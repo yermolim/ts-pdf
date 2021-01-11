@@ -9,7 +9,8 @@
     "buildts": "tsc && copyfiles -f ./src/*.css ./tsc/src",
     "buildru": "rollup -c",
     "bundletypes": "dts-bundle-generator -o dist/ts-pdf-viewer.d.ts src/ts-pdf-viewer.ts",
-    "build": "npm run buildts && npm run buildru && npm run bundletypes",
+    "copypdfworker": "copyfiles -f ./node_modules/pdfjs-dist/build/pdf.worker.min.js ./demo/assets/",
+    "build": "npm run buildts && npm run buildru && npm run bundletypes && npm run copypdfworker",
     "start": "npm run build && lite-server -c ls-config.json",
     "mpublish": "npm version minor && npm publish",
     "ppublish": "npm version patch && npm publish"

@@ -1,4 +1,4 @@
-import { getDocument } from 'pdfjs-dist';
+import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -10,7 +10,26 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
     });
 };
 class TsPdfViewer {
-    constructor(containerSelector) {
+    constructor(containerSelector, workerSrc) {
+        this.onContainerResize = (size) => {
+            if (!size) {
+                const containerRect = this._container.getBoundingClientRect();
+                size = {
+                    width: containerRect.width,
+                    height: containerRect.height,
+                };
+            }
+            const dpr = window.devicePixelRatio;
+            this._viewCanvas.width = size.width * dpr;
+            this._viewCanvas.height = size.height * dpr;
+        };
+        this.onPdfLoadingProgress = (progressData) => {
+            console.log(`${progressData.loaded}/${progressData.total}`);
+        };
+        this.onPdfLoaded = (doc) => {
+            this._pdfDocument = doc;
+            console.log(doc);
+        };
         const container = document.querySelector(containerSelector);
         if (!container) {
             throw new Error("Container not found");
@@ -21,28 +40,38 @@ class TsPdfViewer {
         else {
             this._container = container;
         }
+        if (!workerSrc) {
+            throw new Error("Worker source path not defined");
+        }
+        GlobalWorkerOptions.workerSrc = workerSrc;
         this.initViewerGUI();
     }
     openPdfAsync(path) {
         return __awaiter(this, void 0, void 0, function* () {
-            const doc = yield getDocument(path).promise;
+            if (this._pdfLoadingTask) {
+                yield this.closePdfAsync();
+                return this.openPdfAsync(path);
+            }
+            const loadingTask = getDocument(path);
+            this._pdfLoadingTask = loadingTask;
+            loadingTask.onProgress = this.onPdfLoadingProgress;
+            this.onPdfLoaded(yield loadingTask.promise);
+        });
+    }
+    closePdfAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._pdfLoadingTask) {
+                yield this._pdfLoadingTask.destroy();
+                this._pdfLoadingTask = null;
+            }
+            if (this._pdfDocument) {
+                this._pdfDocument = null;
+            }
         });
     }
     initViewerGUI() {
         const canvas = document.createElement("canvas");
         this._viewCanvas = canvas;
-    }
-    onContainerResize(size) {
-        if (!size) {
-            const containerRect = this._container.getBoundingClientRect();
-            size = {
-                width: containerRect.width,
-                height: containerRect.height,
-            };
-        }
-        const dpr = window.devicePixelRatio;
-        this._viewCanvas.width = size.width * dpr;
-        this._viewCanvas.height = size.height * dpr;
     }
 }
 

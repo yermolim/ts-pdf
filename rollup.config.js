@@ -30,11 +30,14 @@ export default [
       { file: "demo/demo.js", format: "es" },
     ],
     plugins: [
-      nodeResolve({browser: true}),
+      nodeResolve({
+        browser: true
+      }),
       commonjs(),
       css({
         raw: "demo/styles.css",
-        minified: "demo/styles.min.css",
+        minified: false
+        // minified: "demo/styles.min.css",
       }),
     ],
   },

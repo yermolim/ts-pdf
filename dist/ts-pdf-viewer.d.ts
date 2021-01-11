@@ -3,10 +3,15 @@
 export declare class TsPdfViewer {
 	private _container;
 	private _viewCanvas;
-	constructor(containerSelector: string);
+	private _pdfLoadingTask;
+	private _pdfDocument;
+	constructor(containerSelector: string, workerSrc: string);
 	openPdfAsync(path: string): Promise<void>;
+	closePdfAsync(): Promise<void>;
 	private initViewerGUI;
 	private onContainerResize;
+	private onPdfLoadingProgress;
+	private onPdfLoaded;
 }
 
 export {};
