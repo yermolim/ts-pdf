@@ -1,0 +1,11 @@
+{
+  "port": 5500,
+  "files": [
+    "./demo/**/*.{html,css,js,json}"
+  ],
+  "server": { 
+    "baseDir": "./demo",
+    "index": "./index.html"
+  },
+  "open": false
+}

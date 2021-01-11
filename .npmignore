@@ -1,0 +1,13 @@
+.*
+**/tsconfig.json
+**/rollup.config.js
+**/karma.conf.js
+**/ls-config.json
+node_modules
+src
+tsc
+demo
+demo.gif
+debug.log
+test
+coverage
