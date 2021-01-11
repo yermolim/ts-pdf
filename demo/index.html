@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        html, body {
+            position: relative;
+            min-width: 320px;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+        }
+        .abs-stretch {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>    
+    <link rel="icon" href="data:,">
+    <base href="/">
+    <meta charset="UTF-8">
+    <meta name="description" content="TS PDF Viewer test">
+    <meta name="author" content="Volodymyr Yermolenko">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Dots animation test</title>
+</head>
+<body>    
+
+    <div id="pdf-viewer-container" class="abs-stretch"></div>
+
+    <script src="index.umd.min.js"></script>
+    <script async type="module">
+
+        (async function(){
+            var viewer = new TsPdfViewer.PdfViewer("#pdf-viewer-container");
+            console.log(viewer);
+        })();
+
+    </script>    
+</body>
+</html>

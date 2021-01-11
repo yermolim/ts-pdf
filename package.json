@@ -7,10 +7,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "karma start",
-    "buildts": "tsc",
+    "buildts": "tsc && copyfiles -f ./src/*.css ./tsc/src",
     "buildru": "rollup -c",
-    "build": "tsc && rollup -c && dts-bundle-generator -o dist/index.d.ts src/pdf-viewer.ts",
-    "start": "npm run build && copyfiles -f ./dist/index.umd.min.js ./demo && lite-server -c ls-config.json",
+    "build": "npm run buildts && npm run buildru && dts-bundle-generator -o dist/index.d.ts src/pdf-viewer.ts",
+    "start": "npm run build && copyfiles -f ./dist/styles.min.css ./dist/index.umd.min.js ./demo && lite-server -c ls-config.json",
     "mpublish": "npm version minor && npm publish",
     "ppublish": "npm version patch && npm publish"
   },
@@ -61,6 +61,7 @@
     "lite-server": "^2.6.1",
     "puppeteer": "^5.5.0",
     "rollup": "^2.36.1",
+    "rollup-plugin-css-porter": "^1.0.2",
     "rollup-plugin-terser": "^7.0.2",
     "tslib": "^2.1.0",
     "typescript": "^4.1.3"

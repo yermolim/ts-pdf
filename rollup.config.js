@@ -1,4 +1,5 @@
 import { terser } from "rollup-plugin-terser";
+import css from "rollup-plugin-css-porter";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 
@@ -11,6 +12,10 @@ export default [{
     { file: "dist/index.umd.min.js", format: "umd", name: "TsPdfViewer", plugins: [terser()] },
   ],
   plugins: [
+    css({
+      raw: "dist/styles.css",
+      minified: "dist/styles.min.css",
+    }),
     commonjs(),
     resolve({
       browser: true,

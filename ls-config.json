@@ -1,7 +1,7 @@
 {
   "port": 5500,
   "files": [
-    "./demo/**/*.{html,css,js,json}"
+    "./demo/**/*.{html,css,js,json,pdf}"
   ],
   "server": { 
     "baseDir": "./demo",
