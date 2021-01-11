@@ -17,6 +17,7 @@
             height: 100%;
         }
     </style>    
+    <link rel="stylesheet" href="styles.css">
     <link rel="icon" href="data:,">
     <base href="/">
     <meta charset="UTF-8">
@@ -26,17 +27,8 @@
     <title>Dots animation test</title>
 </head>
 <body>    
-
     <div id="pdf-viewer-container" class="abs-stretch"></div>
 
-    <script src="index.umd.min.js"></script>
-    <script async type="module">
-
-        (async function(){
-            var viewer = new TsPdfViewer.PdfViewer("#pdf-viewer-container");
-            console.log(viewer);
-        })();
-
-    </script>    
+    <script src="demo.js" type="module"></script>  
 </body>
 </html>

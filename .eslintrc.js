@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   "env": {
     "browser": true,
     "es6": true,
@@ -131,7 +131,7 @@ export default {
     "no-var": "error",
     "prefer-const": "error",
     "radix": "error",
-    "spaced-comment": "warn",        
+    "spaced-comment": "off",        
     "import/no-unresolved": "off"
   }
 };
