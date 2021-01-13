@@ -6,10 +6,11 @@
   "types": "dist/ts-pdf-viewer.d.ts",
   "scripts": {
     "test": "karma start",
-    "buildts": "tsc && copyfiles -f ./src/*.css ./tsc/src",
+    "copycsstotsc": "copyfiles -f ./src/*.css ./tsc/src",
+    "buildts": "tsc",
     "buildru": "rollup -c",
     "bundletypes": "dts-bundle-generator -o dist/ts-pdf-viewer.d.ts src/ts-pdf-viewer.ts",
-    "copypdfjsworker": "copyfiles -f ./node_modules/pdfjs-dist/build/pdf.worker.min.js ./demo/assets/", 
+    "copypdfjsworker": "copyfiles -f ./node_modules/pdfjs-dist/build/pdf.worker.min.js ./demo/assets/",
     "copypdfjsviewerstyles": "copyfiles -f ./node_modules/pdfjs-dist/web/pdf_viewer.css ./demo/",
     "build": "npm run buildts && npm run buildru && npm run bundletypes && npm run copypdfjsworker",
     "start": "npm run build && lite-server -c ls-config.json",
@@ -37,6 +38,7 @@
   "homepage": "https://github.com/yermolim/ts-pdf-viewer#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-image": "^2.0.6",
     "@rollup/plugin-multi-entry": "^4.0.0",
     "@rollup/plugin-node-resolve": "^11.0.1",
     "@rollup/plugin-replace": "^2.3.4",

@@ -1,21 +1,132 @@
-import "./styles.css";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
-import { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
-import { TsPdfConst } from "./ts-pdf-const";
-import { getRandomUuid } from "./ts-pdf-common";
+import { PDFDocumentLoadingTask, PDFDocumentProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 
 interface PageCanvas {
   canvas: HTMLCanvasElement; 
   ctx: CanvasRenderingContext2D; 
   renderTask: {cancel: () => void}; 
   rendered: boolean;
+  size: {width: number; height: number};
 }
 
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 2;
+  private readonly styles = /*html*/`
+<style>
+  #viewer-container {
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    width: 100%;
+    height: 100%;
+    overflow-x: none;
+    overflow-y: none;
+    background: gray;
+  }
+
+  #panel-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    width: 100%;
+    height: 40px;
+    background: dimgray;
+    box-shadow: 0 0 10px rgba(0,0,0,0.75);
+    z-index: 1;
+    transition: height 0.25s ease-out 0.1s;
+  }
+  .hide-panels #panel-top {
+    height: 0;
+    transition: height 0.25s ease-in 0.1s;
+  }
+
+  #panel-bottom {
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 0;
+    flex-shrink: 0;
+    left: calc(50% - 160px);
+    bottom: 10px;
+    width: 320px;
+    height: 40px;  
+    background: dimgray;
+    box-shadow: 0 0 10px rgba(0,0,0,0.75);
+    z-index: 1;
+    transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
+  }
+  .hide-panels #panel-bottom {
+    bottom: 0;
+    height: 0;
+    transition: bottom 0.1s linear, height 0.25s ease-in 0.1s;
+  }
+
+  #paginator {  
+    user-select: none;
+    font-family: sans-serif;
+    font-size: 16px;
+    color: white;
+  }
+  #paginator-input {
+    text-align: center; 
+    width: 30px;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    outline: none;
+    border: none;
+    color: white;
+    background-color: #303030;
+  }
+
+  #pages-container {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding-top: 0px;
+    overflow-x: auto;
+    overflow-y: auto;
+    transition: padding-top 0.25s ease-out 0.1s;
+  }
+  .hide-panels #page-container {
+    padding-top: 40px;
+    transition: padding-top 0.25s ease-in 0.1s;
+  }
+
+  .page-canvas {
+    margin: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.75);
+  }
+  
+</style>
+  `;
+  private readonly html = /*html*/`
+<div id="viewer-container">
+  <div id="panel-top"></div>
+  <div id="pages-container"></div>
+  <div id="panel-bottom">
+    <div id="paginator">
+      <input id="paginator-input" type="text">
+      <span>/</span>
+      <span id="paginator-total">5</span>
+    </div>
+  </div>
+</div>
+  `;
 
   private _container: HTMLDivElement;
-  private _viewerContainer: HTMLDivElement;
+  private _shadowRoot: ShadowRoot;
 
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;
@@ -23,8 +134,7 @@ export class TsPdfViewer {
   private _pagesContainer: HTMLDivElement;
   private _pageCanvases: PageCanvas[] = [];
 
-  private _pagesVisible = new Set<number>();
-  private _pageCurrent: number;
+  private _scale = 1;
 
   constructor(containerSelector: string, workerSrc: string) {
     const container = document.querySelector(containerSelector);
@@ -59,7 +169,8 @@ export class TsPdfViewer {
     loadingTask.onProgress = this.onPdfLoadingProgress;
     const doc = await loadingTask.promise;    
     this._pdfLoadingTask = null;
-    this.onPdfLoaded(doc);
+
+    await this.onPdfLoadedAsync(doc);
   }
 
   async closePdfAsync(): Promise<void> {
@@ -70,54 +181,20 @@ export class TsPdfViewer {
       this._pdfLoadingTask = null;
     }
 
-    if (this._pdfDocument) {
-      this._pdfDocument = null;
-    }
-
-    this.refreshPageCanvases();
+    await this.onPdfClosedAsync();
   }
 
   private initViewerGUI() {
-    const viewerContainer = document.createElement("div");
-    viewerContainer.classList.add(TsPdfConst.V_CONTAINER_CLASS);
+    this._shadowRoot = this._container.attachShadow({mode: "open"});
+    this._shadowRoot.innerHTML = this.styles + this.html;
 
-    const pagesContainer = document.createElement("div");
-    pagesContainer.classList.add(TsPdfConst.P_CONTAINER_CLASS);
+    const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
+    paginatorInput.addEventListener("input", this.onPaginatorInput);
+    paginatorInput.addEventListener("change", this.onPaginatorChange);
 
-    const topPanel = document.createElement("div");
-    topPanel.classList.add(TsPdfConst.V_PANEL_TOP_CLASS);
+    this._pagesContainer = this._shadowRoot.querySelector("div#pages-container");
     
-    const bottomPanel = document.createElement("div");
-    bottomPanel.classList.add(TsPdfConst.V_PANEL_BOTTOM_CLASS);
-
-    const paginator = document.createElement("div");
-    const pageInput = document.createElement("input");
-    pageInput.setAttribute("type", "text");
-    pageInput.addEventListener("input", () => {
-      console.log(pageInput.value);
-      pageInput.value = pageInput.value.replace(/[^\d]+/g, "");
-    });
-    pageInput.addEventListener("change", () => {
-      console.log("CHANGED");
-      console.log(pageInput.value);
-    });
-    // const currentPagePuuid = getRandomUuid();
-    // const currentPageP = document.createElement("p");
-    // currentPageP.classList.add(TsPdfConst.V_CURRENT_PAGE_CLASS);
-    // currentPageP.id = currentPagePuuid;
-
-    paginator.append(pageInput);
-    bottomPanel.append(paginator);
-
-    viewerContainer.append(topPanel);
-    viewerContainer.append(pagesContainer);
-    viewerContainer.append(bottomPanel);
-    this._container.append(viewerContainer);
-
-    this._viewerContainer = viewerContainer;
-    this._pagesContainer = pagesContainer;
-    
-    // setTimeout(() => viewerContainer.classList.add(TsPdfConst.V_CONTAINER_HIDE_PANELS_CLASS), 3000);
+    // setTimeout(() => viewerContainer.classList.add("panels-"), 3000);
     // setTimeout(() => viewerContainer.classList.remove(TsPdfConst.V_CONTAINER_HIDE_PANELS_CLASS), 6000);
   }
 
@@ -138,50 +215,75 @@ export class TsPdfViewer {
     console.log(`${progressData.loaded}/${progressData.total}`);
   };
 
-  private onPdfLoaded = (doc: PDFDocumentProxy) => {
-    this._pdfDocument = doc;   
-    this.refreshPageCanvases();
-    this.refreshPageView();
+  private onPdfLoadedAsync = async (doc: PDFDocumentProxy) => {
+    this._pdfDocument = doc;
+    await this.refreshPageCanvasesAsync();
+    await this.renderVisiblePagesAsync();
   };
 
-  private refreshPageCanvases() { 
+  private onPdfClosedAsync = async () => {
+    if (this._pdfDocument) {
+      this._pdfDocument = null;
+    }
+    await this.refreshPageCanvasesAsync();
+  };
+
+  private async refreshPageCanvasesAsync(): Promise<void> { 
     this._pageCanvases.forEach(x => {
       x.canvas.remove();
     });
     this._pageCanvases.length = 0;
 
-    const docPagesNumber = this._pdfDocument?.numPages;
+    const docPagesNumber = this._pdfDocument.numPages;
+    this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
     if (!docPagesNumber) {
-      this._pagesContainer.removeEventListener("scroll", this.refreshPageView);
+      this._pagesContainer.removeEventListener("scroll", this.onPagesContainerScroll);
     }
 
     for (let i = 0; i < docPagesNumber; i++) {
       const canvas = document.createElement("canvas");
-      canvas.classList.add(TsPdfConst.P_CANVAS_CLASS);
-      canvas.height = 500;
+      canvas.classList.add("page-canvas"); 
+
+      const page = await this._pdfDocument.getPage(i + 1);
+      const {width, height} = page.getViewport({scale: 1});
+
       this._pagesContainer.append(canvas);
       this._pageCanvases.push({
         canvas, 
         ctx: canvas.getContext("2d"), 
         rendered: false, 
         renderTask: null,
+        size: {width, height},
       });
     }
-    this._pagesContainer.addEventListener("scroll", this.refreshPageView);
+    this.refreshPageCanvasesSize();
+    this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
   }
 
-  private async renderVisiblePagesAsync() {
+  private refreshPageCanvasesSize() {    
+    this._pageCanvases.forEach(x => {
+      const {canvas, size} = x;
+      canvas.width = size.width * this._scale;
+      canvas.height = size.height * this._scale;
+    });    
+  }
+
+  private async renderVisiblePagesAsync(): Promise<void> {
     const doc = this._pdfDocument;
     const pageCanvases = this._pageCanvases;
-    const visiblePages = this._pagesVisible;
+    const scale = this._scale;
+    const visiblePageNumbers = this.getVisiblePages(this._container, pageCanvases); 
 
-    const minPageNumber = Math.max(Math.min(...visiblePages) - this._visibleAdjPages, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePages) + this._visibleAdjPages, pageCanvases.length - 1);
+    const currentPageNumber = this.getCurrentPage(this._container, pageCanvases, visiblePageNumbers);
+    (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = currentPageNumber + 1 + "";
+
+    const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
+    const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pageCanvases.length - 1);
     
     for (let i = 0; i < pageCanvases.length; i++) {
       if (i >= minPageNumber && i <= maxPageNumber) {
         if (!pageCanvases[i].rendered) {
-          await this.renderPageAsync(doc, pageCanvases, i);
+          await this.renderPageAsync(doc, pageCanvases, i, scale);
         }
       } else if (pageCanvases[i].rendered) {
         this.clearRenderedPage(pageCanvases, i);
@@ -189,12 +291,35 @@ export class TsPdfViewer {
     } 
   }
 
-  private refreshPageView = () => {
-    this._pagesVisible = this.getVisiblePages(this._container, this._pageCanvases);
-    this._pageCurrent = this.getCurrentPage(this._container, this._pageCanvases, this._pagesVisible);
+  private scrollToPage(pageNumber: number) { 
+    const {top: cTop} = this._pagesContainer.getBoundingClientRect();
+    const {top: pTop} = this._pageCanvases[pageNumber].canvas.getBoundingClientRect();
+
+    const scroll = pTop - (cTop - this._pagesContainer.scrollTop);
+    this._pagesContainer.scrollTo(0, scroll);
+  }
+  
+  //#region event handlers
+  private onPagesContainerScroll = () => {
     this.renderVisiblePagesAsync();
   };
 
+  private onPaginatorInput = (event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.value = event.target.value.replace(/[^\d]+/g, "");
+    }
+  };
+  
+  private onPaginatorChange = (event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+      const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
+      if (pageNumber + "" !== event.target.value) {        
+        event.target.value = pageNumber + "";
+      }
+      this.scrollToPage(pageNumber - 1);
+    }
+  };
+  //#endregion
   
 
   private getVisiblePages(container: HTMLDivElement, pageCanvases: PageCanvas[]): Set<number> {
@@ -244,7 +369,7 @@ export class TsPdfViewer {
     throw new Error("Incorrect argument");
   }
 
-  private async renderPageAsync(doc: PDFDocumentProxy, pageCanvases: PageCanvas[], pageNumber: number, scale = 1) {  
+  private async renderPageAsync(doc: PDFDocumentProxy, pageCanvases: PageCanvas[], pageNumber: number, scale: number): Promise<void> {  
     const pageCanvas = pageCanvases[pageNumber];    
     if (pageCanvas.renderTask) {
       return;
@@ -252,8 +377,6 @@ export class TsPdfViewer {
 
     const page = await doc.getPage(pageNumber + 1);
     const viewport = page.getViewport({scale});
-    pageCanvas.canvas.width = viewport.width;
-    pageCanvas.canvas.height = viewport.height;
     
     if (!pageCanvas.renderTask) {
       // create new render task only if there is no pending one

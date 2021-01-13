@@ -41,3 +41,5 @@ testem.log
 Thumbs.db
 
 debug.log
+
+src/styles.css
