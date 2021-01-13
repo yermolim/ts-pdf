@@ -6,6 +6,7 @@ TsPdfConst.V_CONTAINER_CLASS = "ts-pdf-viewer-container";
 TsPdfConst.V_CONTAINER_HIDE_PANELS_CLASS = "panels-hidden";
 TsPdfConst.V_PANEL_TOP_CLASS = "ts-pdf-viewer-panel-top";
 TsPdfConst.V_PANEL_BOTTOM_CLASS = "ts-pdf-viewer-panel-bottom";
+TsPdfConst.V_CURRENT_PAGE_CLASS = "ts-pdf-current-page";
 TsPdfConst.P_CONTAINER_CLASS = "ts-pdf-page-container";
 TsPdfConst.P_CANVAS_CLASS = "ts-pdf-page-canvas";
 
@@ -20,6 +21,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 };
 class TsPdfViewer {
     constructor(containerSelector, workerSrc) {
+        this._visibleAdjPages = 2;
         this._pageCanvases = [];
         this._pagesVisible = new Set();
         this.onPdfLoadingProgress = (progressData) => {
@@ -90,6 +92,19 @@ class TsPdfViewer {
         topPanel.classList.add(TsPdfConst.V_PANEL_TOP_CLASS);
         const bottomPanel = document.createElement("div");
         bottomPanel.classList.add(TsPdfConst.V_PANEL_BOTTOM_CLASS);
+        const paginator = document.createElement("div");
+        const pageInput = document.createElement("input");
+        pageInput.setAttribute("type", "text");
+        pageInput.addEventListener("input", () => {
+            console.log(pageInput.value);
+            pageInput.value = pageInput.value.replace(/[^\d]+/g, "");
+        });
+        pageInput.addEventListener("change", () => {
+            console.log("CHANGED");
+            console.log(pageInput.value);
+        });
+        paginator.append(pageInput);
+        bottomPanel.append(paginator);
         viewerContainer.append(topPanel);
         viewerContainer.append(pagesContainer);
         viewerContainer.append(bottomPanel);
@@ -123,12 +138,11 @@ class TsPdfViewer {
     }
     renderVisiblePagesAsync() {
         return __awaiter(this, void 0, void 0, function* () {
-            const visibleAdjPages = 2;
             const doc = this._pdfDocument;
             const pageCanvases = this._pageCanvases;
             const visiblePages = this._pagesVisible;
-            const minPageNumber = Math.max(Math.min(...visiblePages) - visibleAdjPages, 0);
-            const maxPageNumber = Math.min(Math.max(...visiblePages) + visibleAdjPages, pageCanvases.length - 1);
+            const minPageNumber = Math.max(Math.min(...visiblePages) - this._visibleAdjPages, 0);
+            const maxPageNumber = Math.min(Math.max(...visiblePages) + this._visibleAdjPages, pageCanvases.length - 1);
             for (let i = 0; i < pageCanvases.length; i++) {
                 if (i >= minPageNumber && i <= maxPageNumber) {
                     if (!pageCanvases[i].rendered) {

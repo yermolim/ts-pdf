@@ -2,6 +2,7 @@ import "./styles.css";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 import { TsPdfConst } from "./ts-pdf-const";
+import { getRandomUuid } from "./ts-pdf-common";
 
 interface PageCanvas {
   canvas: HTMLCanvasElement; 
@@ -88,6 +89,25 @@ export class TsPdfViewer {
     
     const bottomPanel = document.createElement("div");
     bottomPanel.classList.add(TsPdfConst.V_PANEL_BOTTOM_CLASS);
+
+    const paginator = document.createElement("div");
+    const pageInput = document.createElement("input");
+    pageInput.setAttribute("type", "text");
+    pageInput.addEventListener("input", () => {
+      console.log(pageInput.value);
+      pageInput.value = pageInput.value.replace(/[^\d]+/g, "");
+    });
+    pageInput.addEventListener("change", () => {
+      console.log("CHANGED");
+      console.log(pageInput.value);
+    });
+    // const currentPagePuuid = getRandomUuid();
+    // const currentPageP = document.createElement("p");
+    // currentPageP.classList.add(TsPdfConst.V_CURRENT_PAGE_CLASS);
+    // currentPageP.id = currentPagePuuid;
+
+    paginator.append(pageInput);
+    bottomPanel.append(paginator);
 
     viewerContainer.append(topPanel);
     viewerContainer.append(pagesContainer);
