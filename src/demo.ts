@@ -5,7 +5,7 @@ async function run(): Promise<void> {
   const viewer = new TsPdfViewer("#pdf-viewer-container", "assets/pdf.worker.min.js");
   console.log(viewer);
 
-  await viewer.openPdfAsync("demo.pdf");
+  await viewer.openPdfAsync("demo2.pdf");
 } 
 
 run();
