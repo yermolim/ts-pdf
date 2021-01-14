@@ -2,14 +2,15 @@
 
 export declare class TsPdfViewer {
 	private readonly _visibleAdjPages;
-	private readonly styles;
-	private readonly html;
+	private readonly _minScale;
+	private readonly _maxScale;
 	private _container;
 	private _shadowRoot;
 	private _pdfLoadingTask;
 	private _pdfDocument;
 	private _pagesContainer;
-	private _pageCanvases;
+	private _pages;
+	private _currentPage;
 	private _scale;
 	constructor(containerSelector: string, workerSrc: string);
 	destroy(): void;
@@ -19,17 +20,21 @@ export declare class TsPdfViewer {
 	private onPdfLoadingProgress;
 	private onPdfLoadedAsync;
 	private onPdfClosedAsync;
-	private refreshPageCanvasesAsync;
-	private refreshPageCanvasesSize;
+	private refreshPagesAsync;
 	private renderVisiblePagesAsync;
+	private setScaleAsync;
 	private scrollToPage;
 	private onPagesContainerScroll;
 	private onPaginatorInput;
 	private onPaginatorChange;
+	private onPaginatorPrevClick;
+	private onPaginatorNextClick;
+	private onZoomOutClick;
+	private onZoomInClick;
+	private onZoomFitViewerClick;
+	private onZoomFitPageClick;
 	private getVisiblePages;
 	private getCurrentPage;
-	private renderPageAsync;
-	private clearRenderedPage;
 }
 
 export {};

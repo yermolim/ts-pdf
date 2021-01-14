@@ -1,129 +1,14 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
-import { PDFDocumentLoadingTask, PDFDocumentProxy, RenderParameters } from "pdfjs-dist/types/display/api";
+import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-interface PageCanvas {
-  canvas: HTMLCanvasElement; 
-  ctx: CanvasRenderingContext2D; 
-  renderTask: {cancel: () => void}; 
-  rendered: boolean;
-  size: {width: number; height: number};
-}
+import { html, styles } from "./ts-pdf-html";
+import { clamp } from "./ts-pdf-common";
+import { TsPdfPage } from "./ts-pdf-page";
 
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 2;
-  private readonly styles = /*html*/`
-<style>
-  #viewer-container {
-    box-sizing: border-box;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: stretch;
-    align-items: stretch;
-    width: 100%;
-    height: 100%;
-    overflow-x: none;
-    overflow-y: none;
-    background: gray;
-  }
-
-  #panel-top {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    width: 100%;
-    height: 40px;
-    background: dimgray;
-    box-shadow: 0 0 10px rgba(0,0,0,0.75);
-    z-index: 1;
-    transition: height 0.25s ease-out 0.1s;
-  }
-  .hide-panels #panel-top {
-    height: 0;
-    transition: height 0.25s ease-in 0.1s;
-  }
-
-  #panel-bottom {
-    position: absolute;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    flex-grow: 0;
-    flex-shrink: 0;
-    left: calc(50% - 160px);
-    bottom: 10px;
-    width: 320px;
-    height: 40px;  
-    background: dimgray;
-    box-shadow: 0 0 10px rgba(0,0,0,0.75);
-    z-index: 1;
-    transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
-  }
-  .hide-panels #panel-bottom {
-    bottom: 0;
-    height: 0;
-    transition: bottom 0.1s linear, height 0.25s ease-in 0.1s;
-  }
-
-  #paginator {  
-    user-select: none;
-    font-family: sans-serif;
-    font-size: 16px;
-    color: white;
-  }
-  #paginator-input {
-    text-align: center; 
-    width: 30px;
-    height: 20px;
-    margin: 0;
-    padding: 0;
-    outline: none;
-    border: none;
-    color: white;
-    background-color: #303030;
-  }
-
-  #pages-container {
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    padding-top: 0px;
-    overflow-x: auto;
-    overflow-y: auto;
-    transition: padding-top 0.25s ease-out 0.1s;
-  }
-  .hide-panels #page-container {
-    padding-top: 40px;
-    transition: padding-top 0.25s ease-in 0.1s;
-  }
-
-  .page-canvas {
-    margin: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.75);
-  }
-  
-</style>
-  `;
-  private readonly html = /*html*/`
-<div id="viewer-container">
-  <div id="panel-top"></div>
-  <div id="pages-container"></div>
-  <div id="panel-bottom">
-    <div id="paginator">
-      <input id="paginator-input" type="text">
-      <span>/</span>
-      <span id="paginator-total">5</span>
-    </div>
-  </div>
-</div>
-  `;
+  private readonly _minScale = 0.25;
+  private readonly _maxScale = 4;
 
   private _container: HTMLDivElement;
   private _shadowRoot: ShadowRoot;
@@ -132,7 +17,8 @@ export class TsPdfViewer {
   private _pdfDocument: PDFDocumentProxy;
 
   private _pagesContainer: HTMLDivElement;
-  private _pageCanvases: PageCanvas[] = [];
+  private _pages: TsPdfPage[] = [];
+  private _currentPage = 0;
 
   private _scale = 1;
 
@@ -186,30 +72,24 @@ export class TsPdfViewer {
 
   private initViewerGUI() {
     this._shadowRoot = this._container.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = this.styles + this.html;
+    this._shadowRoot.innerHTML = styles + html;
 
     const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
     paginatorInput.addEventListener("input", this.onPaginatorInput);
-    paginatorInput.addEventListener("change", this.onPaginatorChange);
+    paginatorInput.addEventListener("change", this.onPaginatorChange);    
+    this._shadowRoot.querySelector("div#paginator-prev").addEventListener("click", this.onPaginatorPrevClick);
+    this._shadowRoot.querySelector("div#paginator-next").addEventListener("click", this.onPaginatorNextClick);
+
+    this._shadowRoot.querySelector("div#zoom-out").addEventListener("click", this.onZoomOutClick);
+    this._shadowRoot.querySelector("div#zoom-in").addEventListener("click", this.onZoomInClick);
+    this._shadowRoot.querySelector("div#zoom-fit-viewer").addEventListener("click", this.onZoomFitViewerClick);
+    this._shadowRoot.querySelector("div#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
 
     this._pagesContainer = this._shadowRoot.querySelector("div#pages-container");
     
-    // setTimeout(() => viewerContainer.classList.add("panels-"), 3000);
-    // setTimeout(() => viewerContainer.classList.remove(TsPdfConst.V_CONTAINER_HIDE_PANELS_CLASS), 6000);
+    // setTimeout(() => viewerContainer.classList.add("panels-hide"), 3000);
+    // setTimeout(() => viewerContainer.classList.remove("panels-hide"), 6000);
   }
-
-  // private onContainerResize = (size: { width: number; height: number }) => {
-  //   if (!size) {
-  //     const containerRect = this._container.getBoundingClientRect();
-  //     size = { 
-  //       width: containerRect.width,
-  //       height: containerRect.height,
-  //     };
-  //   }
-  //   const dpr = window.devicePixelRatio;
-  //   this._canvas.width = size.width * dpr;
-  //   this._canvas.height = size.height * dpr;
-  // };
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     console.log(`${progressData.loaded}/${progressData.total}`);
@@ -217,7 +97,7 @@ export class TsPdfViewer {
 
   private onPdfLoadedAsync = async (doc: PDFDocumentProxy) => {
     this._pdfDocument = doc;
-    await this.refreshPageCanvasesAsync();
+    await this.refreshPagesAsync();
     await this.renderVisiblePagesAsync();
   };
 
@@ -225,14 +105,14 @@ export class TsPdfViewer {
     if (this._pdfDocument) {
       this._pdfDocument = null;
     }
-    await this.refreshPageCanvasesAsync();
+    await this.refreshPagesAsync();
   };
 
-  private async refreshPageCanvasesAsync(): Promise<void> { 
-    this._pageCanvases.forEach(x => {
-      x.canvas.remove();
+  private async refreshPagesAsync(): Promise<void> { 
+    this._pages.forEach(x => {
+      x.container.remove();
     });
-    this._pageCanvases.length = 0;
+    this._pages.length = 0;
 
     const docPagesNumber = this._pdfDocument.numPages;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
@@ -241,62 +121,55 @@ export class TsPdfViewer {
     }
 
     for (let i = 0; i < docPagesNumber; i++) {
-      const canvas = document.createElement("canvas");
-      canvas.classList.add("page-canvas"); 
+      const page = new TsPdfPage(this._maxScale);      
+      const pageProxy = await this._pdfDocument.getPage(i + 1);
+      page.pageProxy = pageProxy;
+      page.scale = this._scale;
 
-      const page = await this._pdfDocument.getPage(i + 1);
-      const {width, height} = page.getViewport({scale: 1});
-
-      this._pagesContainer.append(canvas);
-      this._pageCanvases.push({
-        canvas, 
-        ctx: canvas.getContext("2d"), 
-        rendered: false, 
-        renderTask: null,
-        size: {width, height},
-      });
-    }
-    this.refreshPageCanvasesSize();
+      this._pages.push(page);
+      this._pagesContainer.append(page.container);
+    } 
     this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
   }
 
-  private refreshPageCanvasesSize() {    
-    this._pageCanvases.forEach(x => {
-      const {canvas, size} = x;
-      canvas.width = size.width * this._scale;
-      canvas.height = size.height * this._scale;
-    });    
-  }
-
   private async renderVisiblePagesAsync(): Promise<void> {
-    const doc = this._pdfDocument;
-    const pageCanvases = this._pageCanvases;
-    const scale = this._scale;
-    const visiblePageNumbers = this.getVisiblePages(this._container, pageCanvases); 
+    const pages = this._pages;
+    const visiblePageNumbers = this.getVisiblePages(this._container, pages); 
 
-    const currentPageNumber = this.getCurrentPage(this._container, pageCanvases, visiblePageNumbers);
-    (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = currentPageNumber + 1 + "";
+    this._currentPage = this.getCurrentPage(this._container, pages, visiblePageNumbers);
+    (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = this._currentPage + 1 + "";
 
     const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pageCanvases.length - 1);
+    const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
     
-    for (let i = 0; i < pageCanvases.length; i++) {
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
       if (i >= minPageNumber && i <= maxPageNumber) {
-        if (!pageCanvases[i].rendered) {
-          await this.renderPageAsync(doc, pageCanvases, i, scale);
+        if (!page.isValid) {
+          await page.renderAsync();
         }
-      } else if (pageCanvases[i].rendered) {
-        this.clearRenderedPage(pageCanvases, i);
+      } else {
+        page.clear();
       }
     } 
   }
 
+  private async setScaleAsync(scale: number): Promise<void> {
+    if (scale === this._scale) {
+      return;
+    }
+
+    this._scale = scale;
+    this._pages.forEach(x => x.scale = this._scale);   
+    await this.renderVisiblePagesAsync();
+  }
+
   private scrollToPage(pageNumber: number) { 
     const {top: cTop} = this._pagesContainer.getBoundingClientRect();
-    const {top: pTop} = this._pageCanvases[pageNumber].canvas.getBoundingClientRect();
+    const {top: pTop} = this._pages[pageNumber].container.getBoundingClientRect();
 
     const scroll = pTop - (cTop - this._pagesContainer.scrollTop);
-    this._pagesContainer.scrollTo(0, scroll);
+    this._pagesContainer.scrollTo(this._pagesContainer.scrollLeft, scroll);
   }
   
   //#region event handlers
@@ -319,17 +192,67 @@ export class TsPdfViewer {
       this.scrollToPage(pageNumber - 1);
     }
   };
+  
+  private onPaginatorPrevClick = () => {
+    const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
+    this.scrollToPage(pageNumber);
+  };
+
+  private onPaginatorNextClick = () => {
+    const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
+    this.scrollToPage(pageNumber);
+  };
+
+  private onZoomOutClick = () => {
+    const scale = clamp(this._scale / 2, this._minScale, this._maxScale);
+    this.setScaleAsync(scale);
+  };
+
+  private onZoomInClick = () => {
+    const scale = clamp(this._scale * 2, this._minScale, this._maxScale);
+    this.setScaleAsync(scale);
+  };
+  
+  private onZoomFitViewerClick = () => {
+    const cWidth = this._pagesContainer.getBoundingClientRect().width;
+    const pWidth = this._pages[this._currentPage].container.getBoundingClientRect().width;
+    const scale = clamp((cWidth  - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+    this.setScaleAsync(scale);
+  };
+  
+  private onZoomFitPageClick = () => {
+    const { width: cWidth, height: cHeight } = this._pagesContainer.getBoundingClientRect();
+    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].container.getBoundingClientRect();
+    const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+    const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
+    this.setScaleAsync(Math.min(hScale, vScale));
+  };
+
+  // private onContainerResize = (size: { width: number; height: number }) => {
+  //   if (!size) {
+  //     const containerRect = this._container.getBoundingClientRect();
+  //     size = { 
+  //       width: containerRect.width,
+  //       height: containerRect.height,
+  //     };
+  //   }
+  //   const dpr = window.devicePixelRatio;
+  //   this._canvas.width = size.width * dpr;
+  //   this._canvas.height = size.height * dpr;
+  // };
+
   //#endregion
   
 
-  private getVisiblePages(container: HTMLDivElement, pageCanvases: PageCanvas[]): Set<number> {
+  //#region page numbers methods
+  private getVisiblePages(container: HTMLDivElement, pages: TsPdfPage[]): Set<number> {
     const cRect = container.getBoundingClientRect();
     const cTop = cRect.top;
     const cBottom = cRect.top + cRect.height;
 
     const pagesVisible = new Set<number>();
-    pageCanvases.forEach((x, i) => {
-      const pRect = x.canvas.getBoundingClientRect();
+    pages.forEach((x, i) => {
+      const pRect = x.container.getBoundingClientRect();
       const pTop = pRect.top;
       const pBottom = pRect.top + pRect.height;
 
@@ -340,7 +263,7 @@ export class TsPdfViewer {
     return pagesVisible;
   }
   
-  private getCurrentPage(container: HTMLDivElement, pageCanvases: PageCanvas[], visiblePageNumbers: Set<number>): number {
+  private getCurrentPage(container: HTMLDivElement, pages: TsPdfPage[], visiblePageNumbers: Set<number>): number {
     const visiblePageNumbersArray = [...visiblePageNumbers];
     if (!visiblePageNumbersArray.length) {
       return 0;
@@ -353,7 +276,7 @@ export class TsPdfViewer {
     const cMiddle = cRect.top + cRect.height / 2;
 
     for (const i of visiblePageNumbersArray) {
-      const pRect = pageCanvases[i].canvas.getBoundingClientRect();
+      const pRect = pages[i].container.getBoundingClientRect();
       const pTop = pRect.top;
 
       if (pTop > cTop) {
@@ -368,33 +291,5 @@ export class TsPdfViewer {
     // function should not reach this point with correct arguments
     throw new Error("Incorrect argument");
   }
-
-  private async renderPageAsync(doc: PDFDocumentProxy, pageCanvases: PageCanvas[], pageNumber: number, scale: number): Promise<void> {  
-    const pageCanvas = pageCanvases[pageNumber];    
-    if (pageCanvas.renderTask) {
-      return;
-    }
-
-    const page = await doc.getPage(pageNumber + 1);
-    const viewport = page.getViewport({scale});
-    
-    if (!pageCanvas.renderTask) {
-      // create new render task only if there is no pending one
-      const params = <RenderParameters>{
-        canvasContext: pageCanvas.ctx,
-        viewport,
-      };
-      const renderTask = page.render(params);
-      pageCanvas.renderTask = renderTask;
-      await renderTask.promise;
-      pageCanvas.renderTask = null;
-      pageCanvas.rendered = true;
-    }
-  }
-
-  private clearRenderedPage(pageCanvases: PageCanvas[], pageNumber: number) { 
-    const pageCanvas = pageCanvases[pageNumber];
-    pageCanvas.ctx.clearRect(0, 0, pageCanvas.canvas.width, pageCanvas.canvas.height);
-    pageCanvas.rendered = false;
-  }
+  //#endregion
 }

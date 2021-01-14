@@ -1,8 +1,9 @@
 import { terser } from "rollup-plugin-terser";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
+import image from "@rollup/plugin-image";
 import commonjs from "@rollup/plugin-commonjs";
-// import css from "rollup-plugin-css-porter";
 import externals from "rollup-plugin-node-externals";
+// import css from "rollup-plugin-css-porter";
 
 export default [
   // main build
@@ -17,6 +18,7 @@ export default [
         deps: true,
         devDeps: false,
       }),
+      image(),
       // css({
       //   raw: "dist/styles.css",
       //   minified: "dist/styles.min.css",
@@ -34,6 +36,7 @@ export default [
         browser: true
       }),
       commonjs(),
+      image(),
       // css({
       //   raw: "demo/styles.css",
       //   minified: false
