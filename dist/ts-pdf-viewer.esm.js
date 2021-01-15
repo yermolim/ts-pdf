@@ -236,6 +236,14 @@ class TsPdfPage {
         this._size = { width, height };
         this._pageProxy = value;
         this._renderedCanvas = null;
+        this._container.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
+    }
+    set _renderedCanvas(value) {
+        this.$renderedCanvas = value;
+        this._container.setAttribute("data-loaded", !!this._renderedCanvas + "");
+    }
+    get _renderedCanvas() {
+        return this.$renderedCanvas;
     }
     destroy() {
         var _a;
@@ -410,8 +418,8 @@ class TsPdfViewer {
     }
     destroy() {
         var _a;
-        this._pages.forEach(x => x.destroy());
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._pages.forEach(x => x.destroy());
         if (this._pdfDocument) {
             this._pdfDocument.cleanup();
             this._pdfDocument.destroy();

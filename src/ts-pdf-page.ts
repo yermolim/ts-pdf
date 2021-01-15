@@ -46,11 +46,20 @@ export class TsPdfPage {
     this._size = {width, height};
     this._pageProxy = value;
     this._renderedCanvas = null;
+
+    this._container.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
   }
 
   private _size: {width: number; height: number};
   private _renderTask: {cancel: () => void};
-  private _renderedCanvas: HTMLCanvasElement;  
+  private $renderedCanvas: HTMLCanvasElement;
+  private set _renderedCanvas(value: HTMLCanvasElement) {
+    this.$renderedCanvas = value;
+    this._container.setAttribute("data-loaded", !!this._renderedCanvas + "");
+  }  
+  private get _renderedCanvas(): HTMLCanvasElement {
+    return this.$renderedCanvas;
+  }
 
   constructor(maxScale: number) {
     this._maxScale = Math.max(maxScale, 1);
