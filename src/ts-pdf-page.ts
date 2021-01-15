@@ -1,3 +1,4 @@
+import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 
 export class TsPdfPage {
@@ -91,7 +92,15 @@ export class TsPdfPage {
       };
       const renderTask = pageProxy.render(params);
       this._renderTask = renderTask;
-      await renderTask.promise;
+      try {
+        await renderTask.promise;
+      } catch (error) {
+        if (error instanceof RenderingCancelledException) {
+          return;
+        } else {
+          throw error;
+        }
+      }
       
       this._renderedCanvas = renderingCanvas;      
       this._renderTask = null;

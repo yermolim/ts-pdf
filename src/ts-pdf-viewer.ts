@@ -2,13 +2,15 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
 import { html, styles } from "./ts-pdf-html";
-import { clamp } from "./ts-pdf-common";
+import { clamp, Position } from "./ts-pdf-common";
 import { TsPdfPage } from "./ts-pdf-page";
 
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 2;
+
   private readonly _minScale = 0.25;
   private readonly _maxScale = 4;
+  private _scale = 1;
 
   private _container: HTMLDivElement;
   private _shadowRoot: ShadowRoot;
@@ -19,8 +21,8 @@ export class TsPdfViewer {
   private _pagesContainer: HTMLDivElement;
   private _pages: TsPdfPage[] = [];
   private _currentPage = 0;
-
-  private _scale = 1;
+  
+  private _mousePos: Position;
 
   constructor(containerSelector: string, workerSrc: string) {
     const container = document.querySelector(containerSelector);
@@ -41,7 +43,13 @@ export class TsPdfViewer {
   }
 
   destroy() {
-    // TODO: add disposal logic
+    this._pdfLoadingTask?.destroy();
+    this._pages.forEach(x => x.destroy());
+    if (this._pdfDocument) {
+      this._pdfDocument.cleanup();
+      this._pdfDocument.destroy();
+    }
+    this._shadowRoot.innerHTML = "";
   }
 
   async openPdfAsync(path: string): Promise<void> {
@@ -86,6 +94,9 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("div#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
 
     this._pagesContainer = this._shadowRoot.querySelector("div#pages-container");
+    this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
+    this._pagesContainer.addEventListener("wheel", this.onPagesContainerWheel);
+    this._pagesContainer.addEventListener("mousemove", this.onPagesContainerMouseMove);
     
     // setTimeout(() => viewerContainer.classList.add("panels-hide"), 3000);
     // setTimeout(() => viewerContainer.classList.remove("panels-hide"), 6000);
@@ -116,9 +127,6 @@ export class TsPdfViewer {
 
     const docPagesNumber = this._pdfDocument.numPages;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-    if (!docPagesNumber) {
-      this._pagesContainer.removeEventListener("scroll", this.onPagesContainerScroll);
-    }
 
     for (let i = 0; i < docPagesNumber; i++) {
       const page = new TsPdfPage(this._maxScale);      
@@ -129,7 +137,6 @@ export class TsPdfViewer {
       this._pages.push(page);
       this._pagesContainer.append(page.container);
     } 
-    this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
   }
 
   private async renderVisiblePagesAsync(): Promise<void> {
@@ -152,17 +159,7 @@ export class TsPdfViewer {
         page.clear();
       }
     } 
-  }
-
-  private async setScaleAsync(scale: number): Promise<void> {
-    if (scale === this._scale) {
-      return;
-    }
-
-    this._scale = scale;
-    this._pages.forEach(x => x.scale = this._scale);   
-    await this.renderVisiblePagesAsync();
-  }
+  }  
 
   private scrollToPage(pageNumber: number) { 
     const {top: cTop} = this._pagesContainer.getBoundingClientRect();
@@ -171,10 +168,90 @@ export class TsPdfViewer {
     const scroll = pTop - (cTop - this._pagesContainer.scrollTop);
     this._pagesContainer.scrollTo(this._pagesContainer.scrollLeft, scroll);
   }
+
+  //#region zooming
+  private async setScaleAsync(scale: number, cursorPosition: Position = null): Promise<void> {
+    if (!scale || scale === this._scale) {
+      return;
+    }
+
+    let pageContainerUnderPivot: HTMLElement;
+    let xPageRatio: number;
+    let yPageRatio: number;
+
+    if (cursorPosition) {
+      for (const page of this._pages) {
+        const {clientX: x, clientY: y} = cursorPosition;
+        const {x: pX, y: pY, width: pWidth, height: pHeight} = page.container.getBoundingClientRect();
+        // get page under cursor
+        if (pX <= x 
+          && pX + pWidth >= x
+          && pY <= y
+          && pY + pHeight >= y) {          
+          // get cursor position relative to page dimensions before scaling
+          pageContainerUnderPivot = page.container;
+          xPageRatio = (x - pX) / pWidth;
+          yPageRatio = (y - pY) / pHeight;          
+          break;
+        }
+      }
+    }
+
+    this._scale = scale;
+    this._pages.forEach(x => x.scale = this._scale);  
+    
+    if (pageContainerUnderPivot) {   
+      // get the position of the point under cursor after scaling   
+      const {clientX: initialX, clientY: initialY} = cursorPosition;
+      const {x: pX, y: pY, width: pWidth, height: pHeight} = pageContainerUnderPivot.getBoundingClientRect();
+      const resultX = pX + (pWidth * xPageRatio);
+      const resultY = pY + (pHeight * yPageRatio);
+
+      // scroll page to move the point to its initial position in the viewport
+      const scrollLeft = this._pagesContainer.scrollLeft + (resultX - initialX);
+      const scrollTop = this._pagesContainer.scrollTop + (resultY - initialY);
+      this._pagesContainer.scrollTo(scrollLeft, scrollTop);
+      // render will be called from the scroll event handler so no need to call it from here
+      return;
+    }
+    
+    await this.renderVisiblePagesAsync();
+  }
+
+  private async zoomOut(cursorPosition: Position = null): Promise<void> {
+    const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
+    await this.setScaleAsync(scale, cursorPosition);
+  }
+  
+  private async zoomIn(cursorPosition: Position = null): Promise<void> {
+    const scale = clamp(this._scale + 0.25, this._minScale, this._maxScale);
+    await this.setScaleAsync(scale, cursorPosition);
+  }
+  //#endregion
   
   //#region event handlers
   private onPagesContainerScroll = () => {
     this.renderVisiblePagesAsync();
+  };
+  
+  private onPagesContainerMouseMove = (event: MouseEvent) => {
+    const {clientX, clientY} = event;
+    const {x: rectX, y: rectY} = this._pagesContainer.getBoundingClientRect();
+    const containerX = clientX - rectX;
+    const containerY = clientY - rectY;
+
+    this._mousePos = {clientX, clientY, containerX, containerY};
+  };
+  
+  private onPagesContainerWheel = (event: WheelEvent) => {
+    if (event.ctrlKey) {
+      event.preventDefault();
+      if (event.deltaY > 0) {
+        this.zoomOut(this._mousePos);
+      } else {
+        this.zoomIn(this._mousePos);
+      }
+    }
   };
 
   private onPaginatorInput = (event: Event) => {
@@ -204,13 +281,11 @@ export class TsPdfViewer {
   };
 
   private onZoomOutClick = () => {
-    const scale = clamp(this._scale / 2, this._minScale, this._maxScale);
-    this.setScaleAsync(scale);
+    this.zoomOut();
   };
 
   private onZoomInClick = () => {
-    const scale = clamp(this._scale * 2, this._minScale, this._maxScale);
-    this.setScaleAsync(scale);
+    this.zoomIn();
   };
   
   private onZoomFitViewerClick = () => {
