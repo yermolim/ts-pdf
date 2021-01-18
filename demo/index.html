@@ -10,13 +10,13 @@
             margin: 0;
             background-color: black;
         }
-        .test-container {
+        /* .test-container {
             position: absolute;
             left: 200px;
             top: 200px;
             width: 1000px;
             height: 700px;
-        }
+        } */
         .abs-stretch {
             position: absolute;
             top: 0;
@@ -25,8 +25,6 @@
             height: 100%;
         }
     </style>    
-    <!-- <link rel="stylesheet" href="pdf_viewer.css"> -->
-    <!-- <link rel="stylesheet" href="styles.css"> -->
     <link rel="icon" href="data:,">
     <base href="/">
     <meta charset="UTF-8">
@@ -36,8 +34,8 @@
     <title>Dots animation test</title>
 </head>
 <body>    
-    <div class="test-container">
-        <div id="pdf-viewer-container" class="abs-stretch"></div>
+    <div class="test-container abs-stretch">
+        <div id="pdf-main-container" class="abs-stretch"></div>
     </div>
 
     <script src="demo.js" type="module"></script>  

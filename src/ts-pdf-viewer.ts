@@ -7,19 +7,22 @@ import { TsPdfPage } from "./ts-pdf-page";
 
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 2;
-
+  private readonly _previewWidth = 100;
   private readonly _minScale = 0.25;
   private readonly _maxScale = 4;
   private _scale = 1;
 
-  private _container: HTMLDivElement;
+  private _outerContainer: HTMLDivElement;
   private _shadowRoot: ShadowRoot;
-  private _viewerContainer: HTMLDivElement;
+
+  private _mainContainer: HTMLDivElement;
+  private _mainContainerResizeObserver: ResizeObserver;
 
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;
 
-  private _pagesContainer: HTMLDivElement;
+  private _previewer: HTMLDivElement;
+  private _viewer: HTMLDivElement;
   private _pages: TsPdfPage[] = [];
   private _currentPage = 0;
   
@@ -34,7 +37,7 @@ export class TsPdfViewer {
     } else if (!(container instanceof HTMLDivElement)) {
       throw new Error("Container is not a DIV element");
     } else {
-      this._container = container;
+      this._outerContainer = container;
     }
     
     if (!workerSrc) {
@@ -52,20 +55,48 @@ export class TsPdfViewer {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
     }
+
+    this._mainContainerResizeObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
   }
 
-  async openPdfAsync(src: string | Uint8Array): Promise<void> {
-    if (this._pdfLoadingTask) {
-      await this.closePdfAsync();
-      return this.openPdfAsync(src);
+  async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
+    let data: Uint8Array;
+    let doc: PDFDocumentProxy;
+
+    try {
+      if (src instanceof Uint8Array) {
+        data = src;
+      } else {
+        let blob: Blob;  
+        if (typeof src === "string") {
+          const res = await fetch(src);
+          blob = await res.blob();
+        } else {
+          blob = src;
+        }
+  
+        const buffer = await blob.arrayBuffer();
+        data = new Uint8Array(buffer);
+      }
+    } catch {
+      throw new Error("Cannot load file data!");
     }
 
-    const loadingTask = getDocument(src);
-    this._pdfLoadingTask = loadingTask;
-    loadingTask.onProgress = this.onPdfLoadingProgress;
-    const doc = await loadingTask.promise;    
-    this._pdfLoadingTask = null;
+    try {
+      if (this._pdfLoadingTask) {
+        await this.closePdfAsync();
+        return this.openPdfAsync(data);
+      }
+  
+      const loadingTask = getDocument(data);
+      this._pdfLoadingTask = loadingTask;
+      loadingTask.onProgress = this.onPdfLoadingProgress;
+      doc = await loadingTask.promise;    
+      this._pdfLoadingTask = null;
+    } catch {
+      throw new Error("Cannot open PDF!");
+    }
 
     await this.onPdfLoadedAsync(doc);
   }
@@ -82,26 +113,32 @@ export class TsPdfViewer {
   }
 
   private initViewerGUI() {
-    this._shadowRoot = this._container.attachShadow({mode: "open"});
+    this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
     this._shadowRoot.innerHTML = styles + html;
 
     const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
     paginatorInput.addEventListener("input", this.onPaginatorInput);
     paginatorInput.addEventListener("change", this.onPaginatorChange);    
-    this._shadowRoot.querySelector("div#paginator-prev").addEventListener("click", this.onPaginatorPrevClick);
-    this._shadowRoot.querySelector("div#paginator-next").addEventListener("click", this.onPaginatorNextClick);
+    this._shadowRoot.querySelector("#paginator-prev").addEventListener("click", this.onPaginatorPrevClick);
+    this._shadowRoot.querySelector("#paginator-next").addEventListener("click", this.onPaginatorNextClick);
 
-    this._shadowRoot.querySelector("div#zoom-out").addEventListener("click", this.onZoomOutClick);
-    this._shadowRoot.querySelector("div#zoom-in").addEventListener("click", this.onZoomInClick);
-    this._shadowRoot.querySelector("div#zoom-fit-viewer").addEventListener("click", this.onZoomFitViewerClick);
-    this._shadowRoot.querySelector("div#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
+    this._shadowRoot.querySelector("#zoom-out").addEventListener("click", this.onZoomOutClick);
+    this._shadowRoot.querySelector("#zoom-in").addEventListener("click", this.onZoomInClick);
+    this._shadowRoot.querySelector("#zoom-fit-viewer").addEventListener("click", this.onZoomFitViewerClick);
+    this._shadowRoot.querySelector("#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
 
-    this._pagesContainer = this._shadowRoot.querySelector("div#pages-container");
-    this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
-    this._pagesContainer.addEventListener("wheel", this.onPagesContainerWheel);
-    this._pagesContainer.addEventListener("mousemove", this.onPagesContainerMouseMove);
+    this._shadowRoot.querySelector("div#toggle-previewer").addEventListener("click", this.onPreviewerToggleClick);
 
-    this._viewerContainer = this._shadowRoot.querySelector("div#viewer-container");
+    this._previewer = this._shadowRoot.querySelector("div#previewer");
+    this._viewer = this._shadowRoot.querySelector("div#viewer");
+    this._viewer.addEventListener("scroll", this.onPagesContainerScroll);
+    this._viewer.addEventListener("wheel", this.onPagesContainerWheel);
+    this._viewer.addEventListener("mousemove", this.onPagesContainerMouseMove);
+
+    this._mainContainer = this._shadowRoot.querySelector("div#main-container");
+    const resizeObserver = new ResizeObserver(this.onMainContainerResize);
+    resizeObserver.observe(this._mainContainer);
+    this._mainContainerResizeObserver = resizeObserver;
   }
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
@@ -123,7 +160,7 @@ export class TsPdfViewer {
 
   private async refreshPagesAsync(): Promise<void> { 
     this._pages.forEach(x => {
-      x.container.remove();
+      x.viewContainer.remove();
     });
     this._pages.length = 0;
 
@@ -131,21 +168,23 @@ export class TsPdfViewer {
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
 
     for (let i = 0; i < docPagesNumber; i++) {
-      const page = new TsPdfPage(this._maxScale);      
+      const page = new TsPdfPage(this._maxScale, this._previewWidth);      
       const pageProxy = await this._pdfDocument.getPage(i + 1);
       page.pageProxy = pageProxy;
       page.scale = this._scale;
+      await page.renderPreviewAsync();
 
       this._pages.push(page);
-      this._pagesContainer.append(page.container);
+      this._previewer.append(page.previewContainer);
+      this._viewer.append(page.viewContainer);
     } 
   }
 
   private async renderVisiblePagesAsync(): Promise<void> {
     const pages = this._pages;
-    const visiblePageNumbers = this.getVisiblePages(this._container, pages); 
+    const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages); 
 
-    this._currentPage = this.getCurrentPage(this._container, pages, visiblePageNumbers);
+    this._currentPage = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
     (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = this._currentPage + 1 + "";
 
     const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
@@ -155,20 +194,20 @@ export class TsPdfViewer {
       const page = pages[i];
       if (i >= minPageNumber && i <= maxPageNumber) {
         if (!page.isValid) {
-          await page.renderAsync();
+          await page.renderViewAsync();
         }
       } else {
-        page.clear();
+        page.clearView();
       }
     } 
   }  
 
   private scrollToPage(pageNumber: number) { 
-    const {top: cTop} = this._pagesContainer.getBoundingClientRect();
-    const {top: pTop} = this._pages[pageNumber].container.getBoundingClientRect();
+    const {top: cTop} = this._viewer.getBoundingClientRect();
+    const {top: pTop} = this._pages[pageNumber].viewContainer.getBoundingClientRect();
 
-    const scroll = pTop - (cTop - this._pagesContainer.scrollTop);
-    this._pagesContainer.scrollTo(this._pagesContainer.scrollLeft, scroll);
+    const scroll = pTop - (cTop - this._viewer.scrollTop);
+    this._viewer.scrollTo(this._viewer.scrollLeft, scroll);
   }
 
   //#region zooming
@@ -184,14 +223,14 @@ export class TsPdfViewer {
     if (cursorPosition) {
       for (const page of this._pages) {
         const {clientX: x, clientY: y} = cursorPosition;
-        const {x: pX, y: pY, width: pWidth, height: pHeight} = page.container.getBoundingClientRect();
+        const {x: pX, y: pY, width: pWidth, height: pHeight} = page.viewContainer.getBoundingClientRect();
         // get page under cursor
         if (pX <= x 
           && pX + pWidth >= x
           && pY <= y
           && pY + pHeight >= y) {          
           // get cursor position relative to page dimensions before scaling
-          pageContainerUnderPivot = page.container;
+          pageContainerUnderPivot = page.viewContainer;
           xPageRatio = (x - pX) / pWidth;
           yPageRatio = (y - pY) / pHeight;          
           break;
@@ -210,9 +249,9 @@ export class TsPdfViewer {
       const resultY = pY + (pHeight * yPageRatio);
 
       // scroll page to move the point to its initial position in the viewport
-      const scrollLeft = this._pagesContainer.scrollLeft + (resultX - initialX);
-      const scrollTop = this._pagesContainer.scrollTop + (resultY - initialY);
-      this._pagesContainer.scrollTo(scrollLeft, scrollTop);
+      const scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
+      const scrollTop = this._viewer.scrollTop + (resultY - initialY);
+      this._viewer.scrollTo(scrollLeft, scrollTop);
       // render will be called from the scroll event handler so no need to call it from here
       return;
     }
@@ -232,25 +271,42 @@ export class TsPdfViewer {
   //#endregion
   
   //#region event handlers
+  private onMainContainerResize = (entries: ResizeObserverEntry[], observer: ResizeObserver) => {    
+    const {width} = this._mainContainer.getBoundingClientRect();
+    if (width < 721) {      
+      this._mainContainer.classList.add("mobile");
+    } else {      
+      this._mainContainer.classList.remove("mobile");
+    }
+  };
+
+  private onPreviewerToggleClick = () => {
+    if (this._mainContainer.classList.contains("hide-previewer")) {
+      this._mainContainer.classList.remove("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+    } else {      
+      this._mainContainer.classList.add("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+    }
+  };
+  
   private onPagesContainerScroll = () => {
     this.renderVisiblePagesAsync();
   };
   
   private onPagesContainerMouseMove = (event: MouseEvent) => {
     const {clientX, clientY} = event;
-    const {x: rectX, y: rectY, width, height} = this._pagesContainer.getBoundingClientRect();
+    const {x: rectX, y: rectY, width, height} = this._viewer.getBoundingClientRect();
 
     const l = clientX - rectX;
     const t = clientY - rectY;
     const r = width - l;
     const b = height - t;
 
-    console.log(Math.min(l, r, t, b));
-
     if (Math.min(l, r, t, b) > 100) {
       if (!this._panelsHidden && !this._mouseInCenterTimer) {
         this._mouseInCenterTimer = setTimeout(() => {
-          this._viewerContainer.classList.add("hide-panels");
+          this._mainContainer.classList.add("hide-panels");
           this._panelsHidden = true;
           this._mouseInCenterTimer = null;
         }, 5000);
@@ -261,7 +317,7 @@ export class TsPdfViewer {
         this._mouseInCenterTimer = null;
       }
       if (this._panelsHidden) {        
-        this._viewerContainer.classList.remove("hide-panels");
+        this._mainContainer.classList.remove("hide-panels");
         this._panelsHidden = false;
       }
     }
@@ -315,15 +371,15 @@ export class TsPdfViewer {
   };
   
   private onZoomFitViewerClick = () => {
-    const cWidth = this._pagesContainer.getBoundingClientRect().width;
-    const pWidth = this._pages[this._currentPage].container.getBoundingClientRect().width;
+    const cWidth = this._viewer.getBoundingClientRect().width;
+    const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
     const scale = clamp((cWidth  - 20) / pWidth * this._scale, this._minScale, this._maxScale);
     this.setScaleAsync(scale);
   };
   
   private onZoomFitPageClick = () => {
-    const { width: cWidth, height: cHeight } = this._pagesContainer.getBoundingClientRect();
-    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].container.getBoundingClientRect();
+    const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
+    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
     const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
     const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
     this.setScaleAsync(Math.min(hScale, vScale));
@@ -353,7 +409,7 @@ export class TsPdfViewer {
 
     const pagesVisible = new Set<number>();
     pages.forEach((x, i) => {
-      const pRect = x.container.getBoundingClientRect();
+      const pRect = x.viewContainer.getBoundingClientRect();
       const pTop = pRect.top;
       const pBottom = pRect.top + pRect.height;
 
@@ -377,7 +433,7 @@ export class TsPdfViewer {
     const cMiddle = cRect.top + cRect.height / 2;
 
     for (const i of visiblePageNumbersArray) {
-      const pRect = pages[i].container.getBoundingClientRect();
+      const pRect = pages[i].viewContainer.getBoundingClientRect();
       const pTop = pRect.top;
 
       if (pTop > cTop) {

@@ -9,7 +9,7 @@ import icon_fit_page from "./icons/fit-page.png";
 
 export const styles = /*html*/`
   <style>
-    #viewer-container {
+    #main-container {
       box-sizing: border-box;
       position: relative;
       display: flex;
@@ -18,8 +18,6 @@ export const styles = /*html*/`
       align-items: stretch;
       width: 100%;
       height: 100%;
-      overflow-x: none;
-      overflow-y: none;
       background: gray;
     }
   
@@ -64,8 +62,8 @@ export const styles = /*html*/`
       height: 0;
       transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
     }
-  
-    .panel-separator {
+
+    .panel-v-separator {
       width: 1px;
       height: 30px;
       background-color: #BBBBBB;
@@ -82,7 +80,8 @@ export const styles = /*html*/`
       height: 36px;
       border-radius: 50%;
     }
-    .panel-button:hover {
+    .panel-button:hover,
+    .panel-button.on {
       background-color: #606060;
     }
     .panel-button img {
@@ -100,13 +99,14 @@ export const styles = /*html*/`
     }    
     
     .panel-item {
-      transition: opacity 0.1s ease-out 0.35s;
+      transform: scale(1);
+      transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
     .hide-panels .panel-item {
       cursor: default;      
       opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.1s ease-in, visibility 0s linear 0.1s;
+      transform: scale(0);
+      transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
     }
   
     #paginator {  
@@ -131,24 +131,87 @@ export const styles = /*html*/`
       margin: 4px;
     }
 
-    #previewer-toggle {
+    #toggle-previewer {
       margin: 4px;
     }
-  
-    #pages-container {
+    
+    #viewer-container {
       box-sizing: border-box;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      overflow: hidden;
+    }
+      
+    #previewer {
+      box-sizing: border-box;
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 160px; 
+      padding-top: 0px;
+      background: rgb(60,60,60);
+      box-shadow: 0 0 10px rgba(0,0,0,0.75);
+      z-index: 1;
+      transition: padding-top 0.25s ease-out 0.1s, width 0.25s ease-out;
+    } 
+    .hide-panels #previewer {
+      padding-top: 50px;
+      transition: padding-top 0.25s ease-in 0.2s;
+    }   
+    .mobile #previewer {
+      background: rgba(60,60,60,0.9);
+    } 
+    .hide-previewer #previewer {
+      width: 0;
+      transition: width 0.25s ease-in 0.1s;
+    }
+    #previewer .page {      
+      transform: scale(1);
+      transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
+    }
+    .hide-previewer #previewer .page {
+      opacity: 0;
+      transform: scale(0);
+      transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    }
+  
+    #viewer {
+      box-sizing: border-box;
+      position: absolute;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
       overflow: auto;
+      left: 160px;
+      right: 0;
+      top: 0;
+      bottom: 0;
       padding-top: 0px;
-      padding-bottom: 50px;
-      transition: padding-top 0.25s ease-out 0.1s;
+      transition: padding-top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
-    .hide-panels #pages-container {
+    .hide-panels #viewer {
       padding-top: 50px;
       transition: padding-top 0.25s ease-in 0.2s;
-    }
+    }      
+    .hide-panels.mobile #viewer,
+    .hide-panels.hide-previewer #viewer {
+      padding-top: 50px;
+      left: 0;
+      transition: padding-top 0.25s ease-in 0.2s, left 0.25s ease-in;
+    }   
+    .mobile #viewer,
+    .hide-previewer #viewer {
+      padding-top: 0px;
+      left: 0;
+      transition: padding-top 0.25s ease-out 0.1s, left 0.25s ease-in;
+    } 
   
     .page {    
       margin: 10px auto;
@@ -161,15 +224,18 @@ export const styles = /*html*/`
 `;
 
 export const html = /*html*/`
-  <div id="viewer-container">
+  <div id="main-container" class="hide-previewer">
     <div id="panel-top"> 
-      <div id="previewer-toggle" class="panel-button panel-item">
+      <div id="toggle-previewer" class="panel-button panel-item">
         <img src="${icon_arrow_up}"/>
       </div> 
       <div id="annotator" class="panel-item">
       </div>
     </div>
-    <div id="pages-container"></div>
+    <div id="viewer-container">
+      <div id="previewer"></div>
+      <div id="viewer"></div>
+    </div>
     <div id="panel-bottom">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
@@ -182,7 +248,7 @@ export const html = /*html*/`
         <span>&nbsp/&nbsp</span>
         <span id="paginator-total">0</span>
       </div>
-      <div class="panel-separator panel-item"></div>
+      <div class="panel-v-separator panel-item"></div>
       <div id="zoomer" class="subpanel panel-item">
         <div id="zoom-out" class="panel-button">
           <img src="${icon_minus}"/>

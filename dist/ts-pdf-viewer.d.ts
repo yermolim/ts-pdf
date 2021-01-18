@@ -2,15 +2,18 @@
 
 export declare class TsPdfViewer {
 	private readonly _visibleAdjPages;
+	private readonly _previewWidth;
 	private readonly _minScale;
 	private readonly _maxScale;
 	private _scale;
-	private _container;
+	private _outerContainer;
 	private _shadowRoot;
-	private _viewerContainer;
+	private _mainContainer;
+	private _mainContainerResizeObserver;
 	private _pdfLoadingTask;
 	private _pdfDocument;
-	private _pagesContainer;
+	private _previewer;
+	private _viewer;
 	private _pages;
 	private _currentPage;
 	private _mousePos;
@@ -18,7 +21,7 @@ export declare class TsPdfViewer {
 	private _panelsHidden;
 	constructor(containerSelector: string, workerSrc: string);
 	destroy(): void;
-	openPdfAsync(src: string | Uint8Array): Promise<void>;
+	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
 	closePdfAsync(): Promise<void>;
 	private initViewerGUI;
 	private onPdfLoadingProgress;
@@ -30,6 +33,8 @@ export declare class TsPdfViewer {
 	private setScaleAsync;
 	private zoomOut;
 	private zoomIn;
+	private onMainContainerResize;
+	private onPreviewerToggleClick;
 	private onPagesContainerScroll;
 	private onPagesContainerMouseMove;
 	private onPagesContainerWheel;
