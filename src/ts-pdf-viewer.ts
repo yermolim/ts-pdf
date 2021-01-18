@@ -14,6 +14,7 @@ export class TsPdfViewer {
 
   private _container: HTMLDivElement;
   private _shadowRoot: ShadowRoot;
+  private _viewerContainer: HTMLDivElement;
 
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;
@@ -23,6 +24,8 @@ export class TsPdfViewer {
   private _currentPage = 0;
   
   private _mousePos: Position;
+  private _mouseInCenterTimer: number;
+  private _panelsHidden: boolean;
 
   constructor(containerSelector: string, workerSrc: string) {
     const container = document.querySelector(containerSelector);
@@ -52,13 +55,13 @@ export class TsPdfViewer {
     this._shadowRoot.innerHTML = "";
   }
 
-  async openPdfAsync(path: string): Promise<void> {
+  async openPdfAsync(src: string | Uint8Array): Promise<void> {
     if (this._pdfLoadingTask) {
       await this.closePdfAsync();
-      return this.openPdfAsync(path);
+      return this.openPdfAsync(src);
     }
 
-    const loadingTask = getDocument(path);
+    const loadingTask = getDocument(src);
     this._pdfLoadingTask = loadingTask;
     loadingTask.onProgress = this.onPdfLoadingProgress;
     const doc = await loadingTask.promise;    
@@ -97,9 +100,8 @@ export class TsPdfViewer {
     this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
     this._pagesContainer.addEventListener("wheel", this.onPagesContainerWheel);
     this._pagesContainer.addEventListener("mousemove", this.onPagesContainerMouseMove);
-    
-    // setTimeout(() => viewerContainer.classList.add("panels-hide"), 3000);
-    // setTimeout(() => viewerContainer.classList.remove("panels-hide"), 6000);
+
+    this._viewerContainer = this._shadowRoot.querySelector("div#viewer-container");
   }
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
@@ -236,11 +238,35 @@ export class TsPdfViewer {
   
   private onPagesContainerMouseMove = (event: MouseEvent) => {
     const {clientX, clientY} = event;
-    const {x: rectX, y: rectY} = this._pagesContainer.getBoundingClientRect();
-    const containerX = clientX - rectX;
-    const containerY = clientY - rectY;
+    const {x: rectX, y: rectY, width, height} = this._pagesContainer.getBoundingClientRect();
 
-    this._mousePos = {clientX, clientY, containerX, containerY};
+    const l = clientX - rectX;
+    const t = clientY - rectY;
+    const r = width - l;
+    const b = height - t;
+
+    console.log(Math.min(l, r, t, b));
+
+    if (Math.min(l, r, t, b) > 100) {
+      if (!this._panelsHidden && !this._mouseInCenterTimer) {
+        this._mouseInCenterTimer = setTimeout(() => {
+          this._viewerContainer.classList.add("hide-panels");
+          this._panelsHidden = true;
+          this._mouseInCenterTimer = null;
+        }, 5000);
+      }      
+    } else {
+      if (this._mouseInCenterTimer) {
+        clearTimeout(this._mouseInCenterTimer);
+        this._mouseInCenterTimer = null;
+      }
+      if (this._panelsHidden) {        
+        this._viewerContainer.classList.remove("hide-panels");
+        this._panelsHidden = false;
+      }
+    }
+
+    this._mousePos = {clientX, clientY, containerX: l, containerY: t};
   };
   
   private onPagesContainerWheel = (event: WheelEvent) => {

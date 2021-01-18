@@ -29,6 +29,7 @@ const styles = `
     }
   
     #panel-top {
+      position: relative;
       display: flex;
       flex-direction: row;
       justify-content: space-between;
@@ -36,14 +37,14 @@ const styles = `
       flex-shrink: 0;
       width: 100%;
       height: 50px;
-      background: #404040;
+      background: #282828;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
       z-index: 1;
       transition: height 0.25s ease-out 0.1s;
     }
     .hide-panels #panel-top {
       height: 0;
-      transition: height 0.25s ease-in 0.1s;
+      transition: height 0.25s ease-in 0.2s;
     }
   
     #panel-bottom {
@@ -58,7 +59,7 @@ const styles = `
       bottom: 10px;
       width: 320px;
       height: 50px;  
-      background: #404040;
+      background: rgba(40,40,40,0.9);
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
       z-index: 1;
       transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
@@ -66,7 +67,7 @@ const styles = `
     .hide-panels #panel-bottom {
       bottom: 0;
       height: 0;
-      transition: bottom 0.1s linear, height 0.25s ease-in 0.1s;
+      transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
     }
   
     .panel-separator {
@@ -101,6 +102,16 @@ const styles = `
       justify-content: center;
       align-items: center;
       margin: 0 4px;
+    }    
+    
+    .panel-item {
+      transition: opacity 0.1s ease-out 0.35s;
+    }
+    .hide-panels .panel-item {
+      cursor: default;      
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.1s ease-in, visibility 0s linear 0.1s;
     }
   
     #paginator {  
@@ -124,6 +135,10 @@ const styles = `
     #paginator-total {
       margin: 4px;
     }
+
+    #previewer-toggle {
+      margin: 4px;
+    }
   
     #pages-container {
       box-sizing: border-box;
@@ -132,11 +147,12 @@ const styles = `
       justify-content: flex-start;
       overflow: auto;
       padding-top: 0px;
+      padding-bottom: 50px;
       transition: padding-top 0.25s ease-out 0.1s;
     }
-    .hide-panels #page-container {
-      padding-top: 40px;
-      transition: padding-top 0.25s ease-in 0.1s;
+    .hide-panels #pages-container {
+      padding-top: 50px;
+      transition: padding-top 0.25s ease-in 0.2s;
     }
   
     .page {    
@@ -150,10 +166,16 @@ const styles = `
 `;
 const html = `
   <div id="viewer-container">
-    <div id="panel-top"></div>
+    <div id="panel-top"> 
+      <div id="previewer-toggle" class="panel-button panel-item">
+        <img src="${img}"/>
+      </div> 
+      <div id="annotator" class="panel-item">
+      </div>
+    </div>
     <div id="pages-container"></div>
     <div id="panel-bottom">
-      <div id="paginator" class="subpanel">
+      <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${img}"/>
         </div>
@@ -164,8 +186,8 @@ const html = `
         <span>&nbsp/&nbsp</span>
         <span id="paginator-total">0</span>
       </div>
-      <div class="panel-separator"></div>
-      <div id="zoomer" class="subpanel">
+      <div class="panel-separator panel-item"></div>
+      <div id="zoomer" class="subpanel panel-item">
         <div id="zoom-out" class="panel-button">
           <img src="${img$2}"/>
         </div>
@@ -343,10 +365,32 @@ class TsPdfViewer {
         };
         this.onPagesContainerMouseMove = (event) => {
             const { clientX, clientY } = event;
-            const { x: rectX, y: rectY } = this._pagesContainer.getBoundingClientRect();
-            const containerX = clientX - rectX;
-            const containerY = clientY - rectY;
-            this._mousePos = { clientX, clientY, containerX, containerY };
+            const { x: rectX, y: rectY, width, height } = this._pagesContainer.getBoundingClientRect();
+            const l = clientX - rectX;
+            const t = clientY - rectY;
+            const r = width - l;
+            const b = height - t;
+            console.log(Math.min(l, r, t, b));
+            if (Math.min(l, r, t, b) > 100) {
+                if (!this._panelsHidden && !this._mouseInCenterTimer) {
+                    this._mouseInCenterTimer = setTimeout(() => {
+                        this._viewerContainer.classList.add("hide-panels");
+                        this._panelsHidden = true;
+                        this._mouseInCenterTimer = null;
+                    }, 5000);
+                }
+            }
+            else {
+                if (this._mouseInCenterTimer) {
+                    clearTimeout(this._mouseInCenterTimer);
+                    this._mouseInCenterTimer = null;
+                }
+                if (this._panelsHidden) {
+                    this._viewerContainer.classList.remove("hide-panels");
+                    this._panelsHidden = false;
+                }
+            }
+            this._mousePos = { clientX, clientY, containerX: l, containerY: t };
         };
         this.onPagesContainerWheel = (event) => {
             if (event.ctrlKey) {
@@ -426,13 +470,13 @@ class TsPdfViewer {
         }
         this._shadowRoot.innerHTML = "";
     }
-    openPdfAsync(path) {
+    openPdfAsync(src) {
         return __awaiter$1(this, void 0, void 0, function* () {
             if (this._pdfLoadingTask) {
                 yield this.closePdfAsync();
-                return this.openPdfAsync(path);
+                return this.openPdfAsync(src);
             }
-            const loadingTask = getDocument(path);
+            const loadingTask = getDocument(src);
             this._pdfLoadingTask = loadingTask;
             loadingTask.onProgress = this.onPdfLoadingProgress;
             const doc = yield loadingTask.promise;
@@ -467,6 +511,7 @@ class TsPdfViewer {
         this._pagesContainer.addEventListener("scroll", this.onPagesContainerScroll);
         this._pagesContainer.addEventListener("wheel", this.onPagesContainerWheel);
         this._pagesContainer.addEventListener("mousemove", this.onPagesContainerMouseMove);
+        this._viewerContainer = this._shadowRoot.querySelector("div#viewer-container");
     }
     refreshPagesAsync() {
         return __awaiter$1(this, void 0, void 0, function* () {
