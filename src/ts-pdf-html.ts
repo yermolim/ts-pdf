@@ -6,6 +6,7 @@ import icon_minus from "./icons/minus.png";
 import icon_plus from "./icons/plus.png";
 import icon_fit_viewer from "./icons/fit-viewer.png";
 import icon_fit_page from "./icons/fit-page.png";
+import sidebar from "./icons/sidebar.png";
 
 export const styles = /*html*/`
   <style>
@@ -227,7 +228,7 @@ export const html = /*html*/`
   <div id="main-container" class="hide-previewer">
     <div id="panel-top"> 
       <div id="toggle-previewer" class="panel-button panel-item">
-        <img src="${icon_arrow_up}"/>
+        <img src="${sidebar}"/>
       </div> 
       <div id="annotator" class="panel-item">
       </div>
