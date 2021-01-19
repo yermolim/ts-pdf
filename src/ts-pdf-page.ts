@@ -1,7 +1,10 @@
 import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 
+import { TsPdfPageText } from "./ts-pdf-page-text";
+
 export class TsPdfPage {  
+  private readonly _pageProxy: PDFPageProxy;  
   private readonly _maxScale: number;
   private readonly _previewWidth: number;
 
@@ -10,13 +13,6 @@ export class TsPdfPage {
     height: number;
   };
 
-  private _viewContainer: HTMLDivElement; 
-  get viewContainer(): HTMLDivElement {
-    return this._viewContainer;
-  }
-  private _viewCanvas: HTMLCanvasElement;
-  private _viewCtx: CanvasRenderingContext2D; 
-
   private _previewContainer: HTMLDivElement; 
   get previewContainer(): HTMLDivElement {
     return this._previewContainer;
@@ -24,31 +20,23 @@ export class TsPdfPage {
   private _previewCanvas: HTMLCanvasElement;
   private _previewCtx: CanvasRenderingContext2D; 
 
-  private _renderTask: {cancel: () => void};
-  private $renderedCanvas: HTMLCanvasElement;
-  private set _renderedCanvas(value: HTMLCanvasElement) {
-    this.$renderedCanvas = value;
-    this._viewContainer.setAttribute("data-loaded", !!this._renderedCanvas + "");
-  }  
-  private get _renderedCanvas(): HTMLCanvasElement {
-    return this.$renderedCanvas;
+  private _viewContainer: HTMLDivElement; 
+  get viewContainer(): HTMLDivElement {
+    return this._viewContainer;
   }
+  private _viewCanvas: HTMLCanvasElement;
+  private _viewCtx: CanvasRenderingContext2D; 
 
-  private _pageProxy: PDFPageProxy;  
-  set pageProxy(value: PDFPageProxy) {   
-    if (this._pageProxy === value) {
-      return;
-    }
+  private _text: TsPdfPageText;
 
-    const {width, height} = value.getViewport({scale: 1});
-    this._size = {width, height};
-    this.refreshPreviewSize();
-
-    this._pageProxy = value;
-    this._renderedCanvas = null;
-
-    this._previewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
-    this._viewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
+  private _renderTask: {cancel: () => void};
+  private $referenceCanvas: HTMLCanvasElement;
+  private set _referenceCanvas(value: HTMLCanvasElement) {
+    this.$referenceCanvas = value;
+    this._viewContainer.setAttribute("data-loaded", !!this._referenceCanvas + "");
+  }  
+  private get _referenceCanvas(): HTMLCanvasElement {
+    return this.$referenceCanvas;
   }
   
   private _scale: number; 
@@ -75,10 +63,14 @@ export class TsPdfPage {
 
   private _scaleIsValid: boolean;
   get isValid(): boolean {   
-    return this._renderedCanvas && this._scaleIsValid;
+    return this._referenceCanvas && this._scaleIsValid;
   }
 
-  constructor(maxScale: number, previewWidth: number) {
+  constructor(pageProxy: PDFPageProxy, maxScale: number, previewWidth: number) {
+    if (!pageProxy) {
+      throw new Error("Page proxy is not defined");
+    }
+    this._pageProxy = pageProxy;
     this._maxScale = Math.max(maxScale, 1);
     this._previewWidth = Math.max(previewWidth, 50);
 
@@ -88,6 +80,7 @@ export class TsPdfPage {
     this._previewContainer = document.createElement("div");
     this._previewContainer.classList.add("page-preview");
     this._previewContainer.append(this._previewCanvas);
+    this._previewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
     
     this._viewCanvas = document.createElement("canvas");
     this._viewCanvas.classList.add("page-canvas"); 
@@ -95,65 +88,47 @@ export class TsPdfPage {
     this._viewContainer = document.createElement("div");
     this._viewContainer.classList.add("page");
     this._viewContainer.append(this._viewCanvas);
+    this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");  
+    
+    const {width, height} = pageProxy.getViewport({scale: 1});
+    this._size = {width, height};
+    this.refreshPreviewSize();
+
+    this._text = new TsPdfPageText(pageProxy);
+    this._viewContainer.append(this._text.container);  
   }
 
   destroy() {
-    this._pageProxy?.cleanup();
+    this._previewContainer.remove();
+    this._viewContainer.remove();
+    this._pageProxy.cleanup();
   }  
 
-  async renderPreviewAsync(): Promise<void> {    
-    const pageProxy = this.prepareToRender();
-
-    const viewport = pageProxy.getViewport({scale: this._previewCanvas.width / this._size.width});
+  async renderPreviewAsync(): Promise<void> { 
+    const viewport = this._pageProxy.getViewport({scale: this._previewCanvas.width / this._size.width});
 
     const params = <RenderParameters>{
       canvasContext: this._previewCtx,
       viewport,
     };
-    const renderTask = pageProxy.render(params);
-    this._renderTask = renderTask;
-    try {
-      await renderTask.promise;
-    } catch (error) {
-      if (error instanceof RenderingCancelledException) {
-        return;
-      } else {
-        throw error;
-      }
-    }
+
+    await this.runRenderTaskAsync(params);
   }
   
-  async renderViewAsync(): Promise<void> { 
-    const pageProxy = this.prepareToRender();
-    
-    if (!this._renderedCanvas) {
-      // create new render task only if there is no pending one
-      const viewport = pageProxy.getViewport({scale: this._maxScale * window.devicePixelRatio});
-      const renderingCanvas = document.createElement("canvas");
-      renderingCanvas.width = viewport.width;
-      renderingCanvas.height = viewport.height;
-
-      const params = <RenderParameters>{
-        canvasContext: renderingCanvas.getContext("2d"),
-        viewport,
-      };
-      const renderTask = pageProxy.render(params);
-      this._renderTask = renderTask;
-      try {
-        await renderTask.promise;
-      } catch (error) {
-        if (error instanceof RenderingCancelledException) {
-          return;
-        } else {
-          throw error;
-        }
-      }
-      
-      this._renderedCanvas = renderingCanvas;      
-      this._renderTask = null;
+  async renderViewAsync(): Promise<void> {     
+    if (!this._referenceCanvas) {
+      await this.createReferenceCanvasAsync();
     }
     
-    this.drawDownscaled();
+    // fill canvas with a scaled page reference image 
+    this.renderScaledRefView();
+
+    // fill canvas with a full-sized page view
+    // await this.renderFullSizeViewAsync();
+
+    await this._text.renderTextLayerAsync(this._scale);   
+     
+    this._scaleIsValid = true;
   }
   
   clearPreview() {
@@ -162,7 +137,7 @@ export class TsPdfPage {
 
   clearView() {
     this._viewCtx.clearRect(0, 0, this._viewCanvas.width, this._viewCanvas.height);
-    this._renderedCanvas = null;
+    this._referenceCanvas = null;
   }
 
   private refreshPreviewSize() {
@@ -181,12 +156,7 @@ export class TsPdfPage {
     this._previewCanvas.height = height * dpr;
   }
 
-  private prepareToRender(): PDFPageProxy {
-    const pageProxy = this._pageProxy;
-    if (!pageProxy) {
-      throw new Error("PageProxy not set");
-    }
-
+  private async runRenderTaskAsync(renderParams: RenderParameters): Promise<void> {
     if (!this._scale) {
       this._scale = 1;
     }
@@ -196,12 +166,38 @@ export class TsPdfPage {
       this._renderTask = null;
     }
 
-    return pageProxy;
+    const renderTask = this._pageProxy.render(renderParams);
+    this._renderTask = renderTask;
+    try {
+      await renderTask.promise;
+    } catch (error) {
+      if (error instanceof RenderingCancelledException) {
+        return;
+      } else {
+        throw error;
+      }
+    }  
+    this._renderTask = null;
   }
 
-  private drawDownscaled() {
+  private async createReferenceCanvasAsync(): Promise<void> {
+    const viewport = this._pageProxy.getViewport({scale: this._maxScale * window.devicePixelRatio});
+    const renderingCanvas = document.createElement("canvas");
+    renderingCanvas.width = viewport.width;
+    renderingCanvas.height = viewport.height;
+
+    const params = <RenderParameters>{
+      canvasContext: renderingCanvas.getContext("2d"),
+      viewport,
+    };
+    await this.runRenderTaskAsync(params);
+    
+    this._referenceCanvas = renderingCanvas;    
+  }
+
+  private renderScaledRefView() {
     let ratio = this._scale / this._maxScale;
-    let tempSource = this._renderedCanvas;
+    let tempSource = this._referenceCanvas;
     let tempTarget: HTMLCanvasElement;
     while (ratio < 0.5) {
       tempTarget = document.createElement("canvas");
@@ -214,5 +210,14 @@ export class TsPdfPage {
     }
     
     this._viewCtx.drawImage(tempSource, 0, 0, this._viewCanvas.width, this._viewCanvas.height);
+  }
+
+  private async renderFullSizeViewAsync(): Promise<void> {
+    const viewport = this._pageProxy.getViewport({scale: this._scale * window.devicePixelRatio});
+    const params = <RenderParameters>{
+      canvasContext: this._viewCtx,
+      viewport,
+    };
+    await this.runRenderTaskAsync(params);
   }
 }

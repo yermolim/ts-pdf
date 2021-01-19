@@ -160,22 +160,17 @@ export class TsPdfViewer {
 
   private async refreshPagesAsync(): Promise<void> { 
     this._pages.forEach(x => {
-      x.viewContainer.remove();
+      x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
+      x.destroy();
     });
     this._pages.length = 0;
 
     const docPagesNumber = this._pdfDocument.numPages;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
 
-    for (let i = 0; i < docPagesNumber; i++) {
-      const page = new TsPdfPage(this._maxScale, this._previewWidth);      
+    for (let i = 0; i < docPagesNumber; i++) {    
       const pageProxy = await this._pdfDocument.getPage(i + 1);
-
-      //DEBUG
-      // const textContent = await pageProxy.getTextContent();
-      // console.log(textContent);
-
-      page.pageProxy = pageProxy;
+      const page = new TsPdfPage(pageProxy, this._maxScale, this._previewWidth);
       page.scale = this._scale;
 
       await page.renderPreviewAsync();

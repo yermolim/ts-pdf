@@ -157,7 +157,7 @@ export const styles = /*html*/`
       bottom: 0;
       width: 160px; 
       padding-top: 0px;
-      background: rgb(60,60,60);
+      background: rgba(60,60,60,1);
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
       z-index: 1;
       transition: padding-top 0.25s ease-out 0.1s, width 0.25s ease-out;
@@ -215,11 +215,13 @@ export const styles = /*html*/`
     } 
   
     .page {    
+      position: relative;
       margin: 10px auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
     .page-preview {   
       cursor: pointer; 
+      position: relative;
       margin: 10px auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
@@ -227,12 +229,35 @@ export const styles = /*html*/`
     .page-preview.current {
       margin: 0 auto;
       padding: 10px;
-      background-color: rgb(96,96,96);
+      background-color: rgba(96,96,96,1);
     }
 
     .page-canvas {
       background-color: white;
     }  
+    
+    .page-text {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      line-height: 1;
+      opacity: 0.3;
+    }
+    .page-text span {
+      cursor: text;
+      position: absolute;
+      white-space: pre;
+      color: transparent;
+      transform-origin: 0% 0%;
+    }
+    .page-text ::selection {
+      background: rgba(104,104,128,1);
+    }
   </style>
 `;
 

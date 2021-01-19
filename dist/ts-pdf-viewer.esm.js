@@ -1,4 +1,4 @@
-import { RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 
 var img = "data:image/png;base64,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";
 
@@ -163,7 +163,7 @@ const styles = `
       bottom: 0;
       width: 160px; 
       padding-top: 0px;
-      background: rgb(60,60,60);
+      background: rgba(60,60,60,1);
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
       z-index: 1;
       transition: padding-top 0.25s ease-out 0.1s, width 0.25s ease-out;
@@ -221,11 +221,13 @@ const styles = `
     } 
   
     .page {    
+      position: relative;
       margin: 10px auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
     .page-preview {   
       cursor: pointer; 
+      position: relative;
       margin: 10px auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
@@ -233,12 +235,35 @@ const styles = `
     .page-preview.current {
       margin: 0 auto;
       padding: 10px;
-      background-color: rgb(96,96,96);
+      background-color: rgba(96,96,96,1);
     }
 
     .page-canvas {
       background-color: white;
     }  
+    
+    .page-text {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      line-height: 1;
+      opacity: 0.3;
+    }
+    .page-text span {
+      cursor: text;
+      position: absolute;
+      white-space: pre;
+      color: transparent;
+      transform-origin: 0% 0%;
+    }
+    .page-text ::selection {
+      background: rgba(104,104,128,1);
+    }
   </style>
 `;
 const html = `
@@ -298,8 +323,82 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+class TsPdfPageText {
+    constructor(pageProxy) {
+        this.onMouseDown = (e) => {
+            var _a;
+            if (this._divModeTimer) {
+                clearTimeout(this._divModeTimer);
+                this._divModeTimer = null;
+            }
+            (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
+        };
+        this.onMouseUp = (e) => {
+            this._divModeTimer = setTimeout(() => {
+                var _a;
+                (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
+                this._divModeTimer = null;
+            }, 300);
+        };
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
+        this._pageProxy = pageProxy;
+        this._container = document.createElement("div");
+        this._container.classList.add("page-text");
+        this._container.addEventListener("mousedown", this.onMouseDown);
+        this._container.addEventListener("mouseup", this.onMouseUp);
+    }
+    get container() {
+        return this._container;
+    }
+    destroy() {
+    }
+    renderTextLayerAsync(scale) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._container.innerHTML = "";
+            if (this._renderTask) {
+                this._renderTask.cancel();
+                this._renderTask = null;
+            }
+            const viewport = this._pageProxy.getViewport({ scale });
+            const textContentStream = this._pageProxy.streamTextContent();
+            this._renderTask = renderTextLayer({
+                container: this._container,
+                textContentStream,
+                viewport,
+                enhanceTextSelection: true,
+            });
+            try {
+                yield this._renderTask.promise;
+            }
+            catch (error) {
+                if (error instanceof RenderingCancelledException) {
+                    return;
+                }
+                else {
+                    throw error;
+                }
+            }
+        });
+    }
+}
+
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TsPdfPage {
-    constructor(maxScale, previewWidth) {
+    constructor(pageProxy, maxScale, previewWidth) {
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
+        this._pageProxy = pageProxy;
         this._maxScale = Math.max(maxScale, 1);
         this._previewWidth = Math.max(previewWidth, 50);
         this._previewCanvas = document.createElement("canvas");
@@ -308,37 +407,32 @@ class TsPdfPage {
         this._previewContainer = document.createElement("div");
         this._previewContainer.classList.add("page-preview");
         this._previewContainer.append(this._previewCanvas);
+        this._previewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
         this._viewCanvas = document.createElement("canvas");
         this._viewCanvas.classList.add("page-canvas");
         this._viewCtx = this._viewCanvas.getContext("2d");
         this._viewContainer = document.createElement("div");
         this._viewContainer.classList.add("page");
         this._viewContainer.append(this._viewCanvas);
-    }
-    get viewContainer() {
-        return this._viewContainer;
+        this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
+        const { width, height } = pageProxy.getViewport({ scale: 1 });
+        this._size = { width, height };
+        this.refreshPreviewSize();
+        this._text = new TsPdfPageText(pageProxy);
+        this._viewContainer.append(this._text.container);
     }
     get previewContainer() {
         return this._previewContainer;
     }
-    set _renderedCanvas(value) {
-        this.$renderedCanvas = value;
-        this._viewContainer.setAttribute("data-loaded", !!this._renderedCanvas + "");
+    get viewContainer() {
+        return this._viewContainer;
     }
-    get _renderedCanvas() {
-        return this.$renderedCanvas;
+    set _referenceCanvas(value) {
+        this.$referenceCanvas = value;
+        this._viewContainer.setAttribute("data-loaded", !!this._referenceCanvas + "");
     }
-    set pageProxy(value) {
-        if (this._pageProxy === value) {
-            return;
-        }
-        const { width, height } = value.getViewport({ scale: 1 });
-        this._size = { width, height };
-        this.refreshPreviewSize();
-        this._pageProxy = value;
-        this._renderedCanvas = null;
-        this._previewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
-        this._viewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
+    get _referenceCanvas() {
+        return this.$referenceCanvas;
     }
     set scale(value) {
         if (value <= 0 || this._scale === value) {
@@ -357,64 +451,31 @@ class TsPdfPage {
         this._scaleIsValid = false;
     }
     get isValid() {
-        return this._renderedCanvas && this._scaleIsValid;
+        return this._referenceCanvas && this._scaleIsValid;
     }
     destroy() {
-        var _a;
-        (_a = this._pageProxy) === null || _a === void 0 ? void 0 : _a.cleanup();
+        this._previewContainer.remove();
+        this._viewContainer.remove();
+        this._pageProxy.cleanup();
     }
     renderPreviewAsync() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const pageProxy = this.prepareToRender();
-            const viewport = pageProxy.getViewport({ scale: this._previewCanvas.width / this._size.width });
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const viewport = this._pageProxy.getViewport({ scale: this._previewCanvas.width / this._size.width });
             const params = {
                 canvasContext: this._previewCtx,
                 viewport,
             };
-            const renderTask = pageProxy.render(params);
-            this._renderTask = renderTask;
-            try {
-                yield renderTask.promise;
-            }
-            catch (error) {
-                if (error instanceof RenderingCancelledException) {
-                    return;
-                }
-                else {
-                    throw error;
-                }
-            }
+            yield this.runRenderTaskAsync(params);
         });
     }
     renderViewAsync() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const pageProxy = this.prepareToRender();
-            if (!this._renderedCanvas) {
-                const viewport = pageProxy.getViewport({ scale: this._maxScale * window.devicePixelRatio });
-                const renderingCanvas = document.createElement("canvas");
-                renderingCanvas.width = viewport.width;
-                renderingCanvas.height = viewport.height;
-                const params = {
-                    canvasContext: renderingCanvas.getContext("2d"),
-                    viewport,
-                };
-                const renderTask = pageProxy.render(params);
-                this._renderTask = renderTask;
-                try {
-                    yield renderTask.promise;
-                }
-                catch (error) {
-                    if (error instanceof RenderingCancelledException) {
-                        return;
-                    }
-                    else {
-                        throw error;
-                    }
-                }
-                this._renderedCanvas = renderingCanvas;
-                this._renderTask = null;
+        return __awaiter$1(this, void 0, void 0, function* () {
+            if (!this._referenceCanvas) {
+                yield this.createReferenceCanvasAsync();
             }
-            this.drawDownscaled();
+            this.renderScaledRefView();
+            yield this._text.renderTextLayerAsync(this._scale);
+            this._scaleIsValid = true;
         });
     }
     clearPreview() {
@@ -422,7 +483,7 @@ class TsPdfPage {
     }
     clearView() {
         this._viewCtx.clearRect(0, 0, this._viewCanvas.width, this._viewCanvas.height);
-        this._renderedCanvas = null;
+        this._referenceCanvas = null;
     }
     refreshPreviewSize() {
         const { width: fullW, height: fullH } = this._size;
@@ -436,23 +497,48 @@ class TsPdfPage {
         this._previewCanvas.width = width * dpr;
         this._previewCanvas.height = height * dpr;
     }
-    prepareToRender() {
-        const pageProxy = this._pageProxy;
-        if (!pageProxy) {
-            throw new Error("PageProxy not set");
-        }
-        if (!this._scale) {
-            this._scale = 1;
-        }
-        if (this._renderTask) {
-            this._renderTask.cancel();
+    runRenderTaskAsync(renderParams) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            if (!this._scale) {
+                this._scale = 1;
+            }
+            if (this._renderTask) {
+                this._renderTask.cancel();
+                this._renderTask = null;
+            }
+            const renderTask = this._pageProxy.render(renderParams);
+            this._renderTask = renderTask;
+            try {
+                yield renderTask.promise;
+            }
+            catch (error) {
+                if (error instanceof RenderingCancelledException) {
+                    return;
+                }
+                else {
+                    throw error;
+                }
+            }
             this._renderTask = null;
-        }
-        return pageProxy;
+        });
     }
-    drawDownscaled() {
+    createReferenceCanvasAsync() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const viewport = this._pageProxy.getViewport({ scale: this._maxScale * window.devicePixelRatio });
+            const renderingCanvas = document.createElement("canvas");
+            renderingCanvas.width = viewport.width;
+            renderingCanvas.height = viewport.height;
+            const params = {
+                canvasContext: renderingCanvas.getContext("2d"),
+                viewport,
+            };
+            yield this.runRenderTaskAsync(params);
+            this._referenceCanvas = renderingCanvas;
+        });
+    }
+    renderScaledRefView() {
         let ratio = this._scale / this._maxScale;
-        let tempSource = this._renderedCanvas;
+        let tempSource = this._referenceCanvas;
         let tempTarget;
         while (ratio < 0.5) {
             tempTarget = document.createElement("canvas");
@@ -464,9 +550,19 @@ class TsPdfPage {
         }
         this._viewCtx.drawImage(tempSource, 0, 0, this._viewCanvas.width, this._viewCanvas.height);
     }
+    renderFullSizeViewAsync() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const viewport = this._pageProxy.getViewport({ scale: this._scale * window.devicePixelRatio });
+            const params = {
+                canvasContext: this._viewCtx,
+                viewport,
+            };
+            yield this.runRenderTaskAsync(params);
+        });
+    }
 }
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -487,12 +583,12 @@ class TsPdfViewer {
         this.onPdfLoadingProgress = (progressData) => {
             console.log(`${progressData.loaded}/${progressData.total}`);
         };
-        this.onPdfLoadedAsync = (doc) => __awaiter$1(this, void 0, void 0, function* () {
+        this.onPdfLoadedAsync = (doc) => __awaiter$2(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
             yield this.refreshPagesAsync();
             yield this.renderVisiblePagesAsync();
         });
-        this.onPdfClosedAsync = () => __awaiter$1(this, void 0, void 0, function* () {
+        this.onPdfClosedAsync = () => __awaiter$2(this, void 0, void 0, function* () {
             if (this._pdfDocument) {
                 this._pdfDocument = null;
             }
@@ -644,7 +740,7 @@ class TsPdfViewer {
         this._shadowRoot.innerHTML = "";
     }
     openPdfAsync(src) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             let data;
             let doc;
             try {
@@ -685,7 +781,7 @@ class TsPdfViewer {
         });
     }
     closePdfAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             if (this._pdfLoadingTask) {
                 if (!this._pdfLoadingTask.destroyed) {
                     yield this._pdfLoadingTask.destroy();
@@ -719,17 +815,17 @@ class TsPdfViewer {
         this._mainContainerResizeObserver = resizeObserver;
     }
     refreshPagesAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this._pages.forEach(x => {
-                x.viewContainer.remove();
+                x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
+                x.destroy();
             });
             this._pages.length = 0;
             const docPagesNumber = this._pdfDocument.numPages;
             this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
             for (let i = 0; i < docPagesNumber; i++) {
-                const page = new TsPdfPage(this._maxScale, this._previewWidth);
                 const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                page.pageProxy = pageProxy;
+                const page = new TsPdfPage(pageProxy, this._maxScale, this._previewWidth);
                 page.scale = this._scale;
                 yield page.renderPreviewAsync();
                 page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
@@ -740,7 +836,7 @@ class TsPdfViewer {
         });
     }
     renderVisiblePagesAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             const pages = this._pages;
             const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages);
             const prevCurrent = this._currentPage;
@@ -773,7 +869,7 @@ class TsPdfViewer {
         this._viewer.scrollTo(this._viewer.scrollLeft, scroll);
     }
     setScaleAsync(scale, cursorPosition = null) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             if (!scale || scale === this._scale) {
                 return;
             }
@@ -811,13 +907,13 @@ class TsPdfViewer {
         });
     }
     zoomOut(cursorPosition = null) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
             yield this.setScaleAsync(scale, cursorPosition);
         });
     }
     zoomIn(cursorPosition = null) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             const scale = clamp(this._scale + 0.25, this._minScale, this._maxScale);
             yield this.setScaleAsync(scale, cursorPosition);
         });

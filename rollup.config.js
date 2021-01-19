@@ -33,7 +33,7 @@ export default [
     ],
     plugins: [
       nodeResolve({
-        browser: true
+        browser: true,
       }),
       commonjs(),
       image(),
