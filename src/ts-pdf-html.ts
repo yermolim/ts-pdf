@@ -173,11 +173,11 @@ export const styles = /*html*/`
       width: 0;
       transition: width 0.25s ease-in 0.1s;
     }
-    #previewer .page {      
+    #previewer .page-preview {      
       transform: scale(1);
       transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
-    .hide-previewer #previewer .page {
+    .hide-previewer #previewer .page-preview {
       opacity: 0;
       transform: scale(0);
       transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
@@ -218,6 +218,18 @@ export const styles = /*html*/`
       margin: 10px auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
+    .page-preview {   
+      cursor: pointer; 
+      margin: 10px auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.75);
+    }
+    .page-preview:hover,
+    .page-preview.current {
+      margin: 0 auto;
+      padding: 10px;
+      background-color: rgb(96,96,96);
+    }
+
     .page-canvas {
       background-color: white;
     }  

@@ -35,6 +35,7 @@ export declare class TsPdfViewer {
 	private zoomIn;
 	private onMainContainerResize;
 	private onPreviewerToggleClick;
+	private onPreviewerPageClick;
 	private onPagesContainerScroll;
 	private onPagesContainerMouseMove;
 	private onPagesContainerWheel;

@@ -47,6 +47,7 @@ export class TsPdfPage {
     this._pageProxy = value;
     this._renderedCanvas = null;
 
+    this._previewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
     this._viewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
   }
   
@@ -85,7 +86,7 @@ export class TsPdfPage {
     this._previewCanvas.classList.add("page-canvas"); 
     this._previewCtx = this._previewCanvas.getContext("2d");    
     this._previewContainer = document.createElement("div");
-    this._previewContainer.classList.add("page");
+    this._previewContainer.classList.add("page-preview");
     this._previewContainer.append(this._previewCanvas);
     
     this._viewCanvas = document.createElement("canvas");

@@ -179,11 +179,11 @@ const styles = `
       width: 0;
       transition: width 0.25s ease-in 0.1s;
     }
-    #previewer .page {      
+    #previewer .page-preview {      
       transform: scale(1);
       transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
-    .hide-previewer #previewer .page {
+    .hide-previewer #previewer .page-preview {
       opacity: 0;
       transform: scale(0);
       transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
@@ -224,6 +224,18 @@ const styles = `
       margin: 10px auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
+    .page-preview {   
+      cursor: pointer; 
+      margin: 10px auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.75);
+    }
+    .page-preview:hover,
+    .page-preview.current {
+      margin: 0 auto;
+      padding: 10px;
+      background-color: rgb(96,96,96);
+    }
+
     .page-canvas {
       background-color: white;
     }  
@@ -294,7 +306,7 @@ class TsPdfPage {
         this._previewCanvas.classList.add("page-canvas");
         this._previewCtx = this._previewCanvas.getContext("2d");
         this._previewContainer = document.createElement("div");
-        this._previewContainer.classList.add("page");
+        this._previewContainer.classList.add("page-preview");
         this._previewContainer.append(this._previewCanvas);
         this._viewCanvas = document.createElement("canvas");
         this._viewCanvas.classList.add("page-canvas");
@@ -325,6 +337,7 @@ class TsPdfPage {
         this.refreshPreviewSize();
         this._pageProxy = value;
         this._renderedCanvas = null;
+        this._previewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
         this._viewContainer.setAttribute("data-page-number", this._pageProxy.pageNumber + "");
     }
     set scale(value) {
@@ -502,6 +515,22 @@ class TsPdfViewer {
             else {
                 this._mainContainer.classList.add("hide-previewer");
                 this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+            }
+        };
+        this.onPreviewerPageClick = (e) => {
+            let target = e.target;
+            let pageNumber;
+            while (target && !pageNumber) {
+                const data = target.dataset["pageNumber"];
+                if (data) {
+                    pageNumber = +data;
+                }
+                else {
+                    target = target.parentElement;
+                }
+            }
+            if (pageNumber) {
+                this.scrollToPage(pageNumber - 1);
             }
         };
         this.onPagesContainerScroll = () => {
@@ -703,8 +732,9 @@ class TsPdfViewer {
                 page.pageProxy = pageProxy;
                 page.scale = this._scale;
                 yield page.renderPreviewAsync();
-                this._pages.push(page);
+                page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
                 this._previewer.append(page.previewContainer);
+                this._pages.push(page);
                 this._viewer.append(page.viewContainer);
             }
         });
@@ -713,8 +743,14 @@ class TsPdfViewer {
         return __awaiter$1(this, void 0, void 0, function* () {
             const pages = this._pages;
             const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages);
-            this._currentPage = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
-            this._shadowRoot.getElementById("paginator-input").value = this._currentPage + 1 + "";
+            const prevCurrent = this._currentPage;
+            const current = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
+            if (!prevCurrent || prevCurrent !== current) {
+                pages[prevCurrent].previewContainer.classList.remove("current");
+                pages[current].previewContainer.classList.add("current");
+                this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
+                this._currentPage = current;
+            }
             const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
             const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
             for (let i = 0; i < pages.length; i++) {

@@ -170,12 +170,19 @@ export class TsPdfViewer {
     for (let i = 0; i < docPagesNumber; i++) {
       const page = new TsPdfPage(this._maxScale, this._previewWidth);      
       const pageProxy = await this._pdfDocument.getPage(i + 1);
+
+      //DEBUG
+      // const textContent = await pageProxy.getTextContent();
+      // console.log(textContent);
+
       page.pageProxy = pageProxy;
       page.scale = this._scale;
+
       await page.renderPreviewAsync();
+      page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
+      this._previewer.append(page.previewContainer);
 
       this._pages.push(page);
-      this._previewer.append(page.previewContainer);
       this._viewer.append(page.viewContainer);
     } 
   }
@@ -184,8 +191,14 @@ export class TsPdfViewer {
     const pages = this._pages;
     const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages); 
 
-    this._currentPage = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
-    (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = this._currentPage + 1 + "";
+    const prevCurrent = this._currentPage;
+    const current = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
+    if (!prevCurrent || prevCurrent !== current) {
+      pages[prevCurrent].previewContainer.classList.remove("current");
+      pages[current].previewContainer.classList.add("current");
+      (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = current + 1 + "";
+      this._currentPage = current;
+    }
 
     const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
     const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
@@ -289,6 +302,22 @@ export class TsPdfViewer {
       this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
     }
   };
+
+  private onPreviewerPageClick = (e: Event) => {
+    let target = <HTMLElement>e.target;
+    let pageNumber: number;
+    while (target && !pageNumber) {
+      const data = target.dataset["pageNumber"];
+      if (data) {
+        pageNumber = +data;
+      } else {
+        target = target.parentElement;
+      }
+    }    
+    if (pageNumber) {
+      this.scrollToPage(pageNumber - 1);
+    }
+  };
   
   private onPagesContainerScroll = () => {
     this.renderVisiblePagesAsync();
@@ -384,20 +413,6 @@ export class TsPdfViewer {
     const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
     this.setScaleAsync(Math.min(hScale, vScale));
   };
-
-  // private onContainerResize = (size: { width: number; height: number }) => {
-  //   if (!size) {
-  //     const containerRect = this._container.getBoundingClientRect();
-  //     size = { 
-  //       width: containerRect.width,
-  //       height: containerRect.height,
-  //     };
-  //   }
-  //   const dpr = window.devicePixelRatio;
-  //   this._canvas.width = size.width * dpr;
-  //   this._canvas.height = size.height * dpr;
-  // };
-
   //#endregion
   
 
