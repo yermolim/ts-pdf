@@ -16,6 +16,10 @@ var img$6 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeA
 
 const styles = `
   <style>
+    .disabled {
+      pointer-events: none;
+    }
+
     #main-container {
       box-sizing: border-box;
       position: relative;
@@ -279,7 +283,7 @@ const html = `
       <div id="previewer"></div>
       <div id="viewer"></div>
     </div>
-    <div id="panel-bottom">
+    <div id="panel-bottom" class="disabled">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${img}"/>
@@ -373,13 +377,14 @@ class TsPdfPageText {
                 yield this._renderTask.promise;
             }
             catch (error) {
-                if (error instanceof RenderingCancelledException) {
-                    return;
+                if (error.message === "TextLayer task cancelled.") {
+                    return false;
                 }
                 else {
                     throw error;
                 }
             }
+            return true;
         });
     }
 }
@@ -471,7 +476,10 @@ class TsPdfPage {
     renderViewAsync() {
         return __awaiter$1(this, void 0, void 0, function* () {
             if (!this._referenceCanvas) {
-                yield this.createReferenceCanvasAsync();
+                const result = yield this.createReferenceCanvasAsync();
+                if (!result) {
+                    return;
+                }
             }
             this.renderScaledRefView();
             yield this._text.renderTextLayerAsync(this._scale);
@@ -513,13 +521,14 @@ class TsPdfPage {
             }
             catch (error) {
                 if (error instanceof RenderingCancelledException) {
-                    return;
+                    return false;
                 }
                 else {
                     throw error;
                 }
             }
             this._renderTask = null;
+            return true;
         });
     }
     createReferenceCanvasAsync() {
@@ -532,8 +541,12 @@ class TsPdfPage {
                 canvasContext: renderingCanvas.getContext("2d"),
                 viewport,
             };
-            yield this.runRenderTaskAsync(params);
-            this._referenceCanvas = renderingCanvas;
+            const result = yield this.runRenderTaskAsync(params);
+            if (result) {
+                this._referenceCanvas = renderingCanvas;
+                return true;
+            }
+            return false;
         });
     }
     renderScaledRefView() {
@@ -587,8 +600,10 @@ class TsPdfViewer {
             this._pdfDocument = doc;
             yield this.refreshPagesAsync();
             yield this.renderVisiblePagesAsync();
+            this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
         });
         this.onPdfClosedAsync = () => __awaiter$2(this, void 0, void 0, function* () {
+            this._shadowRoot.querySelector("#panel-bottom").classList.add("disabled");
             if (this._pdfDocument) {
                 this._pdfDocument = null;
             }
@@ -629,7 +644,7 @@ class TsPdfViewer {
                 this.scrollToPage(pageNumber - 1);
             }
         };
-        this.onPagesContainerScroll = () => {
+        this.onPagesContainerScroll = (e) => {
             this.renderVisiblePagesAsync();
         };
         this.onPagesContainerMouseMove = (event) => {
@@ -815,14 +830,18 @@ class TsPdfViewer {
         this._mainContainerResizeObserver = resizeObserver;
     }
     refreshPagesAsync() {
+        var _a;
         return __awaiter$2(this, void 0, void 0, function* () {
             this._pages.forEach(x => {
                 x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
                 x.destroy();
             });
             this._pages.length = 0;
-            const docPagesNumber = this._pdfDocument.numPages;
+            const docPagesNumber = ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.numPages) || 0;
             this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
+            if (!docPagesNumber) {
+                return;
+            }
             for (let i = 0; i < docPagesNumber; i++) {
                 const pageProxy = yield this._pdfDocument.getPage(i + 1);
                 const page = new TsPdfPage(pageProxy, this._maxScale, this._previewWidth);
@@ -836,16 +855,20 @@ class TsPdfViewer {
         });
     }
     renderVisiblePagesAsync() {
+        var _a, _b;
         return __awaiter$2(this, void 0, void 0, function* () {
             const pages = this._pages;
             const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages);
             const prevCurrent = this._currentPage;
             const current = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
             if (!prevCurrent || prevCurrent !== current) {
-                pages[prevCurrent].previewContainer.classList.remove("current");
-                pages[current].previewContainer.classList.add("current");
+                (_a = pages[prevCurrent]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
+                (_b = pages[current]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
                 this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
                 this._currentPage = current;
+            }
+            if (current === -1) {
+                return;
             }
             const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
             const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
@@ -893,15 +916,27 @@ class TsPdfViewer {
             }
             this._scale = scale;
             this._pages.forEach(x => x.scale = this._scale);
-            if (pageContainerUnderPivot) {
+            if (pageContainerUnderPivot
+                &&
+                    (this._viewer.scrollHeight > this._viewer.clientHeight
+                        || this._viewer.scrollWidth > this._viewer.clientWidth)) {
                 const { clientX: initialX, clientY: initialY } = cursorPosition;
                 const { x: pX, y: pY, width: pWidth, height: pHeight } = pageContainerUnderPivot.getBoundingClientRect();
                 const resultX = pX + (pWidth * xPageRatio);
                 const resultY = pY + (pHeight * yPageRatio);
-                const scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
-                const scrollTop = this._viewer.scrollTop + (resultY - initialY);
-                this._viewer.scrollTo(scrollLeft, scrollTop);
-                return;
+                let scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
+                let scrollTop = this._viewer.scrollTop + (resultY - initialY);
+                scrollLeft = scrollLeft < 0
+                    ? 0
+                    : scrollLeft;
+                scrollTop = scrollTop < 0
+                    ? 0
+                    : scrollLeft;
+                if (scrollTop !== this._viewer.scrollTop
+                    || scrollLeft !== this._viewer.scrollLeft) {
+                    this._viewer.scrollTo(scrollLeft, scrollTop);
+                    return;
+                }
             }
             yield this.renderVisiblePagesAsync();
         });
@@ -919,10 +954,13 @@ class TsPdfViewer {
         });
     }
     getVisiblePages(container, pages) {
+        const pagesVisible = new Set();
+        if (!pages.length) {
+            return pagesVisible;
+        }
         const cRect = container.getBoundingClientRect();
         const cTop = cRect.top;
         const cBottom = cRect.top + cRect.height;
-        const pagesVisible = new Set();
         pages.forEach((x, i) => {
             const pRect = x.viewContainer.getBoundingClientRect();
             const pTop = pRect.top;
@@ -936,7 +974,7 @@ class TsPdfViewer {
     getCurrentPage(container, pages, visiblePageNumbers) {
         const visiblePageNumbersArray = [...visiblePageNumbers];
         if (!visiblePageNumbersArray.length) {
-            return 0;
+            return -1;
         }
         else if (visiblePageNumbersArray.length === 1) {
             return visiblePageNumbersArray[0];

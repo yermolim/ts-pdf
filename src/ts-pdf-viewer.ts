@@ -149,9 +149,13 @@ export class TsPdfViewer {
     this._pdfDocument = doc;
     await this.refreshPagesAsync();
     await this.renderVisiblePagesAsync();
+
+    this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
   };
 
   private onPdfClosedAsync = async () => {
+    this._shadowRoot.querySelector("#panel-bottom").classList.add("disabled");
+
     if (this._pdfDocument) {
       this._pdfDocument = null;
     }
@@ -165,8 +169,11 @@ export class TsPdfViewer {
     });
     this._pages.length = 0;
 
-    const docPagesNumber = this._pdfDocument.numPages;
+    const docPagesNumber = this._pdfDocument?.numPages || 0;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
+    if (!docPagesNumber) {
+      return;
+    }
 
     for (let i = 0; i < docPagesNumber; i++) {    
       const pageProxy = await this._pdfDocument.getPage(i + 1);
@@ -185,14 +192,17 @@ export class TsPdfViewer {
   private async renderVisiblePagesAsync(): Promise<void> {
     const pages = this._pages;
     const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages); 
-
+    
     const prevCurrent = this._currentPage;
     const current = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
     if (!prevCurrent || prevCurrent !== current) {
-      pages[prevCurrent].previewContainer.classList.remove("current");
-      pages[current].previewContainer.classList.add("current");
+      pages[prevCurrent]?.previewContainer.classList.remove("current");
+      pages[current]?.previewContainer.classList.add("current");
       (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = current + 1 + "";
       this._currentPage = current;
+    }
+    if (current === -1) {
+      return;
     }
 
     const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
@@ -249,7 +259,11 @@ export class TsPdfViewer {
     this._scale = scale;
     this._pages.forEach(x => x.scale = this._scale);  
     
-    if (pageContainerUnderPivot) {   
+    if (pageContainerUnderPivot 
+      && // check if page has scrollbars
+      (this._viewer.scrollHeight > this._viewer.clientHeight
+      || this._viewer.scrollWidth > this._viewer.clientWidth)) {
+      
       // get the position of the point under cursor after scaling   
       const {clientX: initialX, clientY: initialY} = cursorPosition;
       const {x: pX, y: pY, width: pWidth, height: pHeight} = pageContainerUnderPivot.getBoundingClientRect();
@@ -257,11 +271,21 @@ export class TsPdfViewer {
       const resultY = pY + (pHeight * yPageRatio);
 
       // scroll page to move the point to its initial position in the viewport
-      const scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
-      const scrollTop = this._viewer.scrollTop + (resultY - initialY);
-      this._viewer.scrollTo(scrollLeft, scrollTop);
-      // render will be called from the scroll event handler so no need to call it from here
-      return;
+      let scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
+      let scrollTop = this._viewer.scrollTop + (resultY - initialY);
+      scrollLeft = scrollLeft < 0 
+        ? 0 
+        : scrollLeft;
+      scrollTop = scrollTop < 0
+        ? 0
+        : scrollLeft;
+
+      if (scrollTop !== this._viewer.scrollTop
+        || scrollLeft !== this._viewer.scrollLeft) {
+        this._viewer.scrollTo(scrollLeft, scrollTop);
+        // render will be called from the scroll event handler so no need to call it from here
+        return;
+      }
     }
     
     await this.renderVisiblePagesAsync();
@@ -314,7 +338,7 @@ export class TsPdfViewer {
     }
   };
   
-  private onPagesContainerScroll = () => {
+  private onPagesContainerScroll = (e: Event) => {
     this.renderVisiblePagesAsync();
   };
   
@@ -413,11 +437,15 @@ export class TsPdfViewer {
 
   //#region page numbers methods
   private getVisiblePages(container: HTMLDivElement, pages: TsPdfPage[]): Set<number> {
+    const pagesVisible = new Set<number>();
+    if (!pages.length) {
+      return pagesVisible;
+    }
+
     const cRect = container.getBoundingClientRect();
     const cTop = cRect.top;
     const cBottom = cRect.top + cRect.height;
 
-    const pagesVisible = new Set<number>();
     pages.forEach((x, i) => {
       const pRect = x.viewContainer.getBoundingClientRect();
       const pTop = pRect.top;
@@ -433,7 +461,7 @@ export class TsPdfViewer {
   private getCurrentPage(container: HTMLDivElement, pages: TsPdfPage[], visiblePageNumbers: Set<number>): number {
     const visiblePageNumbersArray = [...visiblePageNumbers];
     if (!visiblePageNumbersArray.length) {
-      return 0;
+      return -1;
     } else if (visiblePageNumbersArray.length === 1) {
       return visiblePageNumbersArray[0];
     }

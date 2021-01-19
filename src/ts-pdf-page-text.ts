@@ -1,4 +1,4 @@
-import { RenderingCancelledException, renderTextLayer } from "pdfjs-dist";
+import { renderTextLayer } from "pdfjs-dist";
 import { PDFPageProxy } from "pdfjs-dist/types/display/api";
 import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types/display/text_layer";
 
@@ -7,7 +7,6 @@ export class TsPdfPageText {
   public get container(): HTMLDivElement {
     return this._container;
   }
-  private _eoc: HTMLDivElement;
 
   private _pageProxy: PDFPageProxy;
   private _renderTask: TextLayerRenderTask;
@@ -30,7 +29,7 @@ export class TsPdfPageText {
 
   }
 
-  async renderTextLayerAsync(scale: number): Promise<void> {
+  async renderTextLayerAsync(scale: number): Promise<boolean> {
     this._container.innerHTML = "";
 
     if (this._renderTask) {
@@ -49,12 +48,13 @@ export class TsPdfPageText {
     try {
       await this._renderTask.promise;
     } catch (error) {
-      if (error instanceof RenderingCancelledException) {
-        return;
+      if (error.message === "TextLayer task cancelled.") {
+        return false;
       } else {
         throw error;
       }
     }
+    return true;
   }
 
   private onMouseDown = (e: MouseEvent) => {

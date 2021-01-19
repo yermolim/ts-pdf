@@ -10,6 +10,10 @@ import sidebar from "./icons/sidebar.png";
 
 export const styles = /*html*/`
   <style>
+    .disabled {
+      pointer-events: none;
+    }
+
     #main-container {
       box-sizing: border-box;
       position: relative;
@@ -274,7 +278,7 @@ export const html = /*html*/`
       <div id="previewer"></div>
       <div id="viewer"></div>
     </div>
-    <div id="panel-bottom">
+    <div id="panel-bottom" class="disabled">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${icon_arrow_up}"/>

@@ -115,9 +115,12 @@ export class TsPdfPage {
     await this.runRenderTaskAsync(params);
   }
   
-  async renderViewAsync(): Promise<void> {     
+  async renderViewAsync(): Promise<void> {   
     if (!this._referenceCanvas) {
-      await this.createReferenceCanvasAsync();
+      const result = await this.createReferenceCanvasAsync();
+      if (!result) {
+        return;
+      }
     }
     
     // fill canvas with a scaled page reference image 
@@ -156,7 +159,7 @@ export class TsPdfPage {
     this._previewCanvas.height = height * dpr;
   }
 
-  private async runRenderTaskAsync(renderParams: RenderParameters): Promise<void> {
+  private async runRenderTaskAsync(renderParams: RenderParameters): Promise<boolean> {
     if (!this._scale) {
       this._scale = 1;
     }
@@ -172,15 +175,17 @@ export class TsPdfPage {
       await renderTask.promise;
     } catch (error) {
       if (error instanceof RenderingCancelledException) {
-        return;
+        return false;
       } else {
         throw error;
       }
     }  
     this._renderTask = null;
+
+    return true;
   }
 
-  private async createReferenceCanvasAsync(): Promise<void> {
+  private async createReferenceCanvasAsync(): Promise<boolean> {
     const viewport = this._pageProxy.getViewport({scale: this._maxScale * window.devicePixelRatio});
     const renderingCanvas = document.createElement("canvas");
     renderingCanvas.width = viewport.width;
@@ -190,15 +195,19 @@ export class TsPdfPage {
       canvasContext: renderingCanvas.getContext("2d"),
       viewport,
     };
-    await this.runRenderTaskAsync(params);
-    
-    this._referenceCanvas = renderingCanvas;    
+    const result = await this.runRenderTaskAsync(params);
+    if (result) {
+      this._referenceCanvas = renderingCanvas;   
+      return true;
+    } 
+    return false;
   }
 
   private renderScaledRefView() {
     let ratio = this._scale / this._maxScale;
     let tempSource = this._referenceCanvas;
     let tempTarget: HTMLCanvasElement;
+
     while (ratio < 0.5) {
       tempTarget = document.createElement("canvas");
       tempTarget.width = tempSource.width * 0.5;
