@@ -1,8 +1,8 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-import { html, styles } from "./ts-pdf-html";
-import { clamp, Position } from "./ts-pdf-common";
+import { html, styles } from "./assets/ts-pdf-html";
+import { clamp, Position } from "./common/ts-pdf-utils";
 import { TsPdfPage } from "./ts-pdf-page";
 
 export class TsPdfViewer {
@@ -142,11 +142,13 @@ export class TsPdfViewer {
   }
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
+    // TODO: implement progress display
     console.log(`${progressData.loaded}/${progressData.total}`);
   };
 
   private onPdfLoadedAsync = async (doc: PDFDocumentProxy) => {
     this._pdfDocument = doc;
+
     await this.refreshPagesAsync();
     await this.renderVisiblePagesAsync();
 
@@ -177,6 +179,11 @@ export class TsPdfViewer {
 
     for (let i = 0; i < docPagesNumber; i++) {    
       const pageProxy = await this._pdfDocument.getPage(i + 1);
+
+      // DEBUG
+      // const a = await pageProxy.getAnnotations();
+      // console.log(a);
+
       const page = new TsPdfPage(pageProxy, this._maxScale, this._previewWidth);
       page.scale = this._scale;
 

@@ -7,7 +7,7 @@
   "scripts": {
     "test": "karma start",
     "copycsstotsc": "copyfiles -f ./src/*.css ./tsc/src",
-    "copypngtotsc": "copyfiles -f ./src/icons/*.png ./tsc/src/icons && copyfiles -f ./src/globals.d.ts ./tsc/src",
+    "copypngtotsc": "copyfiles -f ./src/assets/icons/*.png ./tsc/src/assets/icons && copyfiles -f ./src/assets/assets.d.ts ./tsc/src",
     "buildts": "tsc && npm run copypngtotsc",
     "buildru": "rollup -c",
     "bundletypes": "dts-bundle-generator -o dist/ts-pdf-viewer.d.ts src/ts-pdf-viewer.ts",

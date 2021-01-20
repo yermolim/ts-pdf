@@ -1,4 +1,4 @@
-/// <reference path="./globals.d.ts" />
+/// <reference path="./assets.d.ts" />
 
 import icon_arrow_up from "./icons/arrow-up.png";
 import icon_arrow_down from "./icons/arrow-down.png";
