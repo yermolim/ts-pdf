@@ -1,7 +1,7 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-import { html, styles } from "./assets/ts-pdf-html";
+import { html, styles } from "./assets/index.html";
 import { clamp, Position } from "./common/ts-pdf-utils";
 import { TsPdfPage } from "./ts-pdf-page";
 
