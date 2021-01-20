@@ -327,7 +327,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class TsPdfPageText {
+class ViewPageText {
     constructor(pageProxy) {
         this.onMouseDown = (e) => {
             var _a;
@@ -398,7 +398,7 @@ var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class TsPdfPage {
+class ViewPage {
     constructor(pageProxy, maxScale, previewWidth) {
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
@@ -423,7 +423,7 @@ class TsPdfPage {
         const { width, height } = pageProxy.getViewport({ scale: 1 });
         this._size = { width, height };
         this.refreshPreviewSize();
-        this._text = new TsPdfPageText(pageProxy);
+        this._text = new ViewPageText(pageProxy);
         this._viewContainer.append(this._text.container);
     }
     get previewContainer() {
@@ -844,7 +844,7 @@ class TsPdfViewer {
             }
             for (let i = 0; i < docPagesNumber; i++) {
                 const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                const page = new TsPdfPage(pageProxy, this._maxScale, this._previewWidth);
+                const page = new ViewPage(pageProxy, this._maxScale, this._previewWidth);
                 page.scale = this._scale;
                 yield page.renderPreviewAsync();
                 page.previewContainer.addEventListener("click", this.onPreviewerPageClick);

@@ -2,7 +2,7 @@ import { renderTextLayer } from "pdfjs-dist";
 import { PDFPageProxy } from "pdfjs-dist/types/display/api";
 import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types/display/text_layer";
 
-export class TsPdfPageText {  
+export class ViewPageText {  
   private _container: HTMLDivElement;
   public get container(): HTMLDivElement {
     return this._container;

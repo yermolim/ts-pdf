@@ -1,9 +1,10 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
+import { bytesToString } from "pdfjs-dist/lib/shared/util";
 
 import { html, styles } from "./assets/index.html";
-import { clamp, Position } from "./common/ts-pdf-utils";
-import { TsPdfPage } from "./ts-pdf-page";
+import { clamp, Position } from "./common/utils";
+import { ViewPage } from "./view-page";
 
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 2;
@@ -23,7 +24,7 @@ export class TsPdfViewer {
 
   private _previewer: HTMLDivElement;
   private _viewer: HTMLDivElement;
-  private _pages: TsPdfPage[] = [];
+  private _pages: ViewPage[] = [];
   private _currentPage = 0;
   
   private _mousePos: Position;
@@ -82,6 +83,12 @@ export class TsPdfViewer {
     } catch {
       throw new Error("Cannot load file data!");
     }
+
+    //DEBUG
+    // const s = <string>bytesToString(data);
+    // console.log(s);
+    // const r1 = /(?<id>\d+) (?<generation>\d+) (?<content>obj[\s\S]*?endobj)/g;
+    // console.log([...s.matchAll(r1)]);
 
     try {
       if (this._pdfLoadingTask) {
@@ -184,7 +191,7 @@ export class TsPdfViewer {
       // const a = await pageProxy.getAnnotations();
       // console.log(a);
 
-      const page = new TsPdfPage(pageProxy, this._maxScale, this._previewWidth);
+      const page = new ViewPage(pageProxy, this._maxScale, this._previewWidth);
       page.scale = this._scale;
 
       await page.renderPreviewAsync();
@@ -443,7 +450,7 @@ export class TsPdfViewer {
   
 
   //#region page numbers methods
-  private getVisiblePages(container: HTMLDivElement, pages: TsPdfPage[]): Set<number> {
+  private getVisiblePages(container: HTMLDivElement, pages: ViewPage[]): Set<number> {
     const pagesVisible = new Set<number>();
     if (!pages.length) {
       return pagesVisible;
@@ -465,7 +472,7 @@ export class TsPdfViewer {
     return pagesVisible;
   }
   
-  private getCurrentPage(container: HTMLDivElement, pages: TsPdfPage[], visiblePageNumbers: Set<number>): number {
+  private getCurrentPage(container: HTMLDivElement, pages: ViewPage[], visiblePageNumbers: Set<number>): number {
     const visiblePageNumbersArray = [...visiblePageNumbers];
     if (!visiblePageNumbersArray.length) {
       return -1;

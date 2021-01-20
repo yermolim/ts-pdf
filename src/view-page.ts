@@ -1,9 +1,9 @@
 import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 
-import { TsPdfPageText } from "./ts-pdf-page-text";
+import { ViewPageText } from "./view-page-text";
 
-export class TsPdfPage {  
+export class ViewPage {  
   private readonly _pageProxy: PDFPageProxy;  
   private readonly _maxScale: number;
   private readonly _previewWidth: number;
@@ -27,7 +27,7 @@ export class TsPdfPage {
   private _viewCanvas: HTMLCanvasElement;
   private _viewCtx: CanvasRenderingContext2D; 
 
-  private _text: TsPdfPageText;
+  private _text: ViewPageText;
 
   private _renderTask: {cancel: () => void};
   private $referenceCanvas: HTMLCanvasElement;
@@ -94,7 +94,7 @@ export class TsPdfPage {
     this._size = {width, height};
     this.refreshPreviewSize();
 
-    this._text = new TsPdfPageText(pageProxy);
+    this._text = new ViewPageText(pageProxy);
     this._viewContainer.append(this._text.container);  
   }
 
