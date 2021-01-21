@@ -4,16 +4,13 @@ import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types
 
 export class ViewPageText {  
   private _container: HTMLDivElement;
-  public get container(): HTMLDivElement {
-    return this._container;
-  }
 
   private _pageProxy: PDFPageProxy;
   private _renderTask: TextLayerRenderTask;
 
   private _divModeTimer: number;
 
-  constructor(pageProxy: PDFPageProxy) {
+  private constructor(pageProxy: PDFPageProxy) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
@@ -23,19 +20,26 @@ export class ViewPageText {
     this._container.classList.add("page-text");
     this._container.addEventListener("mousedown", this.onMouseDown);
     this._container.addEventListener("mouseup", this.onMouseUp);
-  }  
+  } 
+
+  static async appendPageTextAsync(pageProxy: PDFPageProxy, parent: HTMLElement, scale: number): Promise<ViewPageText> {
+    const textObj = new ViewPageText(pageProxy);
+    await textObj.renderTextLayerAsync(scale);
+    parent.append(textObj._container);
+    return textObj;
+  } 
 
   destroy() {
-
+    this.destroyRenderTask();
+    if (this._container) {
+      this._container.remove();
+      this._container = null;
+    }
   }
 
-  async renderTextLayerAsync(scale: number): Promise<boolean> {
-    this._container.innerHTML = "";
-
-    if (this._renderTask) {
-      this._renderTask.cancel();  
-      this._renderTask = null;
-    }
+  private async renderTextLayerAsync(scale: number): Promise<boolean> {
+    this.clear();
+    this.destroyRenderTask();
 
     const viewport = this._pageProxy.getViewport({scale});
     const textContentStream = this._pageProxy.streamTextContent();
@@ -55,6 +59,17 @@ export class ViewPageText {
       }
     }
     return true;
+  }
+
+  private clear() {
+    this._container.innerHTML = "";
+  }
+
+  private destroyRenderTask() {
+    if (this._renderTask) {
+      this._renderTask.cancel();  
+      this._renderTask = null;
+    }
   }
 
   private onMouseDown = (e: MouseEvent) => {

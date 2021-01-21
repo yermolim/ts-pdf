@@ -20,6 +20,22 @@ const styles = `
       pointer-events: none;
     }
 
+    .absolute {
+      position: absolute;
+    }
+    .abs-stretch {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+    .abs-topleft {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
     #main-container {
       box-sizing: border-box;
       position: relative;
@@ -145,15 +161,6 @@ const styles = `
     #toggle-previewer {
       margin: 4px;
     }
-    
-    #viewer-container {
-      box-sizing: border-box;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-      overflow: hidden;
-    }
       
     #previewer {
       box-sizing: border-box;
@@ -161,20 +168,21 @@ const styles = `
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      align-items: center;
+      overflow-y: auto;
       left: 0;
-      top: 0;
+      top: 50px;
       bottom: 0;
       width: 160px; 
       padding-top: 0px;
       background: rgba(60,60,60,1);
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
       z-index: 1;
-      transition: padding-top 0.25s ease-out 0.1s, width 0.25s ease-out;
+      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, width 0.25s ease-out;
     } 
     .hide-panels #previewer {
+      top: 0;
       padding-top: 50px;
-      transition: padding-top 0.25s ease-in 0.2s;
+      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
     }   
     .mobile #previewer {
       background: rgba(60,60,60,0.9);
@@ -184,12 +192,12 @@ const styles = `
       transition: width 0.25s ease-in 0.1s;
     }
     #previewer .page-preview {      
-      transform: scale(1);
+      transform: scaleX(1);
       transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
     .hide-previewer #previewer .page-preview {
       opacity: 0;
-      transform: scale(0);
+      transform: scaleX(0);
       transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
     }
   
@@ -202,49 +210,59 @@ const styles = `
       overflow: auto;
       left: 160px;
       right: 0;
-      top: 0;
+      top: 50px;
       bottom: 0;
       padding-top: 0px;
-      transition: padding-top 0.25s ease-out 0.1s, left 0.25s ease-out;
+      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
     .hide-panels #viewer {
+      top: 0;
       padding-top: 50px;
-      transition: padding-top 0.25s ease-in 0.2s;
+      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
     }      
     .hide-panels.mobile #viewer,
     .hide-panels.hide-previewer #viewer {
+      top: 0;
       padding-top: 50px;
       left: 0;
-      transition: padding-top 0.25s ease-in 0.2s, left 0.25s ease-in;
+      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s, left 0.25s ease-in;
     }   
     .mobile #viewer,
     .hide-previewer #viewer {
+      top: 50px;
       padding-top: 0px;
       left: 0;
-      transition: padding-top 0.25s ease-out 0.1s, left 0.25s ease-in;
+      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
     } 
   
     .page {    
       position: relative;
+      display: flex;
+      flex-grow: 0;
+      flex-shrink: 0;
       margin: 10px auto;
+      background-color: white;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
     .page-preview {   
       cursor: pointer; 
       position: relative;
+      display: flex;
+      flex-grow: 0;
+      flex-shrink: 0;
       margin: 10px auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.75);
+      background-color: white;
+      background-color: rgba(96,96,96,1);
     }
     .page-preview:hover,
     .page-preview.current {
       margin: 0 auto;
       padding: 10px;
-      background-color: rgba(96,96,96,1);
     }
 
     .page-canvas {
       background-color: white;
-    }  
+    } 
     
     .page-text {
       position: absolute;
@@ -272,16 +290,14 @@ const styles = `
 `;
 const html = `
   <div id="main-container" class="hide-previewer">
+    <div id="viewer"></div>
+    <div id="previewer"></div>
     <div id="panel-top"> 
       <div id="toggle-previewer" class="panel-button panel-item">
         <img src="${img$6}"/>
       </div> 
       <div id="annotator" class="panel-item">
       </div>
-    </div>
-    <div id="viewer-container">
-      <div id="previewer"></div>
-      <div id="viewer"></div>
     </div>
     <div id="panel-bottom" class="disabled">
       <div id="paginator" class="subpanel panel-item">
@@ -353,18 +369,25 @@ class ViewPageText {
         this._container.addEventListener("mousedown", this.onMouseDown);
         this._container.addEventListener("mouseup", this.onMouseUp);
     }
-    get container() {
-        return this._container;
+    static appendPageTextAsync(pageProxy, parent, scale) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const textObj = new ViewPageText(pageProxy);
+            yield textObj.renderTextLayerAsync(scale);
+            parent.append(textObj._container);
+            return textObj;
+        });
     }
     destroy() {
+        this.destroyRenderTask();
+        if (this._container) {
+            this._container.remove();
+            this._container = null;
+        }
     }
     renderTextLayerAsync(scale) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._container.innerHTML = "";
-            if (this._renderTask) {
-                this._renderTask.cancel();
-                this._renderTask = null;
-            }
+            this.clear();
+            this.destroyRenderTask();
             const viewport = this._pageProxy.getViewport({ scale });
             const textContentStream = this._pageProxy.streamTextContent();
             this._renderTask = renderTextLayer({
@@ -387,6 +410,15 @@ class ViewPageText {
             return true;
         });
     }
+    clear() {
+        this._container.innerHTML = "";
+    }
+    destroyRenderTask() {
+        if (this._renderTask) {
+            this._renderTask.cancel();
+            this._renderTask = null;
+        }
+    }
 }
 
 var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -404,27 +436,21 @@ class ViewPage {
             throw new Error("Page proxy is not defined");
         }
         this._pageProxy = pageProxy;
+        this._viewport = pageProxy.getViewport({ scale: 1 });
         this._maxScale = Math.max(maxScale, 1);
-        this._previewWidth = Math.max(previewWidth, 50);
-        this._previewCanvas = document.createElement("canvas");
-        this._previewCanvas.classList.add("page-canvas");
-        this._previewCtx = this._previewCanvas.getContext("2d");
+        const { width, height } = this._viewport;
+        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
+        const previewHeight = previewWidth * (height / width);
+        this._dimensions = { width, height, previewWidth, previewHeight };
         this._previewContainer = document.createElement("div");
         this._previewContainer.classList.add("page-preview");
-        this._previewContainer.append(this._previewCanvas);
         this._previewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
-        this._viewCanvas = document.createElement("canvas");
-        this._viewCanvas.classList.add("page-canvas");
-        this._viewCtx = this._viewCanvas.getContext("2d");
+        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
         this._viewContainer = document.createElement("div");
         this._viewContainer.classList.add("page");
-        this._viewContainer.append(this._viewCanvas);
         this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
-        const { width, height } = pageProxy.getViewport({ scale: 1 });
-        this._size = { width, height };
-        this.refreshPreviewSize();
-        this._text = new ViewPageText(pageProxy);
-        this._viewContainer.append(this._text.container);
+        this.scale = 1;
     }
     get previewContainer() {
         return this._previewContainer;
@@ -432,92 +458,90 @@ class ViewPage {
     get viewContainer() {
         return this._viewContainer;
     }
-    set _referenceCanvas(value) {
-        this.$referenceCanvas = value;
-        this._viewContainer.setAttribute("data-loaded", !!this._referenceCanvas + "");
+    set _viewRendered(value) {
+        this.$viewRendered = value;
+        this._viewContainer.setAttribute("data-loaded", value + "");
     }
-    get _referenceCanvas() {
-        return this.$referenceCanvas;
+    get _viewRendered() {
+        return this.$viewRendered;
     }
     set scale(value) {
         if (value <= 0 || this._scale === value) {
             return;
         }
         this._scale = value;
-        const width = this._size.width * this._scale;
-        const height = this._size.height * this._scale;
-        this._viewContainer.style.width = width + "px";
-        this._viewContainer.style.height = height + "px";
-        this._viewCanvas.style.width = width + "px";
-        this._viewCanvas.style.height = height + "px";
         const dpr = window.devicePixelRatio;
-        this._viewCanvas.width = width * dpr;
-        this._viewCanvas.height = height * dpr;
+        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
+        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
+        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+        if (this._viewCanvas) {
+            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
+            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+        }
         this._scaleIsValid = false;
     }
-    get isValid() {
-        return this._referenceCanvas && this._scaleIsValid;
+    get viewValid() {
+        return this._scaleIsValid && this._viewRendered;
     }
     destroy() {
         this._previewContainer.remove();
         this._viewContainer.remove();
         this._pageProxy.cleanup();
     }
-    renderPreviewAsync() {
+    renderPreviewAsync(force = false) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const viewport = this._pageProxy.getViewport({ scale: this._previewCanvas.width / this._size.width });
-            const params = {
-                canvasContext: this._previewCtx,
-                viewport,
-            };
-            yield this.runRenderTaskAsync(params);
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
+            }
+            if (!force && this._previewRendered) {
+                return;
+            }
+            this._renderPromise = this.runPreviewRenderAsync();
+            return this._renderPromise;
         });
     }
-    renderViewAsync() {
+    renderViewAsync(force = false) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            if (!this._referenceCanvas) {
-                const result = yield this.createReferenceCanvasAsync();
-                if (!result) {
-                    return;
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
                 }
+                yield this._renderPromise;
             }
-            this.renderScaledRefView();
-            yield this._text.renderTextLayerAsync(this._scale);
-            this._scaleIsValid = true;
+            if (!force && this.viewValid) {
+                return;
+            }
+            this._renderPromise = this.runViewRenderAsync();
+            return this._renderPromise;
         });
     }
     clearPreview() {
-        this._previewCtx.clearRect(0, 0, this._viewCanvas.width, this._viewCanvas.height);
+        this._previewContainer.innerHTML = "";
     }
     clearView() {
-        this._viewCtx.clearRect(0, 0, this._viewCanvas.width, this._viewCanvas.height);
-        this._referenceCanvas = null;
+        var _a, _b;
+        (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+        (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+        this._viewRendered = false;
     }
-    refreshPreviewSize() {
-        const { width: fullW, height: fullH } = this._size;
-        const width = this._previewWidth;
-        const height = width * (fullH / fullW);
-        this._previewContainer.style.width = width + "px";
-        this._previewContainer.style.height = height + "px";
-        this._previewCanvas.style.width = width + "px";
-        this._previewCanvas.style.height = height + "px";
-        const dpr = window.devicePixelRatio;
-        this._previewCanvas.width = width * dpr;
-        this._previewCanvas.height = height * dpr;
+    cancelRenderTask() {
+        if (this._renderTask) {
+            this._renderTask.cancel();
+            this._renderTask = null;
+        }
     }
     runRenderTaskAsync(renderParams) {
         return __awaiter$1(this, void 0, void 0, function* () {
-            if (!this._scale) {
-                this._scale = 1;
-            }
-            if (this._renderTask) {
-                this._renderTask.cancel();
-                this._renderTask = null;
-            }
-            const renderTask = this._pageProxy.render(renderParams);
-            this._renderTask = renderTask;
+            this.cancelRenderTask();
+            this._renderTask = this._pageProxy.render(renderParams);
             try {
-                yield renderTask.promise;
+                yield this._renderTask.promise;
             }
             catch (error) {
                 if (error instanceof RenderingCancelledException) {
@@ -527,31 +551,35 @@ class ViewPage {
                     throw error;
                 }
             }
-            this._renderTask = null;
+            finally {
+                this._renderTask = null;
+            }
             return true;
         });
     }
-    createReferenceCanvasAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
-            const viewport = this._pageProxy.getViewport({ scale: this._maxScale * window.devicePixelRatio });
-            const renderingCanvas = document.createElement("canvas");
-            renderingCanvas.width = viewport.width;
-            renderingCanvas.height = viewport.height;
-            const params = {
-                canvasContext: renderingCanvas.getContext("2d"),
-                viewport,
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (result) {
-                this._referenceCanvas = renderingCanvas;
-                return true;
-            }
-            return false;
-        });
+    createPreviewCanvas() {
+        const canvas = document.createElement("canvas");
+        canvas.classList.add("page-canvas");
+        const dpr = window.devicePixelRatio;
+        const { previewWidth: width, previewHeight: height } = this._dimensions;
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        return canvas;
     }
-    renderScaledRefView() {
+    createViewCanvas() {
+        const canvas = document.createElement("canvas");
+        canvas.classList.add("page-canvas");
+        canvas.style.width = this._dimensions.scaledWidth + "px";
+        canvas.style.height = this._dimensions.scaledHeight + "px";
+        canvas.width = this._dimensions.scaledDprWidth;
+        canvas.height = this._dimensions.scaledDprHeight;
+        return canvas;
+    }
+    scaleCanvasImage(sourceCanvas, targetCanvas) {
         let ratio = this._scale / this._maxScale;
-        let tempSource = this._referenceCanvas;
+        let tempSource = sourceCanvas;
         let tempTarget;
         while (ratio < 0.5) {
             tempTarget = document.createElement("canvas");
@@ -561,16 +589,48 @@ class ViewPage {
             tempSource = tempTarget;
             ratio *= 2;
         }
-        this._viewCtx.drawImage(tempSource, 0, 0, this._viewCanvas.width, this._viewCanvas.height);
+        targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
     }
-    renderFullSizeViewAsync() {
+    runPreviewRenderAsync() {
         return __awaiter$1(this, void 0, void 0, function* () {
-            const viewport = this._pageProxy.getViewport({ scale: this._scale * window.devicePixelRatio });
+            const canvas = this.createPreviewCanvas();
             const params = {
-                canvasContext: this._viewCtx,
-                viewport,
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
             };
-            yield this.runRenderTaskAsync(params);
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result) {
+                this._previewRendered = false;
+                return;
+            }
+            this._previewContainer.innerHTML = "";
+            this._previewContainer.append(canvas);
+            this._previewRendered = true;
+        });
+    }
+    runViewRenderAsync() {
+        var _a, _b;
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const scale = this._scale;
+            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+            const canvas = this.createViewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
+                enableWebGL: true,
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result || scale !== this._scale) {
+                return;
+            }
+            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+            this._viewContainer.append(canvas);
+            this._viewCanvas = canvas;
+            this._viewRendered = true;
+            this._text = yield ViewPageText.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            if (scale === this._scale) {
+                this._scaleIsValid = true;
+            }
         });
     }
 }
@@ -586,20 +646,25 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class TsPdfViewer {
     constructor(containerSelector, workerSrc) {
-        this._visibleAdjPages = 2;
+        this._visibleAdjPages = 0;
         this._previewWidth = 100;
         this._minScale = 0.25;
         this._maxScale = 4;
         this._scale = 1;
+        this._previewerHidden = true;
         this._pages = [];
         this._currentPage = 0;
+        this._timers = {
+            hidePanels: 0,
+        };
         this.onPdfLoadingProgress = (progressData) => {
             console.log(`${progressData.loaded}/${progressData.total}`);
         };
         this.onPdfLoadedAsync = (doc) => __awaiter$2(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
             yield this.refreshPagesAsync();
-            yield this.renderVisiblePagesAsync();
+            this.renderVisiblePreviews();
+            this.renderVisiblePages();
             this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
         });
         this.onPdfClosedAsync = () => __awaiter$2(this, void 0, void 0, function* () {
@@ -619,13 +684,16 @@ class TsPdfViewer {
             }
         };
         this.onPreviewerToggleClick = () => {
-            if (this._mainContainer.classList.contains("hide-previewer")) {
+            if (this._previewerHidden) {
                 this._mainContainer.classList.remove("hide-previewer");
                 this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+                this._previewerHidden = false;
+                setTimeout(() => this.renderVisiblePreviews(), 1000);
             }
             else {
                 this._mainContainer.classList.add("hide-previewer");
                 this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+                this._previewerHidden = true;
             }
         };
         this.onPreviewerPageClick = (e) => {
@@ -644,10 +712,13 @@ class TsPdfViewer {
                 this.scrollToPage(pageNumber - 1);
             }
         };
-        this.onPagesContainerScroll = (e) => {
-            this.renderVisiblePagesAsync();
+        this.onPreviewerScroll = (e) => {
+            this.renderVisiblePreviews();
         };
-        this.onPagesContainerMouseMove = (event) => {
+        this.onViewerScroll = (e) => {
+            this.renderVisiblePages();
+        };
+        this.onViewerMouseMove = (event) => {
             const { clientX, clientY } = event;
             const { x: rectX, y: rectY, width, height } = this._viewer.getBoundingClientRect();
             const l = clientX - rectX;
@@ -655,18 +726,18 @@ class TsPdfViewer {
             const r = width - l;
             const b = height - t;
             if (Math.min(l, r, t, b) > 100) {
-                if (!this._panelsHidden && !this._mouseInCenterTimer) {
-                    this._mouseInCenterTimer = setTimeout(() => {
+                if (!this._panelsHidden && !this._timers.hidePanels) {
+                    this._timers.hidePanels = setTimeout(() => {
                         this._mainContainer.classList.add("hide-panels");
                         this._panelsHidden = true;
-                        this._mouseInCenterTimer = null;
+                        this._timers.hidePanels = null;
                     }, 5000);
                 }
             }
             else {
-                if (this._mouseInCenterTimer) {
-                    clearTimeout(this._mouseInCenterTimer);
-                    this._mouseInCenterTimer = null;
+                if (this._timers.hidePanels) {
+                    clearTimeout(this._timers.hidePanels);
+                    this._timers.hidePanels = null;
                 }
                 if (this._panelsHidden) {
                     this._mainContainer.classList.remove("hide-panels");
@@ -675,15 +746,16 @@ class TsPdfViewer {
             }
             this._mousePos = { clientX, clientY, containerX: l, containerY: t };
         };
-        this.onPagesContainerWheel = (event) => {
-            if (event.ctrlKey) {
-                event.preventDefault();
-                if (event.deltaY > 0) {
-                    this.zoomOut(this._mousePos);
-                }
-                else {
-                    this.zoomIn(this._mousePos);
-                }
+        this.onViewerWheel = (event) => {
+            if (!event.ctrlKey) {
+                return;
+            }
+            event.preventDefault();
+            if (event.deltaY > 0) {
+                this.zoomOut(this._mousePos);
+            }
+            else {
+                this.zoomIn(this._mousePos);
             }
         };
         this.onPaginatorInput = (event) => {
@@ -718,14 +790,16 @@ class TsPdfViewer {
             const cWidth = this._viewer.getBoundingClientRect().width;
             const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
             const scale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-            this.setScaleAsync(scale);
+            this.setScale(scale);
+            this.scrollToPage(this._currentPage);
         };
         this.onZoomFitPageClick = () => {
             const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
             const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
             const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
             const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
-            this.setScaleAsync(Math.min(hScale, vScale));
+            this.setScale(Math.min(hScale, vScale));
+            this.scrollToPage(this._currentPage);
         };
         const container = document.querySelector(containerSelector);
         if (!container) {
@@ -820,10 +894,11 @@ class TsPdfViewer {
         this._shadowRoot.querySelector("#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
         this._shadowRoot.querySelector("div#toggle-previewer").addEventListener("click", this.onPreviewerToggleClick);
         this._previewer = this._shadowRoot.querySelector("div#previewer");
+        this._previewer.addEventListener("scroll", this.onPreviewerScroll);
         this._viewer = this._shadowRoot.querySelector("div#viewer");
-        this._viewer.addEventListener("scroll", this.onPagesContainerScroll);
-        this._viewer.addEventListener("wheel", this.onPagesContainerWheel);
-        this._viewer.addEventListener("mousemove", this.onPagesContainerMouseMove);
+        this._viewer.addEventListener("scroll", this.onViewerScroll);
+        this._viewer.addEventListener("wheel", this.onViewerWheel);
+        this._viewer.addEventListener("mousemove", this.onViewerMouseMove);
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         const resizeObserver = new ResizeObserver(this.onMainContainerResize);
         resizeObserver.observe(this._mainContainer);
@@ -846,7 +921,6 @@ class TsPdfViewer {
                 const pageProxy = yield this._pdfDocument.getPage(i + 1);
                 const page = new ViewPage(pageProxy, this._maxScale, this._previewWidth);
                 page.scale = this._scale;
-                yield page.renderPreviewAsync();
                 page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
                 this._previewer.append(page.previewContainer);
                 this._pages.push(page);
@@ -854,36 +928,56 @@ class TsPdfViewer {
             }
         });
     }
-    renderVisiblePagesAsync() {
+    renderVisiblePreviews() {
+        if (this._previewerHidden) {
+            return;
+        }
+        const pages = this._pages;
+        const visiblePreviewNumbers = this.getVisiblePages(this._previewer, pages, true);
+        const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPages, 0);
+        const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPages, pages.length - 1);
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            if (i >= minPageNumber && i <= maxPageNumber) {
+                page.renderPreviewAsync();
+            }
+        }
+    }
+    renderVisiblePages() {
         var _a, _b;
-        return __awaiter$2(this, void 0, void 0, function* () {
-            const pages = this._pages;
-            const visiblePageNumbers = this.getVisiblePages(this._outerContainer, pages);
-            const prevCurrent = this._currentPage;
-            const current = this.getCurrentPage(this._outerContainer, pages, visiblePageNumbers);
-            if (!prevCurrent || prevCurrent !== current) {
-                (_a = pages[prevCurrent]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
-                (_b = pages[current]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
-                this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
-                this._currentPage = current;
+        const pages = this._pages;
+        const visiblePageNumbers = this.getVisiblePages(this._viewer, pages);
+        const prevCurrent = this._currentPage;
+        const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
+        if (!prevCurrent || prevCurrent !== current) {
+            (_a = pages[prevCurrent]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
+            (_b = pages[current]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
+            this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
+            this.scrollToPreview(current);
+            this._currentPage = current;
+        }
+        if (current === -1) {
+            return;
+        }
+        const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
+        const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            if (i >= minPageNumber && i <= maxPageNumber) {
+                page.renderViewAsync();
             }
-            if (current === -1) {
-                return;
+            else {
+                page.clearView();
             }
-            const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
-            const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
-            for (let i = 0; i < pages.length; i++) {
-                const page = pages[i];
-                if (i >= minPageNumber && i <= maxPageNumber) {
-                    if (!page.isValid) {
-                        yield page.renderViewAsync();
-                    }
-                }
-                else {
-                    page.clearView();
-                }
-            }
-        });
+        }
+    }
+    scrollToPreview(pageNumber) {
+        const { top: cTop, height: cHeight } = this._previewer.getBoundingClientRect();
+        const { top: pTop, height: pHeight } = this._pages[pageNumber].previewContainer.getBoundingClientRect();
+        const cCenter = cTop + cHeight / 2;
+        const pCenter = pTop + pHeight / 2;
+        const scroll = pCenter - cCenter + this._previewer.scrollTop;
+        this._previewer.scrollTo(0, scroll);
     }
     scrollToPage(pageNumber) {
         const { top: cTop } = this._viewer.getBoundingClientRect();
@@ -891,69 +985,71 @@ class TsPdfViewer {
         const scroll = pTop - (cTop - this._viewer.scrollTop);
         this._viewer.scrollTo(this._viewer.scrollLeft, scroll);
     }
-    setScaleAsync(scale, cursorPosition = null) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            if (!scale || scale === this._scale) {
+    setScale(scale, cursorPosition = null) {
+        if (!scale || scale === this._scale) {
+            return;
+        }
+        let pageContainerUnderPivot;
+        let xPageRatio;
+        let yPageRatio;
+        if (cursorPosition) {
+            for (const page of this._pages) {
+                const { clientX: x, clientY: y } = cursorPosition;
+                const { x: pX, y: pY, width: pWidth, height: pHeight } = page.viewContainer.getBoundingClientRect();
+                if (pX <= x
+                    && pX + pWidth >= x
+                    && pY <= y
+                    && pY + pHeight >= y) {
+                    pageContainerUnderPivot = page.viewContainer;
+                    xPageRatio = (x - pX) / pWidth;
+                    yPageRatio = (y - pY) / pHeight;
+                    break;
+                }
+            }
+        }
+        this._scale = scale;
+        this._pages.forEach(x => x.scale = this._scale);
+        if (pageContainerUnderPivot
+            &&
+                (this._viewer.scrollHeight > this._viewer.clientHeight
+                    || this._viewer.scrollWidth > this._viewer.clientWidth)) {
+            const { clientX: initialX, clientY: initialY } = cursorPosition;
+            const { x: pX, y: pY, width: pWidth, height: pHeight } = pageContainerUnderPivot.getBoundingClientRect();
+            const resultX = pX + (pWidth * xPageRatio);
+            const resultY = pY + (pHeight * yPageRatio);
+            let scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
+            let scrollTop = this._viewer.scrollTop + (resultY - initialY);
+            scrollLeft = scrollLeft < 0
+                ? 0
+                : scrollLeft;
+            scrollTop = scrollTop < 0
+                ? 0
+                : scrollTop;
+            if (scrollTop !== this._viewer.scrollTop
+                || scrollLeft !== this._viewer.scrollLeft) {
+                this._viewer.scrollTo(scrollLeft, scrollTop);
                 return;
             }
-            let pageContainerUnderPivot;
-            let xPageRatio;
-            let yPageRatio;
-            if (cursorPosition) {
-                for (const page of this._pages) {
-                    const { clientX: x, clientY: y } = cursorPosition;
-                    const { x: pX, y: pY, width: pWidth, height: pHeight } = page.viewContainer.getBoundingClientRect();
-                    if (pX <= x
-                        && pX + pWidth >= x
-                        && pY <= y
-                        && pY + pHeight >= y) {
-                        pageContainerUnderPivot = page.viewContainer;
-                        xPageRatio = (x - pX) / pWidth;
-                        yPageRatio = (y - pY) / pHeight;
-                        break;
-                    }
-                }
-            }
-            this._scale = scale;
-            this._pages.forEach(x => x.scale = this._scale);
-            if (pageContainerUnderPivot
-                &&
-                    (this._viewer.scrollHeight > this._viewer.clientHeight
-                        || this._viewer.scrollWidth > this._viewer.clientWidth)) {
-                const { clientX: initialX, clientY: initialY } = cursorPosition;
-                const { x: pX, y: pY, width: pWidth, height: pHeight } = pageContainerUnderPivot.getBoundingClientRect();
-                const resultX = pX + (pWidth * xPageRatio);
-                const resultY = pY + (pHeight * yPageRatio);
-                let scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
-                let scrollTop = this._viewer.scrollTop + (resultY - initialY);
-                scrollLeft = scrollLeft < 0
-                    ? 0
-                    : scrollLeft;
-                scrollTop = scrollTop < 0
-                    ? 0
-                    : scrollLeft;
-                if (scrollTop !== this._viewer.scrollTop
-                    || scrollLeft !== this._viewer.scrollLeft) {
-                    this._viewer.scrollTo(scrollLeft, scrollTop);
-                    return;
-                }
-            }
-            yield this.renderVisiblePagesAsync();
-        });
+        }
     }
     zoomOut(cursorPosition = null) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
-            yield this.setScaleAsync(scale, cursorPosition);
-        });
+        const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
+        this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
     }
     zoomIn(cursorPosition = null) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            const scale = clamp(this._scale + 0.25, this._minScale, this._maxScale);
-            yield this.setScaleAsync(scale, cursorPosition);
-        });
+        const scale = clamp(this._scale + 0.25, this._minScale, this._maxScale);
+        this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
     }
-    getVisiblePages(container, pages) {
+    getViewerCenterPosition() {
+        const { x, y, width, height } = this._viewer.getBoundingClientRect();
+        return {
+            clientX: x + width / 2,
+            clientY: y + height / 2,
+            containerX: width / 2,
+            containerY: height / 2,
+        };
+    }
+    getVisiblePages(container, pages, preview = false) {
         const pagesVisible = new Set();
         if (!pages.length) {
             return pagesVisible;
@@ -961,14 +1057,20 @@ class TsPdfViewer {
         const cRect = container.getBoundingClientRect();
         const cTop = cRect.top;
         const cBottom = cRect.top + cRect.height;
-        pages.forEach((x, i) => {
-            const pRect = x.viewContainer.getBoundingClientRect();
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            const pRect = preview
+                ? page.previewContainer.getBoundingClientRect()
+                : page.viewContainer.getBoundingClientRect();
             const pTop = pRect.top;
             const pBottom = pRect.top + pRect.height;
             if (pTop < cBottom && pBottom > cTop) {
                 pagesVisible.add(i);
             }
-        });
+            else if (pagesVisible.size) {
+                break;
+            }
+        }
         return pagesVisible;
     }
     getCurrentPage(container, pages, visiblePageNumbers) {

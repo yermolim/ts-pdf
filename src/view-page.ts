@@ -1,43 +1,49 @@
 import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
+import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 
 import { ViewPageText } from "./view-page-text";
 
 export class ViewPage {  
-  private readonly _pageProxy: PDFPageProxy;  
+  private readonly _pageProxy: PDFPageProxy; 
+  private readonly _viewport: PageViewport; 
   private readonly _maxScale: number;
-  private readonly _previewWidth: number;
 
-  private _size: {
+  private _dimensions: {
     width: number; 
     height: number;
+    previewWidth: number;
+    previewHeight: number;
+    scaledWidth?: number;
+    scaledHeight?: number;
+    scaledDprWidth?: number;
+    scaledDprHeight?: number;
   };
 
   private _previewContainer: HTMLDivElement; 
   get previewContainer(): HTMLDivElement {
     return this._previewContainer;
   }
-  private _previewCanvas: HTMLCanvasElement;
-  private _previewCtx: CanvasRenderingContext2D; 
+  private _previewRendered: boolean;
 
   private _viewContainer: HTMLDivElement; 
   get viewContainer(): HTMLDivElement {
     return this._viewContainer;
   }
-  private _viewCanvas: HTMLCanvasElement;
-  private _viewCtx: CanvasRenderingContext2D; 
+  private _viewCanvas: HTMLCanvasElement; 
+  private $viewRendered: boolean;
+  private set _viewRendered(value: boolean) {
+    this.$viewRendered = value;
+    this._viewContainer.setAttribute("data-loaded", value + "");
+  }  
+  private get _viewRendered(): boolean {
+    return this.$viewRendered;
+  }
 
   private _text: ViewPageText;
 
-  private _renderTask: {cancel: () => void};
-  private $referenceCanvas: HTMLCanvasElement;
-  private set _referenceCanvas(value: HTMLCanvasElement) {
-    this.$referenceCanvas = value;
-    this._viewContainer.setAttribute("data-loaded", !!this._referenceCanvas + "");
-  }  
-  private get _referenceCanvas(): HTMLCanvasElement {
-    return this.$referenceCanvas;
-  }
+  private _renderTask: {cancel: () => void; promise: Promise<void>};
+  private _renderPromise: Promise<void>;
   
   private _scale: number; 
   set scale(value: number) {   
@@ -45,25 +51,27 @@ export class ViewPage {
       return;
     }
     this._scale = value;
-    
-    const width =  this._size.width * this._scale;
-    const height =  this._size.height * this._scale;
-
-    this._viewContainer.style.width = width + "px";
-    this._viewContainer.style.height = height + "px";
-    this._viewCanvas.style.width = width + "px";
-    this._viewCanvas.style.height = height + "px";
-
     const dpr = window.devicePixelRatio;
-    this._viewCanvas.width = width * dpr;
-    this._viewCanvas.height = height * dpr;
+    
+    this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+    this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+    this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
+    this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+
+    this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
+    this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+    
+    if (this._viewCanvas) {
+      this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
+      this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+    }
 
     this._scaleIsValid = false;
   } 
 
   private _scaleIsValid: boolean;
-  get isValid(): boolean {   
-    return this._referenceCanvas && this._scaleIsValid;
+  get viewValid(): boolean {
+    return this._scaleIsValid && this._viewRendered;
   }
 
   constructor(pageProxy: PDFPageProxy, maxScale: number, previewWidth: number) {
@@ -71,31 +79,24 @@ export class ViewPage {
       throw new Error("Page proxy is not defined");
     }
     this._pageProxy = pageProxy;
+    this._viewport = pageProxy.getViewport({scale: 1});
     this._maxScale = Math.max(maxScale, 1);
-    this._previewWidth = Math.max(previewWidth, 50);
 
-    this._previewCanvas = document.createElement("canvas");
-    this._previewCanvas.classList.add("page-canvas"); 
-    this._previewCtx = this._previewCanvas.getContext("2d");    
+    const {width, height} = this._viewport;
+    previewWidth = Math.max(previewWidth ?? 0, 50);
+    const previewHeight = previewWidth * (height / width);
+    this._dimensions = {width, height, previewWidth, previewHeight};
+
     this._previewContainer = document.createElement("div");
     this._previewContainer.classList.add("page-preview");
-    this._previewContainer.append(this._previewCanvas);
     this._previewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
-    
-    this._viewCanvas = document.createElement("canvas");
-    this._viewCanvas.classList.add("page-canvas"); 
-    this._viewCtx = this._viewCanvas.getContext("2d");
+    this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+    this._previewContainer.style.height = this._dimensions.previewHeight + "px";
+
     this._viewContainer = document.createElement("div");
     this._viewContainer.classList.add("page");
-    this._viewContainer.append(this._viewCanvas);
-    this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");  
-    
-    const {width, height} = pageProxy.getViewport({scale: 1});
-    this._size = {width, height};
-    this.refreshPreviewSize();
-
-    this._text = new ViewPageText(pageProxy);
-    this._viewContainer.append(this._text.container);  
+    this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");    
+    this.scale = 1;  
   }
 
   destroy() {
@@ -104,108 +105,98 @@ export class ViewPage {
     this._pageProxy.cleanup();
   }  
 
-  async renderPreviewAsync(): Promise<void> { 
-    const viewport = this._pageProxy.getViewport({scale: this._previewCanvas.width / this._size.width});
-
-    const params = <RenderParameters>{
-      canvasContext: this._previewCtx,
-      viewport,
-    };
-
-    await this.runRenderTaskAsync(params);
-  }
-  
-  async renderViewAsync(): Promise<void> {   
-    if (!this._referenceCanvas) {
-      const result = await this.createReferenceCanvasAsync();
-      if (!result) {
-        return;
+  async renderPreviewAsync(force = false): Promise<void> { 
+    if (this._renderPromise) {
+      if (force) {
+        this.cancelRenderTask();
       }
+      await this._renderPromise;
     }
     
-    // fill canvas with a scaled page reference image 
-    this.renderScaledRefView();
+    if (!force && this._previewRendered) {
+      return;
+    }
 
-    // fill canvas with a full-sized page view
-    // await this.renderFullSizeViewAsync();
+    this._renderPromise = this.runPreviewRenderAsync();
+    return this._renderPromise;
+  }
+  
+  async renderViewAsync(force = false): Promise<void> { 
+    if (this._renderPromise) {
+      if (force) {
+        this.cancelRenderTask();
+      }
+      await this._renderPromise;
+    }
 
-    await this._text.renderTextLayerAsync(this._scale);   
-     
-    this._scaleIsValid = true;
+    if (!force && this.viewValid) {
+      return;
+    }
+
+    this._renderPromise = this.runViewRenderAsync();
+    return this._renderPromise;
   }
   
   clearPreview() {
-    this._previewCtx.clearRect(0, 0, this._viewCanvas.width, this._viewCanvas.height);
+    this._previewContainer.innerHTML = "";
   }
 
   clearView() {
-    this._viewCtx.clearRect(0, 0, this._viewCanvas.width, this._viewCanvas.height);
-    this._referenceCanvas = null;
+    this._text?.destroy();
+    this._viewCanvas?.remove();
+    this._viewRendered = false;
   }
-
-  private refreshPreviewSize() {
-    const {width: fullW, height: fullH} = this._size;
-
-    const width = this._previewWidth;
-    const height = width * (fullH / fullW);
-
-    this._previewContainer.style.width = width + "px";
-    this._previewContainer.style.height = height + "px";
-    this._previewCanvas.style.width = width + "px";
-    this._previewCanvas.style.height = height + "px";
-
-    const dpr = window.devicePixelRatio;
-    this._previewCanvas.width = width * dpr;
-    this._previewCanvas.height = height * dpr;
-  }
-
-  private async runRenderTaskAsync(renderParams: RenderParameters): Promise<boolean> {
-    if (!this._scale) {
-      this._scale = 1;
-    }
-
+ 
+  private cancelRenderTask() {    
     if (this._renderTask) {
       this._renderTask.cancel();   
       this._renderTask = null;
     }
+  }
 
-    const renderTask = this._pageProxy.render(renderParams);
-    this._renderTask = renderTask;
+  private async runRenderTaskAsync(renderParams: RenderParameters): Promise<boolean> {
+    this.cancelRenderTask();
+    this._renderTask = this._pageProxy.render(renderParams);
     try {
-      await renderTask.promise;
+      await this._renderTask.promise;
     } catch (error) {
       if (error instanceof RenderingCancelledException) {
         return false;
       } else {
         throw error;
       }
-    }  
-    this._renderTask = null;
+    } finally {
+      this._renderTask = null;
+    }
 
     return true;
   }
-
-  private async createReferenceCanvasAsync(): Promise<boolean> {
-    const viewport = this._pageProxy.getViewport({scale: this._maxScale * window.devicePixelRatio});
-    const renderingCanvas = document.createElement("canvas");
-    renderingCanvas.width = viewport.width;
-    renderingCanvas.height = viewport.height;
-
-    const params = <RenderParameters>{
-      canvasContext: renderingCanvas.getContext("2d"),
-      viewport,
-    };
-    const result = await this.runRenderTaskAsync(params);
-    if (result) {
-      this._referenceCanvas = renderingCanvas;   
-      return true;
-    } 
-    return false;
+  
+  private createPreviewCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement("canvas");
+    canvas.classList.add("page-canvas");  
+    const dpr = window.devicePixelRatio;
+    const {previewWidth: width, previewHeight: height} = this._dimensions;  
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    return canvas;
   }
 
-  private renderScaledRefView() {
+  private createViewCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement("canvas");
+    canvas.classList.add("page-canvas"); 
+    canvas.style.width = this._dimensions.scaledWidth + "px";
+    canvas.style.height = this._dimensions.scaledHeight + "px";
+    canvas.width = this._dimensions.scaledDprWidth;
+    canvas.height = this._dimensions.scaledDprHeight;
+    return canvas;
+  }
+
+  private scaleCanvasImage(sourceCanvas: HTMLCanvasElement, targetCanvas: HTMLCanvasElement) {
     let ratio = this._scale / this._maxScale;
-    let tempSource = this._referenceCanvas;
+    let tempSource = sourceCanvas;
     let tempTarget: HTMLCanvasElement;
 
     while (ratio < 0.5) {
@@ -218,15 +209,55 @@ export class ViewPage {
       ratio *= 2;
     }
     
-    this._viewCtx.drawImage(tempSource, 0, 0, this._viewCanvas.width, this._viewCanvas.height);
+    targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
+  }
+  
+  private async runPreviewRenderAsync(): Promise<void> { 
+    const canvas = this.createPreviewCanvas();
+    const params = <RenderParameters>{
+      canvasContext: canvas.getContext("2d"),
+      viewport: this._viewport.clone({scale: canvas.width / this._dimensions.width}),
+    };
+    const result = await this.runRenderTaskAsync(params);
+    if (!result) {
+      this._previewRendered = false;
+      return;
+    }
+    
+    this._previewContainer.innerHTML = "";
+    this._previewContainer.append(canvas);
+    this._previewRendered = true;
   }
 
-  private async renderFullSizeViewAsync(): Promise<void> {
-    const viewport = this._pageProxy.getViewport({scale: this._scale * window.devicePixelRatio});
+  private async runViewRenderAsync(): Promise<void> { 
+    const scale = this._scale;
+    this._text?.destroy();
+
+    // create a new canvas of the needed size and fill it with a rendered page
+    const canvas = this.createViewCanvas();
     const params = <RenderParameters>{
-      canvasContext: this._viewCtx,
-      viewport,
+      canvasContext: canvas.getContext("2d"),
+      viewport: this._viewport.clone({scale: scale * window.devicePixelRatio}),
+      enableWebGL: true,
     };
-    await this.runRenderTaskAsync(params);
+    const result = await this.runRenderTaskAsync(params);
+    if (!result || scale !== this._scale) {
+      // page rendering was cancelled  
+      // or scale changed during rendering    
+      return;
+    }
+
+    this._viewCanvas?.remove();
+    this._viewContainer.append(canvas);
+    this._viewCanvas = canvas;
+    this._viewRendered = true;
+
+    // add text div on top of canvas
+    this._text = await ViewPageText.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+
+    // check if scale not changed during text render
+    if (scale === this._scale) {
+      this._scaleIsValid = true;
+    }     
   }
 }

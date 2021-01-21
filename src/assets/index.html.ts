@@ -14,6 +14,22 @@ export const styles = /*html*/`
       pointer-events: none;
     }
 
+    .absolute {
+      position: absolute;
+    }
+    .abs-stretch {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+    }
+    .abs-topleft {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
     #main-container {
       box-sizing: border-box;
       position: relative;
@@ -139,15 +155,6 @@ export const styles = /*html*/`
     #toggle-previewer {
       margin: 4px;
     }
-    
-    #viewer-container {
-      box-sizing: border-box;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-      overflow: hidden;
-    }
       
     #previewer {
       box-sizing: border-box;
@@ -155,20 +162,21 @@ export const styles = /*html*/`
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      align-items: center;
+      overflow-y: auto;
       left: 0;
-      top: 0;
+      top: 50px;
       bottom: 0;
       width: 160px; 
       padding-top: 0px;
       background: rgba(60,60,60,1);
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
       z-index: 1;
-      transition: padding-top 0.25s ease-out 0.1s, width 0.25s ease-out;
+      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, width 0.25s ease-out;
     } 
     .hide-panels #previewer {
+      top: 0;
       padding-top: 50px;
-      transition: padding-top 0.25s ease-in 0.2s;
+      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
     }   
     .mobile #previewer {
       background: rgba(60,60,60,0.9);
@@ -178,12 +186,12 @@ export const styles = /*html*/`
       transition: width 0.25s ease-in 0.1s;
     }
     #previewer .page-preview {      
-      transform: scale(1);
+      transform: scaleX(1);
       transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
     .hide-previewer #previewer .page-preview {
       opacity: 0;
-      transform: scale(0);
+      transform: scaleX(0);
       transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
     }
   
@@ -196,49 +204,59 @@ export const styles = /*html*/`
       overflow: auto;
       left: 160px;
       right: 0;
-      top: 0;
+      top: 50px;
       bottom: 0;
       padding-top: 0px;
-      transition: padding-top 0.25s ease-out 0.1s, left 0.25s ease-out;
+      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
     .hide-panels #viewer {
+      top: 0;
       padding-top: 50px;
-      transition: padding-top 0.25s ease-in 0.2s;
+      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
     }      
     .hide-panels.mobile #viewer,
     .hide-panels.hide-previewer #viewer {
+      top: 0;
       padding-top: 50px;
       left: 0;
-      transition: padding-top 0.25s ease-in 0.2s, left 0.25s ease-in;
+      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s, left 0.25s ease-in;
     }   
     .mobile #viewer,
     .hide-previewer #viewer {
+      top: 50px;
       padding-top: 0px;
       left: 0;
-      transition: padding-top 0.25s ease-out 0.1s, left 0.25s ease-in;
+      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
     } 
   
     .page {    
       position: relative;
+      display: flex;
+      flex-grow: 0;
+      flex-shrink: 0;
       margin: 10px auto;
+      background-color: white;
       box-shadow: 0 0 10px rgba(0,0,0,0.75);
     }
     .page-preview {   
       cursor: pointer; 
       position: relative;
+      display: flex;
+      flex-grow: 0;
+      flex-shrink: 0;
       margin: 10px auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.75);
+      background-color: white;
+      background-color: rgba(96,96,96,1);
     }
     .page-preview:hover,
     .page-preview.current {
       margin: 0 auto;
       padding: 10px;
-      background-color: rgba(96,96,96,1);
     }
 
     .page-canvas {
       background-color: white;
-    }  
+    } 
     
     .page-text {
       position: absolute;
@@ -267,16 +285,14 @@ export const styles = /*html*/`
 
 export const html = /*html*/`
   <div id="main-container" class="hide-previewer">
+    <div id="viewer"></div>
+    <div id="previewer"></div>
     <div id="panel-top"> 
       <div id="toggle-previewer" class="panel-button panel-item">
         <img src="${sidebar}"/>
       </div> 
       <div id="annotator" class="panel-item">
       </div>
-    </div>
-    <div id="viewer-container">
-      <div id="previewer"></div>
-      <div id="viewer"></div>
     </div>
     <div id="panel-bottom" class="disabled">
       <div id="paginator" class="subpanel panel-item">
