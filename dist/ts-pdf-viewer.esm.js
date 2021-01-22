@@ -857,10 +857,9 @@ class TsPdfViewer {
                     yield this.closePdfAsync();
                     return this.openPdfAsync(data);
                 }
-                const loadingTask = getDocument(data);
-                this._pdfLoadingTask = loadingTask;
-                loadingTask.onProgress = this.onPdfLoadingProgress;
-                doc = yield loadingTask.promise;
+                this._pdfLoadingTask = getDocument(data);
+                this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
+                doc = yield this._pdfLoadingTask.promise;
                 this._pdfLoadingTask = null;
             }
             catch (_b) {

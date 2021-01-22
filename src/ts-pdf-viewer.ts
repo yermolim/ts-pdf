@@ -101,10 +101,9 @@ export class TsPdfViewer {
         return this.openPdfAsync(data);
       }
   
-      const loadingTask = getDocument(data);
-      this._pdfLoadingTask = loadingTask;
-      loadingTask.onProgress = this.onPdfLoadingProgress;
-      doc = await loadingTask.promise;    
+      this._pdfLoadingTask = getDocument(data);
+      this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
+      doc = await this._pdfLoadingTask.promise;    
       this._pdfLoadingTask = null;
     } catch {
       throw new Error("Cannot open PDF!");
