@@ -1,7 +1,7 @@
 {
   "name": "ts-pdf-viewer",
   "version": "0.0.1",
-  "description": "PDF.js based PDF viewer with annotation support",
+  "description": "PDF.js based PDF viewer",
   "module": "dist/ts-pdf-viewer.esm.min.js",
   "types": "dist/ts-pdf-viewer.d.ts",
   "scripts": {
@@ -27,9 +27,7 @@
     "typescript",
     "pdf",
     "pdf-viewer",
-    "pdf-annotation",
-    "pdfjs",
-    "annotation"
+    "pdfjs"
   ],
   "author": "Volodymyr Yermolenko <yermolim@gmail.com> (https://github.com/yermolim)",
   "license": "MIT",
