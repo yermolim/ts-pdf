@@ -18,7 +18,8 @@ export declare class TsPdfViewer {
 	private _previewerHidden;
 	private _pages;
 	private _currentPage;
-	private _mousePos;
+	private _mode;
+	private _pointerInfo;
 	private _timers;
 	constructor(containerSelector: string, workerSrc: string);
 	destroy(): void;
@@ -42,7 +43,10 @@ export declare class TsPdfViewer {
 	private onPreviewerPageClick;
 	private onPreviewerScroll;
 	private onViewerScroll;
-	private onViewerMouseMove;
+	private onViewerPointerMove;
+	private onViewerPointerDown;
+	private onPointerMove;
+	private onPointerUp;
 	private onViewerWheel;
 	private onPaginatorInput;
 	private onPaginatorChange;
@@ -52,6 +56,7 @@ export declare class TsPdfViewer {
 	private onZoomInClick;
 	private onZoomFitViewerClick;
 	private onZoomFitPageClick;
+	private onHandToggleClick;
 	private getVisiblePages;
 	private getCurrentPage;
 }

@@ -14,6 +14,8 @@ var img$5 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeA
 
 var img$6 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABcmlDQ1BpY2MAACiRdZE9S8NQFIbftkpFWwrqIOKQoYpCC0VBHKWCXapDW8GqS3KbtEKShpsUKa6Ci0PBQXTxa/Af6Cq4KgiCIoi4+Af8WqTEc5tCi7Qn3JyH9573cO+5gD+tM8PuSQCG6fBMKimt5tek4Dt8GEQYQ5iSmW0tZRdz6Bo/j1RN8RAXvbrXdYyBgmozwNdHPMss7hDPE6e3HEvwHvEwK8kF4hPiGKcDEt8KXfH4TXDR4y/BPJdZAPyip1RsY6WNWYkbxJPEUUOvsOZ5xE1CqrmSpTxKaww2MkghCQkKKtiEDgdxyibNrLMv0fAto0weRn8LVXByFFEib4zUCnVVKWukq/TpqIq5/5+nrc1Me91DSaD31XU/x4HgPlCvue7vqevWz4DAC3BttvxlmtPcN+m1lhY9BiI7wOVNS1MOgKtdYOTZkrnckAK0/JoGfFwA4TwwdA/0r3uzau7j/AnIbdMT3QGHR8AE1Uc2/gDt82gCvNGYhAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAcpJREFUeNrtWwFuwyAMjBEPWNf8/4XpugesoWMKUppBYidQ5cAnVZWaRtGdDxscoC6Bvu9d7PfRue6sMETJa8MwRC8Slzi6ACkhiEu8FgGWQpiucdBW9FNj5wiWzyvxjOk5/muVm30n8Xfjl8NfkNeEMLHo10Cem/CbyAHeCZMb/sGePfqTfXfh5/Hovu/3F25Lx9ujiURad6WIld1xHDtjTLLshXv8f7Zgka2dY04ClQNCxDmR5eL0Dvi63Vavf16vh1xjzzy13YKUPPQQWFaDHOShBJjX8VzkIRdDa+RDvvBlskoBOOSlVcLURr7KIVCKPIQAJclDJsGc5FkzwdBUqJE8pANykocTIDd59mKI2zIv0Q8oSR7GAaXIQwhQkjx0GVQBGI5xjEWRrTGqkmGjQ0AFUAFUABVABVAB2sXmRMi3pEbnSDLJyNm3h3MAEvnsAqCRZw0Bb/l5Q2THjg1qaghoFVABVAAVQAVQAVQAFUCCI9thxYSJXj5WcspCHaACNNgP+LhcTr+gySqAX/nNX2nP99ujI/aaX3NAbAPDkQ0RSNFfPTUWbkA/QLUVTNoT9RpOj+rJ0aUDJE5AdkDy8LRECEQBUrnsCeUexwK5uUFRAAAAAElFTkSuQmCC";
 
+var img$7 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABcWlDQ1BpY2MAACiRdZE9S8NQFIbfpkpFqx3qIMUhQxWHFoqCOEoFu1SHtoJVl+Q2aYQkDUmKFFfBxaHgILr4NfgPdBVcFQRBEURc/AN+LVLiuU2hRdoTbs7De897uPdcQMjqzHD6UoBhunYukxZXi2ti6B0BxDACAVGJOdZSfrGAnvHzSNUUD0neq3dd1xgqKQ4DAgPEs8yyXeJ54uyWa3HeIx5lmlQiPiFO2HRA4luuyz6/cS77/MXZLuQWAIH3FMsdLHcw02yDeIo4buhV1joPv0lYMVfylGO0xuEghwzSECGjik3ocJGkbNLMuvtSTd8yKuRh9LdQg02OMjTyJkitUleFskq6Qp+OGp/7/3k66sy03z2cBvpfPe9zAgjtA4265/2eel7jDAi+ANdm21+hOc19k15va/FjILIDXN60NfkAuNoFxp4tyZaaUpCWoKrAxwUwXASi98Dguj+r1j7On4DCNj3RHXB4BExSfWTjD603Z+Sp2ztrAAAACXBIWXMAAAsTAAALEwEAmpwYAAADGklEQVR42uVbC47jIAytESeY6f1P2NkjLCOqInmoP5g4BChSpLZJAT8/G9sQuDHtfr+Tv/9P6WZp/35+tP6lDsEyXgBg7z0eD3qAVsE9AWgU/s8cOQG+vr+bAOCAiK2Cn9CS4TnwGrTIWYAItw9voGmfo56DJlI1DnD38jx75qGxOvcZRwuuCV++V888zaCmLyUkvlc+S0BE6uZBtBMDKHjYbvnMzVG6Rz0bvbSaByWo+0frR0GQWCSZicSE0Kv93Fm5mAl10V/4PSkrSGpRkgrAUXoatWbq8yVA8ujfFQBOg56UbxXQCoIXACytvUHwBjkepffL+Q0PYGqQseaxw5WWyScDcmyPr6uEYOzdnT3YcTcxwMsBtsTlXv1aVoJwpv0bNH16tDl8FThTmwygXeYSBtn61YAmLn6YlgFW0Bg/UgueatMYWQ+AWRiFQZjSBOql6kwneWlF6MyaA8E+6EqHtUleEQUeMD2ofcJH1QRPS4cno7tp/NjoMGbSIljpL4EfPo3ybwzAOzd5aRC0DSOTllEgBEPykBSAlmzBkjkhILyWJLb2Vy7qP54heW89oGu/rgiEKskiRdGETyurBUr7L08L0sA9FdhpTYBaZopmpMKjBwjO+5KiuVD9xVYPSuzXTRdAtdQRc90TnyMIBxBetuHib+jQxjYgPNnQ68m3igOsjm0nEALl4Q2BzvIgRC3Qwaewciu5A9pzr4sM65nAQRYszYioxPzqQUXsDzJbOMZMDwAX6GQB6vM522WDStKzdYt1HlCzQNrBXZEROAxuDYS2YUGtrAwGmw1+SmsNhdMm2n87Wxha1/PdvH/xa8GQg69eEL3ufMBszg+zPBjD2jRwgmfavv7CxC7rvqbcgA89E4cKYQNfkCTlDt0XmGDZezNt1QmuGBgJwvNvjeE/t5Siy3ncq/f9LcJTrA1Wp7GAQ2SFJ0+ItGx5C0XQNJPmhYIuiG+Otm5P9QzQypwjpmSlPR4TNDoTr6iRA40+ak/l95QD1+RaemdIE96UDqMDCUuBYBW+lhM0O1VC4nQl/SkW1MJrcvwCJhH28gf87HUAAAAASUVORK5CYII=";
+
 const styles = `
   <style>
     .disabled {
@@ -76,7 +78,7 @@ const styles = `
       flex-grow: 0;
       flex-shrink: 0;
       left: calc(50% - 160px);
-      bottom: 10px;
+      bottom: 20px;
       width: 320px;
       height: 50px;  
       background: rgba(40,40,40,0.9);
@@ -215,6 +217,10 @@ const styles = `
       padding-top: 0px;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
+    #viewer.hand {
+      cursor: grab !important;
+      user-select: none !important;
+    }
     .hide-panels #viewer {
       top: 0;
       padding-top: 50px;
@@ -250,14 +256,16 @@ const styles = `
       display: flex;
       flex-grow: 0;
       flex-shrink: 0;
-      margin: 10px auto;
+      margin: 0 auto;
       background-color: white;
-      background-color: rgba(96,96,96,1);
+      background-clip: content-box;
+      border-style: solid;
+      border-width: 10px;
+      border-color: transparent;
     }
     .page-preview:hover,
     .page-preview.current {
-      margin: 0 auto;
-      padding: 10px;
+      border-color: rgba(96,96,96,1);
     }
 
     .page-canvas {
@@ -286,6 +294,9 @@ const styles = `
     .page-text ::selection {
       background: rgba(104,104,128,1);
     }
+    .hand .page-text span {
+      cursor: grab;
+    }
   </style>
 `;
 const html = `
@@ -293,10 +304,15 @@ const html = `
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="panel-top"> 
-      <div id="toggle-previewer" class="panel-button panel-item">
-        <img src="${img$6}"/>
-      </div> 
-      <div id="annotator" class="panel-item">
+      <div class="subpanel panel-item">
+        <div id="toggle-previewer" class="panel-button panel-item">
+          <img src="${img$6}"/>
+        </div> 
+        <div id="toggle-hand" class="panel-button panel-item">
+          <img src="${img$7}"/>
+        </div> 
+      </div>
+      <div id="annotator" class="subpanel panel-item">
       </div>
     </div>
     <div id="panel-bottom" class="disabled">
@@ -654,6 +670,12 @@ class TsPdfViewer {
         this._previewerHidden = true;
         this._pages = [];
         this._currentPage = 0;
+        this._mode = "normal";
+        this._pointerInfo = {
+            lastPos: null,
+            downPos: null,
+            downScroll: null,
+        };
         this._timers = {
             hidePanels: 0,
         };
@@ -718,7 +740,7 @@ class TsPdfViewer {
         this.onViewerScroll = (e) => {
             this.renderVisiblePages();
         };
-        this.onViewerMouseMove = (event) => {
+        this.onViewerPointerMove = (event) => {
             const { clientX, clientY } = event;
             const { x: rectX, y: rectY, width, height } = this._viewer.getBoundingClientRect();
             const l = clientX - rectX;
@@ -744,7 +766,32 @@ class TsPdfViewer {
                     this._panelsHidden = false;
                 }
             }
-            this._mousePos = { clientX, clientY, containerX: l, containerY: t };
+            this._pointerInfo.lastPos = { x: clientX, y: clientY };
+        };
+        this.onViewerPointerDown = (event) => {
+            const { clientX, clientY } = event;
+            this._pointerInfo.downPos = { x: clientX, y: clientY };
+            this._pointerInfo.downScroll = { x: this._viewer.scrollLeft, y: this._viewer.scrollTop };
+            window.addEventListener("pointermove", this.onPointerMove);
+            window.addEventListener("pointerup", this.onPointerUp);
+            window.addEventListener("pointerout", this.onPointerUp);
+        };
+        this.onPointerMove = (event) => {
+            const { clientX, clientY } = event;
+            if (this._pointerInfo.downPos && this._mode === "hand") {
+                const { x, y } = this._pointerInfo.downPos;
+                const { x: left, y: top } = this._pointerInfo.downScroll;
+                const dX = clientX - x;
+                const dY = clientY - y;
+                this._viewer.scrollTo(left - dX, top - dY);
+            }
+        };
+        this.onPointerUp = () => {
+            this._pointerInfo.downPos = null;
+            this._pointerInfo.downScroll = null;
+            window.removeEventListener("pointermove", this.onPointerMove);
+            window.removeEventListener("pointerup", this.onPointerUp);
+            window.removeEventListener("pointerout", this.onPointerUp);
         };
         this.onViewerWheel = (event) => {
             if (!event.ctrlKey) {
@@ -752,10 +799,10 @@ class TsPdfViewer {
             }
             event.preventDefault();
             if (event.deltaY > 0) {
-                this.zoomOut(this._mousePos);
+                this.zoomOut(this._pointerInfo.lastPos);
             }
             else {
-                this.zoomIn(this._mousePos);
+                this.zoomIn(this._pointerInfo.lastPos);
             }
         };
         this.onPaginatorInput = (event) => {
@@ -800,6 +847,18 @@ class TsPdfViewer {
             const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
             this.setScale(Math.min(hScale, vScale));
             this.scrollToPage(this._currentPage);
+        };
+        this.onHandToggleClick = () => {
+            if (this._mode === "hand") {
+                this._mode = "normal";
+                this._viewer.classList.remove("hand");
+                this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
+            }
+            else {
+                this._mode = "hand";
+                this._viewer.classList.add("hand");
+                this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
+            }
         };
         const container = document.querySelector(containerSelector);
         if (!container) {
@@ -892,12 +951,14 @@ class TsPdfViewer {
         this._shadowRoot.querySelector("#zoom-fit-viewer").addEventListener("click", this.onZoomFitViewerClick);
         this._shadowRoot.querySelector("#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
         this._shadowRoot.querySelector("div#toggle-previewer").addEventListener("click", this.onPreviewerToggleClick);
+        this._shadowRoot.querySelector("div#toggle-hand").addEventListener("click", this.onHandToggleClick);
         this._previewer = this._shadowRoot.querySelector("div#previewer");
         this._previewer.addEventListener("scroll", this.onPreviewerScroll);
         this._viewer = this._shadowRoot.querySelector("div#viewer");
         this._viewer.addEventListener("scroll", this.onViewerScroll);
         this._viewer.addEventListener("wheel", this.onViewerWheel);
-        this._viewer.addEventListener("mousemove", this.onViewerMouseMove);
+        this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
+        this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         const resizeObserver = new ResizeObserver(this.onMainContainerResize);
         resizeObserver.observe(this._mainContainer);
@@ -922,8 +983,8 @@ class TsPdfViewer {
                 page.scale = this._scale;
                 page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
                 this._previewer.append(page.previewContainer);
-                this._pages.push(page);
                 this._viewer.append(page.viewContainer);
+                this._pages.push(page);
             }
         });
     }
@@ -993,7 +1054,7 @@ class TsPdfViewer {
         let yPageRatio;
         if (cursorPosition) {
             for (const page of this._pages) {
-                const { clientX: x, clientY: y } = cursorPosition;
+                const { x: x, y: y } = cursorPosition;
                 const { x: pX, y: pY, width: pWidth, height: pHeight } = page.viewContainer.getBoundingClientRect();
                 if (pX <= x
                     && pX + pWidth >= x
@@ -1012,7 +1073,7 @@ class TsPdfViewer {
             &&
                 (this._viewer.scrollHeight > this._viewer.clientHeight
                     || this._viewer.scrollWidth > this._viewer.clientWidth)) {
-            const { clientX: initialX, clientY: initialY } = cursorPosition;
+            const { x: initialX, y: initialY } = cursorPosition;
             const { x: pX, y: pY, width: pWidth, height: pHeight } = pageContainerUnderPivot.getBoundingClientRect();
             const resultX = pX + (pWidth * xPageRatio);
             const resultY = pY + (pHeight * yPageRatio);
@@ -1030,6 +1091,7 @@ class TsPdfViewer {
                 return;
             }
         }
+        setTimeout(() => this.renderVisiblePages(), 0);
     }
     zoomOut(cursorPosition = null) {
         const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
@@ -1042,10 +1104,8 @@ class TsPdfViewer {
     getViewerCenterPosition() {
         const { x, y, width, height } = this._viewer.getBoundingClientRect();
         return {
-            clientX: x + width / 2,
-            clientY: y + height / 2,
-            containerX: width / 2,
-            containerY: height / 2,
+            x: x + width / 2,
+            y: y + height / 2,
         };
     }
     getVisiblePages(container, pages, preview = false) {

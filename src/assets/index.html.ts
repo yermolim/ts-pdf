@@ -6,7 +6,8 @@ import icon_minus from "./icons/minus.png";
 import icon_plus from "./icons/plus.png";
 import icon_fit_viewer from "./icons/fit-viewer.png";
 import icon_fit_page from "./icons/fit-page.png";
-import sidebar from "./icons/sidebar.png";
+import icon_sidebar from "./icons/sidebar.png";
+import icon_hand from "./icons/hand.png";
 
 export const styles = /*html*/`
   <style>
@@ -70,7 +71,7 @@ export const styles = /*html*/`
       flex-grow: 0;
       flex-shrink: 0;
       left: calc(50% - 160px);
-      bottom: 10px;
+      bottom: 20px;
       width: 320px;
       height: 50px;  
       background: rgba(40,40,40,0.9);
@@ -209,6 +210,10 @@ export const styles = /*html*/`
       padding-top: 0px;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
+    #viewer.hand {
+      cursor: grab !important;
+      user-select: none !important;
+    }
     .hide-panels #viewer {
       top: 0;
       padding-top: 50px;
@@ -244,14 +249,16 @@ export const styles = /*html*/`
       display: flex;
       flex-grow: 0;
       flex-shrink: 0;
-      margin: 10px auto;
+      margin: 0 auto;
       background-color: white;
-      background-color: rgba(96,96,96,1);
+      background-clip: content-box;
+      border-style: solid;
+      border-width: 10px;
+      border-color: transparent;
     }
     .page-preview:hover,
     .page-preview.current {
-      margin: 0 auto;
-      padding: 10px;
+      border-color: rgba(96,96,96,1);
     }
 
     .page-canvas {
@@ -280,6 +287,9 @@ export const styles = /*html*/`
     .page-text ::selection {
       background: rgba(104,104,128,1);
     }
+    .hand .page-text span {
+      cursor: grab;
+    }
   </style>
 `;
 
@@ -288,10 +298,15 @@ export const html = /*html*/`
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="panel-top"> 
-      <div id="toggle-previewer" class="panel-button panel-item">
-        <img src="${sidebar}"/>
-      </div> 
-      <div id="annotator" class="panel-item">
+      <div class="subpanel panel-item">
+        <div id="toggle-previewer" class="panel-button panel-item">
+          <img src="${icon_sidebar}"/>
+        </div> 
+        <div id="toggle-hand" class="panel-button panel-item">
+          <img src="${icon_hand}"/>
+        </div> 
+      </div>
+      <div id="annotator" class="subpanel panel-item">
       </div>
     </div>
     <div id="panel-bottom" class="disabled">

@@ -1,5 +1,6 @@
 {
-  "port": 5500,
+  "host": "192.168.31.82",
+  "port": 17000,
   "files": [
     "./demo/**/*.{html,css,js,json,pdf}"
   ],

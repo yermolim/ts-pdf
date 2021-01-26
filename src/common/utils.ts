@@ -7,8 +7,6 @@ export function clamp(v: number, min: number, max: number) {
 }
 
 export interface Position {
-  clientX: number;
-  clientY: number;
-  containerX: number;
-  containerY: number;
+  x: number;
+  y: number;
 }

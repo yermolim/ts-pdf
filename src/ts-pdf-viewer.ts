@@ -6,6 +6,8 @@ import { html, styles } from "./assets/index.html";
 import { clamp, Position } from "./common/utils";
 import { ViewPage } from "./view-page";
 
+type ViewerMode = "normal" | "hand";
+
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 0;
   private readonly _previewWidth = 100;
@@ -30,8 +32,14 @@ export class TsPdfViewer {
 
   private _pages: ViewPage[] = [];
   private _currentPage = 0;
+
+  private _mode: ViewerMode = "normal";
   
-  private _mousePos: Position;
+  private _pointerInfo: {lastPos: Position; downPos: Position; downScroll: Position} = {
+    lastPos: null,
+    downPos: null,
+    downScroll: null, 
+  };
   private _timers = {    
     hidePanels: 0,
   };
@@ -139,13 +147,15 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
 
     this._shadowRoot.querySelector("div#toggle-previewer").addEventListener("click", this.onPreviewerToggleClick);
+    this._shadowRoot.querySelector("div#toggle-hand").addEventListener("click", this.onHandToggleClick);
 
     this._previewer = this._shadowRoot.querySelector("div#previewer");
     this._previewer.addEventListener("scroll", this.onPreviewerScroll);
     this._viewer = this._shadowRoot.querySelector("div#viewer");
     this._viewer.addEventListener("scroll", this.onViewerScroll);
     this._viewer.addEventListener("wheel", this.onViewerWheel);
-    this._viewer.addEventListener("mousemove", this.onViewerMouseMove);
+    this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
+    this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);
 
     this._mainContainer = this._shadowRoot.querySelector("div#main-container");
     const resizeObserver = new ResizeObserver(this.onMainContainerResize);
@@ -191,21 +201,15 @@ export class TsPdfViewer {
     }
 
     for (let i = 0; i < docPagesNumber; i++) {    
-      const pageProxy = await this._pdfDocument.getPage(i + 1);
-
-      // DEBUG
-      // const a = await pageProxy.getAnnotations();
-      // console.log(a);
+      const pageProxy = await this._pdfDocument.getPage(i + 1); 
 
       const page = new ViewPage(pageProxy, this._maxScale, this._previewWidth);
       page.scale = this._scale;
-
-      // await page.renderPreviewAsync();
       page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
       this._previewer.append(page.previewContainer);
+      this._viewer.append(page.viewContainer);
 
       this._pages.push(page);
-      this._viewer.append(page.viewContainer);
     } 
   }
   
@@ -291,7 +295,7 @@ export class TsPdfViewer {
 
     if (cursorPosition) {
       for (const page of this._pages) {
-        const {clientX: x, clientY: y} = cursorPosition;
+        const {x: x, y: y} = cursorPosition;
         const {x: pX, y: pY, width: pWidth, height: pHeight} = page.viewContainer.getBoundingClientRect();
         // get page under cursor
         if (pX <= x 
@@ -316,7 +320,7 @@ export class TsPdfViewer {
       || this._viewer.scrollWidth > this._viewer.clientWidth)) {
 
       // get the position of the point under cursor after scaling   
-      const {clientX: initialX, clientY: initialY} = cursorPosition;
+      const {x: initialX, y: initialY} = cursorPosition;
       const {x: pX, y: pY, width: pWidth, height: pHeight} = pageContainerUnderPivot.getBoundingClientRect();
       const resultX = pX + (pWidth * xPageRatio);
       const resultY = pY + (pHeight * yPageRatio);
@@ -338,6 +342,9 @@ export class TsPdfViewer {
         return;
       }
     }
+
+    // use timeout to let browser update page layout
+    setTimeout(() => this.renderVisiblePages(), 0);
   }
 
   private zoomOut(cursorPosition: Position = null) {
@@ -353,10 +360,8 @@ export class TsPdfViewer {
   private getViewerCenterPosition(): Position {
     const {x, y, width, height} = this._viewer.getBoundingClientRect();
     return <Position>{
-      clientX: x + width / 2,
-      clientY: y + height / 2,
-      containerX: width / 2,
-      containerY: height / 2,
+      x: x + width / 2,
+      y: y + height / 2,
     };
   }
   //#endregion
@@ -408,7 +413,7 @@ export class TsPdfViewer {
     this.renderVisiblePages();
   };
   
-  private onViewerMouseMove = (event: MouseEvent) => {
+  private onViewerPointerMove = (event: PointerEvent) => {
     const {clientX, clientY} = event;
     const {x: rectX, y: rectY, width, height} = this._viewer.getBoundingClientRect();
 
@@ -436,7 +441,38 @@ export class TsPdfViewer {
       }
     }
 
-    this._mousePos = {clientX, clientY, containerX: l, containerY: t};
+    this._pointerInfo.lastPos = {x: clientX, y: clientY};
+  };
+
+  private onViewerPointerDown = (event: PointerEvent) => {       
+    const {clientX, clientY} = event;
+    this._pointerInfo.downPos = {x: clientX, y: clientY};
+    this._pointerInfo.downScroll = {x: this._viewer.scrollLeft, y: this._viewer.scrollTop};
+
+    window.addEventListener("pointermove", this.onPointerMove);
+    window.addEventListener("pointerup", this.onPointerUp);
+    window.addEventListener("pointerout", this.onPointerUp);
+  };
+
+  private onPointerMove = (event: PointerEvent) => {
+    const {clientX, clientY} = event;
+
+    if (this._pointerInfo.downPos && this._mode === "hand") {
+      const {x, y} = this._pointerInfo.downPos;
+      const {x: left, y: top} = this._pointerInfo.downScroll;
+      const dX = clientX - x;
+      const dY = clientY - y;
+      this._viewer.scrollTo(left - dX, top - dY);
+    }
+  };
+  
+  private onPointerUp = () => {
+    this._pointerInfo.downPos = null;
+    this._pointerInfo.downScroll = null;
+
+    window.removeEventListener("pointermove", this.onPointerMove);
+    window.removeEventListener("pointerup", this.onPointerUp);
+    window.removeEventListener("pointerout", this.onPointerUp);
   };
   
   private onViewerWheel = (event: WheelEvent) => {
@@ -446,9 +482,9 @@ export class TsPdfViewer {
 
     event.preventDefault();
     if (event.deltaY > 0) {
-      this.zoomOut(this._mousePos);
+      this.zoomOut(this._pointerInfo.lastPos);
     } else {
-      this.zoomIn(this._mousePos);
+      this.zoomIn(this._pointerInfo.lastPos);
     }
   };
 
@@ -501,6 +537,18 @@ export class TsPdfViewer {
     const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
     this.setScale(Math.min(hScale, vScale));
     this.scrollToPage(this._currentPage);
+  };
+
+  private onHandToggleClick = () => {
+    if (this._mode === "hand") {
+      this._mode = "normal";
+      this._viewer.classList.remove("hand");
+      this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
+    } else {
+      this._mode = "hand";
+      this._viewer.classList.add("hand");
+      this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
+    }
   };
   //#endregion
   
