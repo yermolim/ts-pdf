@@ -278,12 +278,24 @@ const styles = `
       background-color: white;
       background-clip: content-box;
       border-style: solid;
-      border-width: 10px;
+      border-width: 10px 10px 20px 10px;
       border-color: transparent;
     }
     .page-preview:hover,
     .page-preview.current {
       border-color: var(--color-accent-final);
+    }
+    .page-preview::after {
+      display: inline-block;
+      position: absolute;
+      top: calc(100% + 3px);
+      width: 100%;
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--color-fg-primary-final);
+      content: attr(data-page-number) " ";
     }
 
     .page-canvas {
