@@ -21,6 +21,7 @@ export declare class TsPdfViewer {
 	private _mode;
 	private _pointerInfo;
 	private _timers;
+	private _pinchInfo;
 	constructor(containerSelector: string, workerSrc: string);
 	destroy(): void;
 	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
@@ -35,19 +36,15 @@ export declare class TsPdfViewer {
 	private scrollToPreview;
 	private scrollToPage;
 	private setScale;
+	private zoom;
 	private zoomOut;
 	private zoomIn;
 	private getViewerCenterPosition;
 	private onMainContainerResize;
+	private onHandToggleClick;
 	private onPreviewerToggleClick;
 	private onPreviewerPageClick;
 	private onPreviewerScroll;
-	private onViewerScroll;
-	private onViewerPointerMove;
-	private onViewerPointerDown;
-	private onPointerMove;
-	private onPointerUp;
-	private onViewerWheel;
 	private onPaginatorInput;
 	private onPaginatorChange;
 	private onPaginatorPrevClick;
@@ -56,7 +53,11 @@ export declare class TsPdfViewer {
 	private onZoomInClick;
 	private onZoomFitViewerClick;
 	private onZoomFitPageClick;
-	private onHandToggleClick;
+	private onViewerScroll;
+	private onViewerPointerMove;
+	private onViewerPointerDown;
+	private onViewerTouchStart;
+	private onViewerWheel;
 	private getVisiblePages;
 	private getCurrentPage;
 }

@@ -3,7 +3,7 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { bytesToString } from "pdfjs-dist/lib/shared/util";
 
 import { html, styles } from "./assets/index.html";
-import { clamp, Position } from "./common/utils";
+import { clamp, getCenter, getDistance, Position } from "./common/utils";
 import { ViewPage } from "./view-page";
 
 type ViewerMode = "normal" | "hand";
@@ -35,13 +35,20 @@ export class TsPdfViewer {
 
   private _mode: ViewerMode = "normal";
   
-  private _pointerInfo: {lastPos: Position; downPos: Position; downScroll: Position} = {
-    lastPos: null,
-    downPos: null,
-    downScroll: null, 
+  private _pointerInfo = {
+    lastPos: <Position>null,
+    downPos: <Position>null,
+    downScroll: <Position>null, 
   };
   private _timers = {    
     hidePanels: 0,
+  };
+  private _pinchInfo = {
+    active: false,
+    lastDist: 0,
+    minDist: 10,
+    sensitivity: 0.025,
+    target: <HTMLElement>null,
   };
 
   constructor(containerSelector: string, workerSrc: string) {
@@ -155,7 +162,8 @@ export class TsPdfViewer {
     this._viewer.addEventListener("scroll", this.onViewerScroll);
     this._viewer.addEventListener("wheel", this.onViewerWheel);
     this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
-    this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);
+    this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);    
+    this._viewer.addEventListener("touchstart", this.onViewerTouchStart);
 
     this._mainContainer = this._shadowRoot.querySelector("div#main-container");
     const resizeObserver = new ResizeObserver(this.onMainContainerResize);
@@ -165,7 +173,6 @@ export class TsPdfViewer {
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     // TODO: implement progress display
-    console.log(`${progressData.loaded}/${progressData.total}`);
   };
 
   private onPdfLoadedAsync = async (doc: PDFDocumentProxy) => {
@@ -347,14 +354,17 @@ export class TsPdfViewer {
     setTimeout(() => this.renderVisiblePages(), 0);
   }
 
-  private zoomOut(cursorPosition: Position = null) {
-    const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
+  private zoom(diff: number, cursorPosition: Position = null) {
+    const scale = clamp(this._scale + diff, this._minScale, this._maxScale);
     this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
+  }
+
+  private zoomOut(cursorPosition: Position = null) {
+    this.zoom(-0.25, cursorPosition);
   }
   
   private zoomIn(cursorPosition: Position = null) {
-    const scale = clamp(this._scale + 0.25, this._minScale, this._maxScale);
-    this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
+    this.zoom(0.25, cursorPosition);
   }
 
   private getViewerCenterPosition(): Position {
@@ -376,6 +386,19 @@ export class TsPdfViewer {
     }
   };
 
+  private onHandToggleClick = () => {
+    if (this._mode === "hand") {
+      this._mode = "normal";
+      this._viewer.classList.remove("hand");
+      this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
+    } else {
+      this._mode = "hand";
+      this._viewer.classList.add("hand");
+      this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
+    }
+  };
+
+  //#region previewer events
   private onPreviewerToggleClick = () => {
     if (this._previewerHidden) {
       this._mainContainer.classList.remove("hide-previewer");
@@ -408,7 +431,63 @@ export class TsPdfViewer {
   private onPreviewerScroll = (e: Event) => {
     this.renderVisiblePreviews();
   };
+  //#endregion
   
+  //#region paginator events
+  private onPaginatorInput = (event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.value = event.target.value.replace(/[^\d]+/g, "");
+    }
+  };
+  
+  private onPaginatorChange = (event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+      const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
+      if (pageNumber + "" !== event.target.value) {        
+        event.target.value = pageNumber + "";
+      }
+      this.scrollToPage(pageNumber - 1);
+    }
+  };
+  
+  private onPaginatorPrevClick = () => {
+    const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
+    this.scrollToPage(pageNumber);
+  };
+
+  private onPaginatorNextClick = () => {
+    const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
+    this.scrollToPage(pageNumber);
+  };
+  //#endregion
+
+  //#region zoomer events
+  private onZoomOutClick = () => {
+    this.zoomOut();
+  };
+
+  private onZoomInClick = () => {
+    this.zoomIn();
+  };
+  
+  private onZoomFitViewerClick = () => {
+    const cWidth = this._viewer.getBoundingClientRect().width;
+    const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
+    const scale = clamp((cWidth  - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+    this.setScale(scale);
+    this.scrollToPage(this._currentPage);
+  };
+  
+  private onZoomFitPageClick = () => {
+    const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
+    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
+    const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+    const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
+    this.setScale(Math.min(hScale, vScale));
+    this.scrollToPage(this._currentPage);
+  };
+  //#endregion
+
   private onViewerScroll = (e: Event) => {
     this.renderVisiblePages();
   };
@@ -444,35 +523,77 @@ export class TsPdfViewer {
     this._pointerInfo.lastPos = {x: clientX, y: clientY};
   };
 
-  private onViewerPointerDown = (event: PointerEvent) => {       
+  private onViewerPointerDown = (event: PointerEvent) => { 
+    if (this._mode !== "hand") {
+      return;
+    }
+    
     const {clientX, clientY} = event;
     this._pointerInfo.downPos = {x: clientX, y: clientY};
-    this._pointerInfo.downScroll = {x: this._viewer.scrollLeft, y: this._viewer.scrollTop};
+    this._pointerInfo.downScroll = {x: this._viewer.scrollLeft, y: this._viewer.scrollTop};    
 
-    window.addEventListener("pointermove", this.onPointerMove);
-    window.addEventListener("pointerup", this.onPointerUp);
-    window.addEventListener("pointerout", this.onPointerUp);
-  };
-
-  private onPointerMove = (event: PointerEvent) => {
-    const {clientX, clientY} = event;
-
-    if (this._pointerInfo.downPos && this._mode === "hand") {
+    const onPointerMove = (moveEvent: PointerEvent) => {
       const {x, y} = this._pointerInfo.downPos;
       const {x: left, y: top} = this._pointerInfo.downScroll;
-      const dX = clientX - x;
-      const dY = clientY - y;
+      const dX = moveEvent.clientX - x;
+      const dY = moveEvent.clientY - y;
       this._viewer.scrollTo(left - dX, top - dY);
-    }
-  };
-  
-  private onPointerUp = () => {
-    this._pointerInfo.downPos = null;
-    this._pointerInfo.downScroll = null;
+    };
+    
+    const onPointerUp = (upEvent: PointerEvent) => {
+      this._pointerInfo.downPos = null;
+      this._pointerInfo.downScroll = null;
 
-    window.removeEventListener("pointermove", this.onPointerMove);
-    window.removeEventListener("pointerup", this.onPointerUp);
-    window.removeEventListener("pointerout", this.onPointerUp);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointerout", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointerout", onPointerUp);
+  };
+
+  private onViewerTouchStart = (event: TouchEvent) => { 
+    if (event.touches.length !== 2) {
+      return;
+    }    
+
+    const a = event.touches[0];
+    const b = event.touches[1];    
+    this._pinchInfo.active = true;
+    this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
+
+    const onTouchMove = (moveEvent: TouchEvent) => {
+      if (moveEvent.touches.length !== 2) {
+        return;
+      }
+
+      const mA = moveEvent.touches[0];
+      const mB = moveEvent.touches[1];    
+      const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+      const delta = dist - this._pinchInfo.lastDist;
+      const factor = Math.floor(delta / this._pinchInfo.minDist);  
+
+      if (factor) {
+        const center = getCenter(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+        this._pinchInfo.lastDist = dist;
+        this.zoom(factor * this._pinchInfo.sensitivity, center);
+      }
+    };
+    
+    const onTouchEnd = (endEvent: TouchEvent) => {
+      this._pinchInfo.active = false;
+      this._pinchInfo.lastDist = 0;
+
+      (<HTMLElement>event.target).removeEventListener("touchmove", onTouchMove);
+      (<HTMLElement>event.target).removeEventListener("touchend", onTouchEnd);
+      (<HTMLElement>event.target).removeEventListener("touchcancel", onTouchEnd);
+    };
+
+    (<HTMLElement>event.target).addEventListener("touchmove", onTouchMove);
+    (<HTMLElement>event.target).addEventListener("touchend", onTouchEnd);
+    (<HTMLElement>event.target).addEventListener("touchcancel", onTouchEnd);
   };
   
   private onViewerWheel = (event: WheelEvent) => {
@@ -488,68 +609,6 @@ export class TsPdfViewer {
     }
   };
 
-  private onPaginatorInput = (event: Event) => {
-    if (event.target instanceof HTMLInputElement) {
-      event.target.value = event.target.value.replace(/[^\d]+/g, "");
-    }
-  };
-  
-  private onPaginatorChange = (event: Event) => {
-    if (event.target instanceof HTMLInputElement) {
-      const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
-      if (pageNumber + "" !== event.target.value) {        
-        event.target.value = pageNumber + "";
-      }
-      this.scrollToPage(pageNumber - 1);
-    }
-  };
-  
-  private onPaginatorPrevClick = () => {
-    const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
-    this.scrollToPage(pageNumber);
-  };
-
-  private onPaginatorNextClick = () => {
-    const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
-    this.scrollToPage(pageNumber);
-  };
-
-  private onZoomOutClick = () => {
-    this.zoomOut();
-  };
-
-  private onZoomInClick = () => {
-    this.zoomIn();
-  };
-  
-  private onZoomFitViewerClick = () => {
-    const cWidth = this._viewer.getBoundingClientRect().width;
-    const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
-    const scale = clamp((cWidth  - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-    this.setScale(scale);
-    this.scrollToPage(this._currentPage);
-  };
-  
-  private onZoomFitPageClick = () => {
-    const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
-    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
-    const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-    const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
-    this.setScale(Math.min(hScale, vScale));
-    this.scrollToPage(this._currentPage);
-  };
-
-  private onHandToggleClick = () => {
-    if (this._mode === "hand") {
-      this._mode = "normal";
-      this._viewer.classList.remove("hand");
-      this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
-    } else {
-      this._mode = "hand";
-      this._viewer.classList.add("hand");
-      this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
-    }
-  };
   //#endregion
   
 

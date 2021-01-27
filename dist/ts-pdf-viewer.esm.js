@@ -366,6 +366,15 @@ const html = `
 function clamp(v, min, max) {
     return Math.max(min, Math.min(v, max));
 }
+function getDistance(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
+}
+function getCenter(x1, y1, x2, y2) {
+    return {
+        x: (x2 + x1) / 2,
+        y: (y2 + y1) / 2,
+    };
+}
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -696,8 +705,14 @@ class TsPdfViewer {
         this._timers = {
             hidePanels: 0,
         };
+        this._pinchInfo = {
+            active: false,
+            lastDist: 0,
+            minDist: 10,
+            sensitivity: 0.025,
+            target: null,
+        };
         this.onPdfLoadingProgress = (progressData) => {
-            console.log(`${progressData.loaded}/${progressData.total}`);
         };
         this.onPdfLoadedAsync = (doc) => __awaiter$2(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
@@ -720,6 +735,18 @@ class TsPdfViewer {
             }
             else {
                 this._mainContainer.classList.remove("mobile");
+            }
+        };
+        this.onHandToggleClick = () => {
+            if (this._mode === "hand") {
+                this._mode = "normal";
+                this._viewer.classList.remove("hand");
+                this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
+            }
+            else {
+                this._mode = "hand";
+                this._viewer.classList.add("hand");
+                this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
             }
         };
         this.onPreviewerToggleClick = () => {
@@ -753,74 +780,6 @@ class TsPdfViewer {
         };
         this.onPreviewerScroll = (e) => {
             this.renderVisiblePreviews();
-        };
-        this.onViewerScroll = (e) => {
-            this.renderVisiblePages();
-        };
-        this.onViewerPointerMove = (event) => {
-            const { clientX, clientY } = event;
-            const { x: rectX, y: rectY, width, height } = this._viewer.getBoundingClientRect();
-            const l = clientX - rectX;
-            const t = clientY - rectY;
-            const r = width - l;
-            const b = height - t;
-            if (Math.min(l, r, t, b) > 100) {
-                if (!this._panelsHidden && !this._timers.hidePanels) {
-                    this._timers.hidePanels = setTimeout(() => {
-                        this._mainContainer.classList.add("hide-panels");
-                        this._panelsHidden = true;
-                        this._timers.hidePanels = null;
-                    }, 5000);
-                }
-            }
-            else {
-                if (this._timers.hidePanels) {
-                    clearTimeout(this._timers.hidePanels);
-                    this._timers.hidePanels = null;
-                }
-                if (this._panelsHidden) {
-                    this._mainContainer.classList.remove("hide-panels");
-                    this._panelsHidden = false;
-                }
-            }
-            this._pointerInfo.lastPos = { x: clientX, y: clientY };
-        };
-        this.onViewerPointerDown = (event) => {
-            const { clientX, clientY } = event;
-            this._pointerInfo.downPos = { x: clientX, y: clientY };
-            this._pointerInfo.downScroll = { x: this._viewer.scrollLeft, y: this._viewer.scrollTop };
-            window.addEventListener("pointermove", this.onPointerMove);
-            window.addEventListener("pointerup", this.onPointerUp);
-            window.addEventListener("pointerout", this.onPointerUp);
-        };
-        this.onPointerMove = (event) => {
-            const { clientX, clientY } = event;
-            if (this._pointerInfo.downPos && this._mode === "hand") {
-                const { x, y } = this._pointerInfo.downPos;
-                const { x: left, y: top } = this._pointerInfo.downScroll;
-                const dX = clientX - x;
-                const dY = clientY - y;
-                this._viewer.scrollTo(left - dX, top - dY);
-            }
-        };
-        this.onPointerUp = () => {
-            this._pointerInfo.downPos = null;
-            this._pointerInfo.downScroll = null;
-            window.removeEventListener("pointermove", this.onPointerMove);
-            window.removeEventListener("pointerup", this.onPointerUp);
-            window.removeEventListener("pointerout", this.onPointerUp);
-        };
-        this.onViewerWheel = (event) => {
-            if (!event.ctrlKey) {
-                return;
-            }
-            event.preventDefault();
-            if (event.deltaY > 0) {
-                this.zoomOut(this._pointerInfo.lastPos);
-            }
-            else {
-                this.zoomIn(this._pointerInfo.lastPos);
-            }
         };
         this.onPaginatorInput = (event) => {
             if (event.target instanceof HTMLInputElement) {
@@ -865,16 +824,106 @@ class TsPdfViewer {
             this.setScale(Math.min(hScale, vScale));
             this.scrollToPage(this._currentPage);
         };
-        this.onHandToggleClick = () => {
-            if (this._mode === "hand") {
-                this._mode = "normal";
-                this._viewer.classList.remove("hand");
-                this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
+        this.onViewerScroll = (e) => {
+            this.renderVisiblePages();
+        };
+        this.onViewerPointerMove = (event) => {
+            const { clientX, clientY } = event;
+            const { x: rectX, y: rectY, width, height } = this._viewer.getBoundingClientRect();
+            const l = clientX - rectX;
+            const t = clientY - rectY;
+            const r = width - l;
+            const b = height - t;
+            if (Math.min(l, r, t, b) > 100) {
+                if (!this._panelsHidden && !this._timers.hidePanels) {
+                    this._timers.hidePanels = setTimeout(() => {
+                        this._mainContainer.classList.add("hide-panels");
+                        this._panelsHidden = true;
+                        this._timers.hidePanels = null;
+                    }, 5000);
+                }
             }
             else {
-                this._mode = "hand";
-                this._viewer.classList.add("hand");
-                this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
+                if (this._timers.hidePanels) {
+                    clearTimeout(this._timers.hidePanels);
+                    this._timers.hidePanels = null;
+                }
+                if (this._panelsHidden) {
+                    this._mainContainer.classList.remove("hide-panels");
+                    this._panelsHidden = false;
+                }
+            }
+            this._pointerInfo.lastPos = { x: clientX, y: clientY };
+        };
+        this.onViewerPointerDown = (event) => {
+            if (this._mode !== "hand") {
+                return;
+            }
+            const { clientX, clientY } = event;
+            this._pointerInfo.downPos = { x: clientX, y: clientY };
+            this._pointerInfo.downScroll = { x: this._viewer.scrollLeft, y: this._viewer.scrollTop };
+            const onPointerMove = (moveEvent) => {
+                const { x, y } = this._pointerInfo.downPos;
+                const { x: left, y: top } = this._pointerInfo.downScroll;
+                const dX = moveEvent.clientX - x;
+                const dY = moveEvent.clientY - y;
+                this._viewer.scrollTo(left - dX, top - dY);
+            };
+            const onPointerUp = (upEvent) => {
+                this._pointerInfo.downPos = null;
+                this._pointerInfo.downScroll = null;
+                window.removeEventListener("pointermove", onPointerMove);
+                window.removeEventListener("pointerup", onPointerUp);
+                window.removeEventListener("pointerout", onPointerUp);
+            };
+            window.addEventListener("pointermove", onPointerMove);
+            window.addEventListener("pointerup", onPointerUp);
+            window.addEventListener("pointerout", onPointerUp);
+        };
+        this.onViewerTouchStart = (event) => {
+            if (event.touches.length !== 2) {
+                return;
+            }
+            const a = event.touches[0];
+            const b = event.touches[1];
+            this._pinchInfo.active = true;
+            this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
+            const onTouchMove = (moveEvent) => {
+                if (moveEvent.touches.length !== 2) {
+                    return;
+                }
+                const mA = moveEvent.touches[0];
+                const mB = moveEvent.touches[1];
+                const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+                const delta = dist - this._pinchInfo.lastDist;
+                const factor = Math.floor(delta / this._pinchInfo.minDist);
+                if (factor) {
+                    const center = getCenter(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+                    this._pinchInfo.lastDist = dist;
+                    this.zoom(factor * this._pinchInfo.sensitivity, center);
+                }
+            };
+            const onTouchEnd = (endEvent) => {
+                this._pinchInfo.active = false;
+                this._pinchInfo.lastDist = 0;
+                event.target.removeEventListener("touchmove", onTouchMove);
+                event.target.removeEventListener("touchend", onTouchEnd);
+                event.target.removeEventListener("touchcancel", onTouchEnd);
+            };
+            event.target.addEventListener("touchmove", onTouchMove);
+            event.target.addEventListener("touchend", onTouchEnd);
+            event.target.addEventListener("touchcancel", onTouchEnd);
+        };
+        this.onViewerWheel = (event) => {
+            if (!event.ctrlKey) {
+                return;
+            }
+            event.preventDefault();
+            if (event.deltaY > 0) {
+                this.zoomOut(this._pointerInfo.lastPos);
+            }
+            else {
+                this.zoomIn(this._pointerInfo.lastPos);
             }
         };
         const container = document.querySelector(containerSelector);
@@ -976,6 +1025,7 @@ class TsPdfViewer {
         this._viewer.addEventListener("wheel", this.onViewerWheel);
         this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
         this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);
+        this._viewer.addEventListener("touchstart", this.onViewerTouchStart);
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         const resizeObserver = new ResizeObserver(this.onMainContainerResize);
         resizeObserver.observe(this._mainContainer);
@@ -1110,13 +1160,15 @@ class TsPdfViewer {
         }
         setTimeout(() => this.renderVisiblePages(), 0);
     }
-    zoomOut(cursorPosition = null) {
-        const scale = clamp(this._scale - 0.25, this._minScale, this._maxScale);
+    zoom(diff, cursorPosition = null) {
+        const scale = clamp(this._scale + diff, this._minScale, this._maxScale);
         this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
     }
+    zoomOut(cursorPosition = null) {
+        this.zoom(-0.25, cursorPosition);
+    }
     zoomIn(cursorPosition = null) {
-        const scale = clamp(this._scale + 0.25, this._minScale, this._maxScale);
-        this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
+        this.zoom(0.25, cursorPosition);
     }
     getViewerCenterPosition() {
         const { x, y, width, height } = this._viewer.getBoundingClientRect();

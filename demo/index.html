@@ -19,10 +19,11 @@
         html, body {
             position: relative;
             min-width: 320px;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: calc(var(--vh, 1vh) * 100);
             margin: 0;
-            background-color: black;
+            background-color: var(--color-bg);
+            transition: height .25s ease;
         }
         /* .test-container {
             position: absolute;
@@ -47,7 +48,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
     <title>Dots animation test</title>
 </head>
-<body>    
+<body>   
+    <!-- hack to fit page in mobile browsers  -->
+    <script type="module">
+        const mobileVhHack = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        mobileVhHack();
+        window.addEventListener("resize", mobileVhHack);
+    </script>
+
     <div class="test-container abs-stretch">
         <div id="pdf-main-container" class="abs-stretch"></div>
     </div>
