@@ -5,6 +5,7 @@ import { BorderStyleDict } from "../core/border-style-dict";
 import { AppearanceDict, AppearanceState } from "../core/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
+import { BorderEffectDict } from "../core/border-effect-dict";
 
 /**
  * PDF supports the standard annotation types listed
@@ -143,12 +144,40 @@ export const annotationReviewStates = {
 } as const;
 export type AnnotationReviewState = typeof annotationReviewStates[keyof typeof annotationReviewStates];
 
-export class Annotation extends DictObj {
+/**
+ * The name of an icon that shall be used in displaying the annotation
+ */
+export const annotationIconTypes = {
+  COMMENT: "/Comment",
+  KEY: "/Key",
+  NOTE: "/Note",
+  HELP: "/Help",
+  NEW_PARAGRAPH: "/NewParagraph",
+  PARAGRAPH: "/Paragraph",
+  INSERT: "/Insert",
+} as const;
+export type AnnotationIconType = typeof annotationIconTypes[keyof typeof annotationIconTypes];
+
+export const lineEndingTypes = {
+  SQUARE: "/Square",
+  CIRCLE: "/Circle",
+  DIAMOND: "/Diamond",
+  ARROW_OPEN: "/OpenArrow",
+  ARROW_CLOSED: "/ClosedArrow",
+  NONE: "/None",
+  BUTT: "/Butt",
+  ARROW_OPEN_R: "/ROpenArrow",
+  ARROW_CLOSED_R: "/RClosedArrow",
+  SLASH: "/Slash",
+} as const;
+export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
+
+export abstract class Annotation extends DictObj {
   /** User defined annotation id */
   uuid: string;
 
   /** (Required) The type of annotation that this dictionary describes */
-  Subtype: AnnotationType;
+  readonly Subtype: AnnotationType;
   
   /** (Required) The annotation rectangle, 
    * defining the location of the annotation on the page in default user space units */
@@ -190,7 +219,7 @@ export class Annotation extends DictObj {
   /** (Optional; PDF1.5+) Specifies a border effect dictionary 
    * that specifies an effect that shall be applied to the border of the annotations
   */
-  BE: BorderStyleDict;
+  BE: BorderEffectDict;
   /** (Optional; PDF1.1+) An array of numbers in the range 0.0 to 1.0, 
    * representing a color of icon background, title bar and link border.
    * The number of array elements determines the color space in which the color is defined: 
@@ -203,7 +232,9 @@ export class Annotation extends DictObj {
    *  specifying the optional content properties for the annotation */
   OC: OcMembershipDict | OcGroupDict;
 
-  constructor() {
+  protected constructor(subType: AnnotationType) {
     super(dictObjTypes.ANNOTATION);
+
+    this.Subtype = subType;
   }
 }

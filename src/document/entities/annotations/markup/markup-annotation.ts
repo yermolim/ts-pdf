@@ -1,6 +1,6 @@
 import { DateString } from "../../common/date-string";
 import { StreamDict } from "../../core/stream-dict";
-import { Annotation } from "../annotation";
+import { Annotation, AnnotationType } from "../annotation";
 import { ExDataDict } from "../misc/ex-data-dict";
 import { PopupAnnotation } from "../non-markup/popup-annotation";
 
@@ -18,7 +18,7 @@ export const markupAnnotationReplyTypes = {
 } as const;
 export type MarkupAnnotationReplyType = typeof markupAnnotationReplyTypes[keyof typeof markupAnnotationReplyTypes];
 
-export class MarkupAnnotation extends Annotation {
+export abstract class MarkupAnnotation extends Annotation {
   /**
    * (Optional; PDF 1.1+) The text label that shall be displayed in the title bar 
    * of the annotation’s pop-up window when open and active. 
@@ -76,7 +76,7 @@ export class MarkupAnnotation extends Annotation {
    */
   ExData: ExDataDict;
   
-  constructor() {
-    super();
+  protected constructor(subType: AnnotationType) {
+    super(subType);
   }
 }

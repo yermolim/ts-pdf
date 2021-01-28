@@ -25,6 +25,8 @@ export const dictObjTypes = {
   OPTIONAL_CONTENT_GROUP: "/OCG",
   OPTIONAL_CONTENT_MD: "/OCMD",
   EXTERNAL_DATA: "/ExDATA",
+  ACTION: "/Action",
+  MEASURE: "/Measure",
 } as const;
 export type DictObjType = typeof dictObjTypes[keyof typeof dictObjTypes]
   | StreamType | UserTypes;

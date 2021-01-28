@@ -2,10 +2,6 @@ import { Annotation, annotationTypes } from "../annotation";
 
 export class PopupAnnotation extends Annotation {
   /**
-   * (Required) The type of annotation that this dictionary describes
-   */
-  readonly Subtype = annotationTypes.POPUP;
-  /**
    * (Optional; shall be an indirect reference) The parent annotation 
    * with which this pop-up annotation shall be associated
    */
@@ -16,6 +12,6 @@ export class PopupAnnotation extends Annotation {
   Open = false;
   
   constructor() {
-    super();
+    super(annotationTypes.POPUP);
   }
 }

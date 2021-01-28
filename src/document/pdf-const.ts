@@ -76,6 +76,13 @@ export const onOffStates = {
 } as const;
 export type OnOffState = typeof onOffStates[keyof typeof onOffStates];
 
+export const justificationTypes = {
+  LEFT: 0,
+  CENTER: 1,
+  RIGHT: 2,
+} as const;
+export type JustificationType = typeof justificationTypes[keyof typeof justificationTypes];
+
 /**
  * The delimiter  characters (, ), <, >, [, ], {, }, /,  and  %  are  special.  
  * They delimit syntactic entities such as strings, arrays, names, and comments.  
