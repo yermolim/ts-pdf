@@ -1,6 +1,6 @@
-import { Annotation, annotationTypes } from "../annotation";
+import { AnnotationDict, annotationTypes } from "../annotation-dict";
 
-export class ScreenAnnotation extends Annotation {
+export class ScreenAnnotation extends AnnotationDict {
   // TODO: implement
   
   constructor() {

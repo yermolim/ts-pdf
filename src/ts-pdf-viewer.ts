@@ -1,10 +1,10 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
-import { bytesToString } from "pdfjs-dist/lib/shared/util";
 
 import { html, styles } from "./assets/index.html";
 import { clamp, getCenter, getDistance, Position } from "./common/utils";
 import { ViewPage } from "./view-page";
+import { Parser } from "./document/parser";
 
 type ViewerMode = "normal" | "hand";
 
@@ -104,11 +104,8 @@ export class TsPdfViewer {
       throw new Error("Cannot load file data!");
     }
 
-    //DEBUG
-    // const s = <string>bytesToString(data);
-    // console.log(s);
-    // const r1 = /(?<id>\d+) (?<generation>\d+) (?<content>obj[\s\S]*?endobj)/g;
-    // console.log([...s.matchAll(r1)]);
+    const parser = new Parser(data);
+    console.log(parser.getPdfVersion());
 
     try {
       if (this._pdfLoadingTask) {

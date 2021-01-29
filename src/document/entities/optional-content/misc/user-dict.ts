@@ -1,4 +1,5 @@
-import { DictObj, UserTypes } from "../../core/dict-obj";
+import { UserTypes } from "../../../const";
+import { DictObj } from "../../core/dict-obj";
 
 export class UserDict extends DictObj {
   /**

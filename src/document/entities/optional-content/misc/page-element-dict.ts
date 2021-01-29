@@ -1,13 +1,5 @@
 import { DictObj } from "../../core/dict-obj";
-
-export const pageElementTypes = {
-  HEADER_FOOTER: "/HF",
-  FOREGROUND: "/FG",
-  BACKGROUND: "/BG",
-  LOGO: "/L",
-} as const;
-export type PageElementType = typeof pageElementTypes[keyof typeof pageElementTypes];
-
+import { PageElementType } from "../oc-const";
 export class PageElementDict extends DictObj {
   /** (Required) */
   Subtype: PageElementType;

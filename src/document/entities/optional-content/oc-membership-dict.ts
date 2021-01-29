@@ -1,14 +1,7 @@
 import { DictObj, dictObjTypes } from "../core/dict-obj";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
-
-export const visibilityPolicies = {
-  ALL_ON: "/AllOn",
-  ALL_OFF: "/AllOff",
-  ANY_ON: "/AnyOn",
-  ANY_OFF: "/AnyOff",
-} as const;
-export type VisibilityPolicy = typeof visibilityPolicies[keyof typeof visibilityPolicies];
+import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
 
 export class OcMembershipDict extends DictObj {
   /**

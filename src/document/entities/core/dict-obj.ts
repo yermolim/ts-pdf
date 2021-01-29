@@ -1,23 +1,10 @@
+import { StreamType, UserTypes } from "../../const";
 import { Obj } from "./obj";
-
-export const streamTypes = {
-  FORM_X_OBJECT: "/XObject",
-  OBJECT_STREAM: "/ObjStm",
-  METADATA_STREAM: "/Metadata",
-} as const;
-export type StreamType = typeof streamTypes[keyof typeof streamTypes];
-
-export const userTypes = {
-  INDIVIDUAL: "/Ind",
-  TITLE: "/Title",
-  ORGANIZATION: "/Org",
-} as const;
-export type UserTypes = typeof userTypes[keyof typeof userTypes];
-
 
 export const dictObjTypes = {
   XREF: "/XRef",
   XOBJECT: "/XObject",
+  CATALOG: "/Catalog",
   PAGE_TREE: "/Pages",
   PAGE: "/Page",
   ANNOTATION: "/Annot",
@@ -27,6 +14,7 @@ export const dictObjTypes = {
   EXTERNAL_DATA: "/ExDATA",
   ACTION: "/Action",
   MEASURE: "/Measure",
+  DEV_EXTENSIONS: "/DeveloperExtensions",
 } as const;
 export type DictObjType = typeof dictObjTypes[keyof typeof dictObjTypes]
   | StreamType | UserTypes;

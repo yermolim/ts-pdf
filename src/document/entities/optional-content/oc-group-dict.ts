@@ -1,12 +1,6 @@
 import { DictObj, dictObjTypes } from "../core/dict-obj";
+import { OcIntent } from "./oc-const";
 import { OcUsageDict } from "./oc-usage-dict";
-
-export const ocIntents = {
-  DESIGN: "/Design",
-  VIEW: "/View",
-  ALL: "/All",
-} as const;
-export type OcIntent = typeof ocIntents[keyof typeof ocIntents];
 
 export class OcGroupDict extends DictObj {
   /**

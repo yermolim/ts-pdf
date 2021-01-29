@@ -689,6 +689,262 @@ class ViewPage {
     }
 }
 
+const charCodes = {
+    NULL: 0,
+    TAB: 9,
+    LINE_FEED: 10,
+    FORM_FEED: 12,
+    CARRIAGE_RETURN: 13,
+    WHITESPACE: 32,
+    EXCLAMATION_MARK: 33,
+    DOUBLE_QUOTE: 34,
+    HASH: 35,
+    DOLLAR: 36,
+    PERCENT: 37,
+    AMPERSAND: 38,
+    QUOTE: 39,
+    L_PARENTHESE: 40,
+    R_PARENTHESE: 41,
+    ASTERISK: 42,
+    PLUS: 43,
+    COMMA: 44,
+    MINUS: 45,
+    DOT: 46,
+    SLASH: 47,
+    D_0: 48,
+    D_1: 49,
+    D_2: 50,
+    D_3: 51,
+    D_4: 52,
+    D_5: 53,
+    D_6: 54,
+    D_7: 55,
+    D_8: 56,
+    D_9: 57,
+    COLON: 58,
+    SEMICOLON: 59,
+    LESS: 60,
+    EQUAL: 61,
+    GREATER: 62,
+    QUESTION_MARK: 63,
+    AT: 64,
+    A_UPPER: 65,
+    B_UPPER: 66,
+    C_UPPER: 67,
+    D_UPPER: 68,
+    E_UPPER: 69,
+    F_UPPER: 70,
+    G_UPPER: 71,
+    H_UPPER: 72,
+    I_UPPER: 73,
+    J_UPPER: 74,
+    K_UPPER: 75,
+    L_UPPER: 76,
+    M_UPPER: 77,
+    N_UPPER: 78,
+    O_UPPER: 79,
+    P_UPPER: 80,
+    Q_UPPER: 81,
+    R_UPPER: 82,
+    S_UPPER: 83,
+    T_UPPER: 84,
+    U_UPPER: 85,
+    V_UPPER: 86,
+    W_UPPER: 87,
+    X_UPPER: 88,
+    Y_UPPER: 89,
+    Z_UPPER: 90,
+    L_BRACKET: 91,
+    BACKSLASH: 92,
+    R_BRACKET: 93,
+    CARET: 94,
+    UNDERSCORE: 95,
+    BACKTICK: 96,
+    A_LOWER: 97,
+    B_LOWER: 98,
+    C_LOWER: 99,
+    D_LOWER: 100,
+    E_LOWER: 101,
+    F_LOWER: 102,
+    G_LOWER: 103,
+    H_LOWER: 104,
+    I_LOWER: 105,
+    J_LOWER: 106,
+    K_LOWER: 107,
+    L_LOWER: 108,
+    M_LOWER: 109,
+    N_LOWER: 110,
+    O_LOWER: 111,
+    P_LOWER: 112,
+    Q_LOWER: 113,
+    R_LOWER: 114,
+    S_LOWER: 115,
+    T_LOWER: 116,
+    U_LOWER: 117,
+    V_LOWER: 118,
+    W_LOWER: 119,
+    X_LOWER: 120,
+    Y_LOWER: 121,
+    Z_LOWER: 122,
+    L_BRACE: 123,
+    VERTICL_LINE: 124,
+    R_BRACE: 125,
+    TILDE: 126,
+};
+const keywordCodes = {
+    OBJ: [charCodes.O_LOWER, charCodes.B_LOWER, charCodes.J_LOWER],
+    ENDOBJ: [charCodes.E_LOWER, charCodes.N_LOWER, charCodes.D_LOWER,
+        charCodes.O_LOWER, charCodes.B_LOWER, charCodes.J_LOWER],
+    DICT_START: [charCodes.LESS, charCodes.LESS],
+    DICT_END: [charCodes.GREATER, charCodes.GREATER],
+    VERSION: [charCodes.PERCENT, charCodes.P_UPPER, charCodes.D_UPPER,
+        charCodes.F_UPPER, charCodes.MINUS],
+};
+const DELIMITER_CHARS = new Set([
+    charCodes.PERCENT,
+    charCodes.L_PARENTHESE,
+    charCodes.R_PARENTHESE,
+    charCodes.SLASH,
+    charCodes.LESS,
+    charCodes.GREATER,
+    charCodes.L_BRACKET,
+    charCodes.R_BRACKET,
+    charCodes.L_BRACE,
+    charCodes.R_BRACE,
+]);
+const SPACE_CHARS = new Set([
+    charCodes.NULL,
+    charCodes.TAB,
+    charCodes.LINE_FEED,
+    charCodes.FORM_FEED,
+    charCodes.CARRIAGE_RETURN,
+    charCodes.WHITESPACE,
+]);
+const DIGIT_CHARS = new Set([
+    charCodes.D_0,
+    charCodes.D_1,
+    charCodes.D_2,
+    charCodes.D_3,
+    charCodes.D_4,
+    charCodes.D_5,
+    charCodes.D_6,
+    charCodes.D_7,
+    charCodes.D_8,
+    charCodes.D_9,
+]);
+
+class Parser {
+    constructor(data) {
+        if (!(data === null || data === void 0 ? void 0 : data.length)) {
+            throw new Error("Data is empty");
+        }
+        this._data = data;
+        this._maxIndex = data.length - 1;
+    }
+    static isRegularChar(code) {
+        return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
+    }
+    getPdfVersion() {
+        let i = this.findSubarrayIndex(keywordCodes.VERSION);
+        i += keywordCodes.VERSION.length;
+        const version = this.parseNumberStartingAtIndex(i, true);
+        return version.toFixed(1);
+    }
+    getXRefType() {
+        return 0;
+    }
+    findSubarrayIndex(sub, direction = "straight", start = undefined, closedOnly = false) {
+        const arr = this._data;
+        if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
+            return -1;
+        }
+        let i = this.getValidStartIndex(direction, start);
+        let j;
+        if (direction === "straight") {
+            outer_loop: for (i; i <= this._maxIndex; i++) {
+                for (j = 0; j < sub.length; j++) {
+                    if (arr[i + j] !== sub[j]) {
+                        continue outer_loop;
+                    }
+                }
+                if (!closedOnly || !Parser.isRegularChar(arr[i + j + 1])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            const subMaxIndex = sub.length - 1;
+            outer_loop: for (i; i >= 0; i--) {
+                for (j = 0; j < sub.length; j++) {
+                    if (arr[i - j] !== sub[subMaxIndex - j]) {
+                        continue outer_loop;
+                    }
+                }
+                if (!closedOnly || !Parser.isRegularChar(arr[i - j - 1])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    findDelimiterIndex(direction = "straight", start = undefined) {
+        const arr = this._data;
+        let i = this.getValidStartIndex(direction, start);
+        if (direction === "straight") {
+            for (i; i <= this._maxIndex; i++) {
+                if (!Parser.isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (!Parser.isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    findRegularIndex(direction = "straight", start = undefined) {
+        const arr = this._data;
+        let i = this.getValidStartIndex(direction, start);
+        if (direction === "straight") {
+            for (i; i <= this._maxIndex; i++) {
+                if (Parser.isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (Parser.isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    parseNumberStartingAtIndex(index, float = false) {
+        let i = this.findRegularIndex("straight", index);
+        let numberStr = "";
+        let value = this._data[i];
+        while (DIGIT_CHARS.has(value)
+            || (float && value === charCodes.DOT)) {
+            numberStr += String.fromCharCode(value);
+            value = this._data[++i];
+        }
+        return +numberStr;
+    }
+    getValidStartIndex(direction, start) {
+        return !isNaN(start)
+            ? Math.max(Math.min(start, this._maxIndex), 0)
+            : direction === "straight"
+                ? 0
+                : this._maxIndex;
+    }
+}
+
 var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -989,6 +1245,8 @@ class TsPdfViewer {
             catch (_a) {
                 throw new Error("Cannot load file data!");
             }
+            const parser = new Parser(data);
+            console.log(parser.getPdfVersion());
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();

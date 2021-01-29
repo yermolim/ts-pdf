@@ -1,4 +1,4 @@
-import { annotationTypes, LineEndingType, lineEndingTypes } from "../../annotation";
+import { annotationTypes, LineEndingType, lineEndingTypes } from "../../annotation-dict";
 import { PolyAnnotation } from "./poly-annotation";
 
 export class PolylineAnnotation extends PolyAnnotation {  

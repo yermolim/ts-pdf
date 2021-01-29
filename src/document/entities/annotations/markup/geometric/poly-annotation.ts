@@ -1,5 +1,5 @@
-import { MeasureDict } from "../../../core/measure-dict";
-import { AnnotationType } from "../../annotation";
+import { MeasureDict } from "../../../common/measure-dict";
+import { AnnotationType } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 
 export const polyIntents = {

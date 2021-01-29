@@ -1,11 +1,11 @@
 import { ObjRef } from "../core/obj-ref";
 import { DictObj, dictObjTypes } from "../core/dict-obj";
 import { DateString } from "../common/date-string";
-import { BorderStyleDict } from "../core/border-style-dict";
-import { AppearanceDict, AppearanceState } from "../core/appearance-dict";
+import { BorderStyleDict } from "../appearance/border-style-dict";
+import { AppearanceDict, AppearanceState } from "../appearance/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
-import { BorderEffectDict } from "../core/border-effect-dict";
+import { BorderEffectDict } from "../appearance/border-effect-dict";
 
 /**
  * PDF supports the standard annotation types listed
@@ -172,7 +172,7 @@ export const lineEndingTypes = {
 } as const;
 export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
 
-export abstract class Annotation extends DictObj {
+export abstract class AnnotationDict extends DictObj {
   /** User defined annotation id */
   uuid: string;
 

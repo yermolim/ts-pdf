@@ -1,23 +1,3 @@
-export const charCodes = {
-  NULL: 0,
-  TAB: 9,
-  LINE_FEED: 10,
-  FORM_FEED: 12,
-  CARRIAGE_RETURN: 13,
-  WHITESPACE: 32,
-  PERCENT: 37,
-  L_PARENTHESE: 40,
-  R_PARENTHESE: 41,
-  SLASH: 47,
-  LESS: 60,
-  GREATER: 62,
-  L_BRACKET: 91,
-  BACKSLASH: 92,
-  R_BRACKET: 93,
-  L_BRACE: 123,
-  R_BRACE: 125,
-} as const;
-
 /**
  * PDF supports eight basic types of objects
  */
@@ -42,6 +22,7 @@ export const xRefTypes = {
   STREAM: 1,
   HYBRID: 2,
 } as const;
+export type XRefType = typeof xRefTypes[keyof typeof xRefTypes]; 
 
 /**
  * Each entry in a cross-reference stream has one or more fields, 
@@ -83,42 +64,36 @@ export const justificationTypes = {
 } as const;
 export type JustificationType = typeof justificationTypes[keyof typeof justificationTypes];
 
-/**
- * The delimiter  characters (, ), <, >, [, ], {, }, /,  and  %  are  special.  
- * They delimit syntactic entities such as strings, arrays, names, and comments.  
- * Any of these characters terminates the entity preceding it and is not included in the entity. 
- */
-export const DELIMITER_CHARS = new Set<number>([
-  charCodes.PERCENT,
-  charCodes.L_PARENTHESE,
-  charCodes.R_PARENTHESE,
-  charCodes.SLASH,
-  charCodes.LESS,
-  charCodes.GREATER,
-  charCodes.L_BRACKET,
-  charCodes.R_BRACKET,
-  charCodes.L_BRACE,
-  charCodes.R_BRACE,
-]);
+export const pageLayouts = {
+  SINGLE: "/SinglePage",
+  TWO_ODD_LEFT: "/TwoPageLeft",
+  TWO_ODD_RIGHT: "/TwoPageRight",
+  SINGLE_COLUMN: "/OneColumn",
+  TWO_COLUMNS_ODD_LEFT: "/TwoColumnLeft",
+  TWO_COLUMNS_ODD_RIGHT: "/TwoColumnRight",
+} as const;
+export type PageLayout = typeof pageLayouts[keyof typeof pageLayouts];
 
-/**
- * White-space characters separate syntactic constructs such as names and numbers from each other.  
- * All white-space characters are  equivalent, except in comments, strings, and streams. 
- * In all other contexts, PDF treats any sequence of consecutive white-space characters as one character.
- */
-export const SPACE_CHARS = new Set<number>([
-  charCodes.NULL,
-  charCodes.TAB,
-  charCodes.LINE_FEED,
-  charCodes.FORM_FEED,
-  charCodes.CARRIAGE_RETURN,
-  charCodes.WHITESPACE,
-]);
+export const pageModes = {
+  NONE: "/UseNone",
+  OUTLINES: "/UseOutlines",
+  THUMBS: "/UseThumbs",
+  FULL_SCREEN: "/FullScreen",
+  OPTIONAL_CONTENT: "/UseOC",
+  ATTACHMENTS: "/UseAttachments",
+} as const;
+export type PageMode = typeof pageModes[keyof typeof pageModes];
 
-/**
- * Each line is terminated by an end-of-line (EOL) marker
- */
-export const EOL = [
-  charCodes.CARRIAGE_RETURN, 
-  charCodes.LINE_FEED,
-] as const;
+export const streamTypes = {
+  FORM_X_OBJECT: "/XObject",
+  OBJECT_STREAM: "/ObjStm",
+  METADATA_STREAM: "/Metadata",
+} as const;
+export type StreamType = typeof streamTypes[keyof typeof streamTypes];
+
+export const userTypes = {
+  INDIVIDUAL: "/Ind",
+  TITLE: "/Title",
+  ORGANIZATION: "/Org",
+} as const;
+export type UserTypes = typeof userTypes[keyof typeof userTypes];

@@ -1,4 +1,4 @@
-import { OnOffState } from "../../../pdf-const";
+import { OnOffState } from "../../../const";
 import { DictObj } from "../../core/dict-obj";
 
 export class ViewDict extends DictObj {

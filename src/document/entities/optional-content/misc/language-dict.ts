@@ -1,4 +1,4 @@
-import { OnOffState, onOffStates } from "../../../pdf-const";
+import { OnOffState, onOffStates } from "../../../const";
 import { DictObj } from "../../core/dict-obj";
 
 export class LanguageDict extends DictObj {

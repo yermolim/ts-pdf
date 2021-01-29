@@ -1,4 +1,4 @@
-import { DictObj, dictObjTypes } from "./dict-obj";
+import { DictObj, dictObjTypes } from "../core/dict-obj";
 
 export const actionTypes = {
   GO_TO: "/GoTo",

@@ -1,13 +1,6 @@
 import { DictObj } from "../core/dict-obj";
+import { UsageEvent } from "./oc-const";
 import { OcGroupDict } from "./oc-group-dict";
-
-export const usageEvents = {
-  VIEW: "/View",
-  PRINT: "/Print",
-  EXPORT: "/Export",
-} as const;
-export type UsageEvent = typeof usageEvents[keyof typeof usageEvents];
-
 
 export class UsageDict extends DictObj {
   /**

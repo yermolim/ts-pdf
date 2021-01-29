@@ -1,7 +1,6 @@
-import { ActionDict } from "../../core/action-dict";
-import { BorderStyleDict } from "../../core/border-style-dict";
-import { UriAction } from "../../core/uri-action";
-import { annotationTypes, Annotation } from "../annotation";
+import { ActionDict } from "../../actions/action-dict";
+import { UriAction } from "../../actions/uri-action";
+import { annotationTypes, AnnotationDict } from "../annotation-dict";
 
 export const highlightingModes = {
   NO: "/N",
@@ -11,7 +10,7 @@ export const highlightingModes = {
 } as const;
 export type HighlightingMode = typeof highlightingModes[keyof typeof highlightingModes];
 
-export class LinkAnnotation extends Annotation {
+export class LinkAnnotation extends AnnotationDict {
   /**
    * (Optional; PDF 1.1+) An action that shall be performed 
    * when the link annotation is activated
@@ -38,11 +37,6 @@ export class LinkAnnotation extends Annotation {
    * the region specified by the Rect entry should be used
    */
   QuadPoints: number[];
-  /**
-   * (Optional; PDF 1.6+) A border style dictionary 
-   * specifying the line width and dash pattern to be used in drawing the annotation’s border
-   */
-  BS: BorderStyleDict;
   
   constructor() {
     super(annotationTypes.LINK);

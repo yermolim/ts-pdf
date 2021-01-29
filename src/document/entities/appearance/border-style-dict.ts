@@ -1,4 +1,4 @@
-import { DictObj, dictObjTypes } from "./dict-obj";
+import { DictObj, dictObjTypes } from "../core/dict-obj";
 
 /**
  * Flags  specifying  various  characteristics of the annotation

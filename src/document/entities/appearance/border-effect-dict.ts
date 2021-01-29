@@ -1,4 +1,4 @@
-import { DictObj } from "./dict-obj";
+import { DictObj } from "../core/dict-obj";
 
 export const borderEffects = {
   NONE: "/S",

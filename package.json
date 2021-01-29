@@ -70,6 +70,7 @@
     "typescript": "^4.1.3"
   },
   "dependencies": {
+    "crypto-js": "^4.0.0",
     "pdfjs-dist": "^2.6.347"
   }
 }

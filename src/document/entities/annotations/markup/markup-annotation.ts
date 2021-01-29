@@ -1,6 +1,6 @@
 import { DateString } from "../../common/date-string";
-import { StreamDict } from "../../core/stream-dict";
-import { Annotation, AnnotationType } from "../annotation";
+import { StreamDict } from "../../streams/stream-dict";
+import { AnnotationDict, AnnotationType } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";
 import { PopupAnnotation } from "../non-markup/popup-annotation";
 
@@ -18,7 +18,7 @@ export const markupAnnotationReplyTypes = {
 } as const;
 export type MarkupAnnotationReplyType = typeof markupAnnotationReplyTypes[keyof typeof markupAnnotationReplyTypes];
 
-export abstract class MarkupAnnotation extends Annotation {
+export abstract class MarkupAnnotation extends AnnotationDict {
   /**
    * (Optional; PDF 1.1+) The text label that shall be displayed in the title bar 
    * of the annotation’s pop-up window when open and active. 
@@ -54,7 +54,7 @@ export abstract class MarkupAnnotation extends Annotation {
    * Both annotations shall be on the same page of the document. 
    * The relationship between the two annotations shall be specified by the RT entry
    */
-  IRT: Annotation;
+  IRT: AnnotationDict;
   /**
    * (Optional; meaningful only if IRT is present; PDF 1.6+) 
    * A name specifying the relationship (the “reply type”) 

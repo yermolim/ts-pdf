@@ -1,4 +1,4 @@
-import { streamTypes } from "./dict-obj";
+import { streamTypes } from "../../const";
 import { StreamDict } from "./stream-dict";
 
 export class MetadataStream extends StreamDict {

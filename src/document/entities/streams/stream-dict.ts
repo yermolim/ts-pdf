@@ -1,5 +1,5 @@
-import { StreamFilter } from "../../pdf-const";
-import { DictObj, StreamType } from "./dict-obj";
+import { StreamFilter, StreamType } from "../../const";
+import { DictObj } from "../core/dict-obj";
 
 export class StreamDict extends DictObj {
   /**

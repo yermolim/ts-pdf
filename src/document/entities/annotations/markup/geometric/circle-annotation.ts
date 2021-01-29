@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../annotation";
+import { annotationTypes } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 
 export class CircleAnnotation extends GeometricAnnotation {

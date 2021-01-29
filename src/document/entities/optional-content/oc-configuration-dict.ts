@@ -1,20 +1,8 @@
 import { DictObj } from "../core/dict-obj";
-import { OcGroupDict, OcIntent, ocIntents } from "./oc-group-dict";
+import { OcConfigState, ocConfigStates, OcIntent, ocIntents, 
+  OcListMode, ocListModes } from "./oc-const";
+import { OcGroupDict } from "./oc-group-dict";
 import { UsageDict } from "./usage-dict";
-
-export const ocConfigStates = {
-  ON: "/ON",
-  OFF: "/OFF",
-  NONE: "/Unchanged",
-} as const;
-export type OcConfigState = typeof ocConfigStates[keyof typeof ocConfigStates];
-
-export const ocListModes = {
-  ALL: "/AllPages",
-  VISIBLE: "/VisiblePages",
-} as const;
-export type OcListMode = typeof ocListModes[keyof typeof ocListModes];
-
 export class OcConfigurationDict extends DictObj {
   /**
    * (Optional) A name for the configuration, 

@@ -1,4 +1,4 @@
-import { ObjRef } from "./obj-ref";
+import { ObjRef } from "../core/obj-ref";
 import { StreamDict } from "./stream-dict";
 
 export class ObjectStream extends StreamDict {

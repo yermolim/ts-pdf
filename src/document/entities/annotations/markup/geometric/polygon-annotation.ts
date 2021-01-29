@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../annotation";
+import { annotationTypes } from "../../annotation-dict";
 import { PolyAnnotation } from "./poly-annotation";
 
 export class PolygonAnnotation extends PolyAnnotation {  

@@ -1,9 +1,15 @@
 import { ObjRef } from "./obj-ref";
 
-export class Obj {
+export abstract class Obj {
   /** Unique object identifier by which other objects can refer to it */
-  ref: ObjRef;
+  readonly ref: ObjRef;
+  
+  readonly array: Uint8Array;
 
   protected constructor() {
   }
+
+  toArray(): Uint8Array {
+    return null;
+  };
 }

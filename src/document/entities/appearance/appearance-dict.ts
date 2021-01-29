@@ -1,5 +1,5 @@
 import { DictObj } from "../core/dict-obj";
-import { xFormStream } from "./x-form-stream";
+import { xFormStream } from "../streams/x-form-stream";
 
 export const appearanceStates = {
   ON: "/ON",

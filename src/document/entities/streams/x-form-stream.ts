@@ -1,7 +1,8 @@
-import { DictObj, streamTypes } from "./dict-obj";
+import { DictObj } from "../core/dict-obj";
 import { MetadataStream } from "./metadata-stream";
-import { ObjRef } from "./obj-ref";
+import { ObjRef } from "../core/obj-ref";
 import { StreamDict } from "./stream-dict";
+import { streamTypes } from "../../const";
 
 export class xFormStream extends StreamDict {
   /**

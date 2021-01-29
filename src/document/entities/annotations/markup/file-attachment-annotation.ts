@@ -1,5 +1,5 @@
 import { DictObj } from "../../core/dict-obj";
-import { annotationTypes } from "../annotation";
+import { annotationTypes } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const attachmentIconTypes = {
