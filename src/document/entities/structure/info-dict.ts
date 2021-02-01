@@ -1,5 +1,5 @@
-import { dictObjTypes } from "../../const";
-import { DateString } from "../common/date-string";
+import { dictObjTypes } from "../../common/const";
+import { DateString } from "../../common/date-string";
 import { DictObj } from "../core/dict-obj";
 
 export class InfoDict extends DictObj {

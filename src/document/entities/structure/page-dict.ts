@@ -1,6 +1,6 @@
-import { dictObjTypes } from "../../const";
+import { dictObjTypes } from "../../common/const";
 import { AnnotationDict } from "../annotations/annotation-dict";
-import { DateString } from "../common/date-string";
+import { DateString } from "../../common/date-string";
 import { DictObj } from "../core/dict-obj";
 import { PageTreeDict } from "./page-tree-dict";
 

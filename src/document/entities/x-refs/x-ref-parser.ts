@@ -1,4 +1,4 @@
-import { keywordCodes } from "../../codes";
+import { keywordCodes } from "../../common/codes";
 import { Parser, ParseResult } from "../../parser";
 import { ObjInfo } from "../core/obj-info";
 import { XRef } from "./x-ref";

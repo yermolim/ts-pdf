@@ -1,4 +1,4 @@
-import { dictObjTypes, flatePredictors, FlatePredictor } from "../../const";
+import { dictObjTypes, flatePredictors, FlatePredictor } from "../../common/const";
 import { DictObj } from "../core/dict-obj";
 
 export class FlateParamsDict extends DictObj {

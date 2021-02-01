@@ -1,4 +1,4 @@
-import { JustificationType } from "../../../const";
+import { JustificationType } from "../../../common/const";
 import { AppearanceString } from "../../appearance/appearance-string";
 import { StreamDict } from "../../streams/stream-dict";
 import { annotationTypes, LineEndingType, lineEndingTypes } from "../annotation-dict";

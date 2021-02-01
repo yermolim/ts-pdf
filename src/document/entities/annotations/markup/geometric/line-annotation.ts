@@ -1,4 +1,4 @@
-import { MeasureDict } from "../../../common/measure-dict";
+import { MeasureDict } from "../../../misc/measure-dict";
 import { LineEndingType, lineEndingTypes, annotationTypes } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 

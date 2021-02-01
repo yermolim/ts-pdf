@@ -2,7 +2,7 @@ import { DictObj } from "../core/dict-obj";
 import { MetadataStream } from "./metadata-stream";
 import { ObjId } from "../core/obj-id";
 import { StreamDict } from "./stream-dict";
-import { streamTypes } from "../../const";
+import { streamTypes } from "../../common/const";
 
 export class XFormStream extends StreamDict {
   /**

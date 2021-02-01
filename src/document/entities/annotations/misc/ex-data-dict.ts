@@ -1,4 +1,4 @@
-import { dictObjTypes } from "../../../const";
+import { dictObjTypes } from "../../../common/const";
 import { DictObj } from "../../core/dict-obj";
 
 export class ExDataDict extends DictObj {

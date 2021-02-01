@@ -1,4 +1,4 @@
-import { dictObjTypes } from "../../const";
+import { dictObjTypes } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
 import { ObjInfo } from "../core/obj-info";
 import { EncryptionDict } from "../encryption/encryption-dict";

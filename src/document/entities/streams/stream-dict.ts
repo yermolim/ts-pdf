@@ -1,4 +1,4 @@
-import { StreamFilter, StreamType } from "../../const";
+import { StreamFilter, StreamType } from "../../common/const";
 import { DictObj } from "../core/dict-obj";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 

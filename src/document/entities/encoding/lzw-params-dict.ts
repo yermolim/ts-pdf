@@ -1,4 +1,4 @@
-import { dictObjTypes } from "../../const";
+import { dictObjTypes } from "../../common/const";
 import { FlateParamsDict } from "./flate-params-dict";
 
 export class LzwParamsDict extends FlateParamsDict {

@@ -1,4 +1,4 @@
-import { DictObjType } from "../../const";
+import { DictObjType } from "../../common/const";
 import { Obj } from "./obj";
 
 export class DictObj extends Obj {

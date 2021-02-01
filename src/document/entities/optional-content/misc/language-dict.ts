@@ -1,4 +1,4 @@
-import { OnOffState, onOffStates } from "../../../const";
+import { OnOffState, onOffStates } from "../../../common/const";
 import { DictObj } from "../../core/dict-obj";
 
 export class LanguageDict extends DictObj {

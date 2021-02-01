@@ -1,4 +1,4 @@
-import { xRefTypes } from "../../const";
+import { xRefTypes } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
 import { ObjInfo } from "../core/obj-info";
 import { TrailerStream } from "./trailer-stream";

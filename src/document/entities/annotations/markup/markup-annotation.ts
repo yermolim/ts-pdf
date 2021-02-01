@@ -1,4 +1,4 @@
-import { DateString } from "../../common/date-string";
+import { DateString } from "../../../common/date-string";
 import { StreamDict } from "../../streams/stream-dict";
 import { AnnotationDict, AnnotationType } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";

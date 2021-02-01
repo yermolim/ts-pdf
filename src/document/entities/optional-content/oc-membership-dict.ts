@@ -2,7 +2,7 @@ import { DictObj } from "../core/dict-obj";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
-import { dictObjTypes } from "../../const";
+import { dictObjTypes } from "../../common/const";
 
 export class OcMembershipDict extends DictObj {
   /**

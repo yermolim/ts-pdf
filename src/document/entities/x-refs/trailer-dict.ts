@@ -1,4 +1,4 @@
-import { dictObjTypes } from "../../const";
+import { dictObjTypes } from "../../common/const";
 import { DictObj } from "../core/dict-obj";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { CatalogDict } from "../structure/catalog-dict";

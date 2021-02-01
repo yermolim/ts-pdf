@@ -1,4 +1,4 @@
-import { codes } from "../../codes";
+import { codes } from "../../common/codes";
 import { Parser, ParseResult } from "../../parser";
 
 export class ObjId {

@@ -1,4 +1,4 @@
-import { XRefType } from "../../const";
+import { XRefType } from "../../common/const";
 
 export abstract class XRef {
   readonly _type: XRefType;
