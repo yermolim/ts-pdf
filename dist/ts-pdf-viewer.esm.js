@@ -802,8 +802,8 @@ const keywordCodes = {
     DICT_END: [codes.GREATER, codes.GREATER],
     ARRAY_START: [codes.L_BRACKET],
     ARRAY_END: [codes.R_BRACKET],
-    STR_PLAIN_START: [codes.L_PARENTHESE],
-    STR_PLAIN_END: [codes.R_PARENTHESE],
+    STR_LITERAL_START: [codes.L_PARENTHESE],
+    STR_LITERAL_END: [codes.R_PARENTHESE],
     STR_HEX_START: [codes.LESS],
     STR_HEX_END: [codes.GREATER],
     VERSION: [codes.PERCENT, codes.P, codes.D, codes.F, codes.MINUS],
@@ -1096,12 +1096,14 @@ class XRef {
 }
 
 class XRefHybrid extends XRef {
-    constructor() {
+    constructor(trailerDict, trailerStream) {
         super(xRefTypes.HYBRID);
+        this._trailerDict = trailerDict;
+        this._trailerStream = trailerStream;
     }
     static parse(parser, index, skipEmpty = true) {
         return {
-            value: new XRefHybrid(),
+            value: new XRefHybrid(null, null),
             start: null,
             end: null,
         };
@@ -1109,12 +1111,13 @@ class XRefHybrid extends XRef {
 }
 
 class XRefStream extends XRef {
-    constructor() {
+    constructor(trailer) {
         super(xRefTypes.STREAM);
+        this._trailerStream = trailer;
     }
     static parse(parser, index, skipEmpty = true) {
         return {
-            value: new XRefStream(),
+            value: new XRefStream(null),
             start: null,
             end: null,
         };
@@ -1122,12 +1125,13 @@ class XRefStream extends XRef {
 }
 
 class XRefTable extends XRef {
-    constructor() {
+    constructor(trailer) {
         super(xRefTypes.TABLE);
+        this._trailerDict = trailer;
     }
     static parse(parser, index, skipEmpty = true) {
         return {
-            value: new XRefTable(),
+            value: new XRefTable(null),
             start: null,
             end: null,
         };
@@ -1139,8 +1143,7 @@ class XRefParser {
         this._parser = parser;
     }
     parseNextXref() {
-        const sub = keywordCodes.XREF_START;
-        const xrefStartIndex = this._parser.findSubarrayIndex(sub, { maxIndex: this._lastXRefStartIndex, direction: "reverse" });
+        const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._lastXRefStartIndex, direction: "reverse" });
         if (!xrefStartIndex) {
             return null;
         }
@@ -1154,21 +1157,21 @@ class XRefParser {
             const xrefStmIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start, closedOnly: true });
             if (xrefStmIndex) {
                 console.log("XRef is hybrid");
-                return XRefHybrid.parse(this._parser, 0);
+                return XRefHybrid.parse(this._parser, xrefIndex.value);
             }
             else {
                 console.log("XRef is table");
-                return XRefTable.parse(this._parser, 0);
+                return XRefTable.parse(this._parser, xrefIndex.value);
             }
         }
         const xrefObj = ObjInfo.parse(this._parser, xrefIndex.value, false);
         if (!xrefObj) {
-            throw new Error("PDF not valid. No XRef found at offset position");
+            return null;
         }
         console.log("XRef is stream");
         console.log(xrefObj);
         console.log(String.fromCharCode(...this._parser["_data"].slice(xrefObj.start, xrefObj.end + 1)));
-        return XRefStream.parse(this._parser, 0);
+        return XRefStream.parse(this._parser, xrefObj.start);
     }
 }
 

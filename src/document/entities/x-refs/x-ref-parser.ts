@@ -15,9 +15,8 @@ export class XRefParser {
     this._parser = parser;
   }
 
-  parseNextXref(): ParseResult<XRef> {    
-    const sub = keywordCodes.XREF_START;
-    const xrefStartIndex = this._parser.findSubarrayIndex(sub, 
+  parseNextXref(): ParseResult<XRef> {
+    const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, 
       {maxIndex: this._lastXRefStartIndex, direction: "reverse"});
     if (!xrefStartIndex) {
       return null;
@@ -37,21 +36,21 @@ export class XRefParser {
         {minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start, closedOnly: true});
       if (xrefStmIndex) {    
         console.log("XRef is hybrid");
-        return XRefHybrid.parse(this._parser, 0);
+        return XRefHybrid.parse(this._parser, xrefIndex.value);
       } else {
         console.log("XRef is table");
-        return XRefTable.parse(this._parser, 0);
+        return XRefTable.parse(this._parser, xrefIndex.value);
       }
     }
 
     const xrefObj = ObjInfo.parse(this._parser, xrefIndex.value, false);    
     if (!xrefObj) {      
-      throw new Error("PDF not valid. No XRef found at offset position");
+      return null;
     }
     console.log("XRef is stream");
     console.log(xrefObj);
     console.log(String.fromCharCode(...this._parser["_data"].slice(xrefObj.start, xrefObj.end + 1)));
     
-    return XRefStream.parse(this._parser, 0);
+    return XRefStream.parse(this._parser, xrefObj.start);
   }
 }

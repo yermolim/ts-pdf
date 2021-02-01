@@ -117,8 +117,8 @@ export const keywordCodes = {
   ARRAY_START: [codes.L_BRACKET],
   ARRAY_END: [codes.R_BRACKET],
   
-  STR_PLAIN_START: [codes.L_PARENTHESE],
-  STR_PLAIN_END: [codes.R_PARENTHESE],
+  STR_LITERAL_START: [codes.L_PARENTHESE],
+  STR_LITERAL_END: [codes.R_PARENTHESE],
 
   STR_HEX_START: [codes.LESS],
   STR_HEX_END: [codes.GREATER],

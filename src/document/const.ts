@@ -38,18 +38,30 @@ export const crsEntryTypes = {
 } as const;
 
 export const streamFilters = {
-  ASCIIHEX: "/ASCIIHexDecode",
   ASCII85: "/ASCII85Decode",
-  LZW: "/LZWDecode",
-  FLATE: "/FlateDecode",
-  RLX: "/RunLengthDecode",
+  ASCIIHEX: "/ASCIIHexDecode",
   CCF: "/CCITTFaxDecode",
-  JBIG2: "/JBIG2Decode",
-  DCT: "/DCTDecode",
-  JPX: "/JPXDecode",
   CRYPT: "/Crypt",
+  DCT: "/DCTDecode",
+  FLATE: "/FlateDecode",
+  JBIG2: "/JBIG2Decode",
+  JPX: "/JPXDecode",
+  LZW: "/LZWDecode",
+  RLX: "/RunLengthDecode",
 } as const;
 export type StreamFilter = typeof streamFilters[keyof typeof streamFilters]; 
+
+export const flatePredictors = {
+  NONE: 1,
+  TIFF: 2,
+  PNG_NONE: 10,
+  PNG_SUB: 11,
+  PNG_UP: 12,
+  PNG_AVERAGE: 13,
+  PNG_PAETH: 14,
+  PNG_OPTIMUM: 15,
+} as const;
+export type FlatePredictor = typeof flatePredictors[keyof typeof flatePredictors]; 
 
 export const onOffStates = {
   ON: "/ON",
@@ -85,7 +97,8 @@ export const pageModes = {
 export type PageMode = typeof pageModes[keyof typeof pageModes];
 
 export const streamTypes = {
-  FORM_X_OBJECT: "/XObject",
+  FORM_XOBJECT: "/XObject",
+  XREF: "/XRef",
   OBJECT_STREAM: "/ObjStm",
   METADATA_STREAM: "/Metadata",
 } as const;
@@ -97,3 +110,22 @@ export const userTypes = {
   ORGANIZATION: "/Org",
 } as const;
 export type UserTypes = typeof userTypes[keyof typeof userTypes];
+
+export const dictObjTypes = {
+  XREF: "/XRef",
+  XOBJECT: "/XObject",
+  CATALOG: "/Catalog",
+  PAGE_TREE: "/Pages",
+  PAGE: "/Page",
+  ANNOTATION: "/Annot",
+  BORDER_STYLE: "/Border",
+  OPTIONAL_CONTENT_GROUP: "/OCG",
+  OPTIONAL_CONTENT_MD: "/OCMD",
+  EXTERNAL_DATA: "/ExDATA",
+  ACTION: "/Action",
+  MEASURE: "/Measure",
+  DEV_EXTENSIONS: "/DeveloperExtensions",
+  EMPTY: "",
+} as const;
+export type DictObjType = typeof dictObjTypes[keyof typeof dictObjTypes]
+  | StreamType | UserTypes;

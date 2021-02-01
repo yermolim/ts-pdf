@@ -1,11 +1,6 @@
 export class DateString {
-  readonly _source: string;
-  readonly _date: Date;
-
-  private constructor(source: string, date: Date) {
-    this._source = source;
-    this._date = date;
-  }
+  private constructor(readonly source: string, 
+    readonly date: Date) { }
 
   static fromDate(date: Date): DateString {
     const year = date.getFullYear();
@@ -37,6 +32,6 @@ export class DateString {
   }
 
   toArray(): Uint8Array {
-    return new TextEncoder().encode(this._source);
+    return new TextEncoder().encode(this.source);
   }
 }

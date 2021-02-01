@@ -1,5 +1,6 @@
 import { StreamFilter, StreamType } from "../../const";
 import { DictObj } from "../core/dict-obj";
+import { FlateParamsDict } from "../encoding/flate-params-dict";
 
 export class StreamDict extends DictObj {
   /**
@@ -19,7 +20,7 @@ export class StreamDict extends DictObj {
    * (Optional) A parameter dictionary or an array of such dictionaries, 
    * used by the filters specified by Filter
    */
-  DecodeParams: [] | DictObj;
+  DecodeParams: (DictObj | FlateParamsDict)[] | DictObj | FlateParamsDict;
   /**
    * (Optional; PDF 1.5+) A non-negative integer representing the number of bytes 
    * in the decoded (defiltered) stream. It can be used to determine, for example, 

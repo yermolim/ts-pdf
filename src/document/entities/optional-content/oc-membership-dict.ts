@@ -1,7 +1,8 @@
-import { DictObj, dictObjTypes } from "../core/dict-obj";
+import { DictObj } from "../core/dict-obj";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
+import { dictObjTypes } from "../../const";
 
 export class OcMembershipDict extends DictObj {
   /**

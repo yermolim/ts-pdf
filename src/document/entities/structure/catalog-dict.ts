@@ -1,4 +1,5 @@
-import { DictObj, dictObjTypes } from "../core/dict-obj";
+import { dictObjTypes } from "../../const";
+import { DictObj } from "../core/dict-obj";
 import { PageTreeDict } from "./page-tree-dict";
 
 export class CatalogDict extends DictObj {

@@ -38,6 +38,6 @@ export class XFormStream extends StreamDict {
   //TODO: add remaining properties
   
   constructor() {
-    super(streamTypes.FORM_X_OBJECT);
+    super(streamTypes.FORM_XOBJECT);
   }
 }

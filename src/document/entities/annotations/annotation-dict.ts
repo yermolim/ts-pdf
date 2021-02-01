@@ -1,11 +1,12 @@
 import { ObjId } from "../core/obj-id";
-import { DictObj, dictObjTypes } from "../core/dict-obj";
+import { DictObj } from "../core/dict-obj";
 import { DateString } from "../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
 import { AppearanceDict, AppearanceState } from "../appearance/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
+import { dictObjTypes } from "../../const";
 
 /**
  * PDF supports the standard annotation types listed

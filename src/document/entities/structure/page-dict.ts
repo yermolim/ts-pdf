@@ -1,6 +1,7 @@
+import { dictObjTypes } from "../../const";
 import { AnnotationDict } from "../annotations/annotation-dict";
 import { DateString } from "../common/date-string";
-import { DictObj, dictObjTypes } from "../core/dict-obj";
+import { DictObj } from "../core/dict-obj";
 import { PageTreeDict } from "./page-tree-dict";
 
 export class PageDict extends DictObj {

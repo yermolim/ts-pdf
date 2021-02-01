@@ -1,4 +1,5 @@
-import { DictObj, dictObjTypes } from "../core/dict-obj";
+import { dictObjTypes } from "../../const";
+import { DictObj } from "../core/dict-obj";
 
 export class MeasureDict extends DictObj {
   /** (Optional) A name specifying the type of coordinate system to use for measuring */
