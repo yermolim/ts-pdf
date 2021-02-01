@@ -22,7 +22,7 @@ export class XRefParser {
       return null;
     }
 
-    const xrefIndex = this._parser.parseNumberStartingAtIndex(xrefStartIndex.end + 1);
+    const xrefIndex = this._parser.parseNumberAtIndex(xrefStartIndex.end + 1);
     if (!xrefIndex) {
       return null;
     }

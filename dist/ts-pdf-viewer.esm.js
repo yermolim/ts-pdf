@@ -691,8 +691,10 @@ class ViewPage {
 
 const codes = {
     NULL: 0,
-    TAB: 9,
+    BACKSPACE: 8,
+    HORIZONTAL_TAB: 9,
     LINE_FEED: 10,
+    VERTICAL_TAB: 11,
     FORM_FEED: 12,
     CARRIAGE_RETURN: 13,
     WHITESPACE: 32,
@@ -814,6 +816,7 @@ const keywordCodes = {
         codes.x, codes.r, codes.e, codes.f],
     TRAILER: [codes.t, codes.r, codes.a, codes.i, codes.l, codes.e, codes.r],
     END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
+    END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
 };
 const DELIMITER_CHARS = new Set([
     codes.PERCENT,
@@ -829,7 +832,7 @@ const DELIMITER_CHARS = new Set([
 ]);
 const SPACE_CHARS = new Set([
     codes.NULL,
-    codes.TAB,
+    codes.HORIZONTAL_TAB,
     codes.LINE_FEED,
     codes.FORM_FEED,
     codes.CARRIAGE_RETURN,
@@ -868,6 +871,145 @@ const valueTypes = {
     COMMENT: 8,
 };
 
+class HexString {
+    constructor(literal, hex, bytes) {
+        this.literal = literal;
+        this.hex = hex;
+        this.bytes = bytes;
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexString(hex) {
+        const bytes = new TextEncoder().encode(hex);
+        const literal = new TextDecoder().decode(bytes);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromLiteralString(literal) {
+        const hex = Array.from(literal, (char, i) => ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
+        const bytes = new TextEncoder().encode(hex);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_HEX_START,
+                ...this.bytes, ...keywordCodes.STR_HEX_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
+class LiteralString {
+    constructor(literal, bytes) {
+        this.literal = literal;
+        this.bytes = bytes;
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
+        return new LiteralString(literal, bytes);
+    }
+    static fromString(source) {
+        const bytes = LiteralString.escape(new TextEncoder().encode(source));
+        return new LiteralString(source, bytes);
+    }
+    static escape(bytes) {
+        const result = [];
+        for (let i = 0; i < bytes.length; i++) {
+            switch (bytes[i]) {
+                case codes.LINE_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.n);
+                    break;
+                case codes.CARRIAGE_RETURN:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.r);
+                    break;
+                case codes.HORIZONTAL_TAB:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.t);
+                    break;
+                case codes.BACKSPACE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.b);
+                    break;
+                case codes.FORM_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.f);
+                    break;
+                case codes.L_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.L_PARENTHESE);
+                    break;
+                case codes.R_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.R_PARENTHESE);
+                    break;
+                case codes.BACKSLASH:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.BACKSLASH);
+                    break;
+                default:
+                    result.push(bytes[i]);
+                    break;
+            }
+        }
+        return new Uint8Array(result);
+    }
+    static unescape(bytes) {
+        const result = [];
+        let escaped = false;
+        for (let i = 0; i < bytes.length; i++) {
+            if (escaped) {
+                switch (bytes[i]) {
+                    case codes.n:
+                        result.push(codes.LINE_FEED);
+                        break;
+                    case codes.r:
+                        result.push(codes.CARRIAGE_RETURN);
+                        break;
+                    case codes.t:
+                        result.push(codes.HORIZONTAL_TAB);
+                        break;
+                    case codes.b:
+                        result.push(codes.BACKSPACE);
+                        break;
+                    case codes.f:
+                        result.push(codes.FORM_FEED);
+                        break;
+                    case codes.L_PARENTHESE:
+                        result.push(codes.L_PARENTHESE);
+                        break;
+                    case codes.R_PARENTHESE:
+                        result.push(codes.R_PARENTHESE);
+                        break;
+                    case codes.BACKSLASH:
+                        result.push(codes.BACKSLASH);
+                        break;
+                    default:
+                        result.push(bytes[i]);
+                        break;
+                }
+                escaped = false;
+                continue;
+            }
+            if (bytes[i] === codes.BACKSLASH) {
+                escaped = true;
+                continue;
+            }
+            result.push(bytes[i]);
+        }
+        return new Uint8Array(result);
+    }
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
+                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
 class Parser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -885,7 +1027,7 @@ class Parser {
         if (!i) {
             throw new Error("PDF not valid. Version not found");
         }
-        const version = (_a = this.parseNumberStartingAtIndex(i.end + 1, true)) === null || _a === void 0 ? void 0 : _a.value;
+        const version = (_a = this.parseNumberAtIndex(i.end + 1, true)) === null || _a === void 0 ? void 0 : _a.value;
         if (!version) {
             throw new Error("Error parsing version number");
         }
@@ -935,6 +1077,17 @@ class Parser {
     findCharIndex(charCode, direction = "straight", start) {
         return this.findSingleCharIndex((value) => charCode === value, direction, start);
     }
+    findNewLineIndex(direction = "straight", start) {
+        let lineBreakIndex = this.findSingleCharIndex((value) => value === codes.CARRIAGE_RETURN || value === codes.LINE_FEED, direction, start);
+        if (lineBreakIndex === -1) {
+            return -1;
+        }
+        if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN
+            && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
+            lineBreakIndex++;
+        }
+        return Math.min(lineBreakIndex + 1, this._maxIndex);
+    }
     findSpaceIndex(direction = "straight", start) {
         return this.findSingleCharIndex((value) => SPACE_CHARS.has(value), direction, start);
     }
@@ -953,7 +1106,7 @@ class Parser {
     findRegularIndex(direction = "straight", start) {
         return this.findSingleCharIndex((value) => isRegularChar(value), direction, start);
     }
-    getValueTypeStartingAtIndex(index, skipEmpty = true) {
+    getValueTypeAtIndex(index, skipEmpty = true) {
         const start = skipEmpty
             ? this.findRegularIndex("straight", index)
             : index;
@@ -1002,7 +1155,7 @@ class Parser {
                 return valueTypes.NONE;
         }
     }
-    parseNumberStartingAtIndex(index, float = false, skipEmpty = true) {
+    parseNumberAtIndex(index, float = false, skipEmpty = true) {
         const start = skipEmpty
             ? this.findRegularIndex("straight", index)
             : index;
@@ -1021,7 +1174,7 @@ class Parser {
             ? { value: +numberStr, start, end: i - 1 }
             : null;
     }
-    parseNameStartingAtIndex(index, includeSlash = true, skipEmpty = true) {
+    parseNameAtIndex(index, includeSlash = true, skipEmpty = true) {
         const start = skipEmpty
             ? this.findCharIndex(codes.SLASH, "straight", index)
             : index;
@@ -1040,6 +1193,58 @@ class Parser {
         return result.length > 1
             ? { value: result, start, end: i - 1 }
             : null;
+    }
+    parseHexAtIndex(index, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findRegularIndex("straight", index)
+            : index;
+        if (start < 0
+            || start > this._maxIndex
+            || this._data[start] !== codes.LESS) {
+            return null;
+        }
+        const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
+        if (end === -1) {
+            return;
+        }
+        const hex = HexString.fromBytes(this._data.slice(start, end + 1));
+        return { value: hex, start, end };
+    }
+    parseLiteralAtIndex(index, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findRegularIndex("straight", index)
+            : index;
+        if (start < 0
+            || start > this._maxIndex
+            || this._data[start] !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const arr = this._data;
+        const bytes = [];
+        let i = start + 1;
+        let prevCode;
+        let code;
+        let opened = 0;
+        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+            if (code) {
+                prevCode = code;
+            }
+            code = arr[i++];
+            bytes.push(code);
+            if (prevCode !== codes.BACKSLASH) {
+                if (code === codes.L_PARENTHESE) {
+                    opened += 1;
+                }
+                else if (code === codes.R_PARENTHESE) {
+                    opened -= 1;
+                }
+            }
+        }
+        if (!bytes.length) {
+            return null;
+        }
+        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+        return { value: literal, start, end: i - 1 };
     }
     sliceCharCodes(start, end) {
         return this._data.slice(start, (end || start) + 1);
@@ -1088,11 +1293,11 @@ class ObjId {
         if (start < 0 || start > parser.maxIndex) {
             return null;
         }
-        const id = parser.parseNumberStartingAtIndex(start, false, false);
+        const id = parser.parseNumberAtIndex(start, false, false);
         if (!id || isNaN(id.value)) {
             return null;
         }
-        const generation = parser.parseNumberStartingAtIndex(id.end + 2, false, false);
+        const generation = parser.parseNumberAtIndex(id.end + 2, false, false);
         if (!generation || isNaN(generation.value)) {
             return null;
         }
@@ -1252,7 +1457,7 @@ class XRefParser {
         if (!xrefStartIndex) {
             return null;
         }
-        const xrefIndex = this._parser.parseNumberStartingAtIndex(xrefStartIndex.end + 1);
+        const xrefIndex = this._parser.parseNumberAtIndex(xrefStartIndex.end + 1);
         if (!xrefIndex) {
             return null;
         }

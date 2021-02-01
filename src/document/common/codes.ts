@@ -1,7 +1,9 @@
 export const codes = {
   NULL: 0,
-  TAB: 9,
+  BACKSPACE: 8,
+  HORIZONTAL_TAB: 9,
   LINE_FEED: 10,
+  VERTICAL_TAB: 11,
   FORM_FEED: 12,
   CARRIAGE_RETURN: 13,
   WHITESPACE: 32,
@@ -133,6 +135,8 @@ export const keywordCodes = {
     codes.x, codes.r, codes.e, codes.f],
   TRAILER: [codes.t, codes.r, codes.a, codes.i, codes.l, codes.e, codes.r],
   END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
+
+  END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
 } as const;
 
 /**
@@ -160,7 +164,7 @@ export const DELIMITER_CHARS = new Set<number>([
  */
 export const SPACE_CHARS = new Set<number>([
   codes.NULL,
-  codes.TAB,
+  codes.HORIZONTAL_TAB,
   codes.LINE_FEED,
   codes.FORM_FEED,
   codes.CARRIAGE_RETURN,

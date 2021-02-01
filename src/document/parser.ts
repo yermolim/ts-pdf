@@ -2,6 +2,9 @@ import { codes, keywordCodes,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "./common/codes";
 import { ValueType, valueTypes } from "./common/const";
+import { DateString } from "./common/date-string";
+import { HexString } from "./common/hex-string";
+import { LiteralString } from "./common/literal-string";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -39,7 +42,7 @@ export class Parser {
     if (!i) {
       throw new Error("PDF not valid. Version not found");
     }
-    const version = this.parseNumberStartingAtIndex(i.end + 1, true)?.value;
+    const version = this.parseNumberAtIndex(i.end + 1, true)?.value;
     if (!version) {
       throw new Error("Error parsing version number");
     }
@@ -117,6 +120,30 @@ export class Parser {
   }
   
   /**
+   * find the nearest char index after EOL
+   * @param direction search direction
+   * @param start starting index
+   */
+  findNewLineIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
+
+    let lineBreakIndex = this.findSingleCharIndex(
+      (value) => value === codes.CARRIAGE_RETURN || value === codes.LINE_FEED,
+      direction, start); 
+      
+    if (lineBreakIndex === -1) {
+      return -1;
+    }
+
+    if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN 
+      && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
+      lineBreakIndex++;
+    }
+
+    return Math.min(lineBreakIndex + 1, this._maxIndex);
+  }
+  
+  /**
    * find the nearest space char index
    * @param direction search direction
    * @param start starting index
@@ -190,7 +217,7 @@ export class Parser {
   //#endregion
 
   //#region parse methods  
-  getValueTypeStartingAtIndex(index: number, skipEmpty = true): ValueType  {
+  getValueTypeAtIndex(index: number, skipEmpty = true): ValueType  {
     const start = skipEmpty
       ? this.findRegularIndex("straight", index)
       : index;
@@ -241,7 +268,7 @@ export class Parser {
     }
   }  
 
-  parseNumberStartingAtIndex(index: number, 
+  parseNumberAtIndex(index: number, 
     float = false, skipEmpty = true): ParseResult<number>  {
     const start = skipEmpty
       ? this.findRegularIndex("straight", index)
@@ -264,7 +291,7 @@ export class Parser {
       : null;
   }
   
-  parseNameStartingAtIndex(index: number, 
+  parseNameAtIndex(index: number, 
     includeSlash = true, skipEmpty = true): ParseResult<string>  {
     const start = skipEmpty
       ? this.findCharIndex(codes.SLASH, "straight", index)
@@ -287,12 +314,71 @@ export class Parser {
       ? {value: result, start, end: i - 1}
       : null;
   } 
+  
+  parseHexAtIndex(index: number, skipEmpty = true): ParseResult<HexString>  {
+    const start = skipEmpty
+      ? this.findRegularIndex("straight", index)
+      : index;
+    if (start < 0 
+      || start > this._maxIndex 
+      || this._data[start] !== codes.LESS) {
+      return null;
+    }
+
+    const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
+    if (end === -1) {
+      return;
+    }
+
+    const hex = HexString.fromBytes(this._data.slice(start, end + 1));
+    return {value: hex, start, end};
+  }
+
+  parseLiteralAtIndex(index: number, skipEmpty = true): ParseResult<LiteralString>  {
+    const start = skipEmpty
+      ? this.findRegularIndex("straight", index)
+      : index;
+    if (start < 0 
+      || start > this._maxIndex 
+      || this._data[start] !== codes.L_PARENTHESE) {
+      return null;
+    }
+
+    const arr = this._data;
+    const bytes: number[] = [];
+    let i = start + 1;
+    let prevCode: number;
+    let code: number;
+    let opened = 0;
+    while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+      if (code) {
+        prevCode = code;
+      }
+      code = arr[i++];
+      bytes.push(code);
+
+      if (prevCode !== codes.BACKSLASH) {
+        if (code === codes.L_PARENTHESE) {
+          opened += 1;
+        } else if (code === codes.R_PARENTHESE) {
+          opened -= 1;
+        }
+      }
+    }
+    if (!bytes.length) {
+      return null;
+    }
+
+    const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+    return {value: literal, start, end: i - 1};
+  }
   //#endregion
 
   //#region debug methods
   sliceCharCodes(start: number, end?: number): Uint8Array {
     return this._data.slice(start, (end || start) + 1);
   }
+  
   sliceChars(start: number, end?: number): string {
     return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
   }

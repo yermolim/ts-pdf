@@ -29,12 +29,12 @@ export class ObjId {
       return null;
     }    
     
-    const id = parser.parseNumberStartingAtIndex(start, false, false);
+    const id = parser.parseNumberAtIndex(start, false, false);
     if (!id || isNaN(id.value)) {
       return null;
     }
 
-    const generation = parser.parseNumberStartingAtIndex(id.end + 2, false, false);
+    const generation = parser.parseNumberAtIndex(id.end + 2, false, false);
     if (!generation || isNaN(generation.value)) {
       return null;
     }
