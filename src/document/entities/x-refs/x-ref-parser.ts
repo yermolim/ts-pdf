@@ -51,6 +51,6 @@ export class XRefParser {
     console.log(xrefObj);
     console.log(String.fromCharCode(...this._parser["_data"].slice(xrefObj.start, xrefObj.end + 1)));
     
-    return XRefStream.parse(this._parser, xrefObj.start);
+    return XRefStream.parse(this._parser, xrefObj.value);
   }
 }

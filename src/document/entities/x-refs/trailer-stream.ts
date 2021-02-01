@@ -1,4 +1,6 @@
 import { dictObjTypes } from "../../const";
+import { Parser, ParseResult } from "../../parser";
+import { ObjInfo } from "../core/obj-info";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { StreamDict } from "../streams/stream-dict";
 import { CatalogDict } from "../structure/catalog-dict";
@@ -60,5 +62,22 @@ export class TrailerStream extends StreamDict {
   
   constructor() {
     super(dictObjTypes.XREF);
+  }  
+  
+  static parse(parser: Parser, info: ObjInfo): ParseResult<TrailerStream> {    
+    if (!parser || !info) {
+      return null;
+    }
+
+    const trailerStartResult = "";
+
+    const trailer = new TrailerStream();
+    trailer.id = info.id;
+
+    return {
+      value: new TrailerStream(),
+      start: null,
+      end: null,
+    };
   }
 }

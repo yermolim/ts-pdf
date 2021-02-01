@@ -129,3 +129,16 @@ export const dictObjTypes = {
 } as const;
 export type DictObjType = typeof dictObjTypes[keyof typeof dictObjTypes]
   | StreamType | UserTypes;
+
+export const valueTypes = {
+  NONE: 0,
+  REF: 1,
+  DICT: 2,
+  ARRAY: 3,
+  STRING_HEX: 4,
+  STRING_LITERAL: 5,
+  NAME: 6,
+  NUMBER: 7,
+  COMMENT: 8,
+} as const;
+export type ValueType = typeof valueTypes[keyof typeof valueTypes];

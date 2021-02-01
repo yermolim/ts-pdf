@@ -1,8 +1,7 @@
-import { codes, keywordCodes, DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
+import { codes, keywordCodes, 
+  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "./codes";
-import { XRefType, xRefTypes } from "./const";
-import { ObjInfo } from "./entities/core/obj-info";
-import { XRef } from "./entities/x-refs/x-ref";
+import { ValueType, valueTypes } from "./const";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -49,15 +48,6 @@ export class Parser {
   }
 
   //#region search methods
-  getValidStartIndex(direction: "straight" | "reverse", 
-    start: number): number {
-    return !isNaN(start) 
-      ? Math.max(Math.min(start, this._maxIndex), 0)
-      : direction === "straight"
-        ? 0
-        : this._maxIndex;
-  }
-
   /**
    * find the indices of the first occurence of the subarray in the data
    * @param sub sought subarray
@@ -112,6 +102,31 @@ export class Parser {
 
     return null;
   }
+  
+  /**
+   * find the nearest specified char index
+   * @param charCode sought char code
+   * @param direction search direction
+   * @param start starting index
+   */
+  findCharIndex(charCode: number, direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
+    
+    return this.findSingleCharIndex((value) => charCode === value,
+      direction, start);  
+  }
+  
+  /**
+   * find the nearest space char index
+   * @param direction search direction
+   * @param start starting index
+   */
+  findSpaceIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
+    
+    return this.findSingleCharIndex((value) => SPACE_CHARS.has(value),
+      direction, start);  
+  }
 
   /**
    * find the nearest non-space char index
@@ -119,27 +134,12 @@ export class Parser {
    * @param start starting index
    */
   findNonSpaceIndex(direction: "straight" | "reverse" = "straight", 
-    start?: number): number {
-    const arr = this._data;
-    let i = this.getValidStartIndex(direction, start);    
-
-    if (direction === "straight") {        
-      for (i; i <= this._maxIndex; i++) {
-        if (!SPACE_CHARS.has(arr[i])) {
-          return i;
-        }
-      }  
-    } else {        
-      for (i; i >= 0; i--) {
-        if (!SPACE_CHARS.has(arr[i])) {
-          return i;
-        }
-      }
-    }
-  
-    return -1; 
+    start?: number): number {    
+    
+    return this.findSingleCharIndex((value) => !SPACE_CHARS.has(value),
+      direction, start);  
   }
-
+  
   /**
    * find the nearest delimiter char index
    * @param direction search direction
@@ -147,55 +147,100 @@ export class Parser {
    */
   findDelimiterIndex(direction: "straight" | "reverse" = "straight", 
     start?: number): number {
-    const arr = this._data;
-    let i = this.getValidStartIndex(direction, start);    
-
-    if (direction === "straight") {        
-      for (i; i <= this._maxIndex; i++) {
-        if (!isRegularChar(arr[i])) {
-          return i;
-        }
-      }  
-    } else {        
-      for (i; i >= 0; i--) {
-        if (!isRegularChar(arr[i])) {
-          return i;
-        }
-      }
-    }
+    
+    return this.findSingleCharIndex((value) => DELIMITER_CHARS.has(value),
+      direction, start);  
+  }
   
-    return -1;    
+  /**
+   * find the nearest non-delimiter char index
+   * @param direction search direction
+   * @param start starting index
+   */
+  findNonDelimiterIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
+    
+    return this.findSingleCharIndex((value) => !DELIMITER_CHARS.has(value),
+      direction, start);  
   }
 
   /**
-   * find the nearest regular (non-delimiter) char index
+   * find the nearest space or delimiter char index
+   * @param direction search direction
+   * @param start starting index
+   */
+  findIrregularIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
+    
+    return this.findSingleCharIndex((value) => !isRegularChar(value),
+      direction, start);  
+  }
+
+  /**
+   * find the nearest regular (non-space and non-delimiter) char index
    * @param direction search direction
    * @param start starting index
    */
   findRegularIndex(direction: "straight" | "reverse" = "straight", 
     start?: number): number {
-    const arr = this._data;
-    let i = this.getValidStartIndex(direction, start); 
-      
-    if (direction === "straight") {        
-      for (i; i <= this._maxIndex; i++) {
-        if (isRegularChar(arr[i])) {
-          return i;
-        }
-      }    
-    } else {        
-      for (i; i >= 0; i--) {
-        if (isRegularChar(arr[i])) {
-          return i;
-        }
-      }
-    }
-    
-    return -1; 
+
+    return this.findSingleCharIndex((value) => isRegularChar(value),
+      direction, start);
   }
   //#endregion
 
-  //#region parse methods
+  //#region parse methods  
+  getValueTypeStartingAtIndex(index: number, skipEmpty = true): ValueType  {
+    const start = skipEmpty
+      ? this.findRegularIndex("straight", index)
+      : index;
+    if (start < 0 || start > this._maxIndex) {
+      return null;
+    }
+
+    const arr = this._data;
+    const i = start;
+    const charCode = arr[i];
+    switch (charCode) {
+      case codes.SLASH:
+        if (isRegularChar(arr[i + 1])) {
+          return valueTypes.NAME;
+        } 
+        return valueTypes.NONE;
+      case codes.L_BRACKET:
+        return valueTypes.ARRAY;
+      case codes.L_PARENTHESE:
+        return valueTypes.STRING_LITERAL;
+      case codes.LESS:
+        if (codes.LESS === arr[i + 1]) {          
+          return valueTypes.DICT;
+        }
+        return valueTypes.STRING_HEX;
+      case codes.PERCENT:
+        return valueTypes.COMMENT;
+      case codes.D_0:
+      case codes.D_1:
+      case codes.D_2:
+      case codes.D_3:
+      case codes.D_4:
+      case codes.D_5:
+      case codes.D_6:
+      case codes.D_7:
+      case codes.D_8:
+      case codes.D_9:
+        const nextDelimIndex = this.findDelimiterIndex("straight", i + 1);
+        if (nextDelimIndex !== -1) {
+          const refEndIndex = this.findCharIndex(codes.R, "reverse", nextDelimIndex - 1);
+          if (refEndIndex !== -1 && refEndIndex > i) {
+            return valueTypes.REF;
+          }
+        }
+        return valueTypes.NUMBER;
+      default:
+        return valueTypes.NONE;
+    }
+  }  
+
   parseNumberStartingAtIndex(index: number, 
     float = false, skipEmpty = true): ParseResult<number>  {
     const start = skipEmpty
@@ -217,6 +262,73 @@ export class Parser {
     return numberStr 
       ? {value: +numberStr, start, end: i - 1}
       : null;
+  }
+  
+  parseNameStartingAtIndex(index: number, 
+    includeSlash = true, skipEmpty = true): ParseResult<string>  {
+    const start = skipEmpty
+      ? this.findCharIndex(codes.SLASH, "straight", index)
+      : index;
+    if (start < 0 || start > this._maxIndex) {
+      return null;
+    }
+
+    let i = start + 1;
+    let result = includeSlash
+      ? "/"
+      : "";
+    let value = this._data[i];
+    while (isRegularChar(value)) {
+      result += String.fromCharCode(value);
+      value = this._data[++i];
+    };
+
+    return result.length > 1 
+      ? {value: result, start, end: i - 1}
+      : null;
+  } 
+  //#endregion
+
+  //#region debug methods
+  sliceCharCodes(start: number, end?: number): Uint8Array {
+    return this._data.slice(start, (end || start) + 1);
+  }
+  sliceChars(start: number, end?: number): string {
+    return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
+  }
+  //#endregion
+
+  //#region private search methods
+  private getValidStartIndex(direction: "straight" | "reverse", 
+    start: number): number {
+    return !isNaN(start) 
+      ? Math.max(Math.min(start, this._maxIndex), 0)
+      : direction === "straight"
+        ? 0
+        : this._maxIndex;
+  }
+  
+  private findSingleCharIndex(filter: (value: number) => boolean, 
+    direction: "straight" | "reverse" = "straight", start?: number): number {
+
+    const arr = this._data;
+    let i = this.getValidStartIndex(direction, start); 
+      
+    if (direction === "straight") {        
+      for (i; i <= this._maxIndex; i++) {
+        if (filter(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (filter(arr[i])) {
+          return i;
+        }
+      }
+    }
+    
+    return -1; 
   }
   //#endregion
 }

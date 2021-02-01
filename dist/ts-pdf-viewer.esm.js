@@ -851,6 +851,23 @@ function isRegularChar(code) {
     return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
 
+const xRefTypes = {
+    TABLE: 0,
+    STREAM: 1,
+    HYBRID: 2,
+};
+const valueTypes = {
+    NONE: 0,
+    REF: 1,
+    DICT: 2,
+    ARRAY: 3,
+    STRING_HEX: 4,
+    STRING_LITERAL: 5,
+    NAME: 6,
+    NUMBER: 7,
+    COMMENT: 8,
+};
+
 class Parser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -873,13 +890,6 @@ class Parser {
             throw new Error("Error parsing version number");
         }
         return version.toFixed(1);
-    }
-    getValidStartIndex(direction, start) {
-        return !isNaN(start)
-            ? Math.max(Math.min(start, this._maxIndex), 0)
-            : direction === "straight"
-                ? 0
-                : this._maxIndex;
     }
     findSubarrayIndex(sub, options) {
         var _a, _b;
@@ -922,62 +932,75 @@ class Parser {
         }
         return null;
     }
+    findCharIndex(charCode, direction = "straight", start) {
+        return this.findSingleCharIndex((value) => charCode === value, direction, start);
+    }
+    findSpaceIndex(direction = "straight", start) {
+        return this.findSingleCharIndex((value) => SPACE_CHARS.has(value), direction, start);
+    }
     findNonSpaceIndex(direction = "straight", start) {
-        const arr = this._data;
-        let i = this.getValidStartIndex(direction, start);
-        if (direction === "straight") {
-            for (i; i <= this._maxIndex; i++) {
-                if (!SPACE_CHARS.has(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (!SPACE_CHARS.has(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
+        return this.findSingleCharIndex((value) => !SPACE_CHARS.has(value), direction, start);
     }
     findDelimiterIndex(direction = "straight", start) {
-        const arr = this._data;
-        let i = this.getValidStartIndex(direction, start);
-        if (direction === "straight") {
-            for (i; i <= this._maxIndex; i++) {
-                if (!isRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (!isRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
+        return this.findSingleCharIndex((value) => DELIMITER_CHARS.has(value), direction, start);
+    }
+    findNonDelimiterIndex(direction = "straight", start) {
+        return this.findSingleCharIndex((value) => !DELIMITER_CHARS.has(value), direction, start);
+    }
+    findIrregularIndex(direction = "straight", start) {
+        return this.findSingleCharIndex((value) => !isRegularChar(value), direction, start);
     }
     findRegularIndex(direction = "straight", start) {
+        return this.findSingleCharIndex((value) => isRegularChar(value), direction, start);
+    }
+    getValueTypeStartingAtIndex(index, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findRegularIndex("straight", index)
+            : index;
+        if (start < 0 || start > this._maxIndex) {
+            return null;
+        }
         const arr = this._data;
-        let i = this.getValidStartIndex(direction, start);
-        if (direction === "straight") {
-            for (i; i <= this._maxIndex; i++) {
-                if (isRegularChar(arr[i])) {
-                    return i;
+        const i = start;
+        const charCode = arr[i];
+        switch (charCode) {
+            case codes.SLASH:
+                if (isRegularChar(arr[i + 1])) {
+                    return valueTypes.NAME;
                 }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (isRegularChar(arr[i])) {
-                    return i;
+                return valueTypes.NONE;
+            case codes.L_BRACKET:
+                return valueTypes.ARRAY;
+            case codes.L_PARENTHESE:
+                return valueTypes.STRING_LITERAL;
+            case codes.LESS:
+                if (codes.LESS === arr[i + 1]) {
+                    return valueTypes.DICT;
                 }
-            }
+                return valueTypes.STRING_HEX;
+            case codes.PERCENT:
+                return valueTypes.COMMENT;
+            case codes.D_0:
+            case codes.D_1:
+            case codes.D_2:
+            case codes.D_3:
+            case codes.D_4:
+            case codes.D_5:
+            case codes.D_6:
+            case codes.D_7:
+            case codes.D_8:
+            case codes.D_9:
+                const nextDelimIndex = this.findDelimiterIndex("straight", i + 1);
+                if (nextDelimIndex !== -1) {
+                    const refEndIndex = this.findCharIndex(codes.R, "reverse", nextDelimIndex - 1);
+                    if (refEndIndex !== -1 && refEndIndex > i) {
+                        return valueTypes.REF;
+                    }
+                }
+                return valueTypes.NUMBER;
+            default:
+                return valueTypes.NONE;
         }
-        return -1;
     }
     parseNumberStartingAtIndex(index, float = false, skipEmpty = true) {
         const start = skipEmpty
@@ -997,6 +1020,58 @@ class Parser {
         return numberStr
             ? { value: +numberStr, start, end: i - 1 }
             : null;
+    }
+    parseNameStartingAtIndex(index, includeSlash = true, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findCharIndex(codes.SLASH, "straight", index)
+            : index;
+        if (start < 0 || start > this._maxIndex) {
+            return null;
+        }
+        let i = start + 1;
+        let result = includeSlash
+            ? "/"
+            : "";
+        let value = this._data[i];
+        while (isRegularChar(value)) {
+            result += String.fromCharCode(value);
+            value = this._data[++i];
+        }
+        return result.length > 1
+            ? { value: result, start, end: i - 1 }
+            : null;
+    }
+    sliceCharCodes(start, end) {
+        return this._data.slice(start, (end || start) + 1);
+    }
+    sliceChars(start, end) {
+        return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
+    }
+    getValidStartIndex(direction, start) {
+        return !isNaN(start)
+            ? Math.max(Math.min(start, this._maxIndex), 0)
+            : direction === "straight"
+                ? 0
+                : this._maxIndex;
+    }
+    findSingleCharIndex(filter, direction = "straight", start) {
+        const arr = this._data;
+        let i = this.getValidStartIndex(direction, start);
+        if (direction === "straight") {
+            for (i; i <= this._maxIndex; i++) {
+                if (filter(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (filter(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
 }
 
@@ -1068,23 +1143,50 @@ class ObjInfo {
         if (!objIndex || objIndex.start !== objIndexSupposed) {
             return null;
         }
-        const objEndIndex = parser.findSubarrayIndex(keywordCodes.OBJ_END, { minIndex: objIndex.end + 1, closedOnly: true });
+        const startIndex = objIndex.end + 1;
+        const objEndIndex = parser.findSubarrayIndex(keywordCodes.OBJ_END, { minIndex: startIndex, closedOnly: true });
         if (!objEndIndex) {
             return null;
         }
+        let lastIndex = objEndIndex.start - 1;
+        const dictStartIndex = parser.findSubarrayIndex(keywordCodes.DICT_START, { direction: "straight", minIndex: startIndex, closedOnly: true });
+        if (!dictStartIndex) {
+            return null;
+        }
+        const info = new ObjInfo(id.value, id.start, objEndIndex.end);
+        const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
+            direction: "reverse",
+            minIndex: dictStartIndex.end + keywordCodes.DICT_END.length + keywordCodes.STREAM_START.length + 1,
+            maxIndex: lastIndex,
+            closedOnly: true
+        });
+        if (streamEndIndex) {
+            const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
+                direction: "reverse",
+                maxIndex: streamEndIndex.start - 1,
+                closedOnly: true
+            });
+            if (streamStartIndex) {
+                info.streamStart = parser.findNonSpaceIndex("straight", streamStartIndex.end + 1);
+                info.streamEnd = parser.findNonSpaceIndex("reverse", streamEndIndex.start - 1);
+                lastIndex = parser.findNonSpaceIndex("reverse", streamStartIndex.start - 1);
+            }
+        }
+        const dictEndIndex = parser.findSubarrayIndex(keywordCodes.DICT_END, {
+            direction: "reverse",
+            minIndex: dictStartIndex.end + 1,
+            maxIndex: lastIndex
+        });
+        info.dictStart = dictStartIndex.end + 1;
+        info.dictEnd = dictEndIndex.start - 1;
+        console.log(parser.sliceChars(info.dictStart, info.dictEnd));
         return {
-            value: new ObjInfo(id.value, id.start, objEndIndex.end),
+            value: info,
             start: id.start,
             end: objEndIndex.end,
         };
     }
 }
-
-const xRefTypes = {
-    TABLE: 0,
-    STREAM: 1,
-    HYBRID: 2,
-};
 
 class XRef {
     constructor(type) {
@@ -1115,7 +1217,10 @@ class XRefStream extends XRef {
         super(xRefTypes.STREAM);
         this._trailerStream = trailer;
     }
-    static parse(parser, index, skipEmpty = true) {
+    static parse(parser, info) {
+        if (!parser || !info) {
+            return null;
+        }
         return {
             value: new XRefStream(null),
             start: null,
@@ -1171,7 +1276,7 @@ class XRefParser {
         console.log("XRef is stream");
         console.log(xrefObj);
         console.log(String.fromCharCode(...this._parser["_data"].slice(xrefObj.start, xrefObj.end + 1)));
-        return XRefStream.parse(this._parser, xrefObj.start);
+        return XRefStream.parse(this._parser, xrefObj.value);
     }
 }
 
