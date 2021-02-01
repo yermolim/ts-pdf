@@ -1,5 +1,5 @@
 import { DictObj } from "../core/dict-obj";
-import { xFormStream } from "../streams/x-form-stream";
+import { XFormStream } from "../streams/x-form-stream";
 
 export const appearanceStates = {
   ON: "/ON",
@@ -11,15 +11,15 @@ export class AppearanceDict extends DictObj {
   /**
    * (Required) The annotation’s normal appearance 
    */
-  N: DictObj | xFormStream;
+  N: DictObj | XFormStream;
   /**
    * (Optional) The annotation’s rollover appearance
    */
-  R: DictObj | xFormStream; 
+  R: DictObj | XFormStream; 
   /**
    * (Optional) The annotation’s down appearance
    */
-  D: DictObj | xFormStream; 
+  D: DictObj | XFormStream; 
   
   constructor() {
     super(null);

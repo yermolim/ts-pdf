@@ -71,6 +71,7 @@
   },
   "dependencies": {
     "crypto-js": "^4.0.0",
+    "pako": "^2.0.3",
     "pdfjs-dist": "^2.6.347"
   }
 }

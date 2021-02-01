@@ -1,12 +1,19 @@
+import { XRef } from "../document/entities/x-refs/x-ref";
+import { Parser } from "./parser";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
+import { XRefParser } from "./entities/x-refs/x-ref-parser";
 
 export class Annotator {
-  protected _sourceData: Uint8Array;
+  private _sourceData: Uint8Array;
 
-  private _lastXRef: any;
-  private _catalog: any;
+  private _parser: Parser;
+  private _xrefParser: XRefParser;
+
+  private _version: string;
+
+  private _lastXref: XRef;
   
-  private _extractAnnotationDictsXRef: any;
+  private _catalog: any;
 
   private _annotations: AnnotationDict[];
   get annotations(): AnnotationDict[] {
@@ -25,6 +32,10 @@ export class Annotator {
     }
 
     this._sourceData = pdfData;
+
+    this._parser = new Parser(pdfData);
+    this._xrefParser = new XRefParser(this._parser);
+
     this.parseData();
   }
 
@@ -49,9 +60,10 @@ export class Annotator {
   }
 
   private parseData() {
-
+    this._version = this._parser.getPdfVersion();
+    this._lastXref = this._xrefParser.parseNextXref()?.value;
   }
-
+  
   private updateData() {
 
   }

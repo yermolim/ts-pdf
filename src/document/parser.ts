@@ -1,9 +1,31 @@
-import {  keywordCodes, DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, charCodes } from "./codes";
-import { XRefType } from "./const";
+import { codes, keywordCodes, DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
+  isRegularChar } from "./codes";
+import { XRefType, xRefTypes } from "./const";
+import { ObjInfo } from "./entities/core/obj-info";
+import { XRef } from "./entities/x-refs/x-ref";
+
+export type SearchDirection = "straight" | "reverse";
+
+export interface SearchOptions {
+  direction?: SearchDirection; 
+  minIndex?: number;
+  maxIndex?: number;
+  closedOnly?: boolean;
+}
+
+export interface ParseResult<T> {
+  value: T; 
+  start: number;
+  end: number;
+}
 
 export class Parser {
   private _data: Uint8Array;
+  
   private _maxIndex: number;
+  public get maxIndex(): number {
+    return this._maxIndex;
+  }
 
   constructor(data: Uint8Array) {
     if (!data?.length) {
@@ -13,69 +35,109 @@ export class Parser {
     this._maxIndex = data.length - 1;
   }
 
-  private static isRegularChar(code: number): boolean {
-    return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
-  }
-
   getPdfVersion(): string {
-    let i = this.findSubarrayIndex(keywordCodes.VERSION);
-    i += keywordCodes.VERSION.length;
-    const version = this.parseNumberStartingAtIndex(i, true);
+    const i = this.findSubarrayIndex(keywordCodes.VERSION);
+    if (!i) {
+      throw new Error("PDF not valid. Version not found");
+    }
+    const version = this.parseNumberStartingAtIndex(i.end + 1, true)?.value;
+    if (!version) {
+      throw new Error("Error parsing version number");
+    }
 
     return version.toFixed(1);
   }
 
-  getXRefType(): XRefType {
-    return 0;
+  //#region search methods
+  getValidStartIndex(direction: "straight" | "reverse", 
+    start: number): number {
+    return !isNaN(start) 
+      ? Math.max(Math.min(start, this._maxIndex), 0)
+      : direction === "straight"
+        ? 0
+        : this._maxIndex;
   }
 
   /**
-   * find the index of the first occurence of the subarray in the data
+   * find the indices of the first occurence of the subarray in the data
    * @param sub sought subarray
    * @param direction search direction
    * @param start starting index
    * @param closedOnly define if subarray must be followed by a delimiter in the search direction
    */
-  private findSubarrayIndex(sub: number[] | readonly number[], 
-    direction: "straight" | "reverse" = "straight", 
-    start: number = undefined, closedOnly = false): number {
-    const arr = this._data;
+  findSubarrayIndex(sub: number[] | readonly number[], 
+    options?: SearchOptions): {start: number; end: number} { 
 
+    const arr = this._data;
     if (!sub?.length) {
-      return -1;
+      return null;
     }
 
-    let i = this.getValidStartIndex(direction, start); 
+    const direction = options?.direction || "straight";
+    const minIndex = Math.max(Math.min(options?.minIndex ?? 0, this._maxIndex), 0);
+    const maxIndex = Math.max(Math.min(options?.maxIndex ?? this._maxIndex, this._maxIndex), 0);
+    const allowOpened = !options?.closedOnly;
+
+    let i = direction === "straight"
+      ? minIndex
+      : maxIndex; 
 
     let j: number; 
     if (direction === "straight") { 
       outer_loop:
-      for (i; i <= this._maxIndex; i++) {
+      for (i; i <= maxIndex; i++) {
         for (j = 0; j < sub.length; j++) {
           if (arr[i + j] !== sub[j]) {
             continue outer_loop;
           }
         }
-        if (!closedOnly || !Parser.isRegularChar(arr[i + j + 1])) {
-          return i;
+        if (allowOpened || !isRegularChar(arr[i + j])) {
+          return {start: i, end: i + j - 1};
         }
       }
     } else {
       const subMaxIndex = sub.length - 1;
       outer_loop:
-      for (i; i >= 0; i--) {
+      for (i; i >= minIndex; i--) {
         for (j = 0; j < sub.length; j++) {
           if (arr[i - j] !== sub[subMaxIndex - j]) {
             continue outer_loop;
           }
         }
-        if (!closedOnly || !Parser.isRegularChar(arr[i - j - 1])) {
-          return i;
+        if (allowOpened || !isRegularChar(arr[i - j])) {
+          return {start: i - j + 1, end: i};
         }
       }
     }
 
-    return -1;
+    return null;
+  }
+
+  /**
+   * find the nearest non-space char index
+   * @param direction search direction
+   * @param start starting index
+   */
+  findNonSpaceIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
+    const arr = this._data;
+    let i = this.getValidStartIndex(direction, start);    
+
+    if (direction === "straight") {        
+      for (i; i <= this._maxIndex; i++) {
+        if (!SPACE_CHARS.has(arr[i])) {
+          return i;
+        }
+      }  
+    } else {        
+      for (i; i >= 0; i--) {
+        if (!SPACE_CHARS.has(arr[i])) {
+          return i;
+        }
+      }
+    }
+  
+    return -1; 
   }
 
   /**
@@ -83,20 +145,20 @@ export class Parser {
    * @param direction search direction
    * @param start starting index
    */
-  private findDelimiterIndex(direction: "straight" | "reverse" = "straight", 
-    start: number = undefined) {
+  findDelimiterIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
     const arr = this._data;
     let i = this.getValidStartIndex(direction, start);    
 
     if (direction === "straight") {        
       for (i; i <= this._maxIndex; i++) {
-        if (!Parser.isRegularChar(arr[i])) {
+        if (!isRegularChar(arr[i])) {
           return i;
         }
       }  
     } else {        
       for (i; i >= 0; i--) {
-        if (!Parser.isRegularChar(arr[i])) {
+        if (!isRegularChar(arr[i])) {
           return i;
         }
       }
@@ -110,20 +172,20 @@ export class Parser {
    * @param direction search direction
    * @param start starting index
    */
-  private findRegularIndex(direction: "straight" | "reverse" = "straight", 
-    start: number = undefined) {
+  findRegularIndex(direction: "straight" | "reverse" = "straight", 
+    start?: number): number {
     const arr = this._data;
     let i = this.getValidStartIndex(direction, start); 
       
     if (direction === "straight") {        
       for (i; i <= this._maxIndex; i++) {
-        if (Parser.isRegularChar(arr[i])) {
+        if (isRegularChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (Parser.isRegularChar(arr[i])) {
+        if (isRegularChar(arr[i])) {
           return i;
         }
       }
@@ -131,26 +193,30 @@ export class Parser {
     
     return -1; 
   }
+  //#endregion
 
-  private parseNumberStartingAtIndex(index: number, float = false) {
-    let i = this.findRegularIndex("straight", index);
+  //#region parse methods
+  parseNumberStartingAtIndex(index: number, 
+    float = false, skipEmpty = true): ParseResult<number>  {
+    const start = skipEmpty
+      ? this.findRegularIndex("straight", index)
+      : index;
+    if (start < 0 || start > this._maxIndex) {
+      return null;
+    }
 
+    let i = start;
     let numberStr = "";
     let value = this._data[i];
     while (DIGIT_CHARS.has(value)
-      || (float && value === charCodes.DOT)) {
+      || (float && value === codes.DOT)) {
       numberStr += String.fromCharCode(value);
       value = this._data[++i];
-    }
+    };
 
-    return +numberStr;
+    return numberStr 
+      ? {value: +numberStr, start, end: i - 1}
+      : null;
   }
-
-  private getValidStartIndex(direction: "straight" | "reverse", start: number) {
-    return !isNaN(start) 
-      ? Math.max(Math.min(start, this._maxIndex), 0)
-      : direction === "straight"
-        ? 0
-        : this._maxIndex;
-  }
+  //#endregion
 }

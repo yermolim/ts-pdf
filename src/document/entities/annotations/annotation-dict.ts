@@ -1,4 +1,4 @@
-import { ObjRef } from "../core/obj-ref";
+import { ObjId } from "../core/obj-id";
 import { DictObj, dictObjTypes } from "../core/dict-obj";
 import { DateString } from "../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
@@ -188,7 +188,7 @@ export abstract class AnnotationDict extends DictObj {
 
   /** (Optional; PDF1.3+) An indirect reference to the page object 
    * with which this annotation is associated */
-  P: ObjRef;
+  P: ObjId;
   /** (Optional; PDF1.4+) The annotation name,  
    * a text string uniquely identifying it among all the annotations on its page */
   NM: string;

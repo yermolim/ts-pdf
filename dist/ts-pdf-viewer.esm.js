@@ -689,7 +689,7 @@ class ViewPage {
     }
 }
 
-const charCodes = {
+const codes = {
     NULL: 0,
     TAB: 9,
     LINE_FEED: 10,
@@ -728,110 +728,128 @@ const charCodes = {
     GREATER: 62,
     QUESTION_MARK: 63,
     AT: 64,
-    A_UPPER: 65,
-    B_UPPER: 66,
-    C_UPPER: 67,
-    D_UPPER: 68,
-    E_UPPER: 69,
-    F_UPPER: 70,
-    G_UPPER: 71,
-    H_UPPER: 72,
-    I_UPPER: 73,
-    J_UPPER: 74,
-    K_UPPER: 75,
-    L_UPPER: 76,
-    M_UPPER: 77,
-    N_UPPER: 78,
-    O_UPPER: 79,
-    P_UPPER: 80,
-    Q_UPPER: 81,
-    R_UPPER: 82,
-    S_UPPER: 83,
-    T_UPPER: 84,
-    U_UPPER: 85,
-    V_UPPER: 86,
-    W_UPPER: 87,
-    X_UPPER: 88,
-    Y_UPPER: 89,
-    Z_UPPER: 90,
+    A: 65,
+    B: 66,
+    C: 67,
+    D: 68,
+    E: 69,
+    F: 70,
+    G: 71,
+    H: 72,
+    I: 73,
+    J: 74,
+    K: 75,
+    L: 76,
+    M: 77,
+    N: 78,
+    O: 79,
+    P: 80,
+    Q: 81,
+    R: 82,
+    S: 83,
+    T: 84,
+    U: 85,
+    V: 86,
+    W: 87,
+    X: 88,
+    Y: 89,
+    Z: 90,
     L_BRACKET: 91,
     BACKSLASH: 92,
     R_BRACKET: 93,
     CARET: 94,
     UNDERSCORE: 95,
     BACKTICK: 96,
-    A_LOWER: 97,
-    B_LOWER: 98,
-    C_LOWER: 99,
-    D_LOWER: 100,
-    E_LOWER: 101,
-    F_LOWER: 102,
-    G_LOWER: 103,
-    H_LOWER: 104,
-    I_LOWER: 105,
-    J_LOWER: 106,
-    K_LOWER: 107,
-    L_LOWER: 108,
-    M_LOWER: 109,
-    N_LOWER: 110,
-    O_LOWER: 111,
-    P_LOWER: 112,
-    Q_LOWER: 113,
-    R_LOWER: 114,
-    S_LOWER: 115,
-    T_LOWER: 116,
-    U_LOWER: 117,
-    V_LOWER: 118,
-    W_LOWER: 119,
-    X_LOWER: 120,
-    Y_LOWER: 121,
-    Z_LOWER: 122,
+    a: 97,
+    b: 98,
+    c: 99,
+    d: 100,
+    e: 101,
+    f: 102,
+    g: 103,
+    h: 104,
+    i: 105,
+    j: 106,
+    k: 107,
+    l: 108,
+    m: 109,
+    n: 110,
+    o: 111,
+    p: 112,
+    q: 113,
+    r: 114,
+    s: 115,
+    t: 116,
+    u: 117,
+    v: 118,
+    w: 119,
+    x: 120,
+    y: 121,
+    z: 122,
     L_BRACE: 123,
-    VERTICL_LINE: 124,
+    VERTICAL_LINE: 124,
     R_BRACE: 125,
     TILDE: 126,
 };
 const keywordCodes = {
-    OBJ: [charCodes.O_LOWER, charCodes.B_LOWER, charCodes.J_LOWER],
-    ENDOBJ: [charCodes.E_LOWER, charCodes.N_LOWER, charCodes.D_LOWER,
-        charCodes.O_LOWER, charCodes.B_LOWER, charCodes.J_LOWER],
-    DICT_START: [charCodes.LESS, charCodes.LESS],
-    DICT_END: [charCodes.GREATER, charCodes.GREATER],
-    VERSION: [charCodes.PERCENT, charCodes.P_UPPER, charCodes.D_UPPER,
-        charCodes.F_UPPER, charCodes.MINUS],
+    NULL: [codes.n, codes.u, codes.l, codes.l],
+    OBJ: [codes.o, codes.b, codes.j],
+    OBJ_END: [codes.e, codes.n, codes.d, codes.o, codes.b, codes.j],
+    STREAM_START: [codes.s, codes.t, codes.r, codes.e, codes.a, codes.m],
+    STREAM_END: [codes.e, codes.n, codes.d,
+        codes.s, codes.t, codes.r, codes.e, codes.a, codes.m],
+    DICT_START: [codes.LESS, codes.LESS],
+    DICT_END: [codes.GREATER, codes.GREATER],
+    ARRAY_START: [codes.L_BRACKET],
+    ARRAY_END: [codes.R_BRACKET],
+    STR_PLAIN_START: [codes.L_PARENTHESE],
+    STR_PLAIN_END: [codes.R_PARENTHESE],
+    STR_HEX_START: [codes.LESS],
+    STR_HEX_END: [codes.GREATER],
+    VERSION: [codes.PERCENT, codes.P, codes.D, codes.F, codes.MINUS],
+    XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
+    XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],
+    XREF_HYBRID: [codes.X, codes.R, codes.e, codes.f, codes.S, codes.t, codes.m],
+    XREF_START: [codes.s, codes.t, codes.a, codes.r, codes.t,
+        codes.x, codes.r, codes.e, codes.f],
+    TRAILER: [codes.t, codes.r, codes.a, codes.i, codes.l, codes.e, codes.r],
+    END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
 };
 const DELIMITER_CHARS = new Set([
-    charCodes.PERCENT,
-    charCodes.L_PARENTHESE,
-    charCodes.R_PARENTHESE,
-    charCodes.SLASH,
-    charCodes.LESS,
-    charCodes.GREATER,
-    charCodes.L_BRACKET,
-    charCodes.R_BRACKET,
-    charCodes.L_BRACE,
-    charCodes.R_BRACE,
+    codes.PERCENT,
+    codes.L_PARENTHESE,
+    codes.R_PARENTHESE,
+    codes.SLASH,
+    codes.LESS,
+    codes.GREATER,
+    codes.L_BRACKET,
+    codes.R_BRACKET,
+    codes.L_BRACE,
+    codes.R_BRACE,
 ]);
 const SPACE_CHARS = new Set([
-    charCodes.NULL,
-    charCodes.TAB,
-    charCodes.LINE_FEED,
-    charCodes.FORM_FEED,
-    charCodes.CARRIAGE_RETURN,
-    charCodes.WHITESPACE,
+    codes.NULL,
+    codes.TAB,
+    codes.LINE_FEED,
+    codes.FORM_FEED,
+    codes.CARRIAGE_RETURN,
+    codes.WHITESPACE,
 ]);
 const DIGIT_CHARS = new Set([
-    charCodes.D_0,
-    charCodes.D_1,
-    charCodes.D_2,
-    charCodes.D_3,
-    charCodes.D_4,
-    charCodes.D_5,
-    charCodes.D_6,
-    charCodes.D_7,
-    charCodes.D_8,
-    charCodes.D_9,
+    codes.D_0,
+    codes.D_1,
+    codes.D_2,
+    codes.D_3,
+    codes.D_4,
+    codes.D_5,
+    codes.D_6,
+    codes.D_7,
+    codes.D_8,
+    codes.D_9,
 ]);
+function isRegularChar(code) {
+    return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
+}
 
 class Parser {
     constructor(data) {
@@ -841,100 +859,20 @@ class Parser {
         this._data = data;
         this._maxIndex = data.length - 1;
     }
-    static isRegularChar(code) {
-        return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
+    get maxIndex() {
+        return this._maxIndex;
     }
     getPdfVersion() {
-        let i = this.findSubarrayIndex(keywordCodes.VERSION);
-        i += keywordCodes.VERSION.length;
-        const version = this.parseNumberStartingAtIndex(i, true);
+        var _a;
+        const i = this.findSubarrayIndex(keywordCodes.VERSION);
+        if (!i) {
+            throw new Error("PDF not valid. Version not found");
+        }
+        const version = (_a = this.parseNumberStartingAtIndex(i.end + 1, true)) === null || _a === void 0 ? void 0 : _a.value;
+        if (!version) {
+            throw new Error("Error parsing version number");
+        }
         return version.toFixed(1);
-    }
-    getXRefType() {
-        return 0;
-    }
-    findSubarrayIndex(sub, direction = "straight", start = undefined, closedOnly = false) {
-        const arr = this._data;
-        if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
-            return -1;
-        }
-        let i = this.getValidStartIndex(direction, start);
-        let j;
-        if (direction === "straight") {
-            outer_loop: for (i; i <= this._maxIndex; i++) {
-                for (j = 0; j < sub.length; j++) {
-                    if (arr[i + j] !== sub[j]) {
-                        continue outer_loop;
-                    }
-                }
-                if (!closedOnly || !Parser.isRegularChar(arr[i + j + 1])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            const subMaxIndex = sub.length - 1;
-            outer_loop: for (i; i >= 0; i--) {
-                for (j = 0; j < sub.length; j++) {
-                    if (arr[i - j] !== sub[subMaxIndex - j]) {
-                        continue outer_loop;
-                    }
-                }
-                if (!closedOnly || !Parser.isRegularChar(arr[i - j - 1])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-    findDelimiterIndex(direction = "straight", start = undefined) {
-        const arr = this._data;
-        let i = this.getValidStartIndex(direction, start);
-        if (direction === "straight") {
-            for (i; i <= this._maxIndex; i++) {
-                if (!Parser.isRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (!Parser.isRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-    findRegularIndex(direction = "straight", start = undefined) {
-        const arr = this._data;
-        let i = this.getValidStartIndex(direction, start);
-        if (direction === "straight") {
-            for (i; i <= this._maxIndex; i++) {
-                if (Parser.isRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (Parser.isRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-    parseNumberStartingAtIndex(index, float = false) {
-        let i = this.findRegularIndex("straight", index);
-        let numberStr = "";
-        let value = this._data[i];
-        while (DIGIT_CHARS.has(value)
-            || (float && value === charCodes.DOT)) {
-            numberStr += String.fromCharCode(value);
-            value = this._data[++i];
-        }
-        return +numberStr;
     }
     getValidStartIndex(direction, start) {
         return !isNaN(start)
@@ -942,6 +880,331 @@ class Parser {
             : direction === "straight"
                 ? 0
                 : this._maxIndex;
+    }
+    findSubarrayIndex(sub, options) {
+        var _a, _b;
+        const arr = this._data;
+        if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
+            return null;
+        }
+        const direction = (options === null || options === void 0 ? void 0 : options.direction) || "straight";
+        const minIndex = Math.max(Math.min((_a = options === null || options === void 0 ? void 0 : options.minIndex) !== null && _a !== void 0 ? _a : 0, this._maxIndex), 0);
+        const maxIndex = Math.max(Math.min((_b = options === null || options === void 0 ? void 0 : options.maxIndex) !== null && _b !== void 0 ? _b : this._maxIndex, this._maxIndex), 0);
+        const allowOpened = !(options === null || options === void 0 ? void 0 : options.closedOnly);
+        let i = direction === "straight"
+            ? minIndex
+            : maxIndex;
+        let j;
+        if (direction === "straight") {
+            outer_loop: for (i; i <= maxIndex; i++) {
+                for (j = 0; j < sub.length; j++) {
+                    if (arr[i + j] !== sub[j]) {
+                        continue outer_loop;
+                    }
+                }
+                if (allowOpened || !isRegularChar(arr[i + j])) {
+                    return { start: i, end: i + j - 1 };
+                }
+            }
+        }
+        else {
+            const subMaxIndex = sub.length - 1;
+            outer_loop: for (i; i >= minIndex; i--) {
+                for (j = 0; j < sub.length; j++) {
+                    if (arr[i - j] !== sub[subMaxIndex - j]) {
+                        continue outer_loop;
+                    }
+                }
+                if (allowOpened || !isRegularChar(arr[i - j])) {
+                    return { start: i - j + 1, end: i };
+                }
+            }
+        }
+        return null;
+    }
+    findNonSpaceIndex(direction = "straight", start) {
+        const arr = this._data;
+        let i = this.getValidStartIndex(direction, start);
+        if (direction === "straight") {
+            for (i; i <= this._maxIndex; i++) {
+                if (!SPACE_CHARS.has(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (!SPACE_CHARS.has(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    findDelimiterIndex(direction = "straight", start) {
+        const arr = this._data;
+        let i = this.getValidStartIndex(direction, start);
+        if (direction === "straight") {
+            for (i; i <= this._maxIndex; i++) {
+                if (!isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (!isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    findRegularIndex(direction = "straight", start) {
+        const arr = this._data;
+        let i = this.getValidStartIndex(direction, start);
+        if (direction === "straight") {
+            for (i; i <= this._maxIndex; i++) {
+                if (isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    parseNumberStartingAtIndex(index, float = false, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findRegularIndex("straight", index)
+            : index;
+        if (start < 0 || start > this._maxIndex) {
+            return null;
+        }
+        let i = start;
+        let numberStr = "";
+        let value = this._data[i];
+        while (DIGIT_CHARS.has(value)
+            || (float && value === codes.DOT)) {
+            numberStr += String.fromCharCode(value);
+            value = this._data[++i];
+        }
+        return numberStr
+            ? { value: +numberStr, start, end: i - 1 }
+            : null;
+    }
+}
+
+class ObjId {
+    constructor(id, generation) {
+        this.id = id !== null && id !== void 0 ? id : 0;
+        this.generation = generation !== null && generation !== void 0 ? generation : 0;
+        this.reused = this.generation > 0;
+    }
+    static parse(parser, index, skipEmpty = true) {
+        const start = skipEmpty
+            ? parser.findRegularIndex("straight", index)
+            : index;
+        if (start < 0 || start > parser.maxIndex) {
+            return null;
+        }
+        const id = parser.parseNumberStartingAtIndex(start, false, false);
+        if (!id || isNaN(id.value)) {
+            return null;
+        }
+        const generation = parser.parseNumberStartingAtIndex(id.end + 2, false, false);
+        if (!generation || isNaN(generation.value)) {
+            return null;
+        }
+        return {
+            value: new ObjId(id.value, generation.value),
+            start,
+            end: generation.end,
+        };
+    }
+    static parseRef(parser, index, skipEmpty = true) {
+        const id = ObjId.parse(parser, index, skipEmpty);
+        if (!id) {
+            return null;
+        }
+        const rIndexSupposed = id.end + 2;
+        const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
+        if (!rIndex || rIndex.start !== rIndexSupposed) {
+            return null;
+        }
+        return {
+            value: id.value,
+            start: id.start,
+            end: rIndex.end,
+        };
+    }
+    equals(other) {
+        return this.id === other.id
+            && this.generation === other.generation;
+    }
+    toArray() {
+        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
+    }
+}
+
+class ObjInfo {
+    constructor(id, start, end) {
+        this.id = id;
+        this.start = start;
+        this.end = end;
+    }
+    static parse(parser, index, skipEmpty = true) {
+        const id = ObjId.parse(parser, index, skipEmpty);
+        if (!id) {
+            return null;
+        }
+        const objIndexSupposed = id.end + 2;
+        const objIndex = parser.findSubarrayIndex(keywordCodes.OBJ, { minIndex: objIndexSupposed, closedOnly: true });
+        if (!objIndex || objIndex.start !== objIndexSupposed) {
+            return null;
+        }
+        const objEndIndex = parser.findSubarrayIndex(keywordCodes.OBJ_END, { minIndex: objIndex.end + 1, closedOnly: true });
+        if (!objEndIndex) {
+            return null;
+        }
+        return {
+            value: new ObjInfo(id.value, id.start, objEndIndex.end),
+            start: id.start,
+            end: objEndIndex.end,
+        };
+    }
+}
+
+const xRefTypes = {
+    TABLE: 0,
+    STREAM: 1,
+    HYBRID: 2,
+};
+
+class XRef {
+    constructor(type) {
+        this._type = type;
+    }
+    get type() {
+        return this._type;
+    }
+}
+
+class XRefHybrid extends XRef {
+    constructor() {
+        super(xRefTypes.HYBRID);
+    }
+    static parse(parser, index, skipEmpty = true) {
+        return {
+            value: new XRefHybrid(),
+            start: null,
+            end: null,
+        };
+    }
+}
+
+class XRefStream extends XRef {
+    constructor() {
+        super(xRefTypes.STREAM);
+    }
+    static parse(parser, index, skipEmpty = true) {
+        return {
+            value: new XRefStream(),
+            start: null,
+            end: null,
+        };
+    }
+}
+
+class XRefTable extends XRef {
+    constructor() {
+        super(xRefTypes.TABLE);
+    }
+    static parse(parser, index, skipEmpty = true) {
+        return {
+            value: new XRefTable(),
+            start: null,
+            end: null,
+        };
+    }
+}
+
+class XRefParser {
+    constructor(parser) {
+        this._parser = parser;
+    }
+    parseNextXref() {
+        const sub = keywordCodes.XREF_START;
+        const xrefStartIndex = this._parser.findSubarrayIndex(sub, { maxIndex: this._lastXRefStartIndex, direction: "reverse" });
+        if (!xrefStartIndex) {
+            return null;
+        }
+        const xrefIndex = this._parser.parseNumberStartingAtIndex(xrefStartIndex.end + 1);
+        if (!xrefIndex) {
+            return null;
+        }
+        console.log(xrefIndex.value);
+        const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: xrefIndex.value, closedOnly: true });
+        if (xrefTableIndex && xrefTableIndex.start === xrefIndex.value) {
+            const xrefStmIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start, closedOnly: true });
+            if (xrefStmIndex) {
+                console.log("XRef is hybrid");
+                return XRefHybrid.parse(this._parser, 0);
+            }
+            else {
+                console.log("XRef is table");
+                return XRefTable.parse(this._parser, 0);
+            }
+        }
+        const xrefObj = ObjInfo.parse(this._parser, xrefIndex.value, false);
+        if (!xrefObj) {
+            throw new Error("PDF not valid. No XRef found at offset position");
+        }
+        console.log("XRef is stream");
+        console.log(xrefObj);
+        console.log(String.fromCharCode(...this._parser["_data"].slice(xrefObj.start, xrefObj.end + 1)));
+        return XRefStream.parse(this._parser, 0);
+    }
+}
+
+class Annotator {
+    constructor(pdfData) {
+        this.onAnnotationDictChange = {
+            set: (target, prop, value) => true,
+        };
+        if (!(pdfData === null || pdfData === void 0 ? void 0 : pdfData.length)) {
+            throw new Error("Data is empty");
+        }
+        this._sourceData = pdfData;
+        this._parser = new Parser(pdfData);
+        this._xrefParser = new XRefParser(this._parser);
+        this.parseData();
+    }
+    get annotations() {
+        return this._annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
+    }
+    getRefinedData() {
+        return null;
+    }
+    getExportedData() {
+        return null;
+    }
+    addAnnotationDict(annotation) {
+        this._annotations.push(annotation);
+    }
+    parseData() {
+        var _a;
+        this._version = this._parser.getPdfVersion();
+        this._lastXref = (_a = this._xrefParser.parseNextXref()) === null || _a === void 0 ? void 0 : _a.value;
+    }
+    updateData() {
+    }
+    extractSupportedAnnotationDicts() {
     }
 }
 
@@ -1245,8 +1508,7 @@ class TsPdfViewer {
             catch (_a) {
                 throw new Error("Cannot load file data!");
             }
-            const parser = new Parser(data);
-            console.log(parser.getPdfVersion());
+            const annotator = new Annotator(data);
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();

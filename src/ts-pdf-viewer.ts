@@ -4,7 +4,7 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, styles } from "./assets/index.html";
 import { clamp, getCenter, getDistance, Position } from "./common/utils";
 import { ViewPage } from "./view-page";
-import { Parser } from "./document/parser";
+import { Annotator } from "./document/annotator";
 
 type ViewerMode = "normal" | "hand";
 
@@ -104,8 +104,7 @@ export class TsPdfViewer {
       throw new Error("Cannot load file data!");
     }
 
-    const parser = new Parser(data);
-    console.log(parser.getPdfVersion());
+    const annotator = new Annotator(data);
 
     try {
       if (this._pdfLoadingTask) {
