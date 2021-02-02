@@ -859,6 +859,34 @@ const xRefTypes = {
     STREAM: 1,
     HYBRID: 2,
 };
+const streamFilters = {
+    ASCII85: "/ASCII85Decode",
+    ASCIIHEX: "/ASCIIHexDecode",
+    CCF: "/CCITTFaxDecode",
+    CRYPT: "/Crypt",
+    DCT: "/DCTDecode",
+    FLATE: "/FlateDecode",
+    JBIG2: "/JBIG2Decode",
+    JPX: "/JPXDecode",
+    LZW: "/LZWDecode",
+    RLX: "/RunLengthDecode",
+};
+const dictObjTypes = {
+    XREF: "/XRef",
+    XOBJECT: "/XObject",
+    CATALOG: "/Catalog",
+    PAGE_TREE: "/Pages",
+    PAGE: "/Page",
+    ANNOTATION: "/Annot",
+    BORDER_STYLE: "/Border",
+    OPTIONAL_CONTENT_GROUP: "/OCG",
+    OPTIONAL_CONTENT_MD: "/OCMD",
+    EXTERNAL_DATA: "/ExDATA",
+    ACTION: "/Action",
+    MEASURE: "/Measure",
+    DEV_EXTENSIONS: "/DeveloperExtensions",
+    EMPTY: "",
+};
 const valueTypes = {
     NONE: 0,
     REF: 1,
@@ -870,6 +898,9 @@ const valueTypes = {
     NUMBER: 7,
     COMMENT: 8,
 };
+const supportedFilters = new Set([
+    streamFilters.FLATE,
+]);
 
 class HexString {
     constructor(literal, hex, bytes) {
@@ -1155,6 +1186,53 @@ class Parser {
                 return valueTypes.NONE;
         }
     }
+    getDictBoundsAtIndex(index, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findCharIndex(codes.LESS, "straight", index)
+            : index;
+        if (start < 0 || start > this._maxIndex) {
+            return null;
+        }
+        const dictStart = this.findSubarrayIndex(keywordCodes.DICT_START, { minIndex: start });
+        if (!dictStart) {
+            return null;
+        }
+        const dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, { minIndex: dictStart.end + 1 });
+        if (!dictEnd) {
+            return null;
+        }
+        return { start: dictStart.start, end: dictEnd.end };
+    }
+    getArrayBoundsAtIndex(index, skipEmpty = true) {
+        const start = skipEmpty
+            ? this.findCharIndex(codes.L_BRACKET, "straight", index)
+            : index;
+        if (start < 0 || start > this._maxIndex) {
+            return null;
+        }
+        const arrayStart = this.findCharIndex(codes.L_BRACKET, "straight", start);
+        if (arrayStart === -1) {
+            return null;
+        }
+        let subArrayOpened = 0;
+        let i = arrayStart + 1;
+        let code;
+        while (subArrayOpened || code !== codes.R_BRACKET) {
+            console.log(this.sliceChars(i));
+            code = this._data[i++];
+            if (code === codes.L_BRACKET) {
+                subArrayOpened++;
+            }
+            else if (subArrayOpened && code === codes.R_BRACKET) {
+                subArrayOpened--;
+            }
+        }
+        const arrayEnd = i - 1;
+        if (arrayEnd - arrayStart < 2) {
+            return null;
+        }
+        return { start: arrayStart, end: arrayEnd };
+    }
     parseNumberAtIndex(index, float = false, skipEmpty = true) {
         const start = skipEmpty
             ? this.findRegularIndex("straight", index)
@@ -1196,11 +1274,10 @@ class Parser {
     }
     parseHexAtIndex(index, skipEmpty = true) {
         const start = skipEmpty
-            ? this.findRegularIndex("straight", index)
+            ? this.findCharIndex(codes.LESS, "straight", index)
             : index;
         if (start < 0
-            || start > this._maxIndex
-            || this._data[start] !== codes.LESS) {
+            || start > this._maxIndex) {
             return null;
         }
         const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
@@ -1212,11 +1289,10 @@ class Parser {
     }
     parseLiteralAtIndex(index, skipEmpty = true) {
         const start = skipEmpty
-            ? this.findRegularIndex("straight", index)
+            ? this.findCharIndex(codes.L_PARENTHESE, "straight", index)
             : index;
         if (start < 0
-            || start > this._maxIndex
-            || this._data[start] !== codes.L_PARENTHESE) {
+            || start > this._maxIndex) {
             return null;
         }
         const arr = this._data;
@@ -1245,6 +1321,42 @@ class Parser {
         }
         const literal = LiteralString.fromBytes(new Uint8Array(bytes));
         return { value: literal, start, end: i - 1 };
+    }
+    parseNumberArrayAtIndex(index, float = true, skipEmpty = true) {
+        const arrayBounds = this.getArrayBoundsAtIndex(index, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const numbers = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = this.parseNumberAtIndex(i, float, true);
+            if (!current) {
+                break;
+            }
+            numbers.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    parseHexArrayAtIndex(index, skipEmpty = true) {
+        const arrayBounds = this.getArrayBoundsAtIndex(index, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = this.parseHexAtIndex(i, true);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
     }
     sliceCharCodes(start, end) {
         return this._data.slice(start, (end || start) + 1);
@@ -1417,6 +1529,196 @@ class XRefHybrid extends XRef {
     }
 }
 
+class Obj {
+    constructor() {
+    }
+    toArray() {
+        return null;
+    }
+    ;
+}
+
+class DictObj extends Obj {
+    constructor(type) {
+        super();
+        this._customProps = new Map();
+        this.Type = type;
+    }
+    get customProps() {
+        return new Map(this._customProps);
+    }
+}
+
+class StreamDict extends DictObj {
+    constructor(type = null) {
+        super(type);
+    }
+}
+
+class TrailerStream extends StreamDict {
+    constructor() {
+        super(dictObjTypes.XREF);
+    }
+    static parse(parser, info) {
+        if (!parser || !info) {
+            return null;
+        }
+        const trailer = new TrailerStream();
+        trailer.id = info.id;
+        let i = info.dictStart;
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAtIndex(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                console.log(name);
+                switch (name) {
+                    case "/Type":
+                        const type = parser.parseNameAtIndex(i);
+                        if (type && type.value === dictObjTypes.XREF) {
+                            i = type.end + 1;
+                        }
+                        else {
+                            return null;
+                        }
+                        break;
+                    case "/Length":
+                        const length = parser.parseNumberAtIndex(i, false);
+                        if (length) {
+                            trailer.Length = length.value;
+                            i = length.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Length property value");
+                        }
+                        break;
+                    case "/Filter":
+                        const filter = parser.parseNameAtIndex(i);
+                        if (filter && supportedFilters.has(filter.value)) {
+                            trailer.Filter = filter.value;
+                            i = filter.end + 1;
+                        }
+                        else {
+                            throw new Error("Unsupported /Filter property value");
+                        }
+                        break;
+                    case "/DecodeParams":
+                        const decodeParamsBounds = parser.getDictBoundsAtIndex(i);
+                        if (decodeParamsBounds) {
+                            console.log(decodeParamsBounds);
+                            i = decodeParamsBounds.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DecodeParams property value");
+                        }
+                        break;
+                    case "/DL":
+                        const dl = parser.parseNumberAtIndex(i, false);
+                        if (dl) {
+                            trailer.Size = dl.value;
+                            i = dl.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DL property value");
+                        }
+                        break;
+                    case "/Size":
+                        const size = parser.parseNumberAtIndex(i, false);
+                        if (size) {
+                            trailer.Size = size.value;
+                            i = size.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Size property value");
+                        }
+                        break;
+                    case "/Prev":
+                        const prev = parser.parseNumberAtIndex(i, false);
+                        if (prev) {
+                            trailer.Prev = prev.value;
+                            i = prev.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Size property value");
+                        }
+                        break;
+                    case "/Root":
+                        const rootId = ObjId.parseRef(parser, i);
+                        if (rootId) {
+                            trailer.Root = rootId.value;
+                            i = rootId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Root property value");
+                        }
+                        break;
+                    case "/Encrypt":
+                        const encryptId = ObjId.parseRef(parser, i);
+                        if (encryptId) {
+                            trailer.Encrypt = encryptId.value;
+                            i = encryptId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Ebcrypt property value");
+                        }
+                        break;
+                    case "/Info":
+                        const infoId = ObjId.parseRef(parser, i);
+                        if (infoId) {
+                            trailer.Info = infoId.value;
+                            i = infoId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Info property value");
+                        }
+                        break;
+                    case "/ID":
+                        const ids = parser.parseHexArrayAtIndex(i);
+                        if (ids) {
+                            trailer.ID = [ids.value[0], ids.value[1]];
+                            i = ids.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /ID property value");
+                        }
+                        break;
+                    case "/Index":
+                        const index = parser.parseNumberArrayAtIndex(i);
+                        if (index) {
+                            trailer.Index = index.value;
+                            i = index.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Index property value");
+                        }
+                        break;
+                    case "/W":
+                        const w = parser.parseNumberArrayAtIndex(i);
+                        if (w) {
+                            trailer.W = [w.value[0], w.value[1], w.value[2]];
+                            i = w.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /W property value");
+                        }
+                        break;
+                }
+            }
+            else {
+                console.log(trailer);
+                break;
+            }
+        }
+        return {
+            value: new TrailerStream(),
+            start: null,
+            end: null,
+        };
+    }
+}
+
 class XRefStream extends XRef {
     constructor(trailer) {
         super(xRefTypes.STREAM);
@@ -1426,8 +1728,12 @@ class XRefStream extends XRef {
         if (!parser || !info) {
             return null;
         }
+        const trailerStream = TrailerStream.parse(parser, info);
+        if (!trailerStream) {
+            return null;
+        }
         return {
-            value: new XRefStream(null),
+            value: new XRefStream(trailerStream.value),
             start: null,
             end: null,
         };

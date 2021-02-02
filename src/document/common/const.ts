@@ -142,3 +142,7 @@ export const valueTypes = {
   COMMENT: 8,
 } as const;
 export type ValueType = typeof valueTypes[keyof typeof valueTypes];
+
+export const supportedFilters = new Set<string>([
+  streamFilters.FLATE,
+]);

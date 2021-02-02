@@ -17,10 +17,13 @@ export class XRefStream extends XRef {
       return null;
     }
     
-
-
+    const trailerStream = TrailerStream.parse(parser, info);
+    if (!trailerStream) {
+      return null;
+    }
+  
     return {
-      value: new XRefStream(null),
+      value: new XRefStream(trailerStream.value),
       start: null,
       end: null,
     };
