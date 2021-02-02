@@ -1,5 +1,5 @@
-import { IndirectObjectId } from "../core/indirect-object-id";
-import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
+import { streamTypes } from "../../common/const";
+import { ObjectId } from "../core/object-id";
 import { Stream } from "../core/stream";
 
 export class ObjectStream extends Stream {
@@ -15,11 +15,11 @@ export class ObjectStream extends Stream {
    * (Optional) A reference to another object stream, 
    * of which the current object stream shall be considered an extension
    */
-  Extends: IndirectObjectId;
-  
-  constructor(parseInfo?: IndirectObjectParseInfo) {
-    super(parseInfo, "/ObjStm");
-  }
+  Extends: ObjectId;
+
+  constructor() {
+    super(streamTypes.OBJECT_STREAM);
+  }  
   
   toArray(): Uint8Array {
     return new Uint8Array();

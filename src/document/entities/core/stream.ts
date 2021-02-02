@@ -1,12 +1,14 @@
-import { dictTypes, objectTypes, StreamFilter, StreamType, supportedFilters } from "../../common/const";
+import { objectTypes, StreamFilter, StreamType, supportedFilters } from "../../common/const";
 import { Dict } from "./dict";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
-import { IndirectStreamObject } from "./indirect-object";
-import { IndirectObjectParseInfo } from "./indirect-object-parse-info";
-import { ParseResult } from "../../parser";
-import { IndirectObjectId } from "./indirect-object-id";
+import { Bounds, Parser, ParseResult } from "../../parser";
+import { PdfObject } from "./pdf-object";
+import { keywordCodes } from "../../common/codes";
+import { FlateDecoder } from "../../common/flate-decoder";
 
-export abstract class Stream extends IndirectStreamObject {
+export abstract class Stream extends PdfObject {
+  streamData: Uint8Array;
+
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: StreamType;
 
@@ -22,12 +24,12 @@ export abstract class Stream extends IndirectStreamObject {
    * found between the keywords stream and endstream, or an array of zero, one or several names. 
    * Multiple filters shall be specified in the order in which they are to be applied
    */
-  Filter: StreamFilter | StreamFilter[];
+  Filter: StreamFilter; // | StreamFilter[];
   /**
    * (Optional) A parameter dictionary or an array of such dictionaries, 
    * used by the filters specified by Filter
    */
-  DecodeParms: (Dict | FlateParamsDict)[] | Dict | FlateParamsDict;
+  DecodeParms: FlateParamsDict; // | Dict | (Dict | FlateParamsDict)[];
   /**
    * (Optional; PDF 1.5+) A non-negative integer representing the number of bytes 
    * in the decoded (defiltered) stream. It can be used to determine, for example, 
@@ -35,44 +37,72 @@ export abstract class Stream extends IndirectStreamObject {
    */
   DL: number;
   
-  protected constructor(parseInfo: IndirectObjectParseInfo = null, 
-    type: StreamType = null) {
-    super(parseInfo);
-    this.Type = type;
-  }
+  protected constructor(type: StreamType = null) {
 
-  decode(): Uint8Array {
-    return new Uint8Array();
+    super();
+    this.Type = type;
   }
 
   /**
    * try parse and fill public properties from data using info/parser if available
    */
-  protected tryParseProps(): boolean {
-    const info = this.parseInfo;
-    if (!info || !info.parser || info.type !== objectTypes.STREAM) {
+  protected tryParseProps(parser: Parser, bounds: Bounds): boolean {
+    if (!parser || !bounds) {
       return false;
     }
+
+    const start = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end;
+
+    const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, { 
+      direction: "reverse", 
+      minIndex: start, 
+      maxIndex: end, 
+      closedOnly: true
+    });
+    if (!streamEndIndex) {
+      // this is not a stream object
+      return false;
+    }   
+    const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
+      direction: "reverse", 
+      minIndex: start,
+      maxIndex: streamEndIndex.start - 1, 
+      closedOnly: true
+    });
+    if (!streamEndIndex) {
+      // stream start is out of bounds
+      return false;
+    }    
     
-    let i = info.dictStart;
+    const lastBeforeStream = streamStartIndex.start - 1;
+    let i = parser.skipToNextName(start, lastBeforeStream);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
-      parseResult = info.parser.parseNameAt(i);
+      parseResult = parser.parseNameAt(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Type":
-            const type = info.parser.parseNameAt(i);
+            const type = parser.parseNameAt(i);
             if (type) {
+              if (this.Type && this.Type !== type.value) {
+                // wrong object type
+                return false;
+              }
               i = type.end + 1;
             } else {
               throw new Error("Can't parse /Type property value");
             }
             break;
           case "/Length":
-            const length = info.parser.parseNumberAt(i, false);
+            const length = parser.parseNumberAt(i, false);
             if (length) {
               this.Length = length.value;
               i = length.end + 1;
@@ -82,7 +112,7 @@ export abstract class Stream extends IndirectStreamObject {
             break;
           case "/Filter":
             // TODO: add support for filter arrays
-            const filter = info.parser.parseNameAt(i);
+            const filter = parser.parseNameAt(i);
             if (filter && supportedFilters.has(filter.value)) {
               this.Filter = <StreamFilter>filter.value;
               i = filter.end + 1;
@@ -92,9 +122,9 @@ export abstract class Stream extends IndirectStreamObject {
             break;
           case "/DecodeParms":
             // TODO: add support for decode params arrays
-            const decodeParamsBounds = info.parser.getDictBoundsAt(i);
+            const decodeParamsBounds = parser.getDictBoundsAt(i);
             if (decodeParamsBounds) {
-              const params = FlateParamsDict.parse(info.parser, 
+              const params = FlateParamsDict.parse(parser, 
                 decodeParamsBounds.start, decodeParamsBounds.end);
               if (params) {
                 this.DecodeParms = params.value;
@@ -105,7 +135,7 @@ export abstract class Stream extends IndirectStreamObject {
             }
             break;
           case "/DL":
-            const dl = info.parser.parseNumberAt(i, false);
+            const dl = parser.parseNumberAt(i, false);
             if (dl) {
               this.DL = dl.value;
               i = dl.end + 1;
@@ -115,12 +145,23 @@ export abstract class Stream extends IndirectStreamObject {
             break;
           default:
             // skip to next name
-            i = info.parser.skipToNextName(i, info.dictEnd);
+            i = parser.skipToNextName(i, lastBeforeStream);
             break;
         }
       } else {
-        return true;
+        break;
       }
     };
+    
+    const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
+    const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
+    const encodedData = parser.sliceCharCodes(streamStart, streamEnd);
+    if (!this.Length || this.Length !== encodedData.length) {    
+      // TODO: replace error with 'return false;' after assuring that the code works correctly
+      throw new Error("Incorrect stream length");
+    }   
+    this.streamData = encodedData;
+
+    return true;
   }
 }

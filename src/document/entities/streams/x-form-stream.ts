@@ -1,9 +1,9 @@
 import { Dict } from "../core/dict";
 import { MetadataStream } from "./metadata-stream";
-import { IndirectObjectId } from "../core/indirect-object-id";
+import { ObjectId } from "../core/object-id";
 import { Stream } from "../core/stream";
 import { streamTypes } from "../../common/const";
-import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
+import { ParseInfo } from "../core/parse-info";
 
 export class XFormStream extends Stream {
   /**
@@ -30,7 +30,7 @@ export class XFormStream extends Stream {
    * (Optional but strongly recommended; PDF 1.2+) A dictionary specifying any resources 
    * (such as fonts and images) required by the form
    */
-  Resources: Dict | IndirectObjectId;
+  Resources: Dict | ObjectId;
   /**
    * (Optional; PDF 1.4+) A metadata stream containing metadata for the form XObject
    */
@@ -38,9 +38,9 @@ export class XFormStream extends Stream {
 
   //TODO: add remaining properties
   
-  constructor(parseInfo?: IndirectObjectParseInfo) {
-    super(parseInfo, streamTypes.FORM_XOBJECT);
-  }
+  constructor() {
+    super(streamTypes.FORM_XOBJECT);
+  }  
 
   toArray(): Uint8Array {
     return new Uint8Array();

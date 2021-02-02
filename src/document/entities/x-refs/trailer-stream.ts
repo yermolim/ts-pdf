@@ -1,13 +1,11 @@
-import { dictTypes, objectTypes, StreamFilter, supportedFilters } from "../../common/const";
+import { dictTypes, streamTypes } from "../../common/const";
 import { HexString } from "../../common/hex-string";
-import { Parser, ParseResult } from "../../parser";
-import { IndirectObjectId } from "../core/indirect-object-id";
-import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
+import { Bounds, Parser, ParseResult } from "../../parser";
+import { ObjectId } from "../core/object-id";
+import { ParseInfo } from "../core/parse-info";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { Stream } from "../core/stream";
-import { CatalogDict } from "../structure/catalog-dict";
-import { InfoDict } from "../structure/info-dict";
-import { codes } from "../../common/codes";
+import { FlateDecoder } from "../../common/flate-decoder";
 
 export class TrailerStream extends Stream {
   /**
@@ -28,17 +26,17 @@ export class TrailerStream extends Stream {
    * (Required; shall be an indirect reference) The catalog dictionary 
    * for the PDF document contained in the file
    */
-  Root: IndirectObjectId;
+  Root: ObjectId;
   /**
    * (Required if document is encrypted; PDF 1.1+) 
    * The document’s encryption dictionary
    */
-  Encrypt: IndirectObjectId | EncryptionDict;
+  Encrypt: ObjectId | EncryptionDict;
   /**
    * (Optional; shall be an indirect reference) 
    * The document’s information dictionary
    */
-  Info: IndirectObjectId;
+  Info: ObjectId;
   /**
    * (Required if an Encrypt entry is present; optional otherwise; PDF 1.1+) 
    * An array of two byte-strings constituting a file identifier for the file. 
@@ -63,16 +61,16 @@ export class TrailerStream extends Stream {
    */
   W: [number, number, number];
   
-  constructor(parseInfo?: IndirectObjectParseInfo) {
-    super(parseInfo, dictTypes.XREF);
+  constructor() {
+    super(streamTypes.XREF);
   }  
   
-  static parse(info: IndirectObjectParseInfo): ParseResult<TrailerStream> {    
-    const trailer = new TrailerStream(info);
-    const parseResult = trailer.tryParseProps();
+  static parse(parser: Parser, bounds: Bounds): ParseResult<TrailerStream> {    
+    const trailer = new TrailerStream();
+    const parseResult = trailer.tryParseProps(parser, bounds);
 
     return parseResult
-      ? {value: trailer, start: info.start, end: info.end}
+      ? {value: trailer, start: bounds.start, end: bounds.end}
       : null;
   }
 
@@ -83,8 +81,8 @@ export class TrailerStream extends Stream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(): boolean {
-    const superIsParsed = super.tryParseProps();
+  protected tryParseProps(parser: Parser, bounds: Bounds): boolean {
+    const superIsParsed = super.tryParseProps(parser, bounds);
     if (!superIsParsed) {
       return false;
     }
@@ -92,19 +90,25 @@ export class TrailerStream extends Stream {
     if (this.Type !== dictTypes.XREF) {
       return false;
     }
+
+    const start = bounds.contentStart || bounds.start;
+    const dictBounds = parser.getDictBoundsAt(start);
     
-    const info = this.parseInfo;
-    let i = info.dictStart;
+    let i = parser.skipToNextName(start, dictBounds.contentStart);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
-      parseResult = info.parser.parseNameAt(i);
+      parseResult = parser.parseNameAt(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Size":
-            const size = info.parser.parseNumberAt(i, false);
+            const size = parser.parseNumberAt(i, false);
             if (size) {
               this.Size = size.value;
               i = size.end + 1;
@@ -113,7 +117,7 @@ export class TrailerStream extends Stream {
             }
             break;
           case "/Prev":
-            const prev = info.parser.parseNumberAt(i, false);
+            const prev = parser.parseNumberAt(i, false);
             if (prev) {
               this.Prev = prev.value;
               i = prev.end + 1;
@@ -122,7 +126,7 @@ export class TrailerStream extends Stream {
             }
             break;
           case "/Root":
-            const rootId = IndirectObjectId.parseRef(info.parser, i);
+            const rootId = ObjectId.parseRef(parser, i);
             if (rootId) {
               this.Root = rootId.value;
               i = rootId.end + 1;
@@ -132,7 +136,7 @@ export class TrailerStream extends Stream {
             break;
           case "/Encrypt":
             // TODO: add direct encrypt object support
-            const encryptId = IndirectObjectId.parseRef(info.parser, i);
+            const encryptId = ObjectId.parseRef(parser, i);
             if (encryptId) {
               this.Encrypt = encryptId.value;
               i = encryptId.end + 1;
@@ -141,7 +145,7 @@ export class TrailerStream extends Stream {
             }
             break;
           case "/Info":
-            const infoId = IndirectObjectId.parseRef(info.parser, i);
+            const infoId = ObjectId.parseRef(parser, i);
             if (infoId) {
               this.Info = infoId.value;
               i = infoId.end + 1;
@@ -150,7 +154,7 @@ export class TrailerStream extends Stream {
             }
             break;
           case "/ID":
-            const ids = info.parser.parseHexArrayAt(i);
+            const ids = parser.parseHexArrayAt(i);
             if (ids) {
               this.ID = [ids.value[0], ids.value[1]];
               i = ids.end + 1;
@@ -159,7 +163,7 @@ export class TrailerStream extends Stream {
             }
             break;
           case "/Index":
-            const index = info.parser.parseNumberArrayAt(i);
+            const index = parser.parseNumberArrayAt(i);
             if (index) {
               this.Index = index.value;
               i = index.end + 1;
@@ -168,7 +172,7 @@ export class TrailerStream extends Stream {
             }
             break;
           case "/W":
-            const w = info.parser.parseNumberArrayAt(i);
+            const w = parser.parseNumberArrayAt(i);
             if (w) {
               this.W = [w.value[0], w.value[1], w.value[2]];
               i = w.end + 1;
@@ -178,12 +182,20 @@ export class TrailerStream extends Stream {
             break;
           default:
             // skip to next name
-            i = info.parser.skipToNextName(i, info.dictEnd);
+            i = parser.skipToNextName(i, dictBounds.contentEnd);
             break;
         }
       } else {
-        return true;
+        break;
       }
     };
+    
+    const decodedData = FlateDecoder.Decode(this.streamData,
+      this.DecodeParms?.Predictor,
+      this.DecodeParms?.Columns,
+      this.DecodeParms?.Colors,
+      this.DecodeParms?.BitsPerComponent);    
+
+    return true;
   }
 }

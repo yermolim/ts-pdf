@@ -44,6 +44,7 @@
     "@rollup/plugin-strip": "^2.0.0",
     "@rollup/plugin-typescript": "^8.1.0",
     "@types/jasmine": "^3.6.2",
+    "@types/pako": "^1.0.1",
     "@types/resize-observer-browser": "^0.1.4",
     "@typescript-eslint/eslint-plugin": "^4.12.0",
     "@typescript-eslint/eslint-plugin-tslint": "^4.12.0",

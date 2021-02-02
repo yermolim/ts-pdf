@@ -1,13 +1,11 @@
 import { keywordCodes } from "../../common/codes";
 import { ObjectType, objectTypes, valueTypes } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
-import { IndirectObjectId } from "./indirect-object-id";
+import { ObjectId } from "./object-id";
 
-export class IndirectObjectParseInfo {
-  constructor(
-    readonly parser: Parser,
+export class ParseInfo {
+  constructor(readonly parser: Parser,
     readonly type: ObjectType, 
-    readonly id: IndirectObjectId, 
     readonly start: number, 
     readonly end: number,
     readonly contentStart: number, 
@@ -18,16 +16,13 @@ export class IndirectObjectParseInfo {
     readonly streamEnd?: number) { }
     
   static parse(parser: Parser, index: number, 
-    skipEmpty = true): ParseResult<IndirectObjectParseInfo> {
-    const id = IndirectObjectId.parse(parser, index, skipEmpty);
-    if (!id) {
-      return null;
+    skipEmpty = true): ParseResult<ParseInfo> {
+    if (skipEmpty) {
+      index = parser.skipEmpty(index);
     }
-
-    const objIndexSupposed = id.end + 2;
     const objIndex = parser.findSubarrayIndex(keywordCodes.OBJ, 
-      {minIndex: objIndexSupposed, closedOnly: true});
-    if (!objIndex || objIndex.start !== objIndexSupposed) {
+      {minIndex: index, closedOnly: true});
+    if (!objIndex || objIndex.start !== index) {
       return null;
     }    
 
@@ -111,14 +106,14 @@ export class IndirectObjectParseInfo {
       }
     }    
     
-    const info = new IndirectObjectParseInfo(parser, 
-      type, id.value, id.start, objEndIndex.end,
+    const info = new ParseInfo(parser, 
+      type, objIndex.start, objEndIndex.end,
       contentStart, contentEnd, 
       dictStart, dictEnd, streamStart, streamEnd);
 
     return {
       value: info,
-      start: id.start,
+      start: objIndex.start,
       end: objEndIndex.end,
     };
   }

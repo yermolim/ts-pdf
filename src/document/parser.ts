@@ -2,7 +2,6 @@ import { codes, keywordCodes,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "./common/codes";
 import { ValueType, valueTypes } from "./common/const";
-import { DateString } from "./common/date-string";
 import { HexString } from "./common/hex-string";
 import { LiteralString } from "./common/literal-string";
 
@@ -15,10 +14,15 @@ export interface SearchOptions {
   closedOnly?: boolean;
 }
 
-export interface ParseResult<T> {
-  value: T; 
+export interface Bounds {  
   start: number;
   end: number;
+  contentStart?: number;
+  contentEnd?: number;
+}
+
+export interface ParseResult<T> extends Bounds {
+  value: T; 
 }
 
 export class Parser {
@@ -59,7 +63,7 @@ export class Parser {
    * @param closedOnly define if subarray must be followed by a delimiter in the search direction
    */
   findSubarrayIndex(sub: number[] | readonly number[], 
-    options?: SearchOptions): {start: number; end: number} { 
+    options?: SearchOptions): Bounds { 
 
     const arr = this._data;
     if (!sub?.length) {
@@ -120,7 +124,7 @@ export class Parser {
   }
   
   /**
-   * find the nearest char index after EOL
+   * find the nearest char index after or before EOL
    * @param direction search direction
    * @param start starting index
    */
@@ -135,12 +139,19 @@ export class Parser {
       return -1;
     }
 
-    if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN 
-      && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
-      lineBreakIndex++;
+    if (direction === "straight") {  
+      if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN 
+        && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
+        lineBreakIndex++;
+      }  
+      return Math.min(lineBreakIndex + 1, this._maxIndex);
+    } else {        
+      if (this._data[lineBreakIndex] === codes.LINE_FEED 
+        && this._data[lineBreakIndex - 1] === codes.CARRIAGE_RETURN) {
+        lineBreakIndex--;
+      }  
+      return Math.max(lineBreakIndex - 1, 0);
     }
-
-    return Math.min(lineBreakIndex + 1, this._maxIndex);
   }
   
   /**
@@ -290,9 +301,41 @@ export class Parser {
       default:
         return valueTypes.UNKNOWN;
     }
-  }  
+  } 
+  
+  getIndirectObjectBoundsAt(start: number, skipEmpty = true): Bounds {   
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start)) {
+      return null;
+    }
 
-  getDictBoundsAt(start: number, skipEmpty = true): {start: number; end: number} {   
+    const objStartIndex = this.findSubarrayIndex(keywordCodes.OBJ, 
+      {minIndex: start, closedOnly: true});
+    if (!objStartIndex || objStartIndex.start !== start) {
+      return null;
+    }      
+    const contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
+    if (contentStart === -1){
+      return null;
+    }    
+    const objEndIndex = this.findSubarrayIndex(keywordCodes.OBJ_END, 
+      {minIndex: contentStart, closedOnly: true});
+    if (!objEndIndex) {
+      return null;
+    }
+    const contentEnd = this.findNonSpaceIndex("reverse", objEndIndex.start - 1);
+
+    return {
+      start: objStartIndex.start, 
+      end: objStartIndex.end,
+      contentStart,
+      contentEnd,
+    };
+  } 
+
+  getDictBoundsAt(start: number, skipEmpty = true): Bounds {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -304,18 +347,32 @@ export class Parser {
       {minIndex: start});
     if (!dictStart) {
       return null;
-    }
-
+    }     
+    const contentStart = this.findNonSpaceIndex("straight", dictStart.end + 1);
+    if (contentStart === -1){
+      return null;
+    }   
     const dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, 
       {minIndex: dictStart.end + 1});
     if (!dictEnd) {
       return null;
+    } 
+    const contentEnd = this.findNonSpaceIndex("reverse", dictEnd.start - 1);
+
+    if (contentEnd < contentStart) {
+      // should be possible only in an empty dict
+      return null;
     }
 
-    return {start: dictStart.start, end: dictEnd.end};
+    return {
+      start: dictStart.start, 
+      end: dictEnd.end,
+      contentStart,
+      contentEnd,
+    };
   }
   
-  getArrayBoundsAt(start: number, skipEmpty = true): {start: number; end: number} {
+  getArrayBoundsAt(start: number, skipEmpty = true): Bounds {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }

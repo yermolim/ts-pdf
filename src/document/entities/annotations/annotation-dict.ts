@@ -1,4 +1,4 @@
-import { IndirectObjectId } from "../core/indirect-object-id";
+import { ObjectId } from "../core/object-id";
 import { Dict } from "../core/dict";
 import { DateString } from "../../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
@@ -189,7 +189,7 @@ export abstract class AnnotationDict extends Dict {
 
   /** (Optional; PDF1.3+) An indirect reference to the page object 
    * with which this annotation is associated */
-  P: IndirectObjectId;
+  P: ObjectId;
   /** (Optional; PDF1.4+) The annotation name,  
    * a text string uniquely identifying it among all the annotations on its page */
   NM: string;
