@@ -1,8 +1,16 @@
 import { StreamFilter, StreamType } from "../../common/const";
-import { Dict } from "../core/dict";
+import { Dict } from "./dict";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
+import { IndirectStreamObject } from "./indirect-object";
+import { IndirectObjectInfo } from "./indirect-object-info";
 
-export abstract class StreamDict extends Dict {
+export abstract class Stream extends IndirectStreamObject {
+  readonly start: number;
+  readonly end: number;
+
+  /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
+  readonly Type: StreamType;
+
   /**
    * (Required) The number of bytes from the beginning of the line 
    * following the keyword stream to the last byte just before the keyword endstream. 
@@ -28,7 +36,12 @@ export abstract class StreamDict extends Dict {
    */
   DL: number;
   
-  protected constructor(type: StreamType = null) {
-    super(type);
+  protected constructor(info: IndirectObjectInfo, type: StreamType = null) {
+    super(info);
+    this.Type = type;
+  }
+
+  decode(): Uint8Array {
+    return new Uint8Array();
   }
 }

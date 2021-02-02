@@ -1,5 +1,5 @@
 import { DateString } from "../../../common/date-string";
-import { StreamDict } from "../../streams/stream-dict";
+import { Stream } from "../../core/stream";
 import { AnnotationDict, AnnotationType } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";
 import { PopupAnnotation } from "../non-markup/popup-annotation";
@@ -38,7 +38,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
    * (Optional; PDF 1.5+) A rich text string that shall be displayed 
    * in the pop-up window when the annotation is opened
    */
-  RC: string | StreamDict;
+  RC: string | Stream;
   /**
    * (Optional; PDF 1.5+) The date and time when the annotation was created
    */

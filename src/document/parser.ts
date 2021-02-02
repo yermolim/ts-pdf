@@ -42,7 +42,7 @@ export class Parser {
     if (!i) {
       throw new Error("PDF not valid. Version not found");
     }
-    const version = this.parseNumberAtIndex(i.end + 1, true)?.value;
+    const version = this.parseNumberAt(i.end + 1, true)?.value;
     if (!version) {
       throw new Error("Error parsing version number");
     }
@@ -217,11 +217,11 @@ export class Parser {
   //#endregion
 
   //#region parse methods  
-  getValueTypeAtIndex(index: number, skipEmpty = true): ValueType  {
-    const start = skipEmpty
-      ? this.findRegularIndex("straight", index)
-      : index;
-    if (start < 0 || start > this._maxIndex) {
+  getValueTypeAt(start: number, skipEmpty = true): ValueType  {
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start)) {
       return null;
     }
 
@@ -233,14 +233,14 @@ export class Parser {
         if (isRegularChar(arr[i + 1])) {
           return valueTypes.NAME;
         } 
-        return valueTypes.NONE;
+        return valueTypes.UNKNOWN;
       case codes.L_BRACKET:
         return valueTypes.ARRAY;
       case codes.L_PARENTHESE:
         return valueTypes.STRING_LITERAL;
       case codes.LESS:
         if (codes.LESS === arr[i + 1]) {          
-          return valueTypes.DICT;
+          return valueTypes.DICTIONARY;
         }
         return valueTypes.STRING_HEX;
       case codes.PERCENT:
@@ -263,16 +263,40 @@ export class Parser {
           }
         }
         return valueTypes.NUMBER;
+      case codes.s:
+        if (arr[i + 1] === codes.t
+          && arr[i + 2] === codes.r
+          && arr[i + 3] === codes.e
+          && arr[i + 4] === codes.a
+          && arr[i + 5] === codes.m) {
+          return valueTypes.STREAM;
+        }
+        return valueTypes.UNKNOWN;
+      case codes.t:
+        if (arr[i + 1] === codes.r
+          && arr[i + 2] === codes.u
+          && arr[i + 3] === codes.e) {
+          return valueTypes.BOOLEAN;
+        }
+        return valueTypes.UNKNOWN;
+      case codes.f:
+        if (arr[i + 1] === codes.a
+          && arr[i + 2] === codes.l
+          && arr[i + 3] === codes.s
+          && arr[i + 4] === codes.e) {
+          return valueTypes.BOOLEAN;
+        }
+        return valueTypes.UNKNOWN;
       default:
-        return valueTypes.NONE;
+        return valueTypes.UNKNOWN;
     }
   }  
 
-  getDictBoundsAtIndex(index: number, skipEmpty = true): {start: number; end: number} {
-    const start = skipEmpty
-      ? this.findCharIndex(codes.LESS, "straight", index)
-      : index;
-    if (start < 0 || start > this._maxIndex) {
+  getDictBoundsAt(start: number, skipEmpty = true): {start: number; end: number} {   
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this._data[start] !== codes.LESS) {
       return null;
     }
 
@@ -291,21 +315,16 @@ export class Parser {
     return {start: dictStart.start, end: dictEnd.end};
   }
   
-  getArrayBoundsAtIndex(index: number, skipEmpty = true): {start: number; end: number} {
-    const start = skipEmpty
-      ? this.findCharIndex(codes.L_BRACKET, "straight", index)
-      : index;
-    if (start < 0 || start > this._maxIndex) {
-      return null;
-    }    
-
-    const arrayStart = this.findCharIndex(codes.L_BRACKET, "straight", start);
-    if (arrayStart === -1) {
+  getArrayBoundsAt(start: number, skipEmpty = true): {start: number; end: number} {
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this._data[start] !== codes.L_BRACKET) {
       return null;
     }
 
     let subArrayOpened = 0;
-    let i = arrayStart + 1;    
+    let i = start + 1;    
     let code: number;
     while (subArrayOpened || code !== codes.R_BRACKET) {
       code = this._data[i++];
@@ -316,25 +335,29 @@ export class Parser {
       }
     }
     const arrayEnd = i - 1;
-    if (arrayEnd - arrayStart < 2) {
+    if (arrayEnd - start < 2) {
       return null;
     }
 
-    return {start: arrayStart, end: arrayEnd};
+    return {start, end: arrayEnd};
   }
 
-  parseNumberAtIndex(index: number, 
+  parseNumberAt(start: number, 
     float = false, skipEmpty = true): ParseResult<number>  {
-    const start = skipEmpty
-      ? this.findRegularIndex("straight", index)
-      : index;
-    if (start < 0 || start > this._maxIndex) {
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || !isRegularChar(this._data[start])) {
       return null;
     }
 
     let i = start;
     let numberStr = "";
     let value = this._data[i];
+    if (value === codes.MINUS) {
+      numberStr += value;
+      value = this._data[++i];
+    }
     while (DIGIT_CHARS.has(value)
       || (float && value === codes.DOT)) {
       numberStr += String.fromCharCode(value);
@@ -346,12 +369,12 @@ export class Parser {
       : null;
   }
   
-  parseNameAtIndex(index: number, 
+  parseNameAt(start: number, 
     includeSlash = true, skipEmpty = true): ParseResult<string>  {
-    const start = skipEmpty
-      ? this.findCharIndex(codes.SLASH, "straight", index)
-      : index;
-    if (start < 0 || start > this._maxIndex) {
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this._data[start] !== codes.SLASH) {
       return null;
     }
 
@@ -370,12 +393,11 @@ export class Parser {
       : null;
   } 
   
-  parseHexAtIndex(index: number, skipEmpty = true): ParseResult<HexString>  {
-    const start = skipEmpty
-      ? this.findCharIndex(codes.LESS, "straight", index)
-      : index;
-    if (start < 0 
-      || start > this._maxIndex) {
+  parseHexAt(start: number, skipEmpty = true): ParseResult<HexString>  {    
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this._data[start] !== codes.LESS) {
       return null;
     }
 
@@ -388,12 +410,11 @@ export class Parser {
     return {value: hex, start, end};
   }
 
-  parseLiteralAtIndex(index: number, skipEmpty = true): ParseResult<LiteralString>  {
-    const start = skipEmpty
-      ? this.findCharIndex(codes.L_PARENTHESE, "straight", index)
-      : index;
-    if (start < 0 
-      || start > this._maxIndex) {
+  parseLiteralAt(start: number, skipEmpty = true): ParseResult<LiteralString>  {       
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this._data[start] !== codes.L_PARENTHESE) {
       return null;
     }
 
@@ -426,9 +447,9 @@ export class Parser {
     return {value: literal, start, end: i - 1};
   }
   
-  parseNumberArrayAtIndex(index: number, float = true, 
+  parseNumberArrayAt(start: number, float = true, 
     skipEmpty = true): ParseResult<number[]>  {
-    const arrayBounds = this.getArrayBoundsAtIndex(index, skipEmpty);
+    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
@@ -437,7 +458,7 @@ export class Parser {
     let current: ParseResult<number>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = this.parseNumberAtIndex(i, float, true);
+      current = this.parseNumberAt(i, float, true);
       if (!current) {
         break;
       }
@@ -448,8 +469,8 @@ export class Parser {
     return {value: numbers, start: arrayBounds.start, end: arrayBounds.end};
   }
   
-  parseHexArrayAtIndex(index: number, skipEmpty = true): ParseResult<HexString[]>  {
-    const arrayBounds = this.getArrayBoundsAtIndex(index, skipEmpty);
+  parseHexArrayAt(start: number, skipEmpty = true): ParseResult<HexString[]>  {
+    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
@@ -458,7 +479,7 @@ export class Parser {
     let current: ParseResult<HexString>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = this.parseHexAtIndex(i, true);
+      current = this.parseHexAt(i, true);
       if (!current) {
         break;
       }
@@ -471,6 +492,18 @@ export class Parser {
   //#endregion
 
   //#region debug methods
+  getCharCode(index: number): number {    
+    return this._data[index];
+  }
+
+  getChar(index: number): string {    
+    const code = this._data[index];
+    if (!isNaN(code)) {
+      return String.fromCharCode(code);
+    }
+    return null;
+  }
+
   sliceCharCodes(start: number, end?: number): Uint8Array {
     return this._data.slice(start, (end || start) + 1);
   }
@@ -481,6 +514,10 @@ export class Parser {
   //#endregion
 
   //#region private search methods
+  private isOutside(index: number) {
+    return (index < 0 || index > this._maxIndex);
+  }
+
   private getValidStartIndex(direction: "straight" | "reverse", 
     start: number): number {
     return !isNaN(start) 
@@ -511,6 +548,22 @@ export class Parser {
     }
     
     return -1; 
+  }
+
+  private skipEmpty(start: number): number {
+    let index = this.findNonSpaceIndex("straight", start);
+    if (index === -1) {
+      return -1;
+    }
+    if (this._data[index] === codes.PERCENT) {
+      // it's a comment. skip it
+      const afterComment = this.findNewLineIndex("straight", index + 1);
+      if (afterComment === -1) {
+        return -1;
+      }
+      index = this.findNonSpaceIndex("straight", afterComment);
+    }
+    return index;
   }
   //#endregion
 }

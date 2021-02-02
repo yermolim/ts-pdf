@@ -29,12 +29,12 @@ export class IndirectObjectId {
       return null;
     }    
     
-    const id = parser.parseNumberAtIndex(start, false, false);
+    const id = parser.parseNumberAt(start, false, false);
     if (!id || isNaN(id.value)) {
       return null;
     }
 
-    const generation = parser.parseNumberAtIndex(id.end + 2, false, false);
+    const generation = parser.parseNumberAt(id.end + 2, false, false);
     if (!generation || isNaN(generation.value)) {
       return null;
     }
@@ -75,5 +75,9 @@ export class IndirectObjectId {
 
   toArray(): Uint8Array {
     return new TextEncoder().encode(`${this.id} ${this.generation} R`);
+  }
+
+  toString(): string {
+    return this.id + "|" + this.generation;
   }
 }

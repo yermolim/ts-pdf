@@ -1,10 +1,11 @@
 import { Dict } from "../core/dict";
 import { MetadataStream } from "./metadata-stream";
 import { IndirectObjectId } from "../core/indirect-object-id";
-import { StreamDict } from "./stream-dict";
+import { Stream } from "../core/stream";
 import { streamTypes } from "../../common/const";
+import { IndirectObjectInfo } from "../core/indirect-object-info";
 
-export class XFormStream extends StreamDict {
+export class XFormStream extends Stream {
   /**
    * (Required) The type of XObject that this dictionary describes
    */
@@ -37,7 +38,11 @@ export class XFormStream extends StreamDict {
 
   //TODO: add remaining properties
   
-  constructor() {
-    super(streamTypes.FORM_XOBJECT);
+  constructor(info: IndirectObjectInfo) {
+    super(info, streamTypes.FORM_XOBJECT);
+  }
+
+  toArray(): Uint8Array {
+    return new Uint8Array();
   }
 }

@@ -4,11 +4,11 @@ import { Parser, ParseResult } from "../../parser";
 import { IndirectObjectId } from "../core/indirect-object-id";
 import { IndirectObjectInfo } from "../core/indirect-object-info";
 import { EncryptionDict } from "../encryption/encryption-dict";
-import { StreamDict } from "../streams/stream-dict";
+import { Stream } from "../core/stream";
 import { CatalogDict } from "../structure/catalog-dict";
 import { InfoDict } from "../structure/info-dict";
 
-export class TrailerStream extends StreamDict {
+export class TrailerStream extends Stream {
   /**
    * (Required) The number one greater than the highest object number 
    * used in this section or in any section for which this shall be an update. 
@@ -62,28 +62,28 @@ export class TrailerStream extends StreamDict {
    */
   W: [number, number, number];
   
-  constructor() {
-    super(dictTypes.XREF);
+  constructor(info: IndirectObjectInfo) {
+    super(info, dictTypes.XREF);
   }  
   
   static parse(parser: Parser, info: IndirectObjectInfo): ParseResult<TrailerStream> {    
     if (!parser || !info) {
       return null;
     }
-    const trailer = new TrailerStream();
+    const trailer = new TrailerStream(info);
     // trailer.id = info.id;
 
     let i = info.dictStart;
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
-      parseResult = parser.parseNameAtIndex(i);
+      parseResult = parser.parseNameAt(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Type":
-            const type = parser.parseNameAtIndex(i);
+            const type = parser.parseNameAt(i);
             if (type && type.value === dictTypes.XREF) {
               i = type.end + 1;
             } else {              
@@ -92,7 +92,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/Length":
-            const length = parser.parseNumberAtIndex(i, false);
+            const length = parser.parseNumberAt(i, false);
             if (length) {
               trailer.Length = length.value;
               i = length.end + 1;
@@ -102,7 +102,7 @@ export class TrailerStream extends StreamDict {
             break;
           case "/Filter":
             // TODO: add support for filter arrays
-            const filter = parser.parseNameAtIndex(i);
+            const filter = parser.parseNameAt(i);
             if (filter && supportedFilters.has(filter.value)) {
               trailer.Filter = <StreamFilter>filter.value;
               i = filter.end + 1;
@@ -112,7 +112,7 @@ export class TrailerStream extends StreamDict {
             break;
           case "/DecodeParams":
             // TODO: implement
-            const decodeParamsBounds = parser.getDictBoundsAtIndex(i);
+            const decodeParamsBounds = parser.getDictBoundsAt(i);
             if (decodeParamsBounds) {
               i = decodeParamsBounds.end + 1;
             } else {              
@@ -120,7 +120,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/DL":
-            const dl = parser.parseNumberAtIndex(i, false);
+            const dl = parser.parseNumberAt(i, false);
             if (dl) {
               trailer.Size = dl.value;
               i = dl.end + 1;
@@ -129,7 +129,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/Size":
-            const size = parser.parseNumberAtIndex(i, false);
+            const size = parser.parseNumberAt(i, false);
             if (size) {
               trailer.Size = size.value;
               i = size.end + 1;
@@ -138,7 +138,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/Prev":
-            const prev = parser.parseNumberAtIndex(i, false);
+            const prev = parser.parseNumberAt(i, false);
             if (prev) {
               trailer.Prev = prev.value;
               i = prev.end + 1;
@@ -175,7 +175,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/ID":
-            const ids = parser.parseHexArrayAtIndex(i);
+            const ids = parser.parseHexArrayAt(i);
             if (ids) {
               trailer.ID = [ids.value[0], ids.value[1]];
               i = ids.end + 1;
@@ -184,7 +184,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/Index":
-            const index = parser.parseNumberArrayAtIndex(i);
+            const index = parser.parseNumberArrayAt(i);
             if (index) {
               trailer.Index = index.value;
               i = index.end + 1;
@@ -193,7 +193,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/W":
-            const w = parser.parseNumberArrayAtIndex(i);
+            const w = parser.parseNumberArrayAt(i);
             if (w) {
               trailer.W = [w.value[0], w.value[1], w.value[2]];
               i = w.end + 1;
@@ -215,5 +215,9 @@ export class TrailerStream extends StreamDict {
       start: info.start,
       end: info.end,
     };
+  }
+
+  toArray(): Uint8Array {
+    return new Uint8Array();
   }
 }

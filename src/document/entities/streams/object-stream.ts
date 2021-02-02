@@ -1,7 +1,8 @@
 import { IndirectObjectId } from "../core/indirect-object-id";
-import { StreamDict } from "./stream-dict";
+import { IndirectObjectInfo } from "../core/indirect-object-info";
+import { Stream } from "../core/stream";
 
-export class ObjectStream extends StreamDict {
+export class ObjectStream extends Stream {
   /**
    * (Required) The number of indirect objects stored in the stream
    */
@@ -16,7 +17,11 @@ export class ObjectStream extends StreamDict {
    */
   Extends: IndirectObjectId;
   
-  constructor() {
-    super("/ObjStm");
+  constructor(info: IndirectObjectInfo) {
+    super(info, "/ObjStm");
+  }
+  
+  toArray(): Uint8Array {
+    return new Uint8Array();
   }
 }

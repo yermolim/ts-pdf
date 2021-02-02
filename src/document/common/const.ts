@@ -2,15 +2,18 @@
  * PDF supports eight basic types of objects
  */
 export const objectTypes = {
-  NULL: 0,
-  BOOLEAN: 1,
-  NUMBER: 2,
-  STRING: 3,
-  NAME: 4,
-  ARRAY: 5,
-  DICTIONARY: 6,
-  STREAM: 7,
+  UNKNOWN: 0,
+  NULL: 1,
+  BOOLEAN: 2,
+  NUMBER: 3,
+  STRING_LITERAL: 4,
+  STRING_HEX: 5,
+  NAME: 6,
+  ARRAY: 7,
+  DICTIONARY: 8,
+  STREAM: 9,
 } as const;
+export type ObjectType = typeof objectTypes[keyof typeof objectTypes]; 
 
 /**
  * Cross-reference tables are used in PDF pre-1.5,
@@ -127,19 +130,21 @@ export const dictTypes = {
   DEV_EXTENSIONS: "/DeveloperExtensions",
   EMPTY: "",
 } as const;
-export type DictType = typeof dictTypes[keyof typeof dictTypes]
-  | StreamType | UserTypes;
+export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
 
 export const valueTypes = {
-  NONE: 0,
-  REF: 1,
-  DICT: 2,
-  ARRAY: 3,
-  STRING_HEX: 4,
-  STRING_LITERAL: 5,
+  UNKNOWN: 0,
+  NULL: 1,
+  BOOLEAN: 2,
+  NUMBER: 3,
+  STRING_LITERAL: 4,
+  STRING_HEX: 5,
   NAME: 6,
-  NUMBER: 7,
-  COMMENT: 8,
+  ARRAY: 7,
+  DICTIONARY: 8,
+  STREAM: 9,
+  REF: 10,
+  COMMENT: 11,
 } as const;
 export type ValueType = typeof valueTypes[keyof typeof valueTypes];
 

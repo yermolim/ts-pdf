@@ -1,4 +1,5 @@
 import { keywordCodes } from "../../common/codes";
+import { objectTypes } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
 import { IndirectObjectInfo } from "../core/indirect-object-info";
 import { XRef } from "./x-ref";
@@ -22,7 +23,7 @@ export class XRefParser {
       return null;
     }
 
-    const xrefIndex = this._parser.parseNumberAtIndex(xrefStartIndex.end + 1);
+    const xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
     if (!xrefIndex) {
       return null;
     }
@@ -44,13 +45,10 @@ export class XRefParser {
     }
 
     const xrefObj = IndirectObjectInfo.parse(this._parser, xrefIndex.value, false);    
-    if (!xrefObj) {      
+    if (!xrefObj || xrefObj.value.type !== objectTypes.STREAM) {      
       return null;
     }
-    console.log("XRef is stream");
-    console.log(xrefObj);
-    console.log(String.fromCharCode(...this._parser["_data"].slice(xrefObj.start, xrefObj.end + 1)));
-    
+    console.log("XRef is stream");    
     return XRefStream.parse(this._parser, xrefObj.value);
   }
 }
