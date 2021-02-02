@@ -1,5 +1,5 @@
 import { streamTypes } from "../../common/const";
-import { IndirectObjectInfo } from "../core/indirect-object-info";
+import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
 import { Stream } from "../core/stream";
 
 export class MetadataStream extends Stream {
@@ -8,8 +8,8 @@ export class MetadataStream extends Stream {
    */
   readonly Subtype: "/XML" = "/XML";
   
-  constructor(info: IndirectObjectInfo) {
-    super(info, streamTypes.METADATA_STREAM);
+  constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo, streamTypes.METADATA_STREAM);
   }
   
   toArray(): Uint8Array {

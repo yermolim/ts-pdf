@@ -1,12 +1,12 @@
 import { Dict } from "./dict";
 import { Stream } from "./stream";
-import { IndirectObjectInfo } from "./indirect-object-info";
+import { IndirectObjectParseInfo } from "./indirect-object-parse-info";
 
 export abstract class IndirectObject {
-  readonly info: IndirectObjectInfo;
+  readonly parseInfo: IndirectObjectParseInfo;
 
-  protected constructor(info: IndirectObjectInfo) {
-    this.info = info;
+  protected constructor(parseInfo?: IndirectObjectParseInfo) {
+    this.parseInfo = parseInfo;
   }
 
   abstract toArray(): Uint8Array;
@@ -15,8 +15,8 @@ export abstract class IndirectObject {
 export class IndirectArrayObject extends IndirectObject {
   content: []; 
 
-  constructor(info: IndirectObjectInfo) {
-    super(info);
+  constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo);
   }
 
   toArray(): Uint8Array {
@@ -27,8 +27,8 @@ export class IndirectArrayObject extends IndirectObject {
 export class IndirectDictObject<T extends Dict> extends IndirectObject {
   content: T; 
 
-  constructor(info: IndirectObjectInfo) {
-    super(info);
+  constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo);
   }
 
   toArray(): Uint8Array {
@@ -37,7 +37,7 @@ export class IndirectDictObject<T extends Dict> extends IndirectObject {
 }
 
 export abstract class IndirectStreamObject extends IndirectObject {
-  protected constructor(info: IndirectObjectInfo) {
-    super(info);
+  protected constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo);
   }
 }

@@ -883,6 +883,16 @@ const streamFilters = {
     LZW: "/LZWDecode",
     RLX: "/RunLengthDecode",
 };
+const flatePredictors = {
+    NONE: 1,
+    TIFF: 2,
+    PNG_NONE: 10,
+    PNG_SUB: 11,
+    PNG_UP: 12,
+    PNG_AVERAGE: 13,
+    PNG_PAETH: 14,
+    PNG_OPTIMUM: 15,
+};
 const dictTypes = {
     XREF: "/XRef",
     XOBJECT: "/XObject",
@@ -1394,6 +1404,35 @@ class Parser {
         }
         return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
     }
+    skipEmpty(start) {
+        let index = this.findNonSpaceIndex("straight", start);
+        if (index === -1) {
+            return -1;
+        }
+        if (this._data[index] === codes.PERCENT) {
+            const afterComment = this.findNewLineIndex("straight", index + 1);
+            if (afterComment === -1) {
+                return -1;
+            }
+            index = this.findNonSpaceIndex("straight", afterComment);
+        }
+        return index;
+    }
+    skipToNextName(start, max) {
+        start || (start = 0);
+        max = max
+            ? Math.max(max, this._maxIndex)
+            : 0;
+        if (max < start) {
+            return -1;
+        }
+        for (let i = start; i <= max; i++) {
+            if (this._data[i] === codes.SLASH) {
+                return i;
+            }
+        }
+        return -1;
+    }
     getCharCode(index) {
         return this._data[index];
     }
@@ -1438,20 +1477,6 @@ class Parser {
             }
         }
         return -1;
-    }
-    skipEmpty(start) {
-        let index = this.findNonSpaceIndex("straight", start);
-        if (index === -1) {
-            return -1;
-        }
-        if (this._data[index] === codes.PERCENT) {
-            const afterComment = this.findNewLineIndex("straight", index + 1);
-            if (afterComment === -1) {
-                return -1;
-            }
-            index = this.findNonSpaceIndex("straight", afterComment);
-        }
-        return index;
     }
 }
 
@@ -1510,8 +1535,9 @@ class IndirectObjectId {
     }
 }
 
-class IndirectObjectInfo {
-    constructor(type, id, start, end, contentStart, contentEnd, dictStart, dictEnd, streamStart, streamEnd) {
+class IndirectObjectParseInfo {
+    constructor(parser, type, id, start, end, contentStart, contentEnd, dictStart, dictEnd, streamStart, streamEnd) {
+        this.parser = parser;
         this.type = type;
         this.id = id;
         this.start = start;
@@ -1601,11 +1627,7 @@ class IndirectObjectInfo {
                     return null;
             }
         }
-        const info = new IndirectObjectInfo(type, id.value, id.start, objEndIndex.end, contentStart, contentEnd, dictStart, dictEnd, streamStart, streamEnd);
-        console.log(parser.sliceChars(info.start, info.end));
-        console.log(parser.sliceChars(info.contentStart, info.contentEnd));
-        console.log(parser.sliceChars(info.dictStart, info.dictEnd));
-        console.log(parser.sliceChars(info.streamStart, info.streamEnd));
+        const info = new IndirectObjectParseInfo(parser, type, id.value, id.start, objEndIndex.end, contentStart, contentEnd, dictStart, dictEnd, streamStart, streamEnd);
         return {
             value: info,
             start: id.start,
@@ -1638,37 +1660,27 @@ class XRefHybrid extends XRef {
     }
 }
 
-class IndirectObject {
-    constructor(info) {
-        this.info = info;
-    }
-}
-class IndirectStreamObject extends IndirectObject {
-    constructor(info) {
-        super(info);
-    }
-}
-
-class Stream extends IndirectStreamObject {
-    constructor(info, type = null) {
-        super(info);
+class Dict {
+    constructor(type) {
+        this._customProps = new Map();
         this.Type = type;
     }
-    decode() {
-        return new Uint8Array();
+    get customProps() {
+        return new Map(this._customProps);
     }
 }
 
-class TrailerStream extends Stream {
-    constructor(info) {
-        super(info, dictTypes.XREF);
+class FlateParamsDict extends Dict {
+    constructor() {
+        super(dictTypes.EMPTY);
+        this.Predictor = flatePredictors.NONE;
+        this.Colors = 1;
+        this.BitsPerComponent = 8;
+        this.Columns = 1;
     }
-    static parse(parser, info) {
-        if (!parser || !info) {
-            return null;
-        }
-        const trailer = new TrailerStream(info);
-        let i = info.dictStart;
+    static parse(parser, start, end) {
+        const dict = new FlateParamsDict();
+        let i = start + 2;
         let name;
         let parseResult;
         while (true) {
@@ -1677,19 +1689,105 @@ class TrailerStream extends Stream {
                 i = parseResult.end + 1;
                 name = parseResult.value;
                 switch (name) {
+                    case "/Predictor":
+                        const predictor = parser.parseNumberAt(i, false);
+                        if (predictor) {
+                            dict.Predictor = predictor.value;
+                            i = predictor.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Colors property value");
+                        }
+                        break;
+                    case "/Colors":
+                        const colors = parser.parseNumberAt(i, false);
+                        if (colors) {
+                            dict.Colors = colors.value;
+                            i = colors.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Colors property value");
+                        }
+                        break;
+                    case "/BitsPerComponent":
+                        const bits = parser.parseNumberAt(i, false);
+                        if (bits) {
+                            dict.BitsPerComponent = bits.value;
+                            i = bits.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BitsPerComponent property value");
+                        }
+                        break;
+                    case "/Columns":
+                        const columns = parser.parseNumberAt(i, false);
+                        if (columns) {
+                            dict.Columns = columns.value;
+                            i = columns.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Columns property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return { value: dict, start, end };
+    }
+}
+
+class IndirectObject {
+    constructor(parseInfo) {
+        this.parseInfo = parseInfo;
+    }
+}
+class IndirectStreamObject extends IndirectObject {
+    constructor(parseInfo) {
+        super(parseInfo);
+    }
+}
+
+class Stream extends IndirectStreamObject {
+    constructor(parseInfo = null, type = null) {
+        super(parseInfo);
+        this.Type = type;
+    }
+    decode() {
+        return new Uint8Array();
+    }
+    tryParseProps() {
+        const info = this.parseInfo;
+        if (!info || !info.parser || info.type !== objectTypes.STREAM) {
+            return false;
+        }
+        let i = info.dictStart;
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = info.parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
                     case "/Type":
-                        const type = parser.parseNameAt(i);
-                        if (type && type.value === dictTypes.XREF) {
+                        const type = info.parser.parseNameAt(i);
+                        if (type) {
                             i = type.end + 1;
                         }
                         else {
-                            return null;
+                            throw new Error("Can't parse /Type property value");
                         }
                         break;
                     case "/Length":
-                        const length = parser.parseNumberAt(i, false);
+                        const length = info.parser.parseNumberAt(i, false);
                         if (length) {
-                            trailer.Length = length.value;
+                            this.Length = length.value;
                             i = length.end + 1;
                         }
                         else {
@@ -1697,38 +1795,86 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/Filter":
-                        const filter = parser.parseNameAt(i);
+                        const filter = info.parser.parseNameAt(i);
                         if (filter && supportedFilters.has(filter.value)) {
-                            trailer.Filter = filter.value;
+                            this.Filter = filter.value;
                             i = filter.end + 1;
                         }
                         else {
                             throw new Error("Unsupported /Filter property value");
                         }
                         break;
-                    case "/DecodeParams":
-                        const decodeParamsBounds = parser.getDictBoundsAt(i);
+                    case "/DecodeParms":
+                        const decodeParamsBounds = info.parser.getDictBoundsAt(i);
                         if (decodeParamsBounds) {
+                            const params = FlateParamsDict.parse(info.parser, decodeParamsBounds.start, decodeParamsBounds.end);
+                            if (params) {
+                                this.DecodeParms = params.value;
+                            }
                             i = decodeParamsBounds.end + 1;
                         }
                         else {
-                            throw new Error("Can't parse /DecodeParams property value");
+                            throw new Error("Can't parse /DecodeParms property value");
                         }
                         break;
                     case "/DL":
-                        const dl = parser.parseNumberAt(i, false);
+                        const dl = info.parser.parseNumberAt(i, false);
                         if (dl) {
-                            trailer.Size = dl.value;
+                            this.DL = dl.value;
                             i = dl.end + 1;
                         }
                         else {
                             throw new Error("Can't parse /DL property value");
                         }
                         break;
+                    default:
+                        i = info.parser.skipToNextName(i, info.dictEnd);
+                        break;
+                }
+            }
+            else {
+                return true;
+            }
+        }
+    }
+}
+
+class TrailerStream extends Stream {
+    constructor(parseInfo) {
+        super(parseInfo, dictTypes.XREF);
+    }
+    static parse(info) {
+        const trailer = new TrailerStream(info);
+        const parseResult = trailer.tryParseProps();
+        return parseResult
+            ? { value: trailer, start: info.start, end: info.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps() {
+        const superIsParsed = super.tryParseProps();
+        if (!superIsParsed) {
+            return false;
+        }
+        if (this.Type !== dictTypes.XREF) {
+            return false;
+        }
+        const info = this.parseInfo;
+        let i = info.dictStart;
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = info.parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
                     case "/Size":
-                        const size = parser.parseNumberAt(i, false);
+                        const size = info.parser.parseNumberAt(i, false);
                         if (size) {
-                            trailer.Size = size.value;
+                            this.Size = size.value;
                             i = size.end + 1;
                         }
                         else {
@@ -1736,9 +1882,9 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/Prev":
-                        const prev = parser.parseNumberAt(i, false);
+                        const prev = info.parser.parseNumberAt(i, false);
                         if (prev) {
-                            trailer.Prev = prev.value;
+                            this.Prev = prev.value;
                             i = prev.end + 1;
                         }
                         else {
@@ -1746,9 +1892,9 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/Root":
-                        const rootId = IndirectObjectId.parseRef(parser, i);
+                        const rootId = IndirectObjectId.parseRef(info.parser, i);
                         if (rootId) {
-                            trailer.Root = rootId.value;
+                            this.Root = rootId.value;
                             i = rootId.end + 1;
                         }
                         else {
@@ -1756,9 +1902,9 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/Encrypt":
-                        const encryptId = IndirectObjectId.parseRef(parser, i);
+                        const encryptId = IndirectObjectId.parseRef(info.parser, i);
                         if (encryptId) {
-                            trailer.Encrypt = encryptId.value;
+                            this.Encrypt = encryptId.value;
                             i = encryptId.end + 1;
                         }
                         else {
@@ -1766,9 +1912,9 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/Info":
-                        const infoId = IndirectObjectId.parseRef(parser, i);
+                        const infoId = IndirectObjectId.parseRef(info.parser, i);
                         if (infoId) {
-                            trailer.Info = infoId.value;
+                            this.Info = infoId.value;
                             i = infoId.end + 1;
                         }
                         else {
@@ -1776,9 +1922,9 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/ID":
-                        const ids = parser.parseHexArrayAt(i);
+                        const ids = info.parser.parseHexArrayAt(i);
                         if (ids) {
-                            trailer.ID = [ids.value[0], ids.value[1]];
+                            this.ID = [ids.value[0], ids.value[1]];
                             i = ids.end + 1;
                         }
                         else {
@@ -1786,9 +1932,9 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/Index":
-                        const index = parser.parseNumberArrayAt(i);
+                        const index = info.parser.parseNumberArrayAt(i);
                         if (index) {
-                            trailer.Index = index.value;
+                            this.Index = index.value;
                             i = index.end + 1;
                         }
                         else {
@@ -1796,30 +1942,24 @@ class TrailerStream extends Stream {
                         }
                         break;
                     case "/W":
-                        const w = parser.parseNumberArrayAt(i);
+                        const w = info.parser.parseNumberArrayAt(i);
                         if (w) {
-                            trailer.W = [w.value[0], w.value[1], w.value[2]];
+                            this.W = [w.value[0], w.value[1], w.value[2]];
                             i = w.end + 1;
                         }
                         else {
                             throw new Error("Can't parse /W property value");
                         }
                         break;
+                    default:
+                        i = info.parser.skipToNextName(i, info.dictEnd);
+                        break;
                 }
             }
             else {
-                console.log(trailer);
-                break;
+                return true;
             }
         }
-        return {
-            value: trailer,
-            start: info.start,
-            end: info.end,
-        };
-    }
-    toArray() {
-        return new Uint8Array();
     }
 }
 
@@ -1828,16 +1968,18 @@ class XRefStream extends XRef {
         super(xRefTypes.STREAM);
         this._trailerStream = trailer;
     }
-    static parse(parser, info) {
-        if (!parser || !info) {
+    static parse(info) {
+        if (!info) {
             return null;
         }
-        const trailerStream = TrailerStream.parse(parser, info);
+        const trailerStream = TrailerStream.parse(info);
         if (!trailerStream) {
             return null;
         }
+        const xrefStream = new XRefStream(trailerStream.value);
+        console.log(xrefStream);
         return {
-            value: new XRefStream(trailerStream.value),
+            value: xrefStream,
             start: null,
             end: null,
         };
@@ -1884,12 +2026,12 @@ class XRefParser {
                 return XRefTable.parse(this._parser, xrefIndex.value);
             }
         }
-        const xrefObj = IndirectObjectInfo.parse(this._parser, xrefIndex.value, false);
-        if (!xrefObj || xrefObj.value.type !== objectTypes.STREAM) {
+        const xrefParseInfo = IndirectObjectParseInfo.parse(this._parser, xrefIndex.value, false);
+        if (!xrefParseInfo || xrefParseInfo.value.type !== objectTypes.STREAM) {
             return null;
         }
         console.log("XRef is stream");
-        return XRefStream.parse(this._parser, xrefObj.value);
+        return XRefStream.parse(xrefParseInfo.value);
     }
 }
 

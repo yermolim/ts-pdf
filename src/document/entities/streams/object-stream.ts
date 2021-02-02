@@ -1,5 +1,5 @@
 import { IndirectObjectId } from "../core/indirect-object-id";
-import { IndirectObjectInfo } from "../core/indirect-object-info";
+import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
 import { Stream } from "../core/stream";
 
 export class ObjectStream extends Stream {
@@ -17,8 +17,8 @@ export class ObjectStream extends Stream {
    */
   Extends: IndirectObjectId;
   
-  constructor(info: IndirectObjectInfo) {
-    super(info, "/ObjStm");
+  constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo, "/ObjStm");
   }
   
   toArray(): Uint8Array {

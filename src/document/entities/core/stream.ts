@@ -1,13 +1,12 @@
-import { StreamFilter, StreamType } from "../../common/const";
+import { dictTypes, objectTypes, StreamFilter, StreamType, supportedFilters } from "../../common/const";
 import { Dict } from "./dict";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 import { IndirectStreamObject } from "./indirect-object";
-import { IndirectObjectInfo } from "./indirect-object-info";
+import { IndirectObjectParseInfo } from "./indirect-object-parse-info";
+import { ParseResult } from "../../parser";
+import { IndirectObjectId } from "./indirect-object-id";
 
 export abstract class Stream extends IndirectStreamObject {
-  readonly start: number;
-  readonly end: number;
-
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: StreamType;
 
@@ -28,7 +27,7 @@ export abstract class Stream extends IndirectStreamObject {
    * (Optional) A parameter dictionary or an array of such dictionaries, 
    * used by the filters specified by Filter
    */
-  DecodeParams: (Dict | FlateParamsDict)[] | Dict | FlateParamsDict;
+  DecodeParms: (Dict | FlateParamsDict)[] | Dict | FlateParamsDict;
   /**
    * (Optional; PDF 1.5+) A non-negative integer representing the number of bytes 
    * in the decoded (defiltered) stream. It can be used to determine, for example, 
@@ -36,12 +35,92 @@ export abstract class Stream extends IndirectStreamObject {
    */
   DL: number;
   
-  protected constructor(info: IndirectObjectInfo, type: StreamType = null) {
-    super(info);
+  protected constructor(parseInfo: IndirectObjectParseInfo = null, 
+    type: StreamType = null) {
+    super(parseInfo);
     this.Type = type;
   }
 
   decode(): Uint8Array {
     return new Uint8Array();
+  }
+
+  /**
+   * try parse and fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(): boolean {
+    const info = this.parseInfo;
+    if (!info || !info.parser || info.type !== objectTypes.STREAM) {
+      return false;
+    }
+    
+    let i = info.dictStart;
+    let name: string;
+    let parseResult: ParseResult<string>;
+    while (true) {
+      parseResult = info.parser.parseNameAt(i);
+      if (parseResult) {
+        i = parseResult.end + 1;
+        name = parseResult.value;
+        switch (name) {
+          case "/Type":
+            const type = info.parser.parseNameAt(i);
+            if (type) {
+              i = type.end + 1;
+            } else {
+              throw new Error("Can't parse /Type property value");
+            }
+            break;
+          case "/Length":
+            const length = info.parser.parseNumberAt(i, false);
+            if (length) {
+              this.Length = length.value;
+              i = length.end + 1;
+            } else {              
+              throw new Error("Can't parse /Length property value");
+            }
+            break;
+          case "/Filter":
+            // TODO: add support for filter arrays
+            const filter = info.parser.parseNameAt(i);
+            if (filter && supportedFilters.has(filter.value)) {
+              this.Filter = <StreamFilter>filter.value;
+              i = filter.end + 1;
+            } else {              
+              throw new Error("Unsupported /Filter property value");
+            }
+            break;
+          case "/DecodeParms":
+            // TODO: add support for decode params arrays
+            const decodeParamsBounds = info.parser.getDictBoundsAt(i);
+            if (decodeParamsBounds) {
+              const params = FlateParamsDict.parse(info.parser, 
+                decodeParamsBounds.start, decodeParamsBounds.end);
+              if (params) {
+                this.DecodeParms = params.value;
+              }
+              i = decodeParamsBounds.end + 1;
+            } else {              
+              throw new Error("Can't parse /DecodeParms property value");
+            }
+            break;
+          case "/DL":
+            const dl = info.parser.parseNumberAt(i, false);
+            if (dl) {
+              this.DL = dl.value;
+              i = dl.end + 1;
+            } else {              
+              throw new Error("Can't parse /DL property value");
+            }
+            break;
+          default:
+            // skip to next name
+            i = info.parser.skipToNextName(i, info.dictEnd);
+            break;
+        }
+      } else {
+        return true;
+      }
+    };
   }
 }

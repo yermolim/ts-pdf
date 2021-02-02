@@ -1,12 +1,13 @@
-import { dictTypes, StreamFilter, supportedFilters } from "../../common/const";
+import { dictTypes, objectTypes, StreamFilter, supportedFilters } from "../../common/const";
 import { HexString } from "../../common/hex-string";
 import { Parser, ParseResult } from "../../parser";
 import { IndirectObjectId } from "../core/indirect-object-id";
-import { IndirectObjectInfo } from "../core/indirect-object-info";
+import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { Stream } from "../core/stream";
 import { CatalogDict } from "../structure/catalog-dict";
 import { InfoDict } from "../structure/info-dict";
+import { codes } from "../../common/codes";
 
 export class TrailerStream extends Stream {
   /**
@@ -27,7 +28,7 @@ export class TrailerStream extends Stream {
    * (Required; shall be an indirect reference) The catalog dictionary 
    * for the PDF document contained in the file
    */
-  Root: IndirectObjectId | CatalogDict;
+  Root: IndirectObjectId;
   /**
    * (Required if document is encrypted; PDF 1.1+) 
    * The document’s encryption dictionary
@@ -37,7 +38,7 @@ export class TrailerStream extends Stream {
    * (Optional; shall be an indirect reference) 
    * The document’s information dictionary
    */
-  Info: IndirectObjectId | InfoDict;
+  Info: IndirectObjectId;
   /**
    * (Required if an Encrypt entry is present; optional otherwise; PDF 1.1+) 
    * An array of two byte-strings constituting a file identifier for the file. 
@@ -62,94 +63,68 @@ export class TrailerStream extends Stream {
    */
   W: [number, number, number];
   
-  constructor(info: IndirectObjectInfo) {
-    super(info, dictTypes.XREF);
+  constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo, dictTypes.XREF);
   }  
   
-  static parse(parser: Parser, info: IndirectObjectInfo): ParseResult<TrailerStream> {    
-    if (!parser || !info) {
-      return null;
-    }
+  static parse(info: IndirectObjectParseInfo): ParseResult<TrailerStream> {    
     const trailer = new TrailerStream(info);
-    // trailer.id = info.id;
+    const parseResult = trailer.tryParseProps();
 
+    return parseResult
+      ? {value: trailer, start: info.start, end: info.end}
+      : null;
+  }
+
+  toArray(): Uint8Array {
+    return new Uint8Array();
+  }
+
+  /**
+   * fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(): boolean {
+    const superIsParsed = super.tryParseProps();
+    if (!superIsParsed) {
+      return false;
+    }
+
+    if (this.Type !== dictTypes.XREF) {
+      return false;
+    }
+    
+    const info = this.parseInfo;
     let i = info.dictStart;
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = info.parser.parseNameAt(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/Type":
-            const type = parser.parseNameAt(i);
-            if (type && type.value === dictTypes.XREF) {
-              i = type.end + 1;
-            } else {              
-              // it's not a trailer stream
-              return null;
-            }
-            break;
-          case "/Length":
-            const length = parser.parseNumberAt(i, false);
-            if (length) {
-              trailer.Length = length.value;
-              i = length.end + 1;
-            } else {              
-              throw new Error("Can't parse /Length property value");
-            }
-            break;
-          case "/Filter":
-            // TODO: add support for filter arrays
-            const filter = parser.parseNameAt(i);
-            if (filter && supportedFilters.has(filter.value)) {
-              trailer.Filter = <StreamFilter>filter.value;
-              i = filter.end + 1;
-            } else {              
-              throw new Error("Unsupported /Filter property value");
-            }
-            break;
-          case "/DecodeParams":
-            // TODO: implement
-            const decodeParamsBounds = parser.getDictBoundsAt(i);
-            if (decodeParamsBounds) {
-              i = decodeParamsBounds.end + 1;
-            } else {              
-              throw new Error("Can't parse /DecodeParams property value");
-            }
-            break;
-          case "/DL":
-            const dl = parser.parseNumberAt(i, false);
-            if (dl) {
-              trailer.Size = dl.value;
-              i = dl.end + 1;
-            } else {              
-              throw new Error("Can't parse /DL property value");
-            }
-            break;
           case "/Size":
-            const size = parser.parseNumberAt(i, false);
+            const size = info.parser.parseNumberAt(i, false);
             if (size) {
-              trailer.Size = size.value;
+              this.Size = size.value;
               i = size.end + 1;
             } else {              
               throw new Error("Can't parse /Size property value");
             }
             break;
           case "/Prev":
-            const prev = parser.parseNumberAt(i, false);
+            const prev = info.parser.parseNumberAt(i, false);
             if (prev) {
-              trailer.Prev = prev.value;
+              this.Prev = prev.value;
               i = prev.end + 1;
             } else {              
               throw new Error("Can't parse /Size property value");
             }
             break;
           case "/Root":
-            const rootId = IndirectObjectId.parseRef(parser, i);
+            const rootId = IndirectObjectId.parseRef(info.parser, i);
             if (rootId) {
-              trailer.Root = rootId.value;
+              this.Root = rootId.value;
               i = rootId.end + 1;
             } else {              
               throw new Error("Can't parse /Root property value");
@@ -157,67 +132,58 @@ export class TrailerStream extends Stream {
             break;
           case "/Encrypt":
             // TODO: add direct encrypt object support
-            const encryptId = IndirectObjectId.parseRef(parser, i);
+            const encryptId = IndirectObjectId.parseRef(info.parser, i);
             if (encryptId) {
-              trailer.Encrypt = encryptId.value;
+              this.Encrypt = encryptId.value;
               i = encryptId.end + 1;
             } else {              
               throw new Error("Can't parse /Ebcrypt property value");
             }
             break;
           case "/Info":
-            const infoId = IndirectObjectId.parseRef(parser, i);
+            const infoId = IndirectObjectId.parseRef(info.parser, i);
             if (infoId) {
-              trailer.Info = infoId.value;
+              this.Info = infoId.value;
               i = infoId.end + 1;
             } else {              
               throw new Error("Can't parse /Info property value");
             }
             break;
           case "/ID":
-            const ids = parser.parseHexArrayAt(i);
+            const ids = info.parser.parseHexArrayAt(i);
             if (ids) {
-              trailer.ID = [ids.value[0], ids.value[1]];
+              this.ID = [ids.value[0], ids.value[1]];
               i = ids.end + 1;
             } else {              
               throw new Error("Can't parse /ID property value");
             }
             break;
           case "/Index":
-            const index = parser.parseNumberArrayAt(i);
+            const index = info.parser.parseNumberArrayAt(i);
             if (index) {
-              trailer.Index = index.value;
+              this.Index = index.value;
               i = index.end + 1;
             } else {              
               throw new Error("Can't parse /Index property value");
             }
             break;
           case "/W":
-            const w = parser.parseNumberArrayAt(i);
+            const w = info.parser.parseNumberArrayAt(i);
             if (w) {
-              trailer.W = [w.value[0], w.value[1], w.value[2]];
+              this.W = [w.value[0], w.value[1], w.value[2]];
               i = w.end + 1;
             } else {              
               throw new Error("Can't parse /W property value");
             }
             break;
           default:
+            // skip to next name
+            i = info.parser.skipToNextName(i, info.dictEnd);
             break;
         }
       } else {
-        console.log(trailer);
-        break;
+        return true;
       }
     };
-
-    return {
-      value: trailer,
-      start: info.start,
-      end: info.end,
-    };
-  }
-
-  toArray(): Uint8Array {
-    return new Uint8Array();
   }
 }

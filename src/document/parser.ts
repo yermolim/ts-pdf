@@ -22,9 +22,9 @@ export interface ParseResult<T> {
 }
 
 export class Parser {
-  private _data: Uint8Array;
-  
-  private _maxIndex: number;
+  private readonly _data: Uint8Array;  
+  private readonly _maxIndex: number;
+
   public get maxIndex(): number {
     return this._maxIndex;
   }
@@ -491,6 +491,42 @@ export class Parser {
   }
   //#endregion
 
+  //#region skip methods
+  skipEmpty(start: number): number {
+    let index = this.findNonSpaceIndex("straight", start);
+    if (index === -1) {
+      return -1;
+    }
+    if (this._data[index] === codes.PERCENT) {
+      // it's a comment. skip it
+      const afterComment = this.findNewLineIndex("straight", index + 1);
+      if (afterComment === -1) {
+        return -1;
+      }
+      index = this.findNonSpaceIndex("straight", afterComment);
+    }
+    return index;
+  }
+
+  skipToNextName(start: number, max: number): number {
+    start ||= 0;
+    max = max 
+      ? Math.max(max, this._maxIndex)
+      : 0;
+    if (max < start) {
+      return -1;
+    }
+
+    for (let i = start; i <= max; i++) {
+      // TODO: add a check if slash is inside a literal string
+      if (this._data[i] === codes.SLASH) {
+        return i;
+      }
+    }
+    return -1;
+  }
+  //#endregion
+
   //#region debug methods
   getCharCode(index: number): number {    
     return this._data[index];
@@ -548,22 +584,6 @@ export class Parser {
     }
     
     return -1; 
-  }
-
-  private skipEmpty(start: number): number {
-    let index = this.findNonSpaceIndex("straight", start);
-    if (index === -1) {
-      return -1;
-    }
-    if (this._data[index] === codes.PERCENT) {
-      // it's a comment. skip it
-      const afterComment = this.findNewLineIndex("straight", index + 1);
-      if (afterComment === -1) {
-        return -1;
-      }
-      index = this.findNonSpaceIndex("straight", afterComment);
-    }
-    return index;
   }
   //#endregion
 }

@@ -3,8 +3,10 @@ import { ObjectType, objectTypes, valueTypes } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
 import { IndirectObjectId } from "./indirect-object-id";
 
-export class IndirectObjectInfo {
-  constructor(readonly type: ObjectType, 
+export class IndirectObjectParseInfo {
+  constructor(
+    readonly parser: Parser,
+    readonly type: ObjectType, 
     readonly id: IndirectObjectId, 
     readonly start: number, 
     readonly end: number,
@@ -16,7 +18,7 @@ export class IndirectObjectInfo {
     readonly streamEnd?: number) { }
     
   static parse(parser: Parser, index: number, 
-    skipEmpty = true): ParseResult<IndirectObjectInfo> {
+    skipEmpty = true): ParseResult<IndirectObjectParseInfo> {
     const id = IndirectObjectId.parse(parser, index, skipEmpty);
     if (!id) {
       return null;
@@ -109,13 +111,10 @@ export class IndirectObjectInfo {
       }
     }    
     
-    const info = new IndirectObjectInfo(type, id.value, id.start, objEndIndex.end,
-      contentStart, contentEnd, dictStart, dictEnd, streamStart, streamEnd);
-
-    console.log(parser.sliceChars(info.start, info.end));
-    console.log(parser.sliceChars(info.contentStart, info.contentEnd));
-    console.log(parser.sliceChars(info.dictStart, info.dictEnd));
-    console.log(parser.sliceChars(info.streamStart, info.streamEnd));
+    const info = new IndirectObjectParseInfo(parser, 
+      type, id.value, id.start, objEndIndex.end,
+      contentStart, contentEnd, 
+      dictStart, dictEnd, streamStart, streamEnd);
 
     return {
       value: info,

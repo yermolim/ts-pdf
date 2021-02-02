@@ -3,7 +3,7 @@ import { MetadataStream } from "./metadata-stream";
 import { IndirectObjectId } from "../core/indirect-object-id";
 import { Stream } from "../core/stream";
 import { streamTypes } from "../../common/const";
-import { IndirectObjectInfo } from "../core/indirect-object-info";
+import { IndirectObjectParseInfo } from "../core/indirect-object-parse-info";
 
 export class XFormStream extends Stream {
   /**
@@ -38,8 +38,8 @@ export class XFormStream extends Stream {
 
   //TODO: add remaining properties
   
-  constructor(info: IndirectObjectInfo) {
-    super(info, streamTypes.FORM_XOBJECT);
+  constructor(parseInfo?: IndirectObjectParseInfo) {
+    super(parseInfo, streamTypes.FORM_XOBJECT);
   }
 
   toArray(): Uint8Array {
