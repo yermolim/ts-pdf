@@ -1,6 +1,6 @@
-import { DictObj } from "../../core/dict-obj";
+import { Dict } from "../../core/dict";
 import { PageElementType } from "../oc-const";
-export class PageElementDict extends DictObj {
+export class PageElementDict extends Dict {
   /** (Required) */
   Subtype: PageElementType;
   

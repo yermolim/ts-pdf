@@ -1,8 +1,8 @@
-import { dictObjTypes } from "../../common/const";
+import { dictTypes } from "../../common/const";
 import { DateString } from "../../common/date-string";
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 
-export class InfoDict extends DictObj {
+export class InfoDict extends Dict {
   /** (Optional; PDF 1.1+) */
   Title: string;
   /** (Optional) */
@@ -33,6 +33,6 @@ export class InfoDict extends DictObj {
   ModDate: DateString;
   
   constructor() {
-    super(dictObjTypes.EMPTY);
+    super(dictTypes.EMPTY);
   }
 }

@@ -1,4 +1,4 @@
-import { ObjId } from "../core/obj-id";
+import { IndirectObjectId } from "../core/indirect-object-id";
 import { StreamDict } from "./stream-dict";
 
 export class ObjectStream extends StreamDict {
@@ -14,7 +14,7 @@ export class ObjectStream extends StreamDict {
    * (Optional) A reference to another object stream, 
    * of which the current object stream shall be considered an extension
    */
-  Extends: ObjId;
+  Extends: IndirectObjectId;
   
   constructor() {
     super("/ObjStm");

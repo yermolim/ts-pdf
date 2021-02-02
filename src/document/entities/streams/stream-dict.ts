@@ -1,8 +1,8 @@
 import { StreamFilter, StreamType } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 
-export abstract class StreamDict extends DictObj {
+export abstract class StreamDict extends Dict {
   /**
    * (Required) The number of bytes from the beginning of the line 
    * following the keyword stream to the last byte just before the keyword endstream. 
@@ -20,7 +20,7 @@ export abstract class StreamDict extends DictObj {
    * (Optional) A parameter dictionary or an array of such dictionaries, 
    * used by the filters specified by Filter
    */
-  DecodeParams: (DictObj | FlateParamsDict)[] | DictObj | FlateParamsDict;
+  DecodeParams: (Dict | FlateParamsDict)[] | Dict | FlateParamsDict;
   /**
    * (Optional; PDF 1.5+) A non-negative integer representing the number of bytes 
    * in the decoded (defiltered) stream. It can be used to determine, for example, 

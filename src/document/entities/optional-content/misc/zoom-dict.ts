@@ -1,6 +1,6 @@
-import { DictObj } from "../../core/dict-obj";
+import { Dict } from "../../core/dict";
 
-export class ZoomDict extends DictObj {
+export class ZoomDict extends Dict {
   /**
    * (Required) The minimum recommended magnification factor 
    * at which the group shall be ON

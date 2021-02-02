@@ -1,8 +1,8 @@
-import { dictObjTypes, StreamFilter, supportedFilters } from "../../common/const";
+import { dictTypes, StreamFilter, supportedFilters } from "../../common/const";
 import { HexString } from "../../common/hex-string";
 import { Parser, ParseResult } from "../../parser";
-import { ObjId } from "../core/obj-id";
-import { ObjInfo } from "../core/obj-info";
+import { IndirectObjectId } from "../core/indirect-object-id";
+import { IndirectObjectInfo } from "../core/indirect-object-info";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { StreamDict } from "../streams/stream-dict";
 import { CatalogDict } from "../structure/catalog-dict";
@@ -27,17 +27,17 @@ export class TrailerStream extends StreamDict {
    * (Required; shall be an indirect reference) The catalog dictionary 
    * for the PDF document contained in the file
    */
-  Root: ObjId | CatalogDict;
+  Root: IndirectObjectId | CatalogDict;
   /**
    * (Required if document is encrypted; PDF 1.1+) 
    * The document’s encryption dictionary
    */
-  Encrypt: ObjId | EncryptionDict;
+  Encrypt: IndirectObjectId | EncryptionDict;
   /**
    * (Optional; shall be an indirect reference) 
    * The document’s information dictionary
    */
-  Info: ObjId | InfoDict;
+  Info: IndirectObjectId | InfoDict;
   /**
    * (Required if an Encrypt entry is present; optional otherwise; PDF 1.1+) 
    * An array of two byte-strings constituting a file identifier for the file. 
@@ -63,15 +63,15 @@ export class TrailerStream extends StreamDict {
   W: [number, number, number];
   
   constructor() {
-    super(dictObjTypes.XREF);
+    super(dictTypes.XREF);
   }  
   
-  static parse(parser: Parser, info: ObjInfo): ParseResult<TrailerStream> {    
+  static parse(parser: Parser, info: IndirectObjectInfo): ParseResult<TrailerStream> {    
     if (!parser || !info) {
       return null;
     }
     const trailer = new TrailerStream();
-    trailer.id = info.id;
+    // trailer.id = info.id;
 
     let i = info.dictStart;
     let name: string;
@@ -84,7 +84,7 @@ export class TrailerStream extends StreamDict {
         switch (name) {
           case "/Type":
             const type = parser.parseNameAtIndex(i);
-            if (type && type.value === dictObjTypes.XREF) {
+            if (type && type.value === dictTypes.XREF) {
               i = type.end + 1;
             } else {              
               // it's not a trailer stream
@@ -147,7 +147,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/Root":
-            const rootId = ObjId.parseRef(parser, i);
+            const rootId = IndirectObjectId.parseRef(parser, i);
             if (rootId) {
               trailer.Root = rootId.value;
               i = rootId.end + 1;
@@ -157,7 +157,7 @@ export class TrailerStream extends StreamDict {
             break;
           case "/Encrypt":
             // TODO: add direct encrypt object support
-            const encryptId = ObjId.parseRef(parser, i);
+            const encryptId = IndirectObjectId.parseRef(parser, i);
             if (encryptId) {
               trailer.Encrypt = encryptId.value;
               i = encryptId.end + 1;
@@ -166,7 +166,7 @@ export class TrailerStream extends StreamDict {
             }
             break;
           case "/Info":
-            const infoId = ObjId.parseRef(parser, i);
+            const infoId = IndirectObjectId.parseRef(parser, i);
             if (infoId) {
               trailer.Info = infoId.value;
               i = infoId.end + 1;

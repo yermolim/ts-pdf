@@ -1,8 +1,8 @@
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { OcConfigurationDict } from "./oc-configuration-dict";
 import { OcGroupDict } from "./oc-group-dict";
 
-export class OcPropertiesDict extends DictObj {
+export class OcPropertiesDict extends Dict {
   /**
    * (Required) An array of indirect references to all the optional content groups 
    * in the document, in any order. Every optional content group shall be included in this array

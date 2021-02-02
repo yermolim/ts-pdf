@@ -1,7 +1,7 @@
 import { OnOffState } from "../../../common/const";
-import { DictObj } from "../../core/dict-obj";
+import { Dict } from "../../core/dict";
 
-export class ViewDict extends DictObj {
+export class ViewDict extends Dict {
   /** (Required) */
   ViewState: OnOffState;
   

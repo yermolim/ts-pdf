@@ -1,11 +1,11 @@
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 
 export const borderEffects = {
   NONE: "/S",
   CLOUDY: "/C",
 };
 
-export class BorderEffectDict extends DictObj {
+export class BorderEffectDict extends Dict {
   /**(Optional) A name representing the border effect to apply */
   S = borderEffects.NONE;
   /**(Optional; valid only if the value of S is C) 

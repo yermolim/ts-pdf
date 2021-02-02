@@ -871,7 +871,7 @@ const streamFilters = {
     LZW: "/LZWDecode",
     RLX: "/RunLengthDecode",
 };
-const dictObjTypes = {
+const dictTypes = {
     XREF: "/XRef",
     XOBJECT: "/XObject",
     CATALOG: "/Catalog",
@@ -1218,7 +1218,6 @@ class Parser {
         let i = arrayStart + 1;
         let code;
         while (subArrayOpened || code !== codes.R_BRACKET) {
-            console.log(this.sliceChars(i));
             code = this._data[i++];
             if (code === codes.L_BRACKET) {
                 subArrayOpened++;
@@ -1392,7 +1391,7 @@ class Parser {
     }
 }
 
-class ObjId {
+class IndirectObjectId {
     constructor(id, generation) {
         this.id = id !== null && id !== void 0 ? id : 0;
         this.generation = generation !== null && generation !== void 0 ? generation : 0;
@@ -1414,13 +1413,13 @@ class ObjId {
             return null;
         }
         return {
-            value: new ObjId(id.value, generation.value),
+            value: new IndirectObjectId(id.value, generation.value),
             start,
             end: generation.end,
         };
     }
     static parseRef(parser, index, skipEmpty = true) {
-        const id = ObjId.parse(parser, index, skipEmpty);
+        const id = IndirectObjectId.parse(parser, index, skipEmpty);
         if (!id) {
             return null;
         }
@@ -1444,14 +1443,14 @@ class ObjId {
     }
 }
 
-class ObjInfo {
+class IndirectObjectInfo {
     constructor(id, start, end) {
         this.id = id;
         this.start = start;
         this.end = end;
     }
     static parse(parser, index, skipEmpty = true) {
-        const id = ObjId.parse(parser, index, skipEmpty);
+        const id = IndirectObjectId.parse(parser, index, skipEmpty);
         if (!id) {
             return null;
         }
@@ -1470,7 +1469,7 @@ class ObjInfo {
         if (!dictStartIndex) {
             return null;
         }
-        const info = new ObjInfo(id.value, id.start, objEndIndex.end);
+        const info = new IndirectObjectInfo(id.value, id.start, objEndIndex.end);
         const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
             direction: "reverse",
             minIndex: dictStartIndex.end + keywordCodes.DICT_END.length + keywordCodes.STREAM_START.length + 1,
@@ -1529,18 +1528,8 @@ class XRefHybrid extends XRef {
     }
 }
 
-class Obj {
-    constructor() {
-    }
-    toArray() {
-        return null;
-    }
-    ;
-}
-
-class DictObj extends Obj {
+class Dict {
     constructor(type) {
-        super();
         this._customProps = new Map();
         this.Type = type;
     }
@@ -1549,7 +1538,7 @@ class DictObj extends Obj {
     }
 }
 
-class StreamDict extends DictObj {
+class StreamDict extends Dict {
     constructor(type = null) {
         super(type);
     }
@@ -1557,14 +1546,13 @@ class StreamDict extends DictObj {
 
 class TrailerStream extends StreamDict {
     constructor() {
-        super(dictObjTypes.XREF);
+        super(dictTypes.XREF);
     }
     static parse(parser, info) {
         if (!parser || !info) {
             return null;
         }
         const trailer = new TrailerStream();
-        trailer.id = info.id;
         let i = info.dictStart;
         let name;
         let parseResult;
@@ -1573,11 +1561,10 @@ class TrailerStream extends StreamDict {
             if (parseResult) {
                 i = parseResult.end + 1;
                 name = parseResult.value;
-                console.log(name);
                 switch (name) {
                     case "/Type":
                         const type = parser.parseNameAtIndex(i);
-                        if (type && type.value === dictObjTypes.XREF) {
+                        if (type && type.value === dictTypes.XREF) {
                             i = type.end + 1;
                         }
                         else {
@@ -1607,7 +1594,6 @@ class TrailerStream extends StreamDict {
                     case "/DecodeParams":
                         const decodeParamsBounds = parser.getDictBoundsAtIndex(i);
                         if (decodeParamsBounds) {
-                            console.log(decodeParamsBounds);
                             i = decodeParamsBounds.end + 1;
                         }
                         else {
@@ -1645,7 +1631,7 @@ class TrailerStream extends StreamDict {
                         }
                         break;
                     case "/Root":
-                        const rootId = ObjId.parseRef(parser, i);
+                        const rootId = IndirectObjectId.parseRef(parser, i);
                         if (rootId) {
                             trailer.Root = rootId.value;
                             i = rootId.end + 1;
@@ -1655,7 +1641,7 @@ class TrailerStream extends StreamDict {
                         }
                         break;
                     case "/Encrypt":
-                        const encryptId = ObjId.parseRef(parser, i);
+                        const encryptId = IndirectObjectId.parseRef(parser, i);
                         if (encryptId) {
                             trailer.Encrypt = encryptId.value;
                             i = encryptId.end + 1;
@@ -1665,7 +1651,7 @@ class TrailerStream extends StreamDict {
                         }
                         break;
                     case "/Info":
-                        const infoId = ObjId.parseRef(parser, i);
+                        const infoId = IndirectObjectId.parseRef(parser, i);
                         if (infoId) {
                             trailer.Info = infoId.value;
                             i = infoId.end + 1;
@@ -1780,7 +1766,7 @@ class XRefParser {
                 return XRefTable.parse(this._parser, xrefIndex.value);
             }
         }
-        const xrefObj = ObjInfo.parse(this._parser, xrefIndex.value, false);
+        const xrefObj = IndirectObjectInfo.parse(this._parser, xrefIndex.value, false);
         if (!xrefObj) {
             return null;
         }

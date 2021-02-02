@@ -1,17 +1,15 @@
-import { DictObjType } from "../../common/const";
-import { Obj } from "./obj";
+import { DictType } from "../../common/const";
 
-export class DictObj extends Obj {
+export class Dict {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
-  readonly Type: DictObjType;
+  readonly Type: DictType;
 
   protected readonly _customProps = new Map<string, any>();
   get customProps(): Map<string, any>{
     return new Map<string, any>(this._customProps);
   }
 
-  protected constructor(type: DictObjType) {
-    super();
+  protected constructor(type: DictType) {
     this.Type = type;
   }
 }

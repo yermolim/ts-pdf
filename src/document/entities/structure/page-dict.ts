@@ -1,10 +1,10 @@
-import { dictObjTypes } from "../../common/const";
+import { dictTypes } from "../../common/const";
 import { AnnotationDict } from "../annotations/annotation-dict";
 import { DateString } from "../../common/date-string";
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { PageTreeDict } from "./page-tree-dict";
 
-export class PageDict extends DictObj {
+export class PageDict extends Dict {
   /**
    * (Required; shall be an indirect reference) 
    * The page tree node that is the immediate parent of this page object
@@ -37,6 +37,6 @@ export class PageDict extends DictObj {
   Annots: AnnotationDict[];
   
   constructor() {
-    super(dictObjTypes.PAGE);
+    super(dictTypes.PAGE);
   }
 }

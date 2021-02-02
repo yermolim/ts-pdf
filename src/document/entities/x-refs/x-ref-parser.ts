@@ -1,6 +1,6 @@
 import { keywordCodes } from "../../common/codes";
 import { Parser, ParseResult } from "../../parser";
-import { ObjInfo } from "../core/obj-info";
+import { IndirectObjectInfo } from "../core/indirect-object-info";
 import { XRef } from "./x-ref";
 import { XRefHybrid } from "./x-ref-hybrid";
 import { XRefStream } from "./x-ref-stream";
@@ -43,7 +43,7 @@ export class XRefParser {
       }
     }
 
-    const xrefObj = ObjInfo.parse(this._parser, xrefIndex.value, false);    
+    const xrefObj = IndirectObjectInfo.parse(this._parser, xrefIndex.value, false);    
     if (!xrefObj) {      
       return null;
     }

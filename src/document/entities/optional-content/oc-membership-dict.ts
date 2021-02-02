@@ -1,10 +1,10 @@
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
-import { dictObjTypes } from "../../common/const";
+import { dictTypes } from "../../common/const";
 
-export class OcMembershipDict extends DictObj {
+export class OcMembershipDict extends Dict {
   /**
    * (Optional) A dictionary or array of dictionaries specifying the optional content groups 
    * whose states shall determine the visibility of content controlled by this membership dictionary
@@ -22,6 +22,6 @@ export class OcMembershipDict extends DictObj {
   VE: VisibilityExpression; 
   
   constructor() {
-    super(dictObjTypes.OPTIONAL_CONTENT_MD);
+    super(dictTypes.OPTIONAL_CONTENT_MD);
   }
 }

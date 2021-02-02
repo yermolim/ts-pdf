@@ -1,8 +1,8 @@
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { UsageEvent } from "./oc-const";
 import { OcGroupDict } from "./oc-group-dict";
 
-export class UsageDict extends DictObj {
+export class UsageDict extends Dict {
   /**
    * (Required) A name defining the situation 
    * in which this usage application dictionary should be used

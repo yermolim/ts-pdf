@@ -1,5 +1,5 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 
 /**
  * Flags  specifying  various  characteristics of the annotation
@@ -12,7 +12,7 @@ export const borderStyles = {
   UNDERLINE: "/U",
 };
 
-export class BorderStyleDict extends DictObj {
+export class BorderStyleDict extends Dict {
   /**(Optional) The border width in points. 
    * If this value is 0, no border shall drawn */
   W = 1;
@@ -23,6 +23,6 @@ export class BorderStyleDict extends DictObj {
   D = [3];
   
   constructor() {
-    super(dictObjTypes.BORDER_STYLE);
+    super(dictTypes.BORDER_STYLE);
   }
 }

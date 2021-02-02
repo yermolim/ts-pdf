@@ -1,7 +1,7 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 
-export class EncryptionDict extends DictObj {
+export class EncryptionDict extends Dict {
   /**
    * (Required) The name of the preferred security handler for this document. 
    * It shall be the name of the security handler that was used 
@@ -49,7 +49,7 @@ export class EncryptionDict extends DictObj {
    * Every crypt filter used in the document shall have an entry in this dictionary, 
    * except for the standard crypt filter names
    * */
-  CF: DictObj;
+  CF: Dict;
   /** 
    * (Optional; meaningful only when the value of V is 4; PDF 1.5+) 
    * The name of the crypt filter that shall be used by default 
@@ -77,6 +77,6 @@ export class EncryptionDict extends DictObj {
   EFF: string;
   
   constructor() {
-    super(dictObjTypes.EMPTY);
+    super(dictTypes.EMPTY);
   }
 }

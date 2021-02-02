@@ -111,7 +111,7 @@ export const userTypes = {
 } as const;
 export type UserTypes = typeof userTypes[keyof typeof userTypes];
 
-export const dictObjTypes = {
+export const dictTypes = {
   XREF: "/XRef",
   XOBJECT: "/XObject",
   CATALOG: "/Catalog",
@@ -127,7 +127,7 @@ export const dictObjTypes = {
   DEV_EXTENSIONS: "/DeveloperExtensions",
   EMPTY: "",
 } as const;
-export type DictObjType = typeof dictObjTypes[keyof typeof dictObjTypes]
+export type DictType = typeof dictTypes[keyof typeof dictTypes]
   | StreamType | UserTypes;
 
 export const valueTypes = {

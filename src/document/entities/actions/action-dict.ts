@@ -1,5 +1,5 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 
 export const actionTypes = {
   GO_TO: "/GoTo",
@@ -23,7 +23,7 @@ export const actionTypes = {
 } as const;
 export type ActionType = typeof actionTypes[keyof typeof actionTypes];
 
-export class ActionDict extends DictObj {
+export class ActionDict extends Dict {
   /**(Required) The type of action that this dictionary describes */
   readonly S: ActionType;
   /**
@@ -35,7 +35,7 @@ export class ActionDict extends DictObj {
   D: ActionDict | ActionDict[];
   
   constructor(type: ActionType) {
-    super(dictObjTypes.ACTION);
+    super(dictTypes.ACTION);
 
     this.S = type;
   }

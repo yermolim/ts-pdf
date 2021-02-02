@@ -1,6 +1,6 @@
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { MetadataStream } from "./metadata-stream";
-import { ObjId } from "../core/obj-id";
+import { IndirectObjectId } from "../core/indirect-object-id";
 import { StreamDict } from "./stream-dict";
 import { streamTypes } from "../../common/const";
 
@@ -29,7 +29,7 @@ export class XFormStream extends StreamDict {
    * (Optional but strongly recommended; PDF 1.2+) A dictionary specifying any resources 
    * (such as fonts and images) required by the form
    */
-  Resources: DictObj | ObjId;
+  Resources: Dict | IndirectObjectId;
   /**
    * (Optional; PDF 1.4+) A metadata stream containing metadata for the form XObject
    */

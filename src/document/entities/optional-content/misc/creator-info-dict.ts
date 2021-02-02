@@ -1,6 +1,6 @@
-import { DictObj } from "../../core/dict-obj";
+import { Dict } from "../../core/dict";
 import { CreatorInfoType } from "../oc-const";
-export class CreatoInfoDict extends DictObj {
+export class CreatoInfoDict extends Dict {
   /**
    * (Required) A name defining the type of content controlled by the group
    */

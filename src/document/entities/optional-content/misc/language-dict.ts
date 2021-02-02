@@ -1,7 +1,7 @@
 import { OnOffState, onOffStates } from "../../../common/const";
-import { DictObj } from "../../core/dict-obj";
+import { Dict } from "../../core/dict";
 
-export class LanguageDict extends DictObj {
+export class LanguageDict extends Dict {
   /**
    * (Required) A text string that specifies a language and possibly a locale
    */

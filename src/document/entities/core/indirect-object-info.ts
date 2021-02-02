@@ -1,20 +1,20 @@
 import { keywordCodes } from "../../common/codes";
 import { Parser, ParseResult } from "../../parser";
-import { ObjId } from "./obj-id";
+import { IndirectObjectId } from "./indirect-object-id";
 
-export class ObjInfo {
+export class IndirectObjectInfo {
   public dictStart: number;
   public dictEnd: number;
   public streamStart: number;
   public streamEnd: number;
 
-  constructor(public id: ObjId,
+  constructor(public id: IndirectObjectId,
     public start: number,
     public end: number) { }
     
   static parse(parser: Parser, index: number, 
-    skipEmpty = true): ParseResult<ObjInfo> {
-    const id = ObjId.parse(parser, index, skipEmpty);
+    skipEmpty = true): ParseResult<IndirectObjectInfo> {
+    const id = IndirectObjectId.parse(parser, index, skipEmpty);
     if (!id) {
       return null;
     }
@@ -40,7 +40,7 @@ export class ObjInfo {
       return null;
     }
     
-    const info = new ObjInfo(id.value, id.start, objEndIndex.end);
+    const info = new IndirectObjectInfo(id.value, id.start, objEndIndex.end);
 
     const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, { 
       direction: "reverse", 

@@ -1,8 +1,8 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 import { PageDict } from "./page-dict";
 
-export class PageTreeDict extends DictObj {
+export class PageTreeDict extends Dict {
   /**
    * (Required except in root node; prohibited in the root node; 
    * shall be an indirect reference) The page tree node that is the immediate parent of this one
@@ -20,6 +20,6 @@ export class PageTreeDict extends DictObj {
   Count: number;
   
   constructor() {
-    super(dictObjTypes.PAGE_TREE);
+    super(dictTypes.PAGE_TREE);
   }
 }

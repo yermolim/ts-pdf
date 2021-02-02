@@ -1,4 +1,4 @@
-import { DictObj } from "../core/dict-obj";
+import { Dict } from "../core/dict";
 import { XFormStream } from "../streams/x-form-stream";
 
 export const appearanceStates = {
@@ -7,19 +7,19 @@ export const appearanceStates = {
 } as const;
 export type AppearanceState = typeof appearanceStates[keyof typeof appearanceStates];
 
-export class AppearanceDict extends DictObj {
+export class AppearanceDict extends Dict {
   /**
    * (Required) The annotation’s normal appearance 
    */
-  N: DictObj | XFormStream;
+  N: Dict | XFormStream;
   /**
    * (Optional) The annotation’s rollover appearance
    */
-  R: DictObj | XFormStream; 
+  R: Dict | XFormStream; 
   /**
    * (Optional) The annotation’s down appearance
    */
-  D: DictObj | XFormStream; 
+  D: Dict | XFormStream; 
   
   constructor() {
     super(null);

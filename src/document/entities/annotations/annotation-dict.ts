@@ -1,12 +1,12 @@
-import { ObjId } from "../core/obj-id";
-import { DictObj } from "../core/dict-obj";
+import { IndirectObjectId } from "../core/indirect-object-id";
+import { Dict } from "../core/dict";
 import { DateString } from "../../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
 import { AppearanceDict, AppearanceState } from "../appearance/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
-import { dictObjTypes } from "../../common/const";
+import { dictTypes } from "../../common/const";
 
 /**
  * PDF supports the standard annotation types listed
@@ -173,7 +173,7 @@ export const lineEndingTypes = {
 } as const;
 export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
 
-export abstract class AnnotationDict extends DictObj {
+export abstract class AnnotationDict extends Dict {
   /** User defined annotation id */
   uuid: string;
 
@@ -189,7 +189,7 @@ export abstract class AnnotationDict extends DictObj {
 
   /** (Optional; PDF1.3+) An indirect reference to the page object 
    * with which this annotation is associated */
-  P: ObjId;
+  P: IndirectObjectId;
   /** (Optional; PDF1.4+) The annotation name,  
    * a text string uniquely identifying it among all the annotations on its page */
   NM: string;
@@ -234,7 +234,7 @@ export abstract class AnnotationDict extends DictObj {
   OC: OcMembershipDict | OcGroupDict;
 
   protected constructor(subType: AnnotationType) {
-    super(dictObjTypes.ANNOTATION);
+    super(dictTypes.ANNOTATION);
 
     this.Subtype = subType;
   }

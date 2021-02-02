@@ -1,10 +1,10 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { CatalogDict } from "../structure/catalog-dict";
 import { InfoDict } from "../structure/info-dict";
 
-export class TrailerDict extends DictObj {
+export class TrailerDict extends Dict {
   /**
    * (Required; shall not be an indirect reference) 
    * The total number of entries in the file’s cross-reference table, 
@@ -46,6 +46,6 @@ export class TrailerDict extends DictObj {
   ID: [];
   
   constructor() {
-    super(dictObjTypes.EMPTY);
+    super(dictTypes.EMPTY);
   }
 }

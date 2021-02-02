@@ -1,9 +1,9 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 import { OcIntent } from "./oc-const";
 import { OcUsageDict } from "./oc-usage-dict";
 
-export class OcGroupDict extends DictObj {
+export class OcGroupDict extends Dict {
   /**
    * (Required)The name of the optional content group, 
    * suitable for presentation in a reader’s user interface 
@@ -24,6 +24,6 @@ export class OcGroupDict extends DictObj {
   Usage: OcUsageDict; 
   
   constructor() {
-    super(dictObjTypes.OPTIONAL_CONTENT_GROUP);
+    super(dictTypes.OPTIONAL_CONTENT_GROUP);
   }
 }

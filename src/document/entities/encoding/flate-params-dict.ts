@@ -1,7 +1,7 @@
-import { dictObjTypes, flatePredictors, FlatePredictor } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
+import { Dict } from "../core/dict";
 
-export class FlateParamsDict extends DictObj {
+export class FlateParamsDict extends Dict {
   /**
    * A code that selects the predictor algorithm, if any. 
    * If the value of this entry is 1, the filter shall assume 
@@ -30,6 +30,6 @@ export class FlateParamsDict extends DictObj {
   Columns = 1;
   
   constructor() {
-    super(dictObjTypes.EMPTY);
+    super(dictTypes.EMPTY);
   }
 }

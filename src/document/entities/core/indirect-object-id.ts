@@ -1,7 +1,7 @@
 import { codes } from "../../common/codes";
 import { Parser, ParseResult } from "../../parser";
 
-export class ObjId {
+export class IndirectObjectId {
   /** A positive integer object number */
   readonly id: number;
   /** A non-negative integer generation number. 
@@ -20,7 +20,7 @@ export class ObjId {
   }
 
   static parse(parser: Parser, index: number, 
-    skipEmpty = true): ParseResult<ObjId> {    
+    skipEmpty = true): ParseResult<IndirectObjectId> {    
 
     const start = skipEmpty
       ? parser.findRegularIndex("straight", index)
@@ -40,16 +40,16 @@ export class ObjId {
     }
 
     return {
-      value: new ObjId(id.value, generation.value),
+      value: new IndirectObjectId(id.value, generation.value),
       start,
       end: generation.end,
     };
   }
   
   static parseRef(parser: Parser, index: number, 
-    skipEmpty = true): ParseResult<ObjId> {    
+    skipEmpty = true): ParseResult<IndirectObjectId> {    
 
-    const id = ObjId.parse(parser, index, skipEmpty);
+    const id = IndirectObjectId.parse(parser, index, skipEmpty);
     if (!id) {
       return null;
     }
@@ -68,7 +68,7 @@ export class ObjId {
     };
   }
 
-  equals(other: ObjId) {
+  equals(other: IndirectObjectId) {
     return this.id === other.id 
       && this.generation === other.generation;
   }

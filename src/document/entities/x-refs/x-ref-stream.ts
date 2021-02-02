@@ -1,6 +1,6 @@
 import { xRefTypes } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
-import { ObjInfo } from "../core/obj-info";
+import { IndirectObjectInfo } from "../core/indirect-object-info";
 import { TrailerStream } from "./trailer-stream";
 import { XRef } from "./x-ref";
 
@@ -12,7 +12,7 @@ export class XRefStream extends XRef {
     this._trailerStream = trailer;
   }
   
-  static parse(parser: Parser, info: ObjInfo): ParseResult<XRefStream> {
+  static parse(parser: Parser, info: IndirectObjectInfo): ParseResult<XRefStream> {
     if (!parser || !info) {
       return null;
     }

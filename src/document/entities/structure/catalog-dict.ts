@@ -1,8 +1,8 @@
-import { dictObjTypes } from "../../common/const";
-import { DictObj } from "../core/dict-obj";
+import { dictTypes } from "../../common/const";
+import { Dict } from "../core/dict";
 import { PageTreeDict } from "./page-tree-dict";
 
-export class CatalogDict extends DictObj {
+export class CatalogDict extends Dict {
   /**
    * (Optional; PDF 1.4+) The version of the PDF specification 
    * to which the document conforms if later than the version 
@@ -29,6 +29,6 @@ export class CatalogDict extends DictObj {
   Lang: string;
   
   constructor() {
-    super(dictObjTypes.CATALOG);
+    super(dictTypes.CATALOG);
   }
 }
