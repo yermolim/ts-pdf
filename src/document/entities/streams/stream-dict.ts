@@ -2,7 +2,7 @@ import { StreamFilter, StreamType } from "../../common/const";
 import { DictObj } from "../core/dict-obj";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 
-export class StreamDict extends DictObj {
+export abstract class StreamDict extends DictObj {
   /**
    * (Required) The number of bytes from the beginning of the line 
    * following the keyword stream to the last byte just before the keyword endstream. 
@@ -28,7 +28,7 @@ export class StreamDict extends DictObj {
    */
   DL: number;
   
-  constructor(type: StreamType = null) {
+  protected constructor(type: StreamType = null) {
     super(type);
   }
 }

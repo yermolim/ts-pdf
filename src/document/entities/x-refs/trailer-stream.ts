@@ -81,7 +81,6 @@ export class TrailerStream extends StreamDict {
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
-        console.log(name);
         switch (name) {
           case "/Type":
             const type = parser.parseNameAtIndex(i);
@@ -115,7 +114,6 @@ export class TrailerStream extends StreamDict {
             // TODO: implement
             const decodeParamsBounds = parser.getDictBoundsAtIndex(i);
             if (decodeParamsBounds) {
-              console.log(decodeParamsBounds);
               i = decodeParamsBounds.end + 1;
             } else {              
               throw new Error("Can't parse /DecodeParams property value");

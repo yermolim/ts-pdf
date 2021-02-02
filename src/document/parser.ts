@@ -308,7 +308,6 @@ export class Parser {
     let i = arrayStart + 1;    
     let code: number;
     while (subArrayOpened || code !== codes.R_BRACKET) {
-      console.log(this.sliceChars(i));
       code = this._data[i++];
       if (code === codes.L_BRACKET) {
         subArrayOpened++;

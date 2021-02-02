@@ -1712,9 +1712,9 @@ class TrailerStream extends StreamDict {
             }
         }
         return {
-            value: new TrailerStream(),
-            start: null,
-            end: null,
+            value: trailer,
+            start: info.start,
+            end: info.end,
         };
     }
 }
