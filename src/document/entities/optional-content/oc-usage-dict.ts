@@ -1,4 +1,4 @@
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { CreatoInfoDict } from "./misc/creator-info-dict";
 import { ExportDict } from "./misc/export-dict";
 import { LanguageDict } from "./misc/language-dict";
@@ -8,7 +8,7 @@ import { UserDict } from "./misc/user-dict";
 import { ViewDict } from "./misc/view-dict";
 import { ZoomDict } from "./misc/zoom-dict";
 
-export class OcUsageDict extends Dict {
+export class OcUsageDict extends PdfDict {
   /**
    * (Optional) A dictionary used by the creating application 
    * to store application-specific data associated with this optional content group

@@ -1,8 +1,8 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { PageTreeDict } from "./page-tree-dict";
 
-export class CatalogDict extends Dict {
+export class CatalogDict extends PdfDict {
   /**
    * (Optional; PDF 1.4+) The version of the PDF specification 
    * to which the document conforms if later than the version 

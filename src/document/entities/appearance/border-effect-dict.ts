@@ -1,11 +1,11 @@
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
 export const borderEffects = {
   NONE: "/S",
   CLOUDY: "/C",
 };
 
-export class BorderEffectDict extends Dict {
+export class BorderEffectDict extends PdfDict {
   /**(Optional) A name representing the border effect to apply */
   S = borderEffects.NONE;
   /**(Optional; valid only if the value of S is C) 

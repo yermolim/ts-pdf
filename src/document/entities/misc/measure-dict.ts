@@ -1,7 +1,7 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
-export class MeasureDict extends Dict {
+export class MeasureDict extends PdfDict {
   /** (Optional) A name specifying the type of coordinate system to use for measuring */
   readonly Subtype = "/RL";
 

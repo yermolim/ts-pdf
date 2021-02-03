@@ -1,5 +1,5 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
 export const actionTypes = {
   GO_TO: "/GoTo",
@@ -23,7 +23,7 @@ export const actionTypes = {
 } as const;
 export type ActionType = typeof actionTypes[keyof typeof actionTypes];
 
-export class ActionDict extends Dict {
+export class ActionDict extends PdfDict {
   /**(Required) The type of action that this dictionary describes */
   readonly S: ActionType;
   /**

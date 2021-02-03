@@ -1,9 +1,9 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { OcIntent } from "./oc-const";
 import { OcUsageDict } from "./oc-usage-dict";
 
-export class OcGroupDict extends Dict {
+export class OcGroupDict extends PdfDict {
   /**
    * (Required)The name of the optional content group, 
    * suitable for presentation in a reader’s user interface 

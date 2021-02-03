@@ -1,7 +1,7 @@
 import { dictTypes } from "../../../common/const";
-import { Dict } from "../../core/dict";
+import { PdfDict } from "../../core/pdf-dict";
 
-export class ExDataDict extends Dict {
+export class ExDataDict extends PdfDict {
   /**
    * (Required) A name specifying the type of data that the markup annotation shall be associated with
    */

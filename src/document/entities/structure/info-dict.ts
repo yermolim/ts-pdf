@@ -1,8 +1,8 @@
 import { dictTypes } from "../../common/const";
 import { DateString } from "../../common/date-string";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
-export class InfoDict extends Dict {
+export class InfoDict extends PdfDict {
   /** (Optional; PDF 1.1+) */
   Title: string;
   /** (Optional) */

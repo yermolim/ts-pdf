@@ -1,9 +1,9 @@
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { OcConfigState, ocConfigStates, OcIntent, ocIntents, 
   OcListMode, ocListModes } from "./oc-const";
 import { OcGroupDict } from "./oc-group-dict";
 import { UsageDict } from "./usage-dict";
-export class OcConfigurationDict extends Dict {
+export class OcConfigurationDict extends PdfDict {
   /**
    * (Optional) A name for the configuration, 
    * suitable for presentation in a user interface

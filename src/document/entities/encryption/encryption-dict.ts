@@ -1,7 +1,7 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
-export class EncryptionDict extends Dict {
+export class EncryptionDict extends PdfDict {
   /**
    * (Required) The name of the preferred security handler for this document. 
    * It shall be the name of the security handler that was used 
@@ -49,7 +49,7 @@ export class EncryptionDict extends Dict {
    * Every crypt filter used in the document shall have an entry in this dictionary, 
    * except for the standard crypt filter names
    * */
-  CF: Dict;
+  CF: PdfDict;
   /** 
    * (Optional; meaningful only when the value of V is 4; PDF 1.5+) 
    * The name of the crypt filter that shall be used by default 

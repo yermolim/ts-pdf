@@ -1,6 +1,6 @@
-import { Dict } from "../../core/dict";
+import { PdfDict } from "../../core/pdf-dict";
 import { PageElementType } from "../oc-const";
-export class PageElementDict extends Dict {
+export class PageElementDict extends PdfDict {
   /** (Required) */
   Subtype: PageElementType;
   

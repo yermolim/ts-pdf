@@ -1,10 +1,10 @@
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
 import { dictTypes } from "../../common/const";
 
-export class OcMembershipDict extends Dict {
+export class OcMembershipDict extends PdfDict {
   /**
    * (Optional) A dictionary or array of dictionaries specifying the optional content groups 
    * whose states shall determine the visibility of content controlled by this membership dictionary

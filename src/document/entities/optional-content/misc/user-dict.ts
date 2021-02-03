@@ -1,7 +1,7 @@
 import { UserTypes } from "../../../common/const";
-import { Dict } from "../../core/dict";
+import { PdfDict } from "../../core/pdf-dict";
 
-export class UserDict extends Dict {
+export class UserDict extends PdfDict {
   /**
    * (Required)
    */

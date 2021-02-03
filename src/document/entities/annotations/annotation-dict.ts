@@ -1,5 +1,5 @@
 import { ObjectId } from "../core/object-id";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { DateString } from "../../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
 import { AppearanceDict, AppearanceState } from "../appearance/appearance-dict";
@@ -173,7 +173,7 @@ export const lineEndingTypes = {
 } as const;
 export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
 
-export abstract class AnnotationDict extends Dict {
+export abstract class AnnotationDict extends PdfDict {
   /** User defined annotation id */
   uuid: string;
 

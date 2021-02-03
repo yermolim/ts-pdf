@@ -48,7 +48,7 @@ export class XRefStream extends XRef {
         params.Predictor,
         params.Columns,
         params.Colors,
-        params.BitsPerComponent);   
+        params.BitsPerComponent); 
     } else {      
       decodedData = FlateDecoder.Decode(this._trailerStream.streamData);
     }

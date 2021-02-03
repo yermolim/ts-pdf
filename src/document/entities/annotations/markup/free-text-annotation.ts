@@ -1,6 +1,6 @@
 import { JustificationType } from "../../../common/const";
 import { AppearanceString } from "../../appearance/appearance-string";
-import { Stream } from "../../core/stream";
+import { PdfStream } from "../../core/pdf-stream";
 import { annotationTypes, LineEndingType, lineEndingTypes } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
@@ -26,7 +26,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * (Optional; PDF 1.5+) A rich text string that shall be used 
    * to generate the appearance of the annotation
    */
-  RC: string | Stream;
+  RC: string | PdfStream;
   /**
    * (Optional; PDF 1.5+) A default style
    */

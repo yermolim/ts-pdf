@@ -1,12 +1,12 @@
 import { dictTypes } from "../../common/const";
 import { Bounds, Parser, ParseResult } from "../../parser";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../core/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { CatalogDict } from "../structure/catalog-dict";
 import { InfoDict } from "../structure/info-dict";
 
-export class TrailerDict extends Dict {
+export class TrailerDict extends PdfDict {
   /**
    * (Required; shall not be an indirect reference) 
    * The total number of entries in the file’s cross-reference table, 

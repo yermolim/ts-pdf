@@ -58,15 +58,15 @@ export class XRefEntry {
 
   static parseFromStream(bytes: Uint8Array, w1 = 1, w2 = 3, w3 = 1): XRefEntry[] {
     const entryLength = w1 + w2 + w3;
-    if (bytes.length % entryLength) {
-      throw new Error("Incorrect stream length");
-    }
+    // if (bytes.length % entryLength) {
+    //   throw new Error("Incorrect stream length");
+    // }
 
     const entries: XRefEntry[] = new Array(entryLength);
 
     let i = 0; 
     let j = 0; 
-    while (i < bytes.length) {
+    while (i < bytes.length - bytes.length % entryLength) {
       const type = parseIntFromBytes(bytes.slice(i, i + w1));
       i += w1;
       const value1 = parseIntFromBytes(bytes.slice(i, i + w2));

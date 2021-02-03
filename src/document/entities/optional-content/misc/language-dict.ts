@@ -1,7 +1,7 @@
 import { OnOffState, onOffStates } from "../../../common/const";
-import { Dict } from "../../core/dict";
+import { PdfDict } from "../../core/pdf-dict";
 
-export class LanguageDict extends Dict {
+export class LanguageDict extends PdfDict {
   /**
    * (Required) A text string that specifies a language and possibly a locale
    */

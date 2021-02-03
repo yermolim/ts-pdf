@@ -1,5 +1,5 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
 /**
  * Flags  specifying  various  characteristics of the annotation
@@ -12,7 +12,7 @@ export const borderStyles = {
   UNDERLINE: "/U",
 };
 
-export class BorderStyleDict extends Dict {
+export class BorderStyleDict extends PdfDict {
   /**(Optional) The border width in points. 
    * If this value is 0, no border shall drawn */
   W = 1;

@@ -1,12 +1,10 @@
-import { objectTypes, StreamFilter, StreamType, supportedFilters } from "../../common/const";
-import { Dict } from "./dict";
+import { StreamFilter, StreamType, supportedFilters } from "../../common/const";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 import { Bounds, Parser, ParseResult } from "../../parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../common/codes";
-import { FlateDecoder } from "../../common/flate-decoder";
 
-export abstract class Stream extends PdfObject {
+export abstract class PdfStream extends PdfObject {
   streamData: Uint8Array;
 
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */

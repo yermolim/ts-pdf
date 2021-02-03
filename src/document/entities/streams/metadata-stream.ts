@@ -1,7 +1,7 @@
 import { streamTypes } from "../../common/const";
-import { Stream } from "../core/stream";
+import { PdfStream } from "../core/pdf-stream";
 
-export class MetadataStream extends Stream {
+export class MetadataStream extends PdfStream {
   /**
    * (Required) The type of metadata stream this dictionary describes
    */

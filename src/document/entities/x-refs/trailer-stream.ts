@@ -3,9 +3,9 @@ import { HexString } from "../../common/hex-string";
 import { Bounds, Parser, ParseResult } from "../../parser";
 import { ObjectId } from "../core/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
-import { Stream } from "../core/stream";
+import { PdfStream } from "../core/pdf-stream";
 
-export class TrailerStream extends Stream {
+export class TrailerStream extends PdfStream {
   /**
    * (Required) The number one greater than the highest object number 
    * used in this section or in any section for which this shall be an update. 

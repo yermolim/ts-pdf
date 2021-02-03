@@ -1,10 +1,10 @@
 import { dictTypes } from "../../common/const";
 import { AnnotationDict } from "../annotations/annotation-dict";
 import { DateString } from "../../common/date-string";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { PageTreeDict } from "./page-tree-dict";
 
-export class PageDict extends Dict {
+export class PageDict extends PdfDict {
   /**
    * (Required; shall be an indirect reference) 
    * The page tree node that is the immediate parent of this page object

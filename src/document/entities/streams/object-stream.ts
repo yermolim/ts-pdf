@@ -1,8 +1,8 @@
 import { streamTypes } from "../../common/const";
 import { ObjectId } from "../core/object-id";
-import { Stream } from "../core/stream";
+import { PdfStream } from "../core/pdf-stream";
 
-export class ObjectStream extends Stream {
+export class ObjectStream extends PdfStream {
   /**
    * (Required) The number of indirect objects stored in the stream
    */

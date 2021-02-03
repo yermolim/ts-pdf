@@ -1,8 +1,8 @@
 import { dictTypes } from "../../common/const";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { PageDict } from "./page-dict";
 
-export class PageTreeDict extends Dict {
+export class PageTreeDict extends PdfDict {
   /**
    * (Required except in root node; prohibited in the root node; 
    * shall be an indirect reference) The page tree node that is the immediate parent of this one

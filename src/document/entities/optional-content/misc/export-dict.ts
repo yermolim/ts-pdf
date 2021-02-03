@@ -1,7 +1,7 @@
 import { OnOffState } from "../../../common/const";
-import { Dict } from "../../core/dict";
+import { PdfDict } from "../../core/pdf-dict";
 
-export class ExportDict extends Dict {
+export class ExportDict extends PdfDict {
   /** (Required) */
   ExportState: OnOffState;
   

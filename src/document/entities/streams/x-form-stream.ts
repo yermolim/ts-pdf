@@ -1,10 +1,10 @@
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { MetadataStream } from "./metadata-stream";
 import { ObjectId } from "../core/object-id";
-import { Stream } from "../core/stream";
+import { PdfStream } from "../core/pdf-stream";
 import { streamTypes } from "../../common/const";
 
-export class XFormStream extends Stream {
+export class XFormStream extends PdfStream {
   /**
    * (Required) The type of XObject that this dictionary describes
    */
@@ -29,7 +29,7 @@ export class XFormStream extends Stream {
    * (Optional but strongly recommended; PDF 1.2+) A dictionary specifying any resources 
    * (such as fonts and images) required by the form
    */
-  Resources: Dict | ObjectId;
+  Resources: PdfDict | ObjectId;
   /**
    * (Optional; PDF 1.4+) A metadata stream containing metadata for the form XObject
    */

@@ -1,8 +1,8 @@
 import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
 import { Parser, ParseResult } from "../../parser";
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 
-export class FlateParamsDict extends Dict {
+export class FlateParamsDict extends PdfDict {
   /**
    * A code that selects the predictor algorithm, if any. 
    * If the value of this entry is 1, the filter shall assume 

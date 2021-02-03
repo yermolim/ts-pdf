@@ -1,8 +1,8 @@
-import { Dict } from "../core/dict";
+import { PdfDict } from "../core/pdf-dict";
 import { UsageEvent } from "./oc-const";
 import { OcGroupDict } from "./oc-group-dict";
 
-export class UsageDict extends Dict {
+export class UsageDict extends PdfDict {
   /**
    * (Required) A name defining the situation 
    * in which this usage application dictionary should be used

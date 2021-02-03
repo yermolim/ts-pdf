@@ -1,6 +1,6 @@
-import { Dict } from "../../core/dict";
+import { PdfDict } from "../../core/pdf-dict";
 
-export class ZoomDict extends Dict {
+export class ZoomDict extends PdfDict {
   /**
    * (Required) The minimum recommended magnification factor 
    * at which the group shall be ON

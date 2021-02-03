@@ -1,7 +1,7 @@
 import { DictType } from "../../common/const";
 import { Bounds, Parser, ParseResult } from "../../parser";
 
-export class Dict {
+export class PdfDict {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: DictType;
 
