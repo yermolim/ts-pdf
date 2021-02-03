@@ -23,7 +23,29 @@ export class XRefParser {
     this._prevXrefIndex = this._lastXrefIndex;
   }
 
-  parsePrevXref(): ParseResult<XRef> {
+  reset() {
+    this._prevXrefIndex = this._lastXrefIndex;
+    this._currentXrefIndex = null;
+  }
+  
+  parseAllXrefs(): XRef[] {
+    this.reset();
+
+    const xrefs: XRef[] = [];
+    let xref: XRef;
+    do {
+      xref = this.parsePrevXref();
+      if (xref) {
+        xrefs.push(xref);
+      }
+    } while (xref);
+
+    return xrefs;
+  }
+
+  parsePrevXref(): XRef {
+    console.log(this);
+
     const max = this._currentXrefIndex || this._parser.maxIndex;  
     let start = this._prevXrefIndex;
     if (!start) {
@@ -46,15 +68,15 @@ export class XRefParser {
         console.log("XRef is table");
         const xrefTable = XRefTable.parse(this._parser, start);
         if (xrefTable?.value) {
-          this._currentXrefIndex = xrefTable.start;
+          this._currentXrefIndex = start;
           this._prevXrefIndex = xrefTable.value.prev;
         }
-        return xrefTable;
+        return xrefTable?.value;
       }
     } else {
       console.log("XRef is stream"); 
     }
-    
+
     const id = ObjectId.parse(this._parser, start, false);
     if (!id) {
       return null;
@@ -62,13 +84,14 @@ export class XRefParser {
     const xrefStreamBounds = this._parser.getIndirectObjectBoundsAt(id.end + 1);   
     if (!xrefStreamBounds) {      
       return null;
-    }        
-    const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);  
+    }       
+    const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);
+
     if (xrefStream?.value) {
-      this._currentXrefIndex = xrefStream.start;
+      this._currentXrefIndex = start;
       this._prevXrefIndex = xrefStream.value.prev;
     }
-    return xrefStream; 
+    return xrefStream?.value; 
   }
 
   private parseLastXrefIndex(): ParseResult<number> {

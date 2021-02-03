@@ -62,11 +62,12 @@ export class Annotator {
   private parseData() {
     this._version = this._parser.getPdfVersion();
 
-    const xrefs: XRef[] = [];    
-    const xref = this._xrefParser.parsePrevXref().value;
-    console.log(xref); 
-    const entries = xref.getEntries();
-    console.log(entries);
+    const xrefs = this._xrefParser.parseAllXrefs();
+    console.log(xrefs); 
+    xrefs.forEach(x => {
+      const entries = x.getEntries();
+      console.log(entries);
+    });
   }
   
   private updateData() {

@@ -329,7 +329,7 @@ export class Parser {
 
     return {
       start: objStartIndex.start, 
-      end: objStartIndex.end,
+      end: objEndIndex.end,
       contentStart,
       contentEnd,
     };
@@ -389,11 +389,25 @@ export class Parser {
     if (contentStart === -1){
       return null;
     }   
-    const dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, 
-      {minIndex: dictStart.end + 1});
-    if (!dictEnd) {
-      return null;
-    } 
+
+    // find the dict end assuring that we skipped all subdicts
+    let subDictSearchStart: number;
+    let dictEnd: Bounds;
+    let subDict: boolean;
+    do {
+      if (dictEnd) {
+        subDictSearchStart = dictEnd.end + 1;
+      }
+      dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, 
+        {minIndex: dictEnd ? dictEnd.end + 1 : dictStart.end + 1});
+      if (!dictEnd) {
+        return null;
+      }
+  
+      subDict = !!this.findSubarrayIndex(keywordCodes.DICT_START,
+        {minIndex: subDictSearchStart || dictStart.end + 1, maxIndex: dictEnd.end - 1});
+    } while (subDict);
+
     const contentEnd = this.findNonSpaceIndex("reverse", dictEnd.start - 1);
 
     if (contentEnd < contentStart) {
@@ -605,7 +619,7 @@ export class Parser {
   skipToNextName(start: number, max: number): number {
     start ||= 0;
     max = max 
-      ? Math.max(max, this._maxIndex)
+      ? Math.min(max, this._maxIndex)
       : 0;
     if (max < start) {
       return -1;

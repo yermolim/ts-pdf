@@ -1316,7 +1316,7 @@ class Parser {
         const contentEnd = this.findNonSpaceIndex("reverse", objEndIndex.start - 1);
         return {
             start: objStartIndex.start,
-            end: objStartIndex.end,
+            end: objEndIndex.end,
             contentStart,
             contentEnd,
         };
@@ -1366,10 +1366,19 @@ class Parser {
         if (contentStart === -1) {
             return null;
         }
-        const dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, { minIndex: dictStart.end + 1 });
-        if (!dictEnd) {
-            return null;
-        }
+        let subDictSearchStart;
+        let dictEnd;
+        let subDict;
+        do {
+            if (dictEnd) {
+                subDictSearchStart = dictEnd.end + 1;
+            }
+            dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, { minIndex: dictEnd ? dictEnd.end + 1 : dictStart.end + 1 });
+            if (!dictEnd) {
+                return null;
+            }
+            subDict = !!this.findSubarrayIndex(keywordCodes.DICT_START, { minIndex: subDictSearchStart || dictStart.end + 1, maxIndex: dictEnd.end - 1 });
+        } while (subDict);
         const contentEnd = this.findNonSpaceIndex("reverse", dictEnd.start - 1);
         if (contentEnd < contentStart) {
             return null;
@@ -1550,7 +1559,7 @@ class Parser {
     skipToNextName(start, max) {
         start || (start = 0);
         max = max
-            ? Math.max(max, this._maxIndex)
+            ? Math.min(max, this._maxIndex)
             : 0;
         if (max < start) {
             return -1;
@@ -2420,7 +2429,7 @@ class PdfStream extends PdfObject {
             maxIndex: streamEndIndex.start - 1,
             closedOnly: true
         });
-        if (!streamEndIndex) {
+        if (!streamStartIndex) {
             return false;
         }
         const lastBeforeStream = streamStartIndex.start - 1;
@@ -2535,6 +2544,7 @@ class TrailerStream extends PdfStream {
         }
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
+        console.log(parser.sliceChars(dictBounds.contentStart, dictBounds.contentEnd));
         let i = parser.skipToNextName(start, dictBounds.contentEnd);
         if (i === -1) {
             return false;
@@ -2942,7 +2952,24 @@ class XRefParser {
         this._lastXrefIndex = lastXrefIndex.value;
         this._prevXrefIndex = this._lastXrefIndex;
     }
+    reset() {
+        this._prevXrefIndex = this._lastXrefIndex;
+        this._currentXrefIndex = null;
+    }
+    parseAllXrefs() {
+        this.reset();
+        const xrefs = [];
+        let xref;
+        do {
+            xref = this.parsePrevXref();
+            if (xref) {
+                xrefs.push(xref);
+            }
+        } while (xref);
+        return xrefs;
+    }
     parsePrevXref() {
+        console.log(this);
         const max = this._currentXrefIndex || this._parser.maxIndex;
         let start = this._prevXrefIndex;
         if (!start) {
@@ -2963,10 +2990,10 @@ class XRefParser {
                 console.log("XRef is table");
                 const xrefTable = XRefTable.parse(this._parser, start);
                 if (xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value) {
-                    this._currentXrefIndex = xrefTable.start;
+                    this._currentXrefIndex = start;
                     this._prevXrefIndex = xrefTable.value.prev;
                 }
-                return xrefTable;
+                return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
             }
         }
         else {
@@ -2982,10 +3009,10 @@ class XRefParser {
         }
         const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);
         if (xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value) {
-            this._currentXrefIndex = xrefStream.start;
+            this._currentXrefIndex = start;
             this._prevXrefIndex = xrefStream.value.prev;
         }
-        return xrefStream;
+        return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
     parseLastXrefIndex() {
         const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._parser.maxIndex, direction: "reverse" });
@@ -3027,10 +3054,12 @@ class Annotator {
     }
     parseData() {
         this._version = this._parser.getPdfVersion();
-        const xref = this._xrefParser.parsePrevXref().value;
-        console.log(xref);
-        const entries = xref.getEntries();
-        console.log(entries);
+        const xrefs = this._xrefParser.parseAllXrefs();
+        console.log(xrefs);
+        xrefs.forEach(x => {
+            const entries = x.getEntries();
+            console.log(entries);
+        });
     }
     updateData() {
     }

@@ -50,7 +50,7 @@ export abstract class PdfStream extends PdfObject {
     }
 
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentEnd || bounds.end;
+    const end = bounds.contentEnd || bounds.end;  
 
     const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, { 
       direction: "reverse", 
@@ -68,22 +68,23 @@ export abstract class PdfStream extends PdfObject {
       maxIndex: streamEndIndex.start - 1, 
       closedOnly: true
     });
-    if (!streamEndIndex) {
+    if (!streamStartIndex) {
       // stream start is out of bounds
       return false;
-    }    
+    }   
     
     const lastBeforeStream = streamStartIndex.start - 1;
     let i = parser.skipToNextName(start, lastBeforeStream);
     if (i === -1) {
       // no required props found
       return false;
-    }
+    }    
+
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
-      if (parseResult) {
+      if (parseResult) {      
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
