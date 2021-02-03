@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-bitwise */
-// import { inflate } from "pako";
-import { decompressSync } from "fflate";
+
+// import { decompressSync } from "fflate";
 import { FlatePredictor, flatePredictors } from "./const";
 
 export class FlateDecoder {
@@ -15,7 +15,8 @@ export class FlateDecoder {
     const inflated = <Uint8Array>fs.takeBytes(null);
     console.log(inflated);
 
-    // const inflated = decompressSync(input); // fails sometimes, yet don't know why
+    // fails sometimes, yet don't know why, so must use FlateStream class
+    // const inflated = decompressSync(input); 
 
     switch (predictor) {
       case (flatePredictors.NONE):
@@ -174,6 +175,7 @@ export class FlateDecoder {
     }
   }
 }
+
 
 
 type HuffmanTable = [codes: Int32Array, maxLength: number];

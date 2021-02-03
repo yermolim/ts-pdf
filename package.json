@@ -30,7 +30,7 @@
     "pdfjs"
   ],
   "author": "Volodymyr Yermolenko <yermolim@gmail.com> (https://github.com/yermolim)",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/yermolim/ts-pdf-viewer/issues"
   },
@@ -64,6 +64,7 @@
     "puppeteer": "^5.5.0",
     "rollup": "^2.36.1",
     "rollup-plugin-css-porter": "^1.0.2",
+    "rollup-plugin-license": "^2.2.0",
     "rollup-plugin-node-externals": "^2.2.0",
     "rollup-plugin-terser": "^7.0.2",
     "tslib": "^2.1.0",
