@@ -1836,7 +1836,7 @@ class DecodedStream {
             if (this._ended) {
                 return -1;
             }
-            this.readBlock();
+            this._readBlock();
         }
         return this._buffer[this._current++];
     }
@@ -1847,7 +1847,7 @@ class DecodedStream {
             this.ensureBuffer(position + length);
             end = position + length;
             while (!this._ended && this._bufferLength < end) {
-                this.readBlock();
+                this._readBlock();
             }
             if (end > this._bufferLength) {
                 end = this._bufferLength;
@@ -1855,7 +1855,7 @@ class DecodedStream {
         }
         else {
             while (!this._ended) {
-                this.readBlock();
+                this._readBlock();
             }
             end = this._bufferLength;
         }
@@ -1900,8 +1900,8 @@ class DecodedStream {
 class FlateStream extends DecodedStream {
     constructor(encodedStream) {
         super(encodedStream);
-        this.codeSize = 0;
-        this.codeBuf = 0;
+        this._codeSize = 0;
+        this._codeBuf = 0;
         const cmf = encodedStream.takeByte();
         const flg = encodedStream.takeByte();
         if (cmf === -1 || flg === -1) {
@@ -1916,91 +1916,19 @@ class FlateStream extends DecodedStream {
         if (flg & 0x20) {
             throw new Error(`FDICT bit set in flate stream: ${cmf}, ${flg}`);
         }
-        this.codeSize = 0;
-        this.codeBuf = 0;
+        this._codeSize = 0;
+        this._codeBuf = 0;
     }
-    getBits(bits) {
+    _readBlock() {
+        let buffer;
+        let len;
         const str = this._sourceStream;
-        let codeSize = this.codeSize;
-        let codeBuf = this.codeBuf;
-        let b;
-        while (codeSize < bits) {
-            if ((b = str.takeByte()) === -1) {
-                throw new Error("Bad encoding in flate stream");
-            }
-            codeBuf |= b << codeSize;
-            codeSize += 8;
-        }
-        b = codeBuf & ((1 << bits) - 1);
-        this.codeBuf = codeBuf >> bits;
-        this.codeSize = codeSize -= bits;
-        return b;
-    }
-    ;
-    getCode(table) {
-        const str = this._sourceStream;
-        const codes = table[0];
-        const maxLen = table[1];
-        let codeSize = this.codeSize;
-        let codeBuf = this.codeBuf;
-        let b;
-        while (codeSize < maxLen) {
-            if ((b = str.takeByte()) === -1) {
-                break;
-            }
-            codeBuf |= b << codeSize;
-            codeSize += 8;
-        }
-        const code = codes[codeBuf & ((1 << maxLen) - 1)];
-        const codeLen = code >> 16;
-        const codeVal = code & 0xffff;
-        if (codeLen < 1 || codeSize < codeLen) {
-            throw new Error("Bad encoding in flate stream");
-        }
-        this.codeBuf = codeBuf >> codeLen;
-        this.codeSize = codeSize - codeLen;
-        return codeVal;
-    }
-    ;
-    generateHuffmanTable(lengths) {
-        const n = lengths.length;
-        let maxLen = 0;
-        let i;
-        for (i = 0; i < n; ++i) {
-            if (lengths[i] > maxLen) {
-                maxLen = lengths[i];
-            }
-        }
-        const size = 1 << maxLen;
-        const codes = new Int32Array(size);
-        for (let len = 1, code = 0, skip = 2; len <= maxLen; ++len, code <<= 1, skip <<= 1) {
-            for (let val = 0; val < n; ++val) {
-                if (lengths[val] === len) {
-                    let code2 = 0;
-                    let t = code;
-                    for (i = 0; i < len; ++i) {
-                        code2 = (code2 << 1) | (t & 1);
-                        t >>= 1;
-                    }
-                    for (i = code2; i < size; i += skip) {
-                        codes[i] = (len << 16) | val;
-                    }
-                    ++code;
-                }
-            }
-        }
-        return [codes, maxLen];
-    }
-    ;
-    readBlock() {
-        let buffer, len;
-        const str = this._sourceStream;
-        let hdr = this.getBits(3);
-        if (hdr & 1) {
+        let header = this.getBits(3);
+        if (header & 1) {
             this._ended = true;
         }
-        hdr >>= 1;
-        if (hdr === 0) {
+        header >>= 1;
+        if (header === 0) {
             let b;
             if ((b = str.takeByte()) === -1) {
                 throw new Error("Bad block header in flate stream");
@@ -2021,8 +1949,8 @@ class FlateStream extends DecodedStream {
             if (check !== (~blockLen & 0xffff) && (blockLen !== 0 || check !== 0)) {
                 throw new Error("Bad uncompressed block length in flate stream");
             }
-            this.codeBuf = 0;
-            this.codeSize = 0;
+            this._codeBuf = 0;
+            this._codeSize = 0;
             const bufferLength = this._bufferLength, end = bufferLength + blockLen;
             buffer = this.ensureBuffer(end);
             this._bufferLength = end;
@@ -2042,17 +1970,17 @@ class FlateStream extends DecodedStream {
         }
         let litCodeTable;
         let distCodeTable;
-        if (hdr === 1) {
+        if (header === 1) {
             litCodeTable = FlateStream.fixedLitCodeTab;
             distCodeTable = FlateStream.fixedDistCodeTab;
         }
-        else if (hdr === 2) {
+        else if (header === 2) {
             const numLitCodes = this.getBits(5) + 257;
             const numDistCodes = this.getBits(5) + 1;
             const numCodeLenCodes = this.getBits(4) + 4;
             const codeLenCodeLengths = new Uint8Array(FlateStream.codeLenCodeMap.length);
             let i;
-            for (i = 0; i < numCodeLenCodes; ++i) {
+            for (i = 0; i < numCodeLenCodes; i++) {
                 codeLenCodeLengths[FlateStream.codeLenCodeMap[i]] = this.getBits(3);
             }
             const codeLenCodeTab = this.generateHuffmanTable(codeLenCodeLengths);
@@ -2060,7 +1988,9 @@ class FlateStream extends DecodedStream {
             i = 0;
             const codes = numLitCodes + numDistCodes;
             const codeLengths = new Uint8Array(codes);
-            let bitsLength, bitsOffset, what;
+            let bitsLength;
+            let bitsOffset;
+            let what;
             while (i < codes) {
                 const code = this.getCode(codeLenCodeTab);
                 if (code === 16) {
@@ -2132,6 +2062,78 @@ class FlateStream extends DecodedStream {
                 buffer[pos] = buffer[pos - dist];
             }
         }
+    }
+    ;
+    getBits(n) {
+        const stream = this._sourceStream;
+        let size = this._codeSize;
+        let buf = this._codeBuf;
+        let value;
+        while (size < n) {
+            if ((value = stream.takeByte()) === -1) {
+                throw new Error("Bad encoding in flate stream");
+            }
+            buf |= value << size;
+            size += 8;
+        }
+        value = buf & ((1 << n) - 1);
+        this._codeBuf = buf >> n;
+        this._codeSize = size -= n;
+        return value;
+    }
+    ;
+    getCode(table) {
+        const stream = this._sourceStream;
+        const [codes, maxLength] = table;
+        let size = this._codeSize;
+        let buf = this._codeBuf;
+        let value;
+        while (size < maxLength) {
+            if ((value = stream.takeByte()) === -1) {
+                break;
+            }
+            buf |= value << size;
+            size += 8;
+        }
+        const code = codes[buf & ((1 << maxLength) - 1)];
+        const codeLen = code >> 16;
+        const codeVal = code & 0xffff;
+        if (codeLen < 1 || size < codeLen) {
+            throw new Error("Bad encoding in flate stream");
+        }
+        this._codeBuf = buf >> codeLen;
+        this._codeSize = size - codeLen;
+        return codeVal;
+    }
+    ;
+    generateHuffmanTable(lengths) {
+        const n = lengths.length;
+        let maxLength = 0;
+        let i;
+        for (i = 0; i < n; i++) {
+            if (lengths[i] > maxLength) {
+                maxLength = lengths[i];
+            }
+        }
+        const size = 1 << maxLength;
+        const codes = new Int32Array(size);
+        for (let length = 1, code = 0, skip = 2; length <= maxLength; length++, code <<= 1, skip <<= 1) {
+            for (let value = 0; value < n; value++) {
+                if (lengths[value] === length) {
+                    let code2 = 0;
+                    let t = code;
+                    for (i = 0; i < length; i++) {
+                        code2 = (code2 << 1) | (t & 1);
+                        t >>= 1;
+                    }
+                    for (i = code2; i < size; i += skip) {
+                        codes[i] = (length << 16) | value;
+                    }
+                    code++;
+                }
+            }
+        }
+        return [codes, maxLength];
     }
     ;
 }
