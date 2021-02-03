@@ -2748,7 +2748,7 @@ class XRefEntry {
     toTableBytes() {
         return null;
     }
-    toStreamBytes(w1, w2, w3) {
+    toStreamBytes(w) {
         return null;
     }
 }
@@ -2933,35 +2933,46 @@ class XRefTable extends XRef {
 class XRefParser {
     constructor(parser) {
         this._parser = parser;
+        const lastXrefIndex = this.parseLastXrefIndex();
+        if (!lastXrefIndex) {
+            {
+                throw new Error("File don't contain any XRefs");
+            }
+        }
+        this._lastXrefIndex = lastXrefIndex.value;
+        this._prevXrefIndex = this._lastXrefIndex;
     }
-    parseNextXref() {
-        const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._lastXRefStartIndex, direction: "reverse" });
-        if (!xrefStartIndex) {
+    parsePrevXref() {
+        const max = this._currentXrefIndex || this._parser.maxIndex;
+        let start = this._prevXrefIndex;
+        if (!start) {
             return null;
         }
-        let xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
-        if (!xrefIndex) {
-            return null;
-        }
-        const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: xrefIndex.value, closedOnly: true });
-        if (xrefTableIndex && xrefTableIndex.start === xrefIndex.value) {
-            const xrefStmIndexProp = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start - 1, closedOnly: true });
+        const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
+        if (xrefTableIndex && xrefTableIndex.start === start) {
+            const xrefStmIndexProp = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
             if (xrefStmIndexProp) {
                 console.log("XRef is hybrid");
-                xrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
-                if (!xrefIndex) {
+                const streamXrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
+                if (!streamXrefIndex) {
                     return null;
                 }
+                start = streamXrefIndex.value;
             }
             else {
                 console.log("XRef is table");
-                return XRefTable.parse(this._parser, xrefIndex.value);
+                const xrefTable = XRefTable.parse(this._parser, start);
+                if (xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value) {
+                    this._currentXrefIndex = xrefTable.start;
+                    this._prevXrefIndex = xrefTable.value.prev;
+                }
+                return xrefTable;
             }
         }
         else {
             console.log("XRef is stream");
         }
-        const id = ObjectId.parse(this._parser, xrefIndex.value, false);
+        const id = ObjectId.parse(this._parser, start, false);
         if (!id) {
             return null;
         }
@@ -2969,7 +2980,23 @@ class XRefParser {
         if (!xrefStreamBounds) {
             return null;
         }
-        return XRefStream.parse(this._parser, xrefStreamBounds);
+        const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);
+        if (xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value) {
+            this._currentXrefIndex = xrefStream.start;
+            this._prevXrefIndex = xrefStream.value.prev;
+        }
+        return xrefStream;
+    }
+    parseLastXrefIndex() {
+        const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._parser.maxIndex, direction: "reverse" });
+        if (!xrefStartIndex) {
+            return null;
+        }
+        const xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
+        if (!xrefIndex) {
+            return null;
+        }
+        return xrefIndex;
     }
 }
 
@@ -2999,9 +3026,8 @@ class Annotator {
         this._annotations.push(annotation);
     }
     parseData() {
-        var _a;
         this._version = this._parser.getPdfVersion();
-        const xref = (_a = this._xrefParser.parseNextXref()) === null || _a === void 0 ? void 0 : _a.value;
+        const xref = this._xrefParser.parsePrevXref().value;
         console.log(xref);
         const entries = xref.getEntries();
         console.log(entries);

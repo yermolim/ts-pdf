@@ -117,7 +117,7 @@ export class XRefEntry {
     return null;
   }
 
-  toStreamBytes(w1: number, w2: number, w3: number): Uint8Array {
+  toStreamBytes(w: [number, number, number]): Uint8Array {
     // TODO: Implement
     return null;
   }

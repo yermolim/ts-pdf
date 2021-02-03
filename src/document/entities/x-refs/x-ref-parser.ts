@@ -7,53 +7,82 @@ import { XRefTable } from "./x-ref-table";
 
 export class XRefParser {
   private readonly _parser: Parser;
+  private readonly _lastXrefIndex: number;
 
-  private _lastXRefStartIndex: number;
+  private _currentXrefIndex: number;
+  private _prevXrefIndex: number;
 
   constructor(parser: Parser) {
     this._parser = parser;
+
+    const lastXrefIndex = this.parseLastXrefIndex();
+    if (!lastXrefIndex) {{
+      throw new Error("File don't contain any XRefs");
+    }}
+    this._lastXrefIndex = lastXrefIndex.value;
+    this._prevXrefIndex = this._lastXrefIndex;
   }
 
-  parseNextXref(): ParseResult<XRef> {
-    const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, 
-      {maxIndex: this._lastXRefStartIndex, direction: "reverse"});
-    if (!xrefStartIndex) {
-      return null;
-    }
-
-    let xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
-    if (!xrefIndex) {
+  parsePrevXref(): ParseResult<XRef> {
+    const max = this._currentXrefIndex || this._parser.maxIndex;  
+    let start = this._prevXrefIndex;
+    if (!start) {
       return null;
     }
     
     const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
-      {minIndex: xrefIndex.value, closedOnly: true});
-    if (xrefTableIndex && xrefTableIndex.start === xrefIndex.value) {      
+      {minIndex: start, closedOnly: true});
+    if (xrefTableIndex && xrefTableIndex.start === start) {      
       const xrefStmIndexProp = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
-        {minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start - 1, closedOnly: true});
+        {minIndex: start, maxIndex: max, closedOnly: true});
       if (xrefStmIndexProp) {    
         console.log("XRef is hybrid");
-        xrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
-        if (!xrefIndex) {
+        const streamXrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
+        if (!streamXrefIndex) {
           return null;
         }
+        start = streamXrefIndex.value;
       } else {
         console.log("XRef is table");
-        return XRefTable.parse(this._parser, xrefIndex.value);
+        const xrefTable = XRefTable.parse(this._parser, start);
+        if (xrefTable?.value) {
+          this._currentXrefIndex = xrefTable.start;
+          this._prevXrefIndex = xrefTable.value.prev;
+        }
+        return xrefTable;
       }
     } else {
-      console.log("XRef is stream");  
+      console.log("XRef is stream"); 
     }
-
-    const id = ObjectId.parse(this._parser, xrefIndex.value, false);
+    
+    const id = ObjectId.parse(this._parser, start, false);
     if (!id) {
       return null;
     }
-
     const xrefStreamBounds = this._parser.getIndirectObjectBoundsAt(id.end + 1);   
     if (!xrefStreamBounds) {      
       return null;
-    }  
-    return XRefStream.parse(this._parser, xrefStreamBounds);  
+    }        
+    const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);  
+    if (xrefStream?.value) {
+      this._currentXrefIndex = xrefStream.start;
+      this._prevXrefIndex = xrefStream.value.prev;
+    }
+    return xrefStream; 
+  }
+
+  private parseLastXrefIndex(): ParseResult<number> {
+    const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, 
+      {maxIndex: this._parser.maxIndex, direction: "reverse"});
+    if (!xrefStartIndex) {
+      return null;
+    }
+
+    const xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
+    if (!xrefIndex) {
+      return null;
+    }
+
+    return xrefIndex;
   }
 }
