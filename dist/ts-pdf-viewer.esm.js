@@ -388,6 +388,16 @@ function getCenter(x1, y1, x2, y2) {
         y: (y2 + y1) / 2,
     };
 }
+function parseIntFromBytes(bytes) {
+    if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
+        return 0;
+    }
+    if (bytes.length === 1) {
+        return bytes[0];
+    }
+    const hex = Array.from(bytes, (byte) => ("0" + (byte & 0xFF).toString(16)).slice(-2)).join("");
+    return parseInt(hex, 16);
+}
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -810,6 +820,7 @@ const keywordCodes = {
     STR_HEX_START: [codes.LESS],
     STR_HEX_END: [codes.GREATER],
     VERSION: [codes.PERCENT, codes.P, codes.D, codes.F, codes.MINUS],
+    PREV: [codes.SLASH, codes.P, codes.r, codes.e, codes.v],
     XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
     XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],
     XREF_HYBRID: [codes.X, codes.R, codes.e, codes.f, codes.S, codes.t, codes.m],
@@ -859,6 +870,11 @@ const xRefTypes = {
     TABLE: 0,
     STREAM: 1,
     HYBRID: 2,
+};
+const xRefEntryTypes = {
+    FREE: 0,
+    NORMAL: 1,
+    COMPRESSED: 2,
 };
 const streamFilters = {
     ASCII85: "/ASCII85Decode",
@@ -1266,6 +1282,36 @@ class Parser {
             contentEnd,
         };
     }
+    getXrefTableBoundsAt(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = this.skipEmpty(start);
+        }
+        if (this.isOutside(start) || this._data[start] !== codes.x) {
+            return null;
+        }
+        const xrefStart = this.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start });
+        if (!xrefStart) {
+            return null;
+        }
+        const contentStart = this.findNonSpaceIndex("straight", xrefStart.end + 1);
+        if (contentStart === -1) {
+            return null;
+        }
+        const xrefEnd = this.findSubarrayIndex(keywordCodes.TRAILER, { minIndex: xrefStart.end + 1 });
+        if (!xrefEnd) {
+            return null;
+        }
+        const contentEnd = this.findNonSpaceIndex("reverse", xrefEnd.start - 1);
+        if (contentEnd < contentStart) {
+            return null;
+        }
+        return {
+            start: xrefStart.start,
+            end: xrefEnd.end,
+            contentStart,
+            contentEnd,
+        };
+    }
     getDictBoundsAt(start, skipEmpty = true) {
         if (skipEmpty) {
             start = this.skipEmpty(start);
@@ -1571,7 +1617,10 @@ class ObjectId {
         return this.id === other.id
             && this.generation === other.generation;
     }
-    toArray() {
+    toObjArray() {
+        return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
+    }
+    toRefArray() {
         return new TextEncoder().encode(`${this.id} ${this.generation} R`);
     }
     toString() {
@@ -1579,122 +1628,9 @@ class ObjectId {
     }
 }
 
-class XRef {
-    constructor(type) {
-        this._type = type;
-    }
-    get type() {
-        return this._type;
-    }
-}
-
-class XRefHybrid extends XRef {
-    constructor(trailerDict, trailerStream) {
-        super(xRefTypes.HYBRID);
-        this._trailerDict = trailerDict;
-        this._trailerStream = trailerStream;
-    }
-    static parse(parser, index, skipEmpty = true) {
-        return {
-            value: new XRefHybrid(null, null),
-            start: null,
-            end: null,
-        };
-    }
-}
-
-class Dict {
-    constructor(type) {
-        this._customProps = new Map();
-        this.Type = type;
-    }
-    get customProps() {
-        return new Map(this._customProps);
-    }
-}
-
-class FlateParamsDict extends Dict {
-    constructor() {
-        super(dictTypes.EMPTY);
-        this.Predictor = flatePredictors.NONE;
-        this.Colors = 1;
-        this.BitsPerComponent = 8;
-        this.Columns = 1;
-    }
-    static parse(parser, start, end) {
-        const dict = new FlateParamsDict();
-        let i = start + 2;
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Predictor":
-                        const predictor = parser.parseNumberAt(i, false);
-                        if (predictor) {
-                            dict.Predictor = predictor.value;
-                            i = predictor.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Colors property value");
-                        }
-                        break;
-                    case "/Colors":
-                        const colors = parser.parseNumberAt(i, false);
-                        if (colors) {
-                            dict.Colors = colors.value;
-                            i = colors.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Colors property value");
-                        }
-                        break;
-                    case "/BitsPerComponent":
-                        const bits = parser.parseNumberAt(i, false);
-                        if (bits) {
-                            dict.BitsPerComponent = bits.value;
-                            i = bits.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BitsPerComponent property value");
-                        }
-                        break;
-                    case "/Columns":
-                        const columns = parser.parseNumberAt(i, false);
-                        if (columns) {
-                            dict.Columns = columns.value;
-                            i = columns.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Columns property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return { value: dict, start, end };
-    }
-}
-
-class PdfObject {
-    constructor() {
-    }
-}
-
 class FlateDecoder {
     static Decode(input, predictor = flatePredictors.NONE, columns = 1, components = 1, bpc = 8) {
-        console.log(input);
         const inflated = inflate(input);
-        console.log(inflated);
         switch (predictor) {
             case (flatePredictors.NONE):
                 return inflated;
@@ -1791,13 +1727,139 @@ class FlateDecoder {
     }
 }
 
+class Dict {
+    constructor(type) {
+        this._customProps = new Map();
+        this.Type = type;
+    }
+    get customProps() {
+        return new Map(this._customProps);
+    }
+    tryParseProps(parser, bounds) {
+        if (!parser || !bounds) {
+            return false;
+        }
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Type":
+                        const type = parser.parseNameAt(i);
+                        if (type) {
+                            if (this.Type && this.Type !== type.value) {
+                                return false;
+                            }
+                            return true;
+                        }
+                        else {
+                            throw new Error("Can't parse /Type property value");
+                        }
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class FlateParamsDict extends Dict {
+    constructor() {
+        super(dictTypes.EMPTY);
+        this.Predictor = flatePredictors.NONE;
+        this.Colors = 1;
+        this.BitsPerComponent = 8;
+        this.Columns = 1;
+    }
+    static parse(parser, start, end) {
+        const dict = new FlateParamsDict();
+        let i = start + 2;
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Predictor":
+                        const predictor = parser.parseNumberAt(i, false);
+                        if (predictor) {
+                            dict.Predictor = predictor.value;
+                            i = predictor.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Colors property value");
+                        }
+                        break;
+                    case "/Colors":
+                        const colors = parser.parseNumberAt(i, false);
+                        if (colors) {
+                            dict.Colors = colors.value;
+                            i = colors.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Colors property value");
+                        }
+                        break;
+                    case "/BitsPerComponent":
+                        const bits = parser.parseNumberAt(i, false);
+                        if (bits) {
+                            dict.BitsPerComponent = bits.value;
+                            i = bits.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BitsPerComponent property value");
+                        }
+                        break;
+                    case "/Columns":
+                        const columns = parser.parseNumberAt(i, false);
+                        if (columns) {
+                            dict.Columns = columns.value;
+                            i = columns.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Columns property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return { value: dict, start, end };
+    }
+}
+
+class PdfObject {
+    constructor() {
+    }
+}
+
 class Stream extends PdfObject {
     constructor(type = null) {
         super();
         this.Type = type;
     }
     tryParseProps(parser, bounds) {
-        var _a, _b, _c, _d;
         if (!parser || !bounds) {
             return false;
         }
@@ -1904,8 +1966,7 @@ class Stream extends PdfObject {
         if (!this.Length || this.Length !== encodedData.length) {
             throw new Error("Incorrect stream length");
         }
-        const decodedData = FlateDecoder.Decode(encodedData, (_a = this.DecodeParms) === null || _a === void 0 ? void 0 : _a.Predictor, (_b = this.DecodeParms) === null || _b === void 0 ? void 0 : _b.Columns, (_c = this.DecodeParms) === null || _c === void 0 ? void 0 : _c.Colors, (_d = this.DecodeParms) === null || _d === void 0 ? void 0 : _d.BitsPerComponent);
-        this.streamData = decodedData;
+        this.streamData = encodedData;
         return true;
     }
 }
@@ -1934,7 +1995,7 @@ class TrailerStream extends Stream {
         }
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(start, dictBounds.contentStart);
+        let i = parser.skipToNextName(start, dictBounds.contentEnd);
         if (i === -1) {
             return false;
         }
@@ -2032,9 +2093,105 @@ class TrailerStream extends Stream {
                 }
             }
             else {
-                return true;
+                break;
             }
         }
+        return true;
+    }
+}
+
+class XRef {
+    constructor(type) {
+        this._type = type;
+    }
+    get type() {
+        return this._type;
+    }
+}
+
+class XRefEntry {
+    constructor(type, generation, byteOffset, nextFreeId, objectId, streamId, streamIndex) {
+        this.type = type;
+        this.generation = generation;
+        this.byteOffset = byteOffset;
+        this.nextFreeId = nextFreeId;
+        this.objectId = objectId;
+        this.streamId = streamId;
+        this.streamIndex = streamIndex;
+    }
+    static parseFromTable(bytes) {
+        const entries = [];
+        let i = 0;
+        let j = 0;
+        while (i < bytes.length) {
+            const firstIndexBytes = [];
+            let firstIndexDigit = bytes[i++];
+            while (DIGIT_CHARS.has(firstIndexDigit)) {
+                firstIndexBytes.push(firstIndexDigit);
+                firstIndexDigit = bytes[i++];
+            }
+            let firstIndex = parseInt(firstIndexBytes.map(x => String.fromCharCode(x)).join(""), 10);
+            const countBytes = [];
+            let countDigit = bytes[i++];
+            while (DIGIT_CHARS.has(countDigit)) {
+                countBytes.push(countDigit);
+                countDigit = bytes[i++];
+            }
+            const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10);
+            i++;
+            for (j = 0; j < count; j++) {
+                const value = parseInt(Array.from(bytes.slice(i, i + 10))
+                    .map(x => String.fromCharCode(x)).join(""), 10);
+                i += 11;
+                const gen = parseInt(Array.from(bytes.slice(i, i + 5))
+                    .map(x => String.fromCharCode(x)).join(""), 10);
+                i += 6;
+                const typeByte = bytes[i];
+                if (typeByte === codes.f) {
+                    entries.push(new XRefEntry(xRefEntryTypes.FREE, gen, null, value, firstIndex++));
+                }
+                else if (typeByte === codes.n) {
+                    entries.push(new XRefEntry(xRefEntryTypes.NORMAL, gen, value, null, firstIndex++));
+                }
+                i += 3;
+            }
+        }
+        return entries;
+    }
+    static parseFromStream(bytes, w1 = 1, w2 = 3, w3 = 1) {
+        const entryLength = w1 + w2 + w3;
+        if (bytes.length % entryLength) {
+            throw new Error("Incorrect stream length");
+        }
+        const entries = new Array(entryLength);
+        let i = 0;
+        let j = 0;
+        while (i < bytes.length) {
+            const type = parseIntFromBytes(bytes.slice(i, i + w1));
+            i += w1;
+            const value1 = parseIntFromBytes(bytes.slice(i, i + w2));
+            i += w2;
+            const value2 = parseIntFromBytes(bytes.slice(i, i + w3));
+            i += w3;
+            switch (type) {
+                case xRefEntryTypes.FREE:
+                    entries[j++] = new XRefEntry(xRefEntryTypes.FREE, value2, null, value1);
+                    break;
+                case xRefEntryTypes.NORMAL:
+                    entries[j++] = new XRefEntry(xRefEntryTypes.NORMAL, value2, value1);
+                    break;
+                case xRefEntryTypes.COMPRESSED:
+                    entries[j++] = new XRefEntry(xRefEntryTypes.COMPRESSED, null, null, null, value1, value2);
+                    break;
+            }
+        }
+        return entries;
+    }
+    toTableBytes() {
+        return null;
+    }
+    toStreamBytes(w1, w2, w3) {
+        return null;
     }
 }
 
@@ -2042,6 +2199,10 @@ class XRefStream extends XRef {
     constructor(trailer) {
         super(xRefTypes.STREAM);
         this._trailerStream = trailer;
+    }
+    get prev() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Prev;
     }
     static parse(parser, bounds) {
         if (!parser || !bounds) {
@@ -2052,26 +2213,162 @@ class XRefStream extends XRef {
             return null;
         }
         const xrefStream = new XRefStream(trailerStream.value);
-        console.log(xrefStream);
         return {
             value: xrefStream,
             start: null,
             end: null,
         };
     }
+    getEntries() {
+        if (!this._trailerStream) {
+            return [];
+        }
+        let decodedData;
+        if (this._trailerStream.DecodeParms) {
+            const params = this._trailerStream.DecodeParms;
+            decodedData = FlateDecoder.Decode(this._trailerStream.streamData, params.Predictor, params.Columns, params.Colors, params.BitsPerComponent);
+        }
+        else {
+            decodedData = FlateDecoder.Decode(this._trailerStream.streamData);
+        }
+        const entries = XRefEntry.parseFromStream(decodedData, this._trailerStream.W[0], this._trailerStream.W[1], this._trailerStream.W[2]);
+        return entries;
+    }
+}
+
+class TrailerDict extends Dict {
+    constructor() {
+        super(dictTypes.EMPTY);
+    }
+    static parse(parser, bounds) {
+        const trailer = new TrailerDict();
+        const parseResult = trailer.tryParseProps(parser, bounds);
+        return parseResult
+            ? { value: trailer, start: bounds.start, end: bounds.end }
+            : null;
+    }
+    tryParseProps(parser, bounds) {
+        const superIsParsed = super.tryParseProps(parser, bounds);
+        if (!superIsParsed) {
+            return false;
+        }
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentStart || bounds.start;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Size":
+                        const size = parser.parseNumberAt(i, false);
+                        if (size) {
+                            this.Size = size.value;
+                            i = size.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Size property value");
+                        }
+                        break;
+                    case "/Prev":
+                        const prev = parser.parseNumberAt(i, false);
+                        if (prev) {
+                            this.Prev = prev.value;
+                            i = prev.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Size property value");
+                        }
+                        break;
+                    case "/Root":
+                        const rootId = ObjectId.parseRef(parser, i);
+                        if (rootId) {
+                            this.Root = rootId.value;
+                            i = rootId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Root property value");
+                        }
+                        break;
+                    case "/Encrypt":
+                        const encryptId = ObjectId.parseRef(parser, i);
+                        if (encryptId) {
+                            this.Encrypt = encryptId.value;
+                            i = encryptId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Ebcrypt property value");
+                        }
+                        break;
+                    case "/Info":
+                        const infoId = ObjectId.parseRef(parser, i);
+                        if (infoId) {
+                            this.Info = infoId.value;
+                            i = infoId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Info property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
 }
 
 class XRefTable extends XRef {
-    constructor(trailer) {
+    constructor(table, trailer) {
         super(xRefTypes.TABLE);
+        this._table = table;
         this._trailerDict = trailer;
     }
-    static parse(parser, index, skipEmpty = true) {
+    get prev() {
+        var _a;
+        return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Prev;
+    }
+    static parse(parser, start) {
+        if (!parser || isNaN(start)) {
+            return null;
+        }
+        const xrefTableBounds = parser.getXrefTableBoundsAt(start);
+        if (!xrefTableBounds) {
+            return null;
+        }
+        const trailerDictBounds = parser.getDictBoundsAt(xrefTableBounds.end + 1);
+        if (!trailerDictBounds) {
+            return null;
+        }
+        const table = parser.sliceCharCodes(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
+        const trailerDict = TrailerDict.parse(parser, trailerDictBounds);
+        if (!trailerDict) {
+            return null;
+        }
+        const xrefTable = new XRefTable(table, trailerDict.value);
         return {
-            value: new XRefTable(null),
+            value: xrefTable,
             start: null,
             end: null,
         };
+    }
+    getEntries() {
+        if (!this._table.length) {
+            return [];
+        }
+        const entries = XRefEntry.parseFromTable(this._table);
+        return entries;
     }
 }
 
@@ -2084,22 +2381,27 @@ class XRefParser {
         if (!xrefStartIndex) {
             return null;
         }
-        const xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
+        let xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
         if (!xrefIndex) {
             return null;
         }
-        console.log(xrefIndex.value);
         const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: xrefIndex.value, closedOnly: true });
         if (xrefTableIndex && xrefTableIndex.start === xrefIndex.value) {
-            const xrefStmIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start, closedOnly: true });
-            if (xrefStmIndex) {
+            const xrefStmIndexProp = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: xrefIndex.value, maxIndex: xrefStartIndex.start - 1, closedOnly: true });
+            if (xrefStmIndexProp) {
                 console.log("XRef is hybrid");
-                return XRefHybrid.parse(this._parser, xrefIndex.value);
+                xrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
+                if (!xrefIndex) {
+                    return null;
+                }
             }
             else {
                 console.log("XRef is table");
                 return XRefTable.parse(this._parser, xrefIndex.value);
             }
+        }
+        else {
+            console.log("XRef is stream");
         }
         const id = ObjectId.parse(this._parser, xrefIndex.value, false);
         if (!id) {
@@ -2109,7 +2411,6 @@ class XRefParser {
         if (!xrefStreamBounds) {
             return null;
         }
-        console.log("XRef is stream");
         return XRefStream.parse(this._parser, xrefStreamBounds);
     }
 }
@@ -2142,7 +2443,10 @@ class Annotator {
     parseData() {
         var _a;
         this._version = this._parser.getPdfVersion();
-        this._lastXref = (_a = this._xrefParser.parseNextXref()) === null || _a === void 0 ? void 0 : _a.value;
+        const xref = (_a = this._xrefParser.parseNextXref()) === null || _a === void 0 ? void 0 : _a.value;
+        console.log(xref);
+        const entries = xref.getEntries();
+        console.log(entries);
     }
     updateData() {
     }

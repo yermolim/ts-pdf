@@ -73,7 +73,11 @@ export class ObjectId {
       && this.generation === other.generation;
   }
 
-  toArray(): Uint8Array {
+  toObjArray(): Uint8Array {
+    return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
+  }
+
+  toRefArray(): Uint8Array {
     return new TextEncoder().encode(`${this.id} ${this.generation} R`);
   }
 

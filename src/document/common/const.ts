@@ -27,6 +27,13 @@ export const xRefTypes = {
 } as const;
 export type XRefType = typeof xRefTypes[keyof typeof xRefTypes]; 
 
+export const xRefEntryTypes = {
+  FREE: 0,
+  NORMAL: 1,
+  COMPRESSED: 2,
+} as const;
+export type XRefEntryType = typeof xRefEntryTypes[keyof typeof xRefEntryTypes]; 
+
 /**
  * Each entry in a cross-reference stream has one or more fields, 
  * the first of which designates the entry’s type. 

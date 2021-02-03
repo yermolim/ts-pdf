@@ -2,10 +2,8 @@ import { dictTypes, streamTypes } from "../../common/const";
 import { HexString } from "../../common/hex-string";
 import { Bounds, Parser, ParseResult } from "../../parser";
 import { ObjectId } from "../core/object-id";
-import { ParseInfo } from "../core/parse-info";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { Stream } from "../core/stream";
-import { FlateDecoder } from "../../common/flate-decoder";
 
 export class TrailerStream extends Stream {
   /**
@@ -59,7 +57,7 @@ export class TrailerStream extends Stream {
    * For PDF 1.5+, W always contains three integers; the value of each integer 
    * shall be the number of bytes (in the decoded stream) of the corresponding field
    */
-  W: [number, number, number];
+  W: [type: number, value1: number, value2: number];
   
   constructor() {
     super(streamTypes.XREF);
@@ -94,7 +92,7 @@ export class TrailerStream extends Stream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(start, dictBounds.contentStart);
+    let i = parser.skipToNextName(start, dictBounds.contentEnd);
     if (i === -1) {
       // no required props found
       return false;
@@ -189,12 +187,6 @@ export class TrailerStream extends Stream {
         break;
       }
     };
-    
-    const decodedData = FlateDecoder.Decode(this.streamData,
-      this.DecodeParms?.Predictor,
-      this.DecodeParms?.Columns,
-      this.DecodeParms?.Colors,
-      this.DecodeParms?.BitsPerComponent);    
 
     return true;
   }

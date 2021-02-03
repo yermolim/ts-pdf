@@ -17,6 +17,19 @@ export function getCenter(x1: number, y1: number, x2: number, y2: number): Posit
   };
 }
 
+export function parseIntFromBytes(bytes: Uint8Array): number {
+  if (!bytes?.length) {
+    return 0;
+  }
+  if (bytes.length === 1) {
+    return bytes[0];
+  }
+  const hex = Array.from(bytes, (byte) => 
+    // eslint-disable-next-line no-bitwise
+    ("0" + (byte & 0xFF).toString(16)).slice(-2)).join("");
+  return parseInt(hex, 16);
+}
+
 export interface Position {
   x: number;
   y: number;

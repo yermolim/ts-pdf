@@ -3,7 +3,6 @@ import { MetadataStream } from "./metadata-stream";
 import { ObjectId } from "../core/object-id";
 import { Stream } from "../core/stream";
 import { streamTypes } from "../../common/const";
-import { ParseInfo } from "../core/parse-info";
 
 export class XFormStream extends Stream {
   /**

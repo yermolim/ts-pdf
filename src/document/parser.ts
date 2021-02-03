@@ -334,6 +334,43 @@ export class Parser {
       contentEnd,
     };
   } 
+  
+  getXrefTableBoundsAt(start: number, skipEmpty = true): Bounds {   
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this._data[start] !== codes.x) {
+      return null;
+    }
+
+    const xrefStart = this.findSubarrayIndex(keywordCodes.XREF_TABLE, 
+      {minIndex: start});
+    if (!xrefStart) {
+      return null;
+    }     
+    const contentStart = this.findNonSpaceIndex("straight", xrefStart.end + 1);
+    if (contentStart === -1){
+      return null;
+    }   
+    const xrefEnd = this.findSubarrayIndex(keywordCodes.TRAILER, 
+      {minIndex: xrefStart.end + 1});
+    if (!xrefEnd) {
+      return null;
+    } 
+    const contentEnd = this.findNonSpaceIndex("reverse", xrefEnd.start - 1);
+
+    if (contentEnd < contentStart) {
+      // should be only possible in an empty xref, which is not allowed
+      return null;
+    }
+
+    return {
+      start: xrefStart.start, 
+      end: xrefEnd.end,
+      contentStart,
+      contentEnd,
+    };
+  }
 
   getDictBoundsAt(start: number, skipEmpty = true): Bounds {   
     if (skipEmpty) {
@@ -597,10 +634,15 @@ export class Parser {
     return null;
   }
 
+  /** slice the inner data array from the start index to the end index including BOTH ends */
   sliceCharCodes(start: number, end?: number): Uint8Array {
     return this._data.slice(start, (end || start) + 1);
   }
-  
+
+  /** 
+   * slice the inner data array from the start index to the end index including BOTH ends 
+   * and convert it to string
+   */
   sliceChars(start: number, end?: number): string {
     return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
   }

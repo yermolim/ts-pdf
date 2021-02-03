@@ -126,6 +126,8 @@ export const keywordCodes = {
   STR_HEX_END: [codes.GREATER],
 
   VERSION: [codes.PERCENT, codes.P, codes.D, codes.F, codes.MINUS],
+
+  PREV: [codes.SLASH, codes.P, codes.r, codes.e, codes.v],
   
   XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
   XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],
