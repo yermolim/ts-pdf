@@ -1667,183 +1667,6 @@ class ObjectId {
     }
 }
 
-class FlateDecoder {
-    static Decode(input, predictor = flatePredictors.NONE, columns = 1, components = 1, bpc = 8) {
-        const stream = new Stream(input, 0, input.length);
-        const fs = new FlateStream(stream);
-        const inflated = fs.takeBytes(null);
-        console.log(inflated);
-        switch (predictor) {
-            case (flatePredictors.NONE):
-                return inflated;
-            case (flatePredictors.PNG_NONE):
-            case (flatePredictors.PNG_SUB):
-            case (flatePredictors.PNG_UP):
-            case (flatePredictors.PNG_AVERAGE):
-            case (flatePredictors.PNG_PAETH):
-            case (flatePredictors.PNG_OPTIMUM):
-                return FlateDecoder.removePngFilter(inflated, columns, components, bpc);
-            case (flatePredictors.TIFF):
-                throw new Error("Unsupported filter predictor");
-        }
-    }
-    static Encode(input) {
-        return null;
-    }
-    static removePngFilter(input, columns, components, bpc) {
-        const interval = Math.ceil(components * bpc / 8);
-        const lineLen = columns * interval;
-        const lineLen_filtered = lineLen + 1;
-        if (!!(input.length % lineLen_filtered)) {
-            throw new Error("Data length doesn't match filter columns");
-        }
-        const output = new Uint8Array(input.length / lineLen_filtered * lineLen);
-        const previous = new Array(lineLen).fill(0);
-        const current = new Array(lineLen).fill(0);
-        const getLeft = (j) => j - interval < 0
-            ? 0
-            : current[j - interval];
-        const getAbove = (j) => previous[j];
-        const getUpperLeft = (j) => j - interval < 0
-            ? 0
-            : previous[j - interval];
-        let x = 0;
-        let y = 0;
-        let k = 0;
-        let rowStart = 0;
-        let filterType = 0;
-        let result = 0;
-        for (let i = 0; i < input.length; i++) {
-            if (i % lineLen_filtered === 0) {
-                filterType = input[i];
-                x = 0;
-                if (i) {
-                    for (k = 0; k < lineLen; k++) {
-                        previous[k] = output[rowStart + k];
-                    }
-                }
-                rowStart = y;
-            }
-            else {
-                current[x] = input[i];
-                switch (filterType) {
-                    case 0:
-                        result = current[x];
-                        break;
-                    case 1:
-                        result = (current[x] + getLeft(x)) % 256;
-                        break;
-                    case 2:
-                        result = (current[x] + getAbove(x)) % 256;
-                        break;
-                    case 3:
-                        result = (current[x] + Math.floor((getAbove(x) + getLeft(x)) / 2)) % 256;
-                        break;
-                    case 4:
-                        result = (current[x] + this.paethPredictor(getLeft(x), getAbove(x), getUpperLeft(x))) % 256;
-                        break;
-                }
-                output[y++] = result;
-                x++;
-            }
-        }
-        return output;
-    }
-    static applyPngFilter(input, predictor, columns) {
-        return null;
-    }
-    static paethPredictor(a, b, c) {
-        const p = a + b - c;
-        const pa = Math.abs(p - a);
-        const pb = Math.abs(p - b);
-        const pc = Math.abs(p - c);
-        if (pa <= pb && pa <= pc) {
-            return a;
-        }
-        else if (pb <= pc) {
-            return b;
-        }
-        else {
-            return c;
-        }
-    }
-}
-class Stream {
-    constructor(bytes, start = 0, length) {
-        if (length && length < 0) {
-            throw new Error("Stream length can't be negative");
-        }
-        this._bytes = bytes instanceof Uint8Array
-            ? bytes
-            : new Uint8Array(bytes);
-        this._start = start;
-        this._current = start;
-        this._end = start + length || bytes.length;
-    }
-    get length() {
-        return this._end - this._start;
-    }
-    takeByte() {
-        if (this._current >= this._end) {
-            return -1;
-        }
-        return this._bytes[this._current++];
-    }
-    takeBytes(length) {
-        const bytes = this._bytes;
-        const position = this._current;
-        const bytesEnd = this._end;
-        if (!length) {
-            const subarray = bytes.subarray(position, bytesEnd);
-            return subarray;
-        }
-        else {
-            let end = position + length;
-            if (end > bytesEnd) {
-                end = bytesEnd;
-            }
-            this._current = end;
-            const subarray = bytes.subarray(position, end);
-            return subarray;
-        }
-    }
-    takeUint16() {
-        const b0 = this.takeByte();
-        const b1 = this.takeByte();
-        if (b0 === -1 || b1 === -1) {
-            return -1;
-        }
-        return (b0 << 8) + b1;
-    }
-    takeInt32() {
-        const b0 = this.takeByte();
-        const b1 = this.takeByte();
-        const b2 = this.takeByte();
-        const b3 = this.takeByte();
-        return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
-    }
-    peekByte() {
-        const peekedByte = this.takeByte();
-        if (peekedByte !== -1) {
-            this._current--;
-        }
-        return peekedByte;
-    }
-    peekBytes(length) {
-        const bytes = this.takeBytes(length);
-        this._current -= bytes.length;
-        return bytes;
-    }
-    getByteRange(start, end) {
-        return this._bytes.subarray(Math.max(start, 0), Math.min(end, this._end));
-    }
-    skip(n) {
-        this._current += n || 1;
-    }
-    reset() {
-        this._current = this._start;
-    }
-}
 class DecodedStream {
     constructor(encodedStream) {
         this._minBufferLength = 512;
@@ -1937,6 +1760,7 @@ class DecodedStream {
         this._current = 0;
     }
 }
+
 class FlateStream extends DecodedStream {
     constructor(encodedStream) {
         super(encodedStream);
@@ -2264,6 +2088,184 @@ FlateStream.fixedDistCodeTab = [new Int32Array([
         0x50001, 0x50011, 0x50009, 0x50019, 0x50005, 0x50015, 0x5000d, 0x5001d,
         0x50003, 0x50013, 0x5000b, 0x5001b, 0x50007, 0x50017, 0x5000f, 0x00000
     ]), 5];
+
+class Stream {
+    constructor(bytes, start = 0, length) {
+        if (length && length < 0) {
+            throw new Error("Stream length can't be negative");
+        }
+        this._bytes = bytes instanceof Uint8Array
+            ? bytes
+            : new Uint8Array(bytes);
+        this._start = start;
+        this._current = start;
+        this._end = start + length || bytes.length;
+    }
+    get length() {
+        return this._end - this._start;
+    }
+    takeByte() {
+        if (this._current >= this._end) {
+            return -1;
+        }
+        return this._bytes[this._current++];
+    }
+    takeBytes(length) {
+        const bytes = this._bytes;
+        const position = this._current;
+        const bytesEnd = this._end;
+        if (!length) {
+            const subarray = bytes.subarray(position, bytesEnd);
+            return subarray;
+        }
+        else {
+            let end = position + length;
+            if (end > bytesEnd) {
+                end = bytesEnd;
+            }
+            this._current = end;
+            const subarray = bytes.subarray(position, end);
+            return subarray;
+        }
+    }
+    takeUint16() {
+        const b0 = this.takeByte();
+        const b1 = this.takeByte();
+        if (b0 === -1 || b1 === -1) {
+            return -1;
+        }
+        return (b0 << 8) + b1;
+    }
+    takeInt32() {
+        const b0 = this.takeByte();
+        const b1 = this.takeByte();
+        const b2 = this.takeByte();
+        const b3 = this.takeByte();
+        return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
+    }
+    peekByte() {
+        const peekedByte = this.takeByte();
+        if (peekedByte !== -1) {
+            this._current--;
+        }
+        return peekedByte;
+    }
+    peekBytes(length) {
+        const bytes = this.takeBytes(length);
+        this._current -= bytes.length;
+        return bytes;
+    }
+    getByteRange(start, end) {
+        return this._bytes.subarray(Math.max(start, 0), Math.min(end, this._end));
+    }
+    skip(n) {
+        this._current += n || 1;
+    }
+    reset() {
+        this._current = this._start;
+    }
+}
+
+class FlateDecoder {
+    static Decode(input, predictor = flatePredictors.NONE, columns = 1, components = 1, bpc = 8) {
+        const stream = new Stream(input, 0, input.length);
+        const flate = new FlateStream(stream);
+        const inflated = flate.takeBytes(null);
+        switch (predictor) {
+            case (flatePredictors.NONE):
+                return inflated;
+            case (flatePredictors.PNG_NONE):
+            case (flatePredictors.PNG_SUB):
+            case (flatePredictors.PNG_UP):
+            case (flatePredictors.PNG_AVERAGE):
+            case (flatePredictors.PNG_PAETH):
+            case (flatePredictors.PNG_OPTIMUM):
+                return FlateDecoder.removePngFilter(inflated, columns, components, bpc);
+            case (flatePredictors.TIFF):
+                throw new Error("Unsupported filter predictor");
+        }
+    }
+    static Encode(input) {
+        return null;
+    }
+    static removePngFilter(input, columns, components, bpc) {
+        const interval = Math.ceil(components * bpc / 8);
+        const lineLen = columns * interval;
+        const lineLen_filtered = lineLen + 1;
+        if (!!(input.length % lineLen_filtered)) {
+            throw new Error("Data length doesn't match filter columns");
+        }
+        const output = new Uint8Array(input.length / lineLen_filtered * lineLen);
+        const previous = new Array(lineLen).fill(0);
+        const current = new Array(lineLen).fill(0);
+        const getLeft = (j) => j - interval < 0
+            ? 0
+            : current[j - interval];
+        const getAbove = (j) => previous[j];
+        const getUpperLeft = (j) => j - interval < 0
+            ? 0
+            : previous[j - interval];
+        let x = 0;
+        let y = 0;
+        let k = 0;
+        let rowStart = 0;
+        let filterType = 0;
+        let result = 0;
+        for (let i = 0; i < input.length; i++) {
+            if (i % lineLen_filtered === 0) {
+                filterType = input[i];
+                x = 0;
+                if (i) {
+                    for (k = 0; k < lineLen; k++) {
+                        previous[k] = output[rowStart + k];
+                    }
+                }
+                rowStart = y;
+            }
+            else {
+                current[x] = input[i];
+                switch (filterType) {
+                    case 0:
+                        result = current[x];
+                        break;
+                    case 1:
+                        result = (current[x] + getLeft(x)) % 256;
+                        break;
+                    case 2:
+                        result = (current[x] + getAbove(x)) % 256;
+                        break;
+                    case 3:
+                        result = (current[x] + Math.floor((getAbove(x) + getLeft(x)) / 2)) % 256;
+                        break;
+                    case 4:
+                        result = (current[x] + this.paethPredictor(getLeft(x), getAbove(x), getUpperLeft(x))) % 256;
+                        break;
+                }
+                output[y++] = result;
+                x++;
+            }
+        }
+        return output;
+    }
+    static applyPngFilter(input, predictor, columns) {
+        return null;
+    }
+    static paethPredictor(a, b, c) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        if (pa <= pb && pa <= pc) {
+            return a;
+        }
+        else if (pb <= pc) {
+            return b;
+        }
+        else {
+            return c;
+        }
+    }
+}
 
 class PdfDict {
     constructor(type) {

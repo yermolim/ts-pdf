@@ -2,8 +2,8 @@ import { codes, keywordCodes,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "./common/codes";
 import { ValueType, valueTypes } from "./common/const";
-import { HexString } from "./common/hex-string";
-import { LiteralString } from "./common/literal-string";
+import { HexString } from "./common/strings/hex-string";
+import { LiteralString } from "./common/strings/literal-string";
 
 export type SearchDirection = "straight" | "reverse";
 

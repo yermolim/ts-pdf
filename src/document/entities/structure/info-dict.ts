@@ -1,5 +1,5 @@
 import { dictTypes } from "../../common/const";
-import { DateString } from "../../common/date-string";
+import { DateString } from "../../common/strings/date-string";
 import { PdfDict } from "../core/pdf-dict";
 
 export class InfoDict extends PdfDict {

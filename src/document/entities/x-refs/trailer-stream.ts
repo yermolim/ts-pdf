@@ -1,5 +1,5 @@
 import { dictTypes, streamTypes } from "../../common/const";
-import { HexString } from "../../common/hex-string";
+import { HexString } from "../../common/strings/hex-string";
 import { Bounds, Parser, ParseResult } from "../../parser";
 import { ObjectId } from "../core/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";

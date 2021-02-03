@@ -1,5 +1,5 @@
 /* eslint-disable no-bitwise */
-import { codes, keywordCodes } from "./codes";
+import { codes, keywordCodes } from "../codes";
 
 export class LiteralString {
   private constructor(readonly literal: string,
