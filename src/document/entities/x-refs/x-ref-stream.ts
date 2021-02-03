@@ -54,7 +54,7 @@ export class XRefStream extends XRef {
     }
 
     const entries = XRefEntry.parseFromStream(decodedData, 
-      this._trailerStream.W[0], this._trailerStream.W[1], this._trailerStream.W[2]);
+      this._trailerStream.W, this._trailerStream.Index);
     return entries;
   }
 }

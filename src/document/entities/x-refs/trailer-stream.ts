@@ -43,7 +43,7 @@ export class TrailerStream extends PdfStream {
    */
   ID: [HexString, HexString];
   /**
-   * (Optional)An array containing a pair of integers for each subsection 
+   * (Optional) An array containing a pair of integers for each subsection 
    * in this section. The first integer shall be the first object number 
    * in the subsection; the second integer shall be the number of entries 
    * in the subsection The array shall be sorted in ascending order by object number. 
