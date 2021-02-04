@@ -1,6 +1,6 @@
 import { dictTypes, streamTypes } from "../../common/const";
 import { HexString } from "../common/hex-string";
-import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
+import { ParseInfo, ParseResult } from "../../parser/document-parser";
 import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
@@ -63,12 +63,12 @@ export class TrailerStream extends PdfStream {
     super(streamTypes.XREF);
   }  
   
-  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<TrailerStream> {    
+  static parse(parseInfo: ParseInfo): ParseResult<TrailerStream> {    
     const trailer = new TrailerStream();
-    const parseResult = trailer.tryParseProps(parser, bounds);
+    const parseResult = trailer.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: bounds.start, end: bounds.end}
+      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
 
@@ -79,8 +79,8 @@ export class TrailerStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
-    const superIsParsed = super.tryParseProps(parser, bounds);
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }
@@ -89,6 +89,7 @@ export class TrailerStream extends PdfStream {
       return false;
     }
 
+    const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
@@ -152,7 +153,7 @@ export class TrailerStream extends PdfStream {
             }
             break;
           case "/ID":
-            const ids = parser.parseHexArrayAt(i);
+            const ids = HexString.parseArray(parser, i);
             if (ids) {
               this.ID = [ids.value[0], ids.value[1]];
               i = ids.end + 1;

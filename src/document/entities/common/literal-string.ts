@@ -6,7 +6,7 @@ export class LiteralString {
   private constructor(readonly literal: string,
     readonly bytes: Uint8Array) { }
     
-  static parseLiteralAt(parser: DocumentParser, start: number, 
+  static parse(parser: DocumentParser, start: number, 
     skipEmpty = true): ParseResult<LiteralString>  {       
     if (skipEmpty) {
       start = parser.skipEmpty(start);
@@ -20,17 +20,19 @@ export class LiteralString {
     let prevCode: number;
     let code: number;
     let opened = 0;
+
     while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-      if (code) {
-        prevCode = code;
+      if (code) {        
+        bytes.push(code);
+        prevCode = code; 
       }
+
       code = parser.getCharCode(i++);
-      bytes.push(code);
 
       if (prevCode !== codes.BACKSLASH) {
         if (code === codes.L_PARENTHESE) {
           opened += 1;
-        } else if (code === codes.R_PARENTHESE) {
+        } else if (opened && code === codes.R_PARENTHESE) {
           opened -= 1;
         }
       }
@@ -40,7 +42,7 @@ export class LiteralString {
     }
 
     const literal = LiteralString.fromBytes(new Uint8Array(bytes));
-    return {value: literal, start, end: i - 1};
+    return {value: literal, start: start, end: i - 1};
   }
 
   /**

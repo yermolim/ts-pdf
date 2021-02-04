@@ -1,5 +1,5 @@
 import { DictType } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
+import { ParseInfo, ParseResult } from "../../parser/document-parser";
 
 export class PdfDict {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
@@ -17,11 +17,12 @@ export class PdfDict {
   /**
    * try parse and fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
-    if (!parser || !bounds) {
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    if (!parseInfo) {
       return false;
     }
 
+    const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;  
 

@@ -1,6 +1,8 @@
 import { dictTypes } from "../../common/const";
+import { ParseInfo, ParseResult } from "../../parser/document-parser";
+import { LiteralString } from "../common/literal-string";
+import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { PageTreeDict } from "./page-tree-dict";
 
 export class CatalogDict extends PdfDict {
   /**
@@ -19,16 +21,98 @@ export class CatalogDict extends PdfDict {
    * (Required; shall be an indirect reference) 
    * The page tree node that shall be the root of the document’s page tree
    */
-  Pages: PageTreeDict;
+  Pages: ObjectId;
   /**
    * (Optional; PDF 1.4+) A language identifier that shall specify the natural language 
    * for all text in the document except where overridden by language specifications 
    * for structure elements or marked content. If this entry is absent, 
    * the language shall be considered unknown
    */
-  Lang: string;
+  Lang: LiteralString;
+
+  // TODO: Add other properties
   
   constructor() {
     super(dictTypes.CATALOG);
+  }  
+  
+  static parse(parseInfo: ParseInfo): ParseResult<CatalogDict> {    
+    const catalog = new CatalogDict();
+    const parseResult = catalog.tryParseProps(parseInfo);
+
+    return parseResult
+      ? {value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      : null;
+  }
+  
+  /**
+   * fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
+    if (!superIsParsed) {
+      return false;
+    }
+
+    const {parser, bounds} = parseInfo;
+    const start = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end; 
+    
+    let i = parser.skipToNextName(start, end - 1);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
+    let name: string;
+    let parseResult: ParseResult<string>;
+    while (true) {
+      parseResult = parser.parseNameAt(i);
+      if (parseResult) {
+        i = parseResult.end + 1;
+        name = parseResult.value;
+        switch (name) {
+          case "/Version":
+            const version = parser.parseNameAt(i, false, false);
+            if (version) {
+              this.Version = version.value;
+              i = version.end + 1;
+            } else {              
+              throw new Error("Can't parse /Version property value");
+            }
+            break;
+          case "/Pages":
+            const rootPageTreeId = ObjectId.parseRef(parser, i);
+            if (rootPageTreeId) {
+              this.Pages = rootPageTreeId.value;
+              i = rootPageTreeId.end + 1;
+            } else {              
+              throw new Error("Can't parse /Pages property value");
+            }
+            break;
+          case "/Lang":
+            const lang = LiteralString.parse(parser, i);
+            if (lang) {
+              this.Lang = lang.value;
+              i = lang.end + 1;
+            } else {              
+              throw new Error("Can't parse /Lang property value");
+            }
+            break;
+          default:
+            // skip to next name
+            i = parser.skipToNextName(i, end - 1);
+            break;
+        }
+      } else {
+        break;
+      }
+    };    
+    
+    if (!this.Pages) {
+      // not all required properties parsed
+      return false;
+    }    
+
+    return true;
   }
 }

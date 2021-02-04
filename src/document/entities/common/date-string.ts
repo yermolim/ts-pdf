@@ -1,6 +1,31 @@
+import { codes } from "../../common/codes";
+import { DocumentParser, ParseResult } from "../../parser/document-parser";
+
 export class DateString {
   private constructor(readonly source: string, 
     readonly date: Date) { }
+    
+  static parse(parser: DocumentParser, start: number, 
+    skipEmpty = true): ParseResult<DateString>  {       
+    if (skipEmpty) {
+      start = parser.skipEmpty(start);
+    }
+    if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+      return null;
+    }
+
+    const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+    if (end === -1) {
+      return null;
+    }
+
+    try {
+      const date = DateString.fromArray(parser.subCharCodes(start + 1, end - 1));
+      return {value: date, start, end};      
+    } catch {
+      return null;
+    }
+  }
 
   static fromDate(date: Date): DateString {
     const year = date.getFullYear();

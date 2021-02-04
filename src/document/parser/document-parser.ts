@@ -2,9 +2,6 @@ import { codes, keywordCodes,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "../common/codes";
 import { ValueType, valueTypes } from "../common/const";
-import { HexString } from "../entities/common/hex-string";
-import { LiteralString } from "../entities/common/literal-string";
-import { ObjectId } from "../entities/common/object-id";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -20,6 +17,11 @@ export interface Bounds {
   end: number;
   contentStart?: number;
   contentEnd?: number;
+}
+
+export interface ParseInfo {
+  parser: DocumentParser;
+  bounds: Bounds;
 }
 
 export interface ParseResult<T> extends Bounds {
@@ -310,13 +312,14 @@ export class DocumentParser {
     }
     if (this.isOutside(start)) {
       return null;
-    }
+    }    
 
     const objStartIndex = this.findSubarrayIndex(keywordCodes.OBJ, 
       {minIndex: start, closedOnly: true});
-    if (!objStartIndex || objStartIndex.start !== start) {
+    if (!objStartIndex) {
       return null;
     }      
+
     const contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
     if (contentStart === -1){
       return null;
@@ -501,43 +504,6 @@ export class DocumentParser {
       ? {value: result, start, end: i - 1}
       : null;
   } 
-
-  parseLiteralAt(start: number, skipEmpty = true): ParseResult<LiteralString>  {       
-    if (skipEmpty) {
-      start = this.skipEmpty(start);
-    }
-    if (this.isOutside(start) || this._data[start] !== codes.L_PARENTHESE) {
-      return null;
-    }
-
-    const arr = this._data;
-    const bytes: number[] = [];
-    let i = start + 1;
-    let prevCode: number;
-    let code: number;
-    let opened = 0;
-    while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-      if (code) {
-        prevCode = code;
-      }
-      code = arr[i++];
-      bytes.push(code);
-
-      if (prevCode !== codes.BACKSLASH) {
-        if (code === codes.L_PARENTHESE) {
-          opened += 1;
-        } else if (code === codes.R_PARENTHESE) {
-          opened -= 1;
-        }
-      }
-    }
-    if (!bytes.length) {
-      return null;
-    }
-
-    const literal = LiteralString.fromBytes(new Uint8Array(bytes));
-    return {value: literal, start, end: i - 1};
-  }
   
   parseNumberArrayAt(start: number, float = true, 
     skipEmpty = true): ParseResult<number[]>  {
@@ -559,48 +525,6 @@ export class DocumentParser {
     }
 
     return {value: numbers, start: arrayBounds.start, end: arrayBounds.end};
-  }
-  
-  parseHexArrayAt(start: number, skipEmpty = true): ParseResult<HexString[]>  {
-    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
-    if (!arrayBounds) {
-      return null;
-    }
-
-    const hexes: HexString[] = [];
-    let current: ParseResult<HexString>;
-    let i = arrayBounds.start + 1;
-    while(i < arrayBounds.end) {
-      current = HexString.parse(this, i, true);
-      if (!current) {
-        break;
-      }
-      hexes.push(current.value);
-      i = current.end + 1;
-    }
-
-    return {value: hexes, start: arrayBounds.start, end: arrayBounds.end};
-  }
-  
-  parseObjectIdRefArrayAt(start: number, skipEmpty = true): ParseResult<ObjectId[]>  {
-    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
-    if (!arrayBounds) {
-      return null;
-    }
-
-    const ids: ObjectId[] = [];
-    let current: ParseResult<ObjectId>;
-    let i = arrayBounds.start + 1;
-    while(i < arrayBounds.end) {
-      current = ObjectId.parseRef(this, i, true);
-      if (!current) {
-        break;
-      }
-      ids.push(current.value);
-      i = current.end + 1;
-    }
-
-    return {value: ids, start: arrayBounds.start, end: arrayBounds.end};
   }
   //#endregion
 

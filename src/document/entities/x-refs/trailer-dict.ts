@@ -1,10 +1,7 @@
 import { dictTypes } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
+import { ParseInfo, ParseResult } from "../../parser/document-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../common/object-id";
-import { EncryptionDict } from "../encryption/encryption-dict";
-import { CatalogDict } from "../structure/catalog-dict";
-import { InfoDict } from "../structure/info-dict";
 
 export class TrailerDict extends PdfDict {
   /**
@@ -51,24 +48,25 @@ export class TrailerDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
   
-  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<TrailerDict> {    
+  static parse(parseInfo: ParseInfo): ParseResult<TrailerDict> {    
     const trailer = new TrailerDict();
-    const parseResult = trailer.tryParseProps(parser, bounds);
+    const parseResult = trailer.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: bounds.start, end: bounds.end}
+      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
-    const superIsParsed = super.tryParseProps(parser, bounds);
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }
 
+    const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
@@ -119,7 +117,7 @@ export class TrailerDict extends PdfDict {
               this.Encrypt = encryptId.value;
               i = encryptId.end + 1;
             } else {              
-              throw new Error("Can't parse /Ebcrypt property value");
+              throw new Error("Can't parse /Encrypt property value");
             }
             break;
           case "/Info":
@@ -140,6 +138,11 @@ export class TrailerDict extends PdfDict {
         break;
       }
     };
+    
+    if (isNaN(this.Size) || !this.Root) {
+      // not all required properties parsed
+      return false;
+    }
 
     return true;
   }

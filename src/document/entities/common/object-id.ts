@@ -19,12 +19,11 @@ export class ObjectId {
     this.reused = this.generation > 0;
   }
 
-  static parse(parser: DocumentParser, index: number, 
-    skipEmpty = true): ParseResult<ObjectId> {    
-
-    const start = skipEmpty
-      ? parser.findRegularIndex("straight", index)
-      : index;
+  static parse(parser: DocumentParser, start: number, 
+    skipEmpty = true): ParseResult<ObjectId> {  
+    if (skipEmpty) {
+      start = parser.findRegularIndex("straight", start);
+    }
     if (start < 0 || start > parser.maxIndex) {
       return null;
     }    
@@ -46,10 +45,10 @@ export class ObjectId {
     };
   }
   
-  static parseRef(parser: DocumentParser, index: number, 
+  static parseRef(parser: DocumentParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId> {    
 
-    const id = ObjectId.parse(parser, index, skipEmpty);
+    const id = ObjectId.parse(parser, start, skipEmpty);
     if (!id) {
       return null;
     }
@@ -66,6 +65,28 @@ export class ObjectId {
       start: id.start,
       end: rIndex.end,
     };
+  }
+  
+  static parseRefArray(parser: DocumentParser, start: number, 
+    skipEmpty = true): ParseResult<ObjectId[]>  {
+    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    if (!arrayBounds) {
+      return null;
+    }
+
+    const ids: ObjectId[] = [];
+    let current: ParseResult<ObjectId>;
+    let i = arrayBounds.start + 1;
+    while(i < arrayBounds.end) {
+      current = ObjectId.parseRef(parser, i, true);
+      if (!current) {
+        break;
+      }
+      ids.push(current.value);
+      i = current.end + 1;
+    }
+
+    return {value: ids, start: arrayBounds.start, end: arrayBounds.end};
   }
 
   equals(other: ObjectId) {

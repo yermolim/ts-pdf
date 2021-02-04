@@ -160,4 +160,8 @@ export class ReferenceData {
     }
     return true;
   }
+
+  getOffset(id: number): number {
+    return this.usedMap.get(id)?.byteOffset;
+  }
 }

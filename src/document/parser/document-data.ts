@@ -1,14 +1,17 @@
 import { keywordCodes } from "../common/codes";
-import { DocumentParser, ParseResult } from "./document-parser";
 import { ObjectId } from "../entities/common/object-id";
+import { ObjectStream } from "../entities/streams/object-stream";
+import { CatalogDict } from "../entities/structure/catalog-dict";
+import { PageTreeDict } from "../entities/structure/page-tree-dict";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
+import { DocumentParser, ParseInfo, ParseResult } from "./document-parser";
 import { ReferenceData } from "./reference-data";
 
 export class DocumentData {
-  private readonly _parser: DocumentParser;
+  private readonly _docParser: DocumentParser;
 
   private readonly _version: string;
   private readonly _lastXrefIndex: number;
@@ -21,9 +24,9 @@ export class DocumentData {
   private _referenceData: ReferenceData;
 
   constructor(parser: DocumentParser) {
-    this._parser = parser;
+    this._docParser = parser;
 
-    this._version = this._parser.getPdfVersion();
+    this._version = this._docParser.getPdfVersion();
 
     const lastXrefIndex = this.parseLastXrefIndex();
     if (!lastXrefIndex) {{
@@ -39,13 +42,22 @@ export class DocumentData {
     console.log(this._xrefs);
 
     const entries: XRefEntry[] = [];
-    this._xrefs.forEach(x => {
-      entries.push(...x.getEntries());
-    });
-    
+    this._xrefs.forEach(x =>  entries.push(...x.getEntries()));    
     this._referenceData = new ReferenceData(entries);
     
     console.log(this._referenceData);
+
+    const catalogId = this._xrefs[0].root;
+    const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
+    const catalog = CatalogDict.parse(catalogParseInfo);
+
+    console.log(catalog);
+    
+    const pagesId = catalog.value.Pages;
+    const pagesParseInfo = this.getObjectParseInfo(pagesId.id);
+    const pages = PageTreeDict.parse(pagesParseInfo);
+    
+    console.log(pages);
   }
 
   reset() {
@@ -73,27 +85,27 @@ export class DocumentData {
   }
 
   parsePrevXref(): XRef {
-    const max = this._currentXrefIndex || this._parser.maxIndex;  
+    const max = this._currentXrefIndex || this._docParser.maxIndex;  
     let start = this._prevXrefIndex;
     if (!start) {
       return null;
     }
     
-    const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
+    const xrefTableIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
       {minIndex: start, closedOnly: true});
     if (xrefTableIndex && xrefTableIndex.start === start) {      
-      const xrefStmIndexProp = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
+      const xrefStmIndexProp = this._docParser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
         {minIndex: start, maxIndex: max, closedOnly: true});
       if (xrefStmIndexProp) {    
         console.log("XRef is hybrid");
-        const streamXrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
+        const streamXrefIndex = this._docParser.parseNumberAt(xrefStmIndexProp.end + 1);
         if (!streamXrefIndex) {
           return null;
         }
         start = streamXrefIndex.value;
       } else {
         console.log("XRef is table");
-        const xrefTable = XRefTable.parse(this._parser, start);        
+        const xrefTable = XRefTable.parse(this._docParser, start);        
         if (xrefTable?.value) {
           this._currentXrefIndex = start;
           this._prevXrefIndex = xrefTable.value.prev;
@@ -107,15 +119,15 @@ export class DocumentData {
       console.log("XRef is stream"); 
     }
 
-    const id = ObjectId.parse(this._parser, start, false);
+    const id = ObjectId.parse(this._docParser, start, false);
     if (!id) {
       return null;
     }
-    const xrefStreamBounds = this._parser.getIndirectObjectBoundsAt(id.end + 1);   
+    const xrefStreamBounds = this._docParser.getIndirectObjectBoundsAt(id.end + 1);   
     if (!xrefStreamBounds) {      
       return null;
     }       
-    const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);
+    const xrefStream = XRefStream.parse({parser: this._docParser, bounds: xrefStreamBounds});
 
     if (xrefStream?.value) {
       this._currentXrefIndex = start;
@@ -128,17 +140,65 @@ export class DocumentData {
   }
 
   private parseLastXrefIndex(): ParseResult<number> {
-    const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, 
-      {maxIndex: this._parser.maxIndex, direction: "reverse"});
+    const xrefStartIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_START, 
+      {maxIndex: this._docParser.maxIndex, direction: "reverse"});
     if (!xrefStartIndex) {
       return null;
     }
 
-    const xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
+    const xrefIndex = this._docParser.parseNumberAt(xrefStartIndex.end + 1);
     if (!xrefIndex) {
       return null;
     }
 
     return xrefIndex;
+  }
+
+  /**
+   * returns a proper parser instance and byte bounds for the object by its id.
+   * returns null if an object with the specified id not found.
+   * @param id 
+   */
+  private getObjectParseInfo(id: number): ParseInfo {
+    if (!id) {
+      return null;
+    }
+    const offset = this._referenceData?.getOffset(id);
+    if (isNaN(offset)) {
+      return null;
+    } 
+    
+    const objectId = ObjectId.parse(this._docParser, offset);
+    if (!objectId) {
+      return null;
+    }   
+
+    const bounds = this._docParser.getIndirectObjectBoundsAt(objectId.end + 1, true);
+    if (!bounds) {
+      return null;
+    }
+    const info = {parser: this._docParser, bounds};
+
+    if (objectId.value.id === id) {
+      // object id equals the sought one, so this is the needed object
+      return info;
+    } 
+
+    // object id at the given offset is not equal to the sought one
+    // check if the object is an object stream and try to find the needed object inside it
+    const stream = ObjectStream.parse(info);
+    if (!stream) {
+      return;
+    }
+    const objectBytes = stream.value.getObjectBytes(id);
+    if (objectBytes?.length) {
+      // the object is found inside the stream
+      return {
+        parser: new DocumentParser(objectBytes), 
+        bounds: {start: 0, end: objectBytes.length - 1},
+      };
+    }
+
+    return null;
   }
 }

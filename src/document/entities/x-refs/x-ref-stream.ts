@@ -1,6 +1,7 @@
 import { xRefTypes } from "../../common/const";
 import { FlateDecoder } from "../../common/decoders/flate-decoder";
-import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
+import { ParseInfo, ParseResult } from "../../parser/document-parser";
+import { ObjectId } from "../common/object-id";
 import { TrailerStream } from "./trailer-stream";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";
@@ -16,17 +17,21 @@ export class XRefStream extends XRef {
     return this._trailerStream?.Size;
   }
   
+  get root(): ObjectId {
+    return this._trailerStream?.Root;
+  }
+  
   constructor(trailer: TrailerStream) {
     super(xRefTypes.STREAM);
     this._trailerStream = trailer;
   }
   
-  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<XRefStream> {
-    if (!parser || !bounds) {
+  static parse(parseInfo: ParseInfo): ParseResult<XRefStream> {
+    if (!parseInfo) {
       return null;
     }
     
-    const trailerStream = TrailerStream.parse(parser, bounds);   
+    const trailerStream = TrailerStream.parse(parseInfo);   
     if (!trailerStream) {
       return null;
     }

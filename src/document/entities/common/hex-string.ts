@@ -24,6 +24,28 @@ export class HexString {
 
     const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
     return {value: hex, start, end};
+  }  
+  
+  static parseArray(parser: DocumentParser, start: number, 
+    skipEmpty = true): ParseResult<HexString[]>  {
+    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    if (!arrayBounds) {
+      return null;
+    }
+
+    const hexes: HexString[] = [];
+    let current: ParseResult<HexString>;
+    let i = arrayBounds.start + 1;
+    while(i < arrayBounds.end) {
+      current = HexString.parse(parser, i, true);
+      if (!current) {
+        break;
+      }
+      hexes.push(current.value);
+      i = current.end + 1;
+    }
+
+    return {value: hexes, start: arrayBounds.start, end: arrayBounds.end};
   }
 
   static fromBytes(bytes: Uint8Array): HexString {   

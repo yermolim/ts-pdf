@@ -1,5 +1,6 @@
 import { streamTypes } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
+import { FlateDecoder } from "../../common/decoders/flate-decoder";
+import { Bounds, DocumentParser, ParseInfo, ParseResult } from "../../parser/document-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 
@@ -22,13 +23,62 @@ export class ObjectStream extends PdfStream {
     super(streamTypes.OBJECT_STREAM);
   }  
   
-  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<ObjectStream> {    
+  static parse(parseInfo: ParseInfo): ParseResult<ObjectStream> {    
     const stream = new ObjectStream();
-    const parseResult = stream.tryParseProps(parser, bounds);
+    const parseResult = stream.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: stream, start: bounds.start, end: bounds.end}
+      ? {value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
+  }
+
+  getObjectBytes(id: number): Uint8Array { 
+    if (!this.streamData || !this.N || !this.First) {
+      return null;
+    }
+
+    let decodedData: Uint8Array;
+    if (this.DecodeParms) {
+      const params = this.DecodeParms;
+      decodedData = FlateDecoder.Decode(this.streamData,
+        params.Predictor,
+        params.Columns,
+        params.Colors,
+        params.BitsPerComponent); 
+    } else {      
+      decodedData = FlateDecoder.Decode(this.streamData);
+    }
+
+    const parser = new DocumentParser(decodedData);
+
+    const offsetMap = new Map<number, number>();
+    let temp: ParseResult<number>;
+    let objectId: number;
+    let byteOffset: number;
+    let position = 0;
+    for (let n = 0; n < this.N; n++) {
+      temp = parser.parseNumberAt(position, false, false);
+      objectId = temp.value;
+      position = temp.end + 2;    
+
+      temp = parser.parseNumberAt(position, false, false);
+      byteOffset = temp.value;
+      position = temp.end + 2; 
+      
+      offsetMap.set(objectId, byteOffset);
+    }
+
+    if (!offsetMap.has(id)) {
+      return null;
+    }
+
+    const objectStart = this.First + offsetMap.get(id);
+    const bounds = parser.getDictBoundsAt(objectStart, false);
+    if (!bounds) {
+      return null;
+    }
+
+    return parser.sliceCharCodes(bounds.start, bounds.end);
   }
 
   toArray(): Uint8Array {
@@ -38,8 +88,8 @@ export class ObjectStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
-    const superIsParsed = super.tryParseProps(parser, bounds);
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }
@@ -48,6 +98,7 @@ export class ObjectStream extends PdfStream {
       return false;
     }
 
+    const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     

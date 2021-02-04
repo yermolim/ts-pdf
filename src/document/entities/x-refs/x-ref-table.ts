@@ -1,5 +1,6 @@
 import { xRefTypes } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
+import { DocumentParser, ParseResult } from "../../parser/document-parser";
+import { ObjectId } from "../common/object-id";
 import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";
@@ -14,6 +15,10 @@ export class XRefTable extends XRef {
   
   get size(): number {
     return this._trailerDict?.Size;
+  }
+  
+  get root(): ObjectId {
+    return this._trailerDict?.Root;
   }
 
   constructor(table: Uint8Array, trailer: TrailerDict) {
@@ -41,7 +46,7 @@ export class XRefTable extends XRef {
     const table = parser.sliceCharCodes(xrefTableBounds.contentStart, 
       xrefTableBounds.contentEnd);    
 
-    const trailerDict = TrailerDict.parse(parser, trailerDictBounds);   
+    const trailerDict = TrailerDict.parse({parser, bounds: trailerDictBounds});   
     if (!trailerDict) {
       return null;
     }

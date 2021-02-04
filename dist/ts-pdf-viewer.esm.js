@@ -978,250 +978,6 @@ const supportedFilters = new Set([
 ]);
 const maxGeneration = 65535;
 
-class HexString {
-    constructor(literal, hex, bytes) {
-        this.literal = literal;
-        this.hex = hex;
-        this.bytes = bytes;
-    }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
-        if (end === -1) {
-            return;
-        }
-        const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
-        return { value: hex, start, end };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(bytes);
-        const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
-        return new HexString(literal, hex, bytes);
-    }
-    static fromHexString(hex) {
-        const bytes = new TextEncoder().encode(hex);
-        const literal = new TextDecoder().decode(bytes);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromLiteralString(literal) {
-        const hex = Array.from(literal, (char, i) => ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
-        const bytes = new TextEncoder().encode(hex);
-        return new HexString(literal, hex, bytes);
-    }
-    ;
-    toArray(bracketed = false) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_HEX_START,
-                ...this.bytes, ...keywordCodes.STR_HEX_END])
-            : new Uint8Array(this.bytes);
-    }
-}
-
-class LiteralString {
-    constructor(literal, bytes) {
-        this.literal = literal;
-        this.bytes = bytes;
-    }
-    static parseLiteralAt(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const bytes = [];
-        let i = start + 1;
-        let prevCode;
-        let code;
-        let opened = 0;
-        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-            if (code) {
-                prevCode = code;
-            }
-            code = parser.getCharCode(i++);
-            bytes.push(code);
-            if (prevCode !== codes.BACKSLASH) {
-                if (code === codes.L_PARENTHESE) {
-                    opened += 1;
-                }
-                else if (code === codes.R_PARENTHESE) {
-                    opened -= 1;
-                }
-            }
-        }
-        if (!bytes.length) {
-            return null;
-        }
-        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
-        return { value: literal, start, end: i - 1 };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
-        return new LiteralString(literal, bytes);
-    }
-    static fromString(source) {
-        const bytes = LiteralString.escape(new TextEncoder().encode(source));
-        return new LiteralString(source, bytes);
-    }
-    static escape(bytes) {
-        const result = [];
-        for (let i = 0; i < bytes.length; i++) {
-            switch (bytes[i]) {
-                case codes.LINE_FEED:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.n);
-                    break;
-                case codes.CARRIAGE_RETURN:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.r);
-                    break;
-                case codes.HORIZONTAL_TAB:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.t);
-                    break;
-                case codes.BACKSPACE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.b);
-                    break;
-                case codes.FORM_FEED:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.f);
-                    break;
-                case codes.L_PARENTHESE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.L_PARENTHESE);
-                    break;
-                case codes.R_PARENTHESE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.R_PARENTHESE);
-                    break;
-                case codes.BACKSLASH:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.BACKSLASH);
-                    break;
-                default:
-                    result.push(bytes[i]);
-                    break;
-            }
-        }
-        return new Uint8Array(result);
-    }
-    static unescape(bytes) {
-        const result = [];
-        let escaped = false;
-        for (let i = 0; i < bytes.length; i++) {
-            if (escaped) {
-                switch (bytes[i]) {
-                    case codes.n:
-                        result.push(codes.LINE_FEED);
-                        break;
-                    case codes.r:
-                        result.push(codes.CARRIAGE_RETURN);
-                        break;
-                    case codes.t:
-                        result.push(codes.HORIZONTAL_TAB);
-                        break;
-                    case codes.b:
-                        result.push(codes.BACKSPACE);
-                        break;
-                    case codes.f:
-                        result.push(codes.FORM_FEED);
-                        break;
-                    case codes.L_PARENTHESE:
-                        result.push(codes.L_PARENTHESE);
-                        break;
-                    case codes.R_PARENTHESE:
-                        result.push(codes.R_PARENTHESE);
-                        break;
-                    case codes.BACKSLASH:
-                        result.push(codes.BACKSLASH);
-                        break;
-                    default:
-                        result.push(bytes[i]);
-                        break;
-                }
-                escaped = false;
-                continue;
-            }
-            if (bytes[i] === codes.BACKSLASH) {
-                escaped = true;
-                continue;
-            }
-            result.push(bytes[i]);
-        }
-        return new Uint8Array(result);
-    }
-    toArray(bracketed = false) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
-                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
-            : new Uint8Array(this.bytes);
-    }
-}
-
-class ObjectId {
-    constructor(id, generation) {
-        this.id = id !== null && id !== void 0 ? id : 0;
-        this.generation = generation !== null && generation !== void 0 ? generation : 0;
-        this.reused = this.generation > 0;
-    }
-    static parse(parser, index, skipEmpty = true) {
-        const start = skipEmpty
-            ? parser.findRegularIndex("straight", index)
-            : index;
-        if (start < 0 || start > parser.maxIndex) {
-            return null;
-        }
-        const id = parser.parseNumberAt(start, false, false);
-        if (!id || isNaN(id.value)) {
-            return null;
-        }
-        const generation = parser.parseNumberAt(id.end + 2, false, false);
-        if (!generation || isNaN(generation.value)) {
-            return null;
-        }
-        return {
-            value: new ObjectId(id.value, generation.value),
-            start,
-            end: generation.end,
-        };
-    }
-    static parseRef(parser, index, skipEmpty = true) {
-        const id = ObjectId.parse(parser, index, skipEmpty);
-        if (!id) {
-            return null;
-        }
-        const rIndexSupposed = id.end + 2;
-        const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
-        if (!rIndex || rIndex.start !== rIndexSupposed) {
-            return null;
-        }
-        return {
-            value: id.value,
-            start: id.start,
-            end: rIndex.end,
-        };
-    }
-    equals(other) {
-        return this.id === other.id
-            && this.generation === other.generation;
-    }
-    toObjArray() {
-        return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
-    }
-    toRefArray() {
-        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
-    }
-    toString() {
-        return this.id + "|" + this.generation;
-    }
-}
-
 class DocumentParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -1408,7 +1164,7 @@ class DocumentParser {
             return null;
         }
         const objStartIndex = this.findSubarrayIndex(keywordCodes.OBJ, { minIndex: start, closedOnly: true });
-        if (!objStartIndex || objStartIndex.start !== start) {
+        if (!objStartIndex) {
             return null;
         }
         const contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
@@ -1564,40 +1320,6 @@ class DocumentParser {
             ? { value: result, start, end: i - 1 }
             : null;
     }
-    parseLiteralAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || this._data[start] !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const arr = this._data;
-        const bytes = [];
-        let i = start + 1;
-        let prevCode;
-        let code;
-        let opened = 0;
-        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-            if (code) {
-                prevCode = code;
-            }
-            code = arr[i++];
-            bytes.push(code);
-            if (prevCode !== codes.BACKSLASH) {
-                if (code === codes.L_PARENTHESE) {
-                    opened += 1;
-                }
-                else if (code === codes.R_PARENTHESE) {
-                    opened -= 1;
-                }
-            }
-        }
-        if (!bytes.length) {
-            return null;
-        }
-        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
-        return { value: literal, start, end: i - 1 };
-    }
     parseNumberArrayAt(start, float = true, skipEmpty = true) {
         const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
         if (!arrayBounds) {
@@ -1615,42 +1337,6 @@ class DocumentParser {
             i = current.end + 1;
         }
         return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    parseHexArrayAt(start, skipEmpty = true) {
-        const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(this, i, true);
-            if (!current) {
-                break;
-            }
-            hexes.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    parseObjectIdRefArrayAt(start, skipEmpty = true) {
-        const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const ids = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = ObjectId.parseRef(this, i, true);
-            if (!current) {
-                break;
-            }
-            ids.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
     }
     skipEmpty(start) {
         let index = this.findNonSpaceIndex("straight", start);
@@ -1728,6 +1414,82 @@ class DocumentParser {
             }
         }
         return -1;
+    }
+}
+
+class ObjectId {
+    constructor(id, generation) {
+        this.id = id !== null && id !== void 0 ? id : 0;
+        this.generation = generation !== null && generation !== void 0 ? generation : 0;
+        this.reused = this.generation > 0;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.findRegularIndex("straight", start);
+        }
+        if (start < 0 || start > parser.maxIndex) {
+            return null;
+        }
+        const id = parser.parseNumberAt(start, false, false);
+        if (!id || isNaN(id.value)) {
+            return null;
+        }
+        const generation = parser.parseNumberAt(id.end + 2, false, false);
+        if (!generation || isNaN(generation.value)) {
+            return null;
+        }
+        return {
+            value: new ObjectId(id.value, generation.value),
+            start,
+            end: generation.end,
+        };
+    }
+    static parseRef(parser, start, skipEmpty = true) {
+        const id = ObjectId.parse(parser, start, skipEmpty);
+        if (!id) {
+            return null;
+        }
+        const rIndexSupposed = id.end + 2;
+        const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
+        if (!rIndex || rIndex.start !== rIndexSupposed) {
+            return null;
+        }
+        return {
+            value: id.value,
+            start: id.start,
+            end: rIndex.end,
+        };
+    }
+    static parseRefArray(parser, start, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const ids = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = ObjectId.parseRef(parser, i, true);
+            if (!current) {
+                break;
+            }
+            ids.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    equals(other) {
+        return this.id === other.id
+            && this.generation === other.generation;
+    }
+    toObjArray() {
+        return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
+    }
+    toRefArray() {
+        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
+    }
+    toString() {
+        return this.id + "|" + this.generation;
     }
 }
 
@@ -2342,10 +2104,11 @@ class PdfDict {
     get customProps() {
         return new Map(this._customProps);
     }
-    tryParseProps(parser, bounds) {
-        if (!parser || !bounds) {
+    tryParseProps(parseInfo) {
+        if (!parseInfo) {
             return false;
         }
+        const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
@@ -2466,10 +2229,11 @@ class PdfStream extends PdfObject {
         super();
         this.Type = type;
     }
-    tryParseProps(parser, bounds) {
-        if (!parser || !bounds) {
+    tryParseProps(parseInfo) {
+        if (!parseInfo) {
             return false;
         }
+        const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
@@ -2578,29 +2342,506 @@ class PdfStream extends PdfObject {
     }
 }
 
+class ObjectStream extends PdfStream {
+    constructor() {
+        super(streamTypes.OBJECT_STREAM);
+    }
+    static parse(parseInfo) {
+        const stream = new ObjectStream();
+        const parseResult = stream.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    getObjectBytes(id) {
+        if (!this.streamData || !this.N || !this.First) {
+            return null;
+        }
+        let decodedData;
+        if (this.DecodeParms) {
+            const params = this.DecodeParms;
+            decodedData = FlateDecoder.Decode(this.streamData, params.Predictor, params.Columns, params.Colors, params.BitsPerComponent);
+        }
+        else {
+            decodedData = FlateDecoder.Decode(this.streamData);
+        }
+        const parser = new DocumentParser(decodedData);
+        const offsetMap = new Map();
+        let temp;
+        let objectId;
+        let byteOffset;
+        let position = 0;
+        for (let n = 0; n < this.N; n++) {
+            temp = parser.parseNumberAt(position, false, false);
+            objectId = temp.value;
+            position = temp.end + 2;
+            temp = parser.parseNumberAt(position, false, false);
+            byteOffset = temp.value;
+            position = temp.end + 2;
+            offsetMap.set(objectId, byteOffset);
+        }
+        if (!offsetMap.has(id)) {
+            return null;
+        }
+        const objectStart = this.First + offsetMap.get(id);
+        const bounds = parser.getDictBoundsAt(objectStart, false);
+        if (!bounds) {
+            return null;
+        }
+        return parser.sliceCharCodes(bounds.start, bounds.end);
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        if (this.Type !== streamTypes.OBJECT_STREAM) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = parser.getDictBoundsAt(start);
+        let i = parser.skipToNextName(start, dictBounds.contentEnd);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/N":
+                        const n = parser.parseNumberAt(i, false);
+                        if (n) {
+                            this.N = n.value;
+                            i = n.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /N property value");
+                        }
+                        break;
+                    case "/First":
+                        const first = parser.parseNumberAt(i, false);
+                        if (first) {
+                            this.First = first.value;
+                            i = first.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /First property value");
+                        }
+                        break;
+                    case "/Extends":
+                        const parentId = ObjectId.parseRef(parser, i);
+                        if (parentId) {
+                            this.Extends = parentId.value;
+                            i = parentId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Extends property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, dictBounds.contentEnd);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class LiteralString {
+    constructor(literal, bytes) {
+        this.literal = literal;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const bytes = [];
+        let i = start + 1;
+        let prevCode;
+        let code;
+        let opened = 0;
+        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+            if (code) {
+                bytes.push(code);
+                prevCode = code;
+            }
+            code = parser.getCharCode(i++);
+            if (prevCode !== codes.BACKSLASH) {
+                if (code === codes.L_PARENTHESE) {
+                    opened += 1;
+                }
+                else if (opened && code === codes.R_PARENTHESE) {
+                    opened -= 1;
+                }
+            }
+        }
+        if (!bytes.length) {
+            return null;
+        }
+        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+        return { value: literal, start: start, end: i - 1 };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
+        return new LiteralString(literal, bytes);
+    }
+    static fromString(source) {
+        const bytes = LiteralString.escape(new TextEncoder().encode(source));
+        return new LiteralString(source, bytes);
+    }
+    static escape(bytes) {
+        const result = [];
+        for (let i = 0; i < bytes.length; i++) {
+            switch (bytes[i]) {
+                case codes.LINE_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.n);
+                    break;
+                case codes.CARRIAGE_RETURN:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.r);
+                    break;
+                case codes.HORIZONTAL_TAB:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.t);
+                    break;
+                case codes.BACKSPACE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.b);
+                    break;
+                case codes.FORM_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.f);
+                    break;
+                case codes.L_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.L_PARENTHESE);
+                    break;
+                case codes.R_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.R_PARENTHESE);
+                    break;
+                case codes.BACKSLASH:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.BACKSLASH);
+                    break;
+                default:
+                    result.push(bytes[i]);
+                    break;
+            }
+        }
+        return new Uint8Array(result);
+    }
+    static unescape(bytes) {
+        const result = [];
+        let escaped = false;
+        for (let i = 0; i < bytes.length; i++) {
+            if (escaped) {
+                switch (bytes[i]) {
+                    case codes.n:
+                        result.push(codes.LINE_FEED);
+                        break;
+                    case codes.r:
+                        result.push(codes.CARRIAGE_RETURN);
+                        break;
+                    case codes.t:
+                        result.push(codes.HORIZONTAL_TAB);
+                        break;
+                    case codes.b:
+                        result.push(codes.BACKSPACE);
+                        break;
+                    case codes.f:
+                        result.push(codes.FORM_FEED);
+                        break;
+                    case codes.L_PARENTHESE:
+                        result.push(codes.L_PARENTHESE);
+                        break;
+                    case codes.R_PARENTHESE:
+                        result.push(codes.R_PARENTHESE);
+                        break;
+                    case codes.BACKSLASH:
+                        result.push(codes.BACKSLASH);
+                        break;
+                    default:
+                        result.push(bytes[i]);
+                        break;
+                }
+                escaped = false;
+                continue;
+            }
+            if (bytes[i] === codes.BACKSLASH) {
+                escaped = true;
+                continue;
+            }
+            result.push(bytes[i]);
+        }
+        return new Uint8Array(result);
+    }
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
+                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
+class CatalogDict extends PdfDict {
+    constructor() {
+        super(dictTypes.CATALOG);
+    }
+    static parse(parseInfo) {
+        const catalog = new CatalogDict();
+        const parseResult = catalog.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Version":
+                        const version = parser.parseNameAt(i, false, false);
+                        if (version) {
+                            this.Version = version.value;
+                            i = version.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Version property value");
+                        }
+                        break;
+                    case "/Pages":
+                        const rootPageTreeId = ObjectId.parseRef(parser, i);
+                        if (rootPageTreeId) {
+                            this.Pages = rootPageTreeId.value;
+                            i = rootPageTreeId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Pages property value");
+                        }
+                        break;
+                    case "/Lang":
+                        const lang = LiteralString.parse(parser, i);
+                        if (lang) {
+                            this.Lang = lang.value;
+                            i = lang.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Lang property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Pages) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class PageTreeDict extends PdfDict {
+    constructor() {
+        super(dictTypes.PAGE_TREE);
+        this.Rotate = 0;
+    }
+    static parse(parseInfo) {
+        const pageTree = new PageTreeDict();
+        const parseResult = pageTree.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Parent":
+                        const parentId = ObjectId.parseRef(parser, i);
+                        if (parentId) {
+                            this.Parent = parentId.value;
+                            i = parentId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Parent property value");
+                        }
+                        break;
+                    case "/Kids":
+                        const kidIds = ObjectId.parseRefArray(parser, i);
+                        if (kidIds) {
+                            this.Kids = kidIds.value;
+                            i = kidIds.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Kids property value");
+                        }
+                        break;
+                    case "/Count":
+                        const count = parser.parseNumberAt(i, false);
+                        if (count) {
+                            this.Count = count.value;
+                            i = count.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Count property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Kids || isNaN(this.Count)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class HexString {
+    constructor(literal, hex, bytes) {
+        this.literal = literal;
+        this.hex = hex;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
+        if (end === -1) {
+            return;
+        }
+        const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
+        return { value: hex, start, end };
+    }
+    static parseArray(parser, start, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = HexString.parse(parser, i, true);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexString(hex) {
+        const bytes = new TextEncoder().encode(hex);
+        const literal = new TextDecoder().decode(bytes);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromLiteralString(literal) {
+        const hex = Array.from(literal, (char, i) => ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
+        const bytes = new TextEncoder().encode(hex);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_HEX_START,
+                ...this.bytes, ...keywordCodes.STR_HEX_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
 class TrailerStream extends PdfStream {
     constructor() {
         super(streamTypes.XREF);
     }
-    static parse(parser, bounds) {
+    static parse(parseInfo) {
         const trailer = new TrailerStream();
-        const parseResult = trailer.tryParseProps(parser, bounds);
+        const parseResult = trailer.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: bounds.start, end: bounds.end }
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
         return new Uint8Array();
     }
-    tryParseProps(parser, bounds) {
+    tryParseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.tryParseProps(parser, bounds);
+        const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
         if (this.Type !== dictTypes.XREF) {
             return false;
         }
+        const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
         let i = parser.skipToNextName(start, dictBounds.contentEnd);
@@ -2666,7 +2907,7 @@ class TrailerStream extends PdfStream {
                         }
                         break;
                     case "/ID":
-                        const ids = parser.parseHexArrayAt(i);
+                        const ids = HexString.parseArray(parser, i);
                         if (ids) {
                             this.ID = [ids.value[0], ids.value[1]];
                             i = ids.end + 1;
@@ -2842,11 +3083,15 @@ class XRefStream extends XRef {
         var _a;
         return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Size;
     }
-    static parse(parser, bounds) {
-        if (!parser || !bounds) {
+    get root() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
             return null;
         }
-        const trailerStream = TrailerStream.parse(parser, bounds);
+        const trailerStream = TrailerStream.parse(parseInfo);
         if (!trailerStream) {
             return null;
         }
@@ -2878,18 +3123,19 @@ class TrailerDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
     }
-    static parse(parser, bounds) {
+    static parse(parseInfo) {
         const trailer = new TrailerDict();
-        const parseResult = trailer.tryParseProps(parser, bounds);
+        const parseResult = trailer.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: bounds.start, end: bounds.end }
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    tryParseProps(parser, bounds) {
-        const superIsParsed = super.tryParseProps(parser, bounds);
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
+        const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
@@ -2941,7 +3187,7 @@ class TrailerDict extends PdfDict {
                             i = encryptId.end + 1;
                         }
                         else {
-                            throw new Error("Can't parse /Ebcrypt property value");
+                            throw new Error("Can't parse /Encrypt property value");
                         }
                         break;
                     case "/Info":
@@ -2963,6 +3209,9 @@ class TrailerDict extends PdfDict {
                 break;
             }
         }
+        if (isNaN(this.Size) || !this.Root) {
+            return false;
+        }
         return true;
     }
 }
@@ -2981,6 +3230,10 @@ class XRefTable extends XRef {
         var _a;
         return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Size;
     }
+    get root() {
+        var _a;
+        return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Root;
+    }
     static parse(parser, start) {
         if (!parser || isNaN(start)) {
             return null;
@@ -2994,7 +3247,7 @@ class XRefTable extends XRef {
             return null;
         }
         const table = parser.sliceCharCodes(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
-        const trailerDict = TrailerDict.parse(parser, trailerDictBounds);
+        const trailerDict = TrailerDict.parse({ parser, bounds: trailerDictBounds });
         if (!trailerDict) {
             return null;
         }
@@ -3115,12 +3368,16 @@ class ReferenceData {
         }
         return true;
     }
+    getOffset(id) {
+        var _a;
+        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
+    }
 }
 
 class DocumentData {
     constructor(parser) {
-        this._parser = parser;
-        this._version = this._parser.getPdfVersion();
+        this._docParser = parser;
+        this._version = this._docParser.getPdfVersion();
         const lastXrefIndex = this.parseLastXrefIndex();
         if (!lastXrefIndex) {
             {
@@ -3134,11 +3391,17 @@ class DocumentData {
         this._xrefs = this.parseAllXrefs();
         console.log(this._xrefs);
         const entries = [];
-        this._xrefs.forEach(x => {
-            entries.push(...x.getEntries());
-        });
+        this._xrefs.forEach(x => entries.push(...x.getEntries()));
         this._referenceData = new ReferenceData(entries);
         console.log(this._referenceData);
+        const catalogId = this._xrefs[0].root;
+        const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
+        const catalog = CatalogDict.parse(catalogParseInfo);
+        console.log(catalog);
+        const pagesId = catalog.value.Pages;
+        const pagesParseInfo = this.getObjectParseInfo(pagesId.id);
+        const pages = PageTreeDict.parse(pagesParseInfo);
+        console.log(pages);
     }
     reset() {
         this._prevXrefIndex = this._lastXrefIndex;
@@ -3160,17 +3423,17 @@ class DocumentData {
         return xrefs;
     }
     parsePrevXref() {
-        const max = this._currentXrefIndex || this._parser.maxIndex;
+        const max = this._currentXrefIndex || this._docParser.maxIndex;
         let start = this._prevXrefIndex;
         if (!start) {
             return null;
         }
-        const xrefTableIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
+        const xrefTableIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
         if (xrefTableIndex && xrefTableIndex.start === start) {
-            const xrefStmIndexProp = this._parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
+            const xrefStmIndexProp = this._docParser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
             if (xrefStmIndexProp) {
                 console.log("XRef is hybrid");
-                const streamXrefIndex = this._parser.parseNumberAt(xrefStmIndexProp.end + 1);
+                const streamXrefIndex = this._docParser.parseNumberAt(xrefStmIndexProp.end + 1);
                 if (!streamXrefIndex) {
                     return null;
                 }
@@ -3178,7 +3441,7 @@ class DocumentData {
             }
             else {
                 console.log("XRef is table");
-                const xrefTable = XRefTable.parse(this._parser, start);
+                const xrefTable = XRefTable.parse(this._docParser, start);
                 if (xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value) {
                     this._currentXrefIndex = start;
                     this._prevXrefIndex = xrefTable.value.prev;
@@ -3192,15 +3455,15 @@ class DocumentData {
         else {
             console.log("XRef is stream");
         }
-        const id = ObjectId.parse(this._parser, start, false);
+        const id = ObjectId.parse(this._docParser, start, false);
         if (!id) {
             return null;
         }
-        const xrefStreamBounds = this._parser.getIndirectObjectBoundsAt(id.end + 1);
+        const xrefStreamBounds = this._docParser.getIndirectObjectBoundsAt(id.end + 1);
         if (!xrefStreamBounds) {
             return null;
         }
-        const xrefStream = XRefStream.parse(this._parser, xrefStreamBounds);
+        const xrefStream = XRefStream.parse({ parser: this._docParser, bounds: xrefStreamBounds });
         if (xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value) {
             this._currentXrefIndex = start;
             this._prevXrefIndex = xrefStream.value.prev;
@@ -3211,15 +3474,49 @@ class DocumentData {
         return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
     parseLastXrefIndex() {
-        const xrefStartIndex = this._parser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._parser.maxIndex, direction: "reverse" });
+        const xrefStartIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._docParser.maxIndex, direction: "reverse" });
         if (!xrefStartIndex) {
             return null;
         }
-        const xrefIndex = this._parser.parseNumberAt(xrefStartIndex.end + 1);
+        const xrefIndex = this._docParser.parseNumberAt(xrefStartIndex.end + 1);
         if (!xrefIndex) {
             return null;
         }
         return xrefIndex;
+    }
+    getObjectParseInfo(id) {
+        var _a;
+        if (!id) {
+            return null;
+        }
+        const offset = (_a = this._referenceData) === null || _a === void 0 ? void 0 : _a.getOffset(id);
+        if (isNaN(offset)) {
+            return null;
+        }
+        const objectId = ObjectId.parse(this._docParser, offset);
+        if (!objectId) {
+            return null;
+        }
+        const bounds = this._docParser.getIndirectObjectBoundsAt(objectId.end + 1, true);
+        if (!bounds) {
+            return null;
+        }
+        const info = { parser: this._docParser, bounds };
+        if (objectId.value.id === id) {
+            return info;
+        }
+        const stream = ObjectStream.parse(info);
+        if (!stream) {
+            return;
+        }
+        const objectBytes = stream.value.getObjectBytes(id);
+        if (objectBytes === null || objectBytes === void 0 ? void 0 : objectBytes.length) {
+            return {
+                parser: new DocumentParser(objectBytes),
+                bounds: { start: 0, end: objectBytes.length - 1 },
+            };
+        }
+        return null;
     }
 }
 

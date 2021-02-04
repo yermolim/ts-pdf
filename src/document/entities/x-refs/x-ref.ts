@@ -1,4 +1,5 @@
 import { XRefType } from "../../common/const";
+import { ObjectId } from "../common/object-id";
 import { XRefEntry } from "./x-ref-entry";
 
 export abstract class XRef {
@@ -9,6 +10,7 @@ export abstract class XRef {
 
   abstract get prev(): number;
   abstract get size(): number;
+  abstract get root(): ObjectId;
 
   protected constructor(type: XRefType) {
     this._type = type;
