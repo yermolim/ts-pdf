@@ -2589,6 +2589,7 @@ class TrailerStream extends PdfStream {
         return new Uint8Array();
     }
     tryParseProps(parser, bounds) {
+        var _a;
         const superIsParsed = super.tryParseProps(parser, bounds);
         if (!superIsParsed) {
             return false;
@@ -2699,6 +2700,9 @@ class TrailerStream extends PdfStream {
                 break;
             }
         }
+        if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
+            this.Index = [0, this.Size];
+        }
         return true;
     }
 }
@@ -2764,6 +2768,7 @@ class XRefEntry {
     static parseFromStream(bytes, w, index) {
         const [w1, w2, w3] = w;
         const entryLength = w1 + w2 + w3;
+        console.log(bytes);
         if (bytes.length % entryLength) {
             throw new Error("Incorrect stream length");
         }
@@ -2787,12 +2792,19 @@ class XRefEntry {
         }
         let i = 0;
         let j = 0;
+        let type;
+        let value1;
+        let value2;
         while (i < bytes.length) {
-            const type = parseIntFromBytes(bytes.slice(i, i + w1));
+            type = w1
+                ? parseIntFromBytes(bytes.slice(i, i + w1))
+                : 1;
             i += w1;
-            const value1 = parseIntFromBytes(bytes.slice(i, i + w2));
+            value1 = parseIntFromBytes(bytes.slice(i, i + w2));
             i += w2;
-            const value2 = parseIntFromBytes(bytes.slice(i, i + w3));
+            value2 = w3
+                ? parseIntFromBytes(bytes.slice(i, i + w3))
+                : null;
             i += w3;
             switch (type) {
                 case xRefEntryTypes.FREE:
@@ -2802,7 +2814,7 @@ class XRefEntry {
                     entries[j] = new XRefEntry(xRefEntryTypes.NORMAL, value2, value1, null, ids[j++]);
                     break;
                 case xRefEntryTypes.COMPRESSED:
-                    entries[j] = new XRefEntry(xRefEntryTypes.COMPRESSED, null, null, ids[j++], value1, value2);
+                    entries[j] = new XRefEntry(xRefEntryTypes.COMPRESSED, 0, null, null, ids[j++], value1, value2);
                     break;
             }
         }

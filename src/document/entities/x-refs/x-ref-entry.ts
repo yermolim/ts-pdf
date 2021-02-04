@@ -58,7 +58,9 @@ export class XRefEntry {
   static parseFromStream(bytes: Uint8Array, w: [number, number, number],
     index?: number[]): XRefEntry[] {
     const [w1, w2, w3] = w;
-    const entryLength = w1 + w2 + w3;    
+    const entryLength = w1 + w2 + w3;   
+    
+    console.log(bytes);
 
     if (bytes.length % entryLength) {
       throw new Error("Incorrect stream length");
@@ -85,12 +87,19 @@ export class XRefEntry {
 
     let i = 0; 
     let j = 0; 
+    let type: number;
+    let value1: number;
+    let value2: number;
     while (i < bytes.length) {
-      const type = parseIntFromBytes(bytes.slice(i, i + w1));
+      type = w1 
+        ? parseIntFromBytes(bytes.slice(i, i + w1))
+        : 1;
       i += w1;
-      const value1 = parseIntFromBytes(bytes.slice(i, i + w2));
+      value1 = parseIntFromBytes(bytes.slice(i, i + w2));
       i += w2;
-      const value2 = parseIntFromBytes(bytes.slice(i, i + w3));
+      value2 = w3 
+        ? parseIntFromBytes(bytes.slice(i, i + w3))
+        : null;
       i += w3;
 
       switch (type) {
@@ -98,10 +107,10 @@ export class XRefEntry {
           entries[j] = new XRefEntry(xRefEntryTypes.FREE, value2, null, value1, ids[j++]);
           break;
         case xRefEntryTypes.NORMAL:
-          entries[j] = new XRefEntry(xRefEntryTypes.NORMAL, value2, value1, null, ids[j++]);
+          entries[j] = new XRefEntry(xRefEntryTypes.NORMAL, value2 ?? 0, value1, null, ids[j++]);
           break;
         case xRefEntryTypes.COMPRESSED:
-          entries[j] = new XRefEntry(xRefEntryTypes.COMPRESSED, null, null, ids[j++], value1, value2);
+          entries[j] = new XRefEntry(xRefEntryTypes.COMPRESSED, 0, null, null, ids[j++], value1, value2);
           break;
         default:
           // treat other types as an absence of entry

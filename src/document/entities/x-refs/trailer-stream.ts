@@ -188,6 +188,10 @@ export class TrailerStream extends PdfStream {
       }
     };
 
+    if (!this.Index?.length) {
+      this.Index = [0, this.Size];
+    }
+
     return true;
   }
 }

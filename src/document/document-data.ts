@@ -12,10 +12,10 @@ export class DocumentData {
   private readonly _lastXrefIndex: number;
 
   private _currentXrefIndex: number;
-  private _prevXrefIndex: number;
-  
-  
+  private _prevXrefIndex: number; 
   private _xrefs: XRef[];
+
+  
 
   constructor(parser: DocumentParser) {
     this._parser = parser;
