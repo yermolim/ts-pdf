@@ -44,8 +44,6 @@ export class XRefParser {
   }
 
   parsePrevXref(): XRef {
-    console.log(this);
-
     const max = this._currentXrefIndex || this._parser.maxIndex;  
     let start = this._prevXrefIndex;
     if (!start) {
@@ -66,7 +64,7 @@ export class XRefParser {
         start = streamXrefIndex.value;
       } else {
         console.log("XRef is table");
-        const xrefTable = XRefTable.parse(this._parser, start);
+        const xrefTable = XRefTable.parse(this._parser, start);        
         if (xrefTable?.value) {
           this._currentXrefIndex = start;
           this._prevXrefIndex = xrefTable.value.prev;

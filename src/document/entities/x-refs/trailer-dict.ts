@@ -70,7 +70,7 @@ export class TrailerDict extends PdfDict {
     }
 
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
     if (i === -1) {

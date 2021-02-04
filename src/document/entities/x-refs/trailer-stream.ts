@@ -139,7 +139,7 @@ export class TrailerStream extends PdfStream {
               this.Encrypt = encryptId.value;
               i = encryptId.end + 1;
             } else {              
-              throw new Error("Can't parse /Ebcrypt property value");
+              throw new Error("Can't parse /Encrypt property value");
             }
             break;
           case "/Info":

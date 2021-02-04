@@ -33,10 +33,10 @@ export class XRefTable extends XRef {
     if (!trailerDictBounds) {
       return null;
     }
-
+    
     const table = parser.sliceCharCodes(xrefTableBounds.contentStart, 
       xrefTableBounds.contentEnd);    
-    
+
     const trailerDict = TrailerDict.parse(parser, trailerDictBounds);   
     if (!trailerDict) {
       return null;

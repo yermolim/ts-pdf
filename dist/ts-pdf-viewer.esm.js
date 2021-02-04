@@ -2544,7 +2544,6 @@ class TrailerStream extends PdfStream {
         }
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
-        console.log(parser.sliceChars(dictBounds.contentStart, dictBounds.contentEnd));
         let i = parser.skipToNextName(start, dictBounds.contentEnd);
         if (i === -1) {
             return false;
@@ -2594,7 +2593,7 @@ class TrailerStream extends PdfStream {
                             i = encryptId.end + 1;
                         }
                         else {
-                            throw new Error("Can't parse /Ebcrypt property value");
+                            throw new Error("Can't parse /Encrypt property value");
                         }
                         break;
                     case "/Info":
@@ -2821,7 +2820,7 @@ class TrailerDict extends PdfDict {
             return false;
         }
         const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
         if (i === -1) {
             return false;
@@ -2969,7 +2968,6 @@ class XRefParser {
         return xrefs;
     }
     parsePrevXref() {
-        console.log(this);
         const max = this._currentXrefIndex || this._parser.maxIndex;
         let start = this._prevXrefIndex;
         if (!start) {
