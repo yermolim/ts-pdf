@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../common/codes";
-import { DocumentParser, ParseResult } from "../../document-parser";
+import { DocumentParser, ParseResult } from "../../parser/document-parser";
 
 export class LiteralString {
   private constructor(readonly literal: string,

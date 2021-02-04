@@ -3101,7 +3101,6 @@ class ReferenceData {
             }
         }
         this.usedMap = normalRefs;
-        console.log([...this.usedMap].map(x => x[1]).filter(x => !x.byteOffset));
     }
     checkReference(ref) {
         if (this.freeOutsideListMap.has(ref.objectId)) {
@@ -3117,9 +3116,9 @@ class ReferenceData {
         return true;
     }
 }
+
 class DocumentData {
     constructor(parser) {
-        this._referenceMap = new Map();
         this._parser = parser;
         this._version = this._parser.getPdfVersion();
         const lastXrefIndex = this.parseLastXrefIndex();
@@ -3138,13 +3137,15 @@ class DocumentData {
         this._xrefs.forEach(x => {
             entries.push(...x.getEntries());
         });
-        console.log(entries);
-        const refData = new ReferenceData(entries);
-        console.log(refData);
+        this._referenceData = new ReferenceData(entries);
+        console.log(this._referenceData);
     }
     reset() {
         this._prevXrefIndex = this._lastXrefIndex;
         this._currentXrefIndex = null;
+        this._xrefs = null;
+        this._size = null;
+        this._referenceData = null;
     }
     parseAllXrefs() {
         this.reset();

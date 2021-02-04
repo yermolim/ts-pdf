@@ -1,5 +1,5 @@
 import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
-import { DocumentParser, ParseResult } from "../../document-parser";
+import { DocumentParser, ParseResult } from "../../parser/document-parser";
 import { PdfDict } from "../core/pdf-dict";
 
 export class FlateParamsDict extends PdfDict {

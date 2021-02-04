@@ -1,5 +1,5 @@
 import { dictTypes } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
+import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";

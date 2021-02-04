@@ -1,7 +1,7 @@
 import { XRef } from "./entities/x-refs/x-ref";
-import { DocumentParser } from "./document-parser";
+import { DocumentParser } from "./parser/document-parser";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
-import { DocumentData } from "./document-data";
+import { DocumentData } from "./parser/document-data";
 
 export class AnnotationEditor {
   private _sourceData: Uint8Array;

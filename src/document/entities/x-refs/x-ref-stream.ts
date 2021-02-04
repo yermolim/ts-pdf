@@ -1,6 +1,6 @@
 import { xRefTypes } from "../../common/const";
 import { FlateDecoder } from "../../common/decoders/flate-decoder";
-import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
+import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
 import { TrailerStream } from "./trailer-stream";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";

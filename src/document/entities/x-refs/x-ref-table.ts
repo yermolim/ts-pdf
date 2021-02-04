@@ -1,5 +1,5 @@
 import { xRefTypes } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
+import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
 import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";

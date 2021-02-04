@@ -1,5 +1,5 @@
 import { codes } from "../../common/codes";
-import { DocumentParser, ParseResult } from "../../document-parser";
+import { DocumentParser, ParseResult } from "../../parser/document-parser";
 
 export class ObjectId {
   /** A positive integer object number */

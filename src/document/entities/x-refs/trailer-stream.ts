@@ -1,6 +1,6 @@
 import { dictTypes, streamTypes } from "../../common/const";
 import { HexString } from "../common/hex-string";
-import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
+import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
 import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";

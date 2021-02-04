@@ -1,10 +1,10 @@
 import { codes, keywordCodes, 
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
-  isRegularChar } from "./common/codes";
-import { ValueType, valueTypes } from "./common/const";
-import { HexString } from "./entities/common/hex-string";
-import { LiteralString } from "./entities/common/literal-string";
-import { ObjectId } from "./entities/common/object-id";
+  isRegularChar } from "../common/codes";
+import { ValueType, valueTypes } from "../common/const";
+import { HexString } from "../entities/common/hex-string";
+import { LiteralString } from "../entities/common/literal-string";
+import { ObjectId } from "../entities/common/object-id";
 
 export type SearchDirection = "straight" | "reverse";
 

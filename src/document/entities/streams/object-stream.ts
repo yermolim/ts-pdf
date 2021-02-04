@@ -1,5 +1,5 @@
 import { streamTypes } from "../../common/const";
-import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
+import { Bounds, DocumentParser, ParseResult } from "../../parser/document-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 
