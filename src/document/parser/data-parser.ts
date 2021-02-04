@@ -56,6 +56,21 @@ export class DataParser {
 
     return version.toFixed(1);
   }
+  
+  getLastXrefIndex(): ParseResult<number> {
+    const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, 
+      {maxIndex: this.maxIndex, direction: "reverse"});
+    if (!xrefStartIndex) {
+      return null;
+    }
+
+    const xrefIndex = this.parseNumberAt(xrefStartIndex.end + 1);
+    if (!xrefIndex) {
+      return null;
+    }
+
+    return xrefIndex;
+  }
 
   //#region search methods
   /**

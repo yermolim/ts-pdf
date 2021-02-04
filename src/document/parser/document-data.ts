@@ -8,90 +8,84 @@ import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
-import { DataParser, ParseInfo, ParseResult } from "./data-parser";
+import { Bounds, DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { ReferenceData } from "./reference-data";
 
 export class DocumentData {
   private readonly _docParser: DataParser;
-
-  private readonly _version: string;
+  private readonly _version: string;    
   private readonly _lastXrefIndex: number;
 
-  private _currentXrefIndex: number;
-  private _prevXrefIndex: number; 
   private _xrefs: XRef[];
-  private _size: number;
-
   private _referenceData: ReferenceData;
 
   private _catalog: CatalogDict;
   private _pagesRoot: PageTreeDict;
   private _pages: PageDict[];
 
-  constructor(parser: DataParser) {
-    this._docParser = parser;
+  get size(): number {
+    if (this._xrefs?.length) {
+      return this._xrefs[0].prev;
+    } else {
+      return 0;
+    }
+  }
 
+  constructor(data: Uint8Array) {
+    this._docParser = new DataParser(data);
     this._version = this._docParser.getPdfVersion();
-
-    const lastXrefIndex = this.parseLastXrefIndex();
+    const lastXrefIndex = this._docParser.getLastXrefIndex();
     if (!lastXrefIndex) {{
-      throw new Error("File don't contain any XRefs");
+      throw new Error("File doesn't contain update section");
     }}
     this._lastXrefIndex = lastXrefIndex.value;
-    this._prevXrefIndex = this._lastXrefIndex;
   }  
 
   parse() {
-    this._xrefs = this.parseAllXrefs();
+    this.reset();
 
-    console.log(this._xrefs);
-
+    const xrefs = this.parseAllXrefs();
+    if (!xrefs.length) {{
+      throw new Error("Failed to parse cross-reference sections");
+    }}
     const entries: XRefEntry[] = [];
-    this._xrefs.forEach(x =>  entries.push(...x.getEntries()));    
+    xrefs.forEach(x =>  entries.push(...x.getEntries()));   
+    if (!entries.length) {{
+      throw new Error("No indirect object references found");
+    }}
+
+    this._xrefs = xrefs;
     this._referenceData = new ReferenceData(entries);
-    
-    console.log(this._referenceData);
 
-    const catalogId = this._xrefs[0].root;
-    const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
-    const catalog = CatalogDict.parse(catalogParseInfo);
-
-    console.log(catalog);
-    
-    const pagesId = catalog.value.Pages;
-    const pagesParseInfo = this.getObjectParseInfo(pagesId.id);
-    const pages = PageTreeDict.parse(pagesParseInfo);
-    
-    console.log(pages);
+    this.parsePageTree();
   }
 
-  reset() {
-    this._prevXrefIndex = this._lastXrefIndex;
-    this._currentXrefIndex = null;
+  reset() {    
     this._xrefs = null;
-    this._size = null;
-    
     this._referenceData = null;
   }
   
-  parseAllXrefs(): XRef[] {
+  private parseAllXrefs(): XRef[] {
     this.reset();
-
+    
     const xrefs: XRef[] = [];
+    let start = this._lastXrefIndex; 
+    let max = this._docParser.maxIndex;
     let xref: XRef;
-    do {
-      xref = this.parsePrevXref();
+    while (start) {
+      xref = this.parsePrevXref(start, max);
       if (xref) {
-        xrefs.push(xref);
+        xrefs.push(xref);        
+        max = start;
+        start = xref.prev;
+      } else {
+        break;
       }
-    } while (xref);
-
+    }
     return xrefs;
   }
 
-  parsePrevXref(): XRef {
-    const max = this._currentXrefIndex || this._docParser.maxIndex;  
-    let start = this._prevXrefIndex;
+  private parsePrevXref(start: number, max: number): XRef {
     if (!start) {
       return null;
     }
@@ -110,14 +104,7 @@ export class DocumentData {
         start = streamXrefIndex.value;
       } else {
         console.log("XRef is table");
-        const xrefTable = XRefTable.parse(this._docParser, start);        
-        if (xrefTable?.value) {
-          this._currentXrefIndex = start;
-          this._prevXrefIndex = xrefTable.value.prev;
-          if (!this._size) {
-            this._size = xrefTable.value.size;
-          }
-        }
+        const xrefTable = XRefTable.parse(this._docParser, start);
         return xrefTable?.value;
       }
     } else {
@@ -133,30 +120,22 @@ export class DocumentData {
       return null;
     }       
     const xrefStream = XRefStream.parse({parser: this._docParser, bounds: xrefStreamBounds});
-
-    if (xrefStream?.value) {
-      this._currentXrefIndex = start;
-      this._prevXrefIndex = xrefStream.value.prev;
-      if (!this._size) {
-        this._size = xrefStream.value.size;
-      }
-    }
     return xrefStream?.value; 
   }
 
-  private parseLastXrefIndex(): ParseResult<number> {
-    const xrefStartIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_START, 
-      {maxIndex: this._docParser.maxIndex, direction: "reverse"});
-    if (!xrefStartIndex) {
-      return null;
-    }
+  private parsePageTree() {  
+    const catalogId = this._xrefs[0].root;
+    const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
+    const catalog = CatalogDict.parse(catalogParseInfo);
+    this._catalog = catalog?.value;
 
-    const xrefIndex = this._docParser.parseNumberAt(xrefStartIndex.end + 1);
-    if (!xrefIndex) {
-      return null;
-    }
-
-    return xrefIndex;
+    console.log(catalog);
+    
+    const pagesId = catalog.value.Pages;
+    const pagesParseInfo = this.getObjectParseInfo(pagesId.id);
+    const pages = PageTreeDict.parse(pagesParseInfo);
+    
+    console.log(pages);
   }
 
   /**
