@@ -907,6 +907,18 @@ function isRegularChar(code) {
     return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
 
+const objectTypes = {
+    UNKNOWN: 0,
+    NULL: 1,
+    BOOLEAN: 2,
+    NUMBER: 3,
+    STRING_LITERAL: 4,
+    STRING_HEX: 5,
+    NAME: 6,
+    ARRAY: 7,
+    DICTIONARY: 8,
+    STREAM: 9,
+};
 const xRefTypes = {
     TABLE: 0,
     STREAM: 1,
@@ -2163,6 +2175,210 @@ class DataParser {
     }
 }
 
+class HexString {
+    constructor(literal, hex, bytes) {
+        this.literal = literal;
+        this.hex = hex;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
+        if (end === -1) {
+            return;
+        }
+        const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
+        return { value: hex, start, end };
+    }
+    static parseArray(parser, start, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = HexString.parse(parser, i, true);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexString(hex) {
+        const bytes = new TextEncoder().encode(hex);
+        const literal = new TextDecoder().decode(bytes);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromLiteralString(literal) {
+        const hex = Array.from(literal, (char, i) => ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
+        const bytes = new TextEncoder().encode(hex);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_HEX_START,
+                ...this.bytes, ...keywordCodes.STR_HEX_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
+class LiteralString {
+    constructor(literal, bytes) {
+        this.literal = literal;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const bytes = [];
+        let i = start + 1;
+        let prevCode;
+        let code;
+        let opened = 0;
+        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+            if (code) {
+                bytes.push(code);
+                prevCode = code;
+            }
+            code = parser.getCharCode(i++);
+            if (prevCode !== codes.BACKSLASH) {
+                if (code === codes.L_PARENTHESE) {
+                    opened += 1;
+                }
+                else if (opened && code === codes.R_PARENTHESE) {
+                    opened -= 1;
+                }
+            }
+        }
+        if (!bytes.length) {
+            return null;
+        }
+        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+        return { value: literal, start: start, end: i - 1 };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
+        return new LiteralString(literal, bytes);
+    }
+    static fromString(source) {
+        const bytes = LiteralString.escape(new TextEncoder().encode(source));
+        return new LiteralString(source, bytes);
+    }
+    static escape(bytes) {
+        const result = [];
+        for (let i = 0; i < bytes.length; i++) {
+            switch (bytes[i]) {
+                case codes.LINE_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.n);
+                    break;
+                case codes.CARRIAGE_RETURN:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.r);
+                    break;
+                case codes.HORIZONTAL_TAB:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.t);
+                    break;
+                case codes.BACKSPACE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.b);
+                    break;
+                case codes.FORM_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.f);
+                    break;
+                case codes.L_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.L_PARENTHESE);
+                    break;
+                case codes.R_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.R_PARENTHESE);
+                    break;
+                case codes.BACKSLASH:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.BACKSLASH);
+                    break;
+                default:
+                    result.push(bytes[i]);
+                    break;
+            }
+        }
+        return new Uint8Array(result);
+    }
+    static unescape(bytes) {
+        const result = [];
+        let escaped = false;
+        for (let i = 0; i < bytes.length; i++) {
+            if (escaped) {
+                switch (bytes[i]) {
+                    case codes.n:
+                        result.push(codes.LINE_FEED);
+                        break;
+                    case codes.r:
+                        result.push(codes.CARRIAGE_RETURN);
+                        break;
+                    case codes.t:
+                        result.push(codes.HORIZONTAL_TAB);
+                        break;
+                    case codes.b:
+                        result.push(codes.BACKSPACE);
+                        break;
+                    case codes.f:
+                        result.push(codes.FORM_FEED);
+                        break;
+                    case codes.L_PARENTHESE:
+                        result.push(codes.L_PARENTHESE);
+                        break;
+                    case codes.R_PARENTHESE:
+                        result.push(codes.R_PARENTHESE);
+                        break;
+                    case codes.BACKSLASH:
+                        result.push(codes.BACKSLASH);
+                        break;
+                    default:
+                        result.push(bytes[i]);
+                        break;
+                }
+                escaped = false;
+                continue;
+            }
+            if (bytes[i] === codes.BACKSLASH) {
+                escaped = true;
+                continue;
+            }
+            result.push(bytes[i]);
+        }
+        return new Uint8Array(result);
+    }
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
+                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
 class PdfDict {
     constructor(type) {
         this._customProps = new Map();
@@ -2438,7 +2654,7 @@ class ObjectStream extends PdfStream {
             ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    getObjectBytes(id) {
+    getObjectData(id) {
         if (!this.streamData || !this.N || !this.First) {
             return null;
         }
@@ -2469,11 +2685,54 @@ class ObjectStream extends PdfStream {
             return null;
         }
         const objectStart = this.First + offsetMap.get(id);
-        const bounds = parser.getDictBoundsAt(objectStart, false);
+        const objectType = parser.getValueTypeAt(objectStart);
+        if (objectType === null) {
+            return;
+        }
+        let bounds;
+        let value;
+        switch (objectType) {
+            case objectTypes.DICTIONARY:
+                bounds = parser.getDictBoundsAt(objectStart, false);
+                break;
+            case objectTypes.ARRAY:
+                bounds = parser.getArrayBoundsAt(objectStart, false);
+                break;
+            case objectTypes.STRING_LITERAL:
+                const literalValue = LiteralString.parse(parser, objectStart);
+                if (literalValue) {
+                    bounds = { start: literalValue.start, end: literalValue.end };
+                    value = literalValue;
+                }
+                break;
+            case objectTypes.STRING_LITERAL:
+                const hexValue = HexString.parse(parser, objectStart);
+                if (hexValue) {
+                    bounds = { start: hexValue.start, end: hexValue.end };
+                    value = hexValue;
+                }
+                break;
+            case objectTypes.NUMBER:
+                const numValue = parser.parseNumberAt(objectStart);
+                if (numValue) {
+                    bounds = { start: numValue.start, end: numValue.end };
+                    value = numValue;
+                }
+                break;
+        }
         if (!bounds) {
             return null;
         }
-        return parser.sliceCharCodes(bounds.start, bounds.end);
+        const bytes = parser.sliceCharCodes(bounds.start, bounds.end);
+        if (!bytes.length) {
+            throw new Error("Object byte array is empty");
+        }
+        return {
+            parser: new DataParser(bytes),
+            bounds: { start: 0, end: bytes.length - 1 },
+            type: objectType,
+            value,
+        };
     }
     toArray() {
         return new Uint8Array();
@@ -2541,148 +2800,6 @@ class ObjectStream extends PdfStream {
             }
         }
         return true;
-    }
-}
-
-class LiteralString {
-    constructor(literal, bytes) {
-        this.literal = literal;
-        this.bytes = bytes;
-    }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const bytes = [];
-        let i = start + 1;
-        let prevCode;
-        let code;
-        let opened = 0;
-        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-            if (code) {
-                bytes.push(code);
-                prevCode = code;
-            }
-            code = parser.getCharCode(i++);
-            if (prevCode !== codes.BACKSLASH) {
-                if (code === codes.L_PARENTHESE) {
-                    opened += 1;
-                }
-                else if (opened && code === codes.R_PARENTHESE) {
-                    opened -= 1;
-                }
-            }
-        }
-        if (!bytes.length) {
-            return null;
-        }
-        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
-        return { value: literal, start: start, end: i - 1 };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
-        return new LiteralString(literal, bytes);
-    }
-    static fromString(source) {
-        const bytes = LiteralString.escape(new TextEncoder().encode(source));
-        return new LiteralString(source, bytes);
-    }
-    static escape(bytes) {
-        const result = [];
-        for (let i = 0; i < bytes.length; i++) {
-            switch (bytes[i]) {
-                case codes.LINE_FEED:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.n);
-                    break;
-                case codes.CARRIAGE_RETURN:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.r);
-                    break;
-                case codes.HORIZONTAL_TAB:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.t);
-                    break;
-                case codes.BACKSPACE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.b);
-                    break;
-                case codes.FORM_FEED:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.f);
-                    break;
-                case codes.L_PARENTHESE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.L_PARENTHESE);
-                    break;
-                case codes.R_PARENTHESE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.R_PARENTHESE);
-                    break;
-                case codes.BACKSLASH:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.BACKSLASH);
-                    break;
-                default:
-                    result.push(bytes[i]);
-                    break;
-            }
-        }
-        return new Uint8Array(result);
-    }
-    static unescape(bytes) {
-        const result = [];
-        let escaped = false;
-        for (let i = 0; i < bytes.length; i++) {
-            if (escaped) {
-                switch (bytes[i]) {
-                    case codes.n:
-                        result.push(codes.LINE_FEED);
-                        break;
-                    case codes.r:
-                        result.push(codes.CARRIAGE_RETURN);
-                        break;
-                    case codes.t:
-                        result.push(codes.HORIZONTAL_TAB);
-                        break;
-                    case codes.b:
-                        result.push(codes.BACKSPACE);
-                        break;
-                    case codes.f:
-                        result.push(codes.FORM_FEED);
-                        break;
-                    case codes.L_PARENTHESE:
-                        result.push(codes.L_PARENTHESE);
-                        break;
-                    case codes.R_PARENTHESE:
-                        result.push(codes.R_PARENTHESE);
-                        break;
-                    case codes.BACKSLASH:
-                        result.push(codes.BACKSLASH);
-                        break;
-                    default:
-                        result.push(bytes[i]);
-                        break;
-                }
-                escaped = false;
-                continue;
-            }
-            if (bytes[i] === codes.BACKSLASH) {
-                escaped = true;
-                continue;
-            }
-            result.push(bytes[i]);
-        }
-        return new Uint8Array(result);
-    }
-    toArray(bracketed = false) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
-                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
-            : new Uint8Array(this.bytes);
     }
 }
 
@@ -2906,7 +3023,7 @@ class PageDict extends PdfDict {
                                 break;
                             }
                         }
-                        throw new Error("Can't parse /Annots property value");
+                        throw new Error(`Unsupported /Annots property value type: ${entryType}`);
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -2998,68 +3115,6 @@ class PageTreeDict extends PdfDict {
             return false;
         }
         return true;
-    }
-}
-
-class HexString {
-    constructor(literal, hex, bytes) {
-        this.literal = literal;
-        this.hex = hex;
-        this.bytes = bytes;
-    }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
-        if (end === -1) {
-            return;
-        }
-        const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
-        return { value: hex, start, end };
-    }
-    static parseArray(parser, start, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, true);
-            if (!current) {
-                break;
-            }
-            hexes.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(bytes);
-        const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
-        return new HexString(literal, hex, bytes);
-    }
-    static fromHexString(hex) {
-        const bytes = new TextEncoder().encode(hex);
-        const literal = new TextDecoder().decode(bytes);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromLiteralString(literal) {
-        const hex = Array.from(literal, (char, i) => ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
-        const bytes = new TextEncoder().encode(hex);
-        return new HexString(literal, hex, bytes);
-    }
-    ;
-    toArray(bracketed = false) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_HEX_START,
-                ...this.bytes, ...keywordCodes.STR_HEX_END])
-            : new Uint8Array(this.bytes);
     }
 }
 
@@ -3657,7 +3712,21 @@ class DocumentData {
         }
         this._xrefs = xrefs;
         this._referenceData = new ReferenceData(entries);
+        console.log(this._xrefs);
+        console.log(this._referenceData);
         this.parsePageTree();
+        console.log(this._catalog);
+        console.log(this._pageRoot);
+        console.log(this._pages);
+        const annotationIds = [];
+        for (const page of this._pages) {
+            if (!page.Annots) {
+                return;
+            }
+            if (Array.isArray(page.Annots)) {
+                annotationIds.push(...page.Annots);
+            }
+        }
     }
     reset() {
         this._xrefs = null;
@@ -3725,7 +3794,6 @@ class DocumentData {
             throw new Error("Document root catalog not found");
         }
         this._catalog = catalog.value;
-        console.log(this._catalog);
         const pageRootId = catalog.value.Pages;
         const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
         const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
@@ -3733,11 +3801,9 @@ class DocumentData {
             throw new Error("Document root page tree not found");
         }
         this._pageRoot = pageRootTree.value;
-        console.log(this._pageRoot);
         const pages = [];
         this.parsePages(pages, pageRootTree.value);
         this._pages = pages;
-        console.log(this._pages);
     }
     parsePages(output, tree) {
         if (!tree.Kids.length) {
@@ -3789,12 +3855,9 @@ class DocumentData {
         if (!stream) {
             return;
         }
-        const objectBytes = stream.value.getObjectBytes(id);
-        if (objectBytes === null || objectBytes === void 0 ? void 0 : objectBytes.length) {
-            return {
-                parser: new DataParser(objectBytes),
-                bounds: { start: 0, end: objectBytes.length - 1 },
-            };
+        const objectParseInfo = stream.value.getObjectData(id);
+        if (objectParseInfo) {
+            return objectParseInfo;
         }
         return null;
     }

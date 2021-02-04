@@ -57,8 +57,27 @@ export class DocumentData {
 
     this._xrefs = xrefs;
     this._referenceData = new ReferenceData(entries);
+    
+    console.log(this._xrefs);    
+    console.log(this._referenceData);   
 
     this.parsePageTree();
+ 
+    console.log(this._catalog);    
+    console.log(this._pageRoot); 
+    console.log(this._pages);  
+
+    const annotationIds: ObjectId[] = [];
+    for (const page of this._pages) {
+      if (!page.Annots) {
+        return;
+      }
+      if (Array.isArray(page.Annots)) {
+        annotationIds.push(...page.Annots);
+      } else {
+        // const parseInfo = this.getObjectParseInfo()
+      }
+    } 
   }
 
   reset() {    
@@ -132,24 +151,17 @@ export class DocumentData {
       throw new Error("Document root catalog not found");
     }
     this._catalog = catalog.value;
-
-    console.log(this._catalog);
-    
     const pageRootId = catalog.value.Pages;
     const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
     const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
     if (!pageRootTree) {
       throw new Error("Document root page tree not found");
     }
-    this._pageRoot = pageRootTree.value;
-    
-    console.log(this._pageRoot);   
+    this._pageRoot = pageRootTree.value;    
 
     const pages: PageDict[] = [];
     this.parsePages(pages, pageRootTree.value);
     this._pages = pages;
-
-    console.log(this._pages);
   }
 
   private parsePages(output: PageDict[], tree: PageTreeDict) {
@@ -214,13 +226,10 @@ export class DocumentData {
     if (!stream) {
       return;
     }
-    const objectBytes = stream.value.getObjectBytes(id);
-    if (objectBytes?.length) {
+    const objectParseInfo = stream.value.getObjectData(id);
+    if (objectParseInfo) {
       // the object is found inside the stream
-      return {
-        parser: new DataParser(objectBytes), 
-        bounds: {start: 0, end: objectBytes.length - 1},
-      };
+      return objectParseInfo;
     }
 
     return null;

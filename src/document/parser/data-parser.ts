@@ -1,7 +1,7 @@
 import { codes, keywordCodes, 
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "../common/codes";
-import { ValueType, valueTypes } from "../common/const";
+import { ObjectType, ValueType, valueTypes } from "../common/const";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -22,6 +22,8 @@ export interface Bounds {
 export interface ParseInfo {
   parser: DataParser;
   bounds: Bounds;
+  type?: ObjectType;
+  value?: any;
 }
 
 export interface ParseResult<T> extends Bounds {

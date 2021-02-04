@@ -1,6 +1,8 @@
-import { streamTypes } from "../../common/const";
+import { ObjectType, objectTypes, streamTypes } from "../../common/const";
 import { FlateDecoder } from "../../common/decoders/flate-decoder";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../parser/data-parser";
+import { HexString } from "../common/hex-string";
+import { LiteralString } from "../common/literal-string";
 import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 
@@ -32,7 +34,7 @@ export class ObjectStream extends PdfStream {
       : null;
   }
 
-  getObjectBytes(id: number): Uint8Array { 
+  getObjectData(id: number): ParseInfo  { 
     if (!this.streamData || !this.N || !this.First) {
       return null;
     }
@@ -73,12 +75,63 @@ export class ObjectStream extends PdfStream {
     }
 
     const objectStart = this.First + offsetMap.get(id);
-    const bounds = parser.getDictBoundsAt(objectStart, false);
-    if (!bounds) {
-      return null;
+
+    const objectType = parser.getValueTypeAt(objectStart);
+    if (objectType === null) {
+      return;
     }
 
-    return parser.sliceCharCodes(bounds.start, bounds.end);
+    let bounds: Bounds;
+    let value: any;
+    switch (objectType) {
+      case objectTypes.DICTIONARY:
+        bounds = parser.getDictBoundsAt(objectStart, false);
+        break;
+      case objectTypes.ARRAY:
+        bounds = parser.getArrayBoundsAt(objectStart, false);
+        break;
+      case objectTypes.STRING_LITERAL: 
+        const literalValue = LiteralString.parse(parser, objectStart);
+        if (literalValue) {
+          bounds = {start: literalValue.start, end: literalValue.end};
+          value = literalValue;
+        }
+        break; 
+      case objectTypes.STRING_LITERAL: 
+        const hexValue = HexString.parse(parser, objectStart);
+        if (hexValue) {
+          bounds = {start: hexValue.start, end: hexValue.end};
+          value = hexValue;
+        }
+        break; 
+      case objectTypes.NUMBER:
+        const numValue = parser.parseNumberAt(objectStart);
+        if (numValue) {
+          bounds = {start: numValue.start, end: numValue.end};
+          value = numValue;
+        }
+        break; 
+      default:
+        // TODO: handle remaining cases
+        break;
+    }
+    
+    if (!bounds) {
+      return null;
+    }    
+
+    const bytes = parser.sliceCharCodes(bounds.start, bounds.end);
+    if (!bytes.length) {
+      // execution should not get here
+      throw new Error("Object byte array is empty");
+    }
+
+    return {
+      parser: new DataParser(bytes),
+      bounds: {start: 0, end: bytes.length - 1},
+      type: <ObjectType>objectType,
+      value,
+    };
   }
 
   toArray(): Uint8Array {

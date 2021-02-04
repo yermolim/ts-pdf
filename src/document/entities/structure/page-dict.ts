@@ -34,7 +34,6 @@ export class PageDict extends PdfDict {
    * (Optional) An array of annotation dictionaries that shall contain indirect 
    * references to all annotations associated with the page
    */
-  // TODO: add support for direct objects
   Annots: ObjectId | ObjectId[]; 
 
   // TODO: Add other properties
@@ -136,7 +135,7 @@ export class PageDict extends PdfDict {
                 break;
               }
             }
-            throw new Error("Can't parse /Annots property value");
+            throw new Error(`Unsupported /Annots property value type: ${entryType}`);
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);
