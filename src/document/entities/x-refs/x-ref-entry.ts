@@ -1,20 +1,18 @@
 import { parseIntFromBytes } from "../../../common/utils";
 import { codes, DIGIT_CHARS } from "../../common/codes";
-import { XRefEntryType, xRefEntryTypes } from "../../common/const";
+import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../common/const";
 
 export class XRefEntry {
 
   constructor(readonly type: XRefEntryType,
-    readonly generation?: number,
-    readonly byteOffset?: number,
+    readonly objectId: number,
+    readonly generation: number,
+    readonly byteOffset: number,
     readonly nextFreeId?: number,
-    readonly objectId?: number,
     readonly streamId?: number,
     readonly streamIndex?: number) { }   
     
-  static parseFromTable(bytes: Uint8Array): XRefEntry[] {
-    const entries: XRefEntry[] = [];
-
+  static *parseFromTable(bytes: Uint8Array): Iterable<XRefEntry> {
     let i = 0;
     let j = 0;
     while (i < bytes.length) {
@@ -44,31 +42,27 @@ export class XRefEntry {
         i += 6;        
         const typeByte = bytes[i];
         if (typeByte === codes.f) {
-          entries.push(new XRefEntry(xRefEntryTypes.FREE, gen, null, value, firstIndex++));
+          yield new XRefEntry(xRefEntryTypes.FREE, firstIndex++, gen, null, value);
         } else if (typeByte === codes.n) {
-          entries.push(new XRefEntry(xRefEntryTypes.NORMAL, gen, value, null, firstIndex++));
+          yield new XRefEntry(xRefEntryTypes.NORMAL, firstIndex++, gen, value);
         }
         i += 3;
       }
     }
 
-    return entries;
+    return;
   } 
 
-  static parseFromStream(bytes: Uint8Array, w: [number, number, number],
-    index?: number[]): XRefEntry[] {
+  static *parseFromStream(bytes: Uint8Array, w: [number, number, number],
+    index?: number[]): Iterable<XRefEntry> {
     const [w1, w2, w3] = w;
-    const entryLength = w1 + w2 + w3;   
-    
-    console.log(bytes);
+    const entryLength = w1 + w2 + w3;
 
     if (bytes.length % entryLength) {
       throw new Error("Incorrect stream length");
     }
 
     const count = bytes.length / entryLength;
-    const entries: XRefEntry[] = new Array(count);
-
     const ids: number[] = new Array(count).fill(null);
     if (index?.length) {
       let id: number;
@@ -104,13 +98,13 @@ export class XRefEntry {
 
       switch (type) {
         case xRefEntryTypes.FREE:
-          entries[j] = new XRefEntry(xRefEntryTypes.FREE, value2, null, value1, ids[j++]);
+          yield new XRefEntry(xRefEntryTypes.FREE, ids[j++], value2 ?? maxGeneration, null, value1);
           break;
         case xRefEntryTypes.NORMAL:
-          entries[j] = new XRefEntry(xRefEntryTypes.NORMAL, value2 ?? 0, value1, null, ids[j++]);
+          yield new XRefEntry(xRefEntryTypes.NORMAL, ids[j++], value2 ?? 0, value1);
           break;
         case xRefEntryTypes.COMPRESSED:
-          entries[j] = new XRefEntry(xRefEntryTypes.COMPRESSED, 0, null, null, ids[j++], value1, value2);
+          yield new XRefEntry(xRefEntryTypes.COMPRESSED, ids[j++], 0, null, null, value1, value2);
           break;
         default:
           // treat other types as an absence of entry
@@ -118,7 +112,7 @@ export class XRefEntry {
       }
     }
 
-    return entries;
+    return;
   }
 
   toTableBytes(): Uint8Array {

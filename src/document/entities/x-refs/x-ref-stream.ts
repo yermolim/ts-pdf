@@ -12,6 +12,10 @@ export class XRefStream extends XRef {
     return this._trailerStream?.Prev;
   }
   
+  get size(): number {
+    return this._trailerStream?.Size;
+  }
+  
   constructor(trailer: TrailerStream) {
     super(xRefTypes.STREAM);
     this._trailerStream = trailer;
@@ -36,7 +40,7 @@ export class XRefStream extends XRef {
     };
   }
 
-  getEntries(): XRefEntry[] {   
+  getEntries(): Iterable<XRefEntry> {   
     if (!this._trailerStream) {
       return [];
     }

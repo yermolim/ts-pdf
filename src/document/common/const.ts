@@ -158,3 +158,5 @@ export type ValueType = typeof valueTypes[keyof typeof valueTypes];
 export const supportedFilters = new Set<string>([
   streamFilters.FLATE,
 ]);
+
+export const maxGeneration = 65535;

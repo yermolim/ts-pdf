@@ -8,10 +8,11 @@ export abstract class XRef {
   }
 
   abstract get prev(): number;
+  abstract get size(): number;
 
   protected constructor(type: XRefType) {
     this._type = type;
   }
 
-  abstract getEntries(): XRefEntry[];
+  abstract getEntries(): Iterable<XRefEntry>;
 }

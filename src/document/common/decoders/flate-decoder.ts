@@ -5,15 +5,16 @@ import { FlateStream } from "../streams/flate-stream";
 import { Stream } from "../streams/stream";
 
 export class FlateDecoder {
-
   static Decode(input: Uint8Array, 
     predictor: FlatePredictor = flatePredictors.NONE, 
     columns = 1, components = 1, bpc = 8): Uint8Array {
 
     const stream = new Stream(input, 0, input.length);
     const flate = new FlateStream(stream);
-    const inflated = <Uint8Array>flate.takeBytes(null);
 
+    /* TODO: make iterable decoding not returning all bytes at once
+    to improve performance and memory use */
+    const inflated = <Uint8Array>flate.takeBytes(null);
     switch (predictor) {
       case (flatePredictors.NONE):
         return inflated;

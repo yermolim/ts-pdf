@@ -11,6 +11,10 @@ export class XRefTable extends XRef {
   get prev(): number {
     return this._trailerDict?.Prev;
   }
+  
+  get size(): number {
+    return this._trailerDict?.Size;
+  }
 
   constructor(table: Uint8Array, trailer: TrailerDict) {
     super(xRefTypes.TABLE);
@@ -51,7 +55,7 @@ export class XRefTable extends XRef {
     };
   }
   
-  getEntries(): XRefEntry[] { 
+  getEntries(): Iterable<XRefEntry> { 
     if (!this._table.length) {
       return [];
     }

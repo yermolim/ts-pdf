@@ -90,6 +90,10 @@ export class Stream implements IStream {
     return bytes;
   }
   
+  getByte(index: number): number {
+    return this._bytes[index];
+  }
+  
   /**
    * returns subarray for speed's sake so should be used as read-only
    * @param start

@@ -976,6 +976,7 @@ const valueTypes = {
 const supportedFilters = new Set([
     streamFilters.FLATE,
 ]);
+const maxGeneration = 65535;
 
 class HexString {
     constructor(literal, hex, bytes) {
@@ -2218,6 +2219,9 @@ class Stream {
         this._current -= bytes.length;
         return bytes;
     }
+    getByte(index) {
+        return this._bytes[index];
+    }
     getByteRange(start, end) {
         return this._bytes.subarray(Math.max(start, 0), Math.min(end, this._end));
     }
@@ -2717,17 +2721,16 @@ class XRef {
 }
 
 class XRefEntry {
-    constructor(type, generation, byteOffset, nextFreeId, objectId, streamId, streamIndex) {
+    constructor(type, objectId, generation, byteOffset, nextFreeId, streamId, streamIndex) {
         this.type = type;
+        this.objectId = objectId;
         this.generation = generation;
         this.byteOffset = byteOffset;
         this.nextFreeId = nextFreeId;
-        this.objectId = objectId;
         this.streamId = streamId;
         this.streamIndex = streamIndex;
     }
-    static parseFromTable(bytes) {
-        const entries = [];
+    static *parseFromTable(bytes) {
         let i = 0;
         let j = 0;
         while (i < bytes.length) {
@@ -2755,25 +2758,23 @@ class XRefEntry {
                 i += 6;
                 const typeByte = bytes[i];
                 if (typeByte === codes.f) {
-                    entries.push(new XRefEntry(xRefEntryTypes.FREE, gen, null, value, firstIndex++));
+                    yield new XRefEntry(xRefEntryTypes.FREE, firstIndex++, gen, null, value);
                 }
                 else if (typeByte === codes.n) {
-                    entries.push(new XRefEntry(xRefEntryTypes.NORMAL, gen, value, null, firstIndex++));
+                    yield new XRefEntry(xRefEntryTypes.NORMAL, firstIndex++, gen, value);
                 }
                 i += 3;
             }
         }
-        return entries;
+        return;
     }
-    static parseFromStream(bytes, w, index) {
+    static *parseFromStream(bytes, w, index) {
         const [w1, w2, w3] = w;
         const entryLength = w1 + w2 + w3;
-        console.log(bytes);
         if (bytes.length % entryLength) {
             throw new Error("Incorrect stream length");
         }
         const count = bytes.length / entryLength;
-        const entries = new Array(count);
         const ids = new Array(count).fill(null);
         if (index === null || index === void 0 ? void 0 : index.length) {
             let id;
@@ -2808,17 +2809,17 @@ class XRefEntry {
             i += w3;
             switch (type) {
                 case xRefEntryTypes.FREE:
-                    entries[j] = new XRefEntry(xRefEntryTypes.FREE, value2, null, value1, ids[j++]);
+                    yield new XRefEntry(xRefEntryTypes.FREE, ids[j++], value2 !== null && value2 !== void 0 ? value2 : maxGeneration, null, value1);
                     break;
                 case xRefEntryTypes.NORMAL:
-                    entries[j] = new XRefEntry(xRefEntryTypes.NORMAL, value2, value1, null, ids[j++]);
+                    yield new XRefEntry(xRefEntryTypes.NORMAL, ids[j++], value2 !== null && value2 !== void 0 ? value2 : 0, value1);
                     break;
                 case xRefEntryTypes.COMPRESSED:
-                    entries[j] = new XRefEntry(xRefEntryTypes.COMPRESSED, 0, null, null, ids[j++], value1, value2);
+                    yield new XRefEntry(xRefEntryTypes.COMPRESSED, ids[j++], 0, null, null, value1, value2);
                     break;
             }
         }
-        return entries;
+        return;
     }
     toTableBytes() {
         return null;
@@ -2836,6 +2837,10 @@ class XRefStream extends XRef {
     get prev() {
         var _a;
         return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Prev;
+    }
+    get size() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Size;
     }
     static parse(parser, bounds) {
         if (!parser || !bounds) {
@@ -2972,6 +2977,10 @@ class XRefTable extends XRef {
         var _a;
         return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Prev;
     }
+    get size() {
+        var _a;
+        return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Size;
+    }
     static parse(parser, start) {
         if (!parser || isNaN(start)) {
             return null;
@@ -3005,8 +3014,112 @@ class XRefTable extends XRef {
     }
 }
 
+class ReferenceData {
+    constructor(entries) {
+        var _a;
+        const zeroFreeRef = {
+            objectId: 0,
+            generation: maxGeneration,
+            nextId: 0,
+        };
+        const freeLinkedList = zeroFreeRef;
+        const freeOutsideListMap = new Map();
+        const freeMap = new Map([
+            [0, zeroFreeRef],
+        ]);
+        let zeroFound = false;
+        for (const entry of entries) {
+            if (entry.type !== xRefEntryTypes.FREE) {
+                continue;
+            }
+            if (!zeroFound && entry.objectId === 0) {
+                zeroFound = true;
+                zeroFreeRef.nextId = entry.nextFreeId;
+            }
+            const valueFromMap = freeMap.get(entry.objectId);
+            if (!valueFromMap || valueFromMap.generation < entry.generation) {
+                freeMap.set(entry.objectId, {
+                    objectId: entry.objectId,
+                    generation: entry.generation,
+                    nextId: entry.nextFreeId
+                });
+            }
+        }
+        let nextId;
+        let next;
+        let currentRef = zeroFreeRef;
+        while (true) {
+            nextId = currentRef.nextId;
+            next = freeMap.get(nextId);
+            freeMap.delete(nextId);
+            currentRef.next = next;
+            if (!nextId) {
+                break;
+            }
+            currentRef = next;
+        }
+        [...freeMap].forEach(x => {
+            const value = x[1];
+            if (value.generation === maxGeneration && value.nextId === 0) {
+                freeOutsideListMap.set(value.objectId, value);
+            }
+        });
+        this.freeLinkedList = freeLinkedList;
+        this.freeOutsideListMap = freeOutsideListMap;
+        const normalRefs = new Map();
+        for (const entry of entries) {
+            if (entry.type !== xRefEntryTypes.NORMAL
+                || !this.checkReference(entry)) {
+                continue;
+            }
+            const valueFromMap = normalRefs.get(entry.objectId);
+            if (valueFromMap && valueFromMap.generation >= entry.generation) {
+                continue;
+            }
+            normalRefs.set(entry.objectId, {
+                objectId: entry.objectId,
+                generation: entry.generation,
+                byteOffset: entry.byteOffset,
+            });
+        }
+        for (const entry of entries) {
+            if (entry.type !== xRefEntryTypes.COMPRESSED
+                || !this.checkReference(entry)) {
+                continue;
+            }
+            const valueFromMap = normalRefs.get(entry.objectId);
+            if (valueFromMap) {
+                continue;
+            }
+            const offset = (_a = normalRefs.get(entry.streamId)) === null || _a === void 0 ? void 0 : _a.byteOffset;
+            if (offset) {
+                normalRefs.set(entry.objectId, {
+                    objectId: entry.objectId,
+                    generation: entry.generation,
+                    byteOffset: offset,
+                });
+            }
+        }
+        this.usedMap = normalRefs;
+        console.log([...this.usedMap].map(x => x[1]).filter(x => !x.byteOffset));
+    }
+    checkReference(ref) {
+        if (this.freeOutsideListMap.has(ref.objectId)) {
+            return false;
+        }
+        let listRef = this.freeLinkedList;
+        while (listRef.nextId) {
+            if (ref.objectId === listRef.objectId && ref.generation < listRef.generation) {
+                return false;
+            }
+            listRef = listRef.next;
+        }
+        return true;
+    }
+}
 class DocumentData {
     constructor(parser) {
+        this._referenceMap = new Map();
         this._parser = parser;
         this._version = this._parser.getPdfVersion();
         const lastXrefIndex = this.parseLastXrefIndex();
@@ -3021,10 +3134,13 @@ class DocumentData {
     parse() {
         this._xrefs = this.parseAllXrefs();
         console.log(this._xrefs);
+        const entries = [];
         this._xrefs.forEach(x => {
-            const entries = x.getEntries();
-            console.log(entries);
+            entries.push(...x.getEntries());
         });
+        console.log(entries);
+        const refData = new ReferenceData(entries);
+        console.log(refData);
     }
     reset() {
         this._prevXrefIndex = this._lastXrefIndex;
@@ -3065,6 +3181,9 @@ class DocumentData {
                 if (xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value) {
                     this._currentXrefIndex = start;
                     this._prevXrefIndex = xrefTable.value.prev;
+                    if (!this._size) {
+                        this._size = xrefTable.value.size;
+                    }
                 }
                 return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
             }
@@ -3084,6 +3203,9 @@ class DocumentData {
         if (xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value) {
             this._currentXrefIndex = start;
             this._prevXrefIndex = xrefStream.value.prev;
+            if (!this._size) {
+                this._size = xrefStream.value.size;
+            }
         }
         return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
