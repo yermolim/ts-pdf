@@ -1,6 +1,6 @@
 import { xRefTypes } from "../../common/const";
 import { FlateDecoder } from "../../common/decoders/flate-decoder";
-import { Bounds, Parser, ParseResult } from "../../parser";
+import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
 import { TrailerStream } from "./trailer-stream";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";
@@ -17,7 +17,7 @@ export class XRefStream extends XRef {
     this._trailerStream = trailer;
   }
   
-  static parse(parser: Parser, bounds: Bounds): ParseResult<XRefStream> {
+  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<XRefStream> {
     if (!parser || !bounds) {
       return null;
     }

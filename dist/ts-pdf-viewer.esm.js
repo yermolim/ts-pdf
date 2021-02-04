@@ -983,6 +983,20 @@ class HexString {
         this.hex = hex;
         this.bytes = bytes;
     }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
+        if (end === -1) {
+            return;
+        }
+        const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
+        return { value: hex, start, end };
+    }
     static fromBytes(bytes) {
         const literal = new TextDecoder().decode(bytes);
         const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
@@ -1011,6 +1025,39 @@ class LiteralString {
     constructor(literal, bytes) {
         this.literal = literal;
         this.bytes = bytes;
+    }
+    static parseLiteralAt(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const bytes = [];
+        let i = start + 1;
+        let prevCode;
+        let code;
+        let opened = 0;
+        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+            if (code) {
+                prevCode = code;
+            }
+            code = parser.getCharCode(i++);
+            bytes.push(code);
+            if (prevCode !== codes.BACKSLASH) {
+                if (code === codes.L_PARENTHESE) {
+                    opened += 1;
+                }
+                else if (code === codes.R_PARENTHESE) {
+                    opened -= 1;
+                }
+            }
+        }
+        if (!bytes.length) {
+            return null;
+        }
+        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+        return { value: literal, start, end: i - 1 };
     }
     static fromBytes(bytes) {
         const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
@@ -1116,7 +1163,65 @@ class LiteralString {
     }
 }
 
-class Parser {
+class ObjectId {
+    constructor(id, generation) {
+        this.id = id !== null && id !== void 0 ? id : 0;
+        this.generation = generation !== null && generation !== void 0 ? generation : 0;
+        this.reused = this.generation > 0;
+    }
+    static parse(parser, index, skipEmpty = true) {
+        const start = skipEmpty
+            ? parser.findRegularIndex("straight", index)
+            : index;
+        if (start < 0 || start > parser.maxIndex) {
+            return null;
+        }
+        const id = parser.parseNumberAt(start, false, false);
+        if (!id || isNaN(id.value)) {
+            return null;
+        }
+        const generation = parser.parseNumberAt(id.end + 2, false, false);
+        if (!generation || isNaN(generation.value)) {
+            return null;
+        }
+        return {
+            value: new ObjectId(id.value, generation.value),
+            start,
+            end: generation.end,
+        };
+    }
+    static parseRef(parser, index, skipEmpty = true) {
+        const id = ObjectId.parse(parser, index, skipEmpty);
+        if (!id) {
+            return null;
+        }
+        const rIndexSupposed = id.end + 2;
+        const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
+        if (!rIndex || rIndex.start !== rIndexSupposed) {
+            return null;
+        }
+        return {
+            value: id.value,
+            start: id.start,
+            end: rIndex.end,
+        };
+    }
+    equals(other) {
+        return this.id === other.id
+            && this.generation === other.generation;
+    }
+    toObjArray() {
+        return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
+    }
+    toRefArray() {
+        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
+    }
+    toString() {
+        return this.id + "|" + this.generation;
+    }
+}
+
+class DocumentParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
@@ -1458,20 +1563,6 @@ class Parser {
             ? { value: result, start, end: i - 1 }
             : null;
     }
-    parseHexAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || this._data[start] !== codes.LESS) {
-            return null;
-        }
-        const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
-        if (end === -1) {
-            return;
-        }
-        const hex = HexString.fromBytes(this._data.slice(start, end + 1));
-        return { value: hex, start, end };
-    }
     parseLiteralAt(start, skipEmpty = true) {
         if (skipEmpty) {
             start = this.skipEmpty(start);
@@ -1533,7 +1624,7 @@ class Parser {
         let current;
         let i = arrayBounds.start + 1;
         while (i < arrayBounds.end) {
-            current = this.parseHexAt(i, true);
+            current = HexString.parse(this, i, true);
             if (!current) {
                 break;
             }
@@ -1541,6 +1632,24 @@ class Parser {
             i = current.end + 1;
         }
         return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    parseObjectIdRefArrayAt(start, skipEmpty = true) {
+        const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const ids = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = ObjectId.parseRef(this, i, true);
+            if (!current) {
+                break;
+            }
+            ids.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
     }
     skipEmpty(start) {
         let index = this.findNonSpaceIndex("straight", start);
@@ -1587,6 +1696,9 @@ class Parser {
     sliceChars(start, end) {
         return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
     }
+    subCharCodes(start, end) {
+        return this._data.subarray(start, (end || start) + 1);
+    }
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
@@ -1615,64 +1727,6 @@ class Parser {
             }
         }
         return -1;
-    }
-}
-
-class ObjectId {
-    constructor(id, generation) {
-        this.id = id !== null && id !== void 0 ? id : 0;
-        this.generation = generation !== null && generation !== void 0 ? generation : 0;
-        this.reused = this.generation > 0;
-    }
-    static parse(parser, index, skipEmpty = true) {
-        const start = skipEmpty
-            ? parser.findRegularIndex("straight", index)
-            : index;
-        if (start < 0 || start > parser.maxIndex) {
-            return null;
-        }
-        const id = parser.parseNumberAt(start, false, false);
-        if (!id || isNaN(id.value)) {
-            return null;
-        }
-        const generation = parser.parseNumberAt(id.end + 2, false, false);
-        if (!generation || isNaN(generation.value)) {
-            return null;
-        }
-        return {
-            value: new ObjectId(id.value, generation.value),
-            start,
-            end: generation.end,
-        };
-    }
-    static parseRef(parser, index, skipEmpty = true) {
-        const id = ObjectId.parse(parser, index, skipEmpty);
-        if (!id) {
-            return null;
-        }
-        const rIndexSupposed = id.end + 2;
-        const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
-        if (!rIndex || rIndex.start !== rIndexSupposed) {
-            return null;
-        }
-        return {
-            value: id.value,
-            start: id.start,
-            end: rIndex.end,
-        };
-    }
-    equals(other) {
-        return this.id === other.id
-            && this.generation === other.generation;
-    }
-    toObjArray() {
-        return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
-    }
-    toRefArray() {
-        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
-    }
-    toString() {
-        return this.id + "|" + this.generation;
     }
 }
 
@@ -2939,9 +2993,10 @@ class XRefTable extends XRef {
     }
 }
 
-class XRefParser {
+class DocumentData {
     constructor(parser) {
         this._parser = parser;
+        this._version = this._parser.getPdfVersion();
         const lastXrefIndex = this.parseLastXrefIndex();
         if (!lastXrefIndex) {
             {
@@ -2950,6 +3005,14 @@ class XRefParser {
         }
         this._lastXrefIndex = lastXrefIndex.value;
         this._prevXrefIndex = this._lastXrefIndex;
+    }
+    parse() {
+        this._xrefs = this.parseAllXrefs();
+        console.log(this._xrefs);
+        this._xrefs.forEach(x => {
+            const entries = x.getEntries();
+            console.log(entries);
+        });
     }
     reset() {
         this._prevXrefIndex = this._lastXrefIndex;
@@ -3025,7 +3088,7 @@ class XRefParser {
     }
 }
 
-class Annotator {
+class AnnotationEditor {
     constructor(pdfData) {
         this.onAnnotationDictChange = {
             set: (target, prop, value) => true,
@@ -3034,9 +3097,9 @@ class Annotator {
             throw new Error("Data is empty");
         }
         this._sourceData = pdfData;
-        this._parser = new Parser(pdfData);
-        this._xrefParser = new XRefParser(this._parser);
-        this.parseData();
+        this._parser = new DocumentParser(pdfData);
+        this._documentData = new DocumentData(this._parser);
+        this._documentData.parse();
     }
     get annotations() {
         return this._annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
@@ -3049,15 +3112,6 @@ class Annotator {
     }
     addAnnotationDict(annotation) {
         this._annotations.push(annotation);
-    }
-    parseData() {
-        this._version = this._parser.getPdfVersion();
-        const xrefs = this._xrefParser.parseAllXrefs();
-        console.log(xrefs);
-        xrefs.forEach(x => {
-            const entries = x.getEntries();
-            console.log(entries);
-        });
     }
     updateData() {
     }
@@ -3365,7 +3419,7 @@ class TsPdfViewer {
             catch (_a) {
                 throw new Error("Cannot load file data!");
             }
-            const annotator = new Annotator(data);
+            const annotator = new AnnotationEditor(data);
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();

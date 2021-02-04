@@ -1,9 +1,47 @@
 /* eslint-disable no-bitwise */
-import { codes, keywordCodes } from "../codes";
+import { codes, keywordCodes } from "../../common/codes";
+import { DocumentParser, ParseResult } from "../../document-parser";
 
 export class LiteralString {
   private constructor(readonly literal: string,
     readonly bytes: Uint8Array) { }
+    
+  static parseLiteralAt(parser: DocumentParser, start: number, 
+    skipEmpty = true): ParseResult<LiteralString>  {       
+    if (skipEmpty) {
+      start = parser.skipEmpty(start);
+    }
+    if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+      return null;
+    }
+
+    const bytes: number[] = [];
+    let i = start + 1;
+    let prevCode: number;
+    let code: number;
+    let opened = 0;
+    while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+      if (code) {
+        prevCode = code;
+      }
+      code = parser.getCharCode(i++);
+      bytes.push(code);
+
+      if (prevCode !== codes.BACKSLASH) {
+        if (code === codes.L_PARENTHESE) {
+          opened += 1;
+        } else if (code === codes.R_PARENTHESE) {
+          opened -= 1;
+        }
+      }
+    }
+    if (!bytes.length) {
+      return null;
+    }
+
+    const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+    return {value: literal, start, end: i - 1};
+  }
 
   /**
    * create LiteralString from escaped byte array

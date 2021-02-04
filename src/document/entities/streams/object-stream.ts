@@ -1,5 +1,5 @@
 import { streamTypes } from "../../common/const";
-import { ObjectId } from "../core/object-id";
+import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 
 export class ObjectStream extends PdfStream {

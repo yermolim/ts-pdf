@@ -1,7 +1,7 @@
 import { dictTypes, streamTypes } from "../../common/const";
-import { HexString } from "../../common/strings/hex-string";
-import { Bounds, Parser, ParseResult } from "../../parser";
-import { ObjectId } from "../core/object-id";
+import { HexString } from "../common/hex-string";
+import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
+import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
 
@@ -63,7 +63,7 @@ export class TrailerStream extends PdfStream {
     super(streamTypes.XREF);
   }  
   
-  static parse(parser: Parser, bounds: Bounds): ParseResult<TrailerStream> {    
+  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<TrailerStream> {    
     const trailer = new TrailerStream();
     const parseResult = trailer.tryParseProps(parser, bounds);
 
@@ -79,7 +79,7 @@ export class TrailerStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: Parser, bounds: Bounds): boolean {
+  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
     const superIsParsed = super.tryParseProps(parser, bounds);
     if (!superIsParsed) {
       return false;

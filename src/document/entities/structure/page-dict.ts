@@ -1,6 +1,6 @@
 import { dictTypes } from "../../common/const";
 import { AnnotationDict } from "../annotations/annotation-dict";
-import { DateString } from "../../common/strings/date-string";
+import { DateString } from "../common/date-string";
 import { PdfDict } from "../core/pdf-dict";
 import { PageTreeDict } from "./page-tree-dict";
 

@@ -1,6 +1,6 @@
 import { PdfDict } from "../core/pdf-dict";
 import { MetadataStream } from "./metadata-stream";
-import { ObjectId } from "../core/object-id";
+import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { streamTypes } from "../../common/const";
 

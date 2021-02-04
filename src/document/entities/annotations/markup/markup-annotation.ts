@@ -1,4 +1,4 @@
-import { DateString } from "../../../common/strings/date-string";
+import { DateString } from "../../common/date-string";
 import { PdfStream } from "../../core/pdf-stream";
 import { AnnotationDict, AnnotationType } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";

@@ -1,10 +1,30 @@
 /* eslint-disable no-bitwise */
-import { codes, keywordCodes } from "../codes";
+import { codes, keywordCodes } from "../../common/codes";
+import { DocumentParser, ParseResult } from "../../document-parser";
 
 export class HexString {
   private constructor(readonly literal: string, 
     readonly hex: string,
     readonly bytes: Uint8Array) { }
+    
+  static parse(parser: DocumentParser, start: number, 
+    skipEmpty = true): ParseResult<HexString>  {   
+
+    if (skipEmpty) {
+      start = parser.skipEmpty(start);
+    }
+    if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
+      return null;
+    }
+
+    const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
+    if (end === -1) {
+      return;
+    }
+
+    const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
+    return {value: hex, start, end};
+  }
 
   static fromBytes(bytes: Uint8Array): HexString {   
     const literal = new TextDecoder().decode(bytes);   

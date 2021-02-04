@@ -1,5 +1,5 @@
 import { codes } from "../../common/codes";
-import { Parser, ParseResult } from "../../parser";
+import { DocumentParser, ParseResult } from "../../document-parser";
 
 export class ObjectId {
   /** A positive integer object number */
@@ -19,7 +19,7 @@ export class ObjectId {
     this.reused = this.generation > 0;
   }
 
-  static parse(parser: Parser, index: number, 
+  static parse(parser: DocumentParser, index: number, 
     skipEmpty = true): ParseResult<ObjectId> {    
 
     const start = skipEmpty
@@ -46,7 +46,7 @@ export class ObjectId {
     };
   }
   
-  static parseRef(parser: Parser, index: number, 
+  static parseRef(parser: DocumentParser, index: number, 
     skipEmpty = true): ParseResult<ObjectId> {    
 
     const id = ObjectId.parse(parser, index, skipEmpty);

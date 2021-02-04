@@ -1,19 +1,13 @@
-import { XRef } from "../document/entities/x-refs/x-ref";
-import { Parser } from "./parser";
+import { XRef } from "./entities/x-refs/x-ref";
+import { DocumentParser } from "./document-parser";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
-import { XRefParser } from "./entities/x-refs/x-ref-parser";
+import { DocumentData } from "./document-data";
 
-export class Annotator {
+export class AnnotationEditor {
   private _sourceData: Uint8Array;
 
-  private _parser: Parser;
-  private _xrefParser: XRefParser;
-
-  private _version: string;
-
-  private _lastXref: XRef;
-  
-  private _catalog: any;
+  private _parser: DocumentParser;
+  private _documentData: DocumentData;
 
   private _annotations: AnnotationDict[];
   get annotations(): AnnotationDict[] {
@@ -33,10 +27,10 @@ export class Annotator {
 
     this._sourceData = pdfData;
 
-    this._parser = new Parser(pdfData);
-    this._xrefParser = new XRefParser(this._parser);
+    this._parser = new DocumentParser(pdfData);
+    this._documentData = new DocumentData(this._parser);
 
-    this.parseData();
+    this._documentData.parse();
   }
 
   /**
@@ -57,17 +51,6 @@ export class Annotator {
 
   addAnnotationDict(annotation: AnnotationDict) {
     this._annotations.push(annotation);
-  }
-
-  private parseData() {
-    this._version = this._parser.getPdfVersion();
-
-    const xrefs = this._xrefParser.parseAllXrefs();
-    console.log(xrefs); 
-    xrefs.forEach(x => {
-      const entries = x.getEntries();
-      console.log(entries);
-    });
   }
   
   private updateData() {

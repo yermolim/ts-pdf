@@ -2,8 +2,9 @@ import { codes, keywordCodes,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "./common/codes";
 import { ValueType, valueTypes } from "./common/const";
-import { HexString } from "./common/strings/hex-string";
-import { LiteralString } from "./common/strings/literal-string";
+import { HexString } from "./entities/common/hex-string";
+import { LiteralString } from "./entities/common/literal-string";
+import { ObjectId } from "./entities/common/object-id";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -25,7 +26,7 @@ export interface ParseResult<T> extends Bounds {
   value: T; 
 }
 
-export class Parser {
+export class DocumentParser {
   private readonly _data: Uint8Array;  
   private readonly _maxIndex: number;
 
@@ -500,23 +501,6 @@ export class Parser {
       ? {value: result, start, end: i - 1}
       : null;
   } 
-  
-  parseHexAt(start: number, skipEmpty = true): ParseResult<HexString>  {    
-    if (skipEmpty) {
-      start = this.skipEmpty(start);
-    }
-    if (this.isOutside(start) || this._data[start] !== codes.LESS) {
-      return null;
-    }
-
-    const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
-    if (end === -1) {
-      return;
-    }
-
-    const hex = HexString.fromBytes(this._data.slice(start, end + 1));
-    return {value: hex, start, end};
-  }
 
   parseLiteralAt(start: number, skipEmpty = true): ParseResult<LiteralString>  {       
     if (skipEmpty) {
@@ -587,7 +571,7 @@ export class Parser {
     let current: ParseResult<HexString>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = this.parseHexAt(i, true);
+      current = HexString.parse(this, i, true);
       if (!current) {
         break;
       }
@@ -596,6 +580,27 @@ export class Parser {
     }
 
     return {value: hexes, start: arrayBounds.start, end: arrayBounds.end};
+  }
+  
+  parseObjectIdRefArrayAt(start: number, skipEmpty = true): ParseResult<ObjectId[]>  {
+    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
+    if (!arrayBounds) {
+      return null;
+    }
+
+    const ids: ObjectId[] = [];
+    let current: ParseResult<ObjectId>;
+    let i = arrayBounds.start + 1;
+    while(i < arrayBounds.end) {
+      current = ObjectId.parseRef(this, i, true);
+      if (!current) {
+        break;
+      }
+      ids.push(current.value);
+      i = current.end + 1;
+    }
+
+    return {value: ids, start: arrayBounds.start, end: arrayBounds.end};
   }
   //#endregion
 
@@ -635,7 +640,7 @@ export class Parser {
   }
   //#endregion
 
-  //#region debug methods
+  //#region get chars/codes methods
   getCharCode(index: number): number {    
     return this._data[index];
   }
@@ -660,13 +665,19 @@ export class Parser {
   sliceChars(start: number, end?: number): string {
     return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
   }
+  
+  /** returns a SUBARRAY of the inner data array 
+   * from the start index to the end index including BOTH ends */
+  subCharCodes(start: number, end?: number): Uint8Array {
+    return this._data.subarray(start, (end || start) + 1);
+  }
   //#endregion
-
-  //#region private search methods
-  private isOutside(index: number) {
+  
+  isOutside(index: number) {
     return (index < 0 || index > this._maxIndex);
   }
 
+  //#region private search methods
   private getValidStartIndex(direction: "straight" | "reverse", 
     start: number): number {
     return !isNaN(start) 

@@ -1,5 +1,5 @@
 import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
-import { Parser, ParseResult } from "../../parser";
+import { DocumentParser, ParseResult } from "../../document-parser";
 import { PdfDict } from "../core/pdf-dict";
 
 export class FlateParamsDict extends PdfDict {
@@ -34,7 +34,7 @@ export class FlateParamsDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
   
-  static parse(parser: Parser, start: number, end: number): ParseResult<FlateParamsDict> {    
+  static parse(parser: DocumentParser, start: number, end: number): ParseResult<FlateParamsDict> {    
     const dict = new FlateParamsDict();
 
     let i = start + 2;

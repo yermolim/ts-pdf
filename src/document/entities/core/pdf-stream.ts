@@ -1,6 +1,6 @@
 import { StreamFilter, StreamType, supportedFilters } from "../../common/const";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
-import { Bounds, Parser, ParseResult } from "../../parser";
+import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../common/codes";
 
@@ -44,7 +44,7 @@ export abstract class PdfStream extends PdfObject {
   /**
    * try parse and fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: Parser, bounds: Bounds): boolean {
+  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
     if (!parser || !bounds) {
       return false;
     }

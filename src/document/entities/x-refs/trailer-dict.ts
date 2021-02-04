@@ -1,7 +1,7 @@
 import { dictTypes } from "../../common/const";
-import { Bounds, Parser, ParseResult } from "../../parser";
+import { Bounds, DocumentParser, ParseResult } from "../../document-parser";
 import { PdfDict } from "../core/pdf-dict";
-import { ObjectId } from "../core/object-id";
+import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { CatalogDict } from "../structure/catalog-dict";
 import { InfoDict } from "../structure/info-dict";
@@ -51,7 +51,7 @@ export class TrailerDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
   
-  static parse(parser: Parser, bounds: Bounds): ParseResult<TrailerDict> {    
+  static parse(parser: DocumentParser, bounds: Bounds): ParseResult<TrailerDict> {    
     const trailer = new TrailerDict();
     const parseResult = trailer.tryParseProps(parser, bounds);
 
@@ -63,7 +63,7 @@ export class TrailerDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parser: Parser, bounds: Bounds): boolean {
+  protected tryParseProps(parser: DocumentParser, bounds: Bounds): boolean {
     const superIsParsed = super.tryParseProps(parser, bounds);
     if (!superIsParsed) {
       return false;

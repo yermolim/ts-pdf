@@ -1,19 +1,26 @@
-import { keywordCodes } from "../../common/codes";
-import { Parser, ParseResult } from "../../parser";
-import { ObjectId } from "../core/object-id";
-import { XRef } from "./x-ref";
-import { XRefStream } from "./x-ref-stream";
-import { XRefTable } from "./x-ref-table";
+import { keywordCodes } from "./common/codes";
+import { DocumentParser, ParseResult } from "./document-parser";
+import { ObjectId } from "./entities/common/object-id";
+import { XRef } from "./entities/x-refs/x-ref";
+import { XRefStream } from "./entities/x-refs/x-ref-stream";
+import { XRefTable } from "./entities/x-refs/x-ref-table";
 
-export class XRefParser {
-  private readonly _parser: Parser;
+export class DocumentData {
+  private readonly _parser: DocumentParser;
+
+  private readonly _version: string;
   private readonly _lastXrefIndex: number;
 
   private _currentXrefIndex: number;
   private _prevXrefIndex: number;
+  
+  
+  private _xrefs: XRef[];
 
-  constructor(parser: Parser) {
+  constructor(parser: DocumentParser) {
     this._parser = parser;
+
+    this._version = this._parser.getPdfVersion();
 
     const lastXrefIndex = this.parseLastXrefIndex();
     if (!lastXrefIndex) {{
@@ -21,6 +28,15 @@ export class XRefParser {
     }}
     this._lastXrefIndex = lastXrefIndex.value;
     this._prevXrefIndex = this._lastXrefIndex;
+  }  
+
+  parse() {
+    this._xrefs = this.parseAllXrefs();
+    console.log(this._xrefs); 
+    this._xrefs.forEach(x => {
+      const entries = x.getEntries();
+      console.log(entries);
+    });
   }
 
   reset() {
