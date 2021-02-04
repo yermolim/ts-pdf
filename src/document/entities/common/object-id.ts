@@ -1,5 +1,5 @@
 import { codes } from "../../common/codes";
-import { DocumentParser, ParseResult } from "../../parser/document-parser";
+import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class ObjectId {
   /** A positive integer object number */
@@ -19,7 +19,7 @@ export class ObjectId {
     this.reused = this.generation > 0;
   }
 
-  static parse(parser: DocumentParser, start: number, 
+  static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId> {  
     if (skipEmpty) {
       start = parser.findRegularIndex("straight", start);
@@ -45,7 +45,7 @@ export class ObjectId {
     };
   }
   
-  static parseRef(parser: DocumentParser, start: number, 
+  static parseRef(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId> {    
 
     const id = ObjectId.parse(parser, start, skipEmpty);
@@ -67,7 +67,7 @@ export class ObjectId {
     };
   }
   
-  static parseRefArray(parser: DocumentParser, start: number, 
+  static parseRefArray(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {

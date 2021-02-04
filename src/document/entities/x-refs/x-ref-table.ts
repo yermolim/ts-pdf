@@ -1,5 +1,5 @@
 import { xRefTypes } from "../../common/const";
-import { DocumentParser, ParseResult } from "../../parser/document-parser";
+import { DataParser, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";
@@ -28,7 +28,7 @@ export class XRefTable extends XRef {
     this._trailerDict = trailer;
   }
 
-  static parse(parser: DocumentParser, start: number): ParseResult<XRefTable> {
+  static parse(parser: DataParser, start: number): ParseResult<XRefTable> {
     if (!parser || isNaN(start)) {
       return null;
     }

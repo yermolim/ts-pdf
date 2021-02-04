@@ -1,12 +1,12 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../common/codes";
-import { DocumentParser, ParseResult } from "../../parser/document-parser";
+import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class LiteralString {
   private constructor(readonly literal: string,
     readonly bytes: Uint8Array) { }
     
-  static parse(parser: DocumentParser, start: number, 
+  static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<LiteralString>  {       
     if (skipEmpty) {
       start = parser.skipEmpty(start);

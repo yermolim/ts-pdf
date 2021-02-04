@@ -1,5 +1,5 @@
 import { DictType } from "../../common/const";
-import { ParseInfo, ParseResult } from "../../parser/document-parser";
+import { ParseInfo, ParseResult } from "../../parser/data-parser";
 
 export class PdfDict {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */

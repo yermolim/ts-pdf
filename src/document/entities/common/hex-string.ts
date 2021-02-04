@@ -1,13 +1,13 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../common/codes";
-import { DocumentParser, ParseResult } from "../../parser/document-parser";
+import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class HexString {
   private constructor(readonly literal: string, 
     readonly hex: string,
     readonly bytes: Uint8Array) { }
     
-  static parse(parser: DocumentParser, start: number, 
+  static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<HexString>  {   
 
     if (skipEmpty) {
@@ -26,7 +26,7 @@ export class HexString {
     return {value: hex, start, end};
   }  
   
-  static parseArray(parser: DocumentParser, start: number, 
+  static parseArray(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<HexString[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {

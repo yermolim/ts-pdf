@@ -1,6 +1,6 @@
 import { streamTypes } from "../../common/const";
 import { FlateDecoder } from "../../common/decoders/flate-decoder";
-import { Bounds, DocumentParser, ParseInfo, ParseResult } from "../../parser/document-parser";
+import { Bounds, DataParser, ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 
@@ -49,7 +49,7 @@ export class ObjectStream extends PdfStream {
       decodedData = FlateDecoder.Decode(this.streamData);
     }
 
-    const parser = new DocumentParser(decodedData);
+    const parser = new DataParser(decodedData);
 
     const offsetMap = new Map<number, number>();
     let temp: ParseResult<number>;

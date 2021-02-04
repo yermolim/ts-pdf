@@ -20,7 +20,7 @@ export interface Bounds {
 }
 
 export interface ParseInfo {
-  parser: DocumentParser;
+  parser: DataParser;
   bounds: Bounds;
 }
 
@@ -28,7 +28,7 @@ export interface ParseResult<T> extends Bounds {
   value: T; 
 }
 
-export class DocumentParser {
+export class DataParser {
   private readonly _data: Uint8Array;  
   private readonly _maxIndex: number;
 

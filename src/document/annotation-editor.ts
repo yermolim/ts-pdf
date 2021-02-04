@@ -1,12 +1,12 @@
 import { XRef } from "./entities/x-refs/x-ref";
-import { DocumentParser } from "./parser/document-parser";
+import { DataParser } from "./parser/data-parser";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { DocumentData } from "./parser/document-data";
 
 export class AnnotationEditor {
   private _sourceData: Uint8Array;
 
-  private _parser: DocumentParser;
+  private _parser: DataParser;
   private _documentData: DocumentData;
 
   private _annotations: AnnotationDict[];
@@ -27,7 +27,7 @@ export class AnnotationEditor {
 
     this._sourceData = pdfData;
 
-    this._parser = new DocumentParser(pdfData);
+    this._parser = new DataParser(pdfData);
     this._documentData = new DocumentData(this._parser);
 
     this._documentData.parse();

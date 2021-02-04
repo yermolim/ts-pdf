@@ -1,11 +1,11 @@
 import { codes } from "../../common/codes";
-import { DocumentParser, ParseResult } from "../../parser/document-parser";
+import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class DateString {
   private constructor(readonly source: string, 
     readonly date: Date) { }
     
-  static parse(parser: DocumentParser, start: number, 
+  static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<DateString>  {       
     if (skipEmpty) {
       start = parser.skipEmpty(start);

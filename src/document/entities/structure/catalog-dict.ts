@@ -1,5 +1,5 @@
 import { dictTypes } from "../../common/const";
-import { ParseInfo, ParseResult } from "../../parser/document-parser";
+import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { LiteralString } from "../common/literal-string";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";

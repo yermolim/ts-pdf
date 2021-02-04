@@ -978,7 +978,7 @@ const supportedFilters = new Set([
 ]);
 const maxGeneration = 65535;
 
-class DocumentParser {
+class DataParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
@@ -2365,7 +2365,7 @@ class ObjectStream extends PdfStream {
         else {
             decodedData = FlateDecoder.Decode(this.streamData);
         }
-        const parser = new DocumentParser(decodedData);
+        const parser = new DataParser(decodedData);
         const offsetMap = new Map();
         let temp;
         let objectId;
@@ -3512,7 +3512,7 @@ class DocumentData {
         const objectBytes = stream.value.getObjectBytes(id);
         if (objectBytes === null || objectBytes === void 0 ? void 0 : objectBytes.length) {
             return {
-                parser: new DocumentParser(objectBytes),
+                parser: new DataParser(objectBytes),
                 bounds: { start: 0, end: objectBytes.length - 1 },
             };
         }
@@ -3529,7 +3529,7 @@ class AnnotationEditor {
             throw new Error("Data is empty");
         }
         this._sourceData = pdfData;
-        this._parser = new DocumentParser(pdfData);
+        this._parser = new DataParser(pdfData);
         this._documentData = new DocumentData(this._parser);
         this._documentData.parse();
     }

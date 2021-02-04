@@ -2,16 +2,17 @@ import { keywordCodes } from "../common/codes";
 import { ObjectId } from "../entities/common/object-id";
 import { ObjectStream } from "../entities/streams/object-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
+import { PageDict } from "../entities/structure/page-dict";
 import { PageTreeDict } from "../entities/structure/page-tree-dict";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
-import { DocumentParser, ParseInfo, ParseResult } from "./document-parser";
+import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { ReferenceData } from "./reference-data";
 
 export class DocumentData {
-  private readonly _docParser: DocumentParser;
+  private readonly _docParser: DataParser;
 
   private readonly _version: string;
   private readonly _lastXrefIndex: number;
@@ -23,7 +24,11 @@ export class DocumentData {
 
   private _referenceData: ReferenceData;
 
-  constructor(parser: DocumentParser) {
+  private _catalog: CatalogDict;
+  private _pagesRoot: PageTreeDict;
+  private _pages: PageDict[];
+
+  constructor(parser: DataParser) {
     this._docParser = parser;
 
     this._version = this._docParser.getPdfVersion();
@@ -194,7 +199,7 @@ export class DocumentData {
     if (objectBytes?.length) {
       // the object is found inside the stream
       return {
-        parser: new DocumentParser(objectBytes), 
+        parser: new DataParser(objectBytes), 
         bounds: {start: 0, end: objectBytes.length - 1},
       };
     }
