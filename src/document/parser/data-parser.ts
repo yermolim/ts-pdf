@@ -407,28 +407,49 @@ export class DataParser {
     const contentStart = this.findNonSpaceIndex("straight", dictStart.end + 1);
     if (contentStart === -1){
       return null;
-    }   
+    }  
+    
+    let subDictOpened = 0;
+    let literalOpened = 0;
+    let i = contentStart;    
+    let code: number;
+    let prevCode: number;
+    while (true) {
+      prevCode = code;
+      code = this._data[i++];
 
-    // find the dict end assuring that we skipped all subdicts
-    let subDictSearchStart: number;
-    let dictEnd: Bounds;
-    let subDict: boolean;
-    do {
-      if (dictEnd) {
-        subDictSearchStart = dictEnd.end + 1;
+      if (code === codes.L_PARENTHESE
+        && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+        // increase string literal nesting
+        literalOpened++;
       }
-      dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, 
-        {minIndex: dictEnd ? dictEnd.end + 1 : dictStart.end + 1});
-      if (!dictEnd) {
-        return null;
+
+      if (code === codes.R_PARENTHESE
+        && (literalOpened && prevCode !== codes.BACKSLASH)) {
+        // decrease string literal nesting
+        literalOpened--;
       }
-  
-      subDict = !!this.findSubarrayIndex(keywordCodes.DICT_START,
-        {minIndex: subDictSearchStart || dictStart.end + 1, maxIndex: dictEnd.end - 1});
-    } while (subDict);
 
-    const contentEnd = this.findNonSpaceIndex("reverse", dictEnd.start - 1);
+      if (literalOpened) {
+        // ignore 'less' and 'greater' signs while being inside a literal
+        continue;
+      }
 
+      if (code === codes.LESS && code === prevCode) {
+        subDictOpened++;
+      }
+
+      if (code === codes.GREATER && code === prevCode) {
+        if (subDictOpened) {
+          subDictOpened--;
+        } else {
+          break;
+        }
+      }
+    }
+    const dictEnd = i - 1;
+
+    const contentEnd = this.findNonSpaceIndex("reverse", dictEnd - 2);
     if (contentEnd < contentStart) {
       // should be possible only in an empty dict
       return null;
@@ -436,7 +457,7 @@ export class DataParser {
 
     return {
       start: dictStart.start, 
-      end: dictEnd.end,
+      end: dictEnd,
       contentStart,
       contentEnd,
     };
@@ -540,7 +561,52 @@ export class DataParser {
     }
 
     return {value: numbers, start: arrayBounds.start, end: arrayBounds.end};
-  }
+  }  
+  
+  parseNameArrayAt(start: number, includeSlash = true, 
+    skipEmpty = true): ParseResult<string[]>  {
+    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
+    if (!arrayBounds) {
+      return null;
+    }
+
+    const names: string[] = [];
+    let current: ParseResult<string>;
+    let i = arrayBounds.start + 1;
+    while(i < arrayBounds.end) {
+      current = this.parseNameAt(i, includeSlash, true);
+      if (!current) {
+        break;
+      }
+      names.push(current.value);
+      i = current.end + 1;
+    }
+
+    return {value: names, start: arrayBounds.start, end: arrayBounds.end};
+  }  
+  
+  parseDictType(bounds: Bounds): string  {
+    return this.parseDictNameProperty(keywordCodes.TYPE, bounds);   
+  } 
+  
+  parseDictSubtype(bounds: Bounds): string {
+    return this.parseDictNameProperty(keywordCodes.SUBTYPE, bounds);   
+  } 
+  
+  parseDictNameProperty(subarray: readonly number[] | number[], bounds: Bounds): string {
+    const typeProp = this.findSubarrayIndex(subarray, 
+      {minIndex: bounds.start, maxIndex: bounds.end});
+    if (!typeProp) {
+      return null;
+    }
+
+    const type = this.parseNameAt(typeProp.end + 1);
+    if (!type) {
+      return null;
+    }
+
+    return type.value;    
+  } 
   //#endregion
 
   //#region skip methods

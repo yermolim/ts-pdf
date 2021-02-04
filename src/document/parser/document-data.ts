@@ -1,4 +1,5 @@
 import { keywordCodes } from "../common/codes";
+import { dictTypes } from "../common/const";
 import { ObjectId } from "../entities/common/object-id";
 import { ObjectStream } from "../entities/streams/object-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
@@ -8,7 +9,7 @@ import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
-import { Bounds, DataParser, ParseInfo, ParseResult } from "./data-parser";
+import { DataParser, ParseInfo } from "./data-parser";
 import { ReferenceData } from "./reference-data";
 
 export class DocumentData {
@@ -20,7 +21,7 @@ export class DocumentData {
   private _referenceData: ReferenceData;
 
   private _catalog: CatalogDict;
-  private _pagesRoot: PageTreeDict;
+  private _pageRoot: PageTreeDict;
   private _pages: PageDict[];
 
   get size(): number {
@@ -127,16 +128,55 @@ export class DocumentData {
     const catalogId = this._xrefs[0].root;
     const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
     const catalog = CatalogDict.parse(catalogParseInfo);
-    this._catalog = catalog?.value;
+    if (!catalog) {
+      throw new Error("Document root catalog not found");
+    }
+    this._catalog = catalog.value;
 
-    console.log(catalog);
+    console.log(this._catalog);
     
-    const pagesId = catalog.value.Pages;
-    const pagesParseInfo = this.getObjectParseInfo(pagesId.id);
-    const pages = PageTreeDict.parse(pagesParseInfo);
+    const pageRootId = catalog.value.Pages;
+    const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
+    const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
+    if (!pageRootTree) {
+      throw new Error("Document root page tree not found");
+    }
+    this._pageRoot = pageRootTree.value;
     
-    console.log(pages);
+    console.log(this._pageRoot);   
+
+    const pages: PageDict[] = [];
+    this.parsePages(pages, pageRootTree.value);
+    this._pages = pages;
+
+    console.log(this._pages);
   }
+
+  private parsePages(output: PageDict[], tree: PageTreeDict) {
+    if (!tree.Kids.length) {
+      return;
+    }
+
+    for (const kid of tree.Kids) {
+      const parseInfo = this.getObjectParseInfo(kid.id);
+      if (!parseInfo) {
+        continue;
+      }
+
+      const type = parseInfo.parser.parseDictType(parseInfo.bounds);
+      if (type === dictTypes.PAGE_TREE) {          
+        const kidTree = PageTreeDict.parse(parseInfo);
+        if (kidTree) {
+          this.parsePages(output, kidTree.value);
+        }
+      } else if (type === dictTypes.PAGE) {        
+        const kidPage = PageDict.parse(parseInfo);
+        if (kidPage) {
+          output.push(kidPage.value);
+        }
+      }
+    }
+  };  
 
   /**
    * returns a proper parser instance and byte bounds for the object by its id.

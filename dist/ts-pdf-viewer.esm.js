@@ -860,6 +860,8 @@ const keywordCodes = {
     STR_HEX_END: [codes.GREATER],
     VERSION: [codes.PERCENT, codes.P, codes.D, codes.F, codes.MINUS],
     PREV: [codes.SLASH, codes.P, codes.r, codes.e, codes.v],
+    TYPE: [codes.SLASH, codes.T, codes.y, codes.p, codes.e],
+    SUBTYPE: [codes.SLASH, codes.S, codes.u, codes.b, codes.t, codes.y, codes.p, codes.e],
     XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
     XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],
     XREF_HYBRID: [codes.X, codes.R, codes.e, codes.f, codes.S, codes.t, codes.m],
@@ -904,6 +906,79 @@ const DIGIT_CHARS = new Set([
 function isRegularChar(code) {
     return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
+
+const xRefTypes = {
+    TABLE: 0,
+    STREAM: 1,
+    HYBRID: 2,
+};
+const xRefEntryTypes = {
+    FREE: 0,
+    NORMAL: 1,
+    COMPRESSED: 2,
+};
+const streamFilters = {
+    ASCII85: "/ASCII85Decode",
+    ASCIIHEX: "/ASCIIHexDecode",
+    CCF: "/CCITTFaxDecode",
+    CRYPT: "/Crypt",
+    DCT: "/DCTDecode",
+    FLATE: "/FlateDecode",
+    JBIG2: "/JBIG2Decode",
+    JPX: "/JPXDecode",
+    LZW: "/LZWDecode",
+    RLX: "/RunLengthDecode",
+};
+const flatePredictors = {
+    NONE: 1,
+    TIFF: 2,
+    PNG_NONE: 10,
+    PNG_SUB: 11,
+    PNG_UP: 12,
+    PNG_AVERAGE: 13,
+    PNG_PAETH: 14,
+    PNG_OPTIMUM: 15,
+};
+const streamTypes = {
+    FORM_XOBJECT: "/XObject",
+    XREF: "/XRef",
+    OBJECT_STREAM: "/ObjStm",
+    METADATA_STREAM: "/Metadata",
+};
+const dictTypes = {
+    XREF: "/XRef",
+    XOBJECT: "/XObject",
+    CATALOG: "/Catalog",
+    PAGE_TREE: "/Pages",
+    PAGE: "/Page",
+    ANNOTATION: "/Annot",
+    BORDER_STYLE: "/Border",
+    OPTIONAL_CONTENT_GROUP: "/OCG",
+    OPTIONAL_CONTENT_MD: "/OCMD",
+    EXTERNAL_DATA: "/ExDATA",
+    ACTION: "/Action",
+    MEASURE: "/Measure",
+    DEV_EXTENSIONS: "/DeveloperExtensions",
+    EMPTY: "",
+};
+const valueTypes = {
+    UNKNOWN: 0,
+    NULL: 1,
+    BOOLEAN: 2,
+    NUMBER: 3,
+    STRING_LITERAL: 4,
+    STRING_HEX: 5,
+    NAME: 6,
+    ARRAY: 7,
+    DICTIONARY: 8,
+    STREAM: 9,
+    REF: 10,
+    COMMENT: 11,
+};
+const supportedFilters = new Set([
+    streamFilters.FLATE,
+]);
+const maxGeneration = 65535;
 
 class ObjectId {
     constructor(id, generation) {
@@ -980,79 +1055,6 @@ class ObjectId {
         return this.id + "|" + this.generation;
     }
 }
-
-const xRefTypes = {
-    TABLE: 0,
-    STREAM: 1,
-    HYBRID: 2,
-};
-const xRefEntryTypes = {
-    FREE: 0,
-    NORMAL: 1,
-    COMPRESSED: 2,
-};
-const streamFilters = {
-    ASCII85: "/ASCII85Decode",
-    ASCIIHEX: "/ASCIIHexDecode",
-    CCF: "/CCITTFaxDecode",
-    CRYPT: "/Crypt",
-    DCT: "/DCTDecode",
-    FLATE: "/FlateDecode",
-    JBIG2: "/JBIG2Decode",
-    JPX: "/JPXDecode",
-    LZW: "/LZWDecode",
-    RLX: "/RunLengthDecode",
-};
-const flatePredictors = {
-    NONE: 1,
-    TIFF: 2,
-    PNG_NONE: 10,
-    PNG_SUB: 11,
-    PNG_UP: 12,
-    PNG_AVERAGE: 13,
-    PNG_PAETH: 14,
-    PNG_OPTIMUM: 15,
-};
-const streamTypes = {
-    FORM_XOBJECT: "/XObject",
-    XREF: "/XRef",
-    OBJECT_STREAM: "/ObjStm",
-    METADATA_STREAM: "/Metadata",
-};
-const dictTypes = {
-    XREF: "/XRef",
-    XOBJECT: "/XObject",
-    CATALOG: "/Catalog",
-    PAGE_TREE: "/Pages",
-    PAGE: "/Page",
-    ANNOTATION: "/Annot",
-    BORDER_STYLE: "/Border",
-    OPTIONAL_CONTENT_GROUP: "/OCG",
-    OPTIONAL_CONTENT_MD: "/OCMD",
-    EXTERNAL_DATA: "/ExDATA",
-    ACTION: "/Action",
-    MEASURE: "/Measure",
-    DEV_EXTENSIONS: "/DeveloperExtensions",
-    EMPTY: "",
-};
-const valueTypes = {
-    UNKNOWN: 0,
-    NULL: 1,
-    BOOLEAN: 2,
-    NUMBER: 3,
-    STRING_LITERAL: 4,
-    STRING_HEX: 5,
-    NAME: 6,
-    ARRAY: 7,
-    DICTIONARY: 8,
-    STREAM: 9,
-    REF: 10,
-    COMMENT: 11,
-};
-const supportedFilters = new Set([
-    streamFilters.FLATE,
-]);
-const maxGeneration = 65535;
 
 class DecodedStream {
     constructor(encodedStream) {
@@ -1918,26 +1920,45 @@ class DataParser {
         if (contentStart === -1) {
             return null;
         }
-        let subDictSearchStart;
-        let dictEnd;
-        let subDict;
-        do {
-            if (dictEnd) {
-                subDictSearchStart = dictEnd.end + 1;
+        let subDictOpened = 0;
+        let literalOpened = 0;
+        let i = contentStart;
+        let code;
+        let prevCode;
+        while (true) {
+            prevCode = code;
+            code = this._data[i++];
+            if (code === codes.L_PARENTHESE
+                && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+                literalOpened++;
             }
-            dictEnd = this.findSubarrayIndex(keywordCodes.DICT_END, { minIndex: dictEnd ? dictEnd.end + 1 : dictStart.end + 1 });
-            if (!dictEnd) {
-                return null;
+            if (code === codes.R_PARENTHESE
+                && (literalOpened && prevCode !== codes.BACKSLASH)) {
+                literalOpened--;
             }
-            subDict = !!this.findSubarrayIndex(keywordCodes.DICT_START, { minIndex: subDictSearchStart || dictStart.end + 1, maxIndex: dictEnd.end - 1 });
-        } while (subDict);
-        const contentEnd = this.findNonSpaceIndex("reverse", dictEnd.start - 1);
+            if (literalOpened) {
+                continue;
+            }
+            if (code === codes.LESS && code === prevCode) {
+                subDictOpened++;
+            }
+            if (code === codes.GREATER && code === prevCode) {
+                if (subDictOpened) {
+                    subDictOpened--;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        const dictEnd = i - 1;
+        const contentEnd = this.findNonSpaceIndex("reverse", dictEnd - 2);
         if (contentEnd < contentStart) {
             return null;
         }
         return {
             start: dictStart.start,
-            end: dictEnd.end,
+            end: dictEnd,
             contentStart,
             contentEnd,
         };
@@ -2027,6 +2048,41 @@ class DataParser {
             i = current.end + 1;
         }
         return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    parseNameArrayAt(start, includeSlash = true, skipEmpty = true) {
+        const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const names = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = this.parseNameAt(i, includeSlash, true);
+            if (!current) {
+                break;
+            }
+            names.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: names, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    parseDictType(bounds) {
+        return this.parseDictNameProperty(keywordCodes.TYPE, bounds);
+    }
+    parseDictSubtype(bounds) {
+        return this.parseDictNameProperty(keywordCodes.SUBTYPE, bounds);
+    }
+    parseDictNameProperty(subarray, bounds) {
+        const typeProp = this.findSubarrayIndex(subarray, { minIndex: bounds.start, maxIndex: bounds.end });
+        if (!typeProp) {
+            return null;
+        }
+        const type = this.parseNameAt(typeProp.end + 1);
+        if (!type) {
+            return null;
+        }
+        return type.value;
     }
     skipEmpty(start) {
         let index = this.findNonSpaceIndex("straight", start);
@@ -2301,15 +2357,33 @@ class PdfStream extends PdfObject {
                         }
                         break;
                     case "/Filter":
-                        const filter = parser.parseNameAt(i);
-                        if (filter && supportedFilters.has(filter.value)) {
-                            this.Filter = filter.value;
-                            i = filter.end + 1;
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.NAME) {
+                            const filter = parser.parseNameAt(i);
+                            if (filter && supportedFilters.has(filter.value)) {
+                                this.Filter = filter.value;
+                                i = filter.end + 1;
+                                break;
+                            }
+                            else {
+                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+                            }
                         }
-                        else {
-                            throw new Error("Unsupported /Filter property value");
+                        else if (entryType === valueTypes.ARRAY) {
+                            const filterNames = parser.parseNameArrayAt(i);
+                            if (filterNames) {
+                                const filterArray = filterNames.value;
+                                if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
+                                    this.Filter = filterArray[0];
+                                    i = filterNames.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                                }
+                            }
                         }
-                        break;
+                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
                     case "/DecodeParms":
                         const decodeParamsBounds = parser.getDictBoundsAt(i);
                         if (decodeParamsBounds) {
@@ -2683,6 +2757,166 @@ class CatalogDict extends PdfDict {
             }
         }
         if (!this.Pages) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class DateString {
+    constructor(source, date) {
+        this.source = source;
+        this.date = date;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+        if (end === -1) {
+            return null;
+        }
+        try {
+            const date = DateString.fromArray(parser.subCharCodes(start + 1, end - 1));
+            return { value: date, start, end };
+        }
+        catch (_a) {
+            return null;
+        }
+    }
+    static fromDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
+        return new DateString(source, date);
+    }
+    static fromString(source) {
+        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
+        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
+        return new DateString(source, date);
+    }
+    static fromArray(arr) {
+        const source = new TextDecoder().decode(arr);
+        return DateString.fromString(source);
+    }
+    toArray() {
+        return new TextEncoder().encode(this.source);
+    }
+}
+
+class PageDict extends PdfDict {
+    constructor() {
+        super(dictTypes.PAGE);
+        this.Rotate = 0;
+    }
+    static parse(parseInfo) {
+        const trailer = new PageDict();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Parent":
+                        const parentId = ObjectId.parseRef(parser, i);
+                        if (parentId) {
+                            this.Parent = parentId.value;
+                            i = parentId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Parent property value");
+                        }
+                        break;
+                    case "/LastModified":
+                        const date = DateString.parse(parser, i, false);
+                        if (date) {
+                            this.LastModified = date.value;
+                            i = date.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LastModified property value");
+                        }
+                        break;
+                    case "/MediaBox":
+                        const mediaBox = parser.parseNumberArrayAt(i, true);
+                        if (mediaBox) {
+                            this.MediaBox = [
+                                mediaBox.value[0],
+                                mediaBox.value[1],
+                                mediaBox.value[2],
+                                mediaBox.value[3],
+                            ];
+                            i = mediaBox.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /MediaBox property value");
+                        }
+                        break;
+                    case "/Rotate":
+                        const rotate = parser.parseNumberAt(i, false);
+                        if (rotate) {
+                            this.Rotate = rotate.value;
+                            i = rotate.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Rotate property value");
+                        }
+                        break;
+                    case "/Annots":
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.REF) {
+                            const annotArrayId = ObjectId.parseRef(parser, i);
+                            if (annotArrayId) {
+                                this.Annots = annotArrayId.value;
+                                i = annotArrayId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (entryType === valueTypes.ARRAY) {
+                            const annotIds = ObjectId.parseRefArray(parser, i);
+                            if (annotIds) {
+                                this.Annots = annotIds.value;
+                                i = annotIds.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /Annots property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Parent) {
             return false;
         }
         return true;
@@ -3397,6 +3631,15 @@ class DocumentData {
         }
         this._lastXrefIndex = lastXrefIndex.value;
     }
+    get size() {
+        var _a;
+        if ((_a = this._xrefs) === null || _a === void 0 ? void 0 : _a.length) {
+            return this._xrefs[0].prev;
+        }
+        else {
+            return 0;
+        }
+    }
     parse() {
         this.reset();
         const xrefs = this.parseAllXrefs();
@@ -3405,14 +3648,14 @@ class DocumentData {
                 throw new Error("Failed to parse cross-reference sections");
             }
         }
-        this._xrefs = xrefs;
         const entries = [];
-        this._xrefs.forEach(x => entries.push(...x.getEntries()));
+        xrefs.forEach(x => entries.push(...x.getEntries()));
         if (!entries.length) {
             {
                 throw new Error("No indirect object references found");
             }
         }
+        this._xrefs = xrefs;
         this._referenceData = new ReferenceData(entries);
         this.parsePageTree();
     }
@@ -3478,13 +3721,49 @@ class DocumentData {
         const catalogId = this._xrefs[0].root;
         const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
         const catalog = CatalogDict.parse(catalogParseInfo);
-        this._catalog = catalog === null || catalog === void 0 ? void 0 : catalog.value;
-        console.log(catalog);
-        const pagesId = catalog.value.Pages;
-        const pagesParseInfo = this.getObjectParseInfo(pagesId.id);
-        const pages = PageTreeDict.parse(pagesParseInfo);
-        console.log(pages);
+        if (!catalog) {
+            throw new Error("Document root catalog not found");
+        }
+        this._catalog = catalog.value;
+        console.log(this._catalog);
+        const pageRootId = catalog.value.Pages;
+        const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
+        const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
+        if (!pageRootTree) {
+            throw new Error("Document root page tree not found");
+        }
+        this._pageRoot = pageRootTree.value;
+        console.log(this._pageRoot);
+        const pages = [];
+        this.parsePages(pages, pageRootTree.value);
+        this._pages = pages;
+        console.log(this._pages);
     }
+    parsePages(output, tree) {
+        if (!tree.Kids.length) {
+            return;
+        }
+        for (const kid of tree.Kids) {
+            const parseInfo = this.getObjectParseInfo(kid.id);
+            if (!parseInfo) {
+                continue;
+            }
+            const type = parseInfo.parser.parseDictType(parseInfo.bounds);
+            if (type === dictTypes.PAGE_TREE) {
+                const kidTree = PageTreeDict.parse(parseInfo);
+                if (kidTree) {
+                    this.parsePages(output, kidTree.value);
+                }
+            }
+            else if (type === dictTypes.PAGE) {
+                const kidPage = PageDict.parse(parseInfo);
+                if (kidPage) {
+                    output.push(kidPage.value);
+                }
+            }
+        }
+    }
+    ;
     getObjectParseInfo(id) {
         var _a;
         if (!id) {

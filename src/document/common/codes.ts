@@ -128,6 +128,8 @@ export const keywordCodes = {
   VERSION: [codes.PERCENT, codes.P, codes.D, codes.F, codes.MINUS],
 
   PREV: [codes.SLASH, codes.P, codes.r, codes.e, codes.v],
+  TYPE: [codes.SLASH, codes.T, codes.y, codes.p, codes.e],
+  SUBTYPE: [codes.SLASH, codes.S, codes.u, codes.b, codes.t, codes.y, codes.p, codes.e],
   
   XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
   XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],

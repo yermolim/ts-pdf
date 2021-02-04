@@ -1,4 +1,4 @@
-import { StreamFilter, StreamType, supportedFilters } from "../../common/const";
+import { StreamFilter, StreamType, supportedFilters, valueTypes } from "../../common/const";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
@@ -22,7 +22,7 @@ export abstract class PdfStream extends PdfObject {
    * found between the keywords stream and endstream, or an array of zero, one or several names. 
    * Multiple filters shall be specified in the order in which they are to be applied
    */
-  Filter: StreamFilter; // | StreamFilter[];
+  Filter: StreamFilter; // | StreamFilter[]; TODO: Add support to filter arrays
   /**
    * (Optional) A parameter dictionary or an array of such dictionaries, 
    * used by the filters specified by Filter
@@ -111,15 +111,30 @@ export abstract class PdfStream extends PdfObject {
             }
             break;
           case "/Filter":
-            // TODO: add support for filter arrays
-            const filter = parser.parseNameAt(i);
-            if (filter && supportedFilters.has(filter.value)) {
-              this.Filter = <StreamFilter>filter.value;
-              i = filter.end + 1;
-            } else {              
-              throw new Error("Unsupported /Filter property value");
+            const entryType = parser.getValueTypeAt(i);
+            if (entryType === valueTypes.NAME) {  
+              const filter = parser.parseNameAt(i);  
+              if (filter && supportedFilters.has(filter.value)) {
+                this.Filter = <StreamFilter>filter.value;
+                i = filter.end + 1;
+                break;
+              } else {              
+                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+              }
+            } else if (entryType === valueTypes.ARRAY) {              
+              const filterNames = parser.parseNameArrayAt(i);
+              if (filterNames) {
+                const filterArray = filterNames.value;
+                if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
+                  this.Filter = <StreamFilter>filterArray[0];
+                  i = filterNames.end + 1;
+                  break;
+                } else {                  
+                  throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                }
+              }
             }
-            break;
+            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
           case "/DecodeParms":
             // TODO: add support for decode params arrays
             const decodeParamsBounds = parser.getDictBoundsAt(i);
