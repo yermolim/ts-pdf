@@ -1,7 +1,7 @@
 import { streamTypes } from "../../common/const";
-import { PdfStream } from "../core/pdf-stream";
+import { TextStream } from "./text-stream";
 
-export class MetadataStream extends PdfStream {
+export class MetadataStream extends TextStream {
   /**
    * (Required) The type of metadata stream this dictionary describes
    */
@@ -12,6 +12,7 @@ export class MetadataStream extends PdfStream {
   }  
   
   toArray(): Uint8Array {
-    return null;
-  };
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

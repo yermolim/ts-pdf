@@ -46,6 +46,7 @@ export class CatalogDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
+    // TODO: implement
     return new Uint8Array();
   }
   

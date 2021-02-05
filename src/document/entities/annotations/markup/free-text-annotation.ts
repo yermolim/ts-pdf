@@ -1,6 +1,8 @@
-import { annotationTypes, JustificationType, LineEndingType, lineEndingTypes } from "../../../common/const";
-import { AppearanceString } from "../../appearance/appearance-string";
-import { PdfStream } from "../../core/pdf-stream";
+import { annotationTypes, JustificationType, 
+  justificationTypes, 
+  LineEndingType, lineEndingTypes, Rect } from "../../../common/const";
+import { ParseInfo, ParseResult } from "../../../parser/data-parser";
+import { LiteralString } from "../../common/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const freeTextIntents = {
@@ -15,21 +17,16 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * (Required) The default appearance string that shall be used in formatting the text. 
    * The annotation dictionary’s AP entry, if present, shall take precedence over the DA entry
    */
-  DA: AppearanceString;
+  DA: LiteralString;
   /**
    * (Optional; PDF 1.4+) A code specifying the form of quadding (justification) 
    * that shall be used in displaying the annotation’s text
    */
   Q: JustificationType;
   /**
-   * (Optional; PDF 1.5+) A rich text string that shall be used 
-   * to generate the appearance of the annotation
-   */
-  RC: string | PdfStream;
-  /**
    * (Optional; PDF 1.5+) A default style
    */
-  DS: string;
+  DS: LiteralString;
   /**
    * (Optional; meaningful only if IT is FreeTextCallout; PDF 1.6+) 
    * An array of four or six numbers specifying a callout line 
@@ -49,7 +46,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * Any border styles and/or border effects specified by BS and BE entries, respectively, 
    * shall be applied to the border of the inner rectangle
    */
-  RD: number[];
+  RD: Rect;
   /**
    * (Optional; meaningful only if CL is present; PDF 1.6+) 
    * A name specifying the line ending style that shall be used in drawing the callout line 
@@ -60,5 +57,134 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   
   constructor() {
     super(annotationTypes.FREE_TEXT);
+  }
+  
+  static parse(parseInfo: ParseInfo): ParseResult<FreeTextAnnotation> {    
+    const trailer = new FreeTextAnnotation();
+    const parseResult = trailer.tryParseProps(parseInfo);
+
+    return parseResult
+      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      : null;
+  }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
+  
+  /**
+   * fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
+    if (!superIsParsed) {
+      return false;
+    }
+
+    const {parser, bounds} = parseInfo;
+    const start = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end; 
+    
+    let i = parser.skipToNextName(start, end - 1);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
+    let name: string;
+    let parseResult: ParseResult<string>;
+    while (true) {
+      parseResult = parser.parseNameAt(i);
+      if (parseResult) {
+        i = parseResult.end + 1;
+        name = parseResult.value;
+        switch (name) {
+          case "/DA":
+            const appearanceString = LiteralString.parse(parser, i);
+            if (appearanceString) {
+              this.DA = appearanceString.value;
+              i = appearanceString.end + 1;
+            } else {              
+              throw new Error("Can't parse /DA property value");
+            }
+            break;
+          case "/Q":
+            const justification = parser.parseNumberAt(i, true);
+            if (justification && (<number[]>Object.values(justificationTypes))
+              .includes(justification.value)) {
+              this.Q = <JustificationType>justification.value;
+              i = justification.end + 1;              
+            } else {              
+              throw new Error("Can't parse /Q property value");
+            }
+            break;            
+          case "/DS":
+            const style = LiteralString.parse(parser, i);
+            if (style) {
+              this.DS = style.value;
+              i = style.end + 1;
+            } else {              
+              throw new Error("Can't parse /DS property value");
+            }
+            break;
+          case "/CL":
+            const callout = parser.parseNumberArrayAt(i, true);
+            if (callout) {
+              this.CL = callout.value;
+              i = callout.end + 1;
+            } else {              
+              throw new Error("Can't parse /CL property value");
+            }
+            break;
+          case "/IT":
+            const intent = parser.parseNameAt(i, true);
+            if (intent && (<string[]>Object.values(freeTextIntents))
+              .includes(intent.value)) {
+              this.IT = <FreeTextIntent>intent.value;
+              i = intent.end + 1;              
+            } else {              
+              throw new Error("Can't parse /IT property value");
+            }
+            break; 
+          case "/RD":
+            const innerRect = parser.parseNumberArrayAt(i, true);
+            if (innerRect) {
+              this.RD = [
+                innerRect.value[0],
+                innerRect.value[1],
+                innerRect.value[2],
+                innerRect.value[3],
+              ];
+              i = innerRect.end + 1;
+            } else {              
+              throw new Error("Can't parse /RD property value");
+            }
+            break;
+          case "/LE":
+            const lineEndingType = parser.parseNameAt(i, true);
+            if (lineEndingType && (<string[]>Object.values(lineEndingTypes))
+              .includes(lineEndingType.value)) {
+              this.LE = <LineEndingType>lineEndingType.value;
+              i = lineEndingType.end + 1;              
+            } else {              
+              throw new Error("Can't parse /LE property value");
+            }
+            break;
+          default:
+            // skip to next name
+            i = parser.skipToNextName(i, end - 1);
+            break;
+        }
+      } else {
+        break;
+      }
+    };
+        
+    if (!this.DA) {
+      // not all required properties parsed
+      return false;
+    }
+
+    return true;
   }
 }

@@ -30,7 +30,7 @@ export class PageTreeDict extends PdfDict {
    * (Optional; inheritable) The number of degrees by which the page shall be rotated 
    * clockwise when displayed or printed. The value shall be a multiple of 90
    */
-  Rotate: 0 | 90 | 180 | 270 = 0;
+  Rotate = 0;
   
   constructor() {
     super(dictTypes.PAGE_TREE);
@@ -46,6 +46,7 @@ export class PageTreeDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
+    // TODO: implement
     return new Uint8Array();
   }
   
@@ -100,6 +101,29 @@ export class PageTreeDict extends PdfDict {
               i = count.end + 1;
             } else {              
               throw new Error("Can't parse /Count property value");
+            }
+            break;
+          case "/MediaBox":
+            const mediaBox = parser.parseNumberArrayAt(i, true);
+            if (mediaBox) {
+              this.MediaBox = [
+                mediaBox.value[0],
+                mediaBox.value[1],
+                mediaBox.value[2],
+                mediaBox.value[3],
+              ];
+              i = mediaBox.end + 1;
+            } else {              
+              throw new Error("Can't parse /MediaBox property value");
+            }
+            break;
+          case "/Rotate":
+            const rotate = parser.parseNumberAt(i, false);
+            if (rotate) {
+              this.Rotate = rotate.value;
+              i = rotate.end + 1;
+            } else {              
+              throw new Error("Can't parse /Rotate property value");
             }
             break;
           default:

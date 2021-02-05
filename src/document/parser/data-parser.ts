@@ -24,6 +24,7 @@ export interface ParseInfo {
   bounds: Bounds;
   type?: ObjectType;
   value?: any;
+  parseInfoGetter?: (id: number) => ParseInfo;
 }
 
 export interface ParseResult<T> extends Bounds {
@@ -541,6 +542,27 @@ export class DataParser {
     return result.length > 1 
       ? {value: result, start, end: i - 1}
       : null;
+  } 
+  
+  parseBoolAt(start: number, skipEmpty = true): ParseResult<boolean>  {
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start)) {
+      return null;
+    }
+
+    const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {minIndex: start});
+    if (isTrue) {
+      return {value: true, start, end: isTrue.end};
+    }
+    
+    const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, {minIndex: start});
+    if (isFalse) {
+      return {value: true, start, end: isFalse.end};
+    }
+
+    return null;
   } 
   
   parseNumberArrayAt(start: number, float = true, 

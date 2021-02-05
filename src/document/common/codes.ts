@@ -141,6 +141,9 @@ export const keywordCodes = {
   END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
 
   END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
+
+  TRUE: [codes.t, codes.r, codes.u, codes.e],
+  FALSE: [codes.f, codes.a, codes.l, codes.s, codes.e],
 } as const;
 
 /**

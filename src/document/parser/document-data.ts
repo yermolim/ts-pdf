@@ -85,7 +85,7 @@ export class DocumentData {
         }        
       }
     }
-        
+
     console.log(annotationIds);
   }
 
@@ -204,7 +204,7 @@ export class DocumentData {
    * returns null if an object with the specified id not found.
    * @param id 
    */
-  private getObjectParseInfo(id: number): ParseInfo {
+  private getObjectParseInfo = (id: number): ParseInfo => {
     if (!id) {
       return null;
     }
@@ -222,7 +222,8 @@ export class DocumentData {
     if (!bounds) {
       return null;
     }
-    const info = {parser: this._docParser, bounds};
+    const parseInfoGetter = this.getObjectParseInfo;
+    const info = {parser: this._docParser, bounds, parseInfoGetter};
 
     if (objectId.value.id === id) {
       // object id equals the sought one, so this is the needed object
@@ -238,9 +239,10 @@ export class DocumentData {
     const objectParseInfo = stream.value.getObjectData(id);
     if (objectParseInfo) {
       // the object is found inside the stream
+      objectParseInfo.parseInfoGetter = parseInfoGetter;
       return objectParseInfo;
     }
 
     return null;
-  }
+  };
 }

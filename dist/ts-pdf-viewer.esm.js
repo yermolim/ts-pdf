@@ -870,6 +870,8 @@ const keywordCodes = {
     TRAILER: [codes.t, codes.r, codes.a, codes.i, codes.l, codes.e, codes.r],
     END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
     END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
+    TRUE: [codes.t, codes.r, codes.u, codes.e],
+    FALSE: [codes.f, codes.a, codes.l, codes.s, codes.e],
 };
 const DELIMITER_CHARS = new Set([
     codes.PERCENT,
@@ -952,9 +954,9 @@ const flatePredictors = {
     PNG_OPTIMUM: 15,
 };
 const streamTypes = {
-    FORM_XOBJECT: "/XObject",
     XREF: "/XRef",
     OBJECT_STREAM: "/ObjStm",
+    FORM_XOBJECT: "/XObject",
     METADATA_STREAM: "/Metadata",
 };
 const dictTypes = {
@@ -2043,6 +2045,23 @@ class DataParser {
             ? { value: result, start, end: i - 1 }
             : null;
     }
+    parseBoolAt(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = this.skipEmpty(start);
+        }
+        if (this.isOutside(start)) {
+            return null;
+        }
+        const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, { minIndex: start });
+        if (isTrue) {
+            return { value: true, start, end: isTrue.end };
+        }
+        const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, { minIndex: start });
+        if (isFalse) {
+            return { value: true, start, end: isFalse.end };
+        }
+        return null;
+    }
     parseNumberArrayAt(start, float = true, skipEmpty = true) {
         const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
         if (!arrayBounds) {
@@ -3111,6 +3130,31 @@ class PageTreeDict extends PdfDict {
                             throw new Error("Can't parse /Count property value");
                         }
                         break;
+                    case "/MediaBox":
+                        const mediaBox = parser.parseNumberArrayAt(i, true);
+                        if (mediaBox) {
+                            this.MediaBox = [
+                                mediaBox.value[0],
+                                mediaBox.value[1],
+                                mediaBox.value[2],
+                                mediaBox.value[3],
+                            ];
+                            i = mediaBox.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /MediaBox property value");
+                        }
+                        break;
+                    case "/Rotate":
+                        const rotate = parser.parseNumberAt(i, false);
+                        if (rotate) {
+                            this.Rotate = rotate.value;
+                            i = rotate.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Rotate property value");
+                        }
+                        break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -3688,6 +3732,39 @@ class ReferenceData {
 
 class DocumentData {
     constructor(data) {
+        this.getObjectParseInfo = (id) => {
+            var _a;
+            if (!id) {
+                return null;
+            }
+            const offset = (_a = this._referenceData) === null || _a === void 0 ? void 0 : _a.getOffset(id);
+            if (isNaN(offset)) {
+                return null;
+            }
+            const objectId = ObjectId.parse(this._docParser, offset);
+            if (!objectId) {
+                return null;
+            }
+            const bounds = this._docParser.getIndirectObjectBoundsAt(objectId.end + 1, true);
+            if (!bounds) {
+                return null;
+            }
+            const parseInfoGetter = this.getObjectParseInfo;
+            const info = { parser: this._docParser, bounds, parseInfoGetter };
+            if (objectId.value.id === id) {
+                return info;
+            }
+            const stream = ObjectStream.parse(info);
+            if (!stream) {
+                return;
+            }
+            const objectParseInfo = stream.value.getObjectData(id);
+            if (objectParseInfo) {
+                objectParseInfo.parseInfoGetter = parseInfoGetter;
+                return objectParseInfo;
+            }
+            return null;
+        };
         this._docParser = new DataParser(data);
         this._version = this._docParser.getPdfVersion();
         const lastXrefIndex = this._docParser.getLastXrefIndex();
@@ -3853,37 +3930,6 @@ class DocumentData {
         }
     }
     ;
-    getObjectParseInfo(id) {
-        var _a;
-        if (!id) {
-            return null;
-        }
-        const offset = (_a = this._referenceData) === null || _a === void 0 ? void 0 : _a.getOffset(id);
-        if (isNaN(offset)) {
-            return null;
-        }
-        const objectId = ObjectId.parse(this._docParser, offset);
-        if (!objectId) {
-            return null;
-        }
-        const bounds = this._docParser.getIndirectObjectBoundsAt(objectId.end + 1, true);
-        if (!bounds) {
-            return null;
-        }
-        const info = { parser: this._docParser, bounds };
-        if (objectId.value.id === id) {
-            return info;
-        }
-        const stream = ObjectStream.parse(info);
-        if (!stream) {
-            return;
-        }
-        const objectParseInfo = stream.value.getObjectData(id);
-        if (objectParseInfo) {
-            return objectParseInfo;
-        }
-        return null;
-    }
 }
 
 class AnnotationEditor {

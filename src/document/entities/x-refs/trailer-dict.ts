@@ -58,6 +58,7 @@ export class TrailerDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
+    // TODO: implement
     return new Uint8Array();
   }
   

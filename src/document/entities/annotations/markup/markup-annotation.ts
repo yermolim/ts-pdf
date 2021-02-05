@@ -1,9 +1,11 @@
-import { AnnotationType } from "../../../common/const";
+import { AnnotationType, valueTypes } from "../../../common/const";
+import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { DateString } from "../../common/date-string";
-import { PdfStream } from "../../core/pdf-stream";
+import { LiteralString } from "../../common/literal-string";
+import { ObjectId } from "../../common/object-id";
+import { TextStream } from "../../streams/text-stream";
 import { AnnotationDict } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";
-import { PopupAnnotation } from "../non-markup/popup-annotation";
 
 export const markupAnnotationReplyTypes = {
   /**
@@ -25,21 +27,21 @@ export abstract class MarkupAnnotation extends AnnotationDict {
    * of the annotation’s pop-up window when open and active. 
    * This entry shall identify the user who added the annotation
    */
-  T: string;
+  T: LiteralString;
   /**
    * (Optional; PDF 1.3+) An indirect reference to a pop-up annotation 
    * for entering or editing the text associated with this annotation
    */
-  Popup: PopupAnnotation;
-  /**
-   * (Optional; PDF 1.4+) The constant opacity value
-   */
-  CA: number;
+  Popup: ObjectId;
   /**
    * (Optional; PDF 1.5+) A rich text string that shall be displayed 
    * in the pop-up window when the annotation is opened
    */
-  RC: string | PdfStream;
+  RC: LiteralString;
+  /**
+   * (Optional; PDF 1.4+) The constant opacity value
+   */
+  CA: number;
   /**
    * (Optional; PDF 1.5+) The date and time when the annotation was created
    */
@@ -48,14 +50,14 @@ export abstract class MarkupAnnotation extends AnnotationDict {
    * (Optional; PDF 1.5+) Text representing a short description of the subject 
    * being addressed by the annotation
    */
-  Subj: string;
+  Subj: LiteralString;
   /**
    * (Required if an RT entry is present, otherwise optional; PDF 1.5+) 
    * A reference to the annotation that this annotation is “in reply to.” 
    * Both annotations shall be on the same page of the document. 
    * The relationship between the two annotations shall be specified by the RT entry
    */
-  IRT: AnnotationDict;
+  IRT: ObjectId;
   /**
    * (Optional; meaningful only if IRT is present; PDF 1.6+) 
    * A name specifying the relationship (the “reply type”) 
@@ -79,5 +81,172 @@ export abstract class MarkupAnnotation extends AnnotationDict {
   
   protected constructor(subType: AnnotationType) {
     super(subType);
+  }
+  
+  /**
+   * fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
+    if (!superIsParsed) {
+      return false;
+    }
+
+    const {parser, bounds} = parseInfo;
+    const start = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end; 
+    
+    let i = parser.skipToNextName(start, end - 1);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
+    let name: string;
+    let parseResult: ParseResult<string>;
+    while (true) {
+      parseResult = parser.parseNameAt(i);
+      if (parseResult) {
+        i = parseResult.end + 1;
+        name = parseResult.value;
+        switch (name) {
+          case "/T":
+            const title = LiteralString.parse(parser, i);
+            if (title) {
+              this.T = title.value;
+              i = title.end + 1;
+            } else {              
+              throw new Error("Can't parse /T property value");
+            }
+            break;
+          case "/Popup":
+            const popupId = ObjectId.parseRef(parser, i);
+            if (popupId) {
+              this.Popup = popupId.value;
+              i = popupId.end + 1;
+            } else {              
+              throw new Error("Can't parse /Popup property value");
+            }
+            break;
+          case "/RC":    
+            // TODO: test it   
+            const rcEntryType = parser.getValueTypeAt(i);
+            if (rcEntryType === valueTypes.REF) {    
+              // should be reference to text stream or literal string           
+              const rsObjectId = ObjectId.parseRef(parser, i);
+              if (rsObjectId && parseInfo.parseInfoGetter) {
+                const rcParseInfo = parseInfo.parseInfoGetter(rsObjectId.value.id);
+                if (rcParseInfo) {
+                  const rcObjectType = rcParseInfo.type 
+                    || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
+                  if (rcObjectType === valueTypes.STRING_LITERAL) {
+                    // reference is to the indirect literal string 
+                    // or to the string in an object stream 
+                    const popupTextFromIndirectLiteral = LiteralString
+                      .parse(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
+                    if (popupTextFromIndirectLiteral) {
+                      this.RC = popupTextFromIndirectLiteral.value;
+                      i = rsObjectId.end + 1;
+                      break;
+                    }
+                  } else if (rcObjectType === valueTypes.DICTIONARY) {
+                    // should be a text stream. check it
+                    const popupTextStream = TextStream.parse(rcParseInfo);
+                    if (popupTextStream) {
+                      const popupTextFromStream = popupTextStream.value.getText();
+                      this.RC = LiteralString.fromString(popupTextFromStream);
+                      i = rsObjectId.end + 1;
+                      break;
+                    }
+                  } else {                     
+                    throw new Error(`Unsupported /RC property value type: ${rcObjectType}`);
+                  }
+                }
+              }              
+              throw new Error("Can't parse /RC value reference");
+            } else if (rcEntryType === valueTypes.STRING_LITERAL) { 
+              const popupTextFromLiteral = LiteralString.parse(parser, i);
+              if (popupTextFromLiteral) {
+                this.RC = popupTextFromLiteral.value;
+                i = popupTextFromLiteral.end + 1;
+                break;
+              } else {              
+              }
+              throw new Error("Can't parse /RC property value"); 
+            }
+            throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
+          case "/CA":
+            const opacity = parser.parseNumberAt(i, true);
+            if (opacity) {
+              this.CA = opacity.value;
+              i = opacity.end + 1;
+            } else {              
+              throw new Error("Can't parse /CA property value");
+            }
+            break;   
+          case "/CreationDate":
+            const date = DateString.parse(parser, i);
+            if (date) {
+              this.CreationDate = date.value;
+              i = date.end + 1;   
+            } else {
+              throw new Error("Can't parse /CreationDate property value"); 
+            }
+            break;
+          case "/Subj":
+            const subject = LiteralString.parse(parser, i);
+            if (subject) {
+              this.Subj = subject.value;
+              i = subject.end + 1;
+            } else {              
+              throw new Error("Can't parse /Subj property value");
+            }
+            break;
+          case "/IRT":
+            const refId = ObjectId.parseRef(parser, i);
+            if (refId) {
+              this.IRT = refId.value;
+              i = refId.end + 1;
+            } else {              
+              throw new Error("Can't parse /IRT property value");
+            }
+            break;
+          case "/RT":
+            const replyType = parser.parseNameAt(i, true);
+            if (replyType && (<string[]>Object.values(markupAnnotationReplyTypes))
+              .includes(replyType.value)) {
+              this.RT = <MarkupAnnotationReplyType>replyType.value;
+              i = replyType.end + 1;              
+            } else {              
+              throw new Error("Can't parse /RT property value");
+            }
+            break; 
+          case "/IT":
+            const intent = parser.parseNameAt(i);
+            if (intent) {
+              this.IT = intent.value;
+              i = intent.end + 1;
+            } else {
+              throw new Error("Can't parse /IT property value");
+            }
+            break;  
+          case "/ExData":
+            // TODO: handle this case
+            break;
+          default:
+            // skip to next name
+            i = parser.skipToNextName(i, end - 1);
+            break;
+        }
+      } else {
+        break;
+      }
+    };
+    
+    if (!this.Subtype || !this.Rect) {
+      // not all required properties parsed
+      return false;
+    }
+
+    return true;
   }
 }

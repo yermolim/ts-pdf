@@ -107,9 +107,9 @@ export const pageModes = {
 export type PageMode = typeof pageModes[keyof typeof pageModes];
 
 export const streamTypes = {
-  FORM_XOBJECT: "/XObject",
   XREF: "/XRef",
   OBJECT_STREAM: "/ObjStm",
+  FORM_XOBJECT: "/XObject",
   METADATA_STREAM: "/Metadata",
 } as const;
 export type StreamType = typeof streamTypes[keyof typeof streamTypes];
@@ -292,6 +292,8 @@ export const annotationReviewStates = {
 } as const;
 export type AnnotationReviewState = typeof annotationReviewStates[keyof typeof annotationReviewStates];
 
+export type AnnotationState = AnnotationMarkedState | AnnotationReviewState;
+
 /**
  * The name of an icon that shall be used in displaying the annotation
  */
@@ -336,3 +338,5 @@ export const supportedFilters = new Set<string>([
 export const maxGeneration = 65535;
 
 export type Rect = [ll_x: number, ll_y: number, ur_x: number, ur_y: number];
+export type Pair = [x: number, y: number];
+export type Matrix = [a: number, b: number, d: number, e: number, g: number, h: number];

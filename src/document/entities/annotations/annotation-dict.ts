@@ -2,13 +2,14 @@ import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { DateString } from "../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
-import { AppearanceDict, AppearanceState } from "../appearance/appearance-dict";
+import { AppearanceDict } from "../appearance/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
-import { AnnotationType, dictTypes, Rect } from "../../common/const";
+import { AnnotationType, dictTypes, Rect, valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { LiteralString } from "../common/literal-string";
+import { BorderArray } from "../appearance/border-array";
 
 export abstract class AnnotationDict extends PdfDict {
   /** User defined annotation id */
@@ -45,11 +46,11 @@ export abstract class AnnotationDict extends PdfDict {
   /** (Required if AP contains one or more subdictionaries; PDF1.2+)   
    * The annotation’s appearance state name, 
    * which selects the applicable appearance stream from an appearance subdictionary */
-  AS: AppearanceState;
+  AS: string;
 
   /** (Optional) An array specifying the characteristics of the annotation’s border.  
    * The border is specified as a rounded rectangle. [rx, ry, w, [dash gap]] */
-  Border: (number | number[])[] = [0, 0, 1];
+  Border: BorderArray = new BorderArray(0, 0, 1);
   /** (Optional; PDF1.2+) Specifies a border style dictionary 
    * that has more settings than the array specified for the Border entry. 
    * If an annotation dictionary includes the BS entry, then the Border entry is ignored
@@ -116,6 +117,15 @@ export abstract class AnnotationDict extends PdfDict {
               throw new Error("Can't parse /Subtype property value");
             }
             break;       
+          case "/Contents":
+            const contents = LiteralString.parse(parser, i);
+            if (contents) {
+              this.Contents = contents.value;
+              i = contents.end + 1;
+            } else {              
+              throw new Error("Can't parse /Contents property value");
+            }
+            break;
           case "/Rect":
             const rect = parser.parseNumberArrayAt(i, true);
             if (rect) {
@@ -140,7 +150,7 @@ export abstract class AnnotationDict extends PdfDict {
             }
             break;
           case "/NM":
-            const uniqueName = LiteralString.parse(parser, i, false);
+            const uniqueName = LiteralString.parse(parser, i);
             if (uniqueName) {
               this.NM = uniqueName.value;
               i = uniqueName.end + 1;
@@ -149,13 +159,13 @@ export abstract class AnnotationDict extends PdfDict {
             }
             break;
           case "/M":
-            const date = DateString.parse(parser, i, false);
+            const date = DateString.parse(parser, i);
             if (date) {
               this.M = date.value;
               i = date.end + 1;    
               break;      
             } else {   
-              const dateLiteral = LiteralString.parse(parser, i, false);
+              const dateLiteral = LiteralString.parse(parser, i);
               if (dateLiteral) {
                 this.M = dateLiteral.value;
                 i = dateLiteral.end + 1; 
@@ -190,13 +200,112 @@ export abstract class AnnotationDict extends PdfDict {
               throw new Error("Can't parse /StructParent property value");
             }
             break;
-
-          // TODO: handle remaining properties
           case "/Border":
-          case "/BS":
+            const borderArray = BorderArray.parse(parser, i);
+            if (borderArray) {
+              this.Border = borderArray.value;
+              i = borderArray.end + 1;
+            } else {              
+              throw new Error("Can't parse /Border property value");
+            }
+            break;
+          case "/BS":            
+            const bsEntryType = parser.getValueTypeAt(i);
+            if (bsEntryType === valueTypes.REF) {              
+              const bsDictId = ObjectId.parseRef(parser, i);
+              if (bsDictId && parseInfo.parseInfoGetter) {
+                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
+                if (bsParseInfo) {
+                  const bsDict = BorderStyleDict.parse(bsParseInfo);
+                  if (bsDict) {
+                    this.BS = bsDict.value;
+                    i = bsDict.end + 1;
+                    break;
+                  }
+                }
+              }              
+              throw new Error("Can't parse /BS value reference");
+            } else if (bsEntryType === valueTypes.DICTIONARY) { 
+              const bsDictBounds = parser.getDictBoundsAt(i); 
+              if (bsDictBounds) {
+                const bsDict = BorderStyleDict.parse({parser, bounds: bsDictBounds});
+                if (bsDict) {
+                  this.BS = bsDict.value;
+                  i = bsDict.end + 1;
+                  break;
+                }
+              }  
+              throw new Error("Can't parse /BS value dictionary");  
+            }
+            throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
           case "/BE":
-          case "/AP":
+            const beEntryType = parser.getValueTypeAt(i);
+            if (beEntryType === valueTypes.REF) {              
+              const bsDictId = ObjectId.parseRef(parser, i);
+              if (bsDictId && parseInfo.parseInfoGetter) {
+                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
+                if (bsParseInfo) {
+                  const bsDict = BorderEffectDict.parse(bsParseInfo);
+                  if (bsDict) {
+                    this.BE = bsDict.value;
+                    i = bsDict.end + 1;
+                    break;
+                  }
+                }
+              }              
+              throw new Error("Can't parse /BE value reference");
+            } else if (beEntryType === valueTypes.DICTIONARY) { 
+              const bsDictBounds = parser.getDictBoundsAt(i); 
+              if (bsDictBounds) {
+                const bsDict = BorderEffectDict.parse({parser, bounds: bsDictBounds});
+                if (bsDict) {
+                  this.BE = bsDict.value;
+                  i = bsDict.end + 1;
+                  break;
+                }
+              }  
+              throw new Error("Can't parse /BE value dictionary");  
+            }
+            throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
+          case "/AP":          
+            const apEntryType = parser.getValueTypeAt(i);
+            if (apEntryType === valueTypes.REF) {              
+              const apDictId = ObjectId.parseRef(parser, i);
+              if (apDictId && parseInfo.parseInfoGetter) {
+                const apParseInfo = parseInfo.parseInfoGetter(apDictId.value.id);
+                if (apParseInfo) {
+                  const apDict = AppearanceDict.parse(apParseInfo);
+                  if (apDict) {
+                    this.AP = apDict.value;
+                    i = apDict.end + 1;
+                    break;
+                  }
+                }
+              }              
+              throw new Error("Can't parse /AP value reference");
+            } else if (apEntryType === valueTypes.DICTIONARY) { 
+              const apDictBounds = parser.getDictBoundsAt(i); 
+              if (apDictBounds) {
+                const apDict = AppearanceDict.parse({parser, bounds: apDictBounds});
+                if (apDict) {
+                  this.AP = apDict.value;
+                  i = apDict.end + 1;
+                  break;
+                }
+              }  
+              throw new Error("Can't parse /AP value dictionary");  
+            }
+            throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
           case "/AS":
+            const stateName = parser.parseNameAt(i, true);
+            if (stateName) {
+              this.AS = stateName.value;
+              i = stateName.end + 1;
+            } else {              
+              throw new Error("Can't parse /AS property value");
+            }
+            break;
+          // TODO: handle remaining properties
           case "/OC":
           default:
             // skip to next name

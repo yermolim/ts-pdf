@@ -73,6 +73,7 @@ export class TrailerStream extends PdfStream {
   }
 
   toArray(): Uint8Array {
+    // TODO: implement
     return new Uint8Array();
   }
 

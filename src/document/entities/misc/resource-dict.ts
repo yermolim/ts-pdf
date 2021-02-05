@@ -1,25 +1,50 @@
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 
-export const borderEffects = {
-  NONE: "/S",
-  CLOUDY: "/C",
-};
-export type BorderEffect = typeof borderEffects[keyof typeof borderEffects];
-
-export class BorderEffectDict extends PdfDict {
-  /**(Optional) A name representing the border effect to apply */
-  S: BorderEffect = borderEffects.NONE;
-  /**(Optional; valid only if the value of S is C) 
-   * A number describing the intensity of the effect, in the range 0 to 2 */
-  L = 0;
+export class ResourceDict extends PdfDict {
+  /** 
+   * (Optional) A dictionary that maps resource names 
+   * to graphics state parameter dictionaries 
+   * */
+  ExtGState: PdfDict;
+  /** 
+   * (Optional) A dictionary that maps each resource name 
+   * to either the name of a device-dependent colour space 
+   * or an array describing a colour space
+   * */
+  ColorSpace: PdfDict;
+  /** 
+   * (Optional) A dictionary that maps resource names to pattern objects
+   * */
+  Pattern: PdfDict;
+  /** 
+   * (Optional; PDF 1.3+) A dictionary that maps resource names to shading dictionaries
+   * */
+  Shading: PdfDict;
+  /** 
+   * (Optional) A dictionary that maps resource names to external objects
+   * */
+  XObject: PdfDict;
+  /** 
+   * (Optional) A dictionary that maps resource names to font dictionaries
+   * */
+  Font: PdfDict;
+  /** 
+   * (Optional) An array of predefined procedure set names
+   * */
+  ProcSet: string[];
+  /** 
+   * (Optional; PDF 1.2+) A dictionary that maps resource names 
+   * to property list dictionaries for marked content
+   * */
+  Properties: PdfDict;
   
   constructor() {
     super(null);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<BorderEffectDict> {    
-    const trailer = new BorderEffectDict();
+  static parse(parseInfo: ParseInfo): ParseResult<ResourceDict> {    
+    const trailer = new ResourceDict();
     const parseResult = trailer.tryParseProps(parseInfo);
 
     return parseResult
@@ -58,24 +83,7 @@ export class BorderEffectDict extends PdfDict {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/S":
-            const style = parser.parseNameAt(i, true);
-            if (style && (<string[]>Object.values(borderEffects)).includes(style.value)) {
-              this.S = <BorderEffect>style.value;
-              i = style.end + 1;              
-            } else {              
-              throw new Error("Can't parse /S property value");
-            }
-            break;  
-          case "/L":
-            const intensity = parser.parseNumberAt(i, true);
-            if (intensity) {
-              this.L = Math.min(Math.max(0, intensity.value), 2);
-              i = intensity.end + 1;
-            } else {              
-              throw new Error("Can't parse /L property value");
-            }
-            break;
+          // TODO: add cases for all properties
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);
