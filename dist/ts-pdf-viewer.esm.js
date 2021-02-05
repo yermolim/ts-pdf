@@ -953,6 +953,11 @@ const flatePredictors = {
     PNG_PAETH: 14,
     PNG_OPTIMUM: 15,
 };
+const justificationTypes = {
+    LEFT: 0,
+    CENTER: 1,
+    RIGHT: 2,
+};
 const streamTypes = {
     XREF: "/XRef",
     OBJECT_STREAM: "/ObjStm",
@@ -989,10 +994,274 @@ const valueTypes = {
     REF: 10,
     COMMENT: 11,
 };
+const annotationTypes = {
+    TEXT: "/Text",
+    LINK: "/Link",
+    FREE_TEXT: "/FreeText",
+    LINE: "/Line",
+    SQUARE: "/Square",
+    CIRCLE: "/Circle",
+    POLYGON: "/Polygon",
+    POLYLINE: "/PolyLine",
+    HIGHLIGHT: "/Highlight",
+    UNDERLINE: "/Underline",
+    SQUIGGLY: "/Squiggly",
+    STRIKEOUT: "/StrikeOut",
+    STAMP: "/Stamp",
+    CARET: "/Caret",
+    INK: "/Ink",
+    POPUP: "/Popup",
+    FILE_ATTACHMENT: "/FileAttachment",
+    SOUND: "/Sound",
+    MOVIE: "/Movie",
+    WIDGET: "/Widget",
+    SCREEN: "/Screen",
+    PRINTER_MARK: "/PrinterMark",
+    TRAPNET: "/TrapNet",
+    WATERMARK: "/Watermark",
+    THREED: "/3D",
+    REDACT: "/Redact",
+};
+const annotationStateModelTypes = {
+    MARKED: "/Marked",
+    REVIEW: "/Review",
+};
+const annotationMarkedStates = {
+    MARKED: "/Marked",
+    UNMARKED: "/Unmarked",
+};
+const annotationReviewStates = {
+    ACCEPTED: "/Accepted",
+    REJECTED: "/Rejected",
+    CANCELLED: "/Cancelled",
+    COMPLETED: "/Completed",
+    NONE: "/None",
+};
+const annotationIconTypes = {
+    COMMENT: "/Comment",
+    KEY: "/Key",
+    NOTE: "/Note",
+    HELP: "/Help",
+    NEW_PARAGRAPH: "/NewParagraph",
+    PARAGRAPH: "/Paragraph",
+    INSERT: "/Insert",
+};
+const lineEndingTypes = {
+    SQUARE: "/Square",
+    CIRCLE: "/Circle",
+    DIAMOND: "/Diamond",
+    ARROW_OPEN: "/OpenArrow",
+    ARROW_CLOSED: "/ClosedArrow",
+    NONE: "/None",
+    BUTT: "/Butt",
+    ARROW_OPEN_R: "/ROpenArrow",
+    ARROW_CLOSED_R: "/RClosedArrow",
+    SLASH: "/Slash",
+};
 const supportedFilters = new Set([
     streamFilters.FLATE,
 ]);
 const maxGeneration = 65535;
+
+class LiteralString {
+    constructor(literal, bytes) {
+        this.literal = literal;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const bytes = [];
+        let i = start + 1;
+        let prevCode;
+        let code;
+        let opened = 0;
+        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+            if (!isNaN(code)) {
+                bytes.push(code);
+                prevCode = code;
+            }
+            code = parser.getCharCode(i++);
+            if (prevCode !== codes.BACKSLASH) {
+                if (code === codes.L_PARENTHESE) {
+                    opened += 1;
+                }
+                else if (opened && code === codes.R_PARENTHESE) {
+                    opened -= 1;
+                }
+            }
+        }
+        if (!bytes.length) {
+            return null;
+        }
+        const literal = LiteralString.fromBytes(LiteralString.unescape(new Uint8Array(bytes)));
+        return { value: literal, start: start, end: i - 1 };
+    }
+    static fromBytes(bytes) {
+        const decoder = bytes[0] === 254 && bytes[1] === 255
+            ? new TextDecoder("utf-16be")
+            : new TextDecoder();
+        const literal = decoder.decode(bytes);
+        return new LiteralString(literal, bytes);
+    }
+    static fromString(source) {
+        const bytes = [];
+        bytes.push(254, 255);
+        for (let i = 0; i < source.length; i++) {
+            const charCode = source.charCodeAt(i);
+            bytes.push((charCode & 0xFF00) >>> 8);
+            bytes.push(charCode & 0xFF);
+        }
+        const escapedBytes = LiteralString.escape(new Uint8Array(bytes));
+        return new LiteralString(source, escapedBytes);
+    }
+    static escape(bytes) {
+        const result = [];
+        for (let i = 0; i < bytes.length; i++) {
+            switch (bytes[i]) {
+                case codes.LINE_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.n);
+                    break;
+                case codes.CARRIAGE_RETURN:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.r);
+                    break;
+                case codes.HORIZONTAL_TAB:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.t);
+                    break;
+                case codes.BACKSPACE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.b);
+                    break;
+                case codes.FORM_FEED:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.f);
+                    break;
+                case codes.L_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.L_PARENTHESE);
+                    break;
+                case codes.R_PARENTHESE:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.R_PARENTHESE);
+                    break;
+                case codes.BACKSLASH:
+                    result.push(codes.BACKSLASH);
+                    result.push(codes.BACKSLASH);
+                    break;
+                default:
+                    result.push(bytes[i]);
+                    break;
+            }
+        }
+        return new Uint8Array(result);
+    }
+    static unescape(bytes) {
+        const result = [];
+        let escaped = false;
+        for (let i = 0; i < bytes.length; i++) {
+            if (escaped) {
+                switch (bytes[i]) {
+                    case codes.n:
+                        result.push(codes.LINE_FEED);
+                        break;
+                    case codes.r:
+                        result.push(codes.CARRIAGE_RETURN);
+                        break;
+                    case codes.t:
+                        result.push(codes.HORIZONTAL_TAB);
+                        break;
+                    case codes.b:
+                        result.push(codes.BACKSPACE);
+                        break;
+                    case codes.f:
+                        result.push(codes.FORM_FEED);
+                        break;
+                    case codes.L_PARENTHESE:
+                        result.push(codes.L_PARENTHESE);
+                        break;
+                    case codes.R_PARENTHESE:
+                        result.push(codes.R_PARENTHESE);
+                        break;
+                    case codes.BACKSLASH:
+                        result.push(codes.BACKSLASH);
+                        break;
+                    default:
+                        result.push(bytes[i]);
+                        break;
+                }
+                escaped = false;
+                continue;
+            }
+            if (bytes[i] === codes.BACKSLASH) {
+                escaped = true;
+                continue;
+            }
+            result.push(bytes[i]);
+        }
+        return new Uint8Array(result);
+    }
+    toArray(bracketed = false) {
+        return bracketed
+            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
+                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
+            : new Uint8Array(this.bytes);
+    }
+}
+
+class DateString {
+    constructor(source, date) {
+        this.source = source;
+        this.date = date;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+        if (end === -1) {
+            return null;
+        }
+        try {
+            const date = DateString.fromArray(parser.subCharCodes(start + 1, end - 1));
+            return { value: date, start, end };
+        }
+        catch (_a) {
+            return null;
+        }
+    }
+    static fromDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
+        return new DateString(source, date);
+    }
+    static fromString(source) {
+        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
+        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
+        return new DateString(source, date);
+    }
+    static fromArray(arr) {
+        const source = new TextDecoder().decode(arr);
+        return DateString.fromString(source);
+    }
+    toArray() {
+        return new TextEncoder().encode(this.source);
+    }
+}
 
 class ObjectId {
     constructor(id, generation) {
@@ -1067,6 +1336,1516 @@ class ObjectId {
     }
     toString() {
         return this.id + "|" + this.generation;
+    }
+}
+
+class PdfDict {
+    constructor(type) {
+        this._customProps = new Map();
+        this.Type = type;
+    }
+    get customProps() {
+        return new Map(this._customProps);
+    }
+    tryParseProps(parseInfo) {
+        if (!parseInfo) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Type":
+                        const type = parser.parseNameAt(i);
+                        if (type) {
+                            if (this.Type && this.Type !== type.value) {
+                                return false;
+                            }
+                            return true;
+                        }
+                        else {
+                            throw new Error("Can't parse /Type property value");
+                        }
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class FlateParamsDict extends PdfDict {
+    constructor() {
+        super(dictTypes.EMPTY);
+        this.Predictor = flatePredictors.NONE;
+        this.Colors = 1;
+        this.BitsPerComponent = 8;
+        this.Columns = 1;
+    }
+    static parse(parser, start, end) {
+        const dict = new FlateParamsDict();
+        let i = start + 2;
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Predictor":
+                        const predictor = parser.parseNumberAt(i, false);
+                        if (predictor) {
+                            dict.Predictor = predictor.value;
+                            i = predictor.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Colors property value");
+                        }
+                        break;
+                    case "/Colors":
+                        const colors = parser.parseNumberAt(i, false);
+                        if (colors) {
+                            dict.Colors = colors.value;
+                            i = colors.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Colors property value");
+                        }
+                        break;
+                    case "/BitsPerComponent":
+                        const bits = parser.parseNumberAt(i, false);
+                        if (bits) {
+                            dict.BitsPerComponent = bits.value;
+                            i = bits.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BitsPerComponent property value");
+                        }
+                        break;
+                    case "/Columns":
+                        const columns = parser.parseNumberAt(i, false);
+                        if (columns) {
+                            dict.Columns = columns.value;
+                            i = columns.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Columns property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return { value: dict, start, end };
+    }
+}
+
+class PdfObject {
+    constructor() {
+    }
+}
+
+class PdfStream extends PdfObject {
+    constructor(type = null) {
+        super();
+        this.Type = type;
+    }
+    tryParseProps(parseInfo) {
+        if (!parseInfo) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
+            direction: "reverse",
+            minIndex: start,
+            maxIndex: end,
+            closedOnly: true
+        });
+        if (!streamEndIndex) {
+            return false;
+        }
+        const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
+            direction: "reverse",
+            minIndex: start,
+            maxIndex: streamEndIndex.start - 1,
+            closedOnly: true
+        });
+        if (!streamStartIndex) {
+            return false;
+        }
+        const lastBeforeStream = streamStartIndex.start - 1;
+        let i = parser.skipToNextName(start, lastBeforeStream);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Type":
+                        const type = parser.parseNameAt(i);
+                        if (type) {
+                            if (this.Type && this.Type !== type.value) {
+                                return false;
+                            }
+                            i = type.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Type property value");
+                        }
+                        break;
+                    case "/Length":
+                        const length = parser.parseNumberAt(i, false);
+                        if (length) {
+                            this.Length = length.value;
+                            i = length.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Length property value");
+                        }
+                        break;
+                    case "/Filter":
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.NAME) {
+                            const filter = parser.parseNameAt(i);
+                            if (filter && supportedFilters.has(filter.value)) {
+                                this.Filter = filter.value;
+                                i = filter.end + 1;
+                                break;
+                            }
+                            else {
+                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+                            }
+                        }
+                        else if (entryType === valueTypes.ARRAY) {
+                            const filterNames = parser.parseNameArrayAt(i);
+                            if (filterNames) {
+                                const filterArray = filterNames.value;
+                                if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
+                                    this.Filter = filterArray[0];
+                                    i = filterNames.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                                }
+                            }
+                        }
+                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                    case "/DecodeParms":
+                        const decodeParamsBounds = parser.getDictBoundsAt(i);
+                        if (decodeParamsBounds) {
+                            const params = FlateParamsDict.parse(parser, decodeParamsBounds.start, decodeParamsBounds.end);
+                            if (params) {
+                                this.DecodeParms = params.value;
+                            }
+                            i = decodeParamsBounds.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DecodeParms property value");
+                        }
+                        break;
+                    case "/DL":
+                        const dl = parser.parseNumberAt(i, false);
+                        if (dl) {
+                            this.DL = dl.value;
+                            i = dl.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DL property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, lastBeforeStream);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
+        const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
+        const encodedData = parser.sliceCharCodes(streamStart, streamEnd);
+        if (!this.Length || this.Length !== encodedData.length) {
+            throw new Error("Incorrect stream length");
+        }
+        this.streamData = encodedData;
+        return true;
+    }
+}
+
+class TextStream extends PdfStream {
+    constructor(type = null) {
+        super(type);
+    }
+    static parse(parseInfo) {
+        const trailer = new TextStream();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    getText() {
+        return null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        return true;
+    }
+}
+
+const borderStyles = {
+    SOLID: "/S",
+    DASHED: "/D",
+    BEVELED: "/B",
+    INSET: "/I",
+    UNDERLINE: "/U",
+};
+class BorderStyleDict extends PdfDict {
+    constructor() {
+        super(dictTypes.BORDER_STYLE);
+        this.W = 1;
+        this.S = borderStyles.SOLID;
+        this.D = [3, 0];
+    }
+    static parse(parseInfo) {
+        const trailer = new BorderStyleDict();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        var _a, _b;
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/W":
+                        const width = parser.parseNumberAt(i, true);
+                        if (width) {
+                            this.W = width.value;
+                            i = width.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /W property value");
+                        }
+                        break;
+                    case "/S":
+                        const style = parser.parseNameAt(i, true);
+                        if (style && Object.values(borderStyles).includes(style.value)) {
+                            this.S = style.value;
+                            i = style.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /S property value");
+                        }
+                        break;
+                    case "/D":
+                        const dashGap = parser.parseNumberArrayAt(i, true);
+                        if (dashGap) {
+                            this.D = [
+                                (_a = dashGap.value[0]) !== null && _a !== void 0 ? _a : 3,
+                                (_b = dashGap.value[1]) !== null && _b !== void 0 ? _b : 0,
+                            ];
+                            i = dashGap.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /D property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class AppearanceSubDict extends PdfDict {
+    constructor() {
+        super(null);
+        this._customProps = new Map();
+    }
+    get customProps() {
+        return new Map(this._customProps);
+    }
+    static parse(parseInfo) {
+        const trailer = new AppearanceSubDict();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                const id = ObjectId.parseRef(parser, i);
+                if (id) {
+                    this._customProps.set(name, id.value);
+                    i = id.end + 1;
+                }
+                else {
+                    i = parser.skipToNextName(i, end - 1);
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class AppearanceDict extends PdfDict {
+    constructor() {
+        super(null);
+    }
+    static parse(parseInfo) {
+        const trailer = new AppearanceDict();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/N":
+                        const nEntryType = parser.getValueTypeAt(i);
+                        if (nEntryType === valueTypes.REF) {
+                            const nRefId = ObjectId.parseRef(parser, i);
+                            if (nRefId) {
+                                this.N = nRefId.value;
+                                i = nRefId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (nEntryType === valueTypes.DICTIONARY) {
+                            const nDictBounds = parser.getDictBoundsAt(i);
+                            if (nDictBounds) {
+                                const nSubDict = AppearanceSubDict.parse({ parser, bounds: nDictBounds });
+                                if (nSubDict) {
+                                    this.N = nSubDict.value;
+                                    i = nSubDict.end + 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /N property value type: ${nEntryType}`);
+                        }
+                        throw new Error("Can't parse /N property value");
+                    case "/R":
+                        const rEntryType = parser.getValueTypeAt(i);
+                        if (rEntryType === valueTypes.REF) {
+                            const rRefId = ObjectId.parseRef(parser, i);
+                            if (rRefId) {
+                                this.R = rRefId.value;
+                                i = rRefId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (rEntryType === valueTypes.DICTIONARY) {
+                            const rDictBounds = parser.getDictBoundsAt(i);
+                            if (rDictBounds) {
+                                const rSubDict = AppearanceSubDict.parse({ parser, bounds: rDictBounds });
+                                if (rSubDict) {
+                                    this.R = rSubDict.value;
+                                    i = rSubDict.end + 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /R property value type: ${rEntryType}`);
+                        }
+                        throw new Error("Can't parse /R property value");
+                    case "/D":
+                        const dEntryType = parser.getValueTypeAt(i);
+                        if (dEntryType === valueTypes.REF) {
+                            const dRefId = ObjectId.parseRef(parser, i);
+                            if (dRefId) {
+                                this.D = dRefId.value;
+                                i = dRefId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (dEntryType === valueTypes.DICTIONARY) {
+                            const dDictBounds = parser.getDictBoundsAt(i);
+                            if (dDictBounds) {
+                                const dSubDict = AppearanceSubDict.parse({ parser, bounds: dDictBounds });
+                                if (dSubDict) {
+                                    this.D = dSubDict.value;
+                                    i = dSubDict.end + 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /D property value type: ${dEntryType}`);
+                        }
+                        throw new Error("Can't parse /D property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.N) {
+            return false;
+        }
+        return true;
+    }
+}
+
+const borderEffects = {
+    NONE: "/S",
+    CLOUDY: "/C",
+};
+class BorderEffectDict extends PdfDict {
+    constructor() {
+        super(null);
+        this.S = borderEffects.NONE;
+        this.L = 0;
+    }
+    static parse(parseInfo) {
+        const trailer = new BorderEffectDict();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/S":
+                        const style = parser.parseNameAt(i, true);
+                        if (style && Object.values(borderEffects).includes(style.value)) {
+                            this.S = style.value;
+                            i = style.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /S property value");
+                        }
+                        break;
+                    case "/L":
+                        const intensity = parser.parseNumberAt(i, true);
+                        if (intensity) {
+                            this.L = Math.min(Math.max(0, intensity.value), 2);
+                            i = intensity.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /L property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class BorderArray {
+    constructor(hCornerR, vCornerR, width, dash, gap) {
+        this.hCornerR = hCornerR !== null && hCornerR !== void 0 ? hCornerR : 0;
+        this.vCornerR = vCornerR !== null && vCornerR !== void 0 ? vCornerR : 0;
+        this.width = width !== null && width !== void 0 ? width : 1;
+        this.dash = dash !== null && dash !== void 0 ? dash : 3;
+        this.gap = gap !== null && gap !== void 0 ? gap : 0;
+    }
+    static parse(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.findRegularIndex("straight", start);
+        }
+        if (start < 0 || start > parser.maxIndex
+            || parser.getCharCode(start) !== codes.L_BRACKET) {
+            return null;
+        }
+        const hCornerR = parser.parseNumberAt(start + 1);
+        if (!hCornerR || isNaN(hCornerR.value)) {
+            return null;
+        }
+        const vCornerR = parser.parseNumberAt(hCornerR.end + 2);
+        if (!vCornerR || isNaN(vCornerR.value)) {
+            return null;
+        }
+        const width = parser.parseNumberAt(vCornerR.end + 2);
+        if (!width || isNaN(width.value)) {
+            return null;
+        }
+        const next = parser.findNonSpaceIndex("straight", width.end + 1);
+        if (!next) {
+            return null;
+        }
+        else if (parser.getCharCode(next) === codes.R_BRACKET) {
+            return {
+                value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
+                start,
+                end: next,
+            };
+        }
+        else if (parser.getCharCode(next) === codes.L_BRACKET) {
+            const dash = parser.parseNumberAt(next + 1);
+            if (!dash || isNaN(dash.value)) {
+                return null;
+            }
+            const gap = parser.parseNumberAt(dash.end + 2);
+            if (!gap || isNaN(gap.value)) {
+                return null;
+            }
+            const dashEnd = parser.findNonSpaceIndex("straight", gap.end + 1);
+            if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
+                return null;
+            }
+            const arrayEnd = parser.findNonSpaceIndex("straight", dashEnd + 1);
+            if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
+                return null;
+            }
+            return {
+                value: new BorderArray(hCornerR.value, vCornerR.value, width.value, dash.value, gap.value),
+                start,
+                end: arrayEnd,
+            };
+        }
+        return null;
+    }
+    toArray() {
+        const source = this.dash && this.gap
+            ? `[${this.hCornerR} ${this.vCornerR} ${this.width}]`
+            : `[${this.hCornerR} ${this.vCornerR} ${this.width} [${this.dash} ${this.gap}]]`;
+        return new TextEncoder().encode(source);
+    }
+}
+
+class AnnotationDict extends PdfDict {
+    constructor(subType) {
+        super(dictTypes.ANNOTATION);
+        this.F = 0;
+        this.Border = new BorderArray(0, 0, 1);
+        this.Subtype = subType;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = parser.parseNameAt(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                return false;
+                            }
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/Contents":
+                        const contents = LiteralString.parse(parser, i);
+                        if (contents) {
+                            this.Contents = contents.value;
+                            i = contents.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Contents property value");
+                        }
+                        break;
+                    case "/Rect":
+                        const rect = parser.parseNumberArrayAt(i, true);
+                        if (rect) {
+                            this.Rect = [
+                                rect.value[0],
+                                rect.value[1],
+                                rect.value[2],
+                                rect.value[3],
+                            ];
+                            i = rect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Rect property value");
+                        }
+                        break;
+                    case "/P":
+                        const pageId = ObjectId.parseRef(parser, i);
+                        if (pageId) {
+                            this.P = pageId.value;
+                            i = pageId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /P property value");
+                        }
+                        break;
+                    case "/NM":
+                        const uniqueName = LiteralString.parse(parser, i);
+                        if (uniqueName) {
+                            this.NM = uniqueName.value;
+                            i = uniqueName.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /NM property value");
+                        }
+                        break;
+                    case "/M":
+                        const date = DateString.parse(parser, i);
+                        if (date) {
+                            this.M = date.value;
+                            i = date.end + 1;
+                            break;
+                        }
+                        else {
+                            const dateLiteral = LiteralString.parse(parser, i);
+                            if (dateLiteral) {
+                                this.M = dateLiteral.value;
+                                i = dateLiteral.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /M property value");
+                    case "/F":
+                        const flags = parser.parseNumberAt(i, false);
+                        if (flags) {
+                            this.F = flags.value;
+                            i = flags.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /F property value");
+                        }
+                        break;
+                    case "/C":
+                        const color = parser.parseNumberArrayAt(i, true);
+                        if (color) {
+                            this.C = color.value;
+                            i = color.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /C property value");
+                        }
+                        break;
+                    case "/StructParent":
+                        const structureKey = parser.parseNumberAt(i, false);
+                        if (structureKey) {
+                            this.StructParent = structureKey.value;
+                            i = structureKey.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StructParent property value");
+                        }
+                        break;
+                    case "/Border":
+                        const borderArray = BorderArray.parse(parser, i);
+                        if (borderArray) {
+                            this.Border = borderArray.value;
+                            i = borderArray.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Border property value");
+                        }
+                        break;
+                    case "/BS":
+                        const bsEntryType = parser.getValueTypeAt(i);
+                        if (bsEntryType === valueTypes.REF) {
+                            const bsDictId = ObjectId.parseRef(parser, i);
+                            if (bsDictId && parseInfo.parseInfoGetter) {
+                                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
+                                if (bsParseInfo) {
+                                    const bsDict = BorderStyleDict.parse(bsParseInfo);
+                                    if (bsDict) {
+                                        this.BS = bsDict.value;
+                                        i = bsDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /BS value reference");
+                        }
+                        else if (bsEntryType === valueTypes.DICTIONARY) {
+                            const bsDictBounds = parser.getDictBoundsAt(i);
+                            if (bsDictBounds) {
+                                const bsDict = BorderStyleDict.parse({ parser, bounds: bsDictBounds });
+                                if (bsDict) {
+                                    this.BS = bsDict.value;
+                                    i = bsDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /BS value dictionary");
+                        }
+                        throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
+                    case "/BE":
+                        const beEntryType = parser.getValueTypeAt(i);
+                        if (beEntryType === valueTypes.REF) {
+                            const bsDictId = ObjectId.parseRef(parser, i);
+                            if (bsDictId && parseInfo.parseInfoGetter) {
+                                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
+                                if (bsParseInfo) {
+                                    const bsDict = BorderEffectDict.parse(bsParseInfo);
+                                    if (bsDict) {
+                                        this.BE = bsDict.value;
+                                        i = bsDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /BE value reference");
+                        }
+                        else if (beEntryType === valueTypes.DICTIONARY) {
+                            const bsDictBounds = parser.getDictBoundsAt(i);
+                            if (bsDictBounds) {
+                                const bsDict = BorderEffectDict.parse({ parser, bounds: bsDictBounds });
+                                if (bsDict) {
+                                    this.BE = bsDict.value;
+                                    i = bsDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /BE value dictionary");
+                        }
+                        throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
+                    case "/AP":
+                        const apEntryType = parser.getValueTypeAt(i);
+                        if (apEntryType === valueTypes.REF) {
+                            const apDictId = ObjectId.parseRef(parser, i);
+                            if (apDictId && parseInfo.parseInfoGetter) {
+                                const apParseInfo = parseInfo.parseInfoGetter(apDictId.value.id);
+                                if (apParseInfo) {
+                                    const apDict = AppearanceDict.parse(apParseInfo);
+                                    if (apDict) {
+                                        this.AP = apDict.value;
+                                        i = apDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /AP value reference");
+                        }
+                        else if (apEntryType === valueTypes.DICTIONARY) {
+                            const apDictBounds = parser.getDictBoundsAt(i);
+                            if (apDictBounds) {
+                                const apDict = AppearanceDict.parse({ parser, bounds: apDictBounds });
+                                if (apDict) {
+                                    this.AP = apDict.value;
+                                    i = apDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /AP value dictionary");
+                        }
+                        throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
+                    case "/AS":
+                        const stateName = parser.parseNameAt(i, true);
+                        if (stateName) {
+                            this.AS = stateName.value;
+                            i = stateName.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /AS property value");
+                        }
+                        break;
+                    case "/OC":
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Subtype || !this.Rect) {
+            return false;
+        }
+        return true;
+    }
+}
+
+const markupAnnotationReplyTypes = {
+    REPLY: "/R",
+    GROUP: "/Group",
+};
+class MarkupAnnotation extends AnnotationDict {
+    constructor(subType) {
+        super(subType);
+        this.RT = markupAnnotationReplyTypes.REPLY;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/T":
+                        const title = LiteralString.parse(parser, i);
+                        if (title) {
+                            this.T = title.value;
+                            i = title.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /T property value");
+                        }
+                        break;
+                    case "/Popup":
+                        const popupId = ObjectId.parseRef(parser, i);
+                        if (popupId) {
+                            this.Popup = popupId.value;
+                            i = popupId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Popup property value");
+                        }
+                        break;
+                    case "/RC":
+                        const rcEntryType = parser.getValueTypeAt(i);
+                        if (rcEntryType === valueTypes.REF) {
+                            const rsObjectId = ObjectId.parseRef(parser, i);
+                            if (rsObjectId && parseInfo.parseInfoGetter) {
+                                const rcParseInfo = parseInfo.parseInfoGetter(rsObjectId.value.id);
+                                if (rcParseInfo) {
+                                    const rcObjectType = rcParseInfo.type
+                                        || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
+                                    if (rcObjectType === valueTypes.STRING_LITERAL) {
+                                        const popupTextFromIndirectLiteral = LiteralString
+                                            .parse(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
+                                        if (popupTextFromIndirectLiteral) {
+                                            this.RC = popupTextFromIndirectLiteral.value;
+                                            i = rsObjectId.end + 1;
+                                            break;
+                                        }
+                                    }
+                                    else if (rcObjectType === valueTypes.DICTIONARY) {
+                                        const popupTextStream = TextStream.parse(rcParseInfo);
+                                        if (popupTextStream) {
+                                            const popupTextFromStream = popupTextStream.value.getText();
+                                            this.RC = LiteralString.fromString(popupTextFromStream);
+                                            i = rsObjectId.end + 1;
+                                            break;
+                                        }
+                                    }
+                                    else {
+                                        throw new Error(`Unsupported /RC property value type: ${rcObjectType}`);
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /RC value reference");
+                        }
+                        else if (rcEntryType === valueTypes.STRING_LITERAL) {
+                            const popupTextFromLiteral = LiteralString.parse(parser, i);
+                            if (popupTextFromLiteral) {
+                                this.RC = popupTextFromLiteral.value;
+                                i = popupTextFromLiteral.end + 1;
+                                break;
+                            }
+                            throw new Error("Can't parse /RC property value");
+                        }
+                        throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
+                    case "/CA":
+                        const opacity = parser.parseNumberAt(i, true);
+                        if (opacity) {
+                            this.CA = opacity.value;
+                            i = opacity.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CA property value");
+                        }
+                        break;
+                    case "/CreationDate":
+                        const date = DateString.parse(parser, i);
+                        if (date) {
+                            this.CreationDate = date.value;
+                            i = date.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CreationDate property value");
+                        }
+                        break;
+                    case "/Subj":
+                        const subject = LiteralString.parse(parser, i);
+                        if (subject) {
+                            this.Subj = subject.value;
+                            i = subject.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subj property value");
+                        }
+                        break;
+                    case "/IRT":
+                        const refId = ObjectId.parseRef(parser, i);
+                        if (refId) {
+                            this.IRT = refId.value;
+                            i = refId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /IRT property value");
+                        }
+                        break;
+                    case "/RT":
+                        const replyType = parser.parseNameAt(i, true);
+                        if (replyType && Object.values(markupAnnotationReplyTypes)
+                            .includes(replyType.value)) {
+                            this.RT = replyType.value;
+                            i = replyType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RT property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i);
+                        if (intent) {
+                            this.IT = intent.value;
+                            i = intent.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /IT property value");
+                        }
+                        break;
+                    case "/ExData":
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Subtype || !this.Rect) {
+            return false;
+        }
+        return true;
+    }
+}
+
+const freeTextIntents = {
+    PLAIN_TEXT: "/FreeText",
+    WITH_CALLOUT: "/FreeTextCallout",
+    CLICK_TO_TYPE: "/FreeTextTypeWriter",
+};
+class FreeTextAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.FREE_TEXT);
+        this.IT = freeTextIntents.PLAIN_TEXT;
+        this.LE = lineEndingTypes.NONE;
+    }
+    static parse(parseInfo) {
+        const trailer = new FreeTextAnnotation();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/DA":
+                        const appearanceString = LiteralString.parse(parser, i);
+                        if (appearanceString) {
+                            this.DA = appearanceString.value;
+                            i = appearanceString.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DA property value");
+                        }
+                        break;
+                    case "/Q":
+                        const justification = parser.parseNumberAt(i, true);
+                        if (justification && Object.values(justificationTypes)
+                            .includes(justification.value)) {
+                            this.Q = justification.value;
+                            i = justification.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Q property value");
+                        }
+                        break;
+                    case "/DS":
+                        const style = LiteralString.parse(parser, i);
+                        if (style) {
+                            this.DS = style.value;
+                            i = style.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DS property value");
+                        }
+                        break;
+                    case "/CL":
+                        const callout = parser.parseNumberArrayAt(i, true);
+                        if (callout) {
+                            this.CL = callout.value;
+                            i = callout.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CL property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (intent.value === "/FreeTextTypewriter") {
+                                this.IT = freeTextIntents.CLICK_TO_TYPE;
+                                i = intent.end + 1;
+                                break;
+                            }
+                            else if (Object.values(freeTextIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/RD":
+                        const innerRect = parser.parseNumberArrayAt(i, true);
+                        if (innerRect) {
+                            this.RD = [
+                                innerRect.value[0],
+                                innerRect.value[1],
+                                innerRect.value[2],
+                                innerRect.value[3],
+                            ];
+                            i = innerRect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RD property value");
+                        }
+                        break;
+                    case "/LE":
+                        const lineEndingType = parser.parseNameAt(i, true);
+                        if (lineEndingType && Object.values(lineEndingTypes)
+                            .includes(lineEndingType.value)) {
+                            this.LE = lineEndingType.value;
+                            i = lineEndingType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.DA) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class InkAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.INK);
+    }
+    static parse(parseInfo) {
+        const trailer = new InkAnnotation();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        var _a;
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/InkList":
+                        const isArray = parser.getValueTypeAt(i);
+                        if (isArray) {
+                            const inkList = [];
+                            let inkSubList;
+                            let inkArrayPos = i++;
+                            while (true) {
+                                inkSubList = parser.parseNumberArrayAt(inkArrayPos);
+                                if (!inkSubList) {
+                                    break;
+                                }
+                                inkList.push(inkSubList.value);
+                                inkArrayPos = inkSubList.end + 1;
+                            }
+                            this.InkList = inkList;
+                            break;
+                        }
+                        throw new Error("Can't parse /InkList property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+const stampTypes = {
+    DRAFT: "/Draft",
+    NOT_APPROVED: "/NotApproved",
+    APPROVED: "/Approved",
+    AS_IS: "/AsIs",
+    FOR_COMMENT: "/ForComment",
+    EXPERIMENTAL: "/Experimental",
+    FINAL: "/Final",
+    SOLD: "/Sold",
+    EXPIRED: "/Expired",
+    PUBLIC: "/ForPublicRelease",
+    NOT_PUBLIC: "/NotForPublicRelease",
+    DEPARTMENTAL: "/Departmental",
+    CONFIDENTIAL: "/Confidential",
+    SECRET: "/TopSecret",
+};
+class StampAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.STAMP);
+        this.Name = stampTypes.DRAFT;
+    }
+    static parse(parseInfo) {
+        const trailer = new StampAnnotation();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Name":
+                        const type = parser.parseNameAt(i, true);
+                        if (type && Object.values(stampTypes).includes(type.value)) {
+                            this.Name = type.value;
+                            i = type.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Name property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Name) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class TextAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.TEXT);
+        this.Open = false;
+    }
+    static parse(parseInfo) {
+        const trailer = new TextAnnotation();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Open":
+                        const opened = parser.parseBoolAt(i, true);
+                        if (opened) {
+                            this.Open = opened.value;
+                            i = opened.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Open property value");
+                        }
+                        break;
+                    case "/Name":
+                        const iconType = parser.parseNameAt(i, true);
+                        if (iconType && Object.values(annotationIconTypes)
+                            .includes(iconType.value)) {
+                            this.Name = iconType.value;
+                            i = iconType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Name property value");
+                        }
+                        break;
+                    case "/State":
+                        const state = parser.parseNameAt(i, true);
+                        if (state && Object.values(annotationMarkedStates)
+                            .concat(Object.values(annotationReviewStates))
+                            .includes(state.value)) {
+                            this.State = state.value;
+                            i = state.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /State property value");
+                        }
+                        break;
+                    case "/StateModel":
+                        const stateModelType = parser.parseNameAt(i, true);
+                        if (stateModelType && Object.values(annotationStateModelTypes)
+                            .includes(stateModelType.value)) {
+                            this.StateModel = stateModelType.value;
+                            i = stateModelType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StateModel property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
     }
 }
 
@@ -2256,412 +4035,6 @@ class HexString {
     }
 }
 
-class LiteralString {
-    constructor(literal, bytes) {
-        this.literal = literal;
-        this.bytes = bytes;
-    }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const bytes = [];
-        let i = start + 1;
-        let prevCode;
-        let code;
-        let opened = 0;
-        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-            if (code) {
-                bytes.push(code);
-                prevCode = code;
-            }
-            code = parser.getCharCode(i++);
-            if (prevCode !== codes.BACKSLASH) {
-                if (code === codes.L_PARENTHESE) {
-                    opened += 1;
-                }
-                else if (opened && code === codes.R_PARENTHESE) {
-                    opened -= 1;
-                }
-            }
-        }
-        if (!bytes.length) {
-            return null;
-        }
-        const literal = LiteralString.fromBytes(new Uint8Array(bytes));
-        return { value: literal, start: start, end: i - 1 };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
-        return new LiteralString(literal, bytes);
-    }
-    static fromString(source) {
-        const bytes = LiteralString.escape(new TextEncoder().encode(source));
-        return new LiteralString(source, bytes);
-    }
-    static escape(bytes) {
-        const result = [];
-        for (let i = 0; i < bytes.length; i++) {
-            switch (bytes[i]) {
-                case codes.LINE_FEED:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.n);
-                    break;
-                case codes.CARRIAGE_RETURN:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.r);
-                    break;
-                case codes.HORIZONTAL_TAB:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.t);
-                    break;
-                case codes.BACKSPACE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.b);
-                    break;
-                case codes.FORM_FEED:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.f);
-                    break;
-                case codes.L_PARENTHESE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.L_PARENTHESE);
-                    break;
-                case codes.R_PARENTHESE:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.R_PARENTHESE);
-                    break;
-                case codes.BACKSLASH:
-                    result.push(codes.BACKSLASH);
-                    result.push(codes.BACKSLASH);
-                    break;
-                default:
-                    result.push(bytes[i]);
-                    break;
-            }
-        }
-        return new Uint8Array(result);
-    }
-    static unescape(bytes) {
-        const result = [];
-        let escaped = false;
-        for (let i = 0; i < bytes.length; i++) {
-            if (escaped) {
-                switch (bytes[i]) {
-                    case codes.n:
-                        result.push(codes.LINE_FEED);
-                        break;
-                    case codes.r:
-                        result.push(codes.CARRIAGE_RETURN);
-                        break;
-                    case codes.t:
-                        result.push(codes.HORIZONTAL_TAB);
-                        break;
-                    case codes.b:
-                        result.push(codes.BACKSPACE);
-                        break;
-                    case codes.f:
-                        result.push(codes.FORM_FEED);
-                        break;
-                    case codes.L_PARENTHESE:
-                        result.push(codes.L_PARENTHESE);
-                        break;
-                    case codes.R_PARENTHESE:
-                        result.push(codes.R_PARENTHESE);
-                        break;
-                    case codes.BACKSLASH:
-                        result.push(codes.BACKSLASH);
-                        break;
-                    default:
-                        result.push(bytes[i]);
-                        break;
-                }
-                escaped = false;
-                continue;
-            }
-            if (bytes[i] === codes.BACKSLASH) {
-                escaped = true;
-                continue;
-            }
-            result.push(bytes[i]);
-        }
-        return new Uint8Array(result);
-    }
-    toArray(bracketed = false) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
-                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
-            : new Uint8Array(this.bytes);
-    }
-}
-
-class PdfDict {
-    constructor(type) {
-        this._customProps = new Map();
-        this.Type = type;
-    }
-    get customProps() {
-        return new Map(this._customProps);
-    }
-    tryParseProps(parseInfo) {
-        if (!parseInfo) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Type":
-                        const type = parser.parseNameAt(i);
-                        if (type) {
-                            if (this.Type && this.Type !== type.value) {
-                                return false;
-                            }
-                            return true;
-                        }
-                        else {
-                            throw new Error("Can't parse /Type property value");
-                        }
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class FlateParamsDict extends PdfDict {
-    constructor() {
-        super(dictTypes.EMPTY);
-        this.Predictor = flatePredictors.NONE;
-        this.Colors = 1;
-        this.BitsPerComponent = 8;
-        this.Columns = 1;
-    }
-    static parse(parser, start, end) {
-        const dict = new FlateParamsDict();
-        let i = start + 2;
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Predictor":
-                        const predictor = parser.parseNumberAt(i, false);
-                        if (predictor) {
-                            dict.Predictor = predictor.value;
-                            i = predictor.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Colors property value");
-                        }
-                        break;
-                    case "/Colors":
-                        const colors = parser.parseNumberAt(i, false);
-                        if (colors) {
-                            dict.Colors = colors.value;
-                            i = colors.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Colors property value");
-                        }
-                        break;
-                    case "/BitsPerComponent":
-                        const bits = parser.parseNumberAt(i, false);
-                        if (bits) {
-                            dict.BitsPerComponent = bits.value;
-                            i = bits.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BitsPerComponent property value");
-                        }
-                        break;
-                    case "/Columns":
-                        const columns = parser.parseNumberAt(i, false);
-                        if (columns) {
-                            dict.Columns = columns.value;
-                            i = columns.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Columns property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return { value: dict, start, end };
-    }
-}
-
-class PdfObject {
-    constructor() {
-    }
-}
-
-class PdfStream extends PdfObject {
-    constructor(type = null) {
-        super();
-        this.Type = type;
-    }
-    tryParseProps(parseInfo) {
-        if (!parseInfo) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
-            direction: "reverse",
-            minIndex: start,
-            maxIndex: end,
-            closedOnly: true
-        });
-        if (!streamEndIndex) {
-            return false;
-        }
-        const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
-            direction: "reverse",
-            minIndex: start,
-            maxIndex: streamEndIndex.start - 1,
-            closedOnly: true
-        });
-        if (!streamStartIndex) {
-            return false;
-        }
-        const lastBeforeStream = streamStartIndex.start - 1;
-        let i = parser.skipToNextName(start, lastBeforeStream);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Type":
-                        const type = parser.parseNameAt(i);
-                        if (type) {
-                            if (this.Type && this.Type !== type.value) {
-                                return false;
-                            }
-                            i = type.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Type property value");
-                        }
-                        break;
-                    case "/Length":
-                        const length = parser.parseNumberAt(i, false);
-                        if (length) {
-                            this.Length = length.value;
-                            i = length.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Length property value");
-                        }
-                        break;
-                    case "/Filter":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.NAME) {
-                            const filter = parser.parseNameAt(i);
-                            if (filter && supportedFilters.has(filter.value)) {
-                                this.Filter = filter.value;
-                                i = filter.end + 1;
-                                break;
-                            }
-                            else {
-                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
-                            }
-                        }
-                        else if (entryType === valueTypes.ARRAY) {
-                            const filterNames = parser.parseNameArrayAt(i);
-                            if (filterNames) {
-                                const filterArray = filterNames.value;
-                                if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
-                                    this.Filter = filterArray[0];
-                                    i = filterNames.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
-                                }
-                            }
-                        }
-                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                    case "/DecodeParms":
-                        const decodeParamsBounds = parser.getDictBoundsAt(i);
-                        if (decodeParamsBounds) {
-                            const params = FlateParamsDict.parse(parser, decodeParamsBounds.start, decodeParamsBounds.end);
-                            if (params) {
-                                this.DecodeParms = params.value;
-                            }
-                            i = decodeParamsBounds.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /DecodeParms property value");
-                        }
-                        break;
-                    case "/DL":
-                        const dl = parser.parseNumberAt(i, false);
-                        if (dl) {
-                            this.DL = dl.value;
-                            i = dl.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /DL property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, lastBeforeStream);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
-        const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
-        const encodedData = parser.sliceCharCodes(streamStart, streamEnd);
-        if (!this.Length || this.Length !== encodedData.length) {
-            throw new Error("Incorrect stream length");
-        }
-        this.streamData = encodedData;
-        return true;
-    }
-}
-
 class ObjectStream extends PdfStream {
     constructor() {
         super(streamTypes.OBJECT_STREAM);
@@ -2899,54 +4272,6 @@ class CatalogDict extends PdfDict {
             return false;
         }
         return true;
-    }
-}
-
-class DateString {
-    constructor(source, date) {
-        this.source = source;
-        this.date = date;
-    }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
-        if (end === -1) {
-            return null;
-        }
-        try {
-            const date = DateString.fromArray(parser.subCharCodes(start + 1, end - 1));
-            return { value: date, start, end };
-        }
-        catch (_a) {
-            return null;
-        }
-    }
-    static fromDate(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const seconds = String(date.getSeconds()).padStart(2, "0");
-        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
-        return new DateString(source, date);
-    }
-    static fromString(source) {
-        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
-        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
-        return new DateString(source, date);
-    }
-    static fromArray(arr) {
-        const source = new TextDecoder().decode(arr);
-        return DateString.fromString(source);
-    }
-    toArray() {
-        return new TextEncoder().encode(this.source);
     }
 }
 
@@ -3785,7 +5110,6 @@ class DocumentData {
         }
     }
     parse() {
-        var _a;
         this.reset();
         const xrefs = this.parseAllXrefs();
         if (!xrefs.length) {
@@ -3808,25 +5132,8 @@ class DocumentData {
         console.log(this._catalog);
         console.log(this._pageRoot);
         console.log(this._pages);
-        const annotationIds = [];
-        for (const page of this._pages) {
-            if (!page.Annots) {
-                return;
-            }
-            if (Array.isArray(page.Annots)) {
-                annotationIds.push(...page.Annots);
-            }
-            else {
-                const parseInfo = this.getObjectParseInfo(page.Annots.id);
-                if ((parseInfo === null || parseInfo === void 0 ? void 0 : parseInfo.type) === objectTypes.ARRAY) {
-                    const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.start);
-                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
-                        annotationIds.push(...annotationRefs.value);
-                    }
-                }
-            }
-        }
-        console.log(annotationIds);
+        this.parseSupportedAnnotations();
+        console.log(this._annotations);
     }
     reset() {
         this._xrefs = null;
@@ -3930,6 +5237,60 @@ class DocumentData {
         }
     }
     ;
+    parseSupportedAnnotations() {
+        var _a;
+        const annotationIds = [];
+        for (const page of this._pages) {
+            if (!page.Annots) {
+                break;
+            }
+            if (Array.isArray(page.Annots)) {
+                annotationIds.push(...page.Annots);
+            }
+            else {
+                const parseInfo = this.getObjectParseInfo(page.Annots.id);
+                if (parseInfo) {
+                    const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
+                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
+                        annotationIds.push(...annotationRefs.value);
+                    }
+                }
+            }
+        }
+        const annotations = [];
+        for (const objectId of annotationIds) {
+            const info = this.getObjectParseInfo(objectId.id);
+            const annotationType = info.parser.parseDictSubtype(info.bounds);
+            let annot;
+            switch (annotationType) {
+                case annotationTypes.INK:
+                    annot = InkAnnotation.parse(info);
+                    if (annot) {
+                        annotations.push(annot.value);
+                    }
+                    break;
+                case annotationTypes.FREE_TEXT:
+                    annot = FreeTextAnnotation.parse(info);
+                    if (annot) {
+                        annotations.push(annot.value);
+                    }
+                    break;
+                case annotationTypes.STAMP:
+                    annot = StampAnnotation.parse(info);
+                    if (annot) {
+                        annotations.push(annot.value);
+                    }
+                    break;
+                case annotationTypes.TEXT:
+                    annot = TextAnnotation.parse(info);
+                    if (annot) {
+                        annotations.push(annot.value);
+                    }
+                    break;
+            }
+        }
+        this._annotations = annotations;
+    }
 }
 
 class AnnotationEditor {

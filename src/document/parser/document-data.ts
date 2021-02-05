@@ -1,5 +1,10 @@
 import { keywordCodes } from "../common/codes";
-import { dictTypes, objectTypes } from "../common/const";
+import { annotationTypes, dictTypes, objectTypes } from "../common/const";
+import { AnnotationDict } from "../entities/annotations/annotation-dict";
+import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-annotation";
+import { InkAnnotation } from "../entities/annotations/markup/ink-annotation";
+import { StampAnnotation } from "../entities/annotations/markup/stamp-annotation";
+import { TextAnnotation } from "../entities/annotations/markup/text-annotation";
 import { ObjectId } from "../entities/common/object-id";
 import { ObjectStream } from "../entities/streams/object-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
@@ -9,7 +14,7 @@ import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
-import { DataParser, ParseInfo } from "./data-parser";
+import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { ReferenceData } from "./reference-data";
 
 export class DocumentData {
@@ -23,6 +28,8 @@ export class DocumentData {
   private _catalog: CatalogDict;
   private _pageRoot: PageTreeDict;
   private _pages: PageDict[];
+
+  private _annotations: AnnotationDict[];
 
   get size(): number {
     if (this._xrefs?.length) {
@@ -67,26 +74,9 @@ export class DocumentData {
     console.log(this._pageRoot); 
     console.log(this._pages);  
 
-    const annotationIds: ObjectId[] = [];
-    for (const page of this._pages) {
-      if (!page.Annots) {
-        return;
-      }
-      if (Array.isArray(page.Annots)) {
-        annotationIds.push(...page.Annots);
-      } else {
-        const parseInfo = this.getObjectParseInfo(page.Annots.id);
-        if (parseInfo?.type === objectTypes.ARRAY) {
-          const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
-            parseInfo.bounds.start);
-          if (annotationRefs?.value?.length) {
-            annotationIds.push(...annotationRefs.value);
-          }
-        }        
-      }
-    }
+    this.parseSupportedAnnotations();
 
-    console.log(annotationIds);
+    console.log(this._annotations);
   }
 
   reset() {    
@@ -199,6 +189,65 @@ export class DocumentData {
     }
   };  
 
+  private parseSupportedAnnotations() {
+    const annotationIds: ObjectId[] = [];
+
+    for (const page of this._pages) {
+      if (!page.Annots) {
+        break;
+      }
+      if (Array.isArray(page.Annots)) {
+        annotationIds.push(...page.Annots);
+      } else {
+        const parseInfo = this.getObjectParseInfo(page.Annots.id);
+        if (parseInfo) {
+          const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
+            parseInfo.bounds.contentStart);
+          if (annotationRefs?.value?.length) {
+            annotationIds.push(...annotationRefs.value);
+          }
+        }        
+      }
+    }
+
+    const annotations: AnnotationDict[] = [];
+    for (const objectId of annotationIds) {
+      const info = this.getObjectParseInfo(objectId.id);
+      const annotationType = info.parser.parseDictSubtype(info.bounds);
+      let annot: ParseResult<AnnotationDict>;
+      switch (annotationType) {
+        case annotationTypes.INK:
+          annot = InkAnnotation.parse(info);
+          if (annot) {
+            annotations.push(annot.value);
+          }
+          break;
+        case annotationTypes.FREE_TEXT:
+          annot = FreeTextAnnotation.parse(info);
+          if (annot) {
+            annotations.push(annot.value);
+          }
+          break;
+        case annotationTypes.STAMP:
+          annot = StampAnnotation.parse(info);
+          if (annot) {
+            annotations.push(annot.value);
+          }
+          break;
+        case annotationTypes.TEXT:
+          annot = TextAnnotation.parse(info);
+          if (annot) {
+            annotations.push(annot.value);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    this._annotations = annotations;
+  }
+ 
   /**
    * returns a proper parser instance and byte bounds for the object by its id.
    * returns null if an object with the specified id not found.

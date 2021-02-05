@@ -138,14 +138,19 @@ export class FreeTextAnnotation extends MarkupAnnotation {
             break;
           case "/IT":
             const intent = parser.parseNameAt(i, true);
-            if (intent && (<string[]>Object.values(freeTextIntents))
-              .includes(intent.value)) {
-              this.IT = <FreeTextIntent>intent.value;
-              i = intent.end + 1;              
-            } else {              
-              throw new Error("Can't parse /IT property value");
+            if (intent) {
+              if (intent.value === "/FreeTextTypewriter") { // common typo                
+                this.IT = freeTextIntents.CLICK_TO_TYPE;
+                i = intent.end + 1; 
+                break;   
+              }
+              else if ((<string[]>Object.values(freeTextIntents)).includes(intent.value)) {
+                this.IT = <FreeTextIntent>intent.value;
+                i = intent.end + 1;    
+                break;          
+              }
             }
-            break; 
+            throw new Error("Can't parse /IT property value");
           case "/RD":
             const innerRect = parser.parseNumberArrayAt(i, true);
             if (innerRect) {

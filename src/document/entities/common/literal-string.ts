@@ -22,9 +22,9 @@ export class LiteralString {
     let opened = 0;
 
     while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-      if (code) {        
+      if (!isNaN(code)) {        
         bytes.push(code);
-        prevCode = code; 
+        prevCode = code;
       }
 
       code = parser.getCharCode(i++);
@@ -41,7 +41,7 @@ export class LiteralString {
       return null;
     }
 
-    const literal = LiteralString.fromBytes(new Uint8Array(bytes));
+    const literal = LiteralString.fromBytes(LiteralString.unescape(new Uint8Array(bytes)));
     return {value: literal, start: start, end: i - 1};
   }
 
@@ -49,8 +49,11 @@ export class LiteralString {
    * create LiteralString from escaped byte array
    * @param bytes escaped byte array
    */
-  static fromBytes(bytes: Uint8Array): LiteralString {   
-    const literal = new TextDecoder().decode(LiteralString.unescape(bytes));
+  static fromBytes(bytes: Uint8Array): LiteralString {
+    const decoder = bytes[0] === 254 && bytes[1] === 255 // UTF-16 Big Endian
+      ? new TextDecoder("utf-16be")
+      : new TextDecoder();
+    const literal = decoder.decode(bytes);
     return new LiteralString(literal, bytes);
   }
   
@@ -58,9 +61,18 @@ export class LiteralString {
    * create LiteralString from unescaped string
    * @param source unescaped string
    */
-  static fromString(source: string): LiteralString {
-    const bytes = LiteralString.escape(new TextEncoder().encode(source));
-    return new LiteralString(source, bytes);
+  static fromString(source: string): LiteralString {    
+    const bytes: number[] = [];
+    bytes.push(254, 255);  // UTF-16 Big Endian byte order marks
+    for (let i = 0; i < source.length; i++)
+    {
+      const charCode = source.charCodeAt(i);
+      //char > 2 bytes is impossible since charCodeAt can only return 2 bytes
+      bytes.push((charCode & 0xFF00) >>> 8);  //high byte (might be 0)
+      bytes.push(charCode & 0xFF);  //low byte
+    }
+    const escapedBytes = LiteralString.escape(new Uint8Array(bytes));
+    return new LiteralString(source, escapedBytes);
   }
 
   private static escape(bytes: Uint8Array): Uint8Array {
