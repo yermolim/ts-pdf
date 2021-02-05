@@ -14,7 +14,8 @@ export class XRefEntry {
     
   static *parseFromTable(bytes: Uint8Array): Iterable<XRefEntry> {
     let i = 0;
-    let j = 0;
+    let j = 0;   
+    
     while (i < bytes.length) {
       const firstIndexBytes: number[] = [];
       let firstIndexDigit = bytes[i++];
@@ -23,21 +24,24 @@ export class XRefEntry {
         firstIndexDigit = bytes[i++];
       }
       let firstIndex = parseInt(firstIndexBytes.map(x => String.fromCharCode(x)).join(""), 10);
-
+      
       const countBytes: number[] = [];
       let countDigit = bytes[i++];
       while (DIGIT_CHARS.has(countDigit)) {
         countBytes.push(countDigit);
         countDigit = bytes[i++];
       }
-      const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10);
+      const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10); 
 
-      i++;
+      while (!DIGIT_CHARS.has(bytes[i])) {
+        i++;
+      }
+      
       for (j = 0; j < count; j++) {
-        const value = parseInt(Array.from(bytes.slice(i, i + 10))
+        const value = parseInt(Array.from(bytes.subarray(i, i + 10))
           .map(x => String.fromCharCode(x)).join(""), 10);
         i += 11;
-        const gen = parseInt(Array.from(bytes.slice(i, i + 5))
+        const gen = parseInt(Array.from(bytes.subarray(i, i + 5))
           .map(x => String.fromCharCode(x)).join(""), 10);
         i += 6;        
         const typeByte = bytes[i];
