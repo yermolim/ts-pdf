@@ -52,7 +52,6 @@ export class PdfDict {
             } else {
               throw new Error("Can't parse /Type property value");
             }
-            break;
           // TODO: add case for custom props
           default:
             // skip to next name

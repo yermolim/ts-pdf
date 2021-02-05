@@ -1,4 +1,4 @@
-import { dictTypes, valueTypes } from "../../common/const";
+import { dictTypes, Rect, valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { DateString } from "../common/date-string";
 import { ObjectId } from "../common/object-id";
@@ -24,7 +24,7 @@ export class PageDict extends PdfDict {
    * that shall define the boundaries of the physical medium 
    * on which the page shall be displayed or printed
    */
-  MediaBox: [ll_x: number, ll_y: number, ur_x: number, ur_y: number];
+  MediaBox: Rect;
   /**
    * (Optional; inheritable) The number of degrees by which the page shall be rotated 
    * clockwise when displayed or printed. The value shall be a multiple of 90
@@ -49,6 +49,10 @@ export class PageDict extends PdfDict {
     return parseResult
       ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
+  }
+  
+  toArray(): Uint8Array {
+    return new Uint8Array();
   }
   
   /**

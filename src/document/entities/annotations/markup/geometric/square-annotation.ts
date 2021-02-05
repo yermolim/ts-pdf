@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../annotation-dict";
+import { annotationTypes } from "../../../../common/const";
 import { GeometricAnnotation } from "./geometric-annotation";
 
 export class SquareAnnotation extends GeometricAnnotation {

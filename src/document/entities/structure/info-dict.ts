@@ -35,4 +35,8 @@ export class InfoDict extends PdfDict {
   constructor() {
     super(dictTypes.EMPTY);
   }
+  
+  toArray(): Uint8Array {
+    return new Uint8Array();
+  }
 }

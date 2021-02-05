@@ -6,172 +6,9 @@ import { AppearanceDict, AppearanceState } from "../appearance/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
-import { dictTypes } from "../../common/const";
-
-/**
- * PDF supports the standard annotation types listed
- */
-export const annotationTypes = {
-  TEXT: "/Text",
-  LINK: "/Link",
-  FREE_TEXT: "/FreeText",
-  LINE: "/Line",
-  SQUARE: "/Square",
-  CIRCLE: "/Circle",
-  POLYGON: "/Polygon",
-  POLYLINE: "/PolyLine",
-  HIGHLIGHT: "/Highlight",
-  UNDERLINE: "/Underline",
-  SQUIGGLY: "/Squiggly",
-  STRIKEOUT: "/StrikeOut",
-  STAMP: "/Stamp",
-  CARET: "/Caret",
-  INK: "/Ink",
-  POPUP: "/Popup",
-  FILE_ATTACHMENT: "/FileAttachment",
-  SOUND: "/Sound",
-  MOVIE: "/Movie",
-  WIDGET: "/Widget",
-  SCREEN: "/Screen",
-  PRINTER_MARK: "/PrinterMark",
-  TRAPNET: "/TrapNet",
-  WATERMARK: "/Watermark",
-  THREED: "/3D",
-  REDACT: "/Redact",
-} as const;
-export type AnnotationType = typeof annotationTypes[keyof typeof annotationTypes];
-
-/**
- * Flags  specifying  various  characteristics of the annotation
- */
-export const annotationFlags = {
-  NONE: 0x00,
-  /**
-   * If set, do not display the annotation 
-   * if it does not belong to one of the standard annotation types 
-   * and no annotation handler is available. 
-   * If clear, display such an unknown annotation using an appearance stream 
-   * specified by its appearance dictionary, if any
-   */
-  INVISIBLE: 0x01,
-  /**
-   * (PDF 1.2+) If set, do not display or print the annotation 
-   * or allow it to interact with the user, regardless of its annotation type 
-   * or whether an annotation handler is available
-   */
-  HIDDEN: 0x02,
-  /**
-   * (PDF 1.2+) If set, print the annotation 
-   * when the page is printed. If clear, never print the annotation, 
-   * regardless of whether it is displayed on the screen
-   */
-  PRINT: 0x04,
-  /**
-   * (PDF 1.3+) If set, do not scale the annotation’s appearance 
-   * to match the magnification of the page
-   */
-  NO_ZOOM: 0x08,
-  /**
-   * (PDF 1.3+) If set, do not rotate the annotation’s appearance 
-   * to match the rotation of the page
-   */
-  NO_ROTATE: 0x10,
-  /**
-   * (PDF 1.3+) If set, do not display the annotation on the screen 
-   * or allow it to interact with the user
-   */
-  NO_VIEW: 0x20,
-  /**
-   * (PDF 1.3+) If set, do not allow the annotation to interact with the user
-   */
-  READ_ONLY: 0x40,
-  /**
-   * (PDF 1.4+) If set, do not allow the annotation to be deleted 
-   * or its properties (including position and size) to be modified by the user
-   */
-  LOCKED: 0x80,
-  /**
-   * (PDF 1.5+) If set, invert the interpretation of the NoView flag for certain events
-   */
-  TOGGLE_NO_VIEW: 0x100,
-  /**
-   * (PDF 1.7+) If set, do not allow the contents of the annotation to be modified by the user. 
-   * This flag does not restrict deletion of the annotation or changes to other annotation properties, 
-   * such as position and size
-   */
-  LOCKED_CONTENTS: 0x200,
-} as const;
-
-
-export const annotationStateModelTypes = {
-  MARKED: "/Marked",
-  REVIEW: "/Review",
-} as const;
-export type AnnotationStateModelType = typeof annotationStateModelTypes[keyof typeof annotationStateModelTypes];
-
-export const annotationMarkedStates = {
-  /**
-   * The annotation has been marked by the user
-   */
-  MARKED: "/Marked",
-  /**
-   * The annotation has not been marked by the user (the default)
-   */
-  UNMARKED: "/Unmarked",
-} as const;
-export type AnnotationMarkedState = typeof annotationMarkedStates[keyof typeof annotationMarkedStates];
-
-export const annotationReviewStates = {
-  /**
-   * The user agrees with the change
-   */
-  ACCEPTED: "/Accepted",
-  /**
-   * The user disagrees  with the change
-   */
-  REJECTED: "/Rejected",
-  /**
-   * The change has been cancelled
-   */
-  CANCELLED: "/Cancelled",
-  /**
-   * The change has been completed
-   */
-  COMPLETED: "/Completed",
-  /**
-   * The user has indicated nothing about the change (the default)
-   */
-  NONE: "/None",
-} as const;
-export type AnnotationReviewState = typeof annotationReviewStates[keyof typeof annotationReviewStates];
-
-/**
- * The name of an icon that shall be used in displaying the annotation
- */
-export const annotationIconTypes = {
-  COMMENT: "/Comment",
-  KEY: "/Key",
-  NOTE: "/Note",
-  HELP: "/Help",
-  NEW_PARAGRAPH: "/NewParagraph",
-  PARAGRAPH: "/Paragraph",
-  INSERT: "/Insert",
-} as const;
-export type AnnotationIconType = typeof annotationIconTypes[keyof typeof annotationIconTypes];
-
-export const lineEndingTypes = {
-  SQUARE: "/Square",
-  CIRCLE: "/Circle",
-  DIAMOND: "/Diamond",
-  ARROW_OPEN: "/OpenArrow",
-  ARROW_CLOSED: "/ClosedArrow",
-  NONE: "/None",
-  BUTT: "/Butt",
-  ARROW_OPEN_R: "/ROpenArrow",
-  ARROW_CLOSED_R: "/RClosedArrow",
-  SLASH: "/Slash",
-} as const;
-export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
+import { AnnotationType, dictTypes, Rect } from "../../common/const";
+import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { LiteralString } from "../common/literal-string";
 
 export abstract class AnnotationDict extends PdfDict {
   /** User defined annotation id */
@@ -182,19 +19,19 @@ export abstract class AnnotationDict extends PdfDict {
   
   /** (Required) The annotation rectangle, 
    * defining the location of the annotation on the page in default user space units */
-  Rect: number[];
+  Rect: Rect;
 
   /** (Optional) Text to be displayed for the annotation */
-  Contents: string;
+  Contents: LiteralString;
 
   /** (Optional; PDF1.3+) An indirect reference to the page object 
    * with which this annotation is associated */
   P: ObjectId;
   /** (Optional; PDF1.4+) The annotation name,  
    * a text string uniquely identifying it among all the annotations on its page */
-  NM: string;
+  NM: LiteralString;
   /** (Optional; PDF1.1+) The date and time when the annotation was most recently modified */
-  M: DateString | string;
+  M: DateString | LiteralString;
   /** (Optional; PDF1.1+) A set of flags. 
    * Is an integer interpreted as one-bit flags 
    * specifying various characteristics of the annotation. 
@@ -209,6 +46,7 @@ export abstract class AnnotationDict extends PdfDict {
    * The annotation’s appearance state name, 
    * which selects the applicable appearance stream from an appearance subdictionary */
   AS: AppearanceState;
+
   /** (Optional) An array specifying the characteristics of the annotation’s border.  
    * The border is specified as a rounded rectangle. [rx, ry, w, [dash gap]] */
   Border: (number | number[])[] = [0, 0, 1];
@@ -221,11 +59,13 @@ export abstract class AnnotationDict extends PdfDict {
    * that specifies an effect that shall be applied to the border of the annotations
   */
   BE: BorderEffectDict;
+
   /** (Optional; PDF1.1+) An array of numbers in the range 0.0 to 1.0, 
    * representing a color of icon background, title bar and link border.
    * The number of array elements determines the color space in which the color is defined: 
    * 0 - transparent; 1 - gray; 3 - RGB; 4 - CMYK */
   C: number[];
+
   /** (Required if the annotation is a structural content item; PDF 1.3+) 
    * The integer key of the annotation’s entry in the structural parent tree */
   StructParent: number;
@@ -237,5 +77,142 @@ export abstract class AnnotationDict extends PdfDict {
     super(dictTypes.ANNOTATION);
 
     this.Subtype = subType;
+  }
+  
+  /**
+   * fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
+    if (!superIsParsed) {
+      return false;
+    }
+
+    const {parser, bounds} = parseInfo;
+    const start = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end; 
+    
+    let i = parser.skipToNextName(start, end - 1);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
+    let name: string;
+    let parseResult: ParseResult<string>;
+    while (true) {
+      parseResult = parser.parseNameAt(i);
+      if (parseResult) {
+        i = parseResult.end + 1;
+        name = parseResult.value;
+        switch (name) {
+          case "/Subtype":
+            const subtype = parser.parseNameAt(i);
+            if (subtype) {
+              if (this.Subtype && this.Subtype !== subtype.value) {
+                // wrong object subtype
+                return false;
+              }
+            } else {
+              throw new Error("Can't parse /Subtype property value");
+            }
+            break;       
+          case "/Rect":
+            const rect = parser.parseNumberArrayAt(i, true);
+            if (rect) {
+              this.Rect = [
+                rect.value[0],
+                rect.value[1],
+                rect.value[2],
+                rect.value[3],
+              ];
+              i = rect.end + 1;
+            } else {              
+              throw new Error("Can't parse /Rect property value");
+            }
+            break;
+          case "/P":
+            const pageId = ObjectId.parseRef(parser, i);
+            if (pageId) {
+              this.P = pageId.value;
+              i = pageId.end + 1;
+            } else {              
+              throw new Error("Can't parse /P property value");
+            }
+            break;
+          case "/NM":
+            const uniqueName = LiteralString.parse(parser, i, false);
+            if (uniqueName) {
+              this.NM = uniqueName.value;
+              i = uniqueName.end + 1;
+            } else {              
+              throw new Error("Can't parse /NM property value");
+            }
+            break;
+          case "/M":
+            const date = DateString.parse(parser, i, false);
+            if (date) {
+              this.M = date.value;
+              i = date.end + 1;    
+              break;      
+            } else {   
+              const dateLiteral = LiteralString.parse(parser, i, false);
+              if (dateLiteral) {
+                this.M = dateLiteral.value;
+                i = dateLiteral.end + 1; 
+                break;   
+              } 
+            }
+            throw new Error("Can't parse /M property value"); 
+          case "/F":
+            const flags = parser.parseNumberAt(i, false);
+            if (flags) {
+              this.F = flags.value;
+              i = flags.end + 1;
+            } else {              
+              throw new Error("Can't parse /F property value");
+            }
+            break;          
+          case "/C":
+            const color = parser.parseNumberArrayAt(i, true);
+            if (color) {
+              this.C = color.value;
+              i = color.end + 1;
+            } else {              
+              throw new Error("Can't parse /C property value");
+            }
+            break;
+          case "/StructParent":
+            const structureKey = parser.parseNumberAt(i, false);
+            if (structureKey) {
+              this.StructParent = structureKey.value;
+              i = structureKey.end + 1;
+            } else {              
+              throw new Error("Can't parse /StructParent property value");
+            }
+            break;
+
+          // TODO: handle remaining properties
+          case "/Border":
+          case "/BS":
+          case "/BE":
+          case "/AP":
+          case "/AS":
+          case "/OC":
+          default:
+            // skip to next name
+            i = parser.skipToNextName(i, end - 1);
+            break;
+        }
+      } else {
+        break;
+      }
+    };
+    
+    if (!this.Subtype || !this.Rect) {
+      // not all required properties parsed
+      return false;
+    }
+
+    return true;
   }
 }

@@ -1,6 +1,7 @@
+import { AnnotationType } from "../../../common/const";
 import { DateString } from "../../common/date-string";
 import { PdfStream } from "../../core/pdf-stream";
-import { AnnotationDict, AnnotationType } from "../annotation-dict";
+import { AnnotationDict } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";
 import { PopupAnnotation } from "../non-markup/popup-annotation";
 

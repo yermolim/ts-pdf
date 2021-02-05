@@ -1,5 +1,5 @@
+import { AnnotationType } from "../../../../common/const";
 import { MeasureDict } from "../../../misc/measure-dict";
-import { AnnotationType } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 
 export const polyIntents = {

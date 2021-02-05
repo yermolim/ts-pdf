@@ -1,5 +1,5 @@
-import { annotationTypes, AnnotationIconType, 
-  AnnotationMarkedState, AnnotationReviewState, AnnotationStateModelType } from "../annotation-dict";
+import { AnnotationIconType, AnnotationMarkedState, AnnotationReviewState, 
+  AnnotationStateModelType, annotationTypes } from "../../../common/const";
 import { MarkupAnnotation } from "./markup-annotation";
 export class TextAnnotation extends MarkupAnnotation {
   /**

@@ -1,4 +1,4 @@
-import { annotationTypes } from "../annotation-dict";
+import { annotationTypes } from "../../../common/const";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const caretSymbolTypes = {

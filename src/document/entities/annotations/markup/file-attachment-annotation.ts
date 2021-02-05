@@ -1,5 +1,5 @@
+import { annotationTypes } from "../../../common/const";
 import { PdfDict } from "../../core/pdf-dict";
-import { annotationTypes } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const attachmentIconTypes = {

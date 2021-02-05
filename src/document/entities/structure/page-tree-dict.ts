@@ -1,4 +1,4 @@
-import { dictTypes } from "../../common/const";
+import { dictTypes, Rect } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
@@ -25,7 +25,7 @@ export class PageTreeDict extends PdfDict {
    * that shall define the boundaries of the physical medium 
    * on which the page shall be displayed or printed
    */
-  MediaBox: [ll_x: number, ll_y: number, ur_x: number, ur_y: number];
+  MediaBox: Rect;
   /**
    * (Optional; inheritable) The number of degrees by which the page shall be rotated 
    * clockwise when displayed or printed. The value shall be a multiple of 90
@@ -43,6 +43,10 @@ export class PageTreeDict extends PdfDict {
     return parseResult
       ? {value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
+  }
+  
+  toArray(): Uint8Array {
+    return new Uint8Array();
   }
   
   /**

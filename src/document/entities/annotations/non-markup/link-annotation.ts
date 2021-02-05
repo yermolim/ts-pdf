@@ -1,14 +1,7 @@
+import { annotationTypes, HighlightingMode, highlightingModes } from "../../../common/const";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";
-import { annotationTypes, AnnotationDict } from "../annotation-dict";
-
-export const highlightingModes = {
-  NO: "/N",
-  INVERT: "/I",
-  OUTLINE: "/O",
-  PUSH: "/P",
-} as const;
-export type HighlightingMode = typeof highlightingModes[keyof typeof highlightingModes];
+import { AnnotationDict } from "../annotation-dict";
 
 export class LinkAnnotation extends AnnotationDict {
   /**

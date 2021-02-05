@@ -1,5 +1,5 @@
+import { LineEndingType, lineEndingTypes, annotationTypes } from "../../../../common/const";
 import { MeasureDict } from "../../../misc/measure-dict";
-import { LineEndingType, lineEndingTypes, annotationTypes } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 
 export const lineIntents = {

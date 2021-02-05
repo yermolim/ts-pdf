@@ -1,7 +1,6 @@
-import { JustificationType } from "../../../common/const";
+import { annotationTypes, JustificationType, LineEndingType, lineEndingTypes } from "../../../common/const";
 import { AppearanceString } from "../../appearance/appearance-string";
 import { PdfStream } from "../../core/pdf-stream";
-import { annotationTypes, LineEndingType, lineEndingTypes } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const freeTextIntents = {

@@ -2814,6 +2814,9 @@ class CatalogDict extends PdfDict {
             ? { value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
+    toArray() {
+        return new Uint8Array();
+    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -2940,6 +2943,9 @@ class PageDict extends PdfDict {
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
+    toArray() {
+        return new Uint8Array();
+    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -3051,6 +3057,9 @@ class PageTreeDict extends PdfDict {
         return parseResult
             ? { value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
+    }
+    toArray() {
+        return new Uint8Array();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -3430,6 +3439,9 @@ class TrailerDict extends PdfDict {
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
+    toArray() {
+        return new Uint8Array();
+    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -3696,6 +3708,7 @@ class DocumentData {
         }
     }
     parse() {
+        var _a;
         this.reset();
         const xrefs = this.parseAllXrefs();
         if (!xrefs.length) {
@@ -3726,7 +3739,17 @@ class DocumentData {
             if (Array.isArray(page.Annots)) {
                 annotationIds.push(...page.Annots);
             }
+            else {
+                const parseInfo = this.getObjectParseInfo(page.Annots.id);
+                if ((parseInfo === null || parseInfo === void 0 ? void 0 : parseInfo.type) === objectTypes.ARRAY) {
+                    const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.start);
+                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
+                        annotationIds.push(...annotationRefs.value);
+                    }
+                }
+            }
         }
+        console.log(annotationIds);
     }
     reset() {
         this._xrefs = null;

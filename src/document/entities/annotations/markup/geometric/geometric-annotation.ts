@@ -1,4 +1,4 @@
-import { AnnotationType } from "../../annotation-dict";
+import { AnnotationType } from "../../../../common/const";
 import { MarkupAnnotation } from "../markup-annotation";
 
 export abstract class GeometricAnnotation extends MarkupAnnotation {

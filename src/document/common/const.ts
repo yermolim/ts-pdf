@@ -155,8 +155,184 @@ export const valueTypes = {
 } as const;
 export type ValueType = typeof valueTypes[keyof typeof valueTypes];
 
+//#region annotation const
+/**
+ * PDF supports the standard annotation types listed
+ */
+export const annotationTypes = {
+  TEXT: "/Text",
+  LINK: "/Link",
+  FREE_TEXT: "/FreeText",
+  LINE: "/Line",
+  SQUARE: "/Square",
+  CIRCLE: "/Circle",
+  POLYGON: "/Polygon",
+  POLYLINE: "/PolyLine",
+  HIGHLIGHT: "/Highlight",
+  UNDERLINE: "/Underline",
+  SQUIGGLY: "/Squiggly",
+  STRIKEOUT: "/StrikeOut",
+  STAMP: "/Stamp",
+  CARET: "/Caret",
+  INK: "/Ink",
+  POPUP: "/Popup",
+  FILE_ATTACHMENT: "/FileAttachment",
+  SOUND: "/Sound",
+  MOVIE: "/Movie",
+  WIDGET: "/Widget",
+  SCREEN: "/Screen",
+  PRINTER_MARK: "/PrinterMark",
+  TRAPNET: "/TrapNet",
+  WATERMARK: "/Watermark",
+  THREED: "/3D",
+  REDACT: "/Redact",
+} as const;
+export type AnnotationType = typeof annotationTypes[keyof typeof annotationTypes];
+
+/**
+ * Flags  specifying  various  characteristics of the annotation
+ */
+export const annotationFlags = {
+  NONE: 0x00,
+  /**
+   * If set, do not display the annotation 
+   * if it does not belong to one of the standard annotation types 
+   * and no annotation handler is available. 
+   * If clear, display such an unknown annotation using an appearance stream 
+   * specified by its appearance dictionary, if any
+   */
+  INVISIBLE: 0x01,
+  /**
+   * (PDF 1.2+) If set, do not display or print the annotation 
+   * or allow it to interact with the user, regardless of its annotation type 
+   * or whether an annotation handler is available
+   */
+  HIDDEN: 0x02,
+  /**
+   * (PDF 1.2+) If set, print the annotation 
+   * when the page is printed. If clear, never print the annotation, 
+   * regardless of whether it is displayed on the screen
+   */
+  PRINT: 0x04,
+  /**
+   * (PDF 1.3+) If set, do not scale the annotation’s appearance 
+   * to match the magnification of the page
+   */
+  NO_ZOOM: 0x08,
+  /**
+   * (PDF 1.3+) If set, do not rotate the annotation’s appearance 
+   * to match the rotation of the page
+   */
+  NO_ROTATE: 0x10,
+  /**
+   * (PDF 1.3+) If set, do not display the annotation on the screen 
+   * or allow it to interact with the user
+   */
+  NO_VIEW: 0x20,
+  /**
+   * (PDF 1.3+) If set, do not allow the annotation to interact with the user
+   */
+  READ_ONLY: 0x40,
+  /**
+   * (PDF 1.4+) If set, do not allow the annotation to be deleted 
+   * or its properties (including position and size) to be modified by the user
+   */
+  LOCKED: 0x80,
+  /**
+   * (PDF 1.5+) If set, invert the interpretation of the NoView flag for certain events
+   */
+  TOGGLE_NO_VIEW: 0x100,
+  /**
+   * (PDF 1.7+) If set, do not allow the contents of the annotation to be modified by the user. 
+   * This flag does not restrict deletion of the annotation or changes to other annotation properties, 
+   * such as position and size
+   */
+  LOCKED_CONTENTS: 0x200,
+} as const;
+
+export const annotationStateModelTypes = {
+  MARKED: "/Marked",
+  REVIEW: "/Review",
+} as const;
+export type AnnotationStateModelType = typeof annotationStateModelTypes[keyof typeof annotationStateModelTypes];
+
+export const annotationMarkedStates = {
+  /**
+   * The annotation has been marked by the user
+   */
+  MARKED: "/Marked",
+  /**
+   * The annotation has not been marked by the user (the default)
+   */
+  UNMARKED: "/Unmarked",
+} as const;
+export type AnnotationMarkedState = typeof annotationMarkedStates[keyof typeof annotationMarkedStates];
+
+export const annotationReviewStates = {
+  /**
+   * The user agrees with the change
+   */
+  ACCEPTED: "/Accepted",
+  /**
+   * The user disagrees  with the change
+   */
+  REJECTED: "/Rejected",
+  /**
+   * The change has been cancelled
+   */
+  CANCELLED: "/Cancelled",
+  /**
+   * The change has been completed
+   */
+  COMPLETED: "/Completed",
+  /**
+   * The user has indicated nothing about the change (the default)
+   */
+  NONE: "/None",
+} as const;
+export type AnnotationReviewState = typeof annotationReviewStates[keyof typeof annotationReviewStates];
+
+/**
+ * The name of an icon that shall be used in displaying the annotation
+ */
+export const annotationIconTypes = {
+  COMMENT: "/Comment",
+  KEY: "/Key",
+  NOTE: "/Note",
+  HELP: "/Help",
+  NEW_PARAGRAPH: "/NewParagraph",
+  PARAGRAPH: "/Paragraph",
+  INSERT: "/Insert",
+} as const;
+export type AnnotationIconType = typeof annotationIconTypes[keyof typeof annotationIconTypes];
+//#endregion
+
+export const highlightingModes = {
+  NO: "/N",
+  INVERT: "/I",
+  OUTLINE: "/O",
+  PUSH: "/P",
+} as const;
+export type HighlightingMode = typeof highlightingModes[keyof typeof highlightingModes];
+
+export const lineEndingTypes = {
+  SQUARE: "/Square",
+  CIRCLE: "/Circle",
+  DIAMOND: "/Diamond",
+  ARROW_OPEN: "/OpenArrow",
+  ARROW_CLOSED: "/ClosedArrow",
+  NONE: "/None",
+  BUTT: "/Butt",
+  ARROW_OPEN_R: "/ROpenArrow",
+  ARROW_CLOSED_R: "/RClosedArrow",
+  SLASH: "/Slash",
+} as const;
+export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
+
 export const supportedFilters = new Set<string>([
   streamFilters.FLATE,
 ]);
 
 export const maxGeneration = 65535;
+
+export type Rect = [ll_x: number, ll_y: number, ur_x: number, ur_y: number];

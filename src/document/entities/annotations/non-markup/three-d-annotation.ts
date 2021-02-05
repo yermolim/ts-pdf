@@ -1,4 +1,5 @@
-import { AnnotationDict, annotationTypes } from "../annotation-dict";
+import { annotationTypes } from "../../../common/const";
+import { AnnotationDict } from "../annotation-dict";
 
 export class ThreeDAnnotation extends AnnotationDict {
   // TODO: implement

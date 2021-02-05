@@ -1,5 +1,5 @@
 import { keywordCodes } from "../common/codes";
-import { dictTypes } from "../common/const";
+import { dictTypes, objectTypes } from "../common/const";
 import { ObjectId } from "../entities/common/object-id";
 import { ObjectStream } from "../entities/streams/object-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
@@ -75,9 +75,18 @@ export class DocumentData {
       if (Array.isArray(page.Annots)) {
         annotationIds.push(...page.Annots);
       } else {
-        // const parseInfo = this.getObjectParseInfo()
+        const parseInfo = this.getObjectParseInfo(page.Annots.id);
+        if (parseInfo?.type === objectTypes.ARRAY) {
+          const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
+            parseInfo.bounds.start);
+          if (annotationRefs?.value?.length) {
+            annotationIds.push(...annotationRefs.value);
+          }
+        }        
       }
-    } 
+    }
+        
+    console.log(annotationIds);
   }
 
   reset() {    

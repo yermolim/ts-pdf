@@ -45,6 +45,10 @@ export class CatalogDict extends PdfDict {
       : null;
   }
   
+  toArray(): Uint8Array {
+    return new Uint8Array();
+  }
+  
   /**
    * fill public properties from data using info/parser if available
    */
