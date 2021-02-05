@@ -3,10 +3,9 @@ import { FlateParamsDict } from "../encoding/flate-params-dict";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../common/codes";
+import { FlateDecoder } from "../../common/decoders/flate-decoder";
 
 export abstract class PdfStream extends PdfObject {
-  streamData: Uint8Array;
-
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: StreamType;
 
@@ -34,6 +33,25 @@ export abstract class PdfStream extends PdfObject {
    * whether enough disk space is available to write a stream to a file
    */
   DL: number;
+  
+  protected _streamData: Uint8Array;
+  get streamData(): Uint8Array {
+    return this._streamData;
+  }
+  get decodedStreamData(): Uint8Array {
+    let decodedData: Uint8Array;
+    if (this.DecodeParms) {
+      const params = this.DecodeParms;
+      decodedData = FlateDecoder.Decode(this._streamData,
+        params.Predictor,
+        params.Columns,
+        params.Colors,
+        params.BitsPerComponent); 
+    } else {      
+      decodedData = FlateDecoder.Decode(this._streamData);
+    }
+    return decodedData;
+  }
   
   protected constructor(type: StreamType = null) {
 
@@ -175,7 +193,7 @@ export abstract class PdfStream extends PdfObject {
       // TODO: replace error with 'return false;' after assuring that the code works correctly
       throw new Error("Incorrect stream length");
     }   
-    this.streamData = encodedData;
+    this._streamData = encodedData;
 
     return true;
   }

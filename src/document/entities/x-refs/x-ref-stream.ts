@@ -1,5 +1,4 @@
 import { xRefTypes } from "../../common/const";
-import { FlateDecoder } from "../../common/decoders/flate-decoder";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { TrailerStream } from "./trailer-stream";
@@ -50,20 +49,10 @@ export class XRefStream extends XRef {
       return [];
     }
 
-    let decodedData: Uint8Array;
-    if (this._trailerStream.DecodeParms) {
-      const params = this._trailerStream.DecodeParms;
-      decodedData = FlateDecoder.Decode(this._trailerStream.streamData,
-        params.Predictor,
-        params.Columns,
-        params.Colors,
-        params.BitsPerComponent); 
-    } else {      
-      decodedData = FlateDecoder.Decode(this._trailerStream.streamData);
-    }
-
-    const entries = XRefEntry.parseFromStream(decodedData, 
-      this._trailerStream.W, this._trailerStream.Index);
+    const entries = XRefEntry.parseFromStream(
+      this._trailerStream.decodedStreamData, 
+      this._trailerStream.W, 
+      this._trailerStream.Index);
     return entries;
   }
 }

@@ -35,23 +35,11 @@ export class ObjectStream extends PdfStream {
   }
 
   getObjectData(id: number): ParseInfo  { 
-    if (!this.streamData || !this.N || !this.First) {
+    if (!this._streamData || !this.N || !this.First) {
       return null;
     }
 
-    let decodedData: Uint8Array;
-    if (this.DecodeParms) {
-      const params = this.DecodeParms;
-      decodedData = FlateDecoder.Decode(this.streamData,
-        params.Predictor,
-        params.Columns,
-        params.Colors,
-        params.BitsPerComponent); 
-    } else {      
-      decodedData = FlateDecoder.Decode(this.streamData);
-    }
-
-    const parser = new DataParser(decodedData);
+    const parser = new DataParser(this.decodedStreamData);
 
     const offsetMap = new Map<number, number>();
     let temp: ParseResult<number>;

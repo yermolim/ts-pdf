@@ -7,6 +7,7 @@ import { StampAnnotation } from "../entities/annotations/markup/stamp-annotation
 import { TextAnnotation } from "../entities/annotations/markup/text-annotation";
 import { ObjectId } from "../entities/common/object-id";
 import { ObjectStream } from "../entities/streams/object-stream";
+import { XFormStream } from "../entities/streams/x-form-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
 import { PageDict } from "../entities/structure/page-dict";
 import { PageTreeDict } from "../entities/structure/page-tree-dict";
@@ -77,6 +78,14 @@ export class DocumentData {
     this.parseSupportedAnnotations();
 
     console.log(this._annotations);
+
+    // for (const annot of this._annotations) {
+    //   if (annot.AP?.N && annot.AP.N instanceof ObjectId) {
+    //     const apInfo = this.getObjectParseInfo(annot.AP.N.id);
+    //     const apStream = XFormStream.parse(apInfo);
+    //     console.log(apStream?.value.decodedStreamData);
+    //   }
+    // }
   }
 
   reset() {    
