@@ -79,13 +79,15 @@ export class DocumentData {
 
     console.log(this._annotations);
 
-    // for (const annot of this._annotations) {
-    //   if (annot.AP?.N && annot.AP.N instanceof ObjectId) {
-    //     const apInfo = this.getObjectParseInfo(annot.AP.N.id);
-    //     const apStream = XFormStream.parse(apInfo);
-    //     console.log(apStream?.value.decodedStreamData);
-    //   }
-    // }
+    for (const annot of this._annotations) {
+      if (annot.AP?.N && annot.AP.N instanceof ObjectId) {
+        const apInfo = this.getObjectParseInfo(annot.AP.N.id);
+        const apStream = XFormStream.parse(apInfo);
+        if (apStream) {
+          console.log(String.fromCharCode(...apStream.value.decodedStreamData));
+        }
+      }
+    }
   }
 
   reset() {    

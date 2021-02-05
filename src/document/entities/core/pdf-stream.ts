@@ -1,6 +1,6 @@
 import { StreamFilter, StreamType, supportedFilters, valueTypes } from "../../common/const";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { Bounds, ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../common/codes";
 import { FlateDecoder } from "../../common/decoders/flate-decoder";
@@ -92,8 +92,8 @@ export abstract class PdfStream extends PdfObject {
       return false;
     }   
     
-    const lastBeforeStream = streamStartIndex.start - 1;
-    let i = parser.skipToNextName(start, lastBeforeStream);
+    const dictBounds = parser.getDictBoundsAt(start);
+    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
       // no required props found
       return false;
@@ -177,8 +177,8 @@ export abstract class PdfStream extends PdfObject {
             }
             break;
           default:
-            // skip to next name
-            i = parser.skipToNextName(i, lastBeforeStream);
+            // skip value to next name
+            i = parser.skipToNextName(i, dictBounds.contentEnd);
             break;
         }
       } else {

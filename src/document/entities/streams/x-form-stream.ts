@@ -99,7 +99,7 @@ export class XFormStream extends PdfStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(start, dictBounds.contentEnd);
+    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
       // no required props found
       return false;
@@ -119,6 +119,7 @@ export class XFormStream extends PdfStream {
                 // wrong object subtype
                 return false;
               }
+              i = subtype.end + 1;
             } else {
               throw new Error("Can't parse /Subtype property value");
             }
@@ -130,6 +131,7 @@ export class XFormStream extends PdfStream {
                 // wrong form type
                 return false;
               }
+              i = formType.end + 1;
             } else {
               throw new Error("Can't parse /Subtype property value");
             }

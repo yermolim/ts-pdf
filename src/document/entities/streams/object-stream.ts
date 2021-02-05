@@ -85,7 +85,7 @@ export class ObjectStream extends PdfStream {
           value = literalValue;
         }
         break; 
-      case objectTypes.STRING_LITERAL: 
+      case objectTypes.STRING_HEX: 
         const hexValue = HexString.parse(parser, objectStart);
         if (hexValue) {
           bounds = {start: hexValue.start, end: hexValue.end};
@@ -116,7 +116,16 @@ export class ObjectStream extends PdfStream {
 
     return {
       parser: new DataParser(bytes),
-      bounds: {start: 0, end: bytes.length - 1},
+      bounds: {
+        start: 0, 
+        end: bytes.length - 1,
+        contentStart: bounds.contentStart 
+          ? bounds.contentStart - bounds.start 
+          : undefined,
+        contentEnd: bounds.contentEnd 
+          ? bytes.length - 1 - (bounds.end - bounds.contentEnd) 
+          : undefined,
+      },
       type: <ObjectType>objectType,
       value,
     };
@@ -144,7 +153,7 @@ export class ObjectStream extends PdfStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(start, dictBounds.contentEnd);
+    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
       // no required props found
       return false;

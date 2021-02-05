@@ -7,42 +7,16 @@ export class LiteralString {
     readonly bytes: Uint8Array) { }
     
   static parse(parser: DataParser, start: number, 
-    skipEmpty = true): ParseResult<LiteralString>  {       
-    if (skipEmpty) {
-      start = parser.skipEmpty(start);
-    }
-    if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-      return null;
-    }
-
-    const bytes: number[] = [];
-    let i = start + 1;
-    let prevCode: number;
-    let code: number;
-    let opened = 0;
-
-    while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
-      if (!isNaN(code)) {        
-        bytes.push(code);
-        prevCode = code;
-      }
-
-      code = parser.getCharCode(i++);
-
-      if (prevCode !== codes.BACKSLASH) {
-        if (code === codes.L_PARENTHESE) {
-          opened += 1;
-        } else if (opened && code === codes.R_PARENTHESE) {
-          opened -= 1;
-        }
-      }
-    }
-    if (!bytes.length) {
-      return null;
+    skipEmpty = true): ParseResult<LiteralString>  {  
+      
+    const bounds = parser.getLiteralBounds(start, skipEmpty);
+    if (!bounds) {
+      return;
     }
 
-    const literal = LiteralString.fromBytes(LiteralString.unescape(new Uint8Array(bytes)));
-    return {value: literal, start: start, end: i - 1};
+    const literal = LiteralString.fromBytes(LiteralString
+      .unescape(parser.subCharCodes(bounds.start + 1, bounds.end - 1)));
+    return {value: literal, start: bounds.start, end: bounds.end};
   }
 
   /**

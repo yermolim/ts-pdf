@@ -113,6 +113,7 @@ export abstract class AnnotationDict extends PdfDict {
                 // wrong object subtype
                 return false;
               }
+              i = subtype.end + 1;
             } else {
               throw new Error("Can't parse /Subtype property value");
             }

@@ -10,20 +10,13 @@ export class HexString {
   static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<HexString>  {   
 
-    if (skipEmpty) {
-      start = parser.skipEmpty(start);
-    }
-    if (parser.isOutside(start) || parser.getCharCode(start) !== codes.LESS) {
+    const bounds = parser.getHexBounds(start, skipEmpty);
+    if (!bounds) {
       return null;
     }
 
-    const end = parser.findCharIndex(codes.GREATER, "straight", start + 1);
-    if (end === -1) {
-      return;
-    }
-
-    const hex = HexString.fromBytes(parser.sliceCharCodes(start, end));
-    return {value: hex, start, end};
+    const hex = HexString.fromBytes(parser.sliceCharCodes(bounds.start, bounds.end));
+    return {value: hex, start: bounds.start, end: bounds.end};
   }  
   
   static parseArray(parser: DataParser, start: number, 

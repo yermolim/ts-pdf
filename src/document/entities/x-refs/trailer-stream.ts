@@ -94,7 +94,7 @@ export class TrailerStream extends PdfStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(start, dictBounds.contentEnd);
+    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
       // no required props found
       return false;

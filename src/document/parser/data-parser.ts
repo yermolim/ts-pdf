@@ -338,7 +338,7 @@ export class DataParser {
       return null;
     }      
 
-    const contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
+    let contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
     if (contentStart === -1){
       return null;
     }    
@@ -347,7 +347,16 @@ export class DataParser {
     if (!objEndIndex) {
       return null;
     }
-    const contentEnd = this.findNonSpaceIndex("reverse", objEndIndex.start - 1);
+    let contentEnd = this.findNonSpaceIndex("reverse", objEndIndex.start - 1);
+
+    if (this.getCharCode(contentStart) === codes.LESS
+      && this.getCharCode(contentStart + 1) === codes.LESS
+      && this.getCharCode(contentEnd - 1) === codes.GREATER
+      && this.getCharCode(contentEnd) === codes.GREATER) {
+      // object is dict. exclude bounds from content
+      contentStart += 2;
+      contentEnd -=2;
+    }
 
     return {
       start: objStartIndex.start, 
@@ -491,6 +500,58 @@ export class DataParser {
     }
 
     return {start, end: arrayEnd};
+  }
+      
+  getHexBounds(start: number, skipEmpty = true): Bounds  {   
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
+      return null;
+    }
+
+    const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
+    if (end === -1) {
+      return null;
+    }
+
+    return {start, end};
+  }  
+
+  getLiteralBounds(start: number, skipEmpty = true): Bounds  {       
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
+      return null;
+    }
+
+    let i = start + 1;
+    let prevCode: number;
+    let code: number;
+    let opened = 0;
+
+    while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+      if (i > this._maxIndex) {
+        return null;
+      }
+
+      if (!isNaN(code)) {
+        prevCode = code;
+      }
+
+      code = this.getCharCode(i++);
+
+      if (prevCode !== codes.BACKSLASH) {
+        if (code === codes.L_PARENTHESE) {
+          opened += 1;
+        } else if (opened && code === codes.R_PARENTHESE) {
+          opened -= 1;
+        }
+      }
+    }
+
+    return {start, end: i - 1};
   }
 
   parseNumberAt(start: number, 
@@ -659,12 +720,61 @@ export class DataParser {
       return -1;
     }
 
-    for (let i = start; i <= max; i++) {
-      // TODO: add a check if slash is inside a literal string
-      if (this._data[i] === codes.SLASH) {
-        return i;
+    let i = start;
+    while (i <= max) {      
+      const value = this.getValueTypeAt(i, true);
+      if (value) {
+        let skipValueBounds: Bounds;
+        switch (value) {
+          case valueTypes.DICTIONARY:
+            skipValueBounds = this.getDictBoundsAt(i, false);
+            break;
+          case valueTypes.ARRAY:
+            skipValueBounds = this.getArrayBoundsAt(i, false);
+            break;
+          case valueTypes.STRING_LITERAL:            
+            skipValueBounds = this.getLiteralBounds(i, false);
+            break; 
+          case valueTypes.STRING_HEX: 
+            skipValueBounds = this.getHexBounds(i, false);
+            break; 
+          case valueTypes.NUMBER:
+            const numberParseResult = this.parseNumberAt(i, true, false);
+            if (numberParseResult) {
+              skipValueBounds = numberParseResult;
+            }
+            break; 
+          case valueTypes.BOOLEAN:
+            const boolParseResult = this.parseBoolAt(i, false);
+            if (boolParseResult) {
+              skipValueBounds = boolParseResult;
+            }
+            break;
+          case valueTypes.COMMENT:
+            // TODO: Add skip comment
+            break;
+          case valueTypes.NAME:
+            return i;
+          default:
+            i++;
+            continue;
+        }   
+        if (skipValueBounds) {
+          i = skipValueBounds.end + 1;
+          skipValueBounds = null;     
+          continue;
+        }
       }
+      i++;
     }
+
+    // naive logic
+    // for (let i = start; i <= max; i++) {
+    //   // TODO: add a check if slash is inside a literal string
+    //   if (this._data[i] === codes.SLASH) {
+    //     return i;
+    //   }
+    // }
     return -1;
   }
   //#endregion

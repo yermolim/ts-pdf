@@ -85,7 +85,7 @@ export class FlateParamsDict extends PdfDict {
           default:
             
             // skip to next name
-            i = parser.skipToNextName(i, end);
+            i = parser.skipToNextName(i, end - 1);
             break;
         }
       } else {
