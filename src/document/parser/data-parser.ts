@@ -407,26 +407,24 @@ export class DataParser {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
-    if (this.isOutside(start) || this._data[start] !== codes.LESS) {
+    if (this.isOutside(start) 
+      || this._data[start] !== codes.LESS
+      || this._data[start + 1] !== codes.LESS) {
       return null;
     }
-
-    const dictStart = this.findSubarrayIndex(keywordCodes.DICT_START, 
-      {minIndex: start});
-    if (!dictStart) {
-      return null;
-    }     
-    const contentStart = this.findNonSpaceIndex("straight", dictStart.end + 1);
+     
+    const contentStart = this.findNonSpaceIndex("straight", start + 2);
     if (contentStart === -1){
       return null;
     }  
     
-    let subDictOpened = 0;
+    let dictOpened = 1;
+    let dictBound = true;
     let literalOpened = 0;
     let i = contentStart;    
     let code: number;
     let prevCode: number;
-    while (true) {
+    while (dictOpened) {
       prevCode = code;
       code = this._data[i++];
 
@@ -447,29 +445,29 @@ export class DataParser {
         continue;
       }
 
-      if (code === codes.LESS && code === prevCode) {
-        subDictOpened++;
-      }
-
-      if (code === codes.GREATER && code === prevCode) {
-        if (subDictOpened) {
-          subDictOpened--;
-        } else {
-          break;
+      if (!dictBound) {
+        if (code === codes.LESS && code === prevCode) {
+          dictOpened++;
+          dictBound = true;
+        } else if (code === codes.GREATER && code === prevCode) {
+          dictOpened--;
+          dictBound = true;
         }
+      } else {        
+        dictBound = false;
       }
     }
-    const dictEnd = i - 1;
-
-    const contentEnd = this.findNonSpaceIndex("reverse", dictEnd - 2);
+    const end = i - 1;
+ 
+    const contentEnd = this.findNonSpaceIndex("reverse", end - 2);
     if (contentEnd < contentStart) {
       // should be possible only in an empty dict
       return null;
     }
 
     return {
-      start: dictStart.start, 
-      end: dictEnd,
+      start, 
+      end,
       contentStart,
       contentEnd,
     };

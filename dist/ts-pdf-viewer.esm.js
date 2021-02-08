@@ -978,6 +978,7 @@ const dictTypes = {
     ACTION: "/Action",
     MEASURE: "/Measure",
     DEV_EXTENSIONS: "/DeveloperExtensions",
+    GRAPHICS_STATE: "ExtGState",
     EMPTY: "",
 };
 const valueTypes = {
@@ -1317,11 +1318,7 @@ class ObjectId {
 
 class PdfDict {
     constructor(type) {
-        this._customProps = new Map();
         this.Type = type;
-    }
-    get customProps() {
-        return new Map(this._customProps);
     }
     tryParseProps(parseInfo) {
         if (!parseInfo) {
@@ -1350,9 +1347,7 @@ class PdfDict {
                             }
                             return true;
                         }
-                        else {
-                            throw new Error("Can't parse /Type property value");
-                        }
+                        throw new Error("Can't parse /Type property value");
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -3700,23 +3695,22 @@ class DataParser {
         if (skipEmpty) {
             start = this.skipEmpty(start);
         }
-        if (this.isOutside(start) || this._data[start] !== codes.LESS) {
+        if (this.isOutside(start)
+            || this._data[start] !== codes.LESS
+            || this._data[start + 1] !== codes.LESS) {
             return null;
         }
-        const dictStart = this.findSubarrayIndex(keywordCodes.DICT_START, { minIndex: start });
-        if (!dictStart) {
-            return null;
-        }
-        const contentStart = this.findNonSpaceIndex("straight", dictStart.end + 1);
+        const contentStart = this.findNonSpaceIndex("straight", start + 2);
         if (contentStart === -1) {
             return null;
         }
-        let subDictOpened = 0;
+        let dictOpened = 1;
+        let dictBound = true;
         let literalOpened = 0;
         let i = contentStart;
         let code;
         let prevCode;
-        while (true) {
+        while (dictOpened) {
             prevCode = code;
             code = this._data[i++];
             if (code === codes.L_PARENTHESE
@@ -3730,26 +3724,28 @@ class DataParser {
             if (literalOpened) {
                 continue;
             }
-            if (code === codes.LESS && code === prevCode) {
-                subDictOpened++;
+            if (!dictBound) {
+                if (code === codes.LESS && code === prevCode) {
+                    dictOpened++;
+                    dictBound = true;
+                }
+                else if (code === codes.GREATER && code === prevCode) {
+                    dictOpened--;
+                    dictBound = true;
+                }
             }
-            if (code === codes.GREATER && code === prevCode) {
-                if (subDictOpened) {
-                    subDictOpened--;
-                }
-                else {
-                    break;
-                }
+            else {
+                dictBound = false;
             }
         }
-        const dictEnd = i - 1;
-        const contentEnd = this.findNonSpaceIndex("reverse", dictEnd - 2);
+        const end = i - 1;
+        const contentEnd = this.findNonSpaceIndex("reverse", end - 2);
         if (contentEnd < contentStart) {
             return null;
         }
         return {
-            start: dictStart.start,
-            end: dictEnd,
+            start,
+            end,
             contentStart,
             contentEnd,
         };
@@ -4272,6 +4268,66 @@ class ObjectStream extends PdfStream {
     }
 }
 
+class ObjectMapDict extends PdfDict {
+    constructor() {
+        super(null);
+        this._objectIdMap = new Map();
+    }
+    static parse(parseInfo) {
+        const trailer = new ObjectMapDict();
+        const parseResult = trailer.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    getProp(name) {
+        return this._objectIdMap.get(name);
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    default:
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.REF) {
+                            const id = ObjectId.parseRef(parser, i);
+                            if (id) {
+                                this._objectIdMap.set(name, id.value);
+                                i = id.end + 1;
+                                break;
+                            }
+                        }
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
 class ResourceDict extends PdfDict {
     constructor() {
         super(null);
@@ -4306,6 +4362,33 @@ class ResourceDict extends PdfDict {
                 i = parseResult.end + 1;
                 name = parseResult.value;
                 switch (name) {
+                    case "/ExtGState":
+                    case "/ColorSpace":
+                    case "/Pattern":
+                    case "/Shading":
+                    case "/XObject":
+                    case "/Font":
+                    case "/Properties":
+                        const mapBounds = parser.getDictBoundsAt(i);
+                        if (mapBounds) {
+                            const map = ObjectMapDict.parse({ parser, bounds: mapBounds });
+                            console.log(parser.sliceChars(mapBounds.contentStart, mapBounds.contentEnd));
+                            console.log(map);
+                            if (map) {
+                                this[name.substring(1)] = map.value;
+                                i = mapBounds.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error(`Can't parse ${name} property value`);
+                    case "/ProcSet":
+                        const procedureNames = parser.parseNameArrayAt(i);
+                        if (procedureNames) {
+                            this.ProcSet = procedureNames.value;
+                            i = procedureNames.end + 1;
+                            break;
+                        }
+                        throw new Error("Can't parse /ProcSet property value");
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;

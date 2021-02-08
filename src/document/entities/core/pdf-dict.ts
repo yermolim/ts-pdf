@@ -5,10 +5,10 @@ export class PdfDict {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: DictType;
 
-  protected readonly _customProps = new Map<string, any>();
-  get customProps(): Map<string, any>{
-    return new Map<string, any>(this._customProps);
-  }
+  // protected readonly _customProps = new Map<string, any>();
+  // get customProps(): Map<string, any>{
+  //   return new Map<string, any>(this._customProps);
+  // }
 
   protected constructor(type: DictType) {
     this.Type = type;
@@ -49,10 +49,8 @@ export class PdfDict {
               // TEMP: now we are only interested in /Type value, so no need to proceed further
               //i = type.end + 1;
               return true;
-            } else {
-              throw new Error("Can't parse /Type property value");
             }
-          // TODO: add case for custom props
+            throw new Error("Can't parse /Type property value");
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

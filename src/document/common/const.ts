@@ -135,6 +135,7 @@ export const dictTypes = {
   ACTION: "/Action",
   MEASURE: "/Measure",
   DEV_EXTENSIONS: "/DeveloperExtensions",
+  GRAPHICS_STATE: "ExtGState",
   EMPTY: "",
 } as const;
 export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
@@ -317,6 +318,7 @@ export const highlightingModes = {
 } as const;
 export type HighlightingMode = typeof highlightingModes[keyof typeof highlightingModes];
 
+//#region lines
 export const lineEndingTypes = {
   SQUARE: "/Square",
   CIRCLE: "/Circle",
@@ -330,6 +332,133 @@ export const lineEndingTypes = {
   SLASH: "/Slash",
 } as const;
 export type LineEndingType = typeof lineEndingTypes[keyof typeof lineEndingTypes];
+
+export const lineCapStyles = {
+  BUTT: 0,
+  ROUND: 1,
+  SQUARE: 2,
+} as const;
+export type LineCapStyle = typeof lineCapStyles[keyof typeof lineCapStyles];
+
+export const lineJoinStyles = {
+  MITER: 0,
+  ROUND: 1,
+  BEVEL: 2,
+} as const;
+export type LineJoinStyle = typeof lineJoinStyles[keyof typeof lineJoinStyles];
+//#endregion
+
+export const renderingIntents = {
+  /**
+   * Colours shall be represented solely with respect to the light source; 
+   * no correction shall be made for the output medium’s white point 
+   * (such as the colour of unprinted paper). Thus, for example, a monitor’s white point, 
+   * which is bluish compared to that of a printer’s paper, 
+   * would be reproduced with a blue cast. In-gamut colours shall bereproduced exactly; 
+   * out-of-gamut colours shall be mapped to the nearest value within the reproducible gamut
+   */
+  ABSOLUTE: "/AbsoluteColorimetric",
+  /**
+   * Colours shall be represented with respect to the combination of the light source 
+   * and the output medium’s white point (such as the colour of unprinted paper). 
+   * Thus, a monitor’s white point can be reproduced on a printer 
+   * by simply leaving the paper unmarked, ignoring colour differences between the two media. 
+   * In-gamut colours shall be reproduced exactly; out-of-gamut colours shall bemapped 
+   * to the nearest value within the reproducible gamut
+   */
+  RELATIVE: "/RelativeColorimetric",
+  /**
+   * Colours shall be represented in a manner that preserves or emphasizes saturation. 
+   * Reproduction of in-gamut colours may or may not be colourimetrically accurate
+   */
+  SATURATION: "/Saturation",
+  /**
+   * Colours shall be represented in a manner that provides a pleasing perceptual appearance. 
+   * To preserve colour relationships, both in-gamut and out-of-gamut colours 
+   * shall be generally modified from their precise colourimetric values
+   */
+  PERCEPTUAL: "/Perceptual",
+} as const;
+export type RenderingIntent = typeof renderingIntents[keyof typeof renderingIntents];
+
+export const blendModes = {
+  /**
+   * Selects the source colour, ignoring the backdrop
+   */
+  NORMAL: "/Normal",
+  /**
+   * Same as Normal. This mode exists only for compatibility and should not be used
+   */
+  COMPATIBLE: "/Compatible",
+  /**
+   * Multiplies the backdrop and source colour values. 
+   * The result colour is always atleast as dark as either 
+   * of the two constituent colours. Multiplying any colour with black produces black; 
+   * multiplying with white leaves the original colour unchanged. 
+   * Painting successive overlapping objects with a colour 
+   * other than black or white produces progressively darker colours
+   */
+  MULTIPLY: "/Multiply",
+  /**
+   * The result colour is always at least as light as either 
+   * of the two constituent colours. Screening any colour with white produces white; 
+   * screening with black leaves the original colour unchanged. 
+   * The effect is similar to projecting multiple photographic 
+   * slides simultaneously onto a single screen
+   */
+  SCREEN: "/Screen",
+  /**
+   * Multiplies or screens the colours, depending on the backdrop colour value. 
+   * Source colours overlay the backdrop while preserving its highlights and shadows. 
+   * The backdrop colour is not replaced but is mixed with the source colour 
+   * to reflect the lightness or darkness of the backdrop
+   */
+  OVERLAY: "/Overlay",
+  /**
+   * Selects the darker of the backdrop and source colours. 
+   * The backdrop is replaced with the source where the source is darker; 
+   * otherwise, it is left unchanged
+   */
+  DARKEN: "/Darken",
+  /**
+   * Selects the lighter of the backdrop and source colours. 
+   * The backdrop is replaced with the source where the source is lighter; 
+   * otherwise, it is left unchanged
+   */
+  LIGHTEN: "/Lighten",
+  /**
+   * Brightens the backdrop colour to reflect the source colour. 
+   * Painting with black produces no changes
+   */
+  COLOR_DODGE: "/ColorDodge",
+  /**
+   * Darkens the backdrop colour to reflect the source colour. 
+   * Painting with white produces no change
+   */
+  COLOR_BURN: "/ColorBurn",
+  /**
+   * Multiplies or screens the colours, depending on the source colour value. 
+   * The effect is similar to shining a harsh spotlight on the backdrop
+   */
+  HARD_LIGHT: "/HardLight",
+  /**
+   * Darkens or lightens the colours, depending on the source colour value. 
+   * The effect is similar to shining a diffused spotlight on the backdrop
+   */
+  SOFT_LIGHT: "/SoftLight",
+  /**
+   * Subtracts the darker of the two constituent colours from the lighter colour. 
+   * Painting with white inverts the backdrop colour; painting with black produces no change
+   */
+  DIFFERENCE: "/Difference",
+  /**
+   * Produces an effect similar to that of the Difference mode but lower in contrast. 
+   * Painting with white inverts the backdrop colour; painting with black produces no change
+   */
+  EXCLUSION: "/Exclusion",
+} as const;
+export type BlendMode = typeof blendModes[keyof typeof blendModes];
+
 
 export const supportedFilters = new Set<string>([
   streamFilters.FLATE,
