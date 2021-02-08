@@ -1956,12 +1956,7 @@ class FlateDecoder {
             case (flatePredictors.PNG_PAETH):
             case (flatePredictors.PNG_OPTIMUM):
                 const unfiltered = FlateDecoder.removePngFilter(inflated, columns, components, bpc);
-                const encodedAgain = FlateDecoder.Encode(unfiltered, predictor, columns, components, bpc);
-                const stream2 = new Stream(encodedAgain, 0, encodedAgain.length);
-                const flate2 = new FlateStream(stream2);
-                const inflated2 = flate2.takeBytes(null);
-                const unfilteredAgain = FlateDecoder.removePngFilter(inflated2, columns, components, bpc);
-                return unfilteredAgain;
+                return unfiltered;
             case (flatePredictors.TIFF):
                 throw new Error("Unsupported filter predictor");
         }
