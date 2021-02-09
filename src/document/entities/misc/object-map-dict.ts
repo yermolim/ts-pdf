@@ -24,8 +24,19 @@ export class ObjectMapDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    this._objectIdMap.forEach((v, k) => {
+      bytes.push(...encoder.encode(k), ...v.toRefArray());
+    });
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

@@ -2,21 +2,21 @@ import { valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { AppearanceSubDict } from "./appearance-sub-dict";
+import { ObjectMapDict } from "../misc/object-map-dict";
 
 export class AppearanceDict extends PdfDict {
   /**
    * (Required) The annotation’s normal appearance 
    */
-  N: AppearanceSubDict | ObjectId;
+  N: ObjectMapDict | ObjectId;
   /**
    * (Optional) The annotation’s rollover appearance
    */
-  R: AppearanceSubDict | ObjectId; 
+  R: ObjectMapDict | ObjectId; 
   /**
    * (Optional) The annotation’s down appearance
    */
-  D: AppearanceSubDict | ObjectId; 
+  D: ObjectMapDict | ObjectId; 
   
   constructor() {
     super(null);
@@ -32,8 +32,40 @@ export class AppearanceDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.N) {
+      bytes.push(...encoder.encode("/N"));
+      if (this.N instanceof ObjectMapDict) {        
+        bytes.push(...this.N.toArray());
+      } else {               
+        bytes.push(...this.N.toRefArray());
+      }
+    }
+    if (this.R) {
+      bytes.push(...encoder.encode("/R"));
+      if (this.R instanceof ObjectMapDict) {        
+        bytes.push(...this.R.toArray());
+      } else {               
+        bytes.push(...this.R.toRefArray());
+      }
+    }
+    if (this.D) {
+      bytes.push(...encoder.encode("/D"));
+      if (this.D instanceof ObjectMapDict) {        
+        bytes.push(...this.D.toArray());
+      } else {               
+        bytes.push(...this.D.toRefArray());
+      }
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**
@@ -74,7 +106,7 @@ export class AppearanceDict extends PdfDict {
             } else if (nEntryType === valueTypes.DICTIONARY) {     
               const nDictBounds = parser.getDictBoundsAt(i);
               if (nDictBounds) {
-                const nSubDict = AppearanceSubDict.parse({parser, bounds: nDictBounds});
+                const nSubDict = ObjectMapDict.parse({parser, bounds: nDictBounds});
                 if (nSubDict) {
                   this.N = nSubDict.value;
                   i = nSubDict.end + 1;
@@ -97,7 +129,7 @@ export class AppearanceDict extends PdfDict {
             } else if (rEntryType === valueTypes.DICTIONARY) {     
               const rDictBounds = parser.getDictBoundsAt(i);
               if (rDictBounds) {
-                const rSubDict = AppearanceSubDict.parse({parser, bounds: rDictBounds});
+                const rSubDict = ObjectMapDict.parse({parser, bounds: rDictBounds});
                 if (rSubDict) {
                   this.R = rSubDict.value;
                   i = rSubDict.end + 1;
@@ -120,7 +152,7 @@ export class AppearanceDict extends PdfDict {
             } else if (dEntryType === valueTypes.DICTIONARY) {     
               const dDictBounds = parser.getDictBoundsAt(i);
               if (dDictBounds) {
-                const dSubDict = AppearanceSubDict.parse({parser, bounds: dDictBounds});
+                const dSubDict = ObjectMapDict.parse({parser, bounds: dDictBounds});
                 if (dSubDict) {
                   this.D = dSubDict.value;
                   i = dSubDict.end + 1;

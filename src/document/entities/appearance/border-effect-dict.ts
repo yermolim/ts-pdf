@@ -26,10 +26,24 @@ export class BorderEffectDict extends PdfDict {
       ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
-  
+    
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.S) {
+      bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+    }
+    if (this.L) {
+      bytes.push(...encoder.encode("/L"), ...encoder.encode(this.L + ""));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

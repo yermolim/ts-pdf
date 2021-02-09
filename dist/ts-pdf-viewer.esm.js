@@ -1421,8 +1421,12 @@ class DateString {
         const source = new TextDecoder().decode(arr);
         return DateString.fromString(source);
     }
-    toArray() {
-        return new TextEncoder().encode(this.source);
+    toArray(braced = true) {
+        const bytes = new TextEncoder().encode(this.source);
+        return braced
+            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
+                ...bytes, ...keywordCodes.STR_LITERAL_END])
+            : new Uint8Array(bytes);
     }
 }
 
@@ -2605,7 +2609,24 @@ class BorderStyleDict extends PdfDict {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.W) {
+            bytes.push(...encoder.encode("/W"), ...encoder.encode(this.W + ""));
+        }
+        if (this.S) {
+            bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+        }
+        if (this.D) {
+            bytes.push(...encoder.encode("/D"), codes.L_BRACKET, ...encoder.encode(this.D[0] + ""), codes.WHITESPACE, ...encoder.encode(this.D[1] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         var _a, _b;
@@ -2674,23 +2695,34 @@ class BorderStyleDict extends PdfDict {
     }
 }
 
-class AppearanceSubDict extends PdfDict {
+class ObjectMapDict extends PdfDict {
     constructor() {
         super(null);
-        this._customProps = new Map();
-    }
-    get customProps() {
-        return new Map(this._customProps);
+        this._objectIdMap = new Map();
     }
     static parse(parseInfo) {
-        const trailer = new AppearanceSubDict();
+        const trailer = new ObjectMapDict();
         const parseResult = trailer.tryParseProps(parseInfo);
         return parseResult
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
+    getProp(name) {
+        return this._objectIdMap.get(name);
+    }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        this._objectIdMap.forEach((v, k) => {
+            bytes.push(...encoder.encode(k), ...v.toRefArray());
+        });
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -2711,13 +2743,19 @@ class AppearanceSubDict extends PdfDict {
             if (parseResult) {
                 i = parseResult.end + 1;
                 name = parseResult.value;
-                const id = ObjectId.parseRef(parser, i);
-                if (id) {
-                    this._customProps.set(name, id.value);
-                    i = id.end + 1;
-                }
-                else {
-                    i = parser.skipToNextName(i, end - 1);
+                switch (name) {
+                    default:
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.REF) {
+                            const id = ObjectId.parseRef(parser, i);
+                            if (id) {
+                                this._objectIdMap.set(name, id.value);
+                                i = id.end + 1;
+                                break;
+                            }
+                        }
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
                 }
             }
             else {
@@ -2740,7 +2778,42 @@ class AppearanceDict extends PdfDict {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.N) {
+            bytes.push(...encoder.encode("/N"));
+            if (this.N instanceof ObjectMapDict) {
+                bytes.push(...this.N.toArray());
+            }
+            else {
+                bytes.push(...this.N.toRefArray());
+            }
+        }
+        if (this.R) {
+            bytes.push(...encoder.encode("/R"));
+            if (this.R instanceof ObjectMapDict) {
+                bytes.push(...this.R.toArray());
+            }
+            else {
+                bytes.push(...this.R.toRefArray());
+            }
+        }
+        if (this.D) {
+            bytes.push(...encoder.encode("/D"));
+            if (this.D instanceof ObjectMapDict) {
+                bytes.push(...this.D.toArray());
+            }
+            else {
+                bytes.push(...this.D.toRefArray());
+            }
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -2775,7 +2848,7 @@ class AppearanceDict extends PdfDict {
                         else if (nEntryType === valueTypes.DICTIONARY) {
                             const nDictBounds = parser.getDictBoundsAt(i);
                             if (nDictBounds) {
-                                const nSubDict = AppearanceSubDict.parse({ parser, bounds: nDictBounds });
+                                const nSubDict = ObjectMapDict.parse({ parser, bounds: nDictBounds });
                                 if (nSubDict) {
                                     this.N = nSubDict.value;
                                     i = nSubDict.end + 1;
@@ -2800,7 +2873,7 @@ class AppearanceDict extends PdfDict {
                         else if (rEntryType === valueTypes.DICTIONARY) {
                             const rDictBounds = parser.getDictBoundsAt(i);
                             if (rDictBounds) {
-                                const rSubDict = AppearanceSubDict.parse({ parser, bounds: rDictBounds });
+                                const rSubDict = ObjectMapDict.parse({ parser, bounds: rDictBounds });
                                 if (rSubDict) {
                                     this.R = rSubDict.value;
                                     i = rSubDict.end + 1;
@@ -2825,7 +2898,7 @@ class AppearanceDict extends PdfDict {
                         else if (dEntryType === valueTypes.DICTIONARY) {
                             const dDictBounds = parser.getDictBoundsAt(i);
                             if (dDictBounds) {
-                                const dSubDict = AppearanceSubDict.parse({ parser, bounds: dDictBounds });
+                                const dSubDict = ObjectMapDict.parse({ parser, bounds: dDictBounds });
                                 if (dSubDict) {
                                     this.D = dSubDict.value;
                                     i = dSubDict.end + 1;
@@ -2871,7 +2944,21 @@ class BorderEffectDict extends PdfDict {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.S) {
+            bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+        }
+        if (this.L) {
+            bytes.push(...encoder.encode("/L"), ...encoder.encode(this.L + ""));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -3004,6 +3091,61 @@ class AnnotationDict extends PdfDict {
         this.F = 0;
         this.Border = new BorderArray(0, 0, 1);
         this.Subtype = subType;
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+        }
+        if (this.Rect) {
+            bytes.push(...encoder.encode("/Rect"), codes.L_BRACKET, ...encoder.encode(this.Rect[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[3] + ""), codes.R_BRACKET);
+        }
+        if (this.Contents) {
+            bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
+        }
+        if (this.P) {
+            bytes.push(...encoder.encode("/P"), ...this.P.toRefArray());
+        }
+        if (this.NM) {
+            bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
+        }
+        if (this.M) {
+            bytes.push(...encoder.encode("/M"), ...this.M.toArray());
+        }
+        if (this.F) {
+            bytes.push(...encoder.encode("/F"), ...encoder.encode(this.F + ""));
+        }
+        if (this.AP) {
+            bytes.push(...encoder.encode("/AP"), ...this.AP.toArray());
+        }
+        if (this.AS) {
+            bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
+        }
+        if (this.Border) {
+            bytes.push(...encoder.encode("/Border"), ...this.Border.toArray());
+        }
+        if (this.BS) {
+            bytes.push(...encoder.encode("/BS"), ...this.BS.toArray());
+        }
+        if (this.BE) {
+            bytes.push(...encoder.encode("/BE"), ...this.BE.toArray());
+        }
+        if (this.C) {
+            bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
+            this.C.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.StructParent) {
+            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -3263,6 +3405,44 @@ class MarkupAnnotation extends AnnotationDict {
     constructor(subType) {
         super(subType);
         this.RT = markupAnnotationReplyTypes.REPLY;
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.T) {
+            bytes.push(...encoder.encode("/T"), ...this.T.toArray());
+        }
+        if (this.Popup) {
+            bytes.push(...encoder.encode("/Popup"), ...this.Popup.toRefArray());
+        }
+        if (this.RC) {
+            bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
+        }
+        if (this.CA) {
+            bytes.push(...encoder.encode("/CA"), ...encoder.encode(this.CA + ""));
+        }
+        if (this.CreationDate) {
+            bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
+        }
+        if (this.Subj) {
+            bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
+        }
+        if (this.IRT) {
+            bytes.push(...encoder.encode("/IRT"), ...this.IRT.toRefArray());
+        }
+        if (this.RT) {
+            bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -4625,66 +4805,6 @@ class ObjectStream extends PdfStream {
                         break;
                     default:
                         i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class ObjectMapDict extends PdfDict {
-    constructor() {
-        super(null);
-        this._objectIdMap = new Map();
-    }
-    static parse(parseInfo) {
-        const trailer = new ObjectMapDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    getProp(name) {
-        return this._objectIdMap.get(name);
-    }
-    toArray() {
-        return new Uint8Array();
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    default:
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const id = ObjectId.parseRef(parser, i);
-                            if (id) {
-                                this._objectIdMap.set(name, id.value);
-                                i = id.end + 1;
-                                break;
-                            }
-                        }
-                        i = parser.skipToNextName(i, end - 1);
                         break;
                 }
             }

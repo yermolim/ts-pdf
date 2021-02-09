@@ -1,3 +1,4 @@
+import { codes } from "../../common/codes";
 import { dictTypes, Pair } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
@@ -35,11 +36,32 @@ export class BorderStyleDict extends PdfDict {
     return parseResult
       ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
-  }
+  }  
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.W) {
+      bytes.push(...encoder.encode("/W"), ...encoder.encode(this.W + ""));
+    }
+    if (this.S) {
+      bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+    }
+    if (this.D) {
+      bytes.push(
+        ...encoder.encode("/D"), codes.L_BRACKET, 
+        ...encoder.encode(this.D[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.D[1] + ""), codes.R_BRACKET,
+      );
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

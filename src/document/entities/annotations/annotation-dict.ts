@@ -10,6 +10,7 @@ import { AnnotationType, dictTypes, Rect, valueTypes } from "../../common/const"
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { LiteralString } from "../common/literal-string";
 import { BorderArray } from "../appearance/border-array";
+import { codes } from "../../common/codes";
 
 export abstract class AnnotationDict extends PdfDict {
   /** (Required) The type of annotation that this dictionary describes */
@@ -67,6 +68,7 @@ export abstract class AnnotationDict extends PdfDict {
   /** (Required if the annotation is a structural content item; PDF 1.3+) 
    * The integer key of the annotation’s entry in the structural parent tree */
   StructParent: number;
+
   /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
    *  specifying the optional content properties for the annotation */
   OC: OcMembershipDict | OcGroupDict;
@@ -75,6 +77,70 @@ export abstract class AnnotationDict extends PdfDict {
     super(dictTypes.ANNOTATION);
 
     this.Subtype = subType;
+  }
+  
+  toArray(): Uint8Array {
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Subtype) {
+      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+    }
+    if (this.Rect) {
+      bytes.push(
+        ...encoder.encode("/Rect"), codes.L_BRACKET, 
+        ...encoder.encode(this.Rect[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.Rect[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.Rect[2] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.Rect[3] + ""), codes.R_BRACKET,
+      );
+    }
+    if (this.Contents) {
+      bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
+    }
+    if (this.P) {
+      bytes.push(...encoder.encode("/P"), ...this.P.toRefArray());
+    }
+    if (this.NM) {
+      bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
+    }
+    if (this.M) {
+      bytes.push(...encoder.encode("/M"), ...this.M.toArray());
+    }
+    if (this.F) {
+      bytes.push(...encoder.encode("/F"), ...encoder.encode(this.F + ""));
+    }
+    if (this.AP) {
+      bytes.push(...encoder.encode("/AP"), ...this.AP.toArray());
+    }
+    if (this.AS) {
+      bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
+    }
+    if (this.Border) {
+      bytes.push(...encoder.encode("/Border"), ...this.Border.toArray());
+    }
+    if (this.BS) {
+      bytes.push(...encoder.encode("/BS"), ...this.BS.toArray());
+    }
+    if (this.BE) {
+      bytes.push(...encoder.encode("/BE"), ...this.BE.toArray());
+    }
+    if (this.C) {
+      bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
+      this.C.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+      bytes.push(codes.R_BRACKET);
+    }
+    if (this.StructParent) {
+      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+    }
+    // TODO: handle remaining properties
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

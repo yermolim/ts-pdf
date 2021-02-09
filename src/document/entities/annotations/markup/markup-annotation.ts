@@ -83,6 +83,47 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     super(subType);
   }
   
+  toArray(): Uint8Array {
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.T) {
+      bytes.push(...encoder.encode("/T"), ...this.T.toArray());
+    }
+    if (this.Popup) {
+      bytes.push(...encoder.encode("/Popup"), ...this.Popup.toRefArray());
+    }
+    if (this.RC) {
+      bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
+    }
+    if (this.CA) {
+      bytes.push(...encoder.encode("/CA"), ...encoder.encode(this.CA + ""));
+    }
+    if (this.CreationDate) {
+      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
+    }
+    if (this.Subj) {
+      bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
+    }
+    if (this.IRT) {
+      bytes.push(...encoder.encode("/IRT"), ...this.IRT.toRefArray());
+    }
+    if (this.RT) {
+      bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
+    }
+    if (this.IT) {
+      bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+    }
+    // TODO: handle ExData
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
+  }
+  
   /**
    * fill public properties from data using info/parser if available
    */

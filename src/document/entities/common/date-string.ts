@@ -1,4 +1,4 @@
-import { codes } from "../../common/codes";
+import { codes, keywordCodes } from "../../common/codes";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class DateString {
@@ -56,7 +56,11 @@ export class DateString {
     return DateString.fromString(source);
   }
 
-  toArray(): Uint8Array {
-    return new TextEncoder().encode(this.source);
+  toArray(braced = true): Uint8Array { 
+    const bytes = new TextEncoder().encode(this.source);
+    return braced
+      ? new Uint8Array([...keywordCodes.STR_LITERAL_START, 
+        ...bytes, ...keywordCodes.STR_LITERAL_END])
+      : new Uint8Array(bytes);
   }
 }
