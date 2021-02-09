@@ -1,4 +1,5 @@
-import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../common/const";
+import { LinkedList } from "../../common/utils";
+import { maxGeneration, xRefEntryTypes } from "../common/const";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 
@@ -14,11 +15,11 @@ export interface UsedReference extends Reference {
 
 export interface FreeReference extends Reference {
   nextFreeId: number;
-  next?: FreeReference;
 }
 
 export class ReferenceData {  
-  readonly freeLinkedList: FreeReference;
+  readonly size: number;
+  readonly freeLinkedList: LinkedList<FreeReference>;
   readonly freeOutsideListMap: Map<number, FreeReference>;
   readonly usedMap: Map<number, UsedReference>;
 
@@ -28,6 +29,7 @@ export class ReferenceData {
     const allNormalEntries: XRefEntry[] = [];
     const allCompressedEntries: XRefEntry[] = [];
 
+    let maxId = 0;
     xrefs.forEach(x => {
       for (const entry of x.getEntries()) {
         switch (entry.type) {
@@ -43,8 +45,13 @@ export class ReferenceData {
           default:
             continue;
         }
+        if (entry.objectId > maxId) {
+          maxId = entry.objectId;
+        }
       }
     });
+
+    this.size = maxId + 1;
     // #endregion
     
     // #region handle free object references
@@ -68,19 +75,17 @@ export class ReferenceData {
       generation: maxGeneration,
       nextFreeId: 0,
     };
-
-    const freeLinkedList = zeroFreeRef;
+    const freeLinkedList = new LinkedList<FreeReference>(zeroFreeRef);
     const freeOutsideListMap = new Map<number, FreeReference>();
 
     // get all free object entries
-    const freeMap = new Map<number, FreeReference>([
-      [0, zeroFreeRef],
-    ]);
+    const freeMap = new Map<number, FreeReference>();
     let zeroFound = false;
     for (const entry of allFreeEntries) {
       if (!zeroFound && entry.objectId === 0) {
         zeroFound = true;
         zeroFreeRef.nextFreeId = entry.nextFreeId;
+        continue;
       }
       
       const valueFromMap = freeMap.get(entry.objectId);
@@ -93,18 +98,13 @@ export class ReferenceData {
     }
 
     // fill the linked list of free objects
-    let nextId: number;
+    let nextId = zeroFreeRef.nextFreeId;
     let next: FreeReference;
-    let currentRef = zeroFreeRef;
-    while (true) {
-      nextId = currentRef.nextFreeId;
+    while (nextId) {
       next = freeMap.get(nextId);
       freeMap.delete(nextId);
-      currentRef.next = next;
-      if (!nextId) {
-        break;
-      }
-      currentRef = next;
+      freeLinkedList.append(next);
+      nextId = next.nextFreeId;
     }
 
     // find free objects outside the linked list
@@ -123,7 +123,7 @@ export class ReferenceData {
     const normalRefs = new Map<number, UsedReference>();
 
     for (const entry of allNormalEntries) {
-      if (!this.checkReference(entry)) {
+      if (this.isFreed(entry)) {
         continue;
       }
 
@@ -140,7 +140,7 @@ export class ReferenceData {
     }
 
     for (const entry of allCompressedEntries) {
-      if (!this.checkReference(entry)) {
+      if (this.isFreed(entry)) {
         continue;
       }
 
@@ -164,24 +164,6 @@ export class ReferenceData {
     // #endregion
   }
 
-  /**
-   * returns 'false' if the reference is freed or 'true' otherwise
-   * @param ref 
-   */
-  checkReference(ref: Reference): boolean {
-    if (this.freeOutsideListMap.has(ref.objectId)) {
-      return false;
-    }
-    let listRef = this.freeLinkedList;
-    while (listRef.nextFreeId) {
-      if (ref.objectId === listRef.objectId && ref.generation < listRef.generation) {
-        return false;
-      }
-      listRef = listRef.next;
-    }
-    return true;
-  }
-
   getOffset(id: number): number {
     return this.usedMap.get(id)?.byteOffset;
   }
@@ -189,4 +171,65 @@ export class ReferenceData {
   getGeneration(id: number): number {
     return this.usedMap.get(id)?.generation;
   }
+
+
+
+
+  applyChange() {
+
+  }
+
+  resetChange() {
+
+  }
+
+
+
+
+  private isFreed(ref: Reference): boolean {
+    return this.freeOutsideListMap.has(ref.objectId)
+      || this.freeLinkedList.has(<FreeReference>ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
+  }
+  
+  private isUsed(ref: Reference): boolean {
+    return this.usedMap.has(ref.objectId);
+  }
 }
+
+// class ReferenceDataChange {
+//   private readonly _refData: ReferenceData;
+//   private size; 
+
+//   private freeLinkedList: FreeReference;
+//   private usedMap: Map<number, UsedReference>;
+  
+//   constructor(refData: ReferenceData) {
+//     this._refData = refData;
+//     this.size = refData.size;
+
+//     let sourceFreeRef = refData.freeLinkedList;
+//     // get last free ref
+//     while (true) {
+      
+//       if (sourceFreeRef.nextFreeId) {
+//         sourceFreeRef = sourceFreeRef.next;
+//       } else {
+//         break;
+//       }
+//     }
+
+//     this.freeLinkedList = freeRef;
+//   }
+
+//   takeFreeRef(): Reference {
+//     return null;
+//   }
+
+//   setRefFree() {
+
+//   }
+
+//   export(): XRefEntry[] {
+//     return [];
+//   }
+// }

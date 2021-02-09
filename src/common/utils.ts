@@ -55,3 +55,175 @@ export interface Position {
   x: number;
   y: number;
 }
+
+export class LinkedListNode<T> {
+  data: T;
+  next: LinkedListNode<T>;
+
+  constructor (data: T) {
+    this.data = data;
+  }
+}
+
+export class LinkedList<T> {
+  private _head: LinkedListNode<T>;
+  get head(): LinkedListNode<T> {
+    return this._head;
+  }
+
+  private _length = 0;
+  get length(): number {
+    return this._length;
+  }
+
+  constructor(head?: T) {
+    if (head) {
+      this.append(head);
+    }
+  }
+
+  append(value: T) {
+    const node = new LinkedListNode<T>(value);
+    
+    let current: LinkedListNode<T>;
+    if (!this._head) {
+      this._head = node;
+    } else {
+      current = this.head;
+      while (current.next) {
+        current = current.next;
+      }
+      current.next = node;
+    }
+    this._length++;
+  }
+
+  insert(value: T, n: number): boolean {
+    if (n < 0 || n > this._length - 1) {
+      return false;
+    }
+
+    const node = new LinkedListNode<T>(value);
+    let previous: LinkedListNode<T>;
+    let current = this.head;
+    let i = 0;
+
+    if (!n) {
+      this._head = node;
+    } else {
+      while (i++ < n) {
+        previous = current;
+        current = current.next;
+      }
+      previous.next = node;
+    }
+    node.next = current;
+    this._length++;
+    return true;
+  }
+  
+  replace(value: T, n: number): boolean {    
+    if (n < 0 || n > this._length - 1) {
+      return false;
+    }
+
+    const node = new LinkedListNode<T>(value);
+    let previous: LinkedListNode<T>;
+    let current = this.head;
+    let i = 0;
+
+    if (!n) {
+      this._head = node;
+    } else {
+      while (i++ < n) {
+        previous = current;
+        current = current.next;
+      }
+      previous.next = node;
+    }
+    node.next = current.next;
+    return true;
+  }
+
+  remove(n: number): boolean {    
+    if (n < 0 || n > this._length - 1) {
+      return false;
+    }
+
+    let previous: LinkedListNode<T>;
+    let current = this.head;
+    let i = 0;
+
+    if (!n) {
+      this._head = current.next;
+    } else {
+      while (i++ < n) {
+        previous = current;
+        current = current.next;
+      }
+      previous.next = current.next;
+    }
+    this._length--;
+    return true;
+  }
+  
+  get(n: number): T {    
+    if (n < 0 || n > this._length - 1) {
+      return null;
+    }
+
+    let current = this.head;
+    let i = 0;
+    while (i++ < n) {
+      current = current.next;
+    }
+    return current.data;
+  }
+
+  has(value: T, comparator?: (a: T, b: T) => boolean): boolean {
+    if (!this._length) {
+      return false;
+    }
+
+    comparator ||= (a: T, b: T) => a === b;
+    
+    let current = this.head;
+    let i = 0;
+    while (i < this._length) {
+      if (comparator(value, current.data)) {
+        return true;
+      }
+      current = current.next;
+      i++;
+    }
+    return false;
+  }
+  
+  findIndex(value: T, comparator?: (a: T, b: T) => boolean): number {
+    if (!this._length) {
+      return -1;
+    }
+    
+    comparator ||= (a: T, b: T) => a === b;
+    
+    let current = this.head;
+    let i = 0;
+    while (i < this._length) {
+      if (comparator(value, current.data)) {
+        return i;
+      }
+      current = current.next;
+      i++;
+    }
+    return -1;
+  }
+ 
+  *[Symbol.iterator](): Iterable<T> {
+    let current = this._head;
+    while (current) {
+      yield current.data;
+      current = current.next;
+    }
+  }
+
+}

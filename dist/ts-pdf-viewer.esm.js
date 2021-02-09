@@ -456,6 +456,153 @@ function int32ToBytes(int) {
     view.setInt32(0, int, false);
     return new Uint8Array(buffer);
 }
+class LinkedListNode {
+    constructor(data) {
+        this.data = data;
+    }
+}
+class LinkedList {
+    constructor(head) {
+        this._length = 0;
+        if (head) {
+            this.append(head);
+        }
+    }
+    get head() {
+        return this._head;
+    }
+    get length() {
+        return this._length;
+    }
+    append(value) {
+        const node = new LinkedListNode(value);
+        let current;
+        if (!this._head) {
+            this._head = node;
+        }
+        else {
+            current = this.head;
+            while (current.next) {
+                current = current.next;
+            }
+            current.next = node;
+        }
+        this._length++;
+    }
+    insert(value, n) {
+        if (n < 0 || n > this._length - 1) {
+            return false;
+        }
+        const node = new LinkedListNode(value);
+        let previous;
+        let current = this.head;
+        let i = 0;
+        if (!n) {
+            this._head = node;
+        }
+        else {
+            while (i++ < n) {
+                previous = current;
+                current = current.next;
+            }
+            previous.next = node;
+        }
+        node.next = current;
+        this._length++;
+        return true;
+    }
+    replace(value, n) {
+        if (n < 0 || n > this._length - 1) {
+            return false;
+        }
+        const node = new LinkedListNode(value);
+        let previous;
+        let current = this.head;
+        let i = 0;
+        if (!n) {
+            this._head = node;
+        }
+        else {
+            while (i++ < n) {
+                previous = current;
+                current = current.next;
+            }
+            previous.next = node;
+        }
+        node.next = current.next;
+        return true;
+    }
+    remove(n) {
+        if (n < 0 || n > this._length - 1) {
+            return false;
+        }
+        let previous;
+        let current = this.head;
+        let i = 0;
+        if (!n) {
+            this._head = current.next;
+        }
+        else {
+            while (i++ < n) {
+                previous = current;
+                current = current.next;
+            }
+            previous.next = current.next;
+        }
+        this._length--;
+        return true;
+    }
+    get(n) {
+        if (n < 0 || n > this._length - 1) {
+            return null;
+        }
+        let current = this.head;
+        let i = 0;
+        while (i++ < n) {
+            current = current.next;
+        }
+        return current.data;
+    }
+    has(value, comparator) {
+        if (!this._length) {
+            return false;
+        }
+        comparator || (comparator = (a, b) => a === b);
+        let current = this.head;
+        let i = 0;
+        while (i < this._length) {
+            if (comparator(value, current.data)) {
+                return true;
+            }
+            current = current.next;
+            i++;
+        }
+        return false;
+    }
+    findIndex(value, comparator) {
+        if (!this._length) {
+            return -1;
+        }
+        comparator || (comparator = (a, b) => a === b);
+        let current = this.head;
+        let i = 0;
+        while (i < this._length) {
+            if (comparator(value, current.data)) {
+                return i;
+            }
+            current = current.next;
+            i++;
+        }
+        return -1;
+    }
+    *[Symbol.iterator]() {
+        let current = this._head;
+        while (current) {
+            yield current.data;
+            current = current.next;
+        }
+    }
+}
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -5633,6 +5780,7 @@ class ReferenceData {
         const allFreeEntries = [];
         const allNormalEntries = [];
         const allCompressedEntries = [];
+        let maxId = 0;
         xrefs.forEach(x => {
             for (const entry of x.getEntries()) {
                 switch (entry.type) {
@@ -5648,23 +5796,26 @@ class ReferenceData {
                     default:
                         continue;
                 }
+                if (entry.objectId > maxId) {
+                    maxId = entry.objectId;
+                }
             }
         });
+        this.size = maxId + 1;
         const zeroFreeRef = {
             objectId: 0,
             generation: maxGeneration,
             nextFreeId: 0,
         };
-        const freeLinkedList = zeroFreeRef;
+        const freeLinkedList = new LinkedList(zeroFreeRef);
         const freeOutsideListMap = new Map();
-        const freeMap = new Map([
-            [0, zeroFreeRef],
-        ]);
+        const freeMap = new Map();
         let zeroFound = false;
         for (const entry of allFreeEntries) {
             if (!zeroFound && entry.objectId === 0) {
                 zeroFound = true;
                 zeroFreeRef.nextFreeId = entry.nextFreeId;
+                continue;
             }
             const valueFromMap = freeMap.get(entry.objectId);
             if (!valueFromMap || valueFromMap.generation < entry.generation) {
@@ -5675,18 +5826,13 @@ class ReferenceData {
                 });
             }
         }
-        let nextId;
+        let nextId = zeroFreeRef.nextFreeId;
         let next;
-        let currentRef = zeroFreeRef;
-        while (true) {
-            nextId = currentRef.nextFreeId;
+        while (nextId) {
             next = freeMap.get(nextId);
             freeMap.delete(nextId);
-            currentRef.next = next;
-            if (!nextId) {
-                break;
-            }
-            currentRef = next;
+            freeLinkedList.append(next);
+            nextId = next.nextFreeId;
         }
         [...freeMap].forEach(x => {
             const value = x[1];
@@ -5698,7 +5844,7 @@ class ReferenceData {
         this.freeOutsideListMap = freeOutsideListMap;
         const normalRefs = new Map();
         for (const entry of allNormalEntries) {
-            if (!this.checkReference(entry)) {
+            if (this.isFreed(entry)) {
                 continue;
             }
             const valueFromMap = normalRefs.get(entry.objectId);
@@ -5712,7 +5858,7 @@ class ReferenceData {
             });
         }
         for (const entry of allCompressedEntries) {
-            if (!this.checkReference(entry)) {
+            if (this.isFreed(entry)) {
                 continue;
             }
             const valueFromMap = normalRefs.get(entry.objectId);
@@ -5731,19 +5877,6 @@ class ReferenceData {
         }
         this.usedMap = normalRefs;
     }
-    checkReference(ref) {
-        if (this.freeOutsideListMap.has(ref.objectId)) {
-            return false;
-        }
-        let listRef = this.freeLinkedList;
-        while (listRef.nextFreeId) {
-            if (ref.objectId === listRef.objectId && ref.generation < listRef.generation) {
-                return false;
-            }
-            listRef = listRef.next;
-        }
-        return true;
-    }
     getOffset(id) {
         var _a;
         return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
@@ -5751,6 +5884,17 @@ class ReferenceData {
     getGeneration(id) {
         var _a;
         return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
+    }
+    applyChange() {
+    }
+    resetChange() {
+    }
+    isFreed(ref) {
+        return this.freeOutsideListMap.has(ref.objectId)
+            || this.freeLinkedList.has(ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
+    }
+    isUsed(ref) {
+        return this.usedMap.has(ref.objectId);
     }
 }
 
