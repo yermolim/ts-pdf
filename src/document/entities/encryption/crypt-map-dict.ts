@@ -1,17 +1,17 @@
 import { valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
-import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
+import { CryptFilterDict } from "./crypt-filter-dict";
 
-export class ObjectMapDict extends PdfDict {
-  protected readonly _objectIdMap = new Map<string, ObjectId>();
+export class CryptMapDict extends PdfDict {
+  protected readonly _filtersMap = new Map<string, CryptFilterDict>();
   
   constructor() {
     super(null);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<ObjectMapDict> {    
-    const trailer = new ObjectMapDict();
+  static parse(parseInfo: ParseInfo): ParseResult<CryptMapDict> {    
+    const trailer = new CryptMapDict();
     const parseResult = trailer.tryParseProps(parseInfo);
 
     return parseResult
@@ -19,13 +19,26 @@ export class ObjectMapDict extends PdfDict {
       : null;
   }
   
-  getProp(name: string): ObjectId {
-    return this._objectIdMap.get(name);
+  getProp(name: string): CryptFilterDict { 
+    return this._filtersMap.get(name);
   }
-  
+
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+
+    if (this._filtersMap.size) {
+      this._filtersMap.forEach((v, k) => 
+        bytes.push(...encoder.encode(k), ...v.toArray()));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**
@@ -56,13 +69,16 @@ export class ObjectMapDict extends PdfDict {
         switch (name) {
           default:
             const entryType = parser.getValueTypeAt(i);
-            if (entryType === valueTypes.REF) {              
-              const id = ObjectId.parseRef(parser, i);
-              if (id) {
-                this._objectIdMap.set(name, id.value);
-                i = id.end + 1;
-                break;
-              }
+            if (entryType === valueTypes.DICTIONARY) { 
+              const dictBounds = parser.getDictBoundsAt(i);   
+              if (dictBounds) {
+                const filter = CryptFilterDict.parse({parser, bounds: dictBounds});
+                if (filter) {
+                  this._filtersMap.set(name, filter.value);
+                  i = filter.end + 1;
+                  break;
+                }
+              } 
             }
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

@@ -61,7 +61,7 @@ export class HexString {
     return new HexString(literal, hex, bytes);
   };
 
-  toArray(bracketed = false): Uint8Array {
+  toArray(bracketed = true): Uint8Array {
     return bracketed
       ? new Uint8Array([...keywordCodes.STR_HEX_START, 
         ...this.bytes, ...keywordCodes.STR_HEX_END])

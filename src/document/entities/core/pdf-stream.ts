@@ -38,6 +38,22 @@ export abstract class PdfStream extends PdfObject {
   get streamData(): Uint8Array {
     return this._streamData;
   }
+  set streamData(data: Uint8Array) { 
+    let encodedData: Uint8Array;   
+    if (this.DecodeParms) {
+      const params = this.DecodeParms;
+      encodedData = FlateDecoder.Encode(data,
+        params.Predictor,
+        params.Columns,
+        params.Colors,
+        params.BitsPerComponent); 
+    } else {      
+      encodedData = FlateDecoder.Encode(data);
+    }
+    this._streamData.set(encodedData);
+    this.Length = encodedData.length;
+    this.DL = data.length;
+  }
   get decodedStreamData(): Uint8Array {
     let decodedData: Uint8Array;
     if (this.DecodeParms) {
@@ -56,6 +72,33 @@ export abstract class PdfStream extends PdfObject {
   protected constructor(type: StreamType = null) {
     super();
     this.Type = type;
+  }  
+
+  toArray(): Uint8Array {
+    const encoder = new TextEncoder();
+    const bytes: number[] = [...keywordCodes.DICT_START];
+    
+    if (this.Type) {
+      bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
+    }
+    if (this.Length) {
+      bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
+    }
+    if (this.Filter) {
+      bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
+    }
+    if (this.DecodeParms) {
+      bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray());
+    }
+    bytes.push(    
+      ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,
+
+      ...keywordCodes.STREAM_START, 
+      ...this.streamData, 
+      ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE
+    );
+
+    return new Uint8Array(bytes);
   }
 
   /**

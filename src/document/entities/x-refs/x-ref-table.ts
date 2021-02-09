@@ -1,3 +1,4 @@
+import { keywordCodes } from "../../common/codes";
 import { xRefTypes } from "../../common/const";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
@@ -67,5 +68,18 @@ export class XRefTable extends XRef {
     
     const entries = XRefEntry.fromTableBytes(this._table);  
     return entries;
+  }
+  
+  toArray(): Uint8Array {
+    const trailerBytes = this._trailerDict.toArray(); 
+
+    const bytes: number[] = [
+      ...keywordCodes.XREF_TABLE, ...keywordCodes.END_OF_LINE,
+      ...this._table,
+      ...keywordCodes.TRAILER, ...keywordCodes.END_OF_LINE,
+      ...trailerBytes, ...keywordCodes.END_OF_LINE,
+    ];  
+
+    return new Uint8Array(bytes);
   }
 }

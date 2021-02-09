@@ -23,11 +23,21 @@ export class LzwParamsDict extends FlateParamsDict {
     return parseResult
       ? {value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
-  }
-  
+  }  
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.EarlyChange) {
+      bytes.push(...encoder.encode("/EarlyChange"), ...encoder.encode(this.EarlyChange + ""));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

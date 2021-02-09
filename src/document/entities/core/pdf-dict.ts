@@ -1,3 +1,4 @@
+import { keywordCodes } from "../../common/codes";
 import { DictType } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
@@ -19,6 +20,19 @@ export abstract class PdfDict extends PdfObject {
   protected constructor(type: DictType) {
     super();
     this.Type = type;
+  }  
+  
+  toArray(): Uint8Array {
+    const encoder = new TextEncoder();
+    const bytes: number[] = [...keywordCodes.DICT_START];
+
+    if (this.Type) {
+      bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
+    }
+    
+    bytes.push(...keywordCodes.DICT_END);
+
+    return new Uint8Array(bytes);
   }
   
   /**

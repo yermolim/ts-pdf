@@ -73,6 +73,21 @@ export const flatePredictors = {
 } as const;
 export type FlatePredictor = typeof flatePredictors[keyof typeof flatePredictors]; 
 
+//#region encryption
+export const cryptMethods = {
+  NONE: "/None",
+  V2: "/V2",
+  AESV2: "/AESV2",
+} as const;
+export type CryptMethod = typeof cryptMethods[keyof typeof cryptMethods]; 
+
+export const authEvents = {
+  DOC_OPEN: "/DocOpen",
+  EMBEDDED_OPEN: "/EFOpen",
+} as const;
+export type AuthEvent = typeof authEvents[keyof typeof authEvents]; 
+//#endregion
+
 export const onOffStates = {
   ON: "/ON",
   OFF: "/OFF",
@@ -135,7 +150,8 @@ export const dictTypes = {
   ACTION: "/Action",
   MEASURE: "/Measure",
   DEV_EXTENSIONS: "/DeveloperExtensions",
-  GRAPHICS_STATE: "ExtGState",
+  GRAPHICS_STATE: "/ExtGState",
+  CRYPT_FILTER: "/CryptFilter",
   EMPTY: "",
 } as const;
 export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;

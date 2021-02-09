@@ -141,7 +141,7 @@ export class LiteralString {
     return new Uint8Array(result);
   }
 
-  toArray(bracketed = false): Uint8Array {
+  toArray(bracketed = true): Uint8Array {
     return bracketed
       ? new Uint8Array([...keywordCodes.STR_LITERAL_START, 
         ...this.bytes, ...keywordCodes.STR_LITERAL_END])

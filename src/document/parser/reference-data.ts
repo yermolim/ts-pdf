@@ -11,6 +11,8 @@ export interface Reference {
 export interface UsedReference extends Reference {
   byteOffset: number;
   compressed?: boolean;
+  streamId?: number;
+  streamIndex?: number;
 }
 
 export interface FreeReference extends Reference {
@@ -156,6 +158,8 @@ export class ReferenceData {
           generation: entry.generation,
           byteOffset: offset,
           compressed: true,
+          streamId: entry.streamId,
+          streamIndex: entry.streamIndex,
         });
       }
     }
@@ -255,6 +259,16 @@ export class ReferenceDataChange {
   }
 
   updateUsedRef(ref: UsedReference): boolean { 
+    if (ref.compressed && ref.generation) {
+      // compressed ref generation can't be greater than zero
+      return false;
+    }
+
+    if (this.isFreed(ref)) {      
+      // the reference is freed
+      return false;
+    }
+
     const current = this._usedMap.get(ref.objectId);
     if (current) {
       // the ref is already taken within the current change, 
@@ -278,10 +292,30 @@ export class ReferenceDataChange {
   }
 
   export(): XRefEntry[] {
-    return [];
+    const entries: XRefEntry[] = [];
+    for (const entry of this._freeLinkedList) {
+      entries.push(new XRefEntry(xRefEntryTypes.FREE, entry.objectId,
+        entry.generation, null, entry.nextFreeId));
+    }
+    this._usedMap.forEach(v => {
+      if (v.compressed) {
+        entries.push(new XRefEntry(xRefEntryTypes.COMPRESSED, v.objectId,
+          0, null, null, v.streamId, v.streamIndex));
+      } else {
+        entries.push(new XRefEntry(xRefEntryTypes.NORMAL, v.objectId,
+          v.generation, v.byteOffset));
+      }
+    });
+
+    return entries;
   }
   
   isFreed(ref: Reference): boolean {
-    return this._freeLinkedList.has(<FreeReference>ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
+    return this._freeLinkedList.has(<FreeReference>ref, (a, b) => 
+      a.objectId === b.objectId && a.generation < b.generation);
+  }
+
+  isUsed(id: number): boolean {    
+    return this._usedMap.has(id) || this._refData.isUsed(id);
   }
 }

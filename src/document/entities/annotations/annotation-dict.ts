@@ -12,9 +12,6 @@ import { LiteralString } from "../common/literal-string";
 import { BorderArray } from "../appearance/border-array";
 
 export abstract class AnnotationDict extends PdfDict {
-  /** User defined annotation id */
-  uuid: string;
-
   /** (Required) The type of annotation that this dictionary describes */
   readonly Subtype: AnnotationType;
   

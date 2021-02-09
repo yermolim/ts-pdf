@@ -1,9 +1,10 @@
-import { dictTypes, streamTypes } from "../../common/const";
+import { dictTypes, streamTypes, valueTypes } from "../../common/const";
 import { HexString } from "../common/hex-string";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
+import { codes } from "../../common/codes";
 
 export class TrailerStream extends PdfStream {
   /**
@@ -73,8 +74,52 @@ export class TrailerStream extends PdfStream {
   }
 
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Size) {
+      bytes.push(...encoder.encode("/Size"), ...encoder.encode(this.Size + ""));
+    }
+    if (this.Prev) {
+      bytes.push(...encoder.encode("/Prev"), ...encoder.encode(this.Prev + ""));
+    }
+    if (this.Root) {
+      bytes.push(...encoder.encode("/Root"), ...this.Root.toRefArray());
+    }
+    if (this.Encrypt) {
+      if (this.Encrypt instanceof ObjectId) {
+        bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toRefArray());
+      } else {
+        bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
+      }
+    }
+    if (this.Info) {
+      bytes.push(...encoder.encode("/Info"), ...this.Info.toRefArray());
+    }
+    if (this.ID) {
+      bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, 
+        ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
+    }
+    if (this.Index) {
+      bytes.push(...encoder.encode("/Index"), codes.L_BRACKET);
+      this.Index.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + ""))); 
+      bytes.push(codes.R_BRACKET);
+    }
+    if (this.W) {
+      bytes.push(
+        ...encoder.encode("/W"), codes.L_BRACKET,
+        ...encoder.encode(this.W[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.W[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.W[2] + ""), codes.R_BRACKET,
+      );
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
 
   /**
@@ -135,15 +180,30 @@ export class TrailerStream extends PdfStream {
             }
             break;
           case "/Encrypt":
-            // TODO: add direct encrypt object support
-            const encryptId = ObjectId.parseRef(parser, i);
-            if (encryptId) {
-              this.Encrypt = encryptId.value;
-              i = encryptId.end + 1;
-            } else {              
+            const entryType = parser.getValueTypeAt(i);
+            if (entryType === valueTypes.REF) {              
+              const encryptId = ObjectId.parseRef(parser, i);
+              if (encryptId) {
+                this.Encrypt = encryptId.value;
+                i = encryptId.end + 1;
+                break;
+              } 
+              else {              
+                throw new Error("Can't parse /Encrypt property value");
+              }
+            } else if (entryType === valueTypes.DICTIONARY) {  
+              const encryptBounds = parser.getDictBoundsAt(i);
+              if (encryptBounds) {         
+                const encrypt = EncryptionDict.parse({parser, bounds: encryptBounds});
+                if (encrypt) {
+                  this.Encrypt = encrypt.value;
+                  i = encryptBounds.end + 1;
+                  break;
+                }
+              }               
               throw new Error("Can't parse /Encrypt property value");
             }
-            break;
+            throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
           case "/Info":
             const infoId = ObjectId.parseRef(parser, i);
             if (infoId) {
@@ -189,6 +249,11 @@ export class TrailerStream extends PdfStream {
         break;
       }
     };
+
+    if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
+      // not all required properties parsed
+      return false;
+    }
 
     if (!this.Index?.length) {
       this.Index = [0, this.Size];

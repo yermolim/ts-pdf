@@ -1,7 +1,10 @@
-import { dictTypes } from "../../common/const";
+import { dictTypes, valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../common/object-id";
+import { HexString } from "../common/hex-string";
+import { EncryptionDict } from "../encryption/encryption-dict";
+import { codes } from "../../common/codes";
 
 export class TrailerDict extends PdfDict {
   /**
@@ -30,7 +33,7 @@ export class TrailerDict extends PdfDict {
    * (Required if document is encrypted; PDF 1.1+) 
    * The document’s encryption dictionary
    */
-  Encrypt: ObjectId;
+  Encrypt: ObjectId | EncryptionDict;
   /**
    * (Optional; shall be an indirect reference) 
    * The document’s information dictionary
@@ -42,7 +45,7 @@ export class TrailerDict extends PdfDict {
    * If there is an Encrypt entry this array and the two byte-strings 
    * shall be direct objects and shall be unencrypted
    */
-  ID: [];
+  ID: [HexString, HexString];
   
   constructor() {
     super(dictTypes.EMPTY);
@@ -56,10 +59,41 @@ export class TrailerDict extends PdfDict {
       ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
-  
+
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Size) {
+      bytes.push(...encoder.encode("/Size"), ...encoder.encode(this.Size + ""));
+    }
+    if (this.Prev) {
+      bytes.push(...encoder.encode("/Prev"), ...encoder.encode(this.Prev + ""));
+    }
+    if (this.Root) {
+      bytes.push(...encoder.encode("/Root"), ...this.Root.toRefArray());
+    }
+    if (this.Encrypt) {
+      if (this.Encrypt instanceof ObjectId) {
+        bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toRefArray());
+      } else {
+        bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
+      }
+    }
+    if (this.Info) {
+      bytes.push(...encoder.encode("/Info"), ...this.Info.toRefArray());
+    }
+    if (this.ID) {
+      bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, 
+        ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**
@@ -116,15 +150,30 @@ export class TrailerDict extends PdfDict {
             }
             break;
           case "/Encrypt":
-            // TODO: add direct encrypt object support
-            const encryptId = ObjectId.parseRef(parser, i);
-            if (encryptId) {
-              this.Encrypt = encryptId.value;
-              i = encryptId.end + 1;
-            } else {              
+            const entryType = parser.getValueTypeAt(i);
+            if (entryType === valueTypes.REF) {              
+              const encryptId = ObjectId.parseRef(parser, i);
+              if (encryptId) {
+                this.Encrypt = encryptId.value;
+                i = encryptId.end + 1;
+                break;
+              } 
+              else {              
+                throw new Error("Can't parse /Encrypt property value");
+              }
+            } else if (entryType === valueTypes.DICTIONARY) {  
+              const encryptBounds = parser.getDictBoundsAt(i);
+              if (encryptBounds) {         
+                const encrypt = EncryptionDict.parse({parser, bounds: encryptBounds});
+                if (encrypt) {
+                  this.Encrypt = encrypt.value;
+                  i = encryptBounds.end + 1;
+                  break;
+                }
+              }               
               throw new Error("Can't parse /Encrypt property value");
             }
-            break;
+            throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
           case "/Info":
             const infoId = ObjectId.parseRef(parser, i);
             if (infoId) {
@@ -132,6 +181,15 @@ export class TrailerDict extends PdfDict {
               i = infoId.end + 1;
             } else {              
               throw new Error("Can't parse /Info property value");
+            }
+            break;
+          case "/ID":
+            const ids = HexString.parseArray(parser, i);
+            if (ids) {
+              this.ID = [ids.value[0], ids.value[1]];
+              i = ids.end + 1;
+            } else {              
+              throw new Error("Can't parse /ID property value");
             }
             break;
           default:
@@ -144,7 +202,7 @@ export class TrailerDict extends PdfDict {
       }
     };
     
-    if (isNaN(this.Size) || !this.Root) {
+    if (!this.Size || !this.Root || (this.Encrypt && !this.ID)) {
       // not all required properties parsed
       return false;
     }

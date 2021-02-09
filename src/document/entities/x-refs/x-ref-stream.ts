@@ -55,4 +55,8 @@ export class XRefStream extends XRef {
       this._trailerStream.Index);
     return entries;
   }
+  
+  toArray(): Uint8Array {
+    return this._trailerStream.toArray();
+  }
 }

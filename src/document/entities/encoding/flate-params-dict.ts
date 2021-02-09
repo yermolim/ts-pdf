@@ -1,3 +1,4 @@
+import { keywordCodes } from "../../common/codes";
 import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
@@ -44,8 +45,28 @@ export class FlateParamsDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Predictor) {
+      bytes.push(...encoder.encode("/Predictor"), ...encoder.encode(this.Predictor + ""));
+    }
+    if (this.Colors) {
+      bytes.push(...encoder.encode("/Colors"), ...encoder.encode(this.Colors + ""));
+    }
+    if (this.BitsPerComponent) {
+      bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(this.BitsPerComponent + ""));
+    }
+    if (this.Columns) {
+      bytes.push(...encoder.encode("/Columns"), ...encoder.encode(this.Columns + ""));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

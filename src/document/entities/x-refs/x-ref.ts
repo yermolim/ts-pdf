@@ -17,4 +17,6 @@ export abstract class XRef {
   }
 
   abstract getEntries(): Iterable<XRefEntry>;
+  
+  abstract toArray(): Uint8Array;
 }
