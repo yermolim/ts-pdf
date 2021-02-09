@@ -1,4 +1,5 @@
-import { maxGeneration, xRefEntryTypes } from "../common/const";
+import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../common/const";
+import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 
 export interface Reference {  
@@ -8,10 +9,11 @@ export interface Reference {
 
 export interface UsedReference extends Reference {
   byteOffset: number;
+  compressed?: boolean;
 }
 
 export interface FreeReference extends Reference {
-  nextId: number;
+  nextFreeId: number;
   next?: FreeReference;
 }
 
@@ -20,8 +22,32 @@ export class ReferenceData {
   readonly freeOutsideListMap: Map<number, FreeReference>;
   readonly usedMap: Map<number, UsedReference>;
 
-  constructor(entries: XRefEntry[]) {    
-    // #region free object references
+  constructor(xrefs: XRef[]) {       
+    // #region get entries
+    const allFreeEntries: XRefEntry[] = [];
+    const allNormalEntries: XRefEntry[] = [];
+    const allCompressedEntries: XRefEntry[] = [];
+
+    xrefs.forEach(x => {
+      for (const entry of x.getEntries()) {
+        switch (entry.type) {
+          case xRefEntryTypes.FREE:
+            allFreeEntries.push(entry);
+            break;
+          case xRefEntryTypes.NORMAL:
+            allNormalEntries.push(entry);
+            break;
+          case xRefEntryTypes.COMPRESSED:
+            allCompressedEntries.push(entry);
+            break;
+          default:
+            continue;
+        }
+      }
+    });
+    // #endregion
+    
+    // #region handle free object references
     /*
     There are two ways an entry may be a member of the free entries list. 
     
@@ -40,7 +66,7 @@ export class ReferenceData {
     const zeroFreeRef: FreeReference = {
       objectId: 0,
       generation: maxGeneration,
-      nextId: 0,
+      nextFreeId: 0,
     };
 
     const freeLinkedList = zeroFreeRef;
@@ -51,14 +77,10 @@ export class ReferenceData {
       [0, zeroFreeRef],
     ]);
     let zeroFound = false;
-    for (const entry of entries) {
-      if (entry.type !== xRefEntryTypes.FREE) {
-        continue;
-      }
-
+    for (const entry of allFreeEntries) {
       if (!zeroFound && entry.objectId === 0) {
         zeroFound = true;
-        zeroFreeRef.nextId = entry.nextFreeId;
+        zeroFreeRef.nextFreeId = entry.nextFreeId;
       }
       
       const valueFromMap = freeMap.get(entry.objectId);
@@ -66,7 +88,7 @@ export class ReferenceData {
         freeMap.set(entry.objectId, {
           objectId: entry.objectId, 
           generation: entry.generation, 
-          nextId: entry.nextFreeId});
+          nextFreeId: entry.nextFreeId});
       }
     }
 
@@ -75,7 +97,7 @@ export class ReferenceData {
     let next: FreeReference;
     let currentRef = zeroFreeRef;
     while (true) {
-      nextId = currentRef.nextId;
+      nextId = currentRef.nextFreeId;
       next = freeMap.get(nextId);
       freeMap.delete(nextId);
       currentRef.next = next;
@@ -88,7 +110,7 @@ export class ReferenceData {
     // find free objects outside the linked list
     [...freeMap].forEach(x => {
       const value = x[1];
-      if (value.generation === maxGeneration && value.nextId === 0) {
+      if (value.generation === maxGeneration && value.nextFreeId === 0) {
         freeOutsideListMap.set(value.objectId, value);
       }
     });
@@ -97,12 +119,11 @@ export class ReferenceData {
     this.freeOutsideListMap = freeOutsideListMap;
     // #endregion
 
-    // #region in-use object references
+    // #region handle in-use object references
     const normalRefs = new Map<number, UsedReference>();
 
-    for (const entry of entries) {
-      if (entry.type !== xRefEntryTypes.NORMAL
-        || !this.checkReference(entry)) {
+    for (const entry of allNormalEntries) {
+      if (!this.checkReference(entry)) {
         continue;
       }
 
@@ -118,9 +139,8 @@ export class ReferenceData {
       });
     }
 
-    for (const entry of entries) {
-      if (entry.type !== xRefEntryTypes.COMPRESSED
-        || !this.checkReference(entry)) {
+    for (const entry of allCompressedEntries) {
+      if (!this.checkReference(entry)) {
         continue;
       }
 
@@ -135,6 +155,7 @@ export class ReferenceData {
           objectId: entry.objectId,
           generation: entry.generation,
           byteOffset: offset,
+          compressed: true,
         });
       }
     }
@@ -152,7 +173,7 @@ export class ReferenceData {
       return false;
     }
     let listRef = this.freeLinkedList;
-    while (listRef.nextId) {
+    while (listRef.nextFreeId) {
       if (ref.objectId === listRef.objectId && ref.generation < listRef.generation) {
         return false;
       }

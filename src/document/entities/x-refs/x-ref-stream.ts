@@ -49,7 +49,7 @@ export class XRefStream extends XRef {
       return [];
     }
 
-    const entries = XRefEntry.parseFromStream(
+    const entries = XRefEntry.fromStreamBytes(
       this._trailerStream.decodedStreamData, 
       this._trailerStream.W, 
       this._trailerStream.Index);

@@ -65,7 +65,7 @@ export class XRefTable extends XRef {
       return [];
     }
     
-    const entries = XRefEntry.parseFromTable(this._table);  
+    const entries = XRefEntry.fromTableBytes(this._table);  
     return entries;
   }
 }

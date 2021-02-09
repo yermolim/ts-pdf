@@ -438,6 +438,24 @@ function parseIntFromBytes(bytes) {
     const hex = Array.from(bytes, (byte) => ("0" + (byte & 0xFF).toString(16)).slice(-2)).join("");
     return parseInt(hex, 16);
 }
+function int8ToBytes(int) {
+    const buffer = new ArrayBuffer(1);
+    const view = new DataView(buffer);
+    view.setInt8(0, int);
+    return new Uint8Array(buffer);
+}
+function int16ToBytes(int) {
+    const buffer = new ArrayBuffer(2);
+    const view = new DataView(buffer);
+    view.setInt16(0, int, false);
+    return new Uint8Array(buffer);
+}
+function int32ToBytes(int) {
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    view.setInt32(0, int, false);
+    return new Uint8Array(buffer);
+}
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -1401,7 +1419,6 @@ class FlateParamsDict extends PdfDict {
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
-        console.log(parser.sliceChars(start, end));
         let i = parser.skipToNextName(start, end - 1);
         if (i === -1) {
             return false;
@@ -5165,7 +5182,7 @@ class XRefEntry {
         this.streamId = streamId;
         this.streamIndex = streamIndex;
     }
-    static *parseFromTable(bytes) {
+    static *fromTableBytes(bytes) {
         let i = 0;
         let j = 0;
         while (i < bytes.length) {
@@ -5205,14 +5222,14 @@ class XRefEntry {
         }
         return;
     }
-    static *parseFromStream(bytes, w, index) {
+    static *fromStreamBytes(bytes, w, index) {
         const [w1, w2, w3] = w;
         const entryLength = w1 + w2 + w3;
         if (bytes.length % entryLength) {
             throw new Error("Incorrect stream length");
         }
         const count = bytes.length / entryLength;
-        const ids = new Array(count).fill(null);
+        const ids = new Array(count);
         if (index === null || index === void 0 ? void 0 : index.length) {
             let id;
             let n;
@@ -5226,6 +5243,12 @@ class XRefEntry {
                         ids[m++] = id + n;
                     }
                 }
+            }
+        }
+        else {
+            let l = 0;
+            while (l < count) {
+                ids[l++] = l;
             }
         }
         let i = 0;
@@ -5258,11 +5281,157 @@ class XRefEntry {
         }
         return;
     }
-    toTableBytes() {
-        return null;
+    static toTableBytes(entries) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length)) {
+            return null;
+        }
+        const encoder = new TextEncoder();
+        const groups = this.groupEntries(entries);
+        let bytes = new Uint8Array();
+        let temp;
+        let line;
+        for (const group of groups) {
+            line = `${group[0]} ${group[1].length}\r\n`;
+            temp = new Uint8Array(bytes.length + line.length);
+            temp.set(bytes);
+            temp.set(encoder.encode(line), bytes.length);
+            bytes = temp;
+            for (const entry of group[1]) {
+                switch (entry.type) {
+                    case xRefEntryTypes.FREE:
+                        line = `${entry.nextFreeId.toString().padStart(10, "0")} ${entry.generation.toString().padStart(5, "0")} f\r\n`;
+                        break;
+                    case xRefEntryTypes.NORMAL:
+                        line = `${entry.byteOffset.toString().padStart(10, "0")} ${entry.generation.toString().padStart(5, "0")} n\r\n`;
+                        break;
+                    default:
+                        continue;
+                }
+                temp = new Uint8Array(bytes.length + line.length);
+                temp.set(bytes);
+                temp.set(encoder.encode(line), bytes.length);
+                bytes = temp;
+            }
+        }
+        return bytes;
     }
-    toStreamBytes(w) {
-        return null;
+    static toStreamBytes(entries, w = [1, 4, 2]) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length)) {
+            return null;
+        }
+        let [w1, w2, w3] = w;
+        w1 !== null && w1 !== void 0 ? w1 : (w1 = 0);
+        w2 !== null && w2 !== void 0 ? w2 : (w2 = 4);
+        w3 !== null && w3 !== void 0 ? w3 : (w3 = 0);
+        const entryLength = w1 + w2 + w3;
+        let w1ToBytesFunc;
+        let w2ToBytesFunc;
+        let w3ToBytesFunc;
+        switch (w1) {
+            case 0:
+                w1ToBytesFunc = (n) => new Uint8Array();
+                break;
+            case 1:
+                w1ToBytesFunc = int8ToBytes;
+                break;
+            case 2:
+                w1ToBytesFunc = int16ToBytes;
+                break;
+        }
+        switch (w2) {
+            case 1:
+                w2ToBytesFunc = int8ToBytes;
+                break;
+            case 2:
+                w2ToBytesFunc = int16ToBytes;
+                break;
+            case 4:
+                w2ToBytesFunc = int32ToBytes;
+                break;
+        }
+        switch (w3) {
+            case 0:
+                w3ToBytesFunc = (n) => new Uint8Array();
+                break;
+            case 1:
+                w3ToBytesFunc = int8ToBytes;
+                break;
+            case 2:
+                w3ToBytesFunc = int16ToBytes;
+                break;
+        }
+        const encoder = new TextEncoder();
+        const groups = this.groupEntries(entries);
+        let index = new Uint8Array([codes.L_BRACKET]);
+        let bytes = new Uint8Array();
+        let temp;
+        let groupIndex;
+        let entryV1;
+        let entryV2;
+        let entryV3;
+        for (const group of groups) {
+            groupIndex = ` ${group[0]} ${group[1].length}`;
+            temp = new Uint8Array(index.length + groupIndex.length);
+            temp.set(index);
+            temp.set(encoder.encode(groupIndex), index.length);
+            index = temp;
+            for (const entry of group[1]) {
+                switch (entry.type) {
+                    case xRefEntryTypes.FREE:
+                        entryV1 = w1ToBytesFunc(0);
+                        entryV2 = w2ToBytesFunc(entry.nextFreeId);
+                        entryV3 = w3ToBytesFunc(entry.generation);
+                        break;
+                    case xRefEntryTypes.NORMAL:
+                        entryV1 = w1ToBytesFunc(1);
+                        entryV2 = w2ToBytesFunc(entry.byteOffset);
+                        entryV3 = w3ToBytesFunc(entry.generation);
+                        break;
+                    case xRefEntryTypes.COMPRESSED:
+                        entryV1 = w1ToBytesFunc(2);
+                        entryV2 = w2ToBytesFunc(entry.streamId);
+                        entryV3 = w3ToBytesFunc(entry.streamIndex);
+                        break;
+                    default:
+                        continue;
+                }
+                temp = new Uint8Array(bytes.length + entryLength);
+                temp.set(bytes);
+                temp.set(entryV1, bytes.length);
+                temp.set(entryV2, bytes.length + w1);
+                temp.set(entryV3, bytes.length + w1 + w2);
+                bytes = temp;
+            }
+        }
+        temp = new Uint8Array(index.length + 1);
+        temp.set(index);
+        temp.set([codes.R_BRACKET], index.length);
+        index = temp;
+        return { bytes, index };
+    }
+    static groupEntries(entries) {
+        entries.sort((a, b) => a.objectId - b.objectId);
+        const groups = [];
+        let groupStart;
+        let groupEntries;
+        let last;
+        for (const entry of entries) {
+            if (entry.objectId !== last + 1) {
+                if (groupEntries === null || groupEntries === void 0 ? void 0 : groupEntries.length) {
+                    groups.push([groupStart, groupEntries]);
+                }
+                groupStart = entry.objectId;
+                groupEntries = [entry];
+            }
+            else {
+                groupEntries.push(entry);
+            }
+            last = entry.objectId;
+        }
+        if (groupEntries === null || groupEntries === void 0 ? void 0 : groupEntries.length) {
+            groups.push([groupStart, groupEntries]);
+        }
+        return groups;
     }
 }
 
@@ -5302,7 +5471,7 @@ class XRefStream extends XRef {
         if (!this._trailerStream) {
             return [];
         }
-        const entries = XRefEntry.parseFromStream(this._trailerStream.decodedStreamData, this._trailerStream.W, this._trailerStream.Index);
+        const entries = XRefEntry.fromStreamBytes(this._trailerStream.decodedStreamData, this._trailerStream.W, this._trailerStream.Index);
         return entries;
     }
 }
@@ -5453,18 +5622,38 @@ class XRefTable extends XRef {
         if (!this._table.length) {
             return [];
         }
-        const entries = XRefEntry.parseFromTable(this._table);
+        const entries = XRefEntry.fromTableBytes(this._table);
         return entries;
     }
 }
 
 class ReferenceData {
-    constructor(entries) {
+    constructor(xrefs) {
         var _a;
+        const allFreeEntries = [];
+        const allNormalEntries = [];
+        const allCompressedEntries = [];
+        xrefs.forEach(x => {
+            for (const entry of x.getEntries()) {
+                switch (entry.type) {
+                    case xRefEntryTypes.FREE:
+                        allFreeEntries.push(entry);
+                        break;
+                    case xRefEntryTypes.NORMAL:
+                        allNormalEntries.push(entry);
+                        break;
+                    case xRefEntryTypes.COMPRESSED:
+                        allCompressedEntries.push(entry);
+                        break;
+                    default:
+                        continue;
+                }
+            }
+        });
         const zeroFreeRef = {
             objectId: 0,
             generation: maxGeneration,
-            nextId: 0,
+            nextFreeId: 0,
         };
         const freeLinkedList = zeroFreeRef;
         const freeOutsideListMap = new Map();
@@ -5472,20 +5661,17 @@ class ReferenceData {
             [0, zeroFreeRef],
         ]);
         let zeroFound = false;
-        for (const entry of entries) {
-            if (entry.type !== xRefEntryTypes.FREE) {
-                continue;
-            }
+        for (const entry of allFreeEntries) {
             if (!zeroFound && entry.objectId === 0) {
                 zeroFound = true;
-                zeroFreeRef.nextId = entry.nextFreeId;
+                zeroFreeRef.nextFreeId = entry.nextFreeId;
             }
             const valueFromMap = freeMap.get(entry.objectId);
             if (!valueFromMap || valueFromMap.generation < entry.generation) {
                 freeMap.set(entry.objectId, {
                     objectId: entry.objectId,
                     generation: entry.generation,
-                    nextId: entry.nextFreeId
+                    nextFreeId: entry.nextFreeId
                 });
             }
         }
@@ -5493,7 +5679,7 @@ class ReferenceData {
         let next;
         let currentRef = zeroFreeRef;
         while (true) {
-            nextId = currentRef.nextId;
+            nextId = currentRef.nextFreeId;
             next = freeMap.get(nextId);
             freeMap.delete(nextId);
             currentRef.next = next;
@@ -5504,16 +5690,15 @@ class ReferenceData {
         }
         [...freeMap].forEach(x => {
             const value = x[1];
-            if (value.generation === maxGeneration && value.nextId === 0) {
+            if (value.generation === maxGeneration && value.nextFreeId === 0) {
                 freeOutsideListMap.set(value.objectId, value);
             }
         });
         this.freeLinkedList = freeLinkedList;
         this.freeOutsideListMap = freeOutsideListMap;
         const normalRefs = new Map();
-        for (const entry of entries) {
-            if (entry.type !== xRefEntryTypes.NORMAL
-                || !this.checkReference(entry)) {
+        for (const entry of allNormalEntries) {
+            if (!this.checkReference(entry)) {
                 continue;
             }
             const valueFromMap = normalRefs.get(entry.objectId);
@@ -5526,9 +5711,8 @@ class ReferenceData {
                 byteOffset: entry.byteOffset,
             });
         }
-        for (const entry of entries) {
-            if (entry.type !== xRefEntryTypes.COMPRESSED
-                || !this.checkReference(entry)) {
+        for (const entry of allCompressedEntries) {
+            if (!this.checkReference(entry)) {
                 continue;
             }
             const valueFromMap = normalRefs.get(entry.objectId);
@@ -5541,6 +5725,7 @@ class ReferenceData {
                     objectId: entry.objectId,
                     generation: entry.generation,
                     byteOffset: offset,
+                    compressed: true,
                 });
             }
         }
@@ -5551,7 +5736,7 @@ class ReferenceData {
             return false;
         }
         let listRef = this.freeLinkedList;
-        while (listRef.nextId) {
+        while (listRef.nextFreeId) {
             if (ref.objectId === listRef.objectId && ref.generation < listRef.generation) {
                 return false;
             }
@@ -5632,15 +5817,8 @@ class DocumentData {
                 throw new Error("Failed to parse cross-reference sections");
             }
         }
-        const entries = [];
-        xrefs.forEach(x => entries.push(...x.getEntries()));
-        if (!entries.length) {
-            {
-                throw new Error("No indirect object references found");
-            }
-        }
         this._xrefs = xrefs;
-        this._referenceData = new ReferenceData(entries);
+        this._referenceData = new ReferenceData(xrefs);
         console.log(this._xrefs);
         console.log(this._referenceData);
         this.parsePageTree();
@@ -5690,7 +5868,9 @@ class DocumentData {
         if (xrefTableIndex && xrefTableIndex.start === start) {
             const xrefStmIndexProp = this._docParser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
             if (xrefStmIndexProp) {
-                console.log("XRef is hybrid");
+                if (isNaN(this._lastXrefType)) {
+                    this._lastXrefType = xRefTypes.HYBRID;
+                }
                 const streamXrefIndex = this._docParser.parseNumberAt(xrefStmIndexProp.end + 1);
                 if (!streamXrefIndex) {
                     return null;
@@ -5698,13 +5878,17 @@ class DocumentData {
                 start = streamXrefIndex.value;
             }
             else {
-                console.log("XRef is table");
+                if (isNaN(this._lastXrefType)) {
+                    this._lastXrefType = xRefTypes.TABLE;
+                }
                 const xrefTable = XRefTable.parse(this._docParser, start);
                 return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
             }
         }
         else {
-            console.log("XRef is stream");
+            if (isNaN(this._lastXrefType)) {
+                this._lastXrefType = xRefTypes.STREAM;
+            }
         }
         const id = ObjectId.parse(this._docParser, start, false);
         if (!id) {

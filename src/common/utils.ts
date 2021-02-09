@@ -30,6 +30,27 @@ export function parseIntFromBytes(bytes: Uint8Array): number {
   return parseInt(hex, 16);
 }
 
+export function int8ToBytes(int: number): Uint8Array {
+  const buffer = new ArrayBuffer(1);
+  const view = new DataView(buffer);
+  view.setInt8(0, int);
+  return new Uint8Array(buffer);
+}
+
+export function int16ToBytes(int: number): Uint8Array {
+  const buffer = new ArrayBuffer(2);
+  const view = new DataView(buffer);
+  view.setInt16(0, int, false);
+  return new Uint8Array(buffer);
+}
+
+export function int32ToBytes(int: number): Uint8Array {
+  const buffer = new ArrayBuffer(4);
+  const view = new DataView(buffer);
+  view.setInt32(0, int, false);
+  return new Uint8Array(buffer);
+}
+
 export interface Position {
   x: number;
   y: number;

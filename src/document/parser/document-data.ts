@@ -1,5 +1,5 @@
 import { keywordCodes } from "../common/codes";
-import { annotationTypes, dictTypes, objectTypes } from "../common/const";
+import { annotationTypes, dictTypes, objectTypes, XRefType, xRefTypes } from "../common/const";
 import { AnnotationDict } from "../entities/annotations/annotation-dict";
 import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-annotation";
 import { InkAnnotation } from "../entities/annotations/markup/ink-annotation";
@@ -20,9 +20,10 @@ import { ReferenceData } from "./reference-data";
 
 export class DocumentData {
   private readonly _docParser: DataParser;
-  private readonly _version: string;    
-  private readonly _lastXrefIndex: number;
+  private readonly _version: string;  
 
+  private readonly _lastXrefIndex: number;
+  private _lastXrefType: XRefType;
   private _xrefs: XRef[];
   private _referenceData: ReferenceData;
 
@@ -57,14 +58,9 @@ export class DocumentData {
     if (!xrefs.length) {{
       throw new Error("Failed to parse cross-reference sections");
     }}
-    const entries: XRefEntry[] = [];
-    xrefs.forEach(x =>  entries.push(...x.getEntries()));   
-    if (!entries.length) {{
-      throw new Error("No indirect object references found");
-    }}
 
     this._xrefs = xrefs;
-    this._referenceData = new ReferenceData(entries);
+    this._referenceData = new ReferenceData(xrefs);
     
     console.log(this._xrefs);    
     console.log(this._referenceData);   
@@ -126,19 +122,25 @@ export class DocumentData {
       const xrefStmIndexProp = this._docParser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
         {minIndex: start, maxIndex: max, closedOnly: true});
       if (xrefStmIndexProp) {    
-        console.log("XRef is hybrid");
+        if (isNaN(this._lastXrefType)) {
+          this._lastXrefType = xRefTypes.HYBRID;
+        }
         const streamXrefIndex = this._docParser.parseNumberAt(xrefStmIndexProp.end + 1);
         if (!streamXrefIndex) {
           return null;
         }
         start = streamXrefIndex.value;
       } else {
-        console.log("XRef is table");
+        if (isNaN(this._lastXrefType)) {
+          this._lastXrefType = xRefTypes.TABLE;
+        }
         const xrefTable = XRefTable.parse(this._docParser, start);
         return xrefTable?.value;
       }
     } else {
-      console.log("XRef is stream"); 
+      if (isNaN(this._lastXrefType)) {
+        this._lastXrefType = xRefTypes.STREAM;
+      }
     }
 
     const id = ObjectId.parse(this._docParser, start, false);
