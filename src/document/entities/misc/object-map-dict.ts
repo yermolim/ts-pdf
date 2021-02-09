@@ -11,11 +11,11 @@ export class ObjectMapDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<ObjectMapDict> {    
-    const trailer = new ObjectMapDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const objectMap = new ObjectMapDict();
+    const parseResult = objectMap.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

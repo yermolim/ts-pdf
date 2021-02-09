@@ -17,11 +17,11 @@ export class InkAnnotation extends MarkupAnnotation {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {    
-    const trailer = new InkAnnotation();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const ink = new InkAnnotation();
+    const parseResult = ink.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

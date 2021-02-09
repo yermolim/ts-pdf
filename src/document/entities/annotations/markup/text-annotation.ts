@@ -30,11 +30,11 @@ export class TextAnnotation extends MarkupAnnotation {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<TextAnnotation> {    
-    const trailer = new TextAnnotation();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const text = new TextAnnotation();
+    const parseResult = text.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

@@ -11,11 +11,11 @@ export class CryptMapDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<CryptMapDict> {    
-    const trailer = new CryptMapDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const cryptMap = new CryptMapDict();
+    const parseResult = cryptMap.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: cryptMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

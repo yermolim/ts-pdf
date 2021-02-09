@@ -2566,17 +2566,18 @@ class TextStream extends PdfStream {
         super(type);
     }
     static parse(parseInfo) {
-        const trailer = new TextStream();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const stream = new TextStream();
+        const parseResult = stream.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     getText() {
         return null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        return superBytes;
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -2602,10 +2603,10 @@ class BorderStyleDict extends PdfDict {
         this.D = [3, 0];
     }
     static parse(parseInfo) {
-        const trailer = new BorderStyleDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const borderStyle = new BorderStyleDict();
+        const parseResult = borderStyle.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -2701,10 +2702,10 @@ class ObjectMapDict extends PdfDict {
         this._objectIdMap = new Map();
     }
     static parse(parseInfo) {
-        const trailer = new ObjectMapDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const objectMap = new ObjectMapDict();
+        const parseResult = objectMap.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     getProp(name) {
@@ -2771,10 +2772,10 @@ class AppearanceDict extends PdfDict {
         super(null);
     }
     static parse(parseInfo) {
-        const trailer = new AppearanceDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const appearance = new AppearanceDict();
+        const parseResult = appearance.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -2937,10 +2938,10 @@ class BorderEffectDict extends PdfDict {
         this.L = 0;
     }
     static parse(parseInfo) {
-        const trailer = new BorderEffectDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const borderEffect = new BorderEffectDict();
+        const parseResult = borderEffect.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: borderEffect, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -3619,10 +3620,10 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.LE = lineEndingTypes.NONE;
     }
     static parse(parseInfo) {
-        const trailer = new FreeTextAnnotation();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const freeText = new FreeTextAnnotation();
+        const parseResult = freeText.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -3751,10 +3752,10 @@ class InkAnnotation extends MarkupAnnotation {
         super(annotationTypes.INK);
     }
     static parse(parseInfo) {
-        const trailer = new InkAnnotation();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const ink = new InkAnnotation();
+        const parseResult = ink.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -3837,10 +3838,10 @@ class StampAnnotation extends MarkupAnnotation {
         this.Name = stampTypes.DRAFT;
     }
     static parse(parseInfo) {
-        const trailer = new StampAnnotation();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const stamp = new StampAnnotation();
+        const parseResult = stamp.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -3898,10 +3899,10 @@ class TextAnnotation extends MarkupAnnotation {
         this.Open = false;
     }
     static parse(parseInfo) {
-        const trailer = new TextAnnotation();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const text = new TextAnnotation();
+        const parseResult = text.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -4748,7 +4749,24 @@ class ObjectStream extends PdfStream {
         };
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.N) {
+            bytes.push(...encoder.encode("/N"), ...encoder.encode(this.N + ""));
+        }
+        if (this.First) {
+            bytes.push(...encoder.encode("/First"), ...encoder.encode(this.First + ""));
+        }
+        if (this.Extends) {
+            bytes.push(...encoder.encode("/Extends"), ...this.Extends.toRefArray());
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -4821,14 +4839,48 @@ class ResourceDict extends PdfDict {
         super(null);
     }
     static parse(parseInfo) {
-        const trailer = new ResourceDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const resourceDict = new ResourceDict();
+        const parseResult = resourceDict.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.ExtGState) {
+            bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray());
+        }
+        if (this.ColorSpace) {
+            bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray());
+        }
+        if (this.Pattern) {
+            bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray());
+        }
+        if (this.Shading) {
+            bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray());
+        }
+        if (this.XObject) {
+            bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray());
+        }
+        if (this.Font) {
+            bytes.push(...encoder.encode("/Font"), ...this.Font.toArray());
+        }
+        if (this.Properties) {
+            bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray());
+        }
+        if (this.ProcSet) {
+            bytes.push(...encoder.encode("/ProcSet"), codes.L_BRACKET);
+            this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -4898,14 +4950,49 @@ class XFormStream extends PdfStream {
         this.Matrix = [1, 0, 0, 1, 0, 0];
     }
     static parse(parseInfo) {
-        const trailer = new XFormStream();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const xForm = new XFormStream();
+        const parseResult = xForm.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+        }
+        if (this.FormType) {
+            bytes.push(...encoder.encode("/FormType"), ...encoder.encode(this.FormType + ""));
+        }
+        if (this.BBox) {
+            bytes.push(...encoder.encode("/BBox"), codes.L_BRACKET, ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.Matrix) {
+            bytes.push(...encoder.encode("/BBox"), codes.L_BRACKET, ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[3] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[4] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[5] + ""), codes.R_BRACKET);
+        }
+        if (this.Resources) {
+            bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray());
+        }
+        if (this.Metadata) {
+            bytes.push(...encoder.encode("/Metadata"), ...this.Metadata.toRefArray());
+        }
+        if (this.LastModified) {
+            bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+        }
+        if (this.StructParent) {
+            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+        }
+        if (this.StructParents) {
+            bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(this.StructParents + ""));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -5087,7 +5174,24 @@ class CatalogDict extends PdfDict {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Version) {
+            bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
+        }
+        if (this.Pages) {
+            bytes.push(...encoder.encode("/Pages"), ...this.Pages.toRefArray());
+        }
+        if (this.Lang) {
+            bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -5161,14 +5265,44 @@ class PageDict extends PdfDict {
         this.Rotate = 0;
     }
     static parse(parseInfo) {
-        const trailer = new PageDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const page = new PageDict();
+        const parseResult = page.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Parent) {
+            bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+        }
+        if (this.LastModified) {
+            bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+        }
+        if (this.MediaBox) {
+            bytes.push(...encoder.encode("/MediaBox"), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.Rotate) {
+            bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+        }
+        if (this.Annots) {
+            if (this.Annots instanceof ObjectId) {
+                bytes.push(...encoder.encode("/Annots"), ...this.Annots.toRefArray());
+            }
+            else {
+                bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
+                this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+                bytes.push(codes.R_BRACKET);
+            }
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -5283,7 +5417,32 @@ class PageTreeDict extends PdfDict {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Parent) {
+            bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+        }
+        if (this.Kids) {
+            bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
+            this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.Count) {
+            bytes.push(...encoder.encode("/Count"), ...encoder.encode(this.Count + ""));
+        }
+        if (this.MediaBox) {
+            bytes.push(...encoder.encode("/MediaBox"), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.Rotate) {
+            bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -5385,10 +5544,10 @@ class CryptFilterDict extends PdfDict {
         this.EncryptMetadata = true;
     }
     static parse(parseInfo) {
-        const trailer = new CryptFilterDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const cryptFilter = new CryptFilterDict();
+        const parseResult = cryptFilter.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {
@@ -5534,10 +5693,10 @@ class CryptMapDict extends PdfDict {
         this._filtersMap = new Map();
     }
     static parse(parseInfo) {
-        const trailer = new CryptMapDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const cryptMap = new CryptMapDict();
+        const parseResult = cryptMap.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: cryptMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     getProp(name) {
@@ -5613,10 +5772,10 @@ class EncryptionDict extends PdfDict {
         this.EncryptMetadata = true;
     }
     static parse(parseInfo) {
-        const trailer = new EncryptionDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const encryption = new EncryptionDict();
+        const parseResult = encryption.tryParseProps(parseInfo);
         return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            ? { value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
     toArray() {

@@ -108,11 +108,11 @@ export class GraphicsStateDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<GraphicsStateDict> {    
-    const trailer = new GraphicsStateDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const graphicsState = new GraphicsStateDict();
+    const parseResult = graphicsState.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: graphicsState, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

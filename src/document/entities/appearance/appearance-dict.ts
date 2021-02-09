@@ -23,11 +23,11 @@ export class AppearanceDict extends PdfDict {
   } 
   
   static parse(parseInfo: ParseInfo): ParseResult<AppearanceDict> {    
-    const trailer = new AppearanceDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const appearance = new AppearanceDict();
+    const parseResult = appearance.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

@@ -1,3 +1,4 @@
+import { codes } from "../../common/codes";
 import { dictTypes, Rect } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
@@ -46,8 +47,39 @@ export class PageTreeDict extends PdfDict {
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Parent) {
+      bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+    }
+    if (this.Kids) {
+      bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
+      this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+      bytes.push(codes.R_BRACKET);
+    }
+    if (this.Count) {
+      bytes.push(...encoder.encode("/Count"), ...encoder.encode(this.Count + ""));
+    }
+    if (this.MediaBox) {
+      bytes.push(
+        ...encoder.encode("/MediaBox"), codes.L_BRACKET, 
+        ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET,
+      );
+    }
+    if (this.Rotate) {
+      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

@@ -1,3 +1,4 @@
+import { codes } from "../../common/codes";
 import { dictTypes, Rect, valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { DateString } from "../common/date-string";
@@ -43,17 +44,54 @@ export class PageDict extends PdfDict {
   }  
   
   static parse(parseInfo: ParseInfo): ParseResult<PageDict> {    
-    const trailer = new PageDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const page = new PageDict();
+    const parseResult = page.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
-  }
+  }  
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Parent) {
+      bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+    }
+    if (this.LastModified) {
+      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+    }
+    if (this.MediaBox) {
+      bytes.push(
+        ...encoder.encode("/MediaBox"), codes.L_BRACKET, 
+        ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET,
+      );
+    }
+    if (this.Rotate) {
+      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+    }
+    if (this.Annots) {
+      if (this.Annots instanceof ObjectId) {        
+        bytes.push(...encoder.encode("/Annots"), ...this.Annots.toRefArray());
+      } else {
+        bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
+        this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+        bytes.push(codes.R_BRACKET);
+      }
+    }
+
+    // TODO: hamdle remaining properties
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

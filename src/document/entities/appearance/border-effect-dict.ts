@@ -19,11 +19,11 @@ export class BorderEffectDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<BorderEffectDict> {    
-    const trailer = new BorderEffectDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const borderEffect = new BorderEffectDict();
+    const parseResult = borderEffect.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: borderEffect, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
     

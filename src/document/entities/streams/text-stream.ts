@@ -9,11 +9,11 @@ export class TextStream extends PdfStream {
   }  
 
   static parse(parseInfo: ParseInfo): ParseResult<TextStream> {    
-    const trailer = new TextStream();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const stream = new TextStream();
+    const parseResult = stream.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   
@@ -23,8 +23,8 @@ export class TextStream extends PdfStream {
   }
 
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();
+    return superBytes;
   }
 
   /**

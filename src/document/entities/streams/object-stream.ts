@@ -134,8 +134,25 @@ export class ObjectStream extends PdfStream {
   }
 
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.N) {
+      bytes.push(...encoder.encode("/N"), ...encoder.encode(this.N + ""));
+    }
+    if (this.First) {
+      bytes.push(...encoder.encode("/First"), ...encoder.encode(this.First + ""));
+    }
+    if (this.Extends) {
+      bytes.push(...encoder.encode("/Extends"), ...this.Extends.toRefArray());
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
 
   /**

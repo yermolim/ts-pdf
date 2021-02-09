@@ -80,11 +80,11 @@ export class CryptFilterDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<CryptFilterDict> {    
-    const trailer = new CryptFilterDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const cryptFilter = new CryptFilterDict();
+    const parseResult = cryptFilter.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

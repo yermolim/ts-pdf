@@ -30,11 +30,11 @@ export class BorderStyleDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<BorderStyleDict> {    
-    const trailer = new BorderStyleDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const borderStyle = new BorderStyleDict();
+    const parseResult = borderStyle.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }  
   

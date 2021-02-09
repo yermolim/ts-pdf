@@ -60,11 +60,11 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<FreeTextAnnotation> {    
-    const trailer = new FreeTextAnnotation();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const freeText = new FreeTextAnnotation();
+    const parseResult = freeText.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

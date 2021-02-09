@@ -1,3 +1,4 @@
+import { codes } from "../../common/codes";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "./object-map-dict";
@@ -45,17 +46,51 @@ export class ResourceDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<ResourceDict> {    
-    const trailer = new ResourceDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const resourceDict = new ResourceDict();
+    const parseResult = resourceDict.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.ExtGState) {
+      bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray());
+    }
+    if (this.ColorSpace) {
+      bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray());
+    }
+    if (this.Pattern) {
+      bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray());
+    }
+    if (this.Shading) {
+      bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray());
+    }
+    if (this.XObject) {
+      bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray());
+    }
+    if (this.Font) {
+      bytes.push(...encoder.encode("/Font"), ...this.Font.toArray());
+    }
+    if (this.Properties) {
+      bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray());
+    }
+    if (this.ProcSet) {
+      bytes.push(...encoder.encode("/ProcSet"), codes.L_BRACKET);
+      this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x))); 
+      bytes.push(codes.R_BRACKET);
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

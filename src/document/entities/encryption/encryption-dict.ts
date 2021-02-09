@@ -120,11 +120,11 @@ export class EncryptionDict extends PdfDict {
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<EncryptionDict> {    
-    const trailer = new EncryptionDict();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const encryption = new EncryptionDict();
+    const parseResult = encryption.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   

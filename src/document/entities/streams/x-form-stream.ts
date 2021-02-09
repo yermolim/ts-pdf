@@ -6,6 +6,7 @@ import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { DateString } from "../common/date-string";
 import { ResourceDict } from "../misc/resource-dict";
+import { codes } from "../../common/codes";
 
 export class XFormStream extends PdfStream {
   /**
@@ -56,6 +57,7 @@ export class XFormStream extends PdfStream {
    * The integer key of the form XObject’s entry in the structural parent tree
    * */
   StructParents: number;
+
   /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
    *  specifying the optional content properties for the annotation */
   OC: OcMembershipDict | OcGroupDict;
@@ -69,17 +71,68 @@ export class XFormStream extends PdfStream {
   }  
 
   static parse(parseInfo: ParseInfo): ParseResult<XFormStream> {    
-    const trailer = new XFormStream();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const xForm = new XFormStream();
+    const parseResult = xForm.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
 
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Subtype) {
+      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+    }
+    if (this.FormType) {
+      bytes.push(...encoder.encode("/FormType"), ...encoder.encode(this.FormType + ""));
+    }
+    if (this.BBox) {
+      bytes.push(
+        ...encoder.encode("/BBox"), codes.L_BRACKET, 
+        ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.BBox[3] + ""), codes.R_BRACKET,
+      );
+    }
+    if (this.Matrix) {
+      bytes.push(
+        ...encoder.encode("/BBox"), codes.L_BRACKET, 
+        ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.Matrix[3] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.Matrix[4] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.Matrix[5] + ""), codes.R_BRACKET,
+      );
+    }
+    if (this.Resources) {
+      bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray());
+    }
+    if (this.Metadata) {
+      bytes.push(...encoder.encode("/Metadata"), ...this.Metadata.toRefArray());
+    }
+    if (this.LastModified) {
+      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+    }
+    if (this.StructParent) {
+      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+    }
+    if (this.StructParents) {
+      bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(this.StructParents + ""));
+    }
+    
+    //TODO: handle remaining properties
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
 
   /**

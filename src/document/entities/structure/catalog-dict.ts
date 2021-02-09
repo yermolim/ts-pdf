@@ -44,10 +44,29 @@ export class CatalogDict extends PdfDict {
       ? {value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
-  
+
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Version) {
+      bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
+    }
+    if (this.Pages) {
+      bytes.push(...encoder.encode("/Pages"), ...this.Pages.toRefArray());
+    }
+    if (this.Lang) {
+      bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());
+    }
+
+    // TODO: handle remaining properties
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

@@ -31,11 +31,11 @@ export class StampAnnotation extends MarkupAnnotation {
   }  
 
   static parse(parseInfo: ParseInfo): ParseResult<StampAnnotation> {    
-    const trailer = new StampAnnotation();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const stamp = new StampAnnotation();
+    const parseResult = stamp.tryParseProps(parseInfo);
 
     return parseResult
-      ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      ? {value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
   
