@@ -85,4 +85,9 @@ export class LineAnnotation extends GeometricAnnotation {
   constructor() {
     super(annotationTypes.LINE);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

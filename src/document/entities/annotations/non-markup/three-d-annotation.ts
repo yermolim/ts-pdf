@@ -7,4 +7,9 @@ export class ThreeDAnnotation extends AnnotationDict {
   constructor() {
     super(annotationTypes.THREED);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

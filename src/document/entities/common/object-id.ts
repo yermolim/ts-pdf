@@ -11,12 +11,9 @@ export class ObjectId {
    * when the file is later updated */
   readonly generation: number;
 
-  readonly reused: boolean;
-
   constructor(id: number, generation: number) {
     this.id = id ?? 0;
     this.generation = generation ?? 0;
-    this.reused = this.generation > 0;
   }
 
   static parse(parser: DataParser, start: number, 

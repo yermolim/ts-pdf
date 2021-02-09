@@ -75,4 +75,9 @@ export class OcConfigurationDict extends PdfDict {
   constructor() {
     super(null);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

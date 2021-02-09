@@ -7,4 +7,9 @@ export class WatermarkAnnotation extends AnnotationDict {
   constructor() {
     super(annotationTypes.WATERMARK);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

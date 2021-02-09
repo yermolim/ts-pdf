@@ -14,4 +14,9 @@ export class PolylineAnnotation extends PolyAnnotation {
   constructor() {
     super(annotationTypes.POLYLINE);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

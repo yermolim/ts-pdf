@@ -39,4 +39,9 @@ export class ActionDict extends PdfDict {
 
     this.S = type;
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

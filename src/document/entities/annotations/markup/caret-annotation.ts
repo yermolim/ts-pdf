@@ -24,4 +24,9 @@ export class CaretAnnotation extends MarkupAnnotation {
   constructor() {
     super(annotationTypes.CARET);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

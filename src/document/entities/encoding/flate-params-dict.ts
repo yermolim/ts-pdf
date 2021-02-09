@@ -1,5 +1,5 @@
 import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
-import { DataParser, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 
 export class FlateParamsDict extends PdfDict {
@@ -33,11 +33,39 @@ export class FlateParamsDict extends PdfDict {
   constructor() {
     super(dictTypes.EMPTY);
   }
-  
-  static parse(parser: DataParser, start: number, end: number): ParseResult<FlateParamsDict> {    
-    const dict = new FlateParamsDict();
 
-    let i = start + 2;
+  static parse(parseInfo: ParseInfo): ParseResult<FlateParamsDict> {    
+    const dict = new FlateParamsDict();
+    const parseResult = dict.tryParseProps(parseInfo);
+
+    return parseResult
+      ? {value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
+      : null;
+  }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
+  
+  /**
+   * fill public properties from data using info/parser if available
+   */
+  protected tryParseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.tryParseProps(parseInfo);
+    if (!superIsParsed) {
+      return false;
+    }
+
+    const {parser, bounds} = parseInfo;
+    const start = bounds.contentStart || bounds.start;
+    const end = bounds.contentEnd || bounds.end;
+    
+    let i = parser.skipToNextName(start, end - 1);
+    if (i === -1) {
+      // no required props found
+      return false;
+    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -49,7 +77,7 @@ export class FlateParamsDict extends PdfDict {
           case "/Predictor":
             const predictor = parser.parseNumberAt(i, false);
             if (predictor) {
-              dict.Predictor = <FlatePredictor>predictor.value;
+              this.Predictor = <FlatePredictor>predictor.value;
               i = predictor.end + 1;
             } else {              
               throw new Error("Can't parse /Colors property value");
@@ -58,7 +86,7 @@ export class FlateParamsDict extends PdfDict {
           case "/Colors":
             const colors = parser.parseNumberAt(i, false);
             if (colors) {
-              dict.Colors = colors.value;
+              this.Colors = colors.value;
               i = colors.end + 1;
             } else {              
               throw new Error("Can't parse /Colors property value");
@@ -67,7 +95,7 @@ export class FlateParamsDict extends PdfDict {
           case "/BitsPerComponent":
             const bits = parser.parseNumberAt(i, false);
             if (bits) {
-              dict.BitsPerComponent = <1 | 2 | 4 | 8 | 16>bits.value;
+              this.BitsPerComponent = <1 | 2 | 4 | 8 | 16>bits.value;
               i = bits.end + 1;
             } else {              
               throw new Error("Can't parse /BitsPerComponent property value");
@@ -76,7 +104,7 @@ export class FlateParamsDict extends PdfDict {
           case "/Columns":
             const columns = parser.parseNumberAt(i, false);
             if (columns) {
-              dict.Columns = columns.value;
+              this.Columns = columns.value;
               i = columns.end + 1;
             } else {              
               throw new Error("Can't parse /Columns property value");
@@ -93,6 +121,6 @@ export class FlateParamsDict extends PdfDict {
       }
     };
 
-    return {value: dict, start, end};
+    return true;
   }
 }

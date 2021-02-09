@@ -1,7 +1,8 @@
 import { DictType } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { PdfObject } from "./pdf-object";
 
-export class PdfDict {
+export abstract class PdfDict extends PdfObject {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: DictType;
 
@@ -9,8 +10,14 @@ export class PdfDict {
   // get customProps(): Map<string, any>{
   //   return new Map<string, any>(this._customProps);
   // }
+  
+  protected _streamId: number;
+  get streamId(): number {
+    return this._streamId;
+  }
 
   protected constructor(type: DictType) {
+    super();
     this.Type = type;
   }
   
@@ -21,6 +28,9 @@ export class PdfDict {
     if (!parseInfo) {
       return false;
     }
+
+    this._id = parseInfo.objectId;
+    this._streamId = parseInfo.streamId;
 
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

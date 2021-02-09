@@ -12,4 +12,9 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
   protected constructor(type: AnnotationType) {
     super(type);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

@@ -21,4 +21,9 @@ export class FileAttachmentAnnotation extends MarkupAnnotation {
   constructor() {
     super(annotationTypes.FILE_ATTACHMENT);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

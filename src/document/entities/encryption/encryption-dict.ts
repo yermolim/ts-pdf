@@ -79,4 +79,9 @@ export class EncryptionDict extends PdfDict {
   constructor() {
     super(dictTypes.EMPTY);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

@@ -7,4 +7,9 @@ export class SoundAnnotation extends MarkupAnnotation {
   constructor() {
     super(annotationTypes.SOUND);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

@@ -26,4 +26,9 @@ export class OcGroupDict extends PdfDict {
   constructor() {
     super(dictTypes.OPTIONAL_CONTENT_GROUP);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

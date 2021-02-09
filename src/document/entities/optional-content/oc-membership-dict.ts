@@ -23,5 +23,10 @@ export class OcMembershipDict extends PdfDict {
   
   constructor() {
     super(dictTypes.OPTIONAL_CONTENT_MD);
+  }  
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
   }
 }

@@ -164,4 +164,8 @@ export class ReferenceData {
   getOffset(id: number): number {
     return this.usedMap.get(id)?.byteOffset;
   }
+  
+  getGeneration(id: number): number {
+    return this.usedMap.get(id)?.generation;
+  }
 }

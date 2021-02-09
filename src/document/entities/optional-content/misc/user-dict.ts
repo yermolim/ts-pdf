@@ -10,4 +10,9 @@ export class UserDict extends PdfDict {
   constructor(type: UserTypes) {
     super(type);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

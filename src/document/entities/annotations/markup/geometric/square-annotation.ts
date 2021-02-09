@@ -14,4 +14,9 @@ export class SquareAnnotation extends GeometricAnnotation {
   constructor() {
     super(annotationTypes.SQUARE);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

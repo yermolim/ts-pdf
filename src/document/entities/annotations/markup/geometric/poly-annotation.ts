@@ -9,7 +9,6 @@ export const polyIntents = {
 } as const;
 export type PolyIntent = typeof polyIntents[keyof typeof polyIntents];
 
-
 export abstract class PolyAnnotation extends GeometricAnnotation {
   /**
    * (Required) An array of numbers specifying the width and dash pattern 
@@ -29,5 +28,10 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
   
   protected constructor(type: AnnotationType) {
     super(type);
+  }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
   }
 }

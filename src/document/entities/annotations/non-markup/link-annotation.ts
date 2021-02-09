@@ -34,4 +34,9 @@ export class LinkAnnotation extends AnnotationDict {
   constructor() {
     super(annotationTypes.LINK);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

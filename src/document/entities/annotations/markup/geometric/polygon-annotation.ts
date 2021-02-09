@@ -5,4 +5,9 @@ export class PolygonAnnotation extends PolyAnnotation {
   constructor() {
     super(annotationTypes.POLYGON);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

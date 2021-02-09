@@ -10,4 +10,9 @@ export class ExDataDict extends PdfDict {
   constructor() {
     super(dictTypes.EXTERNAL_DATA);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

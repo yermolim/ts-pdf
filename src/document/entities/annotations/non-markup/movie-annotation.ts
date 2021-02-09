@@ -7,4 +7,9 @@ export class MovieAnnotation extends AnnotationDict {
   constructor() {
     super(annotationTypes.MOVIE);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

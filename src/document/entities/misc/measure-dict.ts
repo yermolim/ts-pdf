@@ -10,4 +10,9 @@ export class MeasureDict extends PdfDict {
   constructor() {
     super(dictTypes.MEASURE);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

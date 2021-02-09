@@ -1245,7 +1245,6 @@ class ObjectId {
     constructor(id, generation) {
         this.id = id !== null && id !== void 0 ? id : 0;
         this.generation = generation !== null && generation !== void 0 ? generation : 0;
-        this.reused = this.generation > 0;
     }
     static parse(parser, start, skipEmpty = true) {
         if (skipEmpty) {
@@ -1317,14 +1316,28 @@ class ObjectId {
     }
 }
 
-class PdfDict {
+class PdfObject {
+    constructor() {
+    }
+    get id() {
+        return this._id;
+    }
+}
+
+class PdfDict extends PdfObject {
     constructor(type) {
+        super();
         this.Type = type;
+    }
+    get streamId() {
+        return this._streamId;
     }
     tryParseProps(parseInfo) {
         if (!parseInfo) {
             return false;
         }
+        this._id = parseInfo.objectId;
+        this._streamId = parseInfo.streamId;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
@@ -1370,9 +1383,29 @@ class FlateParamsDict extends PdfDict {
         this.BitsPerComponent = 8;
         this.Columns = 1;
     }
-    static parse(parser, start, end) {
+    static parse(parseInfo) {
         const dict = new FlateParamsDict();
-        let i = start + 2;
+        const parseResult = dict.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        console.log(parser.sliceChars(start, end));
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
         let name;
         let parseResult;
         while (true) {
@@ -1384,7 +1417,7 @@ class FlateParamsDict extends PdfDict {
                     case "/Predictor":
                         const predictor = parser.parseNumberAt(i, false);
                         if (predictor) {
-                            dict.Predictor = predictor.value;
+                            this.Predictor = predictor.value;
                             i = predictor.end + 1;
                         }
                         else {
@@ -1394,7 +1427,7 @@ class FlateParamsDict extends PdfDict {
                     case "/Colors":
                         const colors = parser.parseNumberAt(i, false);
                         if (colors) {
-                            dict.Colors = colors.value;
+                            this.Colors = colors.value;
                             i = colors.end + 1;
                         }
                         else {
@@ -1404,7 +1437,7 @@ class FlateParamsDict extends PdfDict {
                     case "/BitsPerComponent":
                         const bits = parser.parseNumberAt(i, false);
                         if (bits) {
-                            dict.BitsPerComponent = bits.value;
+                            this.BitsPerComponent = bits.value;
                             i = bits.end + 1;
                         }
                         else {
@@ -1414,7 +1447,7 @@ class FlateParamsDict extends PdfDict {
                     case "/Columns":
                         const columns = parser.parseNumberAt(i, false);
                         if (columns) {
-                            dict.Columns = columns.value;
+                            this.Columns = columns.value;
                             i = columns.end + 1;
                         }
                         else {
@@ -1430,12 +1463,7 @@ class FlateParamsDict extends PdfDict {
                 break;
             }
         }
-        return { value: dict, start, end };
-    }
-}
-
-class PdfObject {
-    constructor() {
+        return true;
     }
 }
 
@@ -2157,6 +2185,7 @@ class PdfStream extends PdfObject {
         if (!parseInfo) {
             return false;
         }
+        this._id = parseInfo.objectId;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
@@ -2244,7 +2273,7 @@ class PdfStream extends PdfObject {
                     case "/DecodeParms":
                         const decodeParamsBounds = parser.getDictBoundsAt(i);
                         if (decodeParamsBounds) {
-                            const params = FlateParamsDict.parse(parser, decodeParamsBounds.start, decodeParamsBounds.end);
+                            const params = FlateParamsDict.parse({ parser, bounds: decodeParamsBounds });
                             if (params) {
                                 this.DecodeParms = params.value;
                             }
@@ -4290,6 +4319,8 @@ class ObjectStream extends PdfStream {
             },
             type: objectType,
             value,
+            objectId: id,
+            streamId: this._id,
         };
     }
     toArray() {
@@ -5532,6 +5563,10 @@ class ReferenceData {
         var _a;
         return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
     }
+    getGeneration(id) {
+        var _a;
+        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
+    }
 }
 
 class DocumentData {
@@ -5554,7 +5589,7 @@ class DocumentData {
                 return null;
             }
             const parseInfoGetter = this.getObjectParseInfo;
-            const info = { parser: this._docParser, bounds, parseInfoGetter };
+            const info = { parser: this._docParser, bounds, parseInfoGetter, objectId: objectId.value.id };
             if (objectId.value.id === id) {
                 return info;
             }

@@ -54,7 +54,6 @@ export abstract class PdfStream extends PdfObject {
   }
   
   protected constructor(type: StreamType = null) {
-
     super();
     this.Type = type;
   }
@@ -66,6 +65,8 @@ export abstract class PdfStream extends PdfObject {
     if (!parseInfo) {
       return false;
     }
+
+    this._id = parseInfo.objectId;
 
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -157,8 +158,7 @@ export abstract class PdfStream extends PdfObject {
             // TODO: add support for decode params arrays
             const decodeParamsBounds = parser.getDictBoundsAt(i);
             if (decodeParamsBounds) {
-              const params = FlateParamsDict.parse(parser, 
-                decodeParamsBounds.start, decodeParamsBounds.end);
+              const params = FlateParamsDict.parse({parser, bounds: decodeParamsBounds});
               if (params) {
                 this.DecodeParms = params.value;
               }

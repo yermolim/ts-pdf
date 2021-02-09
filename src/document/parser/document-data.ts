@@ -283,7 +283,7 @@ export class DocumentData {
       return null;
     }
     const parseInfoGetter = this.getObjectParseInfo;
-    const info = {parser: this._docParser, bounds, parseInfoGetter};
+    const info = {parser: this._docParser, bounds, parseInfoGetter, objectId: objectId.value.id};
 
     if (objectId.value.id === id) {
       // object id equals the sought one, so this is the needed object

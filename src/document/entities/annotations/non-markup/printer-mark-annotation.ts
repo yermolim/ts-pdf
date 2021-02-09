@@ -7,4 +7,9 @@ export class PrinterMarkAnnotation extends AnnotationDict {
   constructor() {
     super(annotationTypes.PRINTER_MARK);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

@@ -5,4 +5,9 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
   constructor() {
     super(annotationTypes.UNDERLINE);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }

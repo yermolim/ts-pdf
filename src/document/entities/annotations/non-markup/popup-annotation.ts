@@ -15,4 +15,9 @@ export class PopupAnnotation extends AnnotationDict {
   constructor() {
     super(annotationTypes.POPUP);
   }
+  
+  toArray(): Uint8Array {
+    // TODO: implement
+    return new Uint8Array();
+  }
 }
