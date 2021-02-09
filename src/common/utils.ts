@@ -67,8 +67,8 @@ export class LinkedListNode<T> {
 
 export class LinkedList<T> {
   private _head: LinkedListNode<T>;
-  get head(): LinkedListNode<T> {
-    return this._head;
+  get head(): T {
+    return this._head.data;
   }
 
   private _length = 0;
@@ -76,20 +76,24 @@ export class LinkedList<T> {
     return this._length;
   }
 
+  get tail(): T {
+    return this.get(this._length - 1);
+  }
+
   constructor(head?: T) {
     if (head) {
-      this.append(head);
+      this.push(head);
     }
   }
 
-  append(value: T) {
+  push(value: T) {
     const node = new LinkedListNode<T>(value);
     
     let current: LinkedListNode<T>;
     if (!this._head) {
       this._head = node;
     } else {
-      current = this.head;
+      current = this._head;
       while (current.next) {
         current = current.next;
       }
@@ -98,14 +102,19 @@ export class LinkedList<T> {
     this._length++;
   }
 
-  insert(value: T, n: number): boolean {
+  /**
+   * inserts a node at the specified index and returns the inserted node value 
+   * @param value 
+   * @param n 
+   */
+  insert(value: T, n: number): T {
     if (n < 0 || n > this._length - 1) {
-      return false;
+      return null;
     }
 
     const node = new LinkedListNode<T>(value);
     let previous: LinkedListNode<T>;
-    let current = this.head;
+    let current = this._head;
     let i = 0;
 
     if (!n) {
@@ -119,17 +128,22 @@ export class LinkedList<T> {
     }
     node.next = current;
     this._length++;
-    return true;
+    return node.data;
   }
   
-  replace(value: T, n: number): boolean {    
+  /**
+   * removes a node at the specified index and returns the replaced node value 
+   * @param value 
+   * @param n 
+   */
+  replace(value: T, n: number): T {    
     if (n < 0 || n > this._length - 1) {
-      return false;
+      return null;
     }
 
     const node = new LinkedListNode<T>(value);
     let previous: LinkedListNode<T>;
-    let current = this.head;
+    let current = this._head;
     let i = 0;
 
     if (!n) {
@@ -142,16 +156,20 @@ export class LinkedList<T> {
       previous.next = node;
     }
     node.next = current.next;
-    return true;
+    return current.data;
   }
 
-  remove(n: number): boolean {    
+  /**
+   * removes a node at the specified index and returns the removed node value 
+   * @param n 
+   */
+  remove(n: number): T {    
     if (n < 0 || n > this._length - 1) {
-      return false;
+      return null;
     }
 
     let previous: LinkedListNode<T>;
-    let current = this.head;
+    let current = this._head;
     let i = 0;
 
     if (!n) {
@@ -164,20 +182,29 @@ export class LinkedList<T> {
       previous.next = current.next;
     }
     this._length--;
-    return true;
+    return current.data;
   }
   
+  clear() {
+    this._head = null;
+    this._length = 0;
+  }
+
   get(n: number): T {    
     if (n < 0 || n > this._length - 1) {
       return null;
     }
 
-    let current = this.head;
+    let current = this._head;
     let i = 0;
     while (i++ < n) {
       current = current.next;
     }
     return current.data;
+  }  
+
+  pop(): T {
+    return this.remove(this._length - 1);
   }
 
   has(value: T, comparator?: (a: T, b: T) => boolean): boolean {
@@ -187,7 +214,7 @@ export class LinkedList<T> {
 
     comparator ||= (a: T, b: T) => a === b;
     
-    let current = this.head;
+    let current = this._head;
     let i = 0;
     while (i < this._length) {
       if (comparator(value, current.data)) {
@@ -206,7 +233,7 @@ export class LinkedList<T> {
     
     comparator ||= (a: T, b: T) => a === b;
     
-    let current = this.head;
+    let current = this._head;
     let i = 0;
     while (i < this._length) {
       if (comparator(value, current.data)) {
@@ -218,7 +245,7 @@ export class LinkedList<T> {
     return -1;
   }
  
-  *[Symbol.iterator](): Iterable<T> {
+  *[Symbol.iterator]() {
     let current = this._head;
     while (current) {
       yield current.data;

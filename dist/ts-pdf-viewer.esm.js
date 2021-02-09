@@ -465,23 +465,26 @@ class LinkedList {
     constructor(head) {
         this._length = 0;
         if (head) {
-            this.append(head);
+            this.push(head);
         }
     }
     get head() {
-        return this._head;
+        return this._head.data;
     }
     get length() {
         return this._length;
     }
-    append(value) {
+    get tail() {
+        return this.get(this._length - 1);
+    }
+    push(value) {
         const node = new LinkedListNode(value);
         let current;
         if (!this._head) {
             this._head = node;
         }
         else {
-            current = this.head;
+            current = this._head;
             while (current.next) {
                 current = current.next;
             }
@@ -491,11 +494,11 @@ class LinkedList {
     }
     insert(value, n) {
         if (n < 0 || n > this._length - 1) {
-            return false;
+            return null;
         }
         const node = new LinkedListNode(value);
         let previous;
-        let current = this.head;
+        let current = this._head;
         let i = 0;
         if (!n) {
             this._head = node;
@@ -509,15 +512,15 @@ class LinkedList {
         }
         node.next = current;
         this._length++;
-        return true;
+        return node.data;
     }
     replace(value, n) {
         if (n < 0 || n > this._length - 1) {
-            return false;
+            return null;
         }
         const node = new LinkedListNode(value);
         let previous;
-        let current = this.head;
+        let current = this._head;
         let i = 0;
         if (!n) {
             this._head = node;
@@ -530,14 +533,14 @@ class LinkedList {
             previous.next = node;
         }
         node.next = current.next;
-        return true;
+        return current.data;
     }
     remove(n) {
         if (n < 0 || n > this._length - 1) {
-            return false;
+            return null;
         }
         let previous;
-        let current = this.head;
+        let current = this._head;
         let i = 0;
         if (!n) {
             this._head = current.next;
@@ -550,25 +553,32 @@ class LinkedList {
             previous.next = current.next;
         }
         this._length--;
-        return true;
+        return current.data;
+    }
+    clear() {
+        this._head = null;
+        this._length = 0;
     }
     get(n) {
         if (n < 0 || n > this._length - 1) {
             return null;
         }
-        let current = this.head;
+        let current = this._head;
         let i = 0;
         while (i++ < n) {
             current = current.next;
         }
         return current.data;
     }
+    pop() {
+        return this.remove(this._length - 1);
+    }
     has(value, comparator) {
         if (!this._length) {
             return false;
         }
         comparator || (comparator = (a, b) => a === b);
-        let current = this.head;
+        let current = this._head;
         let i = 0;
         while (i < this._length) {
             if (comparator(value, current.data)) {
@@ -584,7 +594,7 @@ class LinkedList {
             return -1;
         }
         comparator || (comparator = (a, b) => a === b);
-        let current = this.head;
+        let current = this._head;
         let i = 0;
         while (i < this._length) {
             if (comparator(value, current.data)) {
@@ -5831,7 +5841,7 @@ class ReferenceData {
         while (nextId) {
             next = freeMap.get(nextId);
             freeMap.delete(nextId);
-            freeLinkedList.append(next);
+            freeLinkedList.push(next);
             nextId = next.nextFreeId;
         }
         [...freeMap].forEach(x => {
@@ -5885,16 +5895,12 @@ class ReferenceData {
         var _a;
         return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
     }
-    applyChange() {
-    }
-    resetChange() {
-    }
     isFreed(ref) {
         return this.freeOutsideListMap.has(ref.objectId)
             || this.freeLinkedList.has(ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
     }
-    isUsed(ref) {
-        return this.usedMap.has(ref.objectId);
+    isUsed(id) {
+        return this.usedMap.has(id);
     }
 }
 

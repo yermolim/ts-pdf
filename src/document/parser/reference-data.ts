@@ -103,7 +103,7 @@ export class ReferenceData {
     while (nextId) {
       next = freeMap.get(nextId);
       freeMap.delete(nextId);
-      freeLinkedList.append(next);
+      freeLinkedList.push(next);
       nextId = next.nextFreeId;
     }
 
@@ -172,64 +172,116 @@ export class ReferenceData {
     return this.usedMap.get(id)?.generation;
   }
 
-
-
-
-  applyChange() {
-
-  }
-
-  resetChange() {
-
-  }
-
-
-
-
-  private isFreed(ref: Reference): boolean {
+  isFreed(ref: Reference): boolean {
     return this.freeOutsideListMap.has(ref.objectId)
       || this.freeLinkedList.has(<FreeReference>ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
   }
   
-  private isUsed(ref: Reference): boolean {
-    return this.usedMap.has(ref.objectId);
+  isUsed(id: number): boolean {
+    return this.usedMap.has(id);
   }
 }
 
-// class ReferenceDataChange {
-//   private readonly _refData: ReferenceData;
-//   private size; 
+export class ReferenceDataChange {
+  private readonly _refData: ReferenceData;
 
-//   private freeLinkedList: FreeReference;
-//   private usedMap: Map<number, UsedReference>;
+  private readonly _freeLinkedList: LinkedList<FreeReference>;
+  private readonly _usedMap: Map<number, UsedReference>;
+  private _size: number; 
   
-//   constructor(refData: ReferenceData) {
-//     this._refData = refData;
-//     this.size = refData.size;
+  constructor(refData: ReferenceData) {
+    this._refData = refData;
+    this._size = refData.size;
 
-//     let sourceFreeRef = refData.freeLinkedList;
-//     // get last free ref
-//     while (true) {
-      
-//       if (sourceFreeRef.nextFreeId) {
-//         sourceFreeRef = sourceFreeRef.next;
-//       } else {
-//         break;
-//       }
-//     }
+    const freeLinkedList = new LinkedList<FreeReference>();
+    for (const freeRef of refData.freeLinkedList) {
+      freeLinkedList.push(freeRef);
+    }
+    this._freeLinkedList = freeLinkedList;
 
-//     this.freeLinkedList = freeRef;
-//   }
+    this._usedMap = new Map<number, UsedReference>();
+  }
 
-//   takeFreeRef(): Reference {
-//     return null;
-//   }
+  takeFreeRef(byteOffset: number, forceNew = false): UsedReference {
+    let ref: UsedReference;
+    if (!forceNew && this._freeLinkedList.length > 1) {
+      const freeRef = this._freeLinkedList.pop();
+      this._freeLinkedList.tail.nextFreeId = 0;
+      ref = {
+        objectId: freeRef.objectId, 
+        generation: freeRef.generation, 
+        byteOffset,
+      };
+    } else {
+      ref = {
+        objectId: this._size++, 
+        generation: 0, 
+        byteOffset,
+      };
+    }
 
-//   setRefFree() {
+    this._usedMap.set(ref.objectId, ref);
+    return ref;
+  }
 
-//   }
+  setRefFree(id: number) {
+    // if the specified id was taken within the current change, delete it from the change map
+    if (this._usedMap.has(id)) {
+      this._usedMap.delete(id);
+      // if the specified id was the last one and was appended within the current change, decrease the change size value
+      if (this._size > this._refData.size && this._size === id + 1) {
+        this._size--;
+      }
+    }
 
-//   export(): XRefEntry[] {
-//     return [];
-//   }
-// }
+    // if the specified id is used within the source data, add it to the change free list
+    if (this._refData.isUsed(id)) {
+      const gen = this._refData.getGeneration(id);
+      const ref: FreeReference = {objectId: id, generation: gen + 1, nextFreeId: 0};    
+
+      // check if the id is not already in the free list
+      const index = this._freeLinkedList.findIndex(ref, (a, b) => 
+        a.objectId === b.objectId && a.generation <= b.generation);
+      if (index !== -1) {
+        // the id is already in the free list
+        return;
+      }    
+
+      // append the reference to the free list
+      const lastFreeRef = this._freeLinkedList.tail;
+      lastFreeRef.nextFreeId = id;
+      this._freeLinkedList.push(ref);
+    }
+  }
+
+  updateUsedRef(ref: UsedReference): boolean { 
+    const current = this._usedMap.get(ref.objectId);
+    if (current) {
+      // the ref is already taken within the current change, 
+      // replace it if the generation is not less than the current one
+      if (ref.generation >= current.generation) {
+        this._usedMap.set(ref.objectId, ref);
+        return true;
+      }
+    } 
+
+    if (this._refData.isUsed(ref.objectId)) { 
+      const gen = this._refData.getGeneration(ref.generation);
+      if (ref.generation >= gen) {
+        this._usedMap.set(ref.objectId, ref);
+        return true;
+      }
+    } 
+
+    // the ref is not used or has an old generation so there is nothing to change
+    return false;
+  }
+
+  export(): XRefEntry[] {
+    return [];
+  }
+  
+  isFreed(ref: Reference): boolean {
+    return this._freeLinkedList.has(<FreeReference>ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
+  }
+}
