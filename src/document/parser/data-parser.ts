@@ -24,7 +24,8 @@ export interface ParseInfo {
   bounds: Bounds;
   type?: ObjectType;
   value?: any;
-  objectId?: number;
+  id?: number;
+  generation?: number;
   /** parent object stream id */
   streamId?: number;
   parseInfoGetter?: (id: number) => ParseInfo;

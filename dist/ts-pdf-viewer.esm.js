@@ -718,18 +718,25 @@ class ViewPage {
         this._pageProxy = pageProxy;
         this._viewport = pageProxy.getViewport({ scale: 1 });
         this._maxScale = Math.max(maxScale, 1);
+        this.number = pageProxy.pageNumber;
+        this.id = pageProxy.ref["num"];
+        this.generation = pageProxy.ref["gen"];
         const { width, height } = this._viewport;
         previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
         const previewHeight = previewWidth * (height / width);
         this._dimensions = { width, height, previewWidth, previewHeight };
         this._previewContainer = document.createElement("div");
         this._previewContainer.classList.add("page-preview");
-        this._previewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
+        this._previewContainer.setAttribute("data-page-number", this.number + "");
+        this._previewContainer.setAttribute("data-page-id", this.id + "");
+        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
         this._previewContainer.style.width = this._dimensions.previewWidth + "px";
         this._previewContainer.style.height = this._dimensions.previewHeight + "px";
         this._viewContainer = document.createElement("div");
         this._viewContainer.classList.add("page");
-        this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
+        this._viewContainer.setAttribute("data-page-number", this.number + "");
+        this._viewContainer.setAttribute("data-page-id", this.id + "");
+        this._viewContainer.setAttribute("data-page-gen", this.generation + "");
         this.scale = 1;
     }
     get previewContainer() {
@@ -1502,6 +1509,9 @@ class PdfObject {
     get id() {
         return this._id;
     }
+    get generation() {
+        return this._generation;
+    }
 }
 
 class PdfDict extends PdfObject {
@@ -1525,7 +1535,8 @@ class PdfDict extends PdfObject {
         if (!parseInfo) {
             return false;
         }
-        this._id = parseInfo.objectId;
+        this._id = parseInfo.id;
+        this._generation = parseInfo.generation;
         this._streamId = parseInfo.streamId;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
@@ -2424,7 +2435,8 @@ class PdfStream extends PdfObject {
         if (!parseInfo) {
             return false;
         }
-        this._id = parseInfo.objectId;
+        this._id = parseInfo.id;
+        this._generation = parseInfo.generation;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
@@ -5318,7 +5330,8 @@ class ObjectStream extends PdfStream {
             },
             type: objectType,
             value,
-            objectId: id,
+            id,
+            generation: 0,
             streamId: this._id,
         };
     }
@@ -6864,7 +6877,13 @@ class DocumentData {
                 return null;
             }
             const parseInfoGetter = this.getObjectParseInfo;
-            const info = { parser: this._docParser, bounds, parseInfoGetter, objectId: objectId.value.id };
+            const info = {
+                parser: this._docParser,
+                bounds,
+                parseInfoGetter,
+                id: objectId.value.id,
+                generation: objectId.value.generation,
+            };
             if (objectId.value.id === id) {
                 return info;
             }
@@ -6888,12 +6907,20 @@ class DocumentData {
                 throw new Error("File doesn't contain update section");
             }
         }
-        this._lastXrefIndex = lastXrefIndex.value;
+        const xrefs = DocumentData.parseAllXrefs(this._docParser, lastXrefIndex.value);
+        if (!xrefs.length) {
+            {
+                throw new Error("Failed to parse cross-reference sections");
+            }
+        }
+        this._xrefs = xrefs;
+        this._referenceData = new ReferenceData(xrefs);
+        this.parsePageTree();
     }
     get size() {
         var _a;
         if ((_a = this._xrefs) === null || _a === void 0 ? void 0 : _a.length) {
-            return this._xrefs[0].prev;
+            return this._xrefs[0].size;
         }
         else {
             return 0;
@@ -6929,34 +6956,26 @@ class DocumentData {
         const xrefStream = XRefStream.parse({ parser: parser, bounds: xrefStreamBounds });
         return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
-    parse() {
-        this.reset();
-        const xrefs = this.parseAllXrefs();
-        if (!xrefs.length) {
-            {
-                throw new Error("Failed to parse cross-reference sections");
+    static parseAllXrefs(parser, start) {
+        const xrefs = [];
+        let max = parser.maxIndex;
+        let xref;
+        while (start) {
+            xref = DocumentData.parseXref(parser, start, max);
+            if (xref) {
+                xrefs.push(xref);
+                max = start;
+                start = xref.prev;
+            }
+            else {
+                break;
             }
         }
-        this._xrefs = xrefs;
-        this._referenceData = new ReferenceData(xrefs);
-        this.parsePageTree();
-        this.parseSupportedAnnotations();
+        return xrefs;
     }
-    reset() {
-        this._xrefs = null;
-        this._referenceData = null;
-        this._catalog = null;
-        this._pageRoot = null;
-        this._pages = null;
-        this._annotations = null;
-    }
-    getDataWoSupportedAnnotations() {
+    getRefinedData(idsToDelete) {
         const changeData = new ReferenceDataChange(this._referenceData);
-        this._annotations.forEach(x => {
-            if (x.id) {
-                changeData.setRefFree(x.id);
-            }
-        });
+        idsToDelete.forEach(x => changeData.setRefFree(x));
         const writer = new DataWriter(this._data);
         const newXrefOffset = writer.offset;
         const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
@@ -6968,24 +6987,67 @@ class DocumentData {
         const bytes = writer.getCurrentData();
         return bytes;
     }
-    parseAllXrefs() {
-        this.reset();
-        const xrefs = [];
-        let start = this._lastXrefIndex;
-        let max = this._docParser.maxIndex;
-        let xref;
-        while (start) {
-            xref = DocumentData.parseXref(this._docParser, start, max);
-            if (xref) {
-                xrefs.push(xref);
-                max = start;
-                start = xref.prev;
-            }
-            else {
+    getSupportedAnnotations() {
+        var _a;
+        const annotationMap = new Map();
+        for (const page of this._pages) {
+            if (!page.Annots) {
                 break;
             }
+            const annotationIds = [];
+            if (Array.isArray(page.Annots)) {
+                annotationIds.push(...page.Annots);
+            }
+            else {
+                const parseInfo = this.getObjectParseInfo(page.Annots.id);
+                if (parseInfo) {
+                    const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
+                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
+                        annotationIds.push(...annotationRefs.value);
+                    }
+                }
+            }
+            const annotations = [];
+            for (const objectId of annotationIds) {
+                const info = this.getObjectParseInfo(objectId.id);
+                const annotationType = info.parser.parseDictSubtype(info.bounds);
+                let annot;
+                switch (annotationType) {
+                    case annotationTypes.TEXT:
+                        annot = TextAnnotation.parse(info);
+                        break;
+                    case annotationTypes.FREE_TEXT:
+                        annot = FreeTextAnnotation.parse(info);
+                        break;
+                    case annotationTypes.STAMP:
+                        annot = StampAnnotation.parse(info);
+                        break;
+                    case annotationTypes.CIRCLE:
+                        annot = CircleAnnotation.parse(info);
+                        break;
+                    case annotationTypes.SQUARE:
+                        annot = SquareAnnotation.parse(info);
+                        break;
+                    case annotationTypes.POLYGON:
+                        annot = SquareAnnotation.parse(info);
+                        break;
+                    case annotationTypes.POLYLINE:
+                        annot = SquareAnnotation.parse(info);
+                        break;
+                    case annotationTypes.LINE:
+                        annot = LineAnnotation.parse(info);
+                        break;
+                    case annotationTypes.INK:
+                        annot = InkAnnotation.parse(info);
+                        break;
+                }
+                if (annot) {
+                    annotations.push(annot.value);
+                }
+            }
+            annotationMap.set(page.id, annotations);
         }
-        return xrefs;
+        return annotationMap;
     }
     parsePageTree() {
         const catalogId = this._xrefs[0].root;
@@ -7031,66 +7093,6 @@ class DocumentData {
         }
     }
     ;
-    parseSupportedAnnotations() {
-        var _a;
-        const annotationIds = [];
-        for (const page of this._pages) {
-            if (!page.Annots) {
-                break;
-            }
-            if (Array.isArray(page.Annots)) {
-                annotationIds.push(...page.Annots);
-            }
-            else {
-                const parseInfo = this.getObjectParseInfo(page.Annots.id);
-                if (parseInfo) {
-                    const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
-                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
-                        annotationIds.push(...annotationRefs.value);
-                    }
-                }
-            }
-        }
-        const annotations = [];
-        for (const objectId of annotationIds) {
-            const info = this.getObjectParseInfo(objectId.id);
-            const annotationType = info.parser.parseDictSubtype(info.bounds);
-            let annot;
-            switch (annotationType) {
-                case annotationTypes.TEXT:
-                    annot = TextAnnotation.parse(info);
-                    break;
-                case annotationTypes.FREE_TEXT:
-                    annot = FreeTextAnnotation.parse(info);
-                    break;
-                case annotationTypes.STAMP:
-                    annot = StampAnnotation.parse(info);
-                    break;
-                case annotationTypes.CIRCLE:
-                    annot = CircleAnnotation.parse(info);
-                    break;
-                case annotationTypes.SQUARE:
-                    annot = SquareAnnotation.parse(info);
-                    break;
-                case annotationTypes.POLYGON:
-                    annot = SquareAnnotation.parse(info);
-                    break;
-                case annotationTypes.POLYLINE:
-                    annot = SquareAnnotation.parse(info);
-                    break;
-                case annotationTypes.LINE:
-                    annot = LineAnnotation.parse(info);
-                    break;
-                case annotationTypes.INK:
-                    annot = InkAnnotation.parse(info);
-                    break;
-            }
-            if (annot) {
-                annotations.push(annot.value);
-            }
-        }
-        this._annotations = annotations;
-    }
 }
 
 class AnnotationEditor {
@@ -7103,23 +7105,37 @@ class AnnotationEditor {
         }
         this._sourceData = pdfData;
         this._documentData = new DocumentData(pdfData);
-        this._documentData.parse();
-    }
-    get annotations() {
-        return this._annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
+        this._annotationsByPageId = this._documentData.getSupportedAnnotations();
     }
     getRefinedData() {
-        return this._documentData.getDataWoSupportedAnnotations();
+        const idsToDelete = [];
+        this._annotationsByPageId.forEach(x => {
+            x.forEach(y => {
+                if (y.id) {
+                    idsToDelete.push(y.id);
+                }
+            });
+        });
+        return this._documentData.getRefinedData(idsToDelete);
     }
     getExportedData() {
         return null;
     }
-    addAnnotationDict(annotation) {
-        this._annotations.push(annotation);
+    getPageAnnotations(pageId) {
+        const annotations = this._annotationsByPageId.get(pageId);
+        if (!annotations) {
+            return [];
+        }
+        return annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
     }
-    updateData() {
-    }
-    extractSupportedAnnotationDicts() {
+    addAnnotation(pageId, annotation) {
+        const pageAnnotations = this._annotationsByPageId.get(pageId);
+        if (pageAnnotations) {
+            pageAnnotations.push(annotation);
+        }
+        else {
+            this._annotationsByPageId.set(pageId, [annotation]);
+        }
     }
 }
 

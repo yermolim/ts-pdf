@@ -4,7 +4,11 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 
 import { ViewPageText } from "./view-page-text";
 
-export class ViewPage {  
+export class ViewPage { 
+  readonly number: number;
+  readonly id: number;
+  readonly generation: number;
+  
   private readonly _pageProxy: PDFPageProxy; 
   private readonly _viewport: PageViewport; 
   private readonly _maxScale: number;
@@ -82,20 +86,28 @@ export class ViewPage {
     this._viewport = pageProxy.getViewport({scale: 1});
     this._maxScale = Math.max(maxScale, 1);
 
+    this.number = pageProxy.pageNumber;
+    this.id = pageProxy.ref["num"];
+    this.generation = pageProxy.ref["gen"];
+
     const {width, height} = this._viewport;
     previewWidth = Math.max(previewWidth ?? 0, 50);
     const previewHeight = previewWidth * (height / width);
     this._dimensions = {width, height, previewWidth, previewHeight};
 
     this._previewContainer = document.createElement("div");
-    this._previewContainer.classList.add("page-preview");
-    this._previewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");
+    this._previewContainer.classList.add("page-preview");    
+    this._previewContainer.setAttribute("data-page-number", this.number + "");
+    this._previewContainer.setAttribute("data-page-id", this.id + "");
+    this._previewContainer.setAttribute("data-page-gen", this.generation + "");
     this._previewContainer.style.width = this._dimensions.previewWidth + "px";
     this._previewContainer.style.height = this._dimensions.previewHeight + "px";
 
     this._viewContainer = document.createElement("div");
     this._viewContainer.classList.add("page");
-    this._viewContainer.setAttribute("data-page-number", pageProxy.pageNumber + "");    
+    this._viewContainer.setAttribute("data-page-number", this.number + ""); 
+    this._viewContainer.setAttribute("data-page-id", this.id + "");
+    this._viewContainer.setAttribute("data-page-gen", this.generation + "");   
     this.scale = 1;  
   }
 
