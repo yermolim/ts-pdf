@@ -56,6 +56,15 @@ export interface Position {
   y: number;
 }
 
+export interface Reference {  
+  id: number;
+  generation: number;
+}
+
+export interface Encodable {  
+  toArray(): Uint8Array;
+}
+
 export class LinkedListNode<T> {
   data: T;
   next: LinkedListNode<T>;

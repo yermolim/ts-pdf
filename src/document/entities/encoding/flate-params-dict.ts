@@ -50,16 +50,16 @@ export class FlateParamsDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Predictor) {
-      bytes.push(...encoder.encode("/Predictor"), ...encoder.encode(this.Predictor + ""));
+      bytes.push(...encoder.encode("/Predictor"), ...encoder.encode(" " + this.Predictor));
     }
     if (this.Colors) {
-      bytes.push(...encoder.encode("/Colors"), ...encoder.encode(this.Colors + ""));
+      bytes.push(...encoder.encode("/Colors"), ...encoder.encode(" " + this.Colors));
     }
     if (this.BitsPerComponent) {
-      bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(this.BitsPerComponent + ""));
+      bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(" " + this.BitsPerComponent));
     }
     if (this.Columns) {
-      bytes.push(...encoder.encode("/Columns"), ...encoder.encode(this.Columns + ""));
+      bytes.push(...encoder.encode("/Columns"), ...encoder.encode(" " + this.Columns));
     }
 
     const totalBytes: number[] = [

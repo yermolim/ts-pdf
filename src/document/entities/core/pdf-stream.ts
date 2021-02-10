@@ -50,7 +50,7 @@ export abstract class PdfStream extends PdfObject {
     } else {      
       encodedData = FlateDecoder.Encode(data);
     }
-    this._streamData.set(encodedData);
+    this._streamData = encodedData;
     this.Length = encodedData.length;
     this.DL = data.length;
   }
@@ -82,7 +82,7 @@ export abstract class PdfStream extends PdfObject {
       bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
     }
     if (this.Length) {
-      bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
+      bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
     }
     if (this.Filter) {
       bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
@@ -92,9 +92,8 @@ export abstract class PdfStream extends PdfObject {
     }
     bytes.push(    
       ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,
-
-      ...keywordCodes.STREAM_START, 
-      ...this.streamData, 
+      ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE,
+      ...this.streamData, ...keywordCodes.END_OF_LINE,
       ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE
     );
 

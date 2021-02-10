@@ -1,6 +1,7 @@
 import { keywordCodes } from "../../common/codes";
 import { xRefTypes } from "../../common/const";
 import { DataParser, ParseResult } from "../../parser/data-parser";
+import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
 import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";
@@ -22,11 +23,56 @@ export class XRefTable extends XRef {
     return this._trailerDict?.Root;
   }
 
+  get info(): ObjectId {
+    return this._trailerDict?.Root;
+  }
+
+  get encrypt(): ObjectId {
+    return this._trailerDict?.Encrypt;
+  }
+
+  get id(): [HexString, HexString] {
+    return this._trailerDict?.ID;
+  }
+
   constructor(table: Uint8Array, trailer: TrailerDict) {
     super(xRefTypes.TABLE);
 
     this._table = table;
     this._trailerDict = trailer;
+  }
+  
+  static createFrom(base: XRefTable, entries: XRefEntry[]) {
+    if (!entries?.length || !base) {
+      return null;
+    }
+    
+    const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
+    const size = Math.max(entriesSize, base.size);
+
+    return XRefTable.create(entries, size, base.prev, 
+      base.root, base.info, base.encrypt, base.id);
+  }
+  
+  static create(entries: XRefEntry[], size: number, prev: number, root: ObjectId, 
+    info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString],) {
+
+    if (!entries?.length || !size || !prev || !root) {
+      return null;
+    }
+
+    const trailer = new TrailerDict();
+    trailer.Size = size;
+    trailer.Prev = prev;
+    trailer.Root = root;
+    trailer.Info = info;
+    trailer.Encrypt = encrypt;
+    trailer.ID = id;
+
+    const data = XRefEntry.toTableBytes(entries);
+    const table = new XRefTable(data, trailer);
+
+    return table;
   }
 
   static parse(parser: DataParser, start: number): ParseResult<XRefTable> {
@@ -59,6 +105,10 @@ export class XRefTable extends XRef {
       start: null,
       end: null,
     };
+  }
+  
+  createUpdate(entries: XRefEntry[]): XRefTable {
+    return XRefTable.createFrom(this, entries);
   }
   
   getEntries(): Iterable<XRefEntry> { 

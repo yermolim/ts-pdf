@@ -105,6 +105,8 @@ export class TsPdfViewer {
     }
 
     const annotator = new AnnotationEditor(data);
+    // data without supported annotations
+    data = annotator.getRefinedData();
 
     try {
       if (this._pdfLoadingTask) {

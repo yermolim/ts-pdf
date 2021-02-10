@@ -33,7 +33,7 @@ export class AnnotationEditor {
    * returned data is used to render the remaining file content in PDF.js
    */
   getRefinedData(): Uint8Array {
-    return null;
+    return this._documentData.getDataWoSupportedAnnotations();
   }
 
   /**

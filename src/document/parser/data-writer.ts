@@ -1,3 +1,4 @@
+import { Encodable, Reference } from "../../common/utils";
 import { codes, keywordCodes } from "../common/codes";
 
 export class DataWriter {
@@ -6,7 +7,7 @@ export class DataWriter {
 
   private _encoder: TextEncoder;
 
-  public get maxIndex(): number {
+  public get offset(): number {
     return this._pointer;
   }
 
@@ -33,13 +34,29 @@ export class DataWriter {
     this._data.push(...bytes);
     this._pointer += bytes.length;
   }
+  
+  writeIndirectObject(ref: Reference, obj: Encodable) {
+    if (!ref || !obj) {
+      return;
+    }
+    const objBytes = [
+      ...this._encoder.encode(`${ref.id} ${ref.generation} `), 
+      ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+      ...obj.toArray(), 
+      ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
+    ];
+
+    this.writeBytes(objBytes);
+  }
 
   writeEof(xrefOffset: number) {
-    const eof = [...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
-      ...keywordCodes.END_OF_LINE, ...this._encoder.encode(xrefOffset + ""),
-      ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE];
-    this._data.push(...eof);
-    this._pointer += eof.length;
+    const eof = [
+      ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
+      ...this._encoder.encode(xrefOffset + ""), ...keywordCodes.END_OF_LINE,
+      ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE
+    ];
+
+    this.writeBytes(eof);
   }
 
   /**

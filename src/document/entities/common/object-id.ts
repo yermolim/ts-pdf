@@ -1,7 +1,8 @@
+import { Reference } from "../../../common/utils";
 import { codes } from "../../common/codes";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
-export class ObjectId {
+export class ObjectId implements Reference {
   /** A positive integer object number */
   readonly id: number;
   /** A non-negative integer generation number. 

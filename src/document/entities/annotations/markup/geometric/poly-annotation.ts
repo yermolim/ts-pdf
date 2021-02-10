@@ -40,7 +40,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
 
     if (this.Vertices) {
       bytes.push(...encoder.encode("/Vertices"), codes.L_BRACKET);
-      this.Vertices.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+      this.Vertices.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.IT) {

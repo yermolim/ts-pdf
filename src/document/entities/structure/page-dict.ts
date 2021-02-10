@@ -58,7 +58,7 @@ export class PageDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
     }
     if (this.LastModified) {
       bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
@@ -73,11 +73,11 @@ export class PageDict extends PdfDict {
       );
     }
     if (this.Rotate) {
-      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
     }
     if (this.Annots) {
       if (this.Annots instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/Annots"), ...this.Annots.toRefArray());
+        bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toRefArray());
       } else {
         bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
         this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));

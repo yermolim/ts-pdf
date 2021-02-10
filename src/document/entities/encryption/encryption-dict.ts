@@ -140,10 +140,10 @@ export class EncryptionDict extends PdfDict {
       bytes.push(...encoder.encode("/SubFilter"), ...encoder.encode(this.SubFilter));
     }
     if (this.V) {
-      bytes.push(...encoder.encode("/V"), ...encoder.encode(this.V + ""));
+      bytes.push(...encoder.encode("/V"), ...encoder.encode(" " + this.V));
     }
     if (this.Length) {
-      bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
+      bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
     }
     if (this.CF) {
       bytes.push(...encoder.encode("/CF"), ...this.CF.toArray());
@@ -158,7 +158,7 @@ export class EncryptionDict extends PdfDict {
       bytes.push(...encoder.encode("/EFF"), ...encoder.encode(this.EFF));
     }
     if (this.R) {
-      bytes.push(...encoder.encode("/R"), ...encoder.encode(this.R + ""));
+      bytes.push(...encoder.encode("/R"), ...encoder.encode(" " + this.R));
     }
     if (this.O) {
       bytes.push(...encoder.encode("/O"), ...this.O.toArray());
@@ -167,10 +167,10 @@ export class EncryptionDict extends PdfDict {
       bytes.push(...encoder.encode("/U"), ...this.U.toArray());
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P"), ...encoder.encode(this.P + ""));
+      bytes.push(...encoder.encode("/P"), ...encoder.encode(" " + this.P));
     }
     if (this.EncryptMetadata) {
-      bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(this.EncryptMetadata + ""));
+      bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
     }
 
     const totalBytes: number[] = [

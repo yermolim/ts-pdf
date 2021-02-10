@@ -30,7 +30,7 @@ export class LzwParamsDict extends FlateParamsDict {
     const bytes: number[] = [];  
 
     if (this.EarlyChange) {
-      bytes.push(...encoder.encode("/EarlyChange"), ...encoder.encode(this.EarlyChange + ""));
+      bytes.push(...encoder.encode("/EarlyChange"), ...encoder.encode(" " + this.EarlyChange));
     }
 
     const totalBytes: number[] = [

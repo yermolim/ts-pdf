@@ -1,12 +1,7 @@
-import { LinkedList } from "../../common/utils";
+import { LinkedList, Reference } from "../../common/utils";
 import { maxGeneration, xRefEntryTypes } from "../common/const";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
-
-export interface Reference {  
-  objectId: number;
-  generation: number;
-}
 
 export interface UsedReference extends Reference {
   byteOffset: number;
@@ -47,8 +42,8 @@ export class ReferenceData {
           default:
             continue;
         }
-        if (entry.objectId > maxId) {
-          maxId = entry.objectId;
+        if (entry.id > maxId) {
+          maxId = entry.id;
         }
       }
     });
@@ -73,7 +68,7 @@ export class ReferenceData {
      */
 
     const zeroFreeRef: FreeReference = {
-      objectId: 0,
+      id: 0,
       generation: maxGeneration,
       nextFreeId: 0,
     };
@@ -84,16 +79,16 @@ export class ReferenceData {
     const freeMap = new Map<number, FreeReference>();
     let zeroFound = false;
     for (const entry of allFreeEntries) {
-      if (!zeroFound && entry.objectId === 0) {
+      if (!zeroFound && entry.id === 0) {
         zeroFound = true;
         zeroFreeRef.nextFreeId = entry.nextFreeId;
         continue;
       }
       
-      const valueFromMap = freeMap.get(entry.objectId);
+      const valueFromMap = freeMap.get(entry.id);
       if (!valueFromMap || valueFromMap.generation < entry.generation) {
-        freeMap.set(entry.objectId, {
-          objectId: entry.objectId, 
+        freeMap.set(entry.id, {
+          id: entry.id, 
           generation: entry.generation, 
           nextFreeId: entry.nextFreeId});
       }
@@ -113,7 +108,7 @@ export class ReferenceData {
     [...freeMap].forEach(x => {
       const value = x[1];
       if (value.generation === maxGeneration && value.nextFreeId === 0) {
-        freeOutsideListMap.set(value.objectId, value);
+        freeOutsideListMap.set(value.id, value);
       }
     });
 
@@ -129,13 +124,13 @@ export class ReferenceData {
         continue;
       }
 
-      const valueFromMap = normalRefs.get(entry.objectId);
+      const valueFromMap = normalRefs.get(entry.id);
       if (valueFromMap && valueFromMap.generation >= entry.generation) {
         continue;
       }
       
-      normalRefs.set(entry.objectId, {
-        objectId: entry.objectId,
+      normalRefs.set(entry.id, {
+        id: entry.id,
         generation: entry.generation,
         byteOffset: entry.byteOffset,
       });
@@ -146,15 +141,15 @@ export class ReferenceData {
         continue;
       }
 
-      const valueFromMap = normalRefs.get(entry.objectId);
+      const valueFromMap = normalRefs.get(entry.id);
       if (valueFromMap) {
         continue;
       }
       
       const offset = normalRefs.get(entry.streamId)?.byteOffset;
       if (offset) {        
-        normalRefs.set(entry.objectId, {
-          objectId: entry.objectId,
+        normalRefs.set(entry.id, {
+          id: entry.id,
           generation: entry.generation,
           byteOffset: offset,
           compressed: true,
@@ -177,8 +172,8 @@ export class ReferenceData {
   }
 
   isFreed(ref: Reference): boolean {
-    return this.freeOutsideListMap.has(ref.objectId)
-      || this.freeLinkedList.has(<FreeReference>ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
+    return this.freeOutsideListMap.has(ref.id)
+      || this.freeLinkedList.has(<FreeReference>ref, (a, b) => a.id === b.id && a.generation < b.generation);
   }
   
   isUsed(id: number): boolean {
@@ -191,7 +186,11 @@ export class ReferenceDataChange {
 
   private readonly _freeLinkedList: LinkedList<FreeReference>;
   private readonly _usedMap: Map<number, UsedReference>;
+
   private _size: number; 
+  public get size(): number {
+    return this._size;
+  }
   
   constructor(refData: ReferenceData) {
     this._refData = refData;
@@ -212,19 +211,19 @@ export class ReferenceDataChange {
       const freeRef = this._freeLinkedList.pop();
       this._freeLinkedList.tail.nextFreeId = 0;
       ref = {
-        objectId: freeRef.objectId, 
+        id: freeRef.id, 
         generation: freeRef.generation, 
         byteOffset,
       };
     } else {
       ref = {
-        objectId: this._size++, 
+        id: this._size++, 
         generation: 0, 
         byteOffset,
       };
     }
 
-    this._usedMap.set(ref.objectId, ref);
+    this._usedMap.set(ref.id, ref);
     return ref;
   }
 
@@ -241,11 +240,11 @@ export class ReferenceDataChange {
     // if the specified id is used within the source data, add it to the change free list
     if (this._refData.isUsed(id)) {
       const gen = this._refData.getGeneration(id);
-      const ref: FreeReference = {objectId: id, generation: gen + 1, nextFreeId: 0};    
+      const ref: FreeReference = {id: id, generation: gen + 1, nextFreeId: 0};    
 
       // check if the id is not already in the free list
       const index = this._freeLinkedList.findIndex(ref, (a, b) => 
-        a.objectId === b.objectId && a.generation <= b.generation);
+        a.id === b.id && a.generation <= b.generation);
       if (index !== -1) {
         // the id is already in the free list
         return;
@@ -269,20 +268,20 @@ export class ReferenceDataChange {
       return false;
     }
 
-    const current = this._usedMap.get(ref.objectId);
+    const current = this._usedMap.get(ref.id);
     if (current) {
       // the ref is already taken within the current change, 
       // replace it if the generation is not less than the current one
       if (ref.generation >= current.generation) {
-        this._usedMap.set(ref.objectId, ref);
+        this._usedMap.set(ref.id, ref);
         return true;
       }
     } 
 
-    if (this._refData.isUsed(ref.objectId)) { 
+    if (this._refData.isUsed(ref.id)) { 
       const gen = this._refData.getGeneration(ref.generation);
       if (ref.generation >= gen) {
-        this._usedMap.set(ref.objectId, ref);
+        this._usedMap.set(ref.id, ref);
         return true;
       }
     } 
@@ -291,18 +290,18 @@ export class ReferenceDataChange {
     return false;
   }
 
-  export(): XRefEntry[] {
+  exportEntries(): XRefEntry[] {
     const entries: XRefEntry[] = [];
     for (const entry of this._freeLinkedList) {
-      entries.push(new XRefEntry(xRefEntryTypes.FREE, entry.objectId,
+      entries.push(new XRefEntry(xRefEntryTypes.FREE, entry.id,
         entry.generation, null, entry.nextFreeId));
     }
     this._usedMap.forEach(v => {
       if (v.compressed) {
-        entries.push(new XRefEntry(xRefEntryTypes.COMPRESSED, v.objectId,
+        entries.push(new XRefEntry(xRefEntryTypes.COMPRESSED, v.id,
           0, null, null, v.streamId, v.streamIndex));
       } else {
-        entries.push(new XRefEntry(xRefEntryTypes.NORMAL, v.objectId,
+        entries.push(new XRefEntry(xRefEntryTypes.NORMAL, v.id,
           v.generation, v.byteOffset));
       }
     });
@@ -312,7 +311,7 @@ export class ReferenceDataChange {
   
   isFreed(ref: Reference): boolean {
     return this._freeLinkedList.has(<FreeReference>ref, (a, b) => 
-      a.objectId === b.objectId && a.generation < b.generation);
+      a.id === b.id && a.generation < b.generation);
   }
 
   isUsed(id: number): boolean {    

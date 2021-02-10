@@ -1,5 +1,5 @@
+import { codes } from "../../common/codes";
 import { ObjectType, objectTypes, streamTypes } from "../../common/const";
-import { FlateDecoder } from "../../common/decoders/flate-decoder";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
@@ -139,13 +139,13 @@ export class ObjectStream extends PdfStream {
     const bytes: number[] = [];  
 
     if (this.N) {
-      bytes.push(...encoder.encode("/N"), ...encoder.encode(this.N + ""));
+      bytes.push(...encoder.encode("/N"), ...encoder.encode(" " + this.N));
     }
     if (this.First) {
-      bytes.push(...encoder.encode("/First"), ...encoder.encode(this.First + ""));
+      bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
     }
     if (this.Extends) {
-      bytes.push(...encoder.encode("/Extends"), ...this.Extends.toRefArray());
+      bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toRefArray());
     }
 
     const totalBytes: number[] = [

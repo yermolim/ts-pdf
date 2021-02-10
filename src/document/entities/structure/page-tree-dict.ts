@@ -52,7 +52,7 @@ export class PageTreeDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
     }
     if (this.Kids) {
       bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
@@ -60,7 +60,7 @@ export class PageTreeDict extends PdfDict {
       bytes.push(codes.R_BRACKET);
     }
     if (this.Count) {
-      bytes.push(...encoder.encode("/Count"), ...encoder.encode(this.Count + ""));
+      bytes.push(...encoder.encode("/Count"), ...encoder.encode(" " + this.Count));
     }
     if (this.MediaBox) {
       bytes.push(
@@ -72,7 +72,7 @@ export class PageTreeDict extends PdfDict {
       );
     }
     if (this.Rotate) {
-      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
     }
 
     const totalBytes: number[] = [

@@ -36,7 +36,7 @@ export class BorderEffectDict extends PdfDict {
       bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
     }
     if (this.L) {
-      bytes.push(...encoder.encode("/L"), ...encoder.encode(this.L + ""));
+      bytes.push(...encoder.encode("/L"), ...encoder.encode(" " + this.L));
     }
 
     const totalBytes: number[] = [

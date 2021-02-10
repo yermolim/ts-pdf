@@ -78,14 +78,14 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       bytes.push(...encoder.encode("/DA"), ...this.DA.toArray());
     }
     if (this.Q) {
-      bytes.push(...encoder.encode("/Q"), ...encoder.encode(this.Q + ""));
+      bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
     }
     if (this.DS) {
       bytes.push(...encoder.encode("/DS"), ...this.DS.toArray());
     }
     if (this.CL) {
       bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
-      this.CL.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+      this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.IT) {

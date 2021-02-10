@@ -88,7 +88,7 @@ export class XFormStream extends PdfStream {
       bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
     }
     if (this.FormType) {
-      bytes.push(...encoder.encode("/FormType"), ...encoder.encode(this.FormType + ""));
+      bytes.push(...encoder.encode("/FormType"), ...encoder.encode(" " + this.FormType));
     }
     if (this.BBox) {
       bytes.push(
@@ -114,16 +114,16 @@ export class XFormStream extends PdfStream {
       bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray());
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata"), ...this.Metadata.toRefArray());
+      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toRefArray());
     }
     if (this.LastModified) {
       bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
     }
     if (this.StructParent) {
-      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
     }
     if (this.StructParents) {
-      bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(this.StructParents + ""));
+      bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(" " + this.StructParents));
     }
     
     //TODO: handle remaining properties

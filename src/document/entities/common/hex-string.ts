@@ -41,7 +41,8 @@ export class HexString {
     return {value: hexes, start: arrayBounds.start, end: arrayBounds.end};
   }
 
-  static fromBytes(bytes: Uint8Array): HexString {   
+  static fromBytes(bytes: Uint8Array): HexString {  
+    bytes = bytes.subarray(1, bytes.length - 1); 
     const literal = new TextDecoder().decode(bytes);   
     const hex = Array.from(bytes, (byte, i) => 
       ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");  

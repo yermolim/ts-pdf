@@ -100,10 +100,10 @@ export class CryptFilterDict extends PdfDict {
       bytes.push(...encoder.encode("/AuthEvent"), ...encoder.encode(this.AuthEvent));
     }
     if (this.Length) {
-      bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
+      bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
     }
     if (this.EncryptMetadata) {
-      bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(this.EncryptMetadata + ""));
+      bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
     }
     if (this.Recipients) {
       if (this.Recipients instanceof HexString) {

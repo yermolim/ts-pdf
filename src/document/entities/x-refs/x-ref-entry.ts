@@ -1,11 +1,12 @@
-import { int16ToBytes, int32ToBytes, int8ToBytes, parseIntFromBytes } from "../../../common/utils";
+import { int16ToBytes, int32ToBytes, int8ToBytes, parseIntFromBytes, 
+  Reference } from "../../../common/utils";
 import { codes, DIGIT_CHARS } from "../../common/codes";
 import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../common/const";
 
-export class XRefEntry {
+export class XRefEntry implements Reference {
 
   constructor(readonly type: XRefEntryType,
-    readonly objectId: number,
+    readonly id: number,
     readonly generation: number,
     readonly byteOffset: number,
     readonly nextFreeId?: number,
@@ -166,10 +167,15 @@ export class XRefEntry {
   }
 
   static toStreamBytes(entries: XRefEntry[],
-    w: [w1: 0 | 1 | 2, w2: 1 | 2 | 4, w3: 0 | 1 | 2] = [1, 4, 2]): {bytes: Uint8Array; index: Uint8Array} {
+    w: [w1: number, w2: number, w3: number] = [1, 4, 2]): {bytes: Uint8Array; index: number[]} {
     if (!entries?.length) {
       return null;
     }
+
+    if (Math.min(...w) < 0) {
+      throw new Error("Negative length values are not permitted");
+    }
+
     let [w1, w2, w3] = w;
     w1 ??= 0;
     w2 ??= 4;
@@ -180,13 +186,17 @@ export class XRefEntry {
     let w3ToBytesFunc: (n: number) => Uint8Array;
     switch (w1) {
       case 0:
-        w1ToBytesFunc = (n: number) => new Uint8Array();
+        w1ToBytesFunc = () => new Uint8Array();
         break;
       case 1:
         w1ToBytesFunc = int8ToBytes;
         break;
       case 2:
         w1ToBytesFunc = int16ToBytes;
+        break;
+      default:
+        // just pad 3-bytes value with 0s
+        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
         break;
     }
     switch (w2) {
@@ -196,13 +206,21 @@ export class XRefEntry {
       case 2:
         w2ToBytesFunc = int16ToBytes;
         break;
+      case 3:
+        // just pad 2-bytes value with 0
+        w2ToBytesFunc = (n: number) => new Uint8Array([0, ...int16ToBytes(n)]);
+        break;
       case 4:
         w2ToBytesFunc = int32ToBytes;
+        break;
+      default:
+        // just pad 4-bytes value with 0s
+        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 4).fill(0), ...int32ToBytes(n)]);
         break;
     }
     switch (w3) {
       case 0:
-        w3ToBytesFunc = (n: number) => new Uint8Array();
+        w3ToBytesFunc = () => new Uint8Array();
         break;
       case 1:
         w3ToBytesFunc = int8ToBytes;
@@ -210,25 +228,23 @@ export class XRefEntry {
       case 2:
         w3ToBytesFunc = int16ToBytes;
         break;
+      default:
+        // just pad 2-bytes value with 0s
+        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
+        break;
     }
 
     const encoder = new TextEncoder();
     const groups = this.groupEntries(entries);
     
-    let index = new Uint8Array([codes.L_BRACKET]);
+    const index: number[] = [];
     let bytes = new Uint8Array();
     let temp: Uint8Array;
-    let groupIndex: string;
     let entryV1: Uint8Array;
     let entryV2: Uint8Array;
     let entryV3: Uint8Array;
     for (const group of groups) {
-      groupIndex = ` ${group[0]} ${group[1].length}`;
-
-      temp = new Uint8Array(index.length + groupIndex.length);
-      temp.set(index);
-      temp.set(encoder.encode(groupIndex), index.length);
-      index = temp;
+      index.push(group[0], group[1].length);
 
       for (const entry of group[1]) {
         switch (entry.type) {
@@ -259,31 +275,27 @@ export class XRefEntry {
       }
     }
 
-    temp = new Uint8Array(index.length + 1);
-    temp.set(index);
-    temp.set([codes.R_BRACKET], index.length);
-    index = temp;
     return {bytes, index};
   }
 
   private static groupEntries(entries: XRefEntry[]): [startId: number, entries: XRefEntry[]][] {
-    entries.sort((a, b) => a.objectId - b.objectId);
+    entries.sort((a, b) => a.id - b.id);
     const groups: [startId: number, entries: XRefEntry[]][] = [];
     let groupStart: number;
     let groupEntries: XRefEntry[];
     let last: number;
     for (const entry of entries) {
-      if (entry.objectId !== last + 1) {
+      if (entry.id !== last + 1) {
         // group ended. push previous group if present
         if (groupEntries?.length) {
           groups.push([groupStart, groupEntries]);
         }
-        groupStart = entry.objectId;
+        groupStart = entry.id;
         groupEntries = [entry];
       } else {
         groupEntries.push(entry);
       }
-      last = entry.objectId;
+      last = entry.id;
     }
     // push last group if present
     if (groupEntries?.length) {

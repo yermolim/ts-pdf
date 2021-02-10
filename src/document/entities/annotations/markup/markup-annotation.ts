@@ -1,3 +1,4 @@
+import { codes } from "../../../common/codes";
 import { AnnotationType, valueTypes } from "../../../common/const";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { DateString } from "../../common/date-string";
@@ -92,13 +93,13 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       bytes.push(...encoder.encode("/T"), ...this.T.toArray());
     }
     if (this.Popup) {
-      bytes.push(...encoder.encode("/Popup"), ...this.Popup.toRefArray());
+      bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toRefArray());
     }
     if (this.RC) {
       bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
     }
     if (this.CA) {
-      bytes.push(...encoder.encode("/CA"), ...encoder.encode(this.CA + ""));
+      bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
     }
     if (this.CreationDate) {
       bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
@@ -107,7 +108,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
     }
     if (this.IRT) {
-      bytes.push(...encoder.encode("/IRT"), ...this.IRT.toRefArray());
+      bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toRefArray());
     }
     if (this.RT) {
       bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));

@@ -1,3 +1,4 @@
+import { codes } from "../../common/codes";
 import { dictTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { LiteralString } from "../common/literal-string";
@@ -54,7 +55,7 @@ export class CatalogDict extends PdfDict {
       bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
     }
     if (this.Pages) {
-      bytes.push(...encoder.encode("/Pages"), ...this.Pages.toRefArray());
+      bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toRefArray());
     }
     if (this.Lang) {
       bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());

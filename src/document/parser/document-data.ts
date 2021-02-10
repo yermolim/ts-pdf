@@ -1,29 +1,31 @@
 import { keywordCodes } from "../common/codes";
-import { annotationTypes, dictTypes, objectTypes, XRefType, xRefTypes } from "../common/const";
+import { annotationTypes, dictTypes } from "../common/const";
 import { AnnotationDict } from "../entities/annotations/annotation-dict";
 import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-annotation";
+import { CircleAnnotation } from "../entities/annotations/markup/geometric/circle-annotation";
+import { LineAnnotation } from "../entities/annotations/markup/geometric/line-annotation";
+import { SquareAnnotation } from "../entities/annotations/markup/geometric/square-annotation";
 import { InkAnnotation } from "../entities/annotations/markup/ink-annotation";
 import { StampAnnotation } from "../entities/annotations/markup/stamp-annotation";
 import { TextAnnotation } from "../entities/annotations/markup/text-annotation";
 import { ObjectId } from "../entities/common/object-id";
 import { ObjectStream } from "../entities/streams/object-stream";
-import { XFormStream } from "../entities/streams/x-form-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
 import { PageDict } from "../entities/structure/page-dict";
 import { PageTreeDict } from "../entities/structure/page-tree-dict";
 import { XRef } from "../entities/x-refs/x-ref";
-import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
 import { DataParser, ParseInfo, ParseResult } from "./data-parser";
-import { ReferenceData } from "./reference-data";
+import { DataWriter } from "./data-writer";
+import { ReferenceData, ReferenceDataChange } from "./reference-data";
 
 export class DocumentData {
+  private readonly _data: Uint8Array; 
   private readonly _docParser: DataParser;
-  private readonly _version: string;  
-
+  private readonly _version: string; 
   private readonly _lastXrefIndex: number;
-  private _lastXrefType: XRefType;
+
   private _xrefs: XRef[];
   private _referenceData: ReferenceData;
 
@@ -42,6 +44,7 @@ export class DocumentData {
   }
 
   constructor(data: Uint8Array) {
+    this._data = data;
     this._docParser = new DataParser(data);
     this._version = this._docParser.getPdfVersion();
     const lastXrefIndex = this._docParser.getLastXrefIndex();
@@ -49,7 +52,45 @@ export class DocumentData {
       throw new Error("File doesn't contain update section");
     }}
     this._lastXrefIndex = lastXrefIndex.value;
-  }  
+  }    
+
+  private static parseXref(parser: DataParser, start: number, max: number): XRef {
+    if (!parser || !start) {
+      return null;
+    }
+    
+    const xrefTableIndex = parser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
+      {minIndex: start, closedOnly: true});
+    if (xrefTableIndex && xrefTableIndex.start === start) {      
+      const xrefStmIndexProp = parser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
+        {minIndex: start, maxIndex: max, closedOnly: true});
+      if (xrefStmIndexProp) {
+        // HYBRID
+        const streamXrefIndex = parser.parseNumberAt(xrefStmIndexProp.end + 1);
+        if (!streamXrefIndex) {
+          return null;
+        }
+        start = streamXrefIndex.value;
+      } else {
+        // TABLE
+        const xrefTable = XRefTable.parse(parser, start);
+        return xrefTable?.value;
+      }
+    } else {
+      // STREAM
+    }
+
+    const id = ObjectId.parse(parser, start, false);
+    if (!id) {
+      return null;
+    }
+    const xrefStreamBounds = parser.getIndirectObjectBoundsAt(id.end + 1);   
+    if (!xrefStreamBounds) {      
+      return null;
+    }       
+    const xrefStream = XRefStream.parse({parser: parser, bounds: xrefStreamBounds});
+    return xrefStream?.value; 
+  }
 
   parse() {
     this.reset();
@@ -60,35 +101,65 @@ export class DocumentData {
     }}
 
     this._xrefs = xrefs;
-    this._referenceData = new ReferenceData(xrefs);
-    
-    console.log(this._xrefs);    
-    console.log(this._referenceData);   
+    this._referenceData = new ReferenceData(xrefs);    
+    // DEBUG
+    // console.log(this._xrefs);    
+    // console.log(this._referenceData);   
 
     this.parsePageTree();
- 
-    console.log(this._catalog);    
-    console.log(this._pageRoot); 
-    console.log(this._pages);  
+    // DEBUG
+    // console.log(this._catalog);    
+    // console.log(this._pageRoot); 
+    // console.log(this._pages);  
 
     this.parseSupportedAnnotations();
+    // DEBUG
+    // console.log(this._annotations);
 
-    console.log(this._annotations);
-
-    for (const annot of this._annotations) {
-      if (annot.AP?.N && annot.AP.N instanceof ObjectId) {
-        const apInfo = this.getObjectParseInfo(annot.AP.N.id);
-        const apStream = XFormStream.parse(apInfo);
-        if (apStream) {
-          console.log(String.fromCharCode(...apStream.value.decodedStreamData));
-        }
-      }
-    }
+    // for (const annot of this._annotations) {
+    //   if (annot.AP?.N && annot.AP.N instanceof ObjectId) {
+    //     const apInfo = this.getObjectParseInfo(annot.AP.N.id);
+    //     const apStream = XFormStream.parse(apInfo);
+    //     if (apStream) {
+    //       console.log(String.fromCharCode(...apStream.value.decodedStreamData));
+    //     }
+    //   }
+    // }
   }
 
   reset() {    
     this._xrefs = null;
     this._referenceData = null;
+
+    this._catalog = null;
+    this._pageRoot = null;
+    this._pages = null;
+    this._annotations = null;
+  }
+
+  getDataWoSupportedAnnotations(): Uint8Array {    
+    const changeData = new ReferenceDataChange(this._referenceData);
+    this._annotations.forEach(x => {
+      if (x.id) {
+        changeData.setRefFree(x.id);
+      }
+    });
+    
+    const writer = new DataWriter(this._data);
+
+    const newXrefOffset = writer.offset;
+    const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
+
+    const entries = changeData.exportEntries();
+
+    const lastXref = this._xrefs[0];
+    const newXref = lastXref.createUpdate(entries);
+
+    writer.writeIndirectObject(newXrefRef, newXref);
+    writer.writeEof(newXrefOffset);  
+
+    const bytes = writer.getCurrentData();
+    return bytes;
   }
   
   private parseAllXrefs(): XRef[] {
@@ -99,7 +170,7 @@ export class DocumentData {
     let max = this._docParser.maxIndex;
     let xref: XRef;
     while (start) {
-      xref = this.parsePrevXref(start, max);
+      xref = DocumentData.parseXref(this._docParser, start, max);
       if (xref) {
         xrefs.push(xref);        
         max = start;
@@ -109,50 +180,6 @@ export class DocumentData {
       }
     }
     return xrefs;
-  }
-
-  private parsePrevXref(start: number, max: number): XRef {
-    if (!start) {
-      return null;
-    }
-    
-    const xrefTableIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
-      {minIndex: start, closedOnly: true});
-    if (xrefTableIndex && xrefTableIndex.start === start) {      
-      const xrefStmIndexProp = this._docParser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
-        {minIndex: start, maxIndex: max, closedOnly: true});
-      if (xrefStmIndexProp) {    
-        if (isNaN(this._lastXrefType)) {
-          this._lastXrefType = xRefTypes.HYBRID;
-        }
-        const streamXrefIndex = this._docParser.parseNumberAt(xrefStmIndexProp.end + 1);
-        if (!streamXrefIndex) {
-          return null;
-        }
-        start = streamXrefIndex.value;
-      } else {
-        if (isNaN(this._lastXrefType)) {
-          this._lastXrefType = xRefTypes.TABLE;
-        }
-        const xrefTable = XRefTable.parse(this._docParser, start);
-        return xrefTable?.value;
-      }
-    } else {
-      if (isNaN(this._lastXrefType)) {
-        this._lastXrefType = xRefTypes.STREAM;
-      }
-    }
-
-    const id = ObjectId.parse(this._docParser, start, false);
-    if (!id) {
-      return null;
-    }
-    const xrefStreamBounds = this._docParser.getIndirectObjectBoundsAt(id.end + 1);   
-    if (!xrefStreamBounds) {      
-      return null;
-    }       
-    const xrefStream = XRefStream.parse({parser: this._docParser, bounds: xrefStreamBounds});
-    return xrefStream?.value; 
   }
 
   private parsePageTree() {  
@@ -226,35 +253,42 @@ export class DocumentData {
     const annotations: AnnotationDict[] = [];
     for (const objectId of annotationIds) {
       const info = this.getObjectParseInfo(objectId.id);
+
       const annotationType = info.parser.parseDictSubtype(info.bounds);
       let annot: ParseResult<AnnotationDict>;
       switch (annotationType) {
-        case annotationTypes.INK:
-          annot = InkAnnotation.parse(info);
-          if (annot) {
-            annotations.push(annot.value);
-          }
+        case annotationTypes.TEXT:
+          annot = TextAnnotation.parse(info);
           break;
         case annotationTypes.FREE_TEXT:
           annot = FreeTextAnnotation.parse(info);
-          if (annot) {
-            annotations.push(annot.value);
-          }
           break;
         case annotationTypes.STAMP:
           annot = StampAnnotation.parse(info);
-          if (annot) {
-            annotations.push(annot.value);
-          }
           break;
-        case annotationTypes.TEXT:
-          annot = TextAnnotation.parse(info);
-          if (annot) {
-            annotations.push(annot.value);
-          }
+        case annotationTypes.CIRCLE:
+          annot = CircleAnnotation.parse(info);
+          break;
+        case annotationTypes.SQUARE:
+          annot = SquareAnnotation.parse(info);
+          break;
+        case annotationTypes.POLYGON:
+          annot = SquareAnnotation.parse(info);
+          break;
+        case annotationTypes.POLYLINE:
+          annot = SquareAnnotation.parse(info);
+          break;
+        case annotationTypes.LINE:
+          annot = LineAnnotation.parse(info);
+          break;
+        case annotationTypes.INK:
+          annot = InkAnnotation.parse(info);
           break;
         default:
           break;
+      }
+      if (annot) {
+        annotations.push(annot.value);
       }
     }
 

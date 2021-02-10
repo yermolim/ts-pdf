@@ -118,19 +118,19 @@ export class LineAnnotation extends GeometricAnnotation {
       bytes.push(codes.R_BRACKET);
     }
     if (this.LL) {
-      bytes.push(...encoder.encode("/LL"), ...encoder.encode(this.LL + ""));
+      bytes.push(...encoder.encode("/LL"), ...encoder.encode(" " + this.LL));
     }
     if (this.LLE) {
-      bytes.push(...encoder.encode("/LLE"), ...encoder.encode(this.LLE + ""));
+      bytes.push(...encoder.encode("/LLE"), ...encoder.encode(" " + this.LLE));
     }
     if (this.Cap) {
-      bytes.push(...encoder.encode("/Cap"), ...encoder.encode(this.Cap + ""));
+      bytes.push(...encoder.encode("/Cap"), ...encoder.encode(" " + this.Cap));
     }
     if (this.IT) {
       bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
     }
     if (this.LLO) {
-      bytes.push(...encoder.encode("/LLO"), ...encoder.encode(this.LLO + ""));
+      bytes.push(...encoder.encode("/LLO"), ...encoder.encode(" " + this.LLO));
     }
     if (this.CP) {
       bytes.push(...encoder.encode("/CP"), ...encoder.encode(this.CP));

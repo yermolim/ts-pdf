@@ -35,7 +35,7 @@ export class InkAnnotation extends MarkupAnnotation {
       bytes.push(...encoder.encode("/InkList"), codes.L_BRACKET);
       this.InkList.forEach(x => {        
         bytes.push(codes.L_BRACKET);
-        x.forEach(y => bytes.push( codes.WHITESPACE, ...encoder.encode(y + "")));         
+        x.forEach(y => bytes.push(...encoder.encode(" " + y)));         
         bytes.push(codes.R_BRACKET);
       });
       bytes.push(codes.R_BRACKET);

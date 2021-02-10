@@ -22,7 +22,7 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
 
     if (this.QuadPoints) {
       bytes.push(...encoder.encode("/QuadPoints"), codes.L_BRACKET);
-      this.QuadPoints.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+      this.QuadPoints.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
 

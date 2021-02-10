@@ -1129,15 +1129,6 @@ const flatePredictors = {
     PNG_PAETH: 14,
     PNG_OPTIMUM: 15,
 };
-const cryptMethods = {
-    NONE: "/None",
-    V2: "/V2",
-    AESV2: "/AESV2",
-};
-const authEvents = {
-    DOC_OPEN: "/DocOpen",
-    EMBEDDED_OPEN: "/EFOpen",
-};
 const justificationTypes = {
     LEFT: 0,
     CENTER: 1,
@@ -1593,16 +1584,16 @@ class FlateParamsDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Predictor) {
-            bytes.push(...encoder.encode("/Predictor"), ...encoder.encode(this.Predictor + ""));
+            bytes.push(...encoder.encode("/Predictor"), ...encoder.encode(" " + this.Predictor));
         }
         if (this.Colors) {
-            bytes.push(...encoder.encode("/Colors"), ...encoder.encode(this.Colors + ""));
+            bytes.push(...encoder.encode("/Colors"), ...encoder.encode(" " + this.Colors));
         }
         if (this.BitsPerComponent) {
-            bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(this.BitsPerComponent + ""));
+            bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(" " + this.BitsPerComponent));
         }
         if (this.Columns) {
-            bytes.push(...encoder.encode("/Columns"), ...encoder.encode(this.Columns + ""));
+            bytes.push(...encoder.encode("/Columns"), ...encoder.encode(" " + this.Columns));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -2396,7 +2387,7 @@ class PdfStream extends PdfObject {
         else {
             encodedData = FlateDecoder.Encode(data);
         }
-        this._streamData.set(encodedData);
+        this._streamData = encodedData;
         this.Length = encodedData.length;
         this.DL = data.length;
     }
@@ -2418,7 +2409,7 @@ class PdfStream extends PdfObject {
             bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
         }
         if (this.Length) {
-            bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
+            bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
         }
         if (this.Filter) {
             bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
@@ -2426,7 +2417,7 @@ class PdfStream extends PdfObject {
         if (this.DecodeParms) {
             bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray());
         }
-        bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...this.streamData, ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE);
+        bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...this.streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE);
         return new Uint8Array(bytes);
     }
     tryParseProps(parseInfo) {
@@ -2614,7 +2605,7 @@ class BorderStyleDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.W) {
-            bytes.push(...encoder.encode("/W"), ...encoder.encode(this.W + ""));
+            bytes.push(...encoder.encode("/W"), ...encoder.encode(" " + this.W));
         }
         if (this.S) {
             bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
@@ -2952,7 +2943,7 @@ class BorderEffectDict extends PdfDict {
             bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
         }
         if (this.L) {
-            bytes.push(...encoder.encode("/L"), ...encoder.encode(this.L + ""));
+            bytes.push(...encoder.encode("/L"), ...encoder.encode(" " + this.L));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -3107,7 +3098,7 @@ class AnnotationDict extends PdfDict {
             bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
         }
         if (this.P) {
-            bytes.push(...encoder.encode("/P"), ...this.P.toRefArray());
+            bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toRefArray());
         }
         if (this.NM) {
             bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
@@ -3116,7 +3107,7 @@ class AnnotationDict extends PdfDict {
             bytes.push(...encoder.encode("/M"), ...this.M.toArray());
         }
         if (this.F) {
-            bytes.push(...encoder.encode("/F"), ...encoder.encode(this.F + ""));
+            bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
         }
         if (this.AP) {
             bytes.push(...encoder.encode("/AP"), ...this.AP.toArray());
@@ -3135,11 +3126,11 @@ class AnnotationDict extends PdfDict {
         }
         if (this.C) {
             bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
-            this.C.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+            this.C.forEach(x => bytes.push(...encoder.encode(" " + x)));
             bytes.push(codes.R_BRACKET);
         }
         if (this.StructParent) {
-            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -3415,13 +3406,13 @@ class MarkupAnnotation extends AnnotationDict {
             bytes.push(...encoder.encode("/T"), ...this.T.toArray());
         }
         if (this.Popup) {
-            bytes.push(...encoder.encode("/Popup"), ...this.Popup.toRefArray());
+            bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toRefArray());
         }
         if (this.RC) {
             bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
         }
         if (this.CA) {
-            bytes.push(...encoder.encode("/CA"), ...encoder.encode(this.CA + ""));
+            bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
         }
         if (this.CreationDate) {
             bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
@@ -3430,7 +3421,7 @@ class MarkupAnnotation extends AnnotationDict {
             bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
         }
         if (this.IRT) {
-            bytes.push(...encoder.encode("/IRT"), ...this.IRT.toRefArray());
+            bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toRefArray());
         }
         if (this.RT) {
             bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
@@ -3621,14 +3612,14 @@ class FreeTextAnnotation extends MarkupAnnotation {
             bytes.push(...encoder.encode("/DA"), ...this.DA.toArray());
         }
         if (this.Q) {
-            bytes.push(...encoder.encode("/Q"), ...encoder.encode(this.Q + ""));
+            bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
         }
         if (this.DS) {
             bytes.push(...encoder.encode("/DS"), ...this.DS.toArray());
         }
         if (this.CL) {
             bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
-            this.CL.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+            this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
             bytes.push(codes.R_BRACKET);
         }
         if (this.IT) {
@@ -3765,6 +3756,522 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
 }
 
+class GeometricAnnotation extends MarkupAnnotation {
+    constructor(type) {
+        super(type);
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.IC) {
+            bytes.push(...encoder.encode("/IC"), codes.L_BRACKET);
+            this.IC.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/IC":
+                        const interiorColor = parser.parseNumberArrayAt(i, true);
+                        if (interiorColor) {
+                            this.IC = interiorColor.value;
+                            i = interiorColor.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /IC property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class CircleAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.CIRCLE);
+    }
+    static parse(parseInfo) {
+        const freeText = new CircleAnnotation();
+        const parseResult = freeText.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/RD":
+                        const innerRect = parser.parseNumberArrayAt(i, true);
+                        if (innerRect) {
+                            this.RD = [
+                                innerRect.value[0],
+                                innerRect.value[1],
+                                innerRect.value[2],
+                                innerRect.value[3],
+                            ];
+                            i = innerRect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RD property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class MeasureDict extends PdfDict {
+    constructor() {
+        super(dictTypes.MEASURE);
+        this.Subtype = "/RL";
+    }
+    static parse(parseInfo) {
+        const stamp = new MeasureDict();
+        const parseResult = stamp.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = parser.parseNameAt(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                return false;
+                            }
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+const lineIntents = {
+    ARROW: "/LineArrow",
+    DIMESION: "/LineDimension",
+};
+const captionPositions = {
+    INLINE: "/Inline",
+    TOP: "/Top",
+};
+class LineAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.LINE);
+        this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        this.LL = 0;
+        this.LLE = 0;
+        this.Cap = false;
+        this.LLO = 0;
+        this.CP = captionPositions.INLINE;
+        this.CO = [0, 0];
+    }
+    static parse(parseInfo) {
+        const text = new LineAnnotation();
+        const parseResult = text.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.L) {
+            bytes.push(...encoder.encode("/L"), codes.L_BRACKET, ...encoder.encode(this.L[0] + ""), codes.WHITESPACE, ...encoder.encode(this.L[1] + ""), codes.WHITESPACE, ...encoder.encode(this.L[2] + ""), codes.WHITESPACE, ...encoder.encode(this.L[3] + ""), codes.R_BRACKET);
+        }
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE"), codes.L_BRACKET);
+            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.LL) {
+            bytes.push(...encoder.encode("/LL"), ...encoder.encode(" " + this.LL));
+        }
+        if (this.LLE) {
+            bytes.push(...encoder.encode("/LLE"), ...encoder.encode(" " + this.LLE));
+        }
+        if (this.Cap) {
+            bytes.push(...encoder.encode("/Cap"), ...encoder.encode(" " + this.Cap));
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+        }
+        if (this.LLO) {
+            bytes.push(...encoder.encode("/LLO"), ...encoder.encode(" " + this.LLO));
+        }
+        if (this.CP) {
+            bytes.push(...encoder.encode("/CP"), ...encoder.encode(this.CP));
+        }
+        if (this.Measure) {
+            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray());
+        }
+        if (this.CO) {
+            bytes.push(...encoder.encode("/CO"), codes.L_BRACKET, ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/L":
+                        const lineCoords = parser.parseNumberArrayAt(i, true);
+                        if (lineCoords) {
+                            this.L = [
+                                lineCoords.value[0],
+                                lineCoords.value[1],
+                                lineCoords.value[2],
+                                lineCoords.value[3],
+                            ];
+                            i = lineCoords.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /L property value");
+                        }
+                        break;
+                    case "/LE":
+                        const lineEndings = parser.parseNameArrayAt(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    case "/LL":
+                        const leaderLineLength = parser.parseNumberAt(i, false);
+                        if (leaderLineLength) {
+                            this.LL = leaderLineLength.value;
+                            i = leaderLineLength.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LL property value");
+                        }
+                        break;
+                    case "/LLE":
+                        const leaderLineExtLength = parser.parseNumberAt(i, false);
+                        if (leaderLineExtLength) {
+                            this.LLE = leaderLineExtLength.value;
+                            i = leaderLineExtLength.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LLE property value");
+                        }
+                        break;
+                    case "/Cap":
+                        const cap = parser.parseBoolAt(i, false);
+                        if (cap) {
+                            this.Cap = cap.value;
+                            i = cap.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Cap property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (Object.values(lineIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/LLO":
+                        const leaderLineOffset = parser.parseNumberAt(i, false);
+                        if (leaderLineOffset) {
+                            this.LLO = leaderLineOffset.value;
+                            i = leaderLineOffset.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LLO property value");
+                        }
+                        break;
+                    case "/CP":
+                        const captionPosition = parser.parseNameAt(i, true);
+                        if (captionPosition && Object.values(captionPositions)
+                            .includes(captionPosition.value[0])) {
+                            this.CP = captionPosition.value;
+                            i = captionPosition.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CP property value");
+                        }
+                        break;
+                    case "/Measure":
+                        const measureEntryType = parser.getValueTypeAt(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = ObjectId.parseRef(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetter) {
+                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                                    if (measureDict) {
+                                        this.Measure = measureDict.value;
+                                        i = measureDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /BS value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = parser.getDictBoundsAt(i);
+                            if (measureDictBounds) {
+                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    case "/CO":
+                        const captionOffset = parser.parseNumberArrayAt(i, true);
+                        if (captionOffset) {
+                            this.CO = [
+                                captionOffset.value[0],
+                                captionOffset.value[1],
+                            ];
+                            i = captionOffset.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CO property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class SquareAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.SQUARE);
+    }
+    static parse(parseInfo) {
+        const freeText = new SquareAnnotation();
+        const parseResult = freeText.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray() {
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/RD":
+                        const innerRect = parser.parseNumberArrayAt(i, true);
+                        if (innerRect) {
+                            this.RD = [
+                                innerRect.value[0],
+                                innerRect.value[1],
+                                innerRect.value[2],
+                                innerRect.value[3],
+                            ];
+                            i = innerRect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RD property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
 class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
@@ -3784,7 +4291,7 @@ class InkAnnotation extends MarkupAnnotation {
             bytes.push(...encoder.encode("/InkList"), codes.L_BRACKET);
             this.InkList.forEach(x => {
                 bytes.push(codes.L_BRACKET);
-                x.forEach(y => bytes.push(codes.WHITESPACE, ...encoder.encode(y + "")));
+                x.forEach(y => bytes.push(...encoder.encode(" " + y)));
                 bytes.push(codes.R_BRACKET);
             });
             bytes.push(codes.R_BRACKET);
@@ -3956,7 +4463,7 @@ class TextAnnotation extends MarkupAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Open) {
-            bytes.push(...encoder.encode("/Open"), ...encoder.encode(this.Open + ""));
+            bytes.push(...encoder.encode("/Open"), ...encoder.encode(" " + this.Open));
         }
         if (this.Name) {
             bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
@@ -4697,6 +5204,7 @@ class HexString {
         return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
     }
     static fromBytes(bytes) {
+        bytes = bytes.subarray(1, bytes.length - 1);
         const literal = new TextDecoder().decode(bytes);
         const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
         return new HexString(literal, hex, bytes);
@@ -4819,13 +5327,13 @@ class ObjectStream extends PdfStream {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.N) {
-            bytes.push(...encoder.encode("/N"), ...encoder.encode(this.N + ""));
+            bytes.push(...encoder.encode("/N"), ...encoder.encode(" " + this.N));
         }
         if (this.First) {
-            bytes.push(...encoder.encode("/First"), ...encoder.encode(this.First + ""));
+            bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
         }
         if (this.Extends) {
-            bytes.push(...encoder.encode("/Extends"), ...this.Extends.toRefArray());
+            bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toRefArray());
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -4900,334 +5408,6 @@ class ObjectStream extends PdfStream {
     }
 }
 
-class ResourceDict extends PdfDict {
-    constructor() {
-        super(null);
-    }
-    static parse(parseInfo) {
-        const resourceDict = new ResourceDict();
-        const parseResult = resourceDict.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray() {
-        const superBytes = super.toArray();
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.ExtGState) {
-            bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray());
-        }
-        if (this.ColorSpace) {
-            bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray());
-        }
-        if (this.Pattern) {
-            bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray());
-        }
-        if (this.Shading) {
-            bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray());
-        }
-        if (this.XObject) {
-            bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray());
-        }
-        if (this.Font) {
-            bytes.push(...encoder.encode("/Font"), ...this.Font.toArray());
-        }
-        if (this.Properties) {
-            bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray());
-        }
-        if (this.ProcSet) {
-            bytes.push(...encoder.encode("/ProcSet"), codes.L_BRACKET);
-            this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
-            bytes.push(codes.R_BRACKET);
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/ExtGState":
-                    case "/ColorSpace":
-                    case "/Pattern":
-                    case "/Shading":
-                    case "/XObject":
-                    case "/Font":
-                    case "/Properties":
-                        const mapBounds = parser.getDictBoundsAt(i);
-                        if (mapBounds) {
-                            const map = ObjectMapDict.parse({ parser, bounds: mapBounds });
-                            console.log(parser.sliceChars(mapBounds.contentStart, mapBounds.contentEnd));
-                            console.log(map);
-                            if (map) {
-                                this[name.substring(1)] = map.value;
-                                i = mapBounds.end + 1;
-                                break;
-                            }
-                        }
-                        throw new Error(`Can't parse ${name} property value`);
-                    case "/ProcSet":
-                        const procedureNames = parser.parseNameArrayAt(i);
-                        if (procedureNames) {
-                            this.ProcSet = procedureNames.value;
-                            i = procedureNames.end + 1;
-                            break;
-                        }
-                        throw new Error("Can't parse /ProcSet property value");
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class XFormStream extends PdfStream {
-    constructor() {
-        super(streamTypes.FORM_XOBJECT);
-        this.Subtype = "/Form";
-        this.FormType = 1;
-        this.Matrix = [1, 0, 0, 1, 0, 0];
-    }
-    static parse(parseInfo) {
-        const xForm = new XFormStream();
-        const parseResult = xForm.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray() {
-        const superBytes = super.toArray();
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.Subtype) {
-            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
-        }
-        if (this.FormType) {
-            bytes.push(...encoder.encode("/FormType"), ...encoder.encode(this.FormType + ""));
-        }
-        if (this.BBox) {
-            bytes.push(...encoder.encode("/BBox"), codes.L_BRACKET, ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[3] + ""), codes.R_BRACKET);
-        }
-        if (this.Matrix) {
-            bytes.push(...encoder.encode("/BBox"), codes.L_BRACKET, ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[3] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[4] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[5] + ""), codes.R_BRACKET);
-        }
-        if (this.Resources) {
-            bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray());
-        }
-        if (this.Metadata) {
-            bytes.push(...encoder.encode("/Metadata"), ...this.Metadata.toRefArray());
-        }
-        if (this.LastModified) {
-            bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
-        }
-        if (this.StructParent) {
-            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
-        }
-        if (this.StructParents) {
-            bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(this.StructParents + ""));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        if (this.Type !== streamTypes.FORM_XOBJECT) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i);
-                        if (subtype) {
-                            if (this.Subtype && this.Subtype !== subtype.value) {
-                                return false;
-                            }
-                            i = subtype.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
-                        }
-                        break;
-                    case "/FormType":
-                        const formType = parser.parseNumberAt(i, false);
-                        if (formType) {
-                            if (formType.value !== 1) {
-                                return false;
-                            }
-                            i = formType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
-                        }
-                        break;
-                    case "/BBox":
-                        const boundingBox = parser.parseNumberArrayAt(i, true);
-                        if (boundingBox) {
-                            this.BBox = [
-                                boundingBox.value[0],
-                                boundingBox.value[1],
-                                boundingBox.value[2],
-                                boundingBox.value[3],
-                            ];
-                            i = boundingBox.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BBox property value");
-                        }
-                        break;
-                    case "/Matrix":
-                        const matrix = parser.parseNumberArrayAt(i, true);
-                        if (matrix) {
-                            this.Matrix = [
-                                matrix.value[0],
-                                matrix.value[1],
-                                matrix.value[2],
-                                matrix.value[3],
-                                matrix.value[4],
-                                matrix.value[5],
-                            ];
-                            i = matrix.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Matrix property value");
-                        }
-                        break;
-                    case "/Resources":
-                        const resEntryType = parser.getValueTypeAt(i);
-                        if (resEntryType === valueTypes.REF) {
-                            const resDictId = ObjectId.parseRef(parser, i);
-                            if (resDictId && parseInfo.parseInfoGetter) {
-                                const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
-                                if (resParseInfo) {
-                                    const resDict = ResourceDict.parse(resParseInfo);
-                                    if (resDict) {
-                                        this.Resources = resDict.value;
-                                        i = resDict.end + 1;
-                                        break;
-                                    }
-                                }
-                            }
-                            throw new Error("Can't parse /Resources value reference");
-                        }
-                        else if (resEntryType === valueTypes.DICTIONARY) {
-                            const resDictBounds = parser.getDictBoundsAt(i);
-                            if (resDictBounds) {
-                                const resDict = ResourceDict.parse({ parser, bounds: resDictBounds });
-                                if (resDict) {
-                                    this.Resources = resDict.value;
-                                    i = resDict.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Resources value dictionary");
-                        }
-                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
-                    case "/Metadata":
-                        const metaId = ObjectId.parseRef(parser, i);
-                        if (metaId) {
-                            this.Metadata = metaId.value;
-                            i = metaId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Metadata property value");
-                        }
-                        break;
-                    case "/LastModified":
-                        const date = DateString.parse(parser, i, false);
-                        if (date) {
-                            this.LastModified = date.value;
-                            i = date.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LastModified property value");
-                        }
-                        break;
-                    case "/StructParent":
-                        const parentKey = parser.parseNumberAt(i, false);
-                        if (parentKey) {
-                            this.StructParent = parentKey.value;
-                            i = parentKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StructParent property value");
-                        }
-                        break;
-                    case "/StructParents":
-                        const parentsKey = parser.parseNumberAt(i, false);
-                        if (parentsKey) {
-                            this.StructParents = parentsKey.value;
-                            i = parentsKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StructParents property value");
-                        }
-                        break;
-                    case "/OC":
-                    case "/Group":
-                    case "/OPI":
-                    default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        if (!this.BBox) {
-            return false;
-        }
-        return true;
-    }
-}
-
 class CatalogDict extends PdfDict {
     constructor() {
         super(dictTypes.CATALOG);
@@ -5247,7 +5427,7 @@ class CatalogDict extends PdfDict {
             bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
         }
         if (this.Pages) {
-            bytes.push(...encoder.encode("/Pages"), ...this.Pages.toRefArray());
+            bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toRefArray());
         }
         if (this.Lang) {
             bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());
@@ -5342,7 +5522,7 @@ class PageDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
         }
         if (this.LastModified) {
             bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
@@ -5351,11 +5531,11 @@ class PageDict extends PdfDict {
             bytes.push(...encoder.encode("/MediaBox"), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
         }
         if (this.Rotate) {
-            bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+            bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
         }
         if (this.Annots) {
             if (this.Annots instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Annots"), ...this.Annots.toRefArray());
+                bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toRefArray());
             }
             else {
                 bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
@@ -5487,7 +5667,7 @@ class PageTreeDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent"), ...this.Parent.toRefArray());
+            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
         }
         if (this.Kids) {
             bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
@@ -5495,13 +5675,13 @@ class PageTreeDict extends PdfDict {
             bytes.push(codes.R_BRACKET);
         }
         if (this.Count) {
-            bytes.push(...encoder.encode("/Count"), ...encoder.encode(this.Count + ""));
+            bytes.push(...encoder.encode("/Count"), ...encoder.encode(" " + this.Count));
         }
         if (this.MediaBox) {
             bytes.push(...encoder.encode("/MediaBox"), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
         }
         if (this.Rotate) {
-            bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(this.Rotate + ""));
+            bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -5601,472 +5781,6 @@ class PageTreeDict extends PdfDict {
     }
 }
 
-class CryptFilterDict extends PdfDict {
-    constructor() {
-        super(dictTypes.CRYPT_FILTER);
-        this.CFM = cryptMethods.NONE;
-        this.AuthEvent = authEvents.DOC_OPEN;
-        this.Length = 40;
-        this.EncryptMetadata = true;
-    }
-    static parse(parseInfo) {
-        const cryptFilter = new CryptFilterDict();
-        const parseResult = cryptFilter.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray() {
-        const superBytes = super.toArray();
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.CFM) {
-            bytes.push(...encoder.encode("/CFM"), ...encoder.encode(this.CFM));
-        }
-        if (this.AuthEvent) {
-            bytes.push(...encoder.encode("/AuthEvent"), ...encoder.encode(this.AuthEvent));
-        }
-        if (this.Length) {
-            bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
-        }
-        if (this.EncryptMetadata) {
-            bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(this.EncryptMetadata + ""));
-        }
-        if (this.Recipients) {
-            if (this.Recipients instanceof HexString) {
-                bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray());
-            }
-            else {
-                bytes.push(codes.L_BRACKET);
-                this.Recipients.forEach(x => bytes.push(...x.toArray()));
-                bytes.push(codes.R_BRACKET);
-            }
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/CFM":
-                        const method = parser.parseNameAt(i, true);
-                        if (method && Object.values(cryptMethods)
-                            .includes(method.value)) {
-                            this.CFM = method.value;
-                            i = method.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CFM property value");
-                        }
-                        break;
-                    case "/AuthEvent":
-                        const authEvent = parser.parseNameAt(i, true);
-                        if (authEvent && Object.values(authEvents)
-                            .includes(authEvent.value)) {
-                            this.AuthEvent = authEvent.value;
-                            i = authEvent.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /AuthEvent property value");
-                        }
-                        break;
-                    case "/Length":
-                        const length = parser.parseNumberAt(i, false);
-                        if (length) {
-                            this.Length = length.value;
-                            i = length.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Length property value");
-                        }
-                        break;
-                    case "/EncryptMetadata":
-                        const encrypt = parser.parseBoolAt(i, false);
-                        if (encrypt) {
-                            this.EncryptMetadata = encrypt.value;
-                            i = encrypt.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /EncryptMetadata property value");
-                        }
-                        break;
-                    case "/Recipients":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.STRING_HEX) {
-                            const recipient = HexString.parse(parser, i);
-                            if (recipient) {
-                                this.Recipients = recipient.value;
-                                i = recipient.end + 1;
-                                break;
-                            }
-                            else {
-                                throw new Error("Can't parse /Recipients property value");
-                            }
-                        }
-                        else if (entryType === valueTypes.ARRAY) {
-                            const recipients = HexString.parseArray(parser, i);
-                            if (recipients) {
-                                this.Recipients = recipients.value;
-                                i = recipients.end + 1;
-                                break;
-                            }
-                            else {
-                                throw new Error("Can't parse /Recipients property value");
-                            }
-                        }
-                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        if ((this.CFM === cryptMethods.V2 || this.CFM === cryptMethods.AESV2)
-            && !this.Recipients) {
-            return false;
-        }
-        return true;
-    }
-}
-
-class CryptMapDict extends PdfDict {
-    constructor() {
-        super(null);
-        this._filtersMap = new Map();
-    }
-    static parse(parseInfo) {
-        const cryptMap = new CryptMapDict();
-        const parseResult = cryptMap.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: cryptMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    getProp(name) {
-        return this._filtersMap.get(name);
-    }
-    toArray() {
-        const superBytes = super.toArray();
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this._filtersMap.size) {
-            this._filtersMap.forEach((v, k) => bytes.push(...encoder.encode(k), ...v.toArray()));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    default:
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.DICTIONARY) {
-                            const dictBounds = parser.getDictBoundsAt(i);
-                            if (dictBounds) {
-                                const filter = CryptFilterDict.parse({ parser, bounds: dictBounds });
-                                if (filter) {
-                                    this._filtersMap.set(name, filter.value);
-                                    i = filter.end + 1;
-                                    break;
-                                }
-                            }
-                        }
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class EncryptionDict extends PdfDict {
-    constructor() {
-        super(dictTypes.EMPTY);
-        this.Filter = "/Standard";
-        this.V = 0;
-        this.Length = 40;
-        this.StmF = "/Identity";
-        this.StrF = "/Identity";
-        this.EncryptMetadata = true;
-    }
-    static parse(parseInfo) {
-        const encryption = new EncryptionDict();
-        const parseResult = encryption.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray() {
-        const superBytes = super.toArray();
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.Filter) {
-            bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
-        }
-        if (this.SubFilter) {
-            bytes.push(...encoder.encode("/SubFilter"), ...encoder.encode(this.SubFilter));
-        }
-        if (this.V) {
-            bytes.push(...encoder.encode("/V"), ...encoder.encode(this.V + ""));
-        }
-        if (this.Length) {
-            bytes.push(...encoder.encode("/Length"), ...encoder.encode(this.Length + ""));
-        }
-        if (this.CF) {
-            bytes.push(...encoder.encode("/CF"), ...this.CF.toArray());
-        }
-        if (this.StmF) {
-            bytes.push(...encoder.encode("/StmF"), ...encoder.encode(this.StmF));
-        }
-        if (this.StrF) {
-            bytes.push(...encoder.encode("/StrF"), ...encoder.encode(this.StrF));
-        }
-        if (this.EFF) {
-            bytes.push(...encoder.encode("/EFF"), ...encoder.encode(this.EFF));
-        }
-        if (this.R) {
-            bytes.push(...encoder.encode("/R"), ...encoder.encode(this.R + ""));
-        }
-        if (this.O) {
-            bytes.push(...encoder.encode("/O"), ...this.O.toArray());
-        }
-        if (this.U) {
-            bytes.push(...encoder.encode("/U"), ...this.U.toArray());
-        }
-        if (this.P) {
-            bytes.push(...encoder.encode("/P"), ...encoder.encode(this.P + ""));
-        }
-        if (this.EncryptMetadata) {
-            bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(this.EncryptMetadata + ""));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Filter":
-                        const filter = parser.parseNameAt(i, true);
-                        if (filter) {
-                            this.Filter = filter.value;
-                            i = filter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Filter property value");
-                        }
-                        break;
-                    case "/SubFilter":
-                        const subFilter = parser.parseNameAt(i, true);
-                        if (subFilter) {
-                            this.SubFilter = subFilter.value;
-                            i = subFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /SubFilter property value");
-                        }
-                        break;
-                    case "/V":
-                        const algorithm = parser.parseNumberAt(i, false);
-                        if (algorithm && ([0, 1, 2, 3, 4].includes(algorithm.value))) {
-                            this.V = algorithm.value;
-                            i = algorithm.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /V property value");
-                        }
-                        break;
-                    case "/Length":
-                        const length = parser.parseNumberAt(i, false);
-                        if (length) {
-                            this.Length = length.value;
-                            i = length.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Length property value");
-                        }
-                        break;
-                    case "/CF":
-                        const dictBounds = parser.getDictBoundsAt(i);
-                        if (bounds) {
-                            const cryptMap = CryptMapDict.parse({ parser, bounds: dictBounds });
-                            if (cryptMap) {
-                                this.CF = cryptMap.value;
-                                i = cryptMap.end + 1;
-                            }
-                        }
-                        else {
-                            throw new Error("Can't parse /CF property value");
-                        }
-                        break;
-                    case "/StmF":
-                        const streamFilter = parser.parseNameAt(i, true);
-                        if (streamFilter) {
-                            this.StmF = streamFilter.value;
-                            i = streamFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StmF property value");
-                        }
-                        break;
-                    case "/StrF":
-                        const stringFilter = parser.parseNameAt(i, true);
-                        if (stringFilter) {
-                            this.StrF = stringFilter.value;
-                            i = stringFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StrF property value");
-                        }
-                        break;
-                    case "/EFF":
-                        const embeddedFilter = parser.parseNameAt(i, true);
-                        if (embeddedFilter) {
-                            this.EFF = embeddedFilter.value;
-                            i = embeddedFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /EFF property value");
-                        }
-                        break;
-                    case "/R":
-                        const revision = parser.parseNumberAt(i, false);
-                        if (revision && ([2, 3, 4].includes(revision.value))) {
-                            this.R = revision.value;
-                            i = revision.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /R property value");
-                        }
-                        break;
-                    case "/O":
-                        const ownerPassword = LiteralString.parse(parser, i);
-                        if (ownerPassword) {
-                            this.O = ownerPassword.value;
-                            i = ownerPassword.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /O property value");
-                        }
-                        break;
-                    case "/U":
-                        const userPassword = LiteralString.parse(parser, i);
-                        if (userPassword) {
-                            this.U = userPassword.value;
-                            i = userPassword.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /U property value");
-                        }
-                        break;
-                    case "/P":
-                        const flags = parser.parseNumberAt(i, false);
-                        if (flags) {
-                            this.P = flags.value;
-                            i = flags.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /P property value");
-                        }
-                        break;
-                    case "/EncryptMetadata":
-                        const encryptMetadata = parser.parseBoolAt(i);
-                        if (encryptMetadata) {
-                            this.EncryptMetadata = encryptMetadata.value;
-                            i = encryptMetadata.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /EncryptMetadata property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        if (!this.Filter) {
-            return false;
-        }
-        if (this.Filter === "/Standard"
-            && (!this.R || !this.O || !this.U || isNaN(this.P))) {
-            return false;
-        }
-        return true;
-    }
-}
-
 class TrailerStream extends PdfStream {
     constructor() {
         super(streamTypes.XREF);
@@ -6083,31 +5797,26 @@ class TrailerStream extends PdfStream {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Size) {
-            bytes.push(...encoder.encode("/Size"), ...encoder.encode(this.Size + ""));
+            bytes.push(...encoder.encode("/Size"), ...encoder.encode(" " + this.Size));
         }
         if (this.Prev) {
-            bytes.push(...encoder.encode("/Prev"), ...encoder.encode(this.Prev + ""));
+            bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root"), ...this.Root.toRefArray());
+            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toRefArray());
         }
         if (this.Encrypt) {
-            if (this.Encrypt instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toRefArray());
-            }
-            else {
-                bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
-            }
+            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info"), ...this.Info.toRefArray());
+            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toRefArray());
         }
         if (this.ID) {
             bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
         }
         if (this.Index) {
             bytes.push(...encoder.encode("/Index"), codes.L_BRACKET);
-            this.Index.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+            this.Index.forEach(x => bytes.push(...encoder.encode(" " + x)));
             bytes.push(codes.R_BRACKET);
         }
         if (this.W) {
@@ -6187,18 +5896,6 @@ class TrailerStream extends PdfStream {
                                 throw new Error("Can't parse /Encrypt property value");
                             }
                         }
-                        else if (entryType === valueTypes.DICTIONARY) {
-                            const encryptBounds = parser.getDictBoundsAt(i);
-                            if (encryptBounds) {
-                                const encrypt = EncryptionDict.parse({ parser, bounds: encryptBounds });
-                                if (encrypt) {
-                                    this.Encrypt = encrypt.value;
-                                    i = encryptBounds.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Encrypt property value");
-                        }
                         throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
                     case "/Info":
                         const infoId = ObjectId.parseRef(parser, i);
@@ -6269,9 +5966,9 @@ class XRef {
 }
 
 class XRefEntry {
-    constructor(type, objectId, generation, byteOffset, nextFreeId, streamId, streamIndex) {
+    constructor(type, id, generation, byteOffset, nextFreeId, streamId, streamIndex) {
         this.type = type;
-        this.objectId = objectId;
+        this.id = id;
         this.generation = generation;
         this.byteOffset = byteOffset;
         this.nextFreeId = nextFreeId;
@@ -6415,6 +6112,9 @@ class XRefEntry {
         if (!(entries === null || entries === void 0 ? void 0 : entries.length)) {
             return null;
         }
+        if (Math.min(...w) < 0) {
+            throw new Error("Negative length values are not permitted");
+        }
         let [w1, w2, w3] = w;
         w1 !== null && w1 !== void 0 ? w1 : (w1 = 0);
         w2 !== null && w2 !== void 0 ? w2 : (w2 = 4);
@@ -6425,13 +6125,16 @@ class XRefEntry {
         let w3ToBytesFunc;
         switch (w1) {
             case 0:
-                w1ToBytesFunc = (n) => new Uint8Array();
+                w1ToBytesFunc = () => new Uint8Array();
                 break;
             case 1:
                 w1ToBytesFunc = int8ToBytes;
                 break;
             case 2:
                 w1ToBytesFunc = int16ToBytes;
+                break;
+            default:
+                w2ToBytesFunc = (n) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
                 break;
         }
         switch (w2) {
@@ -6441,13 +6144,19 @@ class XRefEntry {
             case 2:
                 w2ToBytesFunc = int16ToBytes;
                 break;
+            case 3:
+                w2ToBytesFunc = (n) => new Uint8Array([0, ...int16ToBytes(n)]);
+                break;
             case 4:
                 w2ToBytesFunc = int32ToBytes;
+                break;
+            default:
+                w2ToBytesFunc = (n) => new Uint8Array([...new Array(w1 - 4).fill(0), ...int32ToBytes(n)]);
                 break;
         }
         switch (w3) {
             case 0:
-                w3ToBytesFunc = (n) => new Uint8Array();
+                w3ToBytesFunc = () => new Uint8Array();
                 break;
             case 1:
                 w3ToBytesFunc = int8ToBytes;
@@ -6455,22 +6164,20 @@ class XRefEntry {
             case 2:
                 w3ToBytesFunc = int16ToBytes;
                 break;
+            default:
+                w2ToBytesFunc = (n) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
+                break;
         }
         const encoder = new TextEncoder();
         const groups = this.groupEntries(entries);
-        let index = new Uint8Array([codes.L_BRACKET]);
+        const index = [];
         let bytes = new Uint8Array();
         let temp;
-        let groupIndex;
         let entryV1;
         let entryV2;
         let entryV3;
         for (const group of groups) {
-            groupIndex = ` ${group[0]} ${group[1].length}`;
-            temp = new Uint8Array(index.length + groupIndex.length);
-            temp.set(index);
-            temp.set(encoder.encode(groupIndex), index.length);
-            index = temp;
+            index.push(group[0], group[1].length);
             for (const entry of group[1]) {
                 switch (entry.type) {
                     case xRefEntryTypes.FREE:
@@ -6499,30 +6206,26 @@ class XRefEntry {
                 bytes = temp;
             }
         }
-        temp = new Uint8Array(index.length + 1);
-        temp.set(index);
-        temp.set([codes.R_BRACKET], index.length);
-        index = temp;
         return { bytes, index };
     }
     static groupEntries(entries) {
-        entries.sort((a, b) => a.objectId - b.objectId);
+        entries.sort((a, b) => a.id - b.id);
         const groups = [];
         let groupStart;
         let groupEntries;
         let last;
         for (const entry of entries) {
-            if (entry.objectId !== last + 1) {
+            if (entry.id !== last + 1) {
                 if (groupEntries === null || groupEntries === void 0 ? void 0 : groupEntries.length) {
                     groups.push([groupStart, groupEntries]);
                 }
-                groupStart = entry.objectId;
+                groupStart = entry.id;
                 groupEntries = [entry];
             }
             else {
                 groupEntries.push(entry);
             }
-            last = entry.objectId;
+            last = entry.id;
         }
         if (groupEntries === null || groupEntries === void 0 ? void 0 : groupEntries.length) {
             groups.push([groupStart, groupEntries]);
@@ -6548,6 +6251,52 @@ class XRefStream extends XRef {
         var _a;
         return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
     }
+    get info() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
+    }
+    get encrypt() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Encrypt;
+    }
+    get id() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.ID;
+    }
+    static createFrom(base, entries) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
+            return null;
+        }
+        const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
+        const size = Math.max(entriesSize, base.size);
+        return XRefStream.create(entries, size, base.prev, base.root, base.info, base.encrypt, base.id);
+    }
+    static create(entries, size, prev, root, info, encrypt, id) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !prev || !root) {
+            return null;
+        }
+        const trailer = new TrailerStream();
+        trailer.Size = size;
+        trailer.Prev = prev;
+        trailer.Root = root;
+        trailer.Info = info;
+        trailer.Encrypt = encrypt;
+        trailer.ID = id;
+        const w = [1, 4, 2];
+        const data = XRefEntry.toStreamBytes(entries, w);
+        const params = new FlateParamsDict();
+        params.Predictor = flatePredictors.PNG_UP;
+        params.Columns = 5;
+        params.Colors = 1;
+        params.BitsPerComponent = 8;
+        const stream = new XRefStream(trailer);
+        stream._trailerStream.Filter = streamFilters.FLATE;
+        stream._trailerStream.DecodeParms = params;
+        stream._trailerStream.W = w;
+        stream._trailerStream.Index = data.index;
+        stream._trailerStream.streamData = data.bytes;
+        return stream;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             return null;
@@ -6562,6 +6311,9 @@ class XRefStream extends XRef {
             start: null,
             end: null,
         };
+    }
+    createUpdate(entries) {
+        return XRefStream.createFrom(this, entries);
     }
     getEntries() {
         if (!this._trailerStream) {
@@ -6591,24 +6343,19 @@ class TrailerDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Size) {
-            bytes.push(...encoder.encode("/Size"), ...encoder.encode(this.Size + ""));
+            bytes.push(...encoder.encode("/Size"), ...encoder.encode(" " + this.Size));
         }
         if (this.Prev) {
-            bytes.push(...encoder.encode("/Prev"), ...encoder.encode(this.Prev + ""));
+            bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root"), ...this.Root.toRefArray());
+            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toRefArray());
         }
         if (this.Encrypt) {
-            if (this.Encrypt instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toRefArray());
-            }
-            else {
-                bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
-            }
+            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info"), ...this.Info.toRefArray());
+            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toRefArray());
         }
         if (this.ID) {
             bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
@@ -6683,18 +6430,6 @@ class TrailerDict extends PdfDict {
                                 throw new Error("Can't parse /Encrypt property value");
                             }
                         }
-                        else if (entryType === valueTypes.DICTIONARY) {
-                            const encryptBounds = parser.getDictBoundsAt(i);
-                            if (encryptBounds) {
-                                const encrypt = EncryptionDict.parse({ parser, bounds: encryptBounds });
-                                if (encrypt) {
-                                    this.Encrypt = encrypt.value;
-                                    i = encryptBounds.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Encrypt property value");
-                        }
                         throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
                     case "/Info":
                         const infoId = ObjectId.parseRef(parser, i);
@@ -6750,6 +6485,41 @@ class XRefTable extends XRef {
         var _a;
         return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Root;
     }
+    get info() {
+        var _a;
+        return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Root;
+    }
+    get encrypt() {
+        var _a;
+        return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.Encrypt;
+    }
+    get id() {
+        var _a;
+        return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.ID;
+    }
+    static createFrom(base, entries) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
+            return null;
+        }
+        const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
+        const size = Math.max(entriesSize, base.size);
+        return XRefTable.create(entries, size, base.prev, base.root, base.info, base.encrypt, base.id);
+    }
+    static create(entries, size, prev, root, info, encrypt, id) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !prev || !root) {
+            return null;
+        }
+        const trailer = new TrailerDict();
+        trailer.Size = size;
+        trailer.Prev = prev;
+        trailer.Root = root;
+        trailer.Info = info;
+        trailer.Encrypt = encrypt;
+        trailer.ID = id;
+        const data = XRefEntry.toTableBytes(entries);
+        const table = new XRefTable(data, trailer);
+        return table;
+    }
     static parse(parser, start) {
         if (!parser || isNaN(start)) {
             return null;
@@ -6774,6 +6544,9 @@ class XRefTable extends XRef {
             end: null,
         };
     }
+    createUpdate(entries) {
+        return XRefTable.createFrom(this, entries);
+    }
     getEntries() {
         if (!this._table.length) {
             return [];
@@ -6790,6 +6563,63 @@ class XRefTable extends XRef {
             ...trailerBytes, ...keywordCodes.END_OF_LINE,
         ];
         return new Uint8Array(bytes);
+    }
+}
+
+class DataWriter {
+    constructor(data) {
+        if (!(data === null || data === void 0 ? void 0 : data.length)) {
+            throw new Error("Data is empty");
+        }
+        this._data = [...data];
+        this._pointer = data.length - 1;
+        this._encoder = new TextEncoder();
+        this.fixEof();
+    }
+    get offset() {
+        return this._pointer;
+    }
+    getCurrentData() {
+        return new Uint8Array(this._data);
+    }
+    writeBytes(bytes) {
+        if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
+            return;
+        }
+        this._data.push(...bytes);
+        this._pointer += bytes.length;
+    }
+    writeIndirectObject(ref, obj) {
+        if (!ref || !obj) {
+            return;
+        }
+        const objBytes = [
+            ...this._encoder.encode(`${ref.id} ${ref.generation} `),
+            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+            ...obj.toArray(),
+            ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
+        ];
+        this.writeBytes(objBytes);
+    }
+    writeEof(xrefOffset) {
+        const eof = [
+            ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
+            ...this._encoder.encode(xrefOffset + ""), ...keywordCodes.END_OF_LINE,
+            ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE
+        ];
+        this.writeBytes(eof);
+    }
+    fixEof() {
+        if (this._data[this._pointer] !== codes.LINE_FEED) {
+            if (this._data[this._pointer - 1] !== codes.CARRIAGE_RETURN) {
+                this._data.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
+                this._pointer += 2;
+            }
+            else {
+                this._data.push(codes.LINE_FEED);
+                this._pointer += 1;
+            }
+        }
     }
 }
 
@@ -6815,14 +6645,14 @@ class ReferenceData {
                     default:
                         continue;
                 }
-                if (entry.objectId > maxId) {
-                    maxId = entry.objectId;
+                if (entry.id > maxId) {
+                    maxId = entry.id;
                 }
             }
         });
         this.size = maxId + 1;
         const zeroFreeRef = {
-            objectId: 0,
+            id: 0,
             generation: maxGeneration,
             nextFreeId: 0,
         };
@@ -6831,15 +6661,15 @@ class ReferenceData {
         const freeMap = new Map();
         let zeroFound = false;
         for (const entry of allFreeEntries) {
-            if (!zeroFound && entry.objectId === 0) {
+            if (!zeroFound && entry.id === 0) {
                 zeroFound = true;
                 zeroFreeRef.nextFreeId = entry.nextFreeId;
                 continue;
             }
-            const valueFromMap = freeMap.get(entry.objectId);
+            const valueFromMap = freeMap.get(entry.id);
             if (!valueFromMap || valueFromMap.generation < entry.generation) {
-                freeMap.set(entry.objectId, {
-                    objectId: entry.objectId,
+                freeMap.set(entry.id, {
+                    id: entry.id,
                     generation: entry.generation,
                     nextFreeId: entry.nextFreeId
                 });
@@ -6856,7 +6686,7 @@ class ReferenceData {
         [...freeMap].forEach(x => {
             const value = x[1];
             if (value.generation === maxGeneration && value.nextFreeId === 0) {
-                freeOutsideListMap.set(value.objectId, value);
+                freeOutsideListMap.set(value.id, value);
             }
         });
         this.freeLinkedList = freeLinkedList;
@@ -6866,12 +6696,12 @@ class ReferenceData {
             if (this.isFreed(entry)) {
                 continue;
             }
-            const valueFromMap = normalRefs.get(entry.objectId);
+            const valueFromMap = normalRefs.get(entry.id);
             if (valueFromMap && valueFromMap.generation >= entry.generation) {
                 continue;
             }
-            normalRefs.set(entry.objectId, {
-                objectId: entry.objectId,
+            normalRefs.set(entry.id, {
+                id: entry.id,
                 generation: entry.generation,
                 byteOffset: entry.byteOffset,
             });
@@ -6880,14 +6710,14 @@ class ReferenceData {
             if (this.isFreed(entry)) {
                 continue;
             }
-            const valueFromMap = normalRefs.get(entry.objectId);
+            const valueFromMap = normalRefs.get(entry.id);
             if (valueFromMap) {
                 continue;
             }
             const offset = (_a = normalRefs.get(entry.streamId)) === null || _a === void 0 ? void 0 : _a.byteOffset;
             if (offset) {
-                normalRefs.set(entry.objectId, {
-                    objectId: entry.objectId,
+                normalRefs.set(entry.id, {
+                    id: entry.id,
                     generation: entry.generation,
                     byteOffset: offset,
                     compressed: true,
@@ -6907,11 +6737,110 @@ class ReferenceData {
         return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
     }
     isFreed(ref) {
-        return this.freeOutsideListMap.has(ref.objectId)
-            || this.freeLinkedList.has(ref, (a, b) => a.objectId === b.objectId && a.generation < b.generation);
+        return this.freeOutsideListMap.has(ref.id)
+            || this.freeLinkedList.has(ref, (a, b) => a.id === b.id && a.generation < b.generation);
     }
     isUsed(id) {
         return this.usedMap.has(id);
+    }
+}
+class ReferenceDataChange {
+    constructor(refData) {
+        this._refData = refData;
+        this._size = refData.size;
+        const freeLinkedList = new LinkedList();
+        for (const freeRef of refData.freeLinkedList) {
+            freeLinkedList.push(freeRef);
+        }
+        this._freeLinkedList = freeLinkedList;
+        this._usedMap = new Map();
+    }
+    get size() {
+        return this._size;
+    }
+    takeFreeRef(byteOffset, forceNew = false) {
+        let ref;
+        if (!forceNew && this._freeLinkedList.length > 1) {
+            const freeRef = this._freeLinkedList.pop();
+            this._freeLinkedList.tail.nextFreeId = 0;
+            ref = {
+                id: freeRef.id,
+                generation: freeRef.generation,
+                byteOffset,
+            };
+        }
+        else {
+            ref = {
+                id: this._size++,
+                generation: 0,
+                byteOffset,
+            };
+        }
+        this._usedMap.set(ref.id, ref);
+        return ref;
+    }
+    setRefFree(id) {
+        if (this._usedMap.has(id)) {
+            this._usedMap.delete(id);
+            if (this._size > this._refData.size && this._size === id + 1) {
+                this._size--;
+            }
+        }
+        if (this._refData.isUsed(id)) {
+            const gen = this._refData.getGeneration(id);
+            const ref = { id: id, generation: gen + 1, nextFreeId: 0 };
+            const index = this._freeLinkedList.findIndex(ref, (a, b) => a.id === b.id && a.generation <= b.generation);
+            if (index !== -1) {
+                return;
+            }
+            const lastFreeRef = this._freeLinkedList.tail;
+            lastFreeRef.nextFreeId = id;
+            this._freeLinkedList.push(ref);
+        }
+    }
+    updateUsedRef(ref) {
+        if (ref.compressed && ref.generation) {
+            return false;
+        }
+        if (this.isFreed(ref)) {
+            return false;
+        }
+        const current = this._usedMap.get(ref.id);
+        if (current) {
+            if (ref.generation >= current.generation) {
+                this._usedMap.set(ref.id, ref);
+                return true;
+            }
+        }
+        if (this._refData.isUsed(ref.id)) {
+            const gen = this._refData.getGeneration(ref.generation);
+            if (ref.generation >= gen) {
+                this._usedMap.set(ref.id, ref);
+                return true;
+            }
+        }
+        return false;
+    }
+    exportEntries() {
+        const entries = [];
+        for (const entry of this._freeLinkedList) {
+            entries.push(new XRefEntry(xRefEntryTypes.FREE, entry.id, entry.generation, null, entry.nextFreeId));
+        }
+        this._usedMap.forEach(v => {
+            if (v.compressed) {
+                entries.push(new XRefEntry(xRefEntryTypes.COMPRESSED, v.id, 0, null, null, v.streamId, v.streamIndex));
+            }
+            else {
+                entries.push(new XRefEntry(xRefEntryTypes.NORMAL, v.id, v.generation, v.byteOffset));
+            }
+        });
+        return entries;
+    }
+    isFreed(ref) {
+        return this._freeLinkedList.has(ref, (a, b) => a.id === b.id && a.generation < b.generation);
+    }
+    isUsed(id) {
+        return this._usedMap.has(id) || this._refData.isUsed(id);
     }
 }
 
@@ -6950,6 +6879,7 @@ class DocumentData {
             }
             return null;
         };
+        this._data = data;
         this._docParser = new DataParser(data);
         this._version = this._docParser.getPdfVersion();
         const lastXrefIndex = this._docParser.getLastXrefIndex();
@@ -6969,8 +6899,37 @@ class DocumentData {
             return 0;
         }
     }
+    static parseXref(parser, start, max) {
+        if (!parser || !start) {
+            return null;
+        }
+        const xrefTableIndex = parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
+        if (xrefTableIndex && xrefTableIndex.start === start) {
+            const xrefStmIndexProp = parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
+            if (xrefStmIndexProp) {
+                const streamXrefIndex = parser.parseNumberAt(xrefStmIndexProp.end + 1);
+                if (!streamXrefIndex) {
+                    return null;
+                }
+                start = streamXrefIndex.value;
+            }
+            else {
+                const xrefTable = XRefTable.parse(parser, start);
+                return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
+            }
+        }
+        const id = ObjectId.parse(parser, start, false);
+        if (!id) {
+            return null;
+        }
+        const xrefStreamBounds = parser.getIndirectObjectBoundsAt(id.end + 1);
+        if (!xrefStreamBounds) {
+            return null;
+        }
+        const xrefStream = XRefStream.parse({ parser: parser, bounds: xrefStreamBounds });
+        return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
+    }
     parse() {
-        var _a;
         this.reset();
         const xrefs = this.parseAllXrefs();
         if (!xrefs.length) {
@@ -6980,27 +6939,34 @@ class DocumentData {
         }
         this._xrefs = xrefs;
         this._referenceData = new ReferenceData(xrefs);
-        console.log(this._xrefs);
-        console.log(this._referenceData);
         this.parsePageTree();
-        console.log(this._catalog);
-        console.log(this._pageRoot);
-        console.log(this._pages);
         this.parseSupportedAnnotations();
-        console.log(this._annotations);
-        for (const annot of this._annotations) {
-            if (((_a = annot.AP) === null || _a === void 0 ? void 0 : _a.N) && annot.AP.N instanceof ObjectId) {
-                const apInfo = this.getObjectParseInfo(annot.AP.N.id);
-                const apStream = XFormStream.parse(apInfo);
-                if (apStream) {
-                    console.log(String.fromCharCode(...apStream.value.decodedStreamData));
-                }
-            }
-        }
     }
     reset() {
         this._xrefs = null;
         this._referenceData = null;
+        this._catalog = null;
+        this._pageRoot = null;
+        this._pages = null;
+        this._annotations = null;
+    }
+    getDataWoSupportedAnnotations() {
+        const changeData = new ReferenceDataChange(this._referenceData);
+        this._annotations.forEach(x => {
+            if (x.id) {
+                changeData.setRefFree(x.id);
+            }
+        });
+        const writer = new DataWriter(this._data);
+        const newXrefOffset = writer.offset;
+        const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
+        const entries = changeData.exportEntries();
+        const lastXref = this._xrefs[0];
+        const newXref = lastXref.createUpdate(entries);
+        writer.writeIndirectObject(newXrefRef, newXref);
+        writer.writeEof(newXrefOffset);
+        const bytes = writer.getCurrentData();
+        return bytes;
     }
     parseAllXrefs() {
         this.reset();
@@ -7009,7 +6975,7 @@ class DocumentData {
         let max = this._docParser.maxIndex;
         let xref;
         while (start) {
-            xref = this.parsePrevXref(start, max);
+            xref = DocumentData.parseXref(this._docParser, start, max);
             if (xref) {
                 xrefs.push(xref);
                 max = start;
@@ -7020,47 +6986,6 @@ class DocumentData {
             }
         }
         return xrefs;
-    }
-    parsePrevXref(start, max) {
-        if (!start) {
-            return null;
-        }
-        const xrefTableIndex = this._docParser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
-        if (xrefTableIndex && xrefTableIndex.start === start) {
-            const xrefStmIndexProp = this._docParser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
-            if (xrefStmIndexProp) {
-                if (isNaN(this._lastXrefType)) {
-                    this._lastXrefType = xRefTypes.HYBRID;
-                }
-                const streamXrefIndex = this._docParser.parseNumberAt(xrefStmIndexProp.end + 1);
-                if (!streamXrefIndex) {
-                    return null;
-                }
-                start = streamXrefIndex.value;
-            }
-            else {
-                if (isNaN(this._lastXrefType)) {
-                    this._lastXrefType = xRefTypes.TABLE;
-                }
-                const xrefTable = XRefTable.parse(this._docParser, start);
-                return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
-            }
-        }
-        else {
-            if (isNaN(this._lastXrefType)) {
-                this._lastXrefType = xRefTypes.STREAM;
-            }
-        }
-        const id = ObjectId.parse(this._docParser, start, false);
-        if (!id) {
-            return null;
-        }
-        const xrefStreamBounds = this._docParser.getIndirectObjectBoundsAt(id.end + 1);
-        if (!xrefStreamBounds) {
-            return null;
-        }
-        const xrefStream = XRefStream.parse({ parser: this._docParser, bounds: xrefStreamBounds });
-        return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
     parsePageTree() {
         const catalogId = this._xrefs[0].root;
@@ -7132,30 +7057,36 @@ class DocumentData {
             const annotationType = info.parser.parseDictSubtype(info.bounds);
             let annot;
             switch (annotationType) {
-                case annotationTypes.INK:
-                    annot = InkAnnotation.parse(info);
-                    if (annot) {
-                        annotations.push(annot.value);
-                    }
+                case annotationTypes.TEXT:
+                    annot = TextAnnotation.parse(info);
                     break;
                 case annotationTypes.FREE_TEXT:
                     annot = FreeTextAnnotation.parse(info);
-                    if (annot) {
-                        annotations.push(annot.value);
-                    }
                     break;
                 case annotationTypes.STAMP:
                     annot = StampAnnotation.parse(info);
-                    if (annot) {
-                        annotations.push(annot.value);
-                    }
                     break;
-                case annotationTypes.TEXT:
-                    annot = TextAnnotation.parse(info);
-                    if (annot) {
-                        annotations.push(annot.value);
-                    }
+                case annotationTypes.CIRCLE:
+                    annot = CircleAnnotation.parse(info);
                     break;
+                case annotationTypes.SQUARE:
+                    annot = SquareAnnotation.parse(info);
+                    break;
+                case annotationTypes.POLYGON:
+                    annot = SquareAnnotation.parse(info);
+                    break;
+                case annotationTypes.POLYLINE:
+                    annot = SquareAnnotation.parse(info);
+                    break;
+                case annotationTypes.LINE:
+                    annot = LineAnnotation.parse(info);
+                    break;
+                case annotationTypes.INK:
+                    annot = InkAnnotation.parse(info);
+                    break;
+            }
+            if (annot) {
+                annotations.push(annot.value);
             }
         }
         this._annotations = annotations;
@@ -7178,7 +7109,7 @@ class AnnotationEditor {
         return this._annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
     }
     getRefinedData() {
-        return null;
+        return this._documentData.getDataWoSupportedAnnotations();
     }
     getExportedData() {
         return null;
@@ -7493,6 +7424,7 @@ class TsPdfViewer {
                 throw new Error("Cannot load file data!");
             }
             const annotator = new AnnotationEditor(data);
+            data = annotator.getRefinedData();
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();

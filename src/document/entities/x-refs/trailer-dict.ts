@@ -33,7 +33,7 @@ export class TrailerDict extends PdfDict {
    * (Required if document is encrypted; PDF 1.1+) 
    * The document’s encryption dictionary
    */
-  Encrypt: ObjectId | EncryptionDict;
+  Encrypt: ObjectId; // | EncryptionDict; // not sure if encryption dictionary can be direct object
   /**
    * (Optional; shall be an indirect reference) 
    * The document’s information dictionary
@@ -66,23 +66,24 @@ export class TrailerDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Size) {
-      bytes.push(...encoder.encode("/Size"), ...encoder.encode(this.Size + ""));
+      bytes.push(...encoder.encode("/Size"), ...encoder.encode(" " + this.Size));
     }
     if (this.Prev) {
-      bytes.push(...encoder.encode("/Prev"), ...encoder.encode(this.Prev + ""));
+      bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
     }
     if (this.Root) {
-      bytes.push(...encoder.encode("/Root"), ...this.Root.toRefArray());
+      bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toRefArray());
     }
     if (this.Encrypt) {
-      if (this.Encrypt instanceof ObjectId) {
-        bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toRefArray());
-      } else {
-        bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
-      }
+      bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
+      // if (this.Encrypt instanceof ObjectId) {
+      //   bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
+      // } else {
+      //   bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
+      // }
     }
     if (this.Info) {
-      bytes.push(...encoder.encode("/Info"), ...this.Info.toRefArray());
+      bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toRefArray());
     }
     if (this.ID) {
       bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, 
@@ -161,17 +162,17 @@ export class TrailerDict extends PdfDict {
               else {              
                 throw new Error("Can't parse /Encrypt property value");
               }
-            } else if (entryType === valueTypes.DICTIONARY) {  
-              const encryptBounds = parser.getDictBoundsAt(i);
-              if (encryptBounds) {         
-                const encrypt = EncryptionDict.parse({parser, bounds: encryptBounds});
-                if (encrypt) {
-                  this.Encrypt = encrypt.value;
-                  i = encryptBounds.end + 1;
-                  break;
-                }
-              }               
-              throw new Error("Can't parse /Encrypt property value");
+            // } else if (entryType === valueTypes.DICTIONARY) {  
+            //   const encryptBounds = parser.getDictBoundsAt(i);
+            //   if (encryptBounds) {         
+            //     const encrypt = EncryptionDict.parse({parser, bounds: encryptBounds});
+            //     if (encrypt) {
+            //       this.Encrypt = encrypt.value;
+            //       i = encryptBounds.end + 1;
+            //       break;
+            //     }
+            //   }               
+            //   throw new Error("Can't parse /Encrypt property value");
             }
             throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
           case "/Info":

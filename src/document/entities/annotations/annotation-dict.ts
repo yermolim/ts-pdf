@@ -100,7 +100,7 @@ export abstract class AnnotationDict extends PdfDict {
       bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P"), ...this.P.toRefArray());
+      bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toRefArray());
     }
     if (this.NM) {
       bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
@@ -109,7 +109,7 @@ export abstract class AnnotationDict extends PdfDict {
       bytes.push(...encoder.encode("/M"), ...this.M.toArray());
     }
     if (this.F) {
-      bytes.push(...encoder.encode("/F"), ...encoder.encode(this.F + ""));
+      bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
     }
     if (this.AP) {
       bytes.push(...encoder.encode("/AP"), ...this.AP.toArray());
@@ -128,11 +128,11 @@ export abstract class AnnotationDict extends PdfDict {
     }
     if (this.C) {
       bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
-      this.C.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+      this.C.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.StructParent) {
-      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(this.StructParent + ""));
+      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
     }
     // TODO: handle remaining properties
 
