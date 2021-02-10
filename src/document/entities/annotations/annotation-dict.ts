@@ -180,7 +180,7 @@ export abstract class AnnotationDict extends PdfDict {
             } else {
               throw new Error("Can't parse /Subtype property value");
             }
-            break;       
+            break;        
           case "/Contents":
             const contents = LiteralString.parse(parser, i);
             if (contents) {

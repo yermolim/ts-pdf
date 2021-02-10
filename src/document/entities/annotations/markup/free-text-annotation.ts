@@ -1,3 +1,4 @@
+import { codes } from "../../../common/codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
   LineEndingType, lineEndingTypes, Rect } from "../../../common/const";
@@ -69,8 +70,45 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.DA) {
+      bytes.push(...encoder.encode("/DA"), ...this.DA.toArray());
+    }
+    if (this.Q) {
+      bytes.push(...encoder.encode("/Q"), ...encoder.encode(this.Q + ""));
+    }
+    if (this.DS) {
+      bytes.push(...encoder.encode("/DS"), ...this.DS.toArray());
+    }
+    if (this.CL) {
+      bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
+      this.CL.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+      bytes.push(codes.R_BRACKET);
+    }
+    if (this.IT) {
+      bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+    }
+    if (this.RD) {
+      bytes.push(
+        ...encoder.encode("/RD"), codes.L_BRACKET, 
+        ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
+        ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
+        ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET,
+      );
+    }
+    if (this.LE) {
+      bytes.push(...encoder.encode("/LE"), ...encoder.encode(this.LE));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

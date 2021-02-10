@@ -3435,9 +3435,6 @@ class MarkupAnnotation extends AnnotationDict {
         if (this.RT) {
             bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
         }
-        if (this.IT) {
-            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
-        }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
             ...bytes,
@@ -3580,16 +3577,6 @@ class MarkupAnnotation extends AnnotationDict {
                             throw new Error("Can't parse /RT property value");
                         }
                         break;
-                    case "/IT":
-                        const intent = parser.parseNameAt(i);
-                        if (intent) {
-                            this.IT = intent.value;
-                            i = intent.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /IT property value");
-                        }
-                        break;
                     case "/ExData":
                         break;
                     default:
@@ -3627,7 +3614,38 @@ class FreeTextAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.DA) {
+            bytes.push(...encoder.encode("/DA"), ...this.DA.toArray());
+        }
+        if (this.Q) {
+            bytes.push(...encoder.encode("/Q"), ...encoder.encode(this.Q + ""));
+        }
+        if (this.DS) {
+            bytes.push(...encoder.encode("/DS"), ...this.DS.toArray());
+        }
+        if (this.CL) {
+            bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
+            this.CL.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x + "")));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+        }
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE"), ...encoder.encode(this.LE));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -3759,7 +3777,24 @@ class InkAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.InkList) {
+            bytes.push(...encoder.encode("/InkList"), codes.L_BRACKET);
+            this.InkList.forEach(x => {
+                bytes.push(codes.L_BRACKET);
+                x.forEach(y => bytes.push(codes.WHITESPACE, ...encoder.encode(y + "")));
+                bytes.push(codes.R_BRACKET);
+            });
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -3783,11 +3818,11 @@ class InkAnnotation extends MarkupAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/InkList":
-                        const isArray = parser.getValueTypeAt(i);
-                        if (isArray) {
+                        const inkType = parser.getValueTypeAt(i);
+                        if (inkType === valueTypes.ARRAY) {
                             const inkList = [];
                             let inkSubList;
-                            let inkArrayPos = i++;
+                            let inkArrayPos = ++i;
                             while (true) {
                                 inkSubList = parser.parseNumberArrayAt(inkArrayPos);
                                 if (!inkSubList) {
@@ -3845,7 +3880,18 @@ class StampAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Name) {
+            bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -3906,7 +3952,27 @@ class TextAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray() {
-        return new Uint8Array();
+        const superBytes = super.toArray();
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Open) {
+            bytes.push(...encoder.encode("/Open"), ...encoder.encode(this.Open + ""));
+        }
+        if (this.Name) {
+            bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+        }
+        if (this.State) {
+            bytes.push(...encoder.encode("/State"), ...encoder.encode(this.State));
+        }
+        if (this.StateModel) {
+            bytes.push(...encoder.encode("/StateModel"), ...encoder.encode(this.StateModel));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);

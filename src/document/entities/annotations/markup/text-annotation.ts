@@ -36,11 +36,31 @@ export class TextAnnotation extends MarkupAnnotation {
     return parseResult
       ? {value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
-  }
+  }  
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Open) {
+      bytes.push(...encoder.encode("/Open"), ...encoder.encode(this.Open + ""));
+    }
+    if (this.Name) {
+      bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+    }
+    if (this.State) {
+      bytes.push(...encoder.encode("/State"), ...encoder.encode(this.State));
+    }
+    if (this.StateModel) {
+      bytes.push(...encoder.encode("/StateModel"), ...encoder.encode(this.StateModel));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

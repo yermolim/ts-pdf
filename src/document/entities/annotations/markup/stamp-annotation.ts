@@ -39,9 +39,21 @@ export class StampAnnotation extends MarkupAnnotation {
       : null;
   }
   
+  
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.Name) {
+      bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**

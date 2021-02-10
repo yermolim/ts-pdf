@@ -72,7 +72,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
    * the annotation shall have no explicit intent and should behave in a generic manner 
    * in a conforming reader
    */
-  IT: string;
+  // IT: string;
   /**
    * (Optional; PDF 1.7+) An external data dictionary specifying data 
    * that shall be associated with the annotation
@@ -112,9 +112,9 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     if (this.RT) {
       bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
     }
-    if (this.IT) {
-      bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
-    }
+    // if (this.IT) {
+    //   bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+    // }
     // TODO: handle ExData
 
     const totalBytes: number[] = [
@@ -261,15 +261,15 @@ export abstract class MarkupAnnotation extends AnnotationDict {
               throw new Error("Can't parse /RT property value");
             }
             break; 
-          case "/IT":
-            const intent = parser.parseNameAt(i);
-            if (intent) {
-              this.IT = intent.value;
-              i = intent.end + 1;
-            } else {
-              throw new Error("Can't parse /IT property value");
-            }
-            break;  
+          // case "/IT":
+          //   const intent = parser.parseNameAt(i);
+          //   if (intent) {
+          //     this.IT = intent.value;
+          //     i = intent.end + 1;
+          //   } else {
+          //     throw new Error("Can't parse /IT property value");
+          //   }
+          //   break;  
           case "/ExData":
             // TODO: handle this case
             break;

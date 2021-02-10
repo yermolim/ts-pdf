@@ -1,4 +1,5 @@
-import { annotationTypes } from "../../../common/const";
+import { codes } from "../../../common/codes";
+import { annotationTypes, valueTypes } from "../../../common/const";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 
@@ -26,8 +27,25 @@ export class InkAnnotation extends MarkupAnnotation {
   }
   
   toArray(): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray();  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.InkList) {
+      bytes.push(...encoder.encode("/InkList"), codes.L_BRACKET);
+      this.InkList.forEach(x => {        
+        bytes.push(codes.L_BRACKET);
+        x.forEach(y => bytes.push( codes.WHITESPACE, ...encoder.encode(y + "")));         
+        bytes.push(codes.R_BRACKET);
+      });
+      bytes.push(codes.R_BRACKET);
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**
@@ -57,11 +75,11 @@ export class InkAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {          
           case "/InkList":
-            const isArray = parser.getValueTypeAt(i);
-            if (isArray) {
+            const inkType = parser.getValueTypeAt(i);
+            if (inkType === valueTypes.ARRAY) {
               const inkList: number[][] = [];
               let inkSubList: ParseResult<number[]>;
-              let inkArrayPos = i++;
+              let inkArrayPos = ++i;
               while (true) {
                 inkSubList = parser.parseNumberArrayAt(inkArrayPos);
                 if (!inkSubList) {
