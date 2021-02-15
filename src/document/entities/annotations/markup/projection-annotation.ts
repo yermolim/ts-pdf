@@ -1,11 +1,11 @@
 import { annotationTypes } from "../../../common/const";
 import { MarkupAnnotation } from "./markup-annotation";
 
-export class SoundAnnotation extends MarkupAnnotation {
+export class ProjectionAnnotation extends MarkupAnnotation {
   // TODO: implement
   
   constructor() {
-    super(annotationTypes.SOUND);
+    super(annotationTypes.PROJECTION);
   }
   
   toArray(): Uint8Array {

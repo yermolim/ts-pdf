@@ -15,13 +15,19 @@ export class CryptFilterDict extends PdfDict {
    * [V2] The application shall ask the security handler for the encryption key and shall implicitly decrypt data
    *  with "Algorithm 1: Encryption of data using the RC4 or AES algorithms", using the RC4 algorithm. 
    * 
-   * [AESV2](PDF 1.6+) The application shall ask the security handler for the encryption key 
-   * and shall implicitly decrypt data with "Algorithm 1: Encryption of data using the RC4 or AES algorithms", 
-   * using the AES algorithm in Cipher Block Chaining (CBC) mode with a 16-byte block size 
-   * and an initialization vector that shall be randomly generated and placed as the first 16 bytes 
-   * in the stream or string. 
+   * [AESV2](PDF 1.6+) The application asks the security handler for the encryption key 
+   * and implicitly decrypts data with Algorithm 3.1, using the AES-128 algorithm 
+   * in Cipher Block Chaining (CBC) with padding mode with a 16-byte block size 
+   * and an initialization vector that is randomly generated and placed as the first 16 bytes 
+   * in the stream or string. The key size (Length) shall be 128 bits 
    * 
-   * When the value is V2 or AESV2, the application may ask once for this encryption key 
+   * [AESV3](PDF 2.0+) The application asks the security handler for the encryption key 
+   * and implicitly decrypts data with Algorithm 3.1a, using the AES-256 algorithm 
+   * in Cipher Block Chaining (CBC) with padding mode with a 16-byte block size 
+   * and an initialization vector that is randomly generated and placed as the first 16 bytes 
+   * in the stream or string. The key size (Length) shall be 256 bits
+   * 
+   * When the value is V2, AESV2, or AESV3, the application may ask once for this encryption key 
    * and cache the key for subsequent use for streams that use the same crypt filter. 
    * Therefore, there shall be a one-to-one relationship between a crypt filter name 
    * and the corresponding encryption key. Only the values listed here shall be supported. 
@@ -42,7 +48,7 @@ export class CryptFilterDict extends PdfDict {
   AuthEvent: AuthEvent = authEvents.DOC_OPEN;
   /** 
    * (Optional) The bit length of the encryption key. 
-   * It shall be a multiple of 8 in the range of 40 to 128. 
+   * It shall be a multiple of 8 in the range of 40 to 256. 
    * Security handlers may define their own use of the Length entry 
    * and should use it to define the bit length of the encryption key. 
    * Standard security handler expresses the length in multiples of 8 (16 means 128) 
@@ -57,7 +63,7 @@ export class CryptFilterDict extends PdfDict {
   */
   EncryptMetadata = true;
   /** 
-   * (Required if V2 or AESV2) If the crypt filter is referenced from StmF or StrF 
+   * (Required for public-key security handlers) If the crypt filter is referenced from StmF or StrF 
    * in the encryption dictionary, this entry shall be an array of byte strings, 
    * where each string shall be a binary-encoded PKCS#7 object that shall list recipients 
    * that have been granted equal access rights to the document. The enveloped data 
@@ -217,12 +223,6 @@ export class CryptFilterDict extends PdfDict {
         break;
       }
     };
-        
-    if ((this.CFM === cryptMethods.V2 || this.CFM === cryptMethods.AESV2)
-      && !this.Recipients) {
-      // not all required properties parsed
-      return false;
-    }
 
     return true;
   }

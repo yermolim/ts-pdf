@@ -7,6 +7,7 @@ import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { DateString } from "../common/date-string";
 import { ResourceDict } from "../misc/resource-dict";
 import { codes } from "../../common/codes";
+import { MeasureDict } from "../misc/measure-dict";
 
 export class XFormStream extends PdfStream {
   /**
@@ -61,10 +62,16 @@ export class XFormStream extends PdfStream {
   /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
    *  specifying the optional content properties for the annotation */
   OC: OcMembershipDict | OcGroupDict;
+  /** 
+   * (Optional; PDF 1.7+) A measure dictionary that shall specify the scale and units 
+   * that apply to the line annotation
+   */
+  Measure: MeasureDict;
 
   //TODO: add remaining properties
   //Group
   //OPI
+  //PtData
   
   constructor() {
     super(streamTypes.FORM_XOBJECT);
@@ -124,6 +131,9 @@ export class XFormStream extends PdfStream {
     }
     if (this.StructParents) {
       bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(" " + this.StructParents));
+    }
+    if (this.Measure) {
+      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray());
     }
     
     //TODO: handle remaining properties
@@ -284,7 +294,36 @@ export class XFormStream extends PdfStream {
               throw new Error("Can't parse /StructParents property value");
             }
             break;
-          // TODO: handle remaining cases
+          case "/Measure":            
+            const measureEntryType = parser.getValueTypeAt(i);
+            if (measureEntryType === valueTypes.REF) {              
+              const measureDictId = ObjectId.parseRef(parser, i);
+              if (measureDictId && parseInfo.parseInfoGetter) {
+                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                if (measureParseInfo) {
+                  const measureDict = MeasureDict.parse(measureParseInfo);
+                  if (measureDict) {
+                    this.Measure = measureDict.value;
+                    i = measureDict.end + 1;
+                    break;
+                  }
+                }
+              }              
+              throw new Error("Can't parse /Measure value reference");
+            } else if (measureEntryType === valueTypes.DICTIONARY) { 
+              const measureDictBounds = parser.getDictBoundsAt(i); 
+              if (measureDictBounds) {
+                const measureDict = MeasureDict.parse({parser, bounds: measureDictBounds});
+                if (measureDict) {
+                  this.Measure = measureDict.value;
+                  i = measureDict.end + 1;
+                  break;
+                }
+              }  
+              throw new Error("Can't parse /Measure value dictionary");  
+            }
+            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);      
+            // TODO: handle remaining cases
           case "/OC":
           case "/Group":
           case "/OPI":

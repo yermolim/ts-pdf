@@ -117,7 +117,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
                   }
                 }
               }              
-              throw new Error("Can't parse /BS value reference");
+              throw new Error("Can't parse /Measure value reference");
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
               const measureDictBounds = parser.getDictBoundsAt(i); 
               if (measureDictBounds) {

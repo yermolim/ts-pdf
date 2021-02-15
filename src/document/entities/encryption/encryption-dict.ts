@@ -1,7 +1,10 @@
-import { dictTypes } from "../../common/const";
+import { codes } from "../../common/codes";
+import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, dictTypes, valueTypes } from "../../common/const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
 import { PdfDict } from "../core/pdf-dict";
+import { CryptFilterDict } from "./crypt-filter-dict";
 import { CryptMapDict } from "./crypt-map-dict";
 
 export class EncryptionDict extends PdfDict {
@@ -27,22 +30,22 @@ export class EncryptionDict extends PdfDict {
    * and decrypting the document: 
    * 
    * - 0 An algorithm that is undocumented. This value shall not be used 
-   * - 1 "Algorithm 1: Encryption of data using the RC4 or AES algorithms" 
-   * with an encryption key length of 40 bits 
-   * - 2 (PDF 1.4+) "Algorithm 1: Encryption of data using the RC4 or AES algorithms"
-   * but permitting encryption key lengths greater than 40 bits 
-   * - 3 (PDF 1.4+)An unpublished algorithm that permits encryption key lengths 
+   * - 1 RC4 with an encryption key length of 40 bits 
+   * - 2 (PDF 1.4+) Same as 1 but permitting encryption key lengths greater than 40 bits 
+   * - 3 (PDF 1.4+) An unpublished algorithm that permits encryption key lengths 
    * ranging from 40 to 128 bits. This value shall not appear in a conforming PDF file
-   * - 4 (PDF 1.5) The security handler defines the use of encryption 
+   * - 4 (PDF 1.5+) The security handler defines the use of AES encryption (128-bit key)
+   * and decryption in the document, using the rules specified by the CF, StmF, and StrF entries. 
+   * - 5 (PDF 1.7+) The security handler defines the use of AES encryption (256-bit key) 
    * and decryption in the document, using the rules specified by the CF, StmF, and StrF entries. 
    * 
    * The default value if this entry is omitted shall be 0, 
    * but when present should be a value of 1 or greater
   */
-  V: 0 | 1 | 2 | 3 | 4 = 0;
+  V: CryptVersion;
   /** 
    * (Optional; PDF 1.4+; only if V is 2 or 3) The length of the encryption key, 
-   * in bits. The value shall be a multiple of 8, in the range 40 to 128
+   * in bits. The value shall be a multiple of 8, in the range 40 to 256
    * */
   Length = 40;
   /** 
@@ -54,7 +57,7 @@ export class EncryptionDict extends PdfDict {
    * */
   CF: CryptMapDict;
   /** 
-   * (Optional; meaningful only when the value of V is 4; PDF 1.5+) 
+   * (Optional; meaningful only when the value of V is 4 or 5; PDF 1.5+) 
    * The name of the crypt filter that shall be used by default 
    * when decrypting streams. The name shall be a key in the CF dictionary 
    * or a standard crypt filter name. All streams in the document, 
@@ -64,14 +67,14 @@ export class EncryptionDict extends PdfDict {
    * */
   StmF = "/Identity";
   /** 
-   * (Optional; meaningful only when the value of V is 4; PDF 1.5+) 
+   * (Optional; meaningful only when the value of V is 4 or 5; PDF 1.5+) 
    * The name of the crypt filter that shall be used when decrypting all strings 
    * in the document. The name shall be a key in the CF dictionary 
    * or a standard crypt filter name
    * */
   StrF = "/Identity";
   /** 
-   * (Optional; meaningful only when the value of V is 4; PDF 1.6+) 
+   * (Optional; meaningful only when the value of V is 4 or 5; PDF 1.6+) 
    * The name of the crypt filter that shall be used when encrypting 
    * embedded file streams that do not have their own crypt filter specifier; 
    * it shall correspond to a key in the CF dictionary 
@@ -89,31 +92,65 @@ export class EncryptionDict extends PdfDict {
    * [3] if the document is encrypted with a V value of 2 or 3, 
    * or has any “Security handlers of revision 3 or greater” access permissions set to 0
    * [4] if the document is encrypted with a V value of 4
+   * [5] if the document is encrypted with a V value of 5
+   * [6] if the document is encrypted with a V value of 5
    * */
-  R: 2 | 3 | 4;
+  R: CryptRevision;
   /** 
-   * (Required if /Filter/Standard) A 32-byte string, 
+   * (Required if /Filter/Standard) A 32-byte string (127-byte string if V = 5), 
    * based on both the owner and user passwords, that shall be used in computing 
    * the encryption key and in determining whether a valid owner password was entered
    * */
   O: LiteralString;
   /** 
-   * (Required if /Filter/Standard) A 32-byte string, based on the user password, 
-   * that shall be used in determining whether to prompt the user for a password and, 
-   * if so, whether a valid user or owner password was entered
+   * (Required if R is 5) A 32-byte string (127-byte string if V = 5), 
+   * based on the user password,that shall be used in determining whether 
+   * to prompt the user for a password and,if so,
+   * whether a valid user or owner password was entered
    * */
   U: LiteralString;
+  /** 
+   * (Required if R is 5) A 32-byte string based on the user password, 
+   * that is used in computing the encryption key
+   * */
+  OE: LiteralString;
+  /** 
+   * (Required if R is 5) A 32-byte string based on the owner and the user password, 
+   * that is used in computing the encryption key
+   * */
+  UE: LiteralString;
   /** 
    * (Required if /Filter/Standard) A set of flags specifying which operations 
    * shall be permitted when the document is opened with user access
    * */
   P: number;
   /** 
-   * (Optional; meaningful only when the value of V is 4; PDF 1.5+) 
+   * (Required if R is 5) A16-byte string, encrypted with the file encryption key, 
+   * that contains an encrypted copy of the permission flags
+   * */
+  Perms: LiteralString;
+  /** 
+   * (Optional; meaningful only when the value of V is 4 or 5; PDF 1.5+) 
    * Indicates whether the document-level metadata stream shall be encrypted. 
    * Conforming products should respect this value
    * */
   EncryptMetadata = true;
+  /** 
+   * (Required when SubFilter is adbe.pkcs7.s3 or adbe.pkcs7.s4; PDF 1.3+) 
+   * An array of byte-strings, where each string is a PKCS#7 object 
+   * listing recipients who have been granted equal access rights to the document. 
+   * The data contained in the PKCS#7 object shall include both a cryptographic key 
+   * that shall be used to decrypt the encrypted data and the access permissions 
+   * that apply to the recipient list. There shall be only one PKCS#7 object 
+   * per unique set of access permissions; if a recipient appears in more 
+   * than one list, the permissions used shall be those in the first matching list. 
+   * When SubFilter is adbe.pkcs7.s5, recipient lists shall be specified 
+   * in the crypt filter dictionary
+   * */
+  Recipients: HexString | HexString[];
+
+  stringFilter: CryptFilterDict;
+  streamFilter: CryptFilterDict;
   
   constructor() {
     super(dictTypes.EMPTY);
@@ -166,11 +203,32 @@ export class EncryptionDict extends PdfDict {
     if (this.U) {
       bytes.push(...encoder.encode("/U"), ...this.U.toArray());
     }
+    if (this.OE) {
+      bytes.push(...encoder.encode("/OE"), ...this.OE.toArray());
+    }
+    if (this.UE) {
+      bytes.push(...encoder.encode("/UE"), ...this.UE.toArray());
+    }
     if (this.P) {
       bytes.push(...encoder.encode("/P"), ...encoder.encode(" " + this.P));
     }
+    if (this.Perms) {
+      bytes.push(...encoder.encode("/Perms"), ...this.Perms.toArray());
+    }
+    if (this.U) {
+      bytes.push(...encoder.encode("/U"), ...this.U.toArray());
+    }
     if (this.EncryptMetadata) {
       bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
+    }
+    if (this.Recipients) {
+      if (this.Recipients instanceof HexString) {
+        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray());
+      } else {        
+        bytes.push(codes.L_BRACKET);
+        this.Recipients.forEach(x => bytes.push(...x.toArray()));
+        bytes.push(codes.R_BRACKET);
+      }
     }
 
     const totalBytes: number[] = [
@@ -178,7 +236,7 @@ export class EncryptionDict extends PdfDict {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
-  } 
+  }
 
   /**
    * fill public properties from data using info/parser if available
@@ -226,8 +284,9 @@ export class EncryptionDict extends PdfDict {
             break; 
           case "/V":
             const algorithm = parser.parseNumberAt(i, false);
-            if (algorithm && ([0, 1, 2, 3, 4].includes(algorithm.value))) {
-              this.V = <0 | 1 | 2 | 3 | 4>algorithm.value;
+            if (algorithm && (<number[]>Object.values(cryptVersions))
+              .includes(algorithm.value)) {
+              this.V = <CryptVersion>algorithm.value;
               i = algorithm.end + 1;              
             } else {              
               throw new Error("Can't parse /V property value");
@@ -283,8 +342,9 @@ export class EncryptionDict extends PdfDict {
             break;
           case "/R":
             const revision = parser.parseNumberAt(i, false);
-            if (revision && ([2, 3, 4].includes(revision.value))) {
-              this.R = <2 | 3 | 4>revision.value;
+            if (revision && (<number[]>Object.values(cryptRevisions))
+              .includes(revision.value)) {
+              this.R = <CryptRevision>revision.value;
               i = revision.end + 1;              
             } else {              
               throw new Error("Can't parse /R property value");
@@ -308,6 +368,24 @@ export class EncryptionDict extends PdfDict {
               throw new Error("Can't parse /U property value");
             }
             break;
+          case "/OE":
+            const ownerPasswordKey = LiteralString.parse(parser, i);
+            if (ownerPasswordKey) {
+              this.OE = ownerPasswordKey.value;
+              i = ownerPasswordKey.end + 1;              
+            } else {              
+              throw new Error("Can't parse /OE property value");
+            }
+            break;
+          case "/UE":
+            const userPasswordKey = LiteralString.parse(parser, i);
+            if (userPasswordKey) {
+              this.UE = userPasswordKey.value;
+              i = userPasswordKey.end + 1;              
+            } else {              
+              throw new Error("Can't parse /UE property value");
+            }
+            break;
           case "/P":
             const flags = parser.parseNumberAt(i, false);
             if (flags) {
@@ -315,6 +393,15 @@ export class EncryptionDict extends PdfDict {
               i = flags.end + 1;
             } else {              
               throw new Error("Can't parse /P property value");
+            }
+            break;
+          case "/Perms":
+            const flagsEncrypted = LiteralString.parse(parser, i);
+            if (flagsEncrypted) {
+              this.Perms = flagsEncrypted.value;
+              i = flagsEncrypted.end + 1;              
+            } else {              
+              throw new Error("Can't parse /Perms property value");
             }
             break;
           case "/EncryptMetadata":
@@ -325,7 +412,29 @@ export class EncryptionDict extends PdfDict {
             } else {              
               throw new Error("Can't parse /EncryptMetadata property value");
             }
-            break;
+            break;          
+          case "/Recipients":            
+            const entryType = parser.getValueTypeAt(i);
+            if (entryType === valueTypes.STRING_HEX) {  
+              const recipient = HexString.parse(parser, i);  
+              if (recipient) {
+                this.Recipients = recipient.value;
+                i = recipient.end + 1;
+                break;
+              } else {                               
+                throw new Error("Can't parse /Recipients property value");
+              }
+            } else if (entryType === valueTypes.ARRAY) {              
+              const recipients = HexString.parseArray(parser, i);
+              if (recipients) {
+                this.Recipients = recipients.value;
+                i = recipients.end + 1;
+                break;
+              } else {                  
+                throw new Error("Can't parse /Recipients property value");
+              }
+            }
+            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
           default:
             
             // skip to next name
@@ -340,12 +449,31 @@ export class EncryptionDict extends PdfDict {
     if (!this.Filter) {
       // not all required properties parsed
       return false;
-    }
+    }    
 
     if (this.Filter === "/Standard" 
-      && (!this.R || !this.O || !this.U || isNaN(this.P))) {
+        && (
+          !this.R 
+          || !this.O 
+          || !this.U 
+          || isNaN(this.P)
+          || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms))
+        )) {
       // not all required properties parsed
       return false;
+    }    
+    
+    if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
+      && ! this.Recipients) {
+      // not all required properties parsed
+      return false;
+    }
+
+    if (this.StrF !== "/Identity") {
+      this.stringFilter = this.CF?.getProp(this.StrF);
+    }
+    if (this.StmF !== "/Identity") {
+      this.streamFilter = this.CF?.getProp(this.StmF);
     }
 
     return true;

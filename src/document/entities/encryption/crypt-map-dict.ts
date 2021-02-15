@@ -70,7 +70,7 @@ export class CryptMapDict extends PdfDict {
           default:
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.DICTIONARY) { 
-              const dictBounds = parser.getDictBoundsAt(i);   
+              const dictBounds = parser.getDictBoundsAt(i);
               if (dictBounds) {
                 const filter = CryptFilterDict.parse({parser, bounds: dictBounds});
                 if (filter) {

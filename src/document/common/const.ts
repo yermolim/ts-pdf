@@ -74,10 +74,28 @@ export const flatePredictors = {
 export type FlatePredictor = typeof flatePredictors[keyof typeof flatePredictors]; 
 
 //#region encryption
+export const cryptVersions = {
+  RC4_40: 1,
+  RC4_128: 2,
+  AES_128: 4,
+  AES_256: 5,
+} as const;
+export type CryptVersion = typeof cryptVersions[keyof typeof cryptVersions]; 
+
+export const cryptRevisions = {
+  RC4_40: 2,
+  RC4_128: 3,
+  AES_128: 4,
+  AES_256: 5,
+  AES_256_V2: 6,
+} as const;
+export type CryptRevision = typeof cryptRevisions[keyof typeof cryptRevisions]; 
+
 export const cryptMethods = {
   NONE: "/None",
-  V2: "/V2",
-  AESV2: "/AESV2",
+  RC4: "/V2",
+  AES_128: "/AESV2",
+  AES_256: "/AESV3",
 } as const;
 export type CryptMethod = typeof cryptMethods[keyof typeof cryptMethods]; 
 
@@ -203,6 +221,8 @@ export const annotationTypes = {
   WATERMARK: "/Watermark",
   THREED: "/3D",
   REDACT: "/Redact",
+  PROJECTION: "/Projection",
+  RICH_MEDIA: "/RichMedia",
 } as const;
 export type AnnotationType = typeof annotationTypes[keyof typeof annotationTypes];
 

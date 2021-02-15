@@ -9,6 +9,7 @@ import { InkAnnotation } from "../entities/annotations/markup/ink-annotation";
 import { StampAnnotation } from "../entities/annotations/markup/stamp-annotation";
 import { TextAnnotation } from "../entities/annotations/markup/text-annotation";
 import { ObjectId } from "../entities/common/object-id";
+import { EncryptionDict } from "../entities/encryption/encryption-dict";
 import { ObjectStream } from "../entities/streams/object-stream";
 import { CatalogDict } from "../entities/structure/catalog-dict";
 import { PageDict } from "../entities/structure/page-dict";
@@ -27,6 +28,8 @@ export class DocumentData {
 
   private readonly _xrefs: XRef[];
   private readonly _referenceData: ReferenceData;
+
+  private _encryption: EncryptionDict;
 
   private _catalog: CatalogDict;
   private _pageRoot: PageTreeDict;
@@ -57,14 +60,18 @@ export class DocumentData {
     this._xrefs = xrefs;
     this._referenceData = new ReferenceData(xrefs);
     // DEBUG
-    // console.log(this._xrefs);    
-    // console.log(this._referenceData);   
+    console.log(this._xrefs);    
+    console.log(this._referenceData);   
+
+    this.parseEncryption();
+    // DEBUG
+    console.log(this._encryption);  
     
     this.parsePageTree(); 
     // DEBUG
-    // console.log(this._catalog);    
-    // console.log(this._pageRoot); 
-    // console.log(this._pages);  
+    console.log(this._catalog);    
+    console.log(this._pageRoot); 
+    console.log(this._pages);  
   }    
 
   private static parseXref(parser: DataParser, start: number, max: number): XRef {
@@ -213,6 +220,20 @@ export class DocumentData {
     return annotationMap;
   }
 
+  private parseEncryption() {    
+    const encryptionId = this._xrefs[0].encrypt;
+    if (!encryptionId) {
+      return;
+    }
+
+    const encryptionParseInfo = this.getObjectParseInfo(encryptionId.id);
+    const encryption = EncryptionDict.parse(encryptionParseInfo);
+    if (!encryption) {
+      throw new Error("Encryption dict can't be parsed");
+    }
+    this._encryption = encryption.value;
+  }
+
   private parsePageTree() {  
     const catalogId = this._xrefs[0].root;
     const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
@@ -221,6 +242,7 @@ export class DocumentData {
       throw new Error("Document root catalog not found");
     }
     this._catalog = catalog.value;
+
     const pageRootId = catalog.value.Pages;
     const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
     const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
