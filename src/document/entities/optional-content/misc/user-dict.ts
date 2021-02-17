@@ -1,4 +1,5 @@
 import { UserTypes } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { PdfDict } from "../../core/pdf-dict";
 
 export class UserDict extends PdfDict {
@@ -11,7 +12,7 @@ export class UserDict extends PdfDict {
     super(type);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

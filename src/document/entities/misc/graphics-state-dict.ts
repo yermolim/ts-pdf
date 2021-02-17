@@ -1,5 +1,6 @@
 import { BlendMode, blendModes, dictTypes, LineCapStyle, lineCapStyles, 
   LineJoinStyle, lineJoinStyles, RenderingIntent, renderingIntents, valueTypes } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
@@ -116,7 +117,7 @@ export class GraphicsStateDict extends PdfDict {
       : null;
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

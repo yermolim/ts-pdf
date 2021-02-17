@@ -1,3 +1,4 @@
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { FlateParamsDict } from "./flate-params-dict";
 
@@ -24,7 +25,7 @@ export class LzwParamsDict extends FlateParamsDict {
       ? {value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }  
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

@@ -1,4 +1,5 @@
 import { flatePredictors, streamFilters, xRefTypes } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
@@ -120,7 +121,7 @@ export class XRefStream extends XRef {
     return entries;
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     return this._trailerStream.toArray();
   }
 }

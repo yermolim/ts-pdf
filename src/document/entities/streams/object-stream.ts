@@ -1,5 +1,6 @@
 import { codes } from "../../codes";
 import { ObjectType, objectTypes, streamTypes } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
@@ -134,7 +135,7 @@ export class ObjectStream extends PdfStream {
     };
   }
 
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

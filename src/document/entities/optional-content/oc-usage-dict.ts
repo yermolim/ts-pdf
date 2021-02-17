@@ -1,3 +1,4 @@
+import { DataCryptor } from "../../crypto";
 import { PdfDict } from "../core/pdf-dict";
 import { CreatoInfoDict } from "./misc/creator-info-dict";
 import { ExportDict } from "./misc/export-dict";
@@ -55,7 +56,7 @@ export class OcUsageDict extends PdfDict {
     super(null);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

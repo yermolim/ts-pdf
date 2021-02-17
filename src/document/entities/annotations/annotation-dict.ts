@@ -11,6 +11,7 @@ import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { LiteralString } from "../common/literal-string";
 import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
+import { DataCryptor } from "../../crypto";
 
 export abstract class AnnotationDict extends PdfDict {
   /** (Required) The type of annotation that this dictionary describes */
@@ -79,7 +80,7 @@ export abstract class AnnotationDict extends PdfDict {
     this.Subtype = subType;
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

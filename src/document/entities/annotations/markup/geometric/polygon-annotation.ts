@@ -1,4 +1,5 @@
 import { annotationTypes } from "../../../../const";
+import { DataCryptor } from "../../../../crypto";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { PolyAnnotation } from "./poly-annotation";
 
@@ -17,7 +18,7 @@ export class PolygonAnnotation extends PolyAnnotation {
       : null;
   }  
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     return superBytes;
   }

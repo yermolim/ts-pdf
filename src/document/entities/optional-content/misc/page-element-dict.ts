@@ -1,3 +1,4 @@
+import { DataCryptor } from "../../../crypto";
 import { PdfDict } from "../../core/pdf-dict";
 import { PageElementType } from "../oc-const";
 export class PageElementDict extends PdfDict {
@@ -8,7 +9,7 @@ export class PageElementDict extends PdfDict {
     super(null);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

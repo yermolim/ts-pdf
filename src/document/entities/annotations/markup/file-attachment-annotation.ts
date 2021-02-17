@@ -1,4 +1,5 @@
 import { annotationTypes } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { PdfDict } from "../../core/pdf-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
@@ -22,7 +23,7 @@ export class FileAttachmentAnnotation extends MarkupAnnotation {
     super(annotationTypes.FILE_ATTACHMENT);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

@@ -1,4 +1,5 @@
 import { annotationTypes } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { AnnotationDict } from "../annotation-dict";
 
 export class ThreeDAnnotation extends AnnotationDict {
@@ -8,7 +9,7 @@ export class ThreeDAnnotation extends AnnotationDict {
     super(annotationTypes.THREED);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

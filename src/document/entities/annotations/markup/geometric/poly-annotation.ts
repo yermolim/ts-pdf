@@ -1,5 +1,6 @@
 import { codes } from "../../../../codes";
 import { AnnotationType, valueTypes } from "../../../../const";
+import { DataCryptor } from "../../../../crypto";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { ObjectId } from "../../../common/object-id";
 import { MeasureDict } from "../../../misc/measure-dict";
@@ -33,7 +34,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
     super(type);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

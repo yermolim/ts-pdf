@@ -1,5 +1,6 @@
 import { codes } from "../../../../codes";
 import { LineEndingType, lineEndingTypes, annotationTypes, Rect, valueTypes, Pair } from "../../../../const";
+import { DataCryptor } from "../../../../crypto";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { ObjectId } from "../../../common/object-id";
 import { MeasureDict } from "../../../misc/measure-dict";
@@ -98,7 +99,7 @@ export class LineAnnotation extends GeometricAnnotation {
       : null;
   }  
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

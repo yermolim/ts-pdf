@@ -2022,7 +2022,7 @@ class PdfDict extends PdfObject {
     get streamId() {
         return this._streamId;
     }
-    toArray() {
+    toArray(cryptor) {
         const encoder = new TextEncoder();
         const bytes = [...keywordCodes.DICT_START];
         if (this.Type) {
@@ -2090,7 +2090,7 @@ class FlateParamsDict extends PdfDict {
             ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -2913,7 +2913,7 @@ class PdfStream extends PdfObject {
         }
         return decodedData;
     }
-    toArray() {
+    toArray(cryptor) {
         const encoder = new TextEncoder();
         const bytes = [...keywordCodes.DICT_START];
         if (this.Type) {
@@ -3078,7 +3078,7 @@ class TextStream extends PdfStream {
     getText() {
         return null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         return superBytes;
     }
@@ -3112,7 +3112,7 @@ class BorderStyleDict extends PdfDict {
             ? { value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3214,7 +3214,7 @@ class ObjectMapDict extends PdfDict {
     getProp(name) {
         return this._objectIdMap.get(name);
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3281,7 +3281,7 @@ class AppearanceDict extends PdfDict {
             ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3447,7 +3447,7 @@ class BorderEffectDict extends PdfDict {
             ? { value: borderEffect, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3581,7 +3581,7 @@ class BorderArray {
         }
         return null;
     }
-    toArray() {
+    toArray(cryptor) {
         const source = this.dash && this.gap
             ? `[${this.hCornerR} ${this.vCornerR} ${this.width}]`
             : `[${this.hCornerR} ${this.vCornerR} ${this.width} [${this.dash} ${this.gap}]]`;
@@ -3596,7 +3596,7 @@ class AnnotationDict extends PdfDict {
         this.Border = new BorderArray(0, 0, 1);
         this.Subtype = subType;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3910,7 +3910,7 @@ class MarkupAnnotation extends AnnotationDict {
         super(subType);
         this.RT = markupAnnotationReplyTypes.REPLY;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4116,7 +4116,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4272,7 +4272,7 @@ class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4342,7 +4342,7 @@ class CircleAnnotation extends GeometricAnnotation {
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4416,7 +4416,7 @@ class MeasureDict extends PdfDict {
             ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4501,7 +4501,7 @@ class LineAnnotation extends GeometricAnnotation {
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4722,7 +4722,7 @@ class SquareAnnotation extends GeometricAnnotation {
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4795,7 +4795,7 @@ class InkAnnotation extends MarkupAnnotation {
             ? { value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4898,7 +4898,7 @@ class StampAnnotation extends MarkupAnnotation {
             ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4970,7 +4970,7 @@ class TextAnnotation extends MarkupAnnotation {
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -5150,7 +5150,7 @@ class CryptFilterDict extends PdfDict {
             ? { value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -5298,7 +5298,7 @@ class CryptMapDict extends PdfDict {
     getProp(name) {
         return this._filtersMap.get(name);
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -5373,7 +5373,7 @@ class EncryptionDict extends PdfDict {
             ? { value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6421,7 +6421,7 @@ class ObjectStream extends PdfStream {
             streamId: this._id,
         };
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6518,7 +6518,7 @@ class CatalogDict extends PdfDict {
             ? { value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6616,7 +6616,7 @@ class PageDict extends PdfDict {
             ? { value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6761,7 +6761,7 @@ class PageTreeDict extends PdfDict {
             ? { value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6891,7 +6891,7 @@ class TrailerStream extends PdfStream {
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -7421,7 +7421,7 @@ class XRefStream extends XRef {
         const entries = XRefEntry.fromStreamBytes(this._trailerStream.decodedStreamData, this._trailerStream.W, this._trailerStream.Index);
         return entries;
     }
-    toArray() {
+    toArray(cryptor) {
         return this._trailerStream.toArray();
     }
 }
@@ -7437,7 +7437,7 @@ class TrailerDict extends PdfDict {
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray() {
+    toArray(cryptor) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -7653,7 +7653,7 @@ class XRefTable extends XRef {
         const entries = XRefEntry.fromTableBytes(this._table);
         return entries;
     }
-    toArray() {
+    toArray(cryptor) {
         const trailerBytes = this._trailerDict.toArray();
         const bytes = [
             ...keywordCodes.XREF_TABLE, ...keywordCodes.END_OF_LINE,

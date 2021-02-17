@@ -1,5 +1,6 @@
 import { codes } from "../../../../codes";
 import { annotationTypes, LineEndingType, lineEndingTypes } from "../../../../const";
+import { DataCryptor } from "../../../../crypto";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { PolyAnnotation } from "./poly-annotation";
 
@@ -26,7 +27,7 @@ export class PolylineAnnotation extends PolyAnnotation {
       : null;
   }  
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

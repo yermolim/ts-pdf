@@ -1,4 +1,5 @@
 import { annotationTypes } from "../../../../const";
+import { DataCryptor } from "../../../../crypto";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { TextMarkupAnnotation } from "./text-markup-annotation";
 
@@ -16,7 +17,7 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
       : null;
   }  
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     return superBytes;
   }

@@ -1,4 +1,5 @@
 import { annotationTypes, HighlightingMode, highlightingModes } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";
 import { AnnotationDict } from "../annotation-dict";
@@ -35,7 +36,7 @@ export class LinkAnnotation extends AnnotationDict {
     super(annotationTypes.LINK);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

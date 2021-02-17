@@ -1,3 +1,4 @@
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 
@@ -27,7 +28,7 @@ export class BorderEffectDict extends PdfDict {
       : null;
   }
     
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

@@ -1,4 +1,5 @@
 import { dictTypes } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { PdfDict } from "../core/pdf-dict";
 import { OcIntent } from "./oc-const";
 import { OcUsageDict } from "./oc-usage-dict";
@@ -27,7 +28,7 @@ export class OcGroupDict extends PdfDict {
     super(dictTypes.OPTIONAL_CONTENT_GROUP);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

@@ -1,4 +1,5 @@
 import { StreamType } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfStream } from "../core/pdf-stream";
 
@@ -22,7 +23,7 @@ export class TextStream extends PdfStream {
     return null;
   }
 
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();
     return superBytes;
   }

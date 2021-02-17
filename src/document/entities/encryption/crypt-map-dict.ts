@@ -1,4 +1,5 @@
 import { valueTypes } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { CryptFilterDict } from "./crypt-filter-dict";
@@ -23,7 +24,7 @@ export class CryptMapDict extends PdfDict {
     return this._filtersMap.get(name);
   }
 
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

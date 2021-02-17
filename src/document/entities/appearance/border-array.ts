@@ -1,4 +1,5 @@
 import { codes } from "../../codes";
+import { DataCryptor } from "../../crypto";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class BorderArray {
@@ -86,7 +87,7 @@ export class BorderArray {
     return null;
   }
 
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const source = this.dash && this.gap 
       ? `[${this.hCornerR} ${this.vCornerR} ${this.width}]`
       : `[${this.hCornerR} ${this.vCornerR} ${this.width} [${this.dash} ${this.gap}]]`;

@@ -1,7 +1,7 @@
 import { codes } from "../../codes";
 import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, 
   dictTypes, valueTypes } from "../../const";
-import { CryptOptions } from "../../crypto";
+import { CryptOptions, DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
@@ -167,7 +167,7 @@ export class EncryptionDict extends PdfDict {
       : null;
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

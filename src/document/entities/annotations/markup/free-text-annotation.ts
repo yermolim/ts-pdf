@@ -2,6 +2,7 @@ import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
   LineEndingType, lineEndingTypes, Rect } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { LiteralString } from "../../common/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";
@@ -69,7 +70,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       : null;
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

@@ -1,5 +1,6 @@
 import { codes } from "../../../codes";
 import { AnnotationType, valueTypes } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { DateString } from "../../common/date-string";
 import { LiteralString } from "../../common/literal-string";
@@ -84,7 +85,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     super(subType);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

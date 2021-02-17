@@ -1,4 +1,5 @@
 import { annotationTypes } from "../../../const";
+import { DataCryptor } from "../../../crypto";
 import { AnnotationDict } from "../annotation-dict";
 
 export class RichMediaAnnotation extends AnnotationDict {
@@ -8,7 +9,7 @@ export class RichMediaAnnotation extends AnnotationDict {
     super(annotationTypes.RICH_MEDIA);
   }
   
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

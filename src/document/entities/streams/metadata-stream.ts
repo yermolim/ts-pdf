@@ -1,4 +1,5 @@
 import { streamTypes } from "../../const";
+import { DataCryptor } from "../../crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { TextStream } from "./text-stream";
 
@@ -21,7 +22,7 @@ export class MetadataStream extends TextStream {
       : null;
   }
 
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

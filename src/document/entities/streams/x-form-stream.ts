@@ -8,6 +8,7 @@ import { DateString } from "../common/date-string";
 import { ResourceDict } from "../misc/resource-dict";
 import { codes } from "../../codes";
 import { MeasureDict } from "../misc/measure-dict";
+import { DataCryptor } from "../../crypto";
 
 export class XFormStream extends PdfStream {
   /**
@@ -86,7 +87,7 @@ export class XFormStream extends PdfStream {
       : null;
   }
 
-  toArray(): Uint8Array {
+  toArray(cryptor?: DataCryptor): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
