@@ -11,8 +11,8 @@ export default [
   {
     input: "tsc/src/ts-pdf-viewer.js",
     output: [
-      { file: "dist/ts-pdf-viewer.esm.js", format: "es" },
-      { file: "dist/ts-pdf-viewer.esm.min.js", format: "es", plugins: [terser()] },
+      { file: "dist/ts-pdf-viewer.esm.js", format: "esm" },
+      { file: "dist/ts-pdf-viewer.esm.min.js", format: "esm", plugins: [terser()] },
     ],
     plugins: [
       license({
@@ -69,7 +69,7 @@ export default [
   {
     input: "tsc/src/demo.js",
     output: [
-      { file: "demo/demo.js", format: "es" },
+      { file: "demo/demo.js", format: "esm" },
     ],
     plugins: [
       // license({

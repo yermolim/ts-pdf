@@ -1,5 +1,7 @@
 import { codes } from "../../common/codes";
-import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, dictTypes, valueTypes } from "../../common/const";
+import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, 
+  dictTypes, valueTypes } from "../../common/const";
+import { CryptOptions } from "../../common/crypto";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
@@ -103,19 +105,19 @@ export class EncryptionDict extends PdfDict {
    * */
   O: LiteralString;
   /** 
-   * (Required if R is 5) A 32-byte string (127-byte string if V = 5), 
+   * (Required if /Filter/Standard) A 32-byte string (127-byte string if V = 5), 
    * based on the user password,that shall be used in determining whether 
    * to prompt the user for a password and,if so,
    * whether a valid user or owner password was entered
    * */
   U: LiteralString;
   /** 
-   * (Required if R is 5) A 32-byte string based on the user password, 
+   * (Required if R is 5 or 6) A 32-byte string based on the user password, 
    * that is used in computing the encryption key
    * */
   OE: LiteralString;
   /** 
-   * (Required if R is 5) A 32-byte string based on the owner and the user password, 
+   * (Required if R is 5 or 6) A 32-byte string based on the owner and the user password, 
    * that is used in computing the encryption key
    * */
   UE: LiteralString;
@@ -236,6 +238,34 @@ export class EncryptionDict extends PdfDict {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+
+  toCryptOptions(): CryptOptions {
+    if (!this.V) {
+      return null;
+    }
+
+    return <CryptOptions> {
+      filter: this.Filter,
+      version: this.V,
+      revision: this.R,
+      permissions: this.P,
+      keyLength: this.Length,
+      encryptMetadata: this.EncryptMetadata,
+    
+      stringKeyLength: this.stringFilter?.Length,
+      streamKeyLength: this.streamFilter?.Length,
+    
+      stringMethod: this.stringFilter?.CFM,
+      streamMethod: this.streamFilter?.CFM,
+      
+      oPasswordHash: this.O?.bytes,
+      uPasswordHash: this.U?.bytes,
+      
+      oEncPasswordHash: this.OE?.bytes,
+      uEncPasswordHash: this.UE?.bytes,
+      perms: this.Perms?.bytes,
+    };
   }
 
   /**

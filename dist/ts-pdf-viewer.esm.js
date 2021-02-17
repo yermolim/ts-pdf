@@ -40,6 +40,7 @@
 
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import Pako from 'pako';
+import Crypto from 'crypto-es';
 
 var img = "data:image/png;base64,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";
 
@@ -444,17 +445,81 @@ function int8ToBytes(int) {
     view.setInt8(0, int);
     return new Uint8Array(buffer);
 }
-function int16ToBytes(int) {
+function int16ToBytes(int, le = false) {
     const buffer = new ArrayBuffer(2);
     const view = new DataView(buffer);
-    view.setInt16(0, int, false);
+    view.setInt16(0, int, le);
     return new Uint8Array(buffer);
 }
-function int32ToBytes(int) {
+function int32ToBytes(int, le = false) {
     const buffer = new ArrayBuffer(4);
     const view = new DataView(buffer);
-    view.setInt32(0, int, false);
+    view.setInt32(0, int, le);
     return new Uint8Array(buffer);
+}
+function int32ArrayToBytes(intArr, le = false) {
+    const buffer = new ArrayBuffer(intArr.length * 4);
+    const view = new DataView(buffer);
+    for (let i = 0; i < intArr.length; i++) {
+        view.setInt32(i * 4, intArr[i], le);
+    }
+    return new Uint8Array(buffer);
+}
+function bytesToInt32Array(bytes, le = false) {
+    if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
+        return null;
+    }
+    const buffer = new ArrayBuffer(Math.ceil(bytes.length / 4) * 4);
+    const view = new DataView(buffer);
+    for (let i = 0; i < bytes.length; i++) {
+        view.setUint8(i, bytes[i]);
+    }
+    const result = new Int32Array(buffer.byteLength / 4);
+    for (let j = 0; j < result.length; j++) {
+        result[j] = view.getInt32(j * 4, le);
+    }
+    return result;
+}
+function xorBytes(bytes, n) {
+    const result = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) {
+        result[i] = bytes[i] ^ n;
+    }
+    return result;
+}
+function arraysEqual(a, b) {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+function findSubarrayIndex(arr, sub) {
+    if ((arr === null || arr === void 0 ? void 0 : arr.length) && (sub === null || sub === void 0 ? void 0 : sub.length)) {
+        let j;
+        outer_loop: for (let i = 0; i <= arr.length; i++) {
+            let overlap = false;
+            for (j = 0; j < sub.length; j++) {
+                if (i + j < arr.length) {
+                    if (arr[i + j] !== sub[j]) {
+                        continue outer_loop;
+                    }
+                    overlap = true;
+                }
+                else if (overlap) {
+                    return i;
+                }
+                else {
+                    break outer_loop;
+                }
+            }
+        }
+    }
+    return -1;
 }
 class LinkedListNode {
     constructor(data) {
@@ -4630,20 +4695,28 @@ class HexString {
     static fromBytes(bytes) {
         bytes = bytes.subarray(1, bytes.length - 1);
         const literal = new TextDecoder().decode(bytes);
-        const hex = Array.from(bytes, (byte, i) => ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");
+        const hex = this.literalToHex(literal);
         return new HexString(literal, hex, bytes);
     }
-    static fromHexString(hex) {
-        const bytes = new TextEncoder().encode(hex);
-        const literal = new TextDecoder().decode(bytes);
+    static fromHexBytes(hex) {
+        let literal = "";
+        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
+        const bytes = new TextEncoder().encode(literal);
         return new HexString(literal, hex, bytes);
     }
     static fromLiteralString(literal) {
-        const hex = Array.from(literal, (char, i) => ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
-        const bytes = new TextEncoder().encode(hex);
+        const hex = this.literalToHex(literal);
+        const bytes = new TextEncoder().encode(literal);
         return new HexString(literal, hex, bytes);
     }
     ;
+    static literalToHex(literal) {
+        const hex = new Uint8Array(literal.length / 2);
+        for (let i = 0, j = 0; i < literal.length; i += 2, j++) {
+            hex[j] = parseInt(literal.substr(i, 2), 16);
+        }
+        return hex;
+    }
     toArray(bracketed = true) {
         return bracketed
             ? new Uint8Array([...keywordCodes.STR_HEX_START,
@@ -4961,6 +5034,29 @@ class EncryptionDict extends PdfDict {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    toCryptOptions() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        if (!this.V) {
+            return null;
+        }
+        return {
+            filter: this.Filter,
+            version: this.V,
+            revision: this.R,
+            permissions: this.P,
+            keyLength: this.Length,
+            encryptMetadata: this.EncryptMetadata,
+            stringKeyLength: (_a = this.stringFilter) === null || _a === void 0 ? void 0 : _a.Length,
+            streamKeyLength: (_b = this.streamFilter) === null || _b === void 0 ? void 0 : _b.Length,
+            stringMethod: (_c = this.stringFilter) === null || _c === void 0 ? void 0 : _c.CFM,
+            streamMethod: (_d = this.streamFilter) === null || _d === void 0 ? void 0 : _d.CFM,
+            oPasswordHash: (_e = this.O) === null || _e === void 0 ? void 0 : _e.bytes,
+            uPasswordHash: (_f = this.U) === null || _f === void 0 ? void 0 : _f.bytes,
+            oEncPasswordHash: (_g = this.OE) === null || _g === void 0 ? void 0 : _g.bytes,
+            uEncPasswordHash: (_h = this.UE) === null || _h === void 0 ? void 0 : _h.bytes,
+            perms: (_j = this.Perms) === null || _j === void 0 ? void 0 : _j.bytes,
+        };
     }
     tryParseProps(parseInfo) {
         var _a, _b;
@@ -5598,7 +5694,7 @@ class DataParser {
         let numberStr = "";
         let value = this._data[i];
         if (value === codes.MINUS) {
-            numberStr += value;
+            numberStr += "-";
             value = this._data[++i];
         }
         while (DIGIT_CHARS.has(value)
@@ -6761,7 +6857,7 @@ class XRefEntry {
                 w2ToBytesFunc = (n) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
                 break;
         }
-        const encoder = new TextEncoder();
+        new TextEncoder();
         const groups = this.groupEntries(entries);
         const index = [];
         let bytes = new Uint8Array();
@@ -7159,6 +7255,416 @@ class XRefTable extends XRef {
     }
 }
 
+const AES_INIT_VALUE = new Uint8Array([
+    0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
+    0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
+]);
+function toWordArray(data) {
+    return Crypto.lib.WordArray.create(Array.from(bytesToInt32Array(data)));
+}
+function md5(data) {
+    if (data instanceof Uint8Array) {
+        data = toWordArray(data);
+    }
+    const result = Crypto.MD5(data);
+    return result;
+}
+function rc4(data, key) {
+    if (data instanceof Uint8Array) {
+        data = toWordArray(data);
+    }
+    if (key instanceof Uint8Array) {
+        key = toWordArray(key);
+    }
+    const result = Crypto.RC4.encrypt(data, key).ciphertext;
+    return result;
+}
+function aes(data, key, iv) {
+    if (data instanceof Uint8Array) {
+        data = toWordArray(data);
+    }
+    if (key instanceof Uint8Array) {
+        key = toWordArray(key);
+    }
+    const ivWordArray = Crypto.lib.WordArray.create(bytesToInt32Array(iv));
+    const result = Crypto.AES.encrypt(data, key, {
+        mode: Crypto.mode.CBC,
+        iv: ivWordArray,
+        padding: Crypto.pad.Pkcs7,
+    }).ciphertext;
+    return result;
+}
+
+const AESV2_KEY_PADDING = [
+    0x73, 0x41, 0x6C, 0x54,
+];
+class AESV2DataCryptor {
+    constructor(key) {
+        if (!key) {
+            throw new Error("Empty key");
+        }
+        if (key.length !== 16) {
+            throw new Error(`Invalid key length: ${key.length} (shall be 16)`);
+        }
+        this._n = key.length;
+        this._key = key;
+        this._tempKey = new Uint8Array(key.length + 9);
+    }
+    encrypt(data, id, generation) {
+        return this.run(data, id, generation, AES_INIT_VALUE);
+    }
+    decrypt(data, id, generation) {
+        return this.run(data, id, generation);
+    }
+    run(data, id, generation, iv) {
+        const idBytes = int32ToBytes(id, true);
+        const genBytes = int32ToBytes(generation, true);
+        this._tempKey.set(this._key, 0);
+        this._tempKey.set(idBytes.subarray(0, 3), this._n);
+        this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
+        this._tempKey.set(AESV2_KEY_PADDING, this._n + 5);
+        const hash = int32ArrayToBytes(md5(this._tempKey).words);
+        const n = Math.max(this._n + 5, 16);
+        const key = hash.slice(0, n);
+        iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
+        const encrypted = int32ArrayToBytes(aes(data, key, iv).words);
+        return encrypted;
+    }
+}
+
+class AESV3DataCryptor {
+    constructor(key) {
+        if (!key) {
+            throw new Error("Empty key");
+        }
+        if (key.length !== 32) {
+            throw new Error(`Invalid key length: ${key.length} (shall be 16)`);
+        }
+        this._n = key.length;
+        this._key = key;
+    }
+    encrypt(data, id, generation) {
+        return this.run(data, id, generation, new Uint8Array(AES_INIT_VALUE));
+    }
+    decrypt(data, id, generation) {
+        return this.run(data, id, generation);
+    }
+    run(data, id, generation, iv) {
+        iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
+        const encrypted = int32ArrayToBytes(aes(data, this._key, iv).words);
+        return encrypted;
+    }
+}
+
+class IdentityDataCryptor {
+    constructor() {
+    }
+    encrypt(data, id, generation) {
+        return data;
+    }
+    decrypt(data, id, generation) {
+        return data;
+    }
+}
+
+class RC4DataCryptor {
+    constructor(key) {
+        if (!key) {
+            throw new Error("Empty key");
+        }
+        if (key.length < 5 || key.length > 16) {
+            throw new Error(`Invalid key length: ${key.length} (shall be a multiple in range from 40 to 128)`);
+        }
+        this._n = key.length;
+        this._key = key;
+        this._tempKey = new Uint8Array(key.length + 5);
+    }
+    encrypt(data, id, generation) {
+        const idBytes = int32ToBytes(id, true);
+        const genBytes = int32ToBytes(generation, true);
+        this._tempKey.set(this._key, 0);
+        this._tempKey.set(idBytes.subarray(0, 3), this._n);
+        this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
+        const hash = int32ArrayToBytes(md5(this._tempKey).words);
+        const n = Math.max(this._n + 5, 16);
+        const key = hash.slice(0, n);
+        const encrypted = int32ArrayToBytes(rc4(data, key).words);
+        return encrypted;
+    }
+    decrypt(data, id, generation) {
+        return this.encrypt(data, id, generation);
+    }
+}
+
+const PASSWORD_32_PADDING = [
+    0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
+    0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
+    0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80,
+    0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A,
+];
+class DataCryptHandler {
+    constructor(options, fileId) {
+        const { filter, version, revision, permissions, encryptMetadata, keyLength, stringKeyLength, streamKeyLength, stringMethod, streamMethod, oPasswordHash, uPasswordHash, oEncPasswordHash, uEncPasswordHash, perms } = options;
+        if (filter !== "/Standard") {
+            throw new Error(`Unsupported filter name: ${filter}`);
+        }
+        if (![1, 2, 4, 5].includes(version)) {
+            throw new Error(`Unsupported algorithm version: ${version}`);
+        }
+        if (![2, 3, 4, 5, 6].includes(revision)) {
+            throw new Error(`Unsupported algorithm revision: ${revision}`);
+        }
+        if (isNaN(permissions)) {
+            throw new Error("Permissions not provided");
+        }
+        if (!oPasswordHash || !uPasswordHash) {
+            throw new Error("Password hash not provided");
+        }
+        this._filter = filter;
+        this._version = version;
+        this._revision = revision;
+        this._permissions = permissions;
+        this._keyLength = keyLength;
+        this._encryptMetadata = encryptMetadata;
+        this._stringKeyLength = stringKeyLength;
+        this._streamKeyLength = streamKeyLength;
+        this._stringMethod = stringMethod;
+        this._streamMethod = streamMethod;
+        this._oPasswordHash = oPasswordHash;
+        this._uPasswordHash = uPasswordHash;
+        this._oEncPasswordHash = oEncPasswordHash;
+        this._uEncPasswordHash = uEncPasswordHash;
+        this._perms = perms;
+        this._fileId = fileId;
+    }
+    authenticate(password) {
+        const version = this._version;
+        const stringMethod = this._stringMethod;
+        const streamMethod = this._streamMethod;
+        let authorized;
+        const ownerAuthenticated = this.authOwnerPassword(password);
+        if (ownerAuthenticated) {
+            authorized = "owner";
+        }
+        else {
+            const userAuthenticated = this.authUserPassword(password);
+            authorized = userAuthenticated
+                ? "user"
+                : null;
+        }
+        if (!authorized) {
+            return null;
+        }
+        const key = this._lastEncryptionKey;
+        switch (version) {
+            case 1:
+                const rc4_40 = new RC4DataCryptor(key);
+                return {
+                    authLevel: authorized,
+                    stringCryptor: rc4_40,
+                    streamCryptor: rc4_40,
+                };
+            case 2:
+                const rc4_128 = new RC4DataCryptor(key);
+                return {
+                    authLevel: authorized,
+                    stringCryptor: rc4_128,
+                    streamCryptor: rc4_128,
+                };
+            case 4:
+                let v4stringCryptor;
+                if (!stringMethod || stringMethod === cryptMethods.NONE) {
+                    v4stringCryptor = new IdentityDataCryptor();
+                }
+                else if (stringMethod === cryptMethods.RC4) {
+                    v4stringCryptor = new RC4DataCryptor(key);
+                }
+                else if (stringMethod === cryptMethods.AES_128) {
+                    v4stringCryptor = new AESV2DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${stringMethod}`);
+                }
+                let v4streamCryptor;
+                if (!streamMethod || streamMethod === cryptMethods.NONE) {
+                    v4streamCryptor = new IdentityDataCryptor();
+                }
+                else if (streamMethod === cryptMethods.RC4) {
+                    v4streamCryptor = new RC4DataCryptor(key);
+                }
+                else if (streamMethod === cryptMethods.AES_128) {
+                    v4streamCryptor = new AESV2DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${streamMethod}`);
+                }
+                return {
+                    authLevel: authorized,
+                    stringCryptor: v4stringCryptor,
+                    streamCryptor: v4streamCryptor,
+                };
+            case 5:
+                let v5stringCryptor;
+                if (!stringMethod || stringMethod === cryptMethods.NONE) {
+                    v4stringCryptor = new IdentityDataCryptor();
+                }
+                else if (stringMethod === cryptMethods.AES_256) {
+                    v4stringCryptor = new AESV3DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${stringMethod}`);
+                }
+                let v5streamCryptor;
+                if (!streamMethod || streamMethod === cryptMethods.NONE) {
+                    v4streamCryptor = new IdentityDataCryptor();
+                }
+                else if (streamMethod === cryptMethods.AES_256) {
+                    v4streamCryptor = new AESV3DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${streamMethod}`);
+                }
+                return {
+                    authLevel: authorized,
+                    stringCryptor: v5stringCryptor,
+                    streamCryptor: v5streamCryptor,
+                };
+        }
+    }
+    padPassword32(password) {
+        if (!password) {
+            return new Uint8Array(PASSWORD_32_PADDING);
+        }
+        const bytes = new TextEncoder().encode(password);
+        const padded = new Uint8Array(32);
+        padded.set(bytes.slice(0, 32));
+        if (bytes.length < 32) {
+            padded.set(PASSWORD_32_PADDING.slice(0, 32 - bytes.length), bytes.length);
+        }
+        return padded;
+    }
+    computeEncryptionKey(password) {
+        if ([2, 3, 4].includes(this._revision)) {
+            const paddedPassword = this.padPassword32(password);
+            const permissionsLe = int32ToBytes(this._permissions, true);
+            const metadata = this._revision >= 4 && !this._encryptMetadata
+                ? new Uint8Array([255, 255, 255, 255])
+                : new Uint8Array(0);
+            const dataToHash = new Uint8Array([
+                ...paddedPassword,
+                ...this._oPasswordHash,
+                ...permissionsLe,
+                ...this._fileId,
+                ...metadata,
+            ]);
+            let hash = int32ArrayToBytes(md5(dataToHash).words);
+            const keyLength = this._keyLength >> 3;
+            if (this._revision >= 3) {
+                for (let i = 0; i < 50; i++) {
+                    hash = int32ArrayToBytes(md5(hash.slice(0, keyLength)).words);
+                }
+            }
+            const encryptionKey = hash.slice(0, keyLength);
+            this._lastEncryptionKey = encryptionKey;
+            return encryptionKey;
+        }
+        else if (this._revision === 5) {
+            throw new Error("Not implemented yet");
+        }
+        else if (this._revision === 6) {
+            throw new Error("Not implemented yet");
+        }
+    }
+    computeOHashEncryptionKey_R2R3R4(password) {
+        const paddedPassword = this.padPassword32(password);
+        let hash = md5(paddedPassword);
+        if (this._revision >= 3) {
+            for (let i = 0; i < 50; i++) {
+                hash = md5(hash);
+            }
+        }
+        const hashArray = int32ArrayToBytes(hash.words);
+        const keyLength = this._keyLength >> 3;
+        return hashArray.slice(0, keyLength);
+    }
+    computeOHash_R2R3R4(oPassword, uPassword) {
+        const key = this.computeOHashEncryptionKey_R2R3R4(oPassword || uPassword);
+        const paddedUPassword = this.padPassword32(uPassword);
+        let hash = rc4(paddedUPassword, key);
+        if (this._revision >= 3) {
+            for (let i = 1; i < 20; i++) {
+                hash = rc4(hash, xorBytes(key, i));
+            }
+        }
+        return int32ArrayToBytes(hash.words);
+    }
+    computeUHash_R2(password) {
+        const key = this.computeEncryptionKey(password);
+        const padding = new Uint8Array(PASSWORD_32_PADDING);
+        const u = int32ArrayToBytes(rc4(padding, key).words);
+        return u;
+    }
+    computeUHash_R3R4(password) {
+        const key = this.computeEncryptionKey(password);
+        const dataToHash = new Uint8Array([
+            ...PASSWORD_32_PADDING,
+            ...this._fileId,
+        ]);
+        let hash = md5(dataToHash);
+        hash = rc4(hash, key);
+        for (let i = 1; i < 20; i++) {
+            hash = rc4(hash, xorBytes(key, i));
+        }
+        return int32ArrayToBytes(hash.words);
+    }
+    authOwnerPassword(password) {
+        if ([2, 3, 4].includes(this._revision)) {
+            const ownerEncryptionKey = this.computeOHashEncryptionKey_R2R3R4(password);
+            let userPasswordPadded;
+            if (this._revision === 2) {
+                userPasswordPadded = int32ArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey).words);
+            }
+            else {
+                let hash = toWordArray(this._oPasswordHash);
+                for (let i = 19; i >= 0; i--) {
+                    hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
+                }
+                userPasswordPadded = int32ArrayToBytes(hash.words);
+            }
+            const j = findSubarrayIndex(userPasswordPadded, new Uint8Array(PASSWORD_32_PADDING));
+            const userPassword = new TextDecoder().decode(j === -1
+                ? userPasswordPadded
+                : userPasswordPadded.subarray(0, j));
+            return this.authUserPassword(userPassword);
+        }
+        else if (this._revision === 5) {
+            throw new Error("Not implemented yet");
+        }
+        else if (this._revision === 6) {
+            throw new Error("Not implemented yet");
+        }
+    }
+    authUserPassword(password) {
+        let u;
+        if (this._revision === 2) {
+            u = this.computeUHash_R2(password);
+            console.log(u);
+            console.log(this._uPasswordHash);
+            return arraysEqual(this._uPasswordHash, u);
+        }
+        else if (this._revision === 3 || this._revision === 4) {
+            u = this.computeUHash_R3R4(password);
+            return arraysEqual(this._uPasswordHash.subarray(0, 16), u);
+        }
+        else if (this._revision === 5) {
+            throw new Error("Not implemented yet");
+        }
+        else if (this._revision === 6) {
+            throw new Error("Not implemented yet");
+        }
+    }
+}
+
 class DataWriter {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -7499,6 +8005,13 @@ class DocumentData {
         console.log(this._referenceData);
         this.parseEncryption();
         console.log(this._encryption);
+        if (this._encryption) {
+            const cryptOptions = this._encryption.toCryptOptions();
+            const fileId = this._xrefs[0].id[0].hex;
+            const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
+            const authResult = cryptorSource.authenticate("ownerpassword");
+            console.log(authResult);
+        }
         this.parsePageTree();
         console.log(this._catalog);
         console.log(this._pageRoot);

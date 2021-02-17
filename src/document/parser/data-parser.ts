@@ -569,7 +569,7 @@ export class DataParser {
     let numberStr = "";
     let value = this._data[i];
     if (value === codes.MINUS) {
-      numberStr += value;
+      numberStr += "-";
       value = this._data[++i];
     }
     while (DIGIT_CHARS.has(value)

@@ -4,7 +4,7 @@ import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class HexString {
   private constructor(readonly literal: string, 
-    readonly hex: string,
+    readonly hex: Uint8Array,
     readonly bytes: Uint8Array) { }
     
   static parse(parser: DataParser, start: number, 
@@ -43,25 +43,32 @@ export class HexString {
 
   static fromBytes(bytes: Uint8Array): HexString {  
     bytes = bytes.subarray(1, bytes.length - 1); 
-    const literal = new TextDecoder().decode(bytes);   
-    const hex = Array.from(bytes, (byte, i) => 
-      ("0" + literal.charCodeAt(i).toString(16)).slice(-2)).join("");  
+    const literal = new TextDecoder().decode(bytes);  
+    const hex = this.literalToHex(literal);
     return new HexString(literal, hex, bytes);
   }
 
-  static fromHexString(hex: string): HexString {
-    const bytes = new TextEncoder().encode(hex);
-    const literal = new TextDecoder().decode(bytes); 
+  static fromHexBytes(hex: Uint8Array): HexString {
+    let literal = "";
+    hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
+    const bytes = new TextEncoder().encode(literal);
     return new HexString(literal, hex, bytes);
   }
 
   static fromLiteralString(literal: string): HexString {
-    const hex = Array.from(literal, (char, i) => 
-      ("000" + literal.charCodeAt(i).toString(16)).slice(-4)).join("");
-    const bytes = new TextEncoder().encode(hex);
+    const hex = this.literalToHex(literal);
+    const bytes = new TextEncoder().encode(literal);
     return new HexString(literal, hex, bytes);
   };
 
+  private static literalToHex(literal: string): Uint8Array {    
+    const hex = new Uint8Array(literal.length / 2);
+    for (let i = 0, j = 0; i < literal.length; i += 2, j++) {
+      hex[j] = parseInt(literal.substr(i, 2), 16);
+    } 
+    return hex;
+  }
+ 
   toArray(bracketed = true): Uint8Array {
     return bracketed
       ? new Uint8Array([...keywordCodes.STR_HEX_START, 

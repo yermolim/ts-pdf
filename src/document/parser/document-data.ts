@@ -17,6 +17,7 @@ import { PageTreeDict } from "../entities/structure/page-tree-dict";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
+import { DataCryptHandler } from "../common/cryptors/data-crypt-handler";
 import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { DataWriter } from "./data-writer";
 import { ReferenceData, ReferenceDataChange } from "./reference-data";
@@ -66,6 +67,14 @@ export class DocumentData {
     this.parseEncryption();
     // DEBUG
     console.log(this._encryption);  
+    if (this._encryption) {
+      // doc is encrypted
+      const cryptOptions = this._encryption.toCryptOptions();
+      const fileId = this._xrefs[0].id[0].hex;
+      const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
+      const authResult = cryptorSource.authenticate("ownerpassword");
+      console.log(authResult);
+    }
     
     this.parsePageTree(); 
     // DEBUG
