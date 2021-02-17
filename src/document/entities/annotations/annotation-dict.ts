@@ -100,7 +100,7 @@ export abstract class AnnotationDict extends PdfDict {
       bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toRefArray());
+      bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray());
     }
     if (this.NM) {
       bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());

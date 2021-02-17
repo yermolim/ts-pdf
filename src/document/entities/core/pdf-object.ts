@@ -1,4 +1,6 @@
-export abstract class PdfObject {
+import { Encodable } from "../../../common/utils";
+
+export abstract class PdfObject implements Encodable {
   protected _id: number;
   get id(): number {
     return this._id;

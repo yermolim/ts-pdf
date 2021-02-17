@@ -52,11 +52,11 @@ export class PageTreeDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
     }
     if (this.Kids) {
       bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
-      this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+      this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
       bytes.push(codes.R_BRACKET);
     }
     if (this.Count) {

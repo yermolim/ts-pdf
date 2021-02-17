@@ -146,7 +146,7 @@ export class ObjectStream extends PdfStream {
       bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
     }
     if (this.Extends) {
-      bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toRefArray());
+      bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray());
     }
 
     const totalBytes: number[] = [

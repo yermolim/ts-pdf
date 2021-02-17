@@ -1582,11 +1582,10 @@ class ObjectId {
         return this.id === other.id
             && this.generation === other.generation;
     }
-    toObjArray() {
-        return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
-    }
-    toRefArray() {
-        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
+    toArray(ref = true) {
+        return ref
+            ? new TextEncoder().encode(`${this.id} ${this.generation} R`)
+            : new TextEncoder().encode(`${this.id} ${this.generation} obj`);
     }
     toString() {
         return this.id + "|" + this.generation;
@@ -2809,7 +2808,7 @@ class ObjectMapDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         this._objectIdMap.forEach((v, k) => {
-            bytes.push(...encoder.encode(k), ...v.toRefArray());
+            bytes.push(...encoder.encode(k), ...v.toArray());
         });
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -2881,7 +2880,7 @@ class AppearanceDict extends PdfDict {
                 bytes.push(...this.N.toArray());
             }
             else {
-                bytes.push(...this.N.toRefArray());
+                bytes.push(...this.N.toArray());
             }
         }
         if (this.R) {
@@ -2890,7 +2889,7 @@ class AppearanceDict extends PdfDict {
                 bytes.push(...this.R.toArray());
             }
             else {
-                bytes.push(...this.R.toRefArray());
+                bytes.push(...this.R.toArray());
             }
         }
         if (this.D) {
@@ -2899,7 +2898,7 @@ class AppearanceDict extends PdfDict {
                 bytes.push(...this.D.toArray());
             }
             else {
-                bytes.push(...this.D.toRefArray());
+                bytes.push(...this.D.toArray());
             }
         }
         const totalBytes = [
@@ -3200,7 +3199,7 @@ class AnnotationDict extends PdfDict {
             bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
         }
         if (this.P) {
-            bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toRefArray());
+            bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray());
         }
         if (this.NM) {
             bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
@@ -3508,7 +3507,7 @@ class MarkupAnnotation extends AnnotationDict {
             bytes.push(...encoder.encode("/T"), ...this.T.toArray());
         }
         if (this.Popup) {
-            bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toRefArray());
+            bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray());
         }
         if (this.RC) {
             bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
@@ -3523,7 +3522,7 @@ class MarkupAnnotation extends AnnotationDict {
             bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
         }
         if (this.IRT) {
-            bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toRefArray());
+            bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray());
         }
         if (this.RT) {
             bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
@@ -6022,7 +6021,7 @@ class ObjectStream extends PdfStream {
             bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
         }
         if (this.Extends) {
-            bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toRefArray());
+            bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray());
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -6116,7 +6115,7 @@ class CatalogDict extends PdfDict {
             bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
         }
         if (this.Pages) {
-            bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toRefArray());
+            bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray());
         }
         if (this.Lang) {
             bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());
@@ -6211,7 +6210,7 @@ class PageDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
+            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
         }
         if (this.LastModified) {
             bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
@@ -6224,11 +6223,11 @@ class PageDict extends PdfDict {
         }
         if (this.Annots) {
             if (this.Annots instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toRefArray());
+                bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toArray());
             }
             else {
                 bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
-                this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+                this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
                 bytes.push(codes.R_BRACKET);
             }
         }
@@ -6356,11 +6355,11 @@ class PageTreeDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
+            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
         }
         if (this.Kids) {
             bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
-            this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toRefArray()));
+            this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
             bytes.push(codes.R_BRACKET);
         }
         if (this.Count) {
@@ -6492,13 +6491,13 @@ class TrailerStream extends PdfStream {
             bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toRefArray());
+            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray());
         }
         if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
+            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray());
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toRefArray());
+            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray());
         }
         if (this.ID) {
             bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
@@ -7038,13 +7037,13 @@ class TrailerDict extends PdfDict {
             bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toRefArray());
+            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray());
         }
         if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
+            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray());
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toRefArray());
+            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray());
         }
         if (this.ID) {
             bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);

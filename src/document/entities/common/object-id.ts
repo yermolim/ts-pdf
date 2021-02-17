@@ -92,12 +92,10 @@ export class ObjectId implements Reference {
       && this.generation === other.generation;
   }
 
-  toObjArray(): Uint8Array {
-    return new TextEncoder().encode(`${this.id} ${this.generation} obj`);
-  }
-
-  toRefArray(): Uint8Array {
-    return new TextEncoder().encode(`${this.id} ${this.generation} R`);
+  toArray(ref = true): Uint8Array {
+    return ref
+      ? new TextEncoder().encode(`${this.id} ${this.generation} R`)
+      : new TextEncoder().encode(`${this.id} ${this.generation} obj`);
   }
 
   toString(): string {

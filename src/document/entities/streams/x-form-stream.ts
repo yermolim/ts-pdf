@@ -121,7 +121,7 @@ export class XFormStream extends PdfStream {
       bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray());
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toRefArray());
+      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray());
     }
     if (this.LastModified) {
       bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());

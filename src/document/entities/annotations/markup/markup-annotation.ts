@@ -93,7 +93,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       bytes.push(...encoder.encode("/T"), ...this.T.toArray());
     }
     if (this.Popup) {
-      bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toRefArray());
+      bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray());
     }
     if (this.RC) {
       bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
@@ -108,7 +108,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
     }
     if (this.IRT) {
-      bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toRefArray());
+      bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray());
     }
     if (this.RT) {
       bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));

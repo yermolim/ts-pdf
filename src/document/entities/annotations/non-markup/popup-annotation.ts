@@ -34,7 +34,7 @@ export class PopupAnnotation extends AnnotationDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toRefArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
     }
     if (this.Open) {
       bytes.push(...encoder.encode("/Open"), ...encoder.encode(" " + this.Open));

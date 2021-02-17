@@ -55,7 +55,7 @@ export class CatalogDict extends PdfDict {
       bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
     }
     if (this.Pages) {
-      bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toRefArray());
+      bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray());
     }
     if (this.Lang) {
       bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());

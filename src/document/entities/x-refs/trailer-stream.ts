@@ -85,10 +85,10 @@ export class TrailerStream extends PdfStream {
       bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
     }
     if (this.Root) {
-      bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toRefArray());
+      bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray());
     }
     if (this.Encrypt) {
-      bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
+      bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray());
       // if (this.Encrypt instanceof ObjectId) {
       //   bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
       // } else {
@@ -96,7 +96,7 @@ export class TrailerStream extends PdfStream {
       // }
     }
     if (this.Info) {
-      bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toRefArray());
+      bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray());
     }
     if (this.ID) {
       bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, 

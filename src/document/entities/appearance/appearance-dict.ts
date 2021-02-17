@@ -41,7 +41,7 @@ export class AppearanceDict extends PdfDict {
       if (this.N instanceof ObjectMapDict) {        
         bytes.push(...this.N.toArray());
       } else {               
-        bytes.push(...this.N.toRefArray());
+        bytes.push(...this.N.toArray());
       }
     }
     if (this.R) {
@@ -49,7 +49,7 @@ export class AppearanceDict extends PdfDict {
       if (this.R instanceof ObjectMapDict) {        
         bytes.push(...this.R.toArray());
       } else {               
-        bytes.push(...this.R.toRefArray());
+        bytes.push(...this.R.toArray());
       }
     }
     if (this.D) {
@@ -57,7 +57,7 @@ export class AppearanceDict extends PdfDict {
       if (this.D instanceof ObjectMapDict) {        
         bytes.push(...this.D.toArray());
       } else {               
-        bytes.push(...this.D.toRefArray());
+        bytes.push(...this.D.toArray());
       }
     }
 

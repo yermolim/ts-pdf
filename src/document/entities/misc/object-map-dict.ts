@@ -29,7 +29,7 @@ export class ObjectMapDict extends PdfDict {
     const bytes: number[] = [];  
 
     this._objectIdMap.forEach((v, k) => {
-      bytes.push(...encoder.encode(k), ...v.toRefArray());
+      bytes.push(...encoder.encode(k), ...v.toArray());
     });
 
     const totalBytes: number[] = [
