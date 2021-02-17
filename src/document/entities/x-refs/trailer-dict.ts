@@ -1,10 +1,10 @@
-import { dictTypes, valueTypes } from "../../common/const";
+import { dictTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../common/object-id";
 import { HexString } from "../common/hex-string";
 import { EncryptionDict } from "../encryption/encryption-dict";
-import { codes } from "../../common/codes";
+import { codes } from "../../codes";
 
 export class TrailerDict extends PdfDict {
   /**

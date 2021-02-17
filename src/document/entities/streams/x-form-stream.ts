@@ -1,12 +1,12 @@
 import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
-import { Matrix, Rect, streamTypes, valueTypes } from "../../common/const";
+import { Matrix, Rect, streamTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { DateString } from "../common/date-string";
 import { ResourceDict } from "../misc/resource-dict";
-import { codes } from "../../common/codes";
+import { codes } from "../../codes";
 import { MeasureDict } from "../misc/measure-dict";
 
 export class XFormStream extends PdfStream {

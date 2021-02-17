@@ -1,5 +1,5 @@
-import { keywordCodes } from "../../common/codes";
-import { dictTypes, flatePredictors, FlatePredictor } from "../../common/const";
+import { keywordCodes } from "../../codes";
+import { dictTypes, flatePredictors, FlatePredictor } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 

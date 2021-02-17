@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../../common/const";
+import { annotationTypes } from "../../../const";
 import { AnnotationDict } from "../annotation-dict";
 
 export class WatermarkAnnotation extends AnnotationDict {

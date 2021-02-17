@@ -1,7 +1,7 @@
 import { codes, keywordCodes, 
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
-  isRegularChar } from "../common/codes";
-import { ObjectType, ValueType, valueTypes } from "../common/const";
+  isRegularChar } from "../codes";
+import { ObjectType, ValueType, valueTypes } from "../const";
 
 export type SearchDirection = "straight" | "reverse";
 

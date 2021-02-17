@@ -1,5 +1,6 @@
-import { keywordCodes } from "../common/codes";
-import { annotationTypes, dictTypes } from "../common/const";
+import { keywordCodes } from "../codes";
+import { DataCryptHandler } from "../cryptors/data-crypt-handler";
+import { annotationTypes, dictTypes } from "../const";
 import { AnnotationDict } from "../entities/annotations/annotation-dict";
 import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-annotation";
 import { CircleAnnotation } from "../entities/annotations/markup/geometric/circle-annotation";
@@ -17,7 +18,6 @@ import { PageTreeDict } from "../entities/structure/page-tree-dict";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefStream } from "../entities/x-refs/x-ref-stream";
 import { XRefTable } from "../entities/x-refs/x-ref-table";
-import { DataCryptHandler } from "../common/cryptors/data-crypt-handler";
 import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { DataWriter } from "./data-writer";
 import { ReferenceData, ReferenceDataChange } from "./reference-data";

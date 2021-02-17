@@ -1,4 +1,4 @@
-import { codes, keywordCodes } from "../../common/codes";
+import { codes, keywordCodes } from "../../codes";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class DateString {

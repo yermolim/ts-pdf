@@ -1,4 +1,4 @@
-import { codes } from "../../common/codes";
+import { codes } from "../../codes";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "./object-map-dict";

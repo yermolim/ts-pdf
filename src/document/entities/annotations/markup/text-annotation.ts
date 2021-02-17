@@ -2,7 +2,7 @@ import { AnnotationIconType, annotationIconTypes,
   annotationMarkedStates, 
   annotationReviewStates, 
   AnnotationState, AnnotationStateModelType, 
-  annotationStateModelTypes, annotationTypes } from "../../../common/const";
+  annotationStateModelTypes, annotationTypes } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 

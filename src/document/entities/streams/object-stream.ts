@@ -1,5 +1,5 @@
-import { codes } from "../../common/codes";
-import { ObjectType, objectTypes, streamTypes } from "../../common/const";
+import { codes } from "../../codes";
+import { ObjectType, objectTypes, streamTypes } from "../../const";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";

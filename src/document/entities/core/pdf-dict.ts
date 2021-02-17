@@ -1,5 +1,5 @@
-import { keywordCodes } from "../../common/codes";
-import { DictType } from "../../common/const";
+import { keywordCodes } from "../../codes";
+import { DictType } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
 

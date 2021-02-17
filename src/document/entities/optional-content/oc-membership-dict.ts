@@ -2,7 +2,7 @@ import { PdfDict } from "../core/pdf-dict";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
-import { dictTypes } from "../../common/const";
+import { dictTypes } from "../../const";
 
 export class OcMembershipDict extends PdfDict {
   /**

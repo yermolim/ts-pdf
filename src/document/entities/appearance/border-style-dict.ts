@@ -1,5 +1,5 @@
-import { codes } from "../../common/codes";
-import { dictTypes, Pair } from "../../common/const";
+import { codes } from "../../codes";
+import { dictTypes, Pair } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 

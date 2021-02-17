@@ -1,5 +1,5 @@
-import { Reference } from "../../../common/utils";
-import { codes } from "../../common/codes";
+import { codes } from "../../codes";
+import { Reference } from "../../interfaces";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class ObjectId implements Reference {

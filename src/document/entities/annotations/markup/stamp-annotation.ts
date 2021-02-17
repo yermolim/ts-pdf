@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../../common/const";
+import { annotationTypes } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 

@@ -1,5 +1,5 @@
-import { codes } from "../../../../common/codes";
-import { annotationTypes, Rect } from "../../../../common/const";
+import { codes } from "../../../../codes";
+import { annotationTypes, Rect } from "../../../../const";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { GeometricAnnotation } from "./geometric-annotation";
 

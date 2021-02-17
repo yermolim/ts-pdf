@@ -1,5 +1,5 @@
-import { Encodable, Reference } from "../../common/utils";
-import { codes, keywordCodes } from "../common/codes";
+import { codes, keywordCodes } from "../codes";
+import { Encodable, Reference } from "../interfaces";
 
 export class DataWriter {
   private readonly _data: number[];  

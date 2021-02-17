@@ -1,5 +1,6 @@
-import { LinkedList, Reference } from "../../common/utils";
-import { maxGeneration, xRefEntryTypes } from "../common/const";
+import { LinkedList } from "../../common";
+import { maxGeneration, xRefEntryTypes } from "../const";
+import { Reference } from "../interfaces";
 import { XRef } from "../entities/x-refs/x-ref";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 

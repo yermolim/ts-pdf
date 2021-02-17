@@ -1,4 +1,4 @@
-import { int32ToBytes, int32ArrayToBytes } from "../../../common/utils";
+import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
 import { DataCryptor, md5, aes, AES_INIT_VALUE } from "../crypto";
 
 /**

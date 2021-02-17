@@ -1,4 +1,4 @@
-import { StreamType } from "../../common/const";
+import { StreamType } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfStream } from "../core/pdf-stream";
 

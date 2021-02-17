@@ -1,5 +1,5 @@
-import { codes } from "../../../../common/codes";
-import { AnnotationType } from "../../../../common/const";
+import { codes } from "../../../../codes";
+import { AnnotationType } from "../../../../const";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { MarkupAnnotation } from "../markup-annotation";
 

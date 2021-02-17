@@ -1,10 +1,10 @@
-import { dictTypes, streamTypes, valueTypes } from "../../common/const";
+import { dictTypes, streamTypes, valueTypes } from "../../const";
 import { HexString } from "../common/hex-string";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
-import { codes } from "../../common/codes";
+import { codes } from "../../codes";
 
 export class TrailerStream extends PdfStream {
   /**

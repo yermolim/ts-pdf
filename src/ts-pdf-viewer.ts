@@ -2,7 +2,7 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
 import { html, styles } from "./assets/index.html";
-import { clamp, getCenter, getDistance, Position } from "./common/utils";
+import { clamp, getCenter, getDistance, Position } from "./common";
 import { ViewPage } from "./view-page";
 import { AnnotationEditor } from "./document/annotation-editor";
 

@@ -1,4 +1,4 @@
-import { flatePredictors, streamFilters, xRefTypes } from "../../common/const";
+import { flatePredictors, streamFilters, xRefTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";

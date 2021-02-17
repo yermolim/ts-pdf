@@ -1,5 +1,5 @@
-import { codes } from "../../../../common/codes";
-import { LineEndingType, lineEndingTypes, annotationTypes, Rect, valueTypes, Pair } from "../../../../common/const";
+import { codes } from "../../../../codes";
+import { LineEndingType, lineEndingTypes, annotationTypes, Rect, valueTypes, Pair } from "../../../../const";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { ObjectId } from "../../../common/object-id";
 import { MeasureDict } from "../../../misc/measure-dict";

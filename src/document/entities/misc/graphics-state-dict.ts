@@ -1,5 +1,5 @@
 import { BlendMode, blendModes, dictTypes, LineCapStyle, lineCapStyles, 
-  LineJoinStyle, lineJoinStyles, RenderingIntent, renderingIntents, valueTypes } from "../../common/const";
+  LineJoinStyle, lineJoinStyles, RenderingIntent, renderingIntents, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";

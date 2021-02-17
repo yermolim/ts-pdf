@@ -1,5 +1,5 @@
-import { codes } from "../../../common/codes";
-import { AnnotationType, valueTypes } from "../../../common/const";
+import { codes } from "../../../codes";
+import { AnnotationType, valueTypes } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { DateString } from "../../common/date-string";
 import { LiteralString } from "../../common/literal-string";

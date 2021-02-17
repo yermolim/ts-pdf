@@ -1,9 +1,9 @@
-import { StreamFilter, StreamType, supportedFilters, valueTypes } from "../../common/const";
+import { StreamFilter, StreamType, supportedFilters, valueTypes } from "../../const";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
-import { Bounds, ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
-import { keywordCodes } from "../../common/codes";
-import { FlateDecoder } from "../../common/decoders/flate-decoder";
+import { keywordCodes } from "../../codes";
+import { FlateDecoder } from "../../decoders/flate-decoder";
 
 export abstract class PdfStream extends PdfObject {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */

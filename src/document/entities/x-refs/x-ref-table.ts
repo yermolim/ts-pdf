@@ -1,5 +1,5 @@
-import { keywordCodes } from "../../common/codes";
-import { xRefTypes } from "../../common/const";
+import { keywordCodes } from "../../codes";
+import { xRefTypes } from "../../const";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";

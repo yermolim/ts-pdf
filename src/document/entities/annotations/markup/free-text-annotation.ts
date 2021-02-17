@@ -1,7 +1,7 @@
-import { codes } from "../../../common/codes";
+import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
-  LineEndingType, lineEndingTypes, Rect } from "../../../common/const";
+  LineEndingType, lineEndingTypes, Rect } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { LiteralString } from "../../common/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";

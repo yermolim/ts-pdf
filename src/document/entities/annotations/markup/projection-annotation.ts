@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../../common/const";
+import { annotationTypes } from "../../../const";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export class ProjectionAnnotation extends MarkupAnnotation {

@@ -1,4 +1,4 @@
-import { annotationTypes, HighlightingMode, highlightingModes } from "../../../common/const";
+import { annotationTypes, HighlightingMode, highlightingModes } from "../../../const";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";
 import { AnnotationDict } from "../annotation-dict";

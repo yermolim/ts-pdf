@@ -1,4 +1,4 @@
-import { codes } from "../../common/codes";
+import { codes } from "../../codes";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class BorderArray {

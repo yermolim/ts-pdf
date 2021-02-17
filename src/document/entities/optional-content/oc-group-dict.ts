@@ -1,4 +1,4 @@
-import { dictTypes } from "../../common/const";
+import { dictTypes } from "../../const";
 import { PdfDict } from "../core/pdf-dict";
 import { OcIntent } from "./oc-const";
 import { OcUsageDict } from "./oc-usage-dict";

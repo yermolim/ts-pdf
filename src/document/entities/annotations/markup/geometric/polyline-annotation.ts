@@ -1,5 +1,5 @@
-import { codes } from "../../../../common/codes";
-import { annotationTypes, LineEndingType, lineEndingTypes } from "../../../../common/const";
+import { codes } from "../../../../codes";
+import { annotationTypes, LineEndingType, lineEndingTypes } from "../../../../const";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { PolyAnnotation } from "./poly-annotation";
 

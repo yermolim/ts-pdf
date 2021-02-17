@@ -1,5 +1,5 @@
-import { codes } from "../../common/codes";
-import { AuthEvent, authEvents, CryptMethod, cryptMethods, dictTypes, valueTypes } from "../../common/const";
+import { codes } from "../../codes";
+import { AuthEvent, authEvents, CryptMethod, cryptMethods, dictTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { PdfDict } from "../core/pdf-dict";

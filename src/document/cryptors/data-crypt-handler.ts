@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { arraysEqual, findSubarrayIndex, 
-  int32ArrayToBytes, int32ToBytes, xorBytes } from "../../../common/utils";
+  int32ArrayToBytes, int32ToBytes, xorBytes } from "../byte-functions";
 import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../const";
 import { md5, rc4, toWordArray, 
   AuthenticationResult, CryptOptions, DataCryptor } from "../crypto";

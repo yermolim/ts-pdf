@@ -1,4 +1,4 @@
-import { int32ArrayToBytes } from "../../../common/utils";
+import { int32ArrayToBytes } from "../byte-functions";
 import { DataCryptor, AES_INIT_VALUE, aes } from "../crypto";
 
 export class AESV3DataCryptor implements DataCryptor {

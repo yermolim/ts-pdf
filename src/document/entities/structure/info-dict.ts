@@ -1,4 +1,4 @@
-import { dictTypes } from "../../common/const";
+import { dictTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { DateString } from "../common/date-string";
 import { LiteralString } from "../common/literal-string";

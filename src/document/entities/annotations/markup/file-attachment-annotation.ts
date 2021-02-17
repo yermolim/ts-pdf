@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../../common/const";
+import { annotationTypes } from "../../../const";
 import { PdfDict } from "../../core/pdf-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 

@@ -1,4 +1,4 @@
-import { XRefType } from "../../common/const";
+import { XRefType } from "../../const";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
 import { XRefEntry } from "./x-ref-entry";

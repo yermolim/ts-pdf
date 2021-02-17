@@ -1,5 +1,5 @@
 /* eslint-disable no-bitwise */
-import { keywordCodes } from "../../common/codes";
+import { keywordCodes } from "../../codes";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
 export class HexString {
