@@ -5,7 +5,7 @@ import { ObjectId } from "../common/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
 import { codes } from "../../codes";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 
 export class TrailerStream extends PdfStream {
   /**
@@ -74,7 +74,7 @@ export class TrailerStream extends PdfStream {
       : null;
   }
 
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

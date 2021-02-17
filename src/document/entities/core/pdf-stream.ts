@@ -4,7 +4,7 @@ import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../codes";
 import { FlateDecoder } from "../../decoders/flate-decoder";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 
 export abstract class PdfStream extends PdfObject {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
@@ -75,7 +75,7 @@ export abstract class PdfStream extends PdfObject {
     this.Type = type;
   }  
 
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const encoder = new TextEncoder();
     const bytes: number[] = [...keywordCodes.DICT_START];
     

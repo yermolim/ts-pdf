@@ -1,8 +1,9 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../codes";
+import { CryptInfo, Encodable } from "../../interfaces";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
-export class LiteralString {
+export class LiteralString implements Encodable {
   private constructor(readonly literal: string,
     readonly bytes: Uint8Array) { }
     
@@ -141,10 +142,11 @@ export class LiteralString {
     return new Uint8Array(result);
   }
 
-  toArray(bracketed = true): Uint8Array {
-    return bracketed
-      ? new Uint8Array([...keywordCodes.STR_LITERAL_START, 
-        ...this.bytes, ...keywordCodes.STR_LITERAL_END])
-      : new Uint8Array(this.bytes);
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
+    return new Uint8Array([
+      ...keywordCodes.STR_LITERAL_START, 
+      ...this.bytes, 
+      ...keywordCodes.STR_LITERAL_END,
+    ]);
   }
 }

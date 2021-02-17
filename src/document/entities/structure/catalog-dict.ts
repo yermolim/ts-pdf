@@ -1,6 +1,6 @@
 import { codes } from "../../codes";
 import { dictTypes } from "../../const";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { LiteralString } from "../common/literal-string";
 import { ObjectId } from "../common/object-id";
@@ -47,7 +47,7 @@ export class CatalogDict extends PdfDict {
       : null;
   }
 
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

@@ -1,7 +1,8 @@
 import { codes, keywordCodes } from "../../codes";
+import { CryptInfo, Encodable } from "../../interfaces";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
-export class DateString {
+export class DateString implements Encodable {
   private constructor(readonly source: string, 
     readonly date: Date) { }
     
@@ -56,11 +57,12 @@ export class DateString {
     return DateString.fromString(source);
   }
 
-  toArray(braced = true): Uint8Array { 
+  toArray(cryptInfo?: CryptInfo): Uint8Array { 
     const bytes = new TextEncoder().encode(this.source);
-    return braced
-      ? new Uint8Array([...keywordCodes.STR_LITERAL_START, 
-        ...bytes, ...keywordCodes.STR_LITERAL_END])
-      : new Uint8Array(bytes);
+    return new Uint8Array([
+      ...keywordCodes.STR_LITERAL_START,         
+      ...bytes, 
+      ...keywordCodes.STR_LITERAL_END,
+    ]);
   }
 }

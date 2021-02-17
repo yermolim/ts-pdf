@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../../const";
-import { DataCryptor } from "../../../../crypto";
+import { CryptInfo } from "../../../../interfaces";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { TextMarkupAnnotation } from "./text-markup-annotation";
 
@@ -17,7 +17,7 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
       : null;
   }  
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     return superBytes;
   }

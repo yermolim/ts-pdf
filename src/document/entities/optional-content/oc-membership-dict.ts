@@ -3,7 +3,7 @@ import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
 import { dictTypes } from "../../const";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 
 export class OcMembershipDict extends PdfDict {
   /**
@@ -26,7 +26,7 @@ export class OcMembershipDict extends PdfDict {
     super(dictTypes.OPTIONAL_CONTENT_MD);
   }  
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

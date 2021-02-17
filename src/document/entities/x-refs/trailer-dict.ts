@@ -5,7 +5,7 @@ import { ObjectId } from "../common/object-id";
 import { HexString } from "../common/hex-string";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { codes } from "../../codes";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 
 export class TrailerDict extends PdfDict {
   /**
@@ -61,7 +61,7 @@ export class TrailerDict extends PdfDict {
       : null;
   }
 
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

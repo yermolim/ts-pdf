@@ -1,5 +1,4 @@
-import { DataCryptor } from "../../crypto";
-import { Encodable } from "../../interfaces";
+import { CryptInfo, Encodable } from "../../interfaces";
 
 export abstract class PdfObject implements Encodable {
   protected _id: number;
@@ -15,5 +14,5 @@ export abstract class PdfObject implements Encodable {
     
   }
 
-  abstract toArray(cryptor?: DataCryptor): Uint8Array;
+  abstract toArray(cryptInfo?: CryptInfo): Uint8Array;
 }

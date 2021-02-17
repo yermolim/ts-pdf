@@ -1,8 +1,9 @@
 /* eslint-disable no-bitwise */
 import { keywordCodes } from "../../codes";
+import { CryptInfo, Encodable } from "../../interfaces";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
-export class HexString {
+export class HexString implements Encodable {
   private constructor(readonly literal: string, 
     readonly hex: Uint8Array,
     readonly bytes: Uint8Array) { }
@@ -69,10 +70,11 @@ export class HexString {
     return hex;
   }
  
-  toArray(bracketed = true): Uint8Array {
-    return bracketed
-      ? new Uint8Array([...keywordCodes.STR_HEX_START, 
-        ...this.bytes, ...keywordCodes.STR_HEX_END])
-      : new Uint8Array(this.bytes);
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
+    return new Uint8Array([
+      ...keywordCodes.STR_HEX_START, 
+      ...this.bytes, 
+      ...keywordCodes.STR_HEX_END,
+    ]);
   }
 }

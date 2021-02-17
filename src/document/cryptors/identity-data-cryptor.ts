@@ -1,15 +1,15 @@
-import { DataCryptor } from "../crypto";
+import { DataCryptor, Reference } from "../interfaces";
 
 export class IdentityDataCryptor implements DataCryptor {
   constructor() {
     
   }
 
-  encrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
+  encrypt(data: Uint8Array, ref: Reference): Uint8Array {
     return data;
   }
 
-  decrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
+  decrypt(data: Uint8Array, ref: Reference): Uint8Array {
     return data;
   }  
 }

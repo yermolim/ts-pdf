@@ -1,5 +1,6 @@
 import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
-import { DataCryptor, md5, rc4 } from "../crypto";
+import { md5, rc4 } from "../crypto";
+import { DataCryptor, Reference } from "../interfaces";
 
 export class RC4DataCryptor implements DataCryptor {
   protected _n: number;
@@ -19,7 +20,7 @@ export class RC4DataCryptor implements DataCryptor {
     this._tempKey = new Uint8Array(key.length + 5);
   }
 
-  encrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
+  encrypt(data: Uint8Array, ref: Reference): Uint8Array {
     /*
     1. Obtain the object number and generation number from the object identifier 
     of the string or stream to be encrypted. If the string is a direct object, 
@@ -32,8 +33,8 @@ export class RC4DataCryptor implements DataCryptor {
     (n is 5 unless the value of V in the encryption dictionary is greater than 1, 
       in which case n is the value of Length divided by 8.)
     */
-    const idBytes = int32ToBytes(id, true); 
-    const genBytes = int32ToBytes(generation, true); 
+    const idBytes = int32ToBytes(ref.id, true); 
+    const genBytes = int32ToBytes(ref.generation, true); 
     this._tempKey.set(this._key, 0);
     this._tempKey.set(idBytes.subarray(0, 3), this._n);
     this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
@@ -52,7 +53,7 @@ export class RC4DataCryptor implements DataCryptor {
     return encrypted;
   }
 
-  decrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
-    return this.encrypt(data, id, generation);
+  decrypt(data: Uint8Array, ref: Reference): Uint8Array {
+    return this.encrypt(data, ref);
   }  
 }

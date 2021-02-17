@@ -1,4 +1,4 @@
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 import { PdfDict } from "../core/pdf-dict";
 import { OcConfigState, ocConfigStates, OcIntent, ocIntents, 
   OcListMode, ocListModes } from "./oc-const";
@@ -77,7 +77,7 @@ export class OcConfigurationDict extends PdfDict {
     super(null);
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

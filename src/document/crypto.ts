@@ -62,36 +62,3 @@ export function aes(data: Uint8Array | Crypto.lib.WordArray,
   }).ciphertext;
   return result;
 }
-
-export interface CryptOptions {
-  filter: string;
-  version: CryptVersion;
-  revision: CryptRevision;
-  permissions: number;
-  encryptMetadata: boolean;
-  keyLength: number;
-
-  stringKeyLength?: number;
-  streamKeyLength?: number;
-
-  stringMethod?: CryptMethod;
-  streamMethod?: CryptMethod;
-  
-  oPasswordHash: Uint8Array;
-  uPasswordHash: Uint8Array;
-  
-  oEncPasswordHash?: Uint8Array;
-  uEncPasswordHash?: Uint8Array;
-  perms?: Uint8Array;
-}
-
-export interface DataCryptor {
-  encrypt(data: Uint8Array, id: number, generation: number): Uint8Array;
-  decrypt(data: Uint8Array, id: number, generation: number): Uint8Array;
-}
-
-export interface AuthenticationResult {
-  authLevel: "user" | "owner"; 
-  stringCryptor: DataCryptor; 
-  streamCryptor: DataCryptor;
-}

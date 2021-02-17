@@ -1,6 +1,6 @@
 import { codes } from "../../../codes";
 import { annotationTypes, Rect } from "../../../const";
-import { DataCryptor } from "../../../crypto";
+import { CryptInfo } from "../../../interfaces";
 import { ParseInfo, ParseResult } from "../../../parser/data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 
@@ -37,7 +37,7 @@ export class CaretAnnotation extends MarkupAnnotation {
       : null;
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

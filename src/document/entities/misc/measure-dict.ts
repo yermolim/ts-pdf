@@ -1,5 +1,5 @@
 import { dictTypes } from "../../const";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfDict } from "../core/pdf-dict";
 
@@ -23,7 +23,7 @@ export class MeasureDict extends PdfDict {
   }
   
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

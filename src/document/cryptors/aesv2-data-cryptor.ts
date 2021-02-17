@@ -1,5 +1,6 @@
 import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
-import { DataCryptor, md5, aes, AES_INIT_VALUE } from "../crypto";
+import { md5, aes, AES_INIT_VALUE } from "../crypto";
+import { DataCryptor, Reference } from "../interfaces";
 
 /**
  * If using the AES-128 algorithm, extend the encryption key an additional 4 bytes 
@@ -29,12 +30,12 @@ export class AESV2DataCryptor implements DataCryptor {
     this._tempKey = new Uint8Array(key.length + 9);
   }
 
-  encrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
-    return this.run(data, id, generation, AES_INIT_VALUE);
+  encrypt(data: Uint8Array, ref: Reference): Uint8Array {
+    return this.run(data, ref.id, ref.generation, AES_INIT_VALUE);
   }
 
-  decrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
-    return this.run(data, id, generation);
+  decrypt(data: Uint8Array, ref: Reference): Uint8Array {
+    return this.run(data, ref.id, ref.generation);
   }  
 
   protected run(data: Uint8Array, id: number, generation: number, iv?: Uint8Array): Uint8Array {

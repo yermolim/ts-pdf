@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../const";
-import { DataCryptor } from "../../../crypto";
+import { CryptInfo } from "../../../interfaces";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export class ProjectionAnnotation extends MarkupAnnotation {
@@ -9,7 +9,7 @@ export class ProjectionAnnotation extends MarkupAnnotation {
     super(annotationTypes.PROJECTION);
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

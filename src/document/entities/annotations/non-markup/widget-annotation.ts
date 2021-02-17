@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../const";
-import { DataCryptor } from "../../../crypto";
+import { CryptInfo } from "../../../interfaces";
 import { AnnotationDict } from "../annotation-dict";
 
 export class WidgetAnnotation extends AnnotationDict {
@@ -9,7 +9,7 @@ export class WidgetAnnotation extends AnnotationDict {
     super(annotationTypes.WIDGET);
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

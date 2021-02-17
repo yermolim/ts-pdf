@@ -1,6 +1,6 @@
 import { codes } from "../../../../codes";
 import { annotationTypes, Rect } from "../../../../const";
-import { DataCryptor } from "../../../../crypto";
+import { CryptInfo } from "../../../../interfaces";
 import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
 import { GeometricAnnotation } from "./geometric-annotation";
 
@@ -27,7 +27,7 @@ export class CircleAnnotation extends GeometricAnnotation {
       : null;
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray();  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  

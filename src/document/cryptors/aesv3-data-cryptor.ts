@@ -1,5 +1,6 @@
 import { int32ArrayToBytes } from "../byte-functions";
-import { DataCryptor, AES_INIT_VALUE, aes } from "../crypto";
+import { AES_INIT_VALUE, aes } from "../crypto";
+import { DataCryptor, Reference } from "../interfaces";
 
 export class AESV3DataCryptor implements DataCryptor {
   protected _n: number;
@@ -17,12 +18,12 @@ export class AESV3DataCryptor implements DataCryptor {
     this._key = key;
   }
 
-  encrypt(data: Uint8Array, id: number, generation: number): Uint8Array { 
-    return this.run(data, id, generation, new Uint8Array(AES_INIT_VALUE));
+  encrypt(data: Uint8Array, ref: Reference): Uint8Array { 
+    return this.run(data, ref.id, ref.generation, new Uint8Array(AES_INIT_VALUE));
   }
 
-  decrypt(data: Uint8Array, id: number, generation: number): Uint8Array {
-    return this.run(data, id, generation);
+  decrypt(data: Uint8Array, ref: Reference): Uint8Array {
+    return this.run(data, ref.id, ref.generation);
   }
   
   protected run(data: Uint8Array, id: number, generation: number, iv?: Uint8Array): Uint8Array {   

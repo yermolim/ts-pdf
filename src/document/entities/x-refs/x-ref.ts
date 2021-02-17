@@ -1,6 +1,5 @@
 import { XRefType } from "../../const";
-import { DataCryptor } from "../../crypto";
-import { Encodable } from "../../interfaces";
+import { CryptInfo, Encodable } from "../../interfaces";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
 import { XRefEntry } from "./x-ref-entry";
@@ -26,5 +25,5 @@ export abstract class XRef implements Encodable {
 
   abstract getEntries(): Iterable<XRefEntry>;
   
-  abstract toArray(cryptor?: DataCryptor): Uint8Array;
+  abstract toArray(cryptInfo?: CryptInfo): Uint8Array;
 }

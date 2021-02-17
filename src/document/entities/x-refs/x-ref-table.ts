@@ -1,6 +1,6 @@
 import { keywordCodes } from "../../codes";
 import { xRefTypes } from "../../const";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
@@ -121,7 +121,7 @@ export class XRefTable extends XRef {
     return entries;
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const trailerBytes = this._trailerDict.toArray(); 
 
     const bytes: number[] = [

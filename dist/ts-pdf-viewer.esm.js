@@ -1394,11 +1394,11 @@ class AESV2DataCryptor {
         this._key = key;
         this._tempKey = new Uint8Array(key.length + 9);
     }
-    encrypt(data, id, generation) {
-        return this.run(data, id, generation, AES_INIT_VALUE);
+    encrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation, AES_INIT_VALUE);
     }
-    decrypt(data, id, generation) {
-        return this.run(data, id, generation);
+    decrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation);
     }
     run(data, id, generation, iv) {
         const idBytes = int32ToBytes(id, true);
@@ -1427,11 +1427,11 @@ class AESV3DataCryptor {
         this._n = key.length;
         this._key = key;
     }
-    encrypt(data, id, generation) {
-        return this.run(data, id, generation, new Uint8Array(AES_INIT_VALUE));
+    encrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation, new Uint8Array(AES_INIT_VALUE));
     }
-    decrypt(data, id, generation) {
-        return this.run(data, id, generation);
+    decrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation);
     }
     run(data, id, generation, iv) {
         iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
@@ -1443,10 +1443,10 @@ class AESV3DataCryptor {
 class IdentityDataCryptor {
     constructor() {
     }
-    encrypt(data, id, generation) {
+    encrypt(data, ref) {
         return data;
     }
-    decrypt(data, id, generation) {
+    decrypt(data, ref) {
         return data;
     }
 }
@@ -1463,9 +1463,9 @@ class RC4DataCryptor {
         this._key = key;
         this._tempKey = new Uint8Array(key.length + 5);
     }
-    encrypt(data, id, generation) {
-        const idBytes = int32ToBytes(id, true);
-        const genBytes = int32ToBytes(generation, true);
+    encrypt(data, ref) {
+        const idBytes = int32ToBytes(ref.id, true);
+        const genBytes = int32ToBytes(ref.generation, true);
         this._tempKey.set(this._key, 0);
         this._tempKey.set(idBytes.subarray(0, 3), this._n);
         this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
@@ -1475,8 +1475,8 @@ class RC4DataCryptor {
         const encrypted = int32ArrayToBytes(rc4(data, key).words);
         return encrypted;
     }
-    decrypt(data, id, generation) {
-        return this.encrypt(data, id, generation);
+    decrypt(data, ref) {
+        return this.encrypt(data, ref);
     }
 }
 
@@ -1869,11 +1869,12 @@ class LiteralString {
         }
         return new Uint8Array(result);
     }
-    toArray(bracketed = true) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
-                ...this.bytes, ...keywordCodes.STR_LITERAL_END])
-            : new Uint8Array(this.bytes);
+    toArray(cryptInfo) {
+        return new Uint8Array([
+            ...keywordCodes.STR_LITERAL_START,
+            ...this.bytes,
+            ...keywordCodes.STR_LITERAL_END,
+        ]);
     }
 }
 
@@ -1920,12 +1921,13 @@ class DateString {
         const source = new TextDecoder().decode(arr);
         return DateString.fromString(source);
     }
-    toArray(braced = true) {
+    toArray(cryptInfo) {
         const bytes = new TextEncoder().encode(this.source);
-        return braced
-            ? new Uint8Array([...keywordCodes.STR_LITERAL_START,
-                ...bytes, ...keywordCodes.STR_LITERAL_END])
-            : new Uint8Array(bytes);
+        return new Uint8Array([
+            ...keywordCodes.STR_LITERAL_START,
+            ...bytes,
+            ...keywordCodes.STR_LITERAL_END,
+        ]);
     }
 }
 
@@ -1993,10 +1995,8 @@ class ObjectId {
         return this.id === other.id
             && this.generation === other.generation;
     }
-    toArray(ref = true) {
-        return ref
-            ? new TextEncoder().encode(`${this.id} ${this.generation} R`)
-            : new TextEncoder().encode(`${this.id} ${this.generation} obj`);
+    toArray(cryptInfo) {
+        return new TextEncoder().encode(`${this.id} ${this.generation} R`);
     }
     toString() {
         return this.id + "|" + this.generation;
@@ -2022,7 +2022,7 @@ class PdfDict extends PdfObject {
     get streamId() {
         return this._streamId;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const encoder = new TextEncoder();
         const bytes = [...keywordCodes.DICT_START];
         if (this.Type) {
@@ -2090,7 +2090,7 @@ class FlateParamsDict extends PdfDict {
             ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -2913,7 +2913,7 @@ class PdfStream extends PdfObject {
         }
         return decodedData;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const encoder = new TextEncoder();
         const bytes = [...keywordCodes.DICT_START];
         if (this.Type) {
@@ -3078,7 +3078,7 @@ class TextStream extends PdfStream {
     getText() {
         return null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         return superBytes;
     }
@@ -3112,7 +3112,7 @@ class BorderStyleDict extends PdfDict {
             ? { value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3214,7 +3214,7 @@ class ObjectMapDict extends PdfDict {
     getProp(name) {
         return this._objectIdMap.get(name);
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3281,7 +3281,7 @@ class AppearanceDict extends PdfDict {
             ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3447,7 +3447,7 @@ class BorderEffectDict extends PdfDict {
             ? { value: borderEffect, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3581,7 +3581,7 @@ class BorderArray {
         }
         return null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const source = this.dash && this.gap
             ? `[${this.hCornerR} ${this.vCornerR} ${this.width}]`
             : `[${this.hCornerR} ${this.vCornerR} ${this.width} [${this.dash} ${this.gap}]]`;
@@ -3596,7 +3596,7 @@ class AnnotationDict extends PdfDict {
         this.Border = new BorderArray(0, 0, 1);
         this.Subtype = subType;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -3910,7 +3910,7 @@ class MarkupAnnotation extends AnnotationDict {
         super(subType);
         this.RT = markupAnnotationReplyTypes.REPLY;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4116,7 +4116,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4272,7 +4272,7 @@ class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4342,7 +4342,7 @@ class CircleAnnotation extends GeometricAnnotation {
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4416,7 +4416,7 @@ class MeasureDict extends PdfDict {
             ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4501,7 +4501,7 @@ class LineAnnotation extends GeometricAnnotation {
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4722,7 +4722,7 @@ class SquareAnnotation extends GeometricAnnotation {
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4795,7 +4795,7 @@ class InkAnnotation extends MarkupAnnotation {
             ? { value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4898,7 +4898,7 @@ class StampAnnotation extends MarkupAnnotation {
             ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -4970,7 +4970,7 @@ class TextAnnotation extends MarkupAnnotation {
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -5127,11 +5127,12 @@ class HexString {
         }
         return hex;
     }
-    toArray(bracketed = true) {
-        return bracketed
-            ? new Uint8Array([...keywordCodes.STR_HEX_START,
-                ...this.bytes, ...keywordCodes.STR_HEX_END])
-            : new Uint8Array(this.bytes);
+    toArray(cryptInfo) {
+        return new Uint8Array([
+            ...keywordCodes.STR_HEX_START,
+            ...this.bytes,
+            ...keywordCodes.STR_HEX_END,
+        ]);
     }
 }
 
@@ -5150,7 +5151,7 @@ class CryptFilterDict extends PdfDict {
             ? { value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -5298,7 +5299,7 @@ class CryptMapDict extends PdfDict {
     getProp(name) {
         return this._filtersMap.get(name);
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -5373,7 +5374,7 @@ class EncryptionDict extends PdfDict {
             ? { value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6421,7 +6422,7 @@ class ObjectStream extends PdfStream {
             streamId: this._id,
         };
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6518,7 +6519,7 @@ class CatalogDict extends PdfDict {
             ? { value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6616,7 +6617,7 @@ class PageDict extends PdfDict {
             ? { value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6761,7 +6762,7 @@ class PageTreeDict extends PdfDict {
             ? { value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -6891,7 +6892,7 @@ class TrailerStream extends PdfStream {
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -7421,7 +7422,7 @@ class XRefStream extends XRef {
         const entries = XRefEntry.fromStreamBytes(this._trailerStream.decodedStreamData, this._trailerStream.W, this._trailerStream.Index);
         return entries;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         return this._trailerStream.toArray();
     }
 }
@@ -7437,7 +7438,7 @@ class TrailerDict extends PdfDict {
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const superBytes = super.toArray();
         const encoder = new TextEncoder();
         const bytes = [];
@@ -7653,7 +7654,7 @@ class XRefTable extends XRef {
         const entries = XRefEntry.fromTableBytes(this._table);
         return entries;
     }
-    toArray(cryptor) {
+    toArray(cryptInfo) {
         const trailerBytes = this._trailerDict.toArray();
         const bytes = [
             ...keywordCodes.XREF_TABLE, ...keywordCodes.END_OF_LINE,

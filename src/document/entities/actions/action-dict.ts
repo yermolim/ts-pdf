@@ -1,5 +1,5 @@
 import { dictTypes } from "../../const";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 import { PdfDict } from "../core/pdf-dict";
 
 export const actionTypes = {
@@ -41,7 +41,7 @@ export class ActionDict extends PdfDict {
     this.S = type;
   }
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

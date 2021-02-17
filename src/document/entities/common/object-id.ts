@@ -1,8 +1,8 @@
 import { codes } from "../../codes";
-import { Reference } from "../../interfaces";
+import { CryptInfo, Encodable, Reference } from "../../interfaces";
 import { DataParser, ParseResult } from "../../parser/data-parser";
 
-export class ObjectId implements Reference {
+export class ObjectId implements Reference, Encodable {
   /** A positive integer object number */
   readonly id: number;
   /** A non-negative integer generation number. 
@@ -92,10 +92,8 @@ export class ObjectId implements Reference {
       && this.generation === other.generation;
   }
 
-  toArray(ref = true): Uint8Array {
-    return ref
-      ? new TextEncoder().encode(`${this.id} ${this.generation} R`)
-      : new TextEncoder().encode(`${this.id} ${this.generation} obj`);
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
+    return new TextEncoder().encode(`${this.id} ${this.generation} R`);
   }
 
   toString(): string {

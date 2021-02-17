@@ -1,6 +1,6 @@
 import { keywordCodes } from "../../codes";
 import { DictType } from "../../const";
-import { DataCryptor } from "../../crypto";
+import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../parser/data-parser";
 import { PdfObject } from "./pdf-object";
 
@@ -23,7 +23,7 @@ export abstract class PdfDict extends PdfObject {
     this.Type = type;
   }  
   
-  toArray(cryptor?: DataCryptor): Uint8Array {
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
     const encoder = new TextEncoder();
     const bytes: number[] = [...keywordCodes.DICT_START];
 
