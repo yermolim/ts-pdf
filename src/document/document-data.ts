@@ -1,5 +1,5 @@
 import { keywordCodes } from "./codes";
-import { DataCryptHandler } from "./cryptors/data-crypt-handler";
+import { DataCryptHandler } from "./encryption/data-crypt-handler";
 import { annotationTypes, dictTypes } from "./const";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
