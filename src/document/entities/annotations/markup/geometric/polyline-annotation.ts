@@ -1,7 +1,7 @@
 import { codes } from "../../../../codes";
 import { annotationTypes, LineEndingType, lineEndingTypes } from "../../../../const";
 import { CryptInfo } from "../../../../interfaces";
-import { ParseInfo, ParseResult } from "../../../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { PolyAnnotation } from "./poly-annotation";
 
 export class PolylineAnnotation extends PolyAnnotation {  

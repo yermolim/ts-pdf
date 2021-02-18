@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 import { keywordCodes } from "../../codes";
 import { CryptInfo, Encodable } from "../../interfaces";
-import { DataParser, ParseResult } from "../../parser/data-parser";
+import { DataParser, ParseResult } from "../../data-parser";
 
 export class HexString implements Encodable {
   private constructor(readonly literal: string, 

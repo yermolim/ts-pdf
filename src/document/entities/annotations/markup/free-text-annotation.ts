@@ -3,7 +3,7 @@ import { annotationTypes, JustificationType,
   justificationTypes, 
   LineEndingType, lineEndingTypes, Rect } from "../../../const";
 import { CryptInfo } from "../../../interfaces";
-import { ParseInfo, ParseResult } from "../../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../common/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";
 

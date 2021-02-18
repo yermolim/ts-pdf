@@ -1,5 +1,5 @@
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { FlateParamsDict } from "./flate-params-dict";
 
 export class LzwParamsDict extends FlateParamsDict {

@@ -1,8 +1,8 @@
-import { LinkedList } from "../../common";
-import { maxGeneration, xRefEntryTypes } from "../const";
-import { Reference } from "../interfaces";
-import { XRef } from "../entities/x-refs/x-ref";
-import { XRefEntry } from "../entities/x-refs/x-ref-entry";
+import { LinkedList } from "../common";
+import { maxGeneration, xRefEntryTypes } from "./const";
+import { Reference } from "./interfaces";
+import { XRef } from "./entities/x-refs/x-ref";
+import { XRefEntry } from "./entities/x-refs/x-ref-entry";
 
 export interface UsedReference extends Reference {
   byteOffset: number;

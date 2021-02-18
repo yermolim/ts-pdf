@@ -1,7 +1,7 @@
 import { codes } from "../../codes";
 import { dictTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { LiteralString } from "../common/literal-string";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";

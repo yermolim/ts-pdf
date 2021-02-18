@@ -1,6 +1,6 @@
 import { valueTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../common/object-id";
 import { PdfDict } from "../core/pdf-dict";
 

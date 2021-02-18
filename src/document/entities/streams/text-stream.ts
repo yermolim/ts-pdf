@@ -1,6 +1,6 @@
 import { StreamType } from "../../const";
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfStream } from "../core/pdf-stream";
 
 export class TextStream extends PdfStream {

@@ -1,6 +1,6 @@
 import { codes, keywordCodes } from "../../codes";
 import { CryptInfo, Encodable } from "../../interfaces";
-import { DataParser, ParseResult } from "../../parser/data-parser";
+import { DataParser, ParseResult } from "../../data-parser";
 
 export class DateString implements Encodable {
   private constructor(readonly source: string, 

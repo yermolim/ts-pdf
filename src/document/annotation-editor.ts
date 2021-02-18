@@ -1,5 +1,5 @@
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
-import { DocumentData } from "./parser/document-data";
+import { DocumentData } from "./document-data";
 
 export class AnnotationEditor {
   private _sourceData: Uint8Array;

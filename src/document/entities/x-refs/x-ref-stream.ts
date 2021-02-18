@@ -1,6 +1,6 @@
 import { flatePredictors, streamFilters, xRefTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
 import { FlateParamsDict } from "../encoding/flate-params-dict";

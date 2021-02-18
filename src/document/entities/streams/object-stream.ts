@@ -1,7 +1,7 @@
 import { codes } from "../../codes";
 import { ObjectType, objectTypes, streamTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
-import { Bounds, DataParser, ParseInfo, ParseResult } from "../../parser/data-parser";
+import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
 import { ObjectId } from "../common/object-id";

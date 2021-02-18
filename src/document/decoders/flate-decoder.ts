@@ -2,8 +2,8 @@
 /* eslint-disable no-bitwise */
 import Pako from "pako";
 import { FlatePredictor, flatePredictors } from "../const";
-import { FlateStream } from "../streams/flate-stream";
-import { Stream } from "../streams/stream";
+import { FlateStream } from "./flate-stream";
+import { Stream } from "./stream";
 
 export class FlateDecoder {
   static Decode(input: Uint8Array, 

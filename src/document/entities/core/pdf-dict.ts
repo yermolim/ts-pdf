@@ -1,7 +1,7 @@
 import { keywordCodes } from "../../codes";
 import { DictType } from "../../const";
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";
 
 export abstract class PdfDict extends PdfObject {

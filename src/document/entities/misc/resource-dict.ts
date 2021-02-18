@@ -1,6 +1,6 @@
 import { codes } from "../../codes";
 import { CryptInfo } from "../../interfaces";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "./object-map-dict";
 

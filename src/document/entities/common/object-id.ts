@@ -1,6 +1,6 @@
 import { codes } from "../../codes";
 import { CryptInfo, Encodable, Reference } from "../../interfaces";
-import { DataParser, ParseResult } from "../../parser/data-parser";
+import { DataParser, ParseResult } from "../../data-parser";
 
 export class ObjectId implements Reference, Encodable {
   /** A positive integer object number */

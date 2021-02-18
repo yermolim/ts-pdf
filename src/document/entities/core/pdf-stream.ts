@@ -1,6 +1,6 @@
 import { StreamFilter, StreamType, supportedFilters, valueTypes } from "../../const";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../codes";
 import { FlateDecoder } from "../../decoders/flate-decoder";

@@ -1,7 +1,7 @@
 import { codes } from "../../../codes";
 import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../interfaces";
-import { ParseInfo, ParseResult } from "../../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../../data-parser";
 import { ObjectId } from "../../common/object-id";
 import { AnnotationDict } from "../annotation-dict";
 

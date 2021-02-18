@@ -1,6 +1,6 @@
 import { codes } from "../../codes";
 import { CryptInfo } from "../../interfaces";
-import { DataParser, ParseResult } from "../../parser/data-parser";
+import { DataParser, ParseResult } from "../../data-parser";
 
 export class BorderArray {
   readonly hCornerR: number;

@@ -1,7 +1,7 @@
 import { ObjectId } from "../common/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { Matrix, Rect, streamTypes, valueTypes } from "../../const";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { DateString } from "../common/date-string";

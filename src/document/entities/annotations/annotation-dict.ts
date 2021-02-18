@@ -7,7 +7,7 @@ import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
 import { AnnotationType, dictTypes, Rect, valueTypes } from "../../const";
-import { ParseInfo, ParseResult } from "../../parser/data-parser";
+import { ParseInfo, ParseResult } from "../../data-parser";
 import { LiteralString } from "../common/literal-string";
 import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
