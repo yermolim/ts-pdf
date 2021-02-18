@@ -9,7 +9,7 @@ import { SquareAnnotation } from "./entities/annotations/markup/geometric/square
 import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
 import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
 import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
-import { ObjectId } from "./entities/common/object-id";
+import { ObjectId } from "./entities/core/object-id";
 import { EncryptionDict } from "./entities/encryption/encryption-dict";
 import { ObjectStream } from "./entities/streams/object-stream";
 import { CatalogDict } from "./entities/structure/catalog-dict";

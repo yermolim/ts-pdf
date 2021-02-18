@@ -1,7 +1,7 @@
 import { dictTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { HexString } from "../common/hex-string";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { codes } from "../../codes";

@@ -1,4 +1,4 @@
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { DateString } from "../common/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";

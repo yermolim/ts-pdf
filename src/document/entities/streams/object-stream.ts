@@ -4,7 +4,7 @@ import { CryptInfo } from "../../interfaces";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../common/hex-string";
 import { LiteralString } from "../common/literal-string";
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 
 export class ObjectStream extends PdfStream {

@@ -4,7 +4,7 @@ import { CryptInfo } from "../../../interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { DateString } from "../../common/date-string";
 import { LiteralString } from "../../common/literal-string";
-import { ObjectId } from "../../common/object-id";
+import { ObjectId } from "../../core/object-id";
 import { TextStream } from "../../streams/text-stream";
 import { AnnotationDict } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";

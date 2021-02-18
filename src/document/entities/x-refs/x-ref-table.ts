@@ -3,7 +3,7 @@ import { xRefTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 import { HexString } from "../common/hex-string";
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";

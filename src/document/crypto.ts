@@ -1,6 +1,5 @@
 import Crypto from "crypto-es";
 import { bytesToInt32Array } from "./byte-functions";
-import { CryptVersion, CryptRevision, CryptMethod } from "./const";
 
 export const AES_INIT_VALUE = new Uint8Array([
   0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41, 

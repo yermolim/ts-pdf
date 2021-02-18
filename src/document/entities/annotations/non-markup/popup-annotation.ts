@@ -2,7 +2,7 @@ import { codes } from "../../../codes";
 import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
-import { ObjectId } from "../../common/object-id";
+import { ObjectId } from "../../core/object-id";
 import { AnnotationDict } from "../annotation-dict";
 
 export class PopupAnnotation extends AnnotationDict {

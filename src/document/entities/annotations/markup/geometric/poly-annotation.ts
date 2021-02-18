@@ -2,7 +2,7 @@ import { codes } from "../../../../codes";
 import { AnnotationType, valueTypes } from "../../../../const";
 import { CryptInfo } from "../../../../interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
-import { ObjectId } from "../../../common/object-id";
+import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../misc/measure-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 

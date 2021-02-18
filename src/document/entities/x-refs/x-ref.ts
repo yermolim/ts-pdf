@@ -1,7 +1,7 @@
 import { XRefType } from "../../const";
 import { CryptInfo, IEncodable } from "../../interfaces";
 import { HexString } from "../common/hex-string";
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { XRefEntry } from "./x-ref-entry";
 
 export abstract class XRef implements IEncodable {

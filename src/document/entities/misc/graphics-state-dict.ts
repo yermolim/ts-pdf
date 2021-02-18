@@ -2,7 +2,7 @@ import { BlendMode, blendModes, dictTypes, LineCapStyle, lineCapStyles,
   LineJoinStyle, lineJoinStyles, RenderingIntent, renderingIntents, valueTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
 export class GraphicsStateDict extends PdfDict {

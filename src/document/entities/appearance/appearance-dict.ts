@@ -1,7 +1,7 @@
 import { valueTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { ObjectId } from "../common/object-id";
+import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "../misc/object-map-dict";
 
