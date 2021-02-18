@@ -76,24 +76,23 @@ export abstract class PdfStream extends PdfObject {
   }  
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
+    
+    const streamData = cryptInfo?.ref && cryptInfo.streamCryptor
+      ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
+      : this.streamData; 
+    
     const encoder = new TextEncoder();
     const bytes: number[] = [...keywordCodes.DICT_START];
-    
+    bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + streamData.length));
     if (this.Type) {
       bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
-    }
-    if (this.Length) {
-      bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
     }
     if (this.Filter) {
       bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
     }
     if (this.DecodeParms) {
       bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray(cryptInfo));
-    }
-    const streamData = cryptInfo?.ref && cryptInfo.streamCryptor
-      ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
-      : this.streamData;  
+    } 
     bytes.push(    
       ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,
       ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE,
@@ -238,10 +237,6 @@ export abstract class PdfStream extends PdfObject {
     const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
       ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
       : streamBytes;
-    if (!this.Length || this.Length !== encodedData.length) {    
-      // TODO: replace error with 'return false;' after assuring that the code works correctly
-      throw new Error("Incorrect stream length");
-    }   
     this._streamData = encodedData;
 
     return true;

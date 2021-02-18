@@ -1101,21 +1101,6 @@ function int32ArrayToBytes(ints, le = false) {
     }
     return new Uint8Array(buffer);
 }
-function bytesToInt32Array(bytes, le = false) {
-    if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
-        return null;
-    }
-    const buffer = new ArrayBuffer(Math.ceil(bytes.length / 4) * 4);
-    const view = new DataView(buffer);
-    for (let i = 0; i < bytes.length; i++) {
-        view.setUint8(i, bytes[i]);
-    }
-    const result = new Int32Array(buffer.byteLength / 4);
-    for (let j = 0; j < result.length; j++) {
-        result[j] = view.getInt32(j * 4, le);
-    }
-    return result;
-}
 function xorBytes(bytes, n) {
     const result = new Uint8Array(bytes.length);
     for (let i = 0; i < bytes.length; i++) {
@@ -1346,10 +1331,6 @@ const supportedFilters = new Set([
 ]);
 const maxGeneration = 65535;
 
-const AES_INIT_VALUE = new Uint8Array([
-    0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
-    0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
-]);
 function toWordArray(data) {
     return Crypto.lib.WordArray.create(data);
 }
@@ -1373,20 +1354,33 @@ function rc4(data, key) {
     const result = Crypto.RC4.encrypt(data, key).ciphertext;
     return result;
 }
-function aes(data, key, iv) {
+function aes(data, key, decrypt = false) {
     if (data instanceof Uint8Array) {
         data = toWordArray(data);
     }
     if (key instanceof Uint8Array) {
         key = toWordArray(key);
     }
-    const ivWordArray = Crypto.lib.WordArray.create(bytesToInt32Array(iv));
-    const result = Crypto.AES.encrypt(data, key, {
-        mode: Crypto.mode.CBC,
-        iv: ivWordArray,
-        padding: Crypto.pad.Pkcs7,
-    }).ciphertext;
-    return result;
+    if (decrypt) {
+        const ivWordArray = Crypto.lib.WordArray.create(data.words.slice(0, 4));
+        const d = Crypto.algo.AES.createDecryptor(key, {
+            mode: Crypto.mode.CBC,
+            iv: ivWordArray,
+            padding: Crypto.pad.Pkcs7,
+        });
+        const result = d.finalize(data);
+        return result;
+    }
+    else {
+        const ivWordArray = Crypto.lib.WordArray.random(16);
+        const e = Crypto.algo.AES.createEncryptor(key, {
+            mode: Crypto.mode.CBC,
+            iv: ivWordArray,
+            padding: Crypto.pad.Pkcs7,
+        });
+        const result = e.finalize(data);
+        return result;
+    }
 }
 
 const AESV2_KEY_PADDING = [
@@ -1405,12 +1399,12 @@ class AESV2DataCryptor {
         this._tempKey = new Uint8Array(key.length + 9);
     }
     encrypt(data, ref) {
-        return this.run(data, ref.id, ref.generation, AES_INIT_VALUE);
-    }
-    decrypt(data, ref) {
         return this.run(data, ref.id, ref.generation);
     }
-    run(data, id, generation, iv) {
+    decrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation, true);
+    }
+    run(data, id, generation, decrypt = false) {
         const idBytes = int32ToBytes(id, true);
         const genBytes = int32ToBytes(generation, true);
         this._tempKey.set(this._key, 0);
@@ -1418,11 +1412,12 @@ class AESV2DataCryptor {
         this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
         this._tempKey.set(AESV2_KEY_PADDING, this._n + 5);
         const hash = wordArrayToBytes(md5(this._tempKey));
-        const n = Math.max(this._n + 5, 16);
+        const n = Math.min(this._n + 5, 16);
         const key = hash.slice(0, n);
-        iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
-        const encrypted = wordArrayToBytes(aes(data, key, iv));
-        return encrypted;
+        const result = wordArrayToBytes(aes(data, key, decrypt));
+        return decrypt
+            ? result.slice(16)
+            : result;
     }
 }
 
@@ -1438,15 +1433,16 @@ class AESV3DataCryptor {
         this._key = key;
     }
     encrypt(data, ref) {
-        return this.run(data, ref.id, ref.generation, new Uint8Array(AES_INIT_VALUE));
-    }
-    decrypt(data, ref) {
         return this.run(data, ref.id, ref.generation);
     }
-    run(data, id, generation, iv) {
-        iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
-        const encrypted = wordArrayToBytes(aes(data, this._key, iv));
-        return encrypted;
+    decrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation, true);
+    }
+    run(data, id, generation, decrypt = false) {
+        const result = wordArrayToBytes(aes(data, this._key, decrypt));
+        return decrypt
+            ? result.slice(16)
+            : result;
     }
 }
 
@@ -2934,13 +2930,14 @@ class PdfStream extends PdfObject {
         return decodedData;
     }
     toArray(cryptInfo) {
+        const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
+            ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
+            : this.streamData;
         const encoder = new TextEncoder();
         const bytes = [...keywordCodes.DICT_START];
+        bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + streamData.length));
         if (this.Type) {
             bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
-        }
-        if (this.Length) {
-            bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
         }
         if (this.Filter) {
             bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
@@ -2948,9 +2945,6 @@ class PdfStream extends PdfObject {
         if (this.DecodeParms) {
             bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray(cryptInfo));
         }
-        const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
-            ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
-            : this.streamData;
         bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE);
         return new Uint8Array(bytes);
     }
@@ -3082,9 +3076,6 @@ class PdfStream extends PdfObject {
         const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
             ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
             : streamBytes;
-        if (!this.Length || this.Length !== encodedData.length) {
-            throw new Error("Incorrect stream length");
-        }
         this._streamData = encodedData;
         return true;
     }

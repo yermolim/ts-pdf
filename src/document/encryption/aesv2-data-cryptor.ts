@@ -1,5 +1,5 @@
 import { int32ToBytes } from "../byte-functions";
-import { md5, aes, AES_INIT_VALUE, wordArrayToBytes } from "../crypto";
+import { md5, aes, wordArrayToBytes } from "../crypto";
 import { IDataCryptor, Reference } from "../common-interfaces";
 
 /**
@@ -31,14 +31,14 @@ export class AESV2DataCryptor implements IDataCryptor {
   }
 
   encrypt(data: Uint8Array, ref: Reference): Uint8Array {
-    return this.run(data, ref.id, ref.generation, AES_INIT_VALUE);
+    return this.run(data, ref.id, ref.generation);
   }
 
   decrypt(data: Uint8Array, ref: Reference): Uint8Array {
-    return this.run(data, ref.id, ref.generation);
+    return this.run(data, ref.id, ref.generation, true);
   }  
 
-  protected run(data: Uint8Array, id: number, generation: number, iv?: Uint8Array): Uint8Array {
+  protected run(data: Uint8Array, id: number, generation: number, decrypt = false): Uint8Array {
     /*
     1. Obtain the object number and generation number from the object identifier 
     of the string or stream to be encrypted. If the string is a direct object, 
@@ -73,10 +73,11 @@ export class AESV2DataCryptor implements IDataCryptor {
     The block size parameter is set to 16 bytes, and the initialization vector 
     is a 16-byte random number that is stored as the first 16 bytes of the encrypted stream or string
     */
-    const n = Math.max(this._n + 5, 16);
+    const n = Math.min(this._n + 5, 16);
     const key = hash.slice(0, n);
-    iv ??= data.slice(0, 16);
-    const encrypted = wordArrayToBytes(aes(data, key, iv));
-    return encrypted;
+    const result = wordArrayToBytes(aes(data, key, decrypt));
+    return decrypt
+      ? result.slice(16)
+      : result;
   }
 }

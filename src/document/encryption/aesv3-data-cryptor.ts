@@ -1,4 +1,4 @@
-import { AES_INIT_VALUE, aes, wordArrayToBytes } from "../crypto";
+import { aes, wordArrayToBytes } from "../crypto";
 import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class AESV3DataCryptor implements IDataCryptor {
@@ -18,14 +18,14 @@ export class AESV3DataCryptor implements IDataCryptor {
   }
 
   encrypt(data: Uint8Array, ref: Reference): Uint8Array { 
-    return this.run(data, ref.id, ref.generation, new Uint8Array(AES_INIT_VALUE));
+    return this.run(data, ref.id, ref.generation);
   }
 
   decrypt(data: Uint8Array, ref: Reference): Uint8Array {
-    return this.run(data, ref.id, ref.generation);
+    return this.run(data, ref.id, ref.generation, true);
   }
   
-  protected run(data: Uint8Array, id: number, generation: number, iv?: Uint8Array): Uint8Array {   
+  protected run(data: Uint8Array, id: number, generation: number, decrypt = false): Uint8Array {   
     /*
     1. Use the 32-byte file encryption key for the AES-256 symmetric key algorithm, 
     along with the string or stream data to be encrypted. Use the AES algorithm 
@@ -33,8 +33,9 @@ export class AESV3DataCryptor implements IDataCryptor {
     The block size parameter is set to 16 bytes, and the initialization vector 
     is a 16-byte random number that is stored as the first 16 bytes of the encrypted stream or string
     */
-    iv ??= data.slice(0, 16);
-    const encrypted = wordArrayToBytes(aes(data, this._key, iv));    
-    return encrypted;
+    const result = wordArrayToBytes(aes(data, this._key, decrypt));
+    return decrypt
+      ? result.slice(16)
+      : result;
   }
 }
