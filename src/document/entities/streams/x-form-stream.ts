@@ -269,7 +269,7 @@ export class XFormStream extends PdfStream {
             }
             break;
           case "/LastModified":
-            const date = DateString.parse(parser, i, false);
+            const date = DateString.parse(parser, i);
             if (date) {
               this.LastModified = date.value;
               i = date.end + 1;

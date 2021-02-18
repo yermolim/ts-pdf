@@ -8,19 +8,24 @@ export class HexString implements IEncodable {
     readonly hex: Uint8Array,
     readonly bytes: Uint8Array) { }
     
-  static parse(parser: DataParser, start: number, 
+  static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<HexString>  {   
 
     const bounds = parser.getHexBounds(start, skipEmpty);
     if (!bounds) {
       return null;
     }
+    
+    let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+    if (cryptInfo?.ref && cryptInfo.stringCryptor) {
+      bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+    }
 
-    const hex = HexString.fromBytes(parser.sliceCharCodes(bounds.start, bounds.end));
+    const hex = HexString.fromBytes(bytes);
     return {value: hex, start: bounds.start, end: bounds.end};
   }  
   
-  static parseArray(parser: DataParser, start: number, 
+  static parseArray(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<HexString[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
@@ -31,7 +36,7 @@ export class HexString implements IEncodable {
     let current: ParseResult<HexString>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = HexString.parse(parser, i, true);
+      current = HexString.parse(parser, i, cryptInfo, skipEmpty);
       if (!current) {
         break;
       }
@@ -43,7 +48,6 @@ export class HexString implements IEncodable {
   }
 
   static fromBytes(bytes: Uint8Array): HexString {  
-    bytes = bytes.subarray(1, bytes.length - 1); 
     const literal = new TextDecoder().decode(bytes);  
     const hex = this.literalToHex(literal);
     return new HexString(literal, hex, bytes);

@@ -1754,14 +1754,17 @@ class LiteralString {
         this.literal = literal;
         this.bytes = bytes;
     }
-    static parse(parser, start, skipEmpty = true) {
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
         const bounds = parser.getLiteralBounds(start, skipEmpty);
         if (!bounds) {
             return;
         }
-        const literal = LiteralString.fromBytes(LiteralString
-            .unescape(parser.subCharCodes(bounds.start + 1, bounds.end - 1)));
-        return { value: literal, start: bounds.start, end: bounds.end };
+        let bytes = LiteralString.unescape(parser.subCharCodes(bounds.start + 1, bounds.end - 1));
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const result = LiteralString.fromBytes(bytes);
+        return { value: result, start: bounds.start, end: bounds.end };
     }
     static fromBytes(bytes) {
         const decoder = bytes[0] === 254 && bytes[1] === 255
@@ -1778,8 +1781,7 @@ class LiteralString {
             bytes.push((charCode & 0xFF00) >>> 8);
             bytes.push(charCode & 0xFF);
         }
-        const escapedBytes = LiteralString.escape(new Uint8Array(bytes));
-        return new LiteralString(source, escapedBytes);
+        return new LiteralString(source, new Uint8Array(bytes));
     }
     static escape(bytes) {
         const result = [];
@@ -1870,9 +1872,12 @@ class LiteralString {
         return new Uint8Array(result);
     }
     toArray(cryptInfo) {
+        const bytes = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor
+            ? cryptInfo.stringCryptor.encrypt(this.bytes, cryptInfo.ref)
+            : this.bytes;
         return new Uint8Array([
             ...keywordCodes.STR_LITERAL_START,
-            ...this.bytes,
+            ...LiteralString.escape(bytes),
             ...keywordCodes.STR_LITERAL_END,
         ]);
     }
@@ -1883,7 +1888,7 @@ class DateString {
         this.source = source;
         this.date = date;
     }
-    static parse(parser, start, skipEmpty = true) {
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
         if (skipEmpty) {
             start = parser.skipEmpty(start);
         }
@@ -1894,8 +1899,12 @@ class DateString {
         if (end === -1) {
             return null;
         }
+        let bytes = parser.subCharCodes(start + 1, end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
         try {
-            const date = DateString.fromArray(parser.subCharCodes(start + 1, end - 1));
+            const date = DateString.fromArray(bytes);
             return { value: date, start, end };
         }
         catch (_a) {
@@ -1922,7 +1931,10 @@ class DateString {
         return DateString.fromString(source);
     }
     toArray(cryptInfo) {
-        const bytes = new TextEncoder().encode(this.source);
+        let bytes = new TextEncoder().encode(this.source);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
+        }
         return new Uint8Array([
             ...keywordCodes.STR_LITERAL_START,
             ...bytes,
@@ -5077,15 +5089,19 @@ class HexString {
         this.hex = hex;
         this.bytes = bytes;
     }
-    static parse(parser, start, skipEmpty = true) {
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
         const bounds = parser.getHexBounds(start, skipEmpty);
         if (!bounds) {
             return null;
         }
-        const hex = HexString.fromBytes(parser.sliceCharCodes(bounds.start, bounds.end));
+        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const hex = HexString.fromBytes(bytes);
         return { value: hex, start: bounds.start, end: bounds.end };
     }
-    static parseArray(parser, start, skipEmpty = true) {
+    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
         const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
         if (!arrayBounds) {
             return null;
@@ -5094,7 +5110,7 @@ class HexString {
         let current;
         let i = arrayBounds.start + 1;
         while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, true);
+            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
             if (!current) {
                 break;
             }
@@ -5104,7 +5120,6 @@ class HexString {
         return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
     }
     static fromBytes(bytes) {
-        bytes = bytes.subarray(1, bytes.length - 1);
         const literal = new TextDecoder().decode(bytes);
         const hex = this.literalToHex(literal);
         return new HexString(literal, hex, bytes);
@@ -6681,7 +6696,7 @@ class PageDict extends PdfDict {
                         }
                         break;
                     case "/LastModified":
-                        const date = DateString.parse(parser, i, false);
+                        const date = DateString.parse(parser, i);
                         if (date) {
                             this.LastModified = date.value;
                             i = date.end + 1;

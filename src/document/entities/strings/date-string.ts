@@ -6,7 +6,7 @@ export class DateString implements IEncodable {
   private constructor(readonly source: string, 
     readonly date: Date) { }
     
-  static parse(parser: DataParser, start: number, 
+  static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<DateString>  {       
     if (skipEmpty) {
       start = parser.skipEmpty(start);
@@ -20,8 +20,13 @@ export class DateString implements IEncodable {
       return null;
     }
 
+    let bytes = parser.subCharCodes(start + 1, end - 1);
+    if (cryptInfo?.ref && cryptInfo.stringCryptor) {
+      bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+    }
+
     try {
-      const date = DateString.fromArray(parser.subCharCodes(start + 1, end - 1));
+      const date = DateString.fromArray(bytes);
       return {value: date, start, end};      
     } catch {
       return null;
@@ -58,7 +63,10 @@ export class DateString implements IEncodable {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array { 
-    const bytes = new TextEncoder().encode(this.source);
+    let bytes = new TextEncoder().encode(this.source);
+    if (cryptInfo?.ref && cryptInfo.stringCryptor) {
+      bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
+    }
     return new Uint8Array([
       ...keywordCodes.STR_LITERAL_START,         
       ...bytes, 

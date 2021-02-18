@@ -7,7 +7,7 @@ export class LiteralString implements IEncodable {
   private constructor(readonly literal: string,
     readonly bytes: Uint8Array) { }
     
-  static parse(parser: DataParser, start: number, 
+  static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<LiteralString>  {  
       
     const bounds = parser.getLiteralBounds(start, skipEmpty);
@@ -15,9 +15,13 @@ export class LiteralString implements IEncodable {
       return;
     }
 
-    const literal = LiteralString.fromBytes(LiteralString
-      .unescape(parser.subCharCodes(bounds.start + 1, bounds.end - 1)));
-    return {value: literal, start: bounds.start, end: bounds.end};
+    let bytes = LiteralString.unescape(parser.subCharCodes(bounds.start + 1, bounds.end - 1));
+    if (cryptInfo?.ref && cryptInfo.stringCryptor) {
+      bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+    }
+
+    const result = LiteralString.fromBytes(bytes);
+    return {value: result, start: bounds.start, end: bounds.end};
   }
 
   /**
@@ -46,8 +50,7 @@ export class LiteralString implements IEncodable {
       bytes.push((charCode & 0xFF00) >>> 8);  //high byte (might be 0)
       bytes.push(charCode & 0xFF);  //low byte
     }
-    const escapedBytes = LiteralString.escape(new Uint8Array(bytes));
-    return new LiteralString(source, escapedBytes);
+    return new LiteralString(source, new Uint8Array(bytes));
   }
 
   private static escape(bytes: Uint8Array): Uint8Array {
@@ -82,11 +85,11 @@ export class LiteralString implements IEncodable {
           result.push(codes.BACKSLASH);
           result.push(codes.R_PARENTHESE);
           break;
-        case codes.BACKSLASH: // TODO: handle escaped char code \ddd
+        case codes.BACKSLASH:
           result.push(codes.BACKSLASH);
           result.push(codes.BACKSLASH);
           break;
-        default:
+        default: // TODO: handle escaped char code \ddd
           result.push(bytes[i]);
           break;
       }
@@ -143,9 +146,12 @@ export class LiteralString implements IEncodable {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
+    const bytes = cryptInfo?.ref && cryptInfo.stringCryptor
+      ? cryptInfo.stringCryptor.encrypt(this.bytes, cryptInfo.ref)
+      : this.bytes; 
     return new Uint8Array([
       ...keywordCodes.STR_LITERAL_START, 
-      ...this.bytes, 
+      ...LiteralString.escape(bytes), 
       ...keywordCodes.STR_LITERAL_END,
     ]);
   }
