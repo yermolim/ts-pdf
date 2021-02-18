@@ -44,8 +44,7 @@ export abstract class PdfDict extends PdfObject {
       return false;
     }
 
-    this._id = parseInfo.id;
-    this._generation = parseInfo.generation;
+    this._ref = parseInfo.ref;
     this._streamId = parseInfo.streamId;
 
     const {parser, bounds} = parseInfo;

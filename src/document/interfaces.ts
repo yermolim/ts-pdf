@@ -43,7 +43,7 @@ export interface AuthenticationResult {
 }
 
 export interface CryptInfo {
-  ref: Reference;
   stringCryptor: DataCryptor;
   streamCryptor: DataCryptor;
+  ref?: Reference;
 }

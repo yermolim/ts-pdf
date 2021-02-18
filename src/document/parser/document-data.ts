@@ -315,12 +315,14 @@ export class DocumentData {
       return null;
     }
     const parseInfoGetter = this.getObjectParseInfo;
-    const info = {
+    const info = <ParseInfo>{
       parser: this._docParser, 
       bounds, 
       parseInfoGetter, 
-      id: objectId.value.id,
-      generation: objectId.value.generation,
+      ref: {
+        id: objectId.value.id,
+        generation: objectId.value.generation,
+      },
     };
 
     if (objectId.value.id === id) {

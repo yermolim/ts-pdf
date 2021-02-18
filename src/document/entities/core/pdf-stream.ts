@@ -109,8 +109,7 @@ export abstract class PdfStream extends PdfObject {
       return false;
     }
 
-    this._id = parseInfo.id;
-    this._generation = parseInfo.generation;
+    this._ref = parseInfo.ref;
 
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

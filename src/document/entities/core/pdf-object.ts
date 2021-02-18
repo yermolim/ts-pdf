@@ -1,13 +1,15 @@
-import { CryptInfo, Encodable } from "../../interfaces";
+import { CryptInfo, Encodable, Reference } from "../../interfaces";
 
 export abstract class PdfObject implements Encodable {
-  protected _id: number;
-  get id(): number {
-    return this._id;
+  protected _ref: Reference;
+  get ref(): Reference {
+    return this._ref;
   }
-  protected _generation: number;
+  get id(): number {
+    return this._ref.id;
+  }
   get generation(): number {
-    return this._generation;
+    return this._ref.generation;
   }
 
   protected constructor() {

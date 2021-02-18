@@ -2006,11 +2006,14 @@ class ObjectId {
 class PdfObject {
     constructor() {
     }
+    get ref() {
+        return this._ref;
+    }
     get id() {
-        return this._id;
+        return this._ref.id;
     }
     get generation() {
-        return this._generation;
+        return this._ref.generation;
     }
 }
 
@@ -2035,8 +2038,7 @@ class PdfDict extends PdfObject {
         if (!parseInfo) {
             return false;
         }
-        this._id = parseInfo.id;
-        this._generation = parseInfo.generation;
+        this._ref = parseInfo.ref;
         this._streamId = parseInfo.streamId;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
@@ -2935,8 +2937,7 @@ class PdfStream extends PdfObject {
         if (!parseInfo) {
             return false;
         }
-        this._id = parseInfo.id;
-        this._generation = parseInfo.generation;
+        this._ref = parseInfo.ref;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
@@ -6417,9 +6418,8 @@ class ObjectStream extends PdfStream {
             },
             type: objectType,
             value,
-            id,
-            generation: 0,
-            streamId: this._id,
+            ref: { id, generation: 0 },
+            streamId: this.id,
         };
     }
     toArray(cryptInfo) {
@@ -7968,8 +7968,10 @@ class DocumentData {
                 parser: this._docParser,
                 bounds,
                 parseInfoGetter,
-                id: objectId.value.id,
-                generation: objectId.value.generation,
+                ref: {
+                    id: objectId.value.id,
+                    generation: objectId.value.generation,
+                },
             };
             if (objectId.value.id === id) {
                 return info;

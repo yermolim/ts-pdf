@@ -2,6 +2,7 @@ import { codes, keywordCodes,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
   isRegularChar } from "../codes";
 import { ObjectType, ValueType, valueTypes } from "../const";
+import { Reference } from "../interfaces";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -24,8 +25,7 @@ export interface ParseInfo {
   bounds: Bounds;
   type?: ObjectType;
   value?: any;
-  id?: number;
-  generation?: number;
+  ref?: Reference;
   /** parent object stream id */
   streamId?: number;
   parseInfoGetter?: (id: number) => ParseInfo;

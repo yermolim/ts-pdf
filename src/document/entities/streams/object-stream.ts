@@ -129,9 +129,8 @@ export class ObjectStream extends PdfStream {
       },
       type: <ObjectType>objectType,
       value,
-      id,
-      generation: 0,
-      streamId: this._id,
+      ref: {id, generation: 0},
+      streamId: this.id,
     };
   }
 
