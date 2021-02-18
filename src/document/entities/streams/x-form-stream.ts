@@ -8,7 +8,7 @@ import { DateString } from "../strings/date-string";
 import { ResourceDict } from "../misc/resource-dict";
 import { codes } from "../../codes";
 import { MeasureDict } from "../misc/measure-dict";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 
 export class XFormStream extends PdfStream {
   /**

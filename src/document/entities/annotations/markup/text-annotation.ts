@@ -3,7 +3,7 @@ import { AnnotationIconType, annotationIconTypes,
   annotationReviewStates, 
   AnnotationState, AnnotationStateModelType, 
   annotationStateModelTypes, annotationTypes } from "../../../const";
-import { CryptInfo } from "../../../interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 

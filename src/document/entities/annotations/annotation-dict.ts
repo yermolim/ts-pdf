@@ -11,7 +11,7 @@ import { ParseInfo, ParseResult } from "../../data-parser";
 import { LiteralString } from "../strings/literal-string";
 import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 
 export abstract class AnnotationDict extends PdfDict {
   /** (Required) The type of annotation that this dictionary describes */

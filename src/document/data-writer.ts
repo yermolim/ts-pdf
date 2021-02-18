@@ -1,5 +1,5 @@
 import { codes, keywordCodes } from "./codes";
-import { IEncodable, Reference } from "./interfaces";
+import { IEncodable, Reference } from "./common-interfaces";
 
 export class DataWriter {
   private readonly _data: number[];  

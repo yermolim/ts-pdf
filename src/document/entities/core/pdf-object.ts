@@ -1,4 +1,4 @@
-import { CryptInfo, IEncodable, Reference } from "../../interfaces";
+import { CryptInfo, IEncodable, Reference } from "../../common-interfaces";
 
 export abstract class PdfObject implements IEncodable {
   protected _ref: Reference;

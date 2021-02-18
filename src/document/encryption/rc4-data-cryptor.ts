@@ -1,6 +1,6 @@
 import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
 import { md5, rc4 } from "../crypto";
-import { IDataCryptor, Reference } from "../interfaces";
+import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class RC4DataCryptor implements IDataCryptor {
   protected _n: number;

@@ -1,6 +1,6 @@
 import { keywordCodes } from "../../codes";
 import { DictType } from "../../const";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";
 

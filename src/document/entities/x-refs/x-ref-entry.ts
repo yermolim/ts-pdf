@@ -1,7 +1,7 @@
 import { parseIntFromBytes, int8ToBytes, int16ToBytes, int32ToBytes } from "../../byte-functions";
 import { codes, DIGIT_CHARS } from "../../codes";
 import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../const";
-import { Reference } from "../../interfaces";
+import { Reference } from "../../common-interfaces";
 
 export class XRefEntry implements Reference {
 

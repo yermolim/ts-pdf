@@ -1,6 +1,6 @@
 import { int32ArrayToBytes } from "../byte-functions";
 import { AES_INIT_VALUE, aes } from "../crypto";
-import { IDataCryptor, Reference } from "../interfaces";
+import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class AESV3DataCryptor implements IDataCryptor {
   protected _n: number;

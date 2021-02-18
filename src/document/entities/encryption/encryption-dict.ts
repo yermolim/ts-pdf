@@ -1,7 +1,7 @@
 import { codes } from "../../codes";
 import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, 
   dictTypes, valueTypes } from "../../const";
-import { CryptInfo, CryptOptions } from "../../interfaces";
+import { CryptInfo, CryptOptions } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";

@@ -5,7 +5,7 @@ import { ObjectId } from "../core/object-id";
 import { HexString } from "../strings/hex-string";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { codes } from "../../codes";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 
 export class TrailerDict extends PdfDict {
   /**

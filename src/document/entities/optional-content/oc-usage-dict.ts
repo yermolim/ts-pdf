@@ -1,4 +1,4 @@
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 import { PdfDict } from "../core/pdf-dict";
 import { CreatoInfoDict } from "./misc/creator-info-dict";
 import { ExportDict } from "./misc/export-dict";

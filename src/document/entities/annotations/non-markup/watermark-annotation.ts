@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../const";
-import { CryptInfo } from "../../../interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { AnnotationDict } from "../annotation-dict";
 
 export class WatermarkAnnotation extends AnnotationDict {

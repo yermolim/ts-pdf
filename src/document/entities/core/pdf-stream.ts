@@ -4,7 +4,7 @@ import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../codes";
 import { FlateDecoder } from "../../encoding/flate-decoder";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 
 export abstract class PdfStream extends PdfObject {
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */

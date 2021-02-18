@@ -2,7 +2,7 @@ import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
   LineEndingType, lineEndingTypes, Rect } from "../../../const";
-import { CryptInfo } from "../../../interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";

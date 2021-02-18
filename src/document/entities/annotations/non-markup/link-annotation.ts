@@ -1,5 +1,5 @@
 import { annotationTypes, HighlightingMode, highlightingModes } from "../../../const";
-import { CryptInfo } from "../../../interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";
 import { AnnotationDict } from "../annotation-dict";

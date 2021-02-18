@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../const";
-import { CryptInfo } from "../../../interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export class ProjectionAnnotation extends MarkupAnnotation {

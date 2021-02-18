@@ -3,7 +3,7 @@ import { arraysEqual, findSubarrayIndex,
   int32ArrayToBytes, int32ToBytes, xorBytes } from "../byte-functions";
 import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../const";
 import { md5, rc4, toWordArray } from "../crypto";
-import { CryptOptions, AuthenticationResult, IDataCryptor } from "../interfaces";
+import { CryptOptions, AuthenticationResult, IDataCryptor } from "../common-interfaces";
 import { AESV2DataCryptor } from "./aesv2-data-cryptor";
 import { AESV3DataCryptor } from "./aesv3-data-cryptor";
 import { IdentityDataCryptor } from "./identity-data-cryptor";

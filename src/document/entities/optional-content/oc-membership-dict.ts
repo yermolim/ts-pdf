@@ -3,7 +3,7 @@ import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
 import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
 import { dictTypes } from "../../const";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 
 export class OcMembershipDict extends PdfDict {
   /**

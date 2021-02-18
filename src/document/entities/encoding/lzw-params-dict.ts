@@ -1,4 +1,4 @@
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { FlateParamsDict } from "./flate-params-dict";
 

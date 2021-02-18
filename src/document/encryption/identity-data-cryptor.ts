@@ -1,4 +1,4 @@
-import { IDataCryptor, Reference } from "../interfaces";
+import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class IdentityDataCryptor implements IDataCryptor {
   constructor() {

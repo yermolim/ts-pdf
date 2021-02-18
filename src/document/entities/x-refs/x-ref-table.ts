@@ -1,6 +1,6 @@
 import { keywordCodes } from "../../codes";
 import { xRefTypes } from "../../const";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";

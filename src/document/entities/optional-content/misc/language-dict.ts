@@ -1,5 +1,5 @@
 import { OnOffState, onOffStates } from "../../../const";
-import { CryptInfo } from "../../../interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 
 export class LanguageDict extends PdfDict {

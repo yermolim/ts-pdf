@@ -1,6 +1,6 @@
 import { codes } from "../../codes";
 import { AuthEvent, authEvents, CryptMethod, cryptMethods, dictTypes, valueTypes } from "../../const";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";
 import { PdfDict } from "../core/pdf-dict";

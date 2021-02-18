@@ -1,5 +1,5 @@
 import { codes, keywordCodes } from "../../codes";
-import { CryptInfo, IEncodable } from "../../interfaces";
+import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
 export class DateString implements IEncodable {

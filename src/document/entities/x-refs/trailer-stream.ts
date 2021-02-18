@@ -5,7 +5,7 @@ import { ObjectId } from "../core/object-id";
 import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
 import { codes } from "../../codes";
-import { CryptInfo } from "../../interfaces";
+import { CryptInfo } from "../../common-interfaces";
 
 export class TrailerStream extends PdfStream {
   /**
