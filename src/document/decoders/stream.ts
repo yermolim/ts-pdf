@@ -1,5 +1,6 @@
 /* eslint-disable no-bitwise */
-import { IStream } from "./i-stream";
+
+import { IStream } from "../interfaces";
 
 export class Stream implements IStream {
   protected _bytes: Uint8Array;

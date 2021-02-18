@@ -4,14 +4,14 @@ import { Reference } from "./interfaces";
 import { XRef } from "./entities/x-refs/x-ref";
 import { XRefEntry } from "./entities/x-refs/x-ref-entry";
 
-export interface UsedReference extends Reference {
+interface UsedReference extends Reference {
   byteOffset: number;
   compressed?: boolean;
   streamId?: number;
   streamIndex?: number;
 }
 
-export interface FreeReference extends Reference {
+interface FreeReference extends Reference {
   nextFreeId: number;
 }
 

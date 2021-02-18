@@ -1,5 +1,5 @@
 import { codes, keywordCodes } from "./codes";
-import { Encodable, Reference } from "./interfaces";
+import { IEncodable, Reference } from "./interfaces";
 
 export class DataWriter {
   private readonly _data: number[];  
@@ -35,7 +35,7 @@ export class DataWriter {
     this._pointer += bytes.length;
   }
   
-  writeIndirectObject(ref: Reference, obj: Encodable) {
+  writeIndirectObject(ref: Reference, obj: IEncodable) {
     if (!ref || !obj) {
       return;
     }

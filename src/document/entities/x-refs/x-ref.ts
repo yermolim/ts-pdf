@@ -1,10 +1,10 @@
 import { XRefType } from "../../const";
-import { CryptInfo, Encodable } from "../../interfaces";
+import { CryptInfo, IEncodable } from "../../interfaces";
 import { HexString } from "../common/hex-string";
 import { ObjectId } from "../common/object-id";
 import { XRefEntry } from "./x-ref-entry";
 
-export abstract class XRef implements Encodable {
+export abstract class XRef implements IEncodable {
   protected readonly _type: XRefType;
   public get type(): XRefType {
     return this._type;

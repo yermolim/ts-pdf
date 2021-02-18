@@ -3,7 +3,7 @@ import { arraysEqual, findSubarrayIndex,
   int32ArrayToBytes, int32ToBytes, xorBytes } from "../byte-functions";
 import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../const";
 import { md5, rc4, toWordArray } from "../crypto";
-import { CryptOptions, AuthenticationResult, DataCryptor } from "../interfaces";
+import { CryptOptions, AuthenticationResult, IDataCryptor } from "../interfaces";
 import { AESV2DataCryptor } from "./aesv2-data-cryptor";
 import { AESV3DataCryptor } from "./aesv3-data-cryptor";
 import { IdentityDataCryptor } from "./identity-data-cryptor";
@@ -138,7 +138,7 @@ export class DataCryptHandler {
           streamCryptor: rc4_128,
         };
       case 4:
-        let v4stringCryptor: DataCryptor;
+        let v4stringCryptor: IDataCryptor;
         if (!stringMethod || stringMethod === cryptMethods.NONE) {
           v4stringCryptor = new IdentityDataCryptor();
         } else if (stringMethod === cryptMethods.RC4) {
@@ -148,7 +148,7 @@ export class DataCryptHandler {
         } else {          
           throw new Error(`Invalid crypt method: ${stringMethod}`);
         }
-        let v4streamCryptor: DataCryptor;
+        let v4streamCryptor: IDataCryptor;
         if (!streamMethod || streamMethod === cryptMethods.NONE) {
           v4streamCryptor = new IdentityDataCryptor();
         } else if (streamMethod === cryptMethods.RC4) {
@@ -164,7 +164,7 @@ export class DataCryptHandler {
           streamCryptor: v4streamCryptor,
         };
       case 5:
-        let v5stringCryptor: DataCryptor;
+        let v5stringCryptor: IDataCryptor;
         if (!stringMethod || stringMethod === cryptMethods.NONE) {
           v4stringCryptor = new IdentityDataCryptor();
         } else if (stringMethod === cryptMethods.AES_256) {
@@ -172,7 +172,7 @@ export class DataCryptHandler {
         } else {          
           throw new Error(`Invalid crypt method: ${stringMethod}`);
         }
-        let v5streamCryptor: DataCryptor;
+        let v5streamCryptor: IDataCryptor;
         if (!streamMethod || streamMethod === cryptMethods.NONE) {
           v4streamCryptor = new IdentityDataCryptor();
         } else if (streamMethod === cryptMethods.AES_256) {

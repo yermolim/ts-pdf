@@ -1,8 +1,8 @@
 import { codes } from "../../codes";
-import { CryptInfo, Encodable, Reference } from "../../interfaces";
+import { CryptInfo, IEncodable, Reference } from "../../interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
-export class ObjectId implements Reference, Encodable {
+export class ObjectId implements Reference, IEncodable {
   /** A positive integer object number */
   readonly id: number;
   /** A non-negative integer generation number. 

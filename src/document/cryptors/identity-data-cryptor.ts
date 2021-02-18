@@ -1,6 +1,6 @@
-import { DataCryptor, Reference } from "../interfaces";
+import { IDataCryptor, Reference } from "../interfaces";
 
-export class IdentityDataCryptor implements DataCryptor {
+export class IdentityDataCryptor implements IDataCryptor {
   constructor() {
     
   }

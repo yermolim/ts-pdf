@@ -5,10 +5,6 @@ export interface Reference {
   generation: number;
 }
 
-export interface Encodable {  
-  toArray(cryptInfo?: CryptInfo): Uint8Array;
-}
-
 export interface CryptOptions {
   filter: string;
   version: CryptVersion;
@@ -31,19 +27,41 @@ export interface CryptOptions {
   perms?: Uint8Array;
 }
 
-export interface DataCryptor {
+export interface IDataCryptor {
   encrypt(data: Uint8Array, ref: Reference): Uint8Array;
   decrypt(data: Uint8Array, ref: Reference): Uint8Array;
 }
 
 export interface AuthenticationResult {
   authLevel: "user" | "owner"; 
-  stringCryptor: DataCryptor; 
-  streamCryptor: DataCryptor;
+  stringCryptor: IDataCryptor; 
+  streamCryptor: IDataCryptor;
 }
 
 export interface CryptInfo {
-  stringCryptor: DataCryptor;
-  streamCryptor: DataCryptor;
+  stringCryptor: IDataCryptor;
+  streamCryptor: IDataCryptor;
   ref?: Reference;
+}
+
+export interface IEncodable {  
+  toArray(cryptInfo?: CryptInfo): Uint8Array;
+}
+
+export interface IStream { 
+  length: number;
+
+  takeByte(): number;
+
+  takeBytes(length?: number): Uint8Array;
+
+  takeUint16(): number;
+
+  takeInt32(): number;
+  
+  peekByte(): number;
+
+  peekBytes(length?: number): Uint8Array;
+  
+  getByteRange?(start: number, end: number): Uint8Array;
 }

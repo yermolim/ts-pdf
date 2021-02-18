@@ -1,6 +1,6 @@
 import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
 import { md5, aes, AES_INIT_VALUE } from "../crypto";
-import { DataCryptor, Reference } from "../interfaces";
+import { IDataCryptor, Reference } from "../interfaces";
 
 /**
  * If using the AES-128 algorithm, extend the encryption key an additional 4 bytes 
@@ -12,7 +12,7 @@ const AESV2_KEY_PADDING = [
 ] as const;
 
 
-export class AESV2DataCryptor implements DataCryptor {
+export class AESV2DataCryptor implements IDataCryptor {
   protected _n: number;
   protected _key: Uint8Array;
   protected _tempKey: Uint8Array;

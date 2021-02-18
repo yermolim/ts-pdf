@@ -1,6 +1,6 @@
-import { CryptInfo, Encodable, Reference } from "../../interfaces";
+import { CryptInfo, IEncodable, Reference } from "../../interfaces";
 
-export abstract class PdfObject implements Encodable {
+export abstract class PdfObject implements IEncodable {
   protected _ref: Reference;
   get ref(): Reference {
     return this._ref;

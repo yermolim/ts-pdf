@@ -1,8 +1,8 @@
 import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
 import { md5, rc4 } from "../crypto";
-import { DataCryptor, Reference } from "../interfaces";
+import { IDataCryptor, Reference } from "../interfaces";
 
-export class RC4DataCryptor implements DataCryptor {
+export class RC4DataCryptor implements IDataCryptor {
   protected _n: number;
   protected _key: Uint8Array;
   protected _tempKey: Uint8Array;

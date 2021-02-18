@@ -1,8 +1,8 @@
 import { codes, keywordCodes } from "../../codes";
-import { CryptInfo, Encodable } from "../../interfaces";
+import { CryptInfo, IEncodable } from "../../interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
-export class DateString implements Encodable {
+export class DateString implements IEncodable {
   private constructor(readonly source: string, 
     readonly date: Date) { }
     

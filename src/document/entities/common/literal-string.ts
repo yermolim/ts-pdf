@@ -1,9 +1,9 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../codes";
-import { CryptInfo, Encodable } from "../../interfaces";
+import { CryptInfo, IEncodable } from "../../interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
-export class LiteralString implements Encodable {
+export class LiteralString implements IEncodable {
   private constructor(readonly literal: string,
     readonly bytes: Uint8Array) { }
     
