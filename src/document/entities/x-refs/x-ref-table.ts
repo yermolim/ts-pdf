@@ -36,14 +36,15 @@ export class XRefTable extends XRef {
     return this._trailerDict?.ID;
   }
 
-  constructor(table: Uint8Array, trailer: TrailerDict) {
+  constructor(table: Uint8Array, trailer: TrailerDict, offset: number) {
     super(xRefTypes.TABLE);
 
     this._table = table;
     this._trailerDict = trailer;
+    this._offset = offset;
   }
   
-  static createFrom(base: XRefTable, entries: XRefEntry[]) {
+  static createFrom(base: XRefTable, entries: XRefEntry[], offset: number) {
     if (!entries?.length || !base) {
       return null;
     }
@@ -51,14 +52,14 @@ export class XRefTable extends XRef {
     const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
     const size = Math.max(entriesSize, base.size);
 
-    return XRefTable.create(entries, size, base.prev, 
-      base.root, base.info, base.encrypt, base.id);
+    return XRefTable.create(entries, size, offset, base.root, 
+      base.offset, base.info, base.encrypt, base.id);
   }
   
-  static create(entries: XRefEntry[], size: number, prev: number, root: ObjectId, 
-    info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString],) {
+  static create(entries: XRefEntry[], size: number, offset: number, root: ObjectId, 
+    prev?: number, info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString],) {
 
-    if (!entries?.length || !size || !prev || !root) {
+    if (!entries?.length || !size || !offset || !root) {
       return null;
     }
 
@@ -71,12 +72,12 @@ export class XRefTable extends XRef {
     trailer.ID = id;
 
     const data = XRefEntry.toTableBytes(entries);
-    const table = new XRefTable(data, trailer);
+    const table = new XRefTable(data, trailer, offset);
 
     return table;
   }
 
-  static parse(parser: DataParser, start: number): ParseResult<XRefTable> {
+  static parse(parser: DataParser, start: number, offset: number): ParseResult<XRefTable> {
     if (!parser || isNaN(start)) {
       return null;
     }
@@ -99,7 +100,7 @@ export class XRefTable extends XRef {
       return null;
     }
 
-    const xrefTable = new XRefTable(table, trailerDict.value); 
+    const xrefTable = new XRefTable(table, trailerDict.value, offset); 
   
     return {
       value: xrefTable,
@@ -108,8 +109,8 @@ export class XRefTable extends XRef {
     };
   }
   
-  createUpdate(entries: XRefEntry[]): XRefTable {
-    return XRefTable.createFrom(this, entries);
+  createUpdate(entries: XRefEntry[], offset: number): XRefTable {
+    return XRefTable.createFrom(this, entries, offset);
   }
   
   getEntries(): Iterable<XRefEntry> { 

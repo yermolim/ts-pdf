@@ -138,7 +138,7 @@ export const keywordCodes = {
   XREF_START: [codes.s, codes.t, codes.a, codes.r, codes.t, 
     codes.x, codes.r, codes.e, codes.f],
   TRAILER: [codes.t, codes.r, codes.a, codes.i, codes.l, codes.e, codes.r],
-  END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
+  END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.E, codes.O, codes.F],
 
   END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
 

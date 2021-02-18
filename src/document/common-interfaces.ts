@@ -33,7 +33,7 @@ export interface IDataCryptor {
 }
 
 export interface AuthenticationResult {
-  authLevel: "user" | "owner"; 
+  owner: boolean; 
   stringCryptor: IDataCryptor; 
   streamCryptor: IDataCryptor;
 }

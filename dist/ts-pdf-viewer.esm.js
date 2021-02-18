@@ -1024,7 +1024,7 @@ const keywordCodes = {
     XREF_START: [codes.s, codes.t, codes.a, codes.r, codes.t,
         codes.x, codes.r, codes.e, codes.f],
     TRAILER: [codes.t, codes.r, codes.a, codes.i, codes.l, codes.e, codes.r],
-    END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.e, codes.o, codes.f],
+    END_OF_FILE: [codes.PERCENT, codes.PERCENT, codes.E, codes.O, codes.F],
     END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
     TRUE: [codes.t, codes.r, codes.u, codes.e],
     FALSE: [codes.f, codes.a, codes.l, codes.s, codes.e],
@@ -1535,33 +1535,30 @@ class DataCryptHandler {
         const version = this._version;
         const stringMethod = this._stringMethod;
         const streamMethod = this._streamMethod;
-        let authorized;
+        let owner = false;
         const ownerAuthenticated = this.authOwnerPassword(password);
         if (ownerAuthenticated) {
-            authorized = "owner";
+            owner = true;
         }
         else {
             const userAuthenticated = this.authUserPassword(password);
-            authorized = userAuthenticated
-                ? "user"
-                : null;
-        }
-        if (!authorized) {
-            return null;
+            if (!userAuthenticated) {
+                return null;
+            }
         }
         const key = this._lastEncryptionKey;
         switch (version) {
             case 1:
                 const rc4_40 = new RC4DataCryptor(key);
                 return {
-                    authLevel: authorized,
+                    owner,
                     stringCryptor: rc4_40,
                     streamCryptor: rc4_40,
                 };
             case 2:
                 const rc4_128 = new RC4DataCryptor(key);
                 return {
-                    authLevel: authorized,
+                    owner,
                     stringCryptor: rc4_128,
                     streamCryptor: rc4_128,
                 };
@@ -1593,7 +1590,7 @@ class DataCryptHandler {
                     throw new Error(`Invalid crypt method: ${streamMethod}`);
                 }
                 return {
-                    authLevel: authorized,
+                    owner,
                     stringCryptor: v4stringCryptor,
                     streamCryptor: v4streamCryptor,
                 };
@@ -1619,7 +1616,7 @@ class DataCryptHandler {
                     throw new Error(`Invalid crypt method: ${streamMethod}`);
                 }
                 return {
-                    authLevel: authorized,
+                    owner,
                     stringCryptor: v5stringCryptor,
                     streamCryptor: v5streamCryptor,
                 };
@@ -7087,6 +7084,9 @@ class XRef {
     get type() {
         return this._type;
     }
+    get offset() {
+        return this._offset;
+    }
 }
 
 class XRefEntry {
@@ -7359,9 +7359,10 @@ class XRefEntry {
 }
 
 class XRefStream extends XRef {
-    constructor(trailer) {
+    constructor(trailer, offset) {
         super(xRefTypes.STREAM);
         this._trailerStream = trailer;
+        this._offset = offset;
     }
     get prev() {
         var _a;
@@ -7387,22 +7388,22 @@ class XRefStream extends XRef {
         var _a;
         return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.ID;
     }
-    static createFrom(base, entries) {
+    static createFrom(base, entries, offset) {
         if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
             return null;
         }
         const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
         const size = Math.max(entriesSize, base.size);
-        return XRefStream.create(entries, size, base.prev, base.root, base.info, base.encrypt, base.id);
+        return XRefStream.create(entries, size, offset, base.root, base.offset, base.info, base.encrypt, base.id);
     }
-    static create(entries, size, prev, root, info, encrypt, id) {
-        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !prev || !root) {
+    static create(entries, size, offset, root, prev, info, encrypt, id) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !offset || !root) {
             return null;
         }
         const trailer = new TrailerStream();
         trailer.Size = size;
-        trailer.Prev = prev;
         trailer.Root = root;
+        trailer.Prev = prev;
         trailer.Info = info;
         trailer.Encrypt = encrypt;
         trailer.ID = id;
@@ -7413,7 +7414,7 @@ class XRefStream extends XRef {
         params.Columns = 5;
         params.Colors = 1;
         params.BitsPerComponent = 8;
-        const stream = new XRefStream(trailer);
+        const stream = new XRefStream(trailer, offset);
         stream._trailerStream.Filter = streamFilters.FLATE;
         stream._trailerStream.DecodeParms = params;
         stream._trailerStream.W = w;
@@ -7421,7 +7422,7 @@ class XRefStream extends XRef {
         stream._trailerStream.streamData = data.bytes;
         return stream;
     }
-    static parse(parseInfo) {
+    static parse(parseInfo, offset) {
         if (!parseInfo) {
             return null;
         }
@@ -7429,15 +7430,15 @@ class XRefStream extends XRef {
         if (!trailerStream) {
             return null;
         }
-        const xrefStream = new XRefStream(trailerStream.value);
+        const xrefStream = new XRefStream(trailerStream.value, offset);
         return {
             value: xrefStream,
             start: null,
             end: null,
         };
     }
-    createUpdate(entries) {
-        return XRefStream.createFrom(this, entries);
+    createUpdate(entries, offset) {
+        return XRefStream.createFrom(this, entries, offset);
     }
     getEntries() {
         if (!this._trailerStream) {
@@ -7592,10 +7593,11 @@ class TrailerDict extends PdfDict {
 }
 
 class XRefTable extends XRef {
-    constructor(table, trailer) {
+    constructor(table, trailer, offset) {
         super(xRefTypes.TABLE);
         this._table = table;
         this._trailerDict = trailer;
+        this._offset = offset;
     }
     get prev() {
         var _a;
@@ -7621,16 +7623,16 @@ class XRefTable extends XRef {
         var _a;
         return (_a = this._trailerDict) === null || _a === void 0 ? void 0 : _a.ID;
     }
-    static createFrom(base, entries) {
+    static createFrom(base, entries, offset) {
         if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
             return null;
         }
         const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
         const size = Math.max(entriesSize, base.size);
-        return XRefTable.create(entries, size, base.prev, base.root, base.info, base.encrypt, base.id);
+        return XRefTable.create(entries, size, offset, base.root, base.offset, base.info, base.encrypt, base.id);
     }
-    static create(entries, size, prev, root, info, encrypt, id) {
-        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !prev || !root) {
+    static create(entries, size, offset, root, prev, info, encrypt, id) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !offset || !root) {
             return null;
         }
         const trailer = new TrailerDict();
@@ -7641,10 +7643,10 @@ class XRefTable extends XRef {
         trailer.Encrypt = encrypt;
         trailer.ID = id;
         const data = XRefEntry.toTableBytes(entries);
-        const table = new XRefTable(data, trailer);
+        const table = new XRefTable(data, trailer, offset);
         return table;
     }
-    static parse(parser, start) {
+    static parse(parser, start, offset) {
         if (!parser || isNaN(start)) {
             return null;
         }
@@ -7661,15 +7663,15 @@ class XRefTable extends XRef {
         if (!trailerDict) {
             return null;
         }
-        const xrefTable = new XRefTable(table, trailerDict.value);
+        const xrefTable = new XRefTable(table, trailerDict.value, offset);
         return {
             value: xrefTable,
             start: null,
             end: null,
         };
     }
-    createUpdate(entries) {
-        return XRefTable.createFrom(this, entries);
+    createUpdate(entries, offset) {
+        return XRefTable.createFrom(this, entries, offset);
     }
     getEntries() {
         if (!this._table.length) {
@@ -7717,15 +7719,12 @@ class DataWriter {
         this._data.push(...bytes);
         this._pointer += bytes.length;
     }
-    writeIndirectObject(ref, obj) {
-        if (!ref || !obj) {
+    writeIndirectObject(cryptInfo, obj) {
+        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !obj) {
             return;
         }
-        const cryptInfo = this._stringCryptor
-            ? { ref, stringCryptor: this._stringCryptor, streamCryptor: this._streamCryptor }
-            : null;
         const objBytes = [
-            ...this._encoder.encode(`${ref.id} ${ref.generation} `),
+            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
             ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
             ...obj.toArray(cryptInfo),
             ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
@@ -8034,23 +8033,13 @@ class DocumentData {
                 throw new Error("Failed to parse cross-reference sections");
             }
         }
+        this._lastXrefOffset = lastXrefIndex.value;
         this._xrefs = xrefs;
         this._referenceData = new ReferenceData(xrefs);
         console.log(this._xrefs);
         console.log(this._referenceData);
         this.parseEncryption();
         console.log(this._encryption);
-        if (this._encryption) {
-            const cryptOptions = this._encryption.toCryptOptions();
-            const fileId = this._xrefs[0].id[0].hex;
-            const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
-            this._authResult = cryptorSource.authenticate("ownerpassword");
-            console.log(this._authResult);
-        }
-        this.parsePageTree();
-        console.log(this._catalog);
-        console.log(this._pageRoot);
-        console.log(this._pages);
     }
     get size() {
         var _a;
@@ -8061,10 +8050,17 @@ class DocumentData {
             return 0;
         }
     }
+    get encrypted() {
+        return !!this._encryption;
+    }
+    get authenticated() {
+        return !this._encryption || !!this._authResult;
+    }
     static parseXref(parser, start, max) {
         if (!parser || !start) {
             return null;
         }
+        const offset = start;
         const xrefTableIndex = parser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
         if (xrefTableIndex && xrefTableIndex.start === start) {
             const xrefStmIndexProp = parser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
@@ -8076,7 +8072,7 @@ class DocumentData {
                 start = streamXrefIndex.value;
             }
             else {
-                const xrefTable = XRefTable.parse(parser, start);
+                const xrefTable = XRefTable.parse(parser, start, offset);
                 return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
             }
         }
@@ -8088,7 +8084,7 @@ class DocumentData {
         if (!xrefStreamBounds) {
             return null;
         }
-        const xrefStream = XRefStream.parse({ parser: parser, bounds: xrefStreamBounds });
+        const xrefStream = XRefStream.parse({ parser: parser, bounds: xrefStreamBounds }, offset);
         return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
     static parseAllXrefs(parser, start) {
@@ -8108,7 +8104,18 @@ class DocumentData {
         }
         return xrefs;
     }
+    authenticate(password) {
+        if (this.authenticated) {
+            return true;
+        }
+        const cryptOptions = this._encryption.toCryptOptions();
+        const fileId = this._xrefs[0].id[0].hex;
+        const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
+        this._authResult = cryptorSource.authenticate(password);
+        return this.authenticated;
+    }
     getRefinedData(idsToDelete) {
+        this.checkAuthentication();
         const changeData = new ReferenceDataChange(this._referenceData);
         idsToDelete.forEach(x => changeData.setRefFree(x));
         const writer = new DataWriter(this._data, this._authResult);
@@ -8116,14 +8123,21 @@ class DocumentData {
         const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
         const entries = changeData.exportEntries();
         const lastXref = this._xrefs[0];
-        const newXref = lastXref.createUpdate(entries);
-        writer.writeIndirectObject(newXrefRef, newXref);
+        const newXref = lastXref.createUpdate(entries, newXrefOffset);
+        writer.writeIndirectObject({ ref: newXrefRef }, newXref);
         writer.writeEof(newXrefOffset);
         const bytes = writer.getCurrentData();
         return bytes;
     }
     getSupportedAnnotations() {
         var _a;
+        this.checkAuthentication();
+        if (!this._catalog) {
+            this.parsePageTree();
+            console.log(this._catalog);
+            console.log(this._pageRoot);
+            console.log(this._pages);
+        }
         const annotationMap = new Map();
         for (const page of this._pages) {
             if (!page.Annots) {
@@ -8183,6 +8197,11 @@ class DocumentData {
             annotationMap.set(page.id, annotations);
         }
         return annotationMap;
+    }
+    checkAuthentication() {
+        if (!this.authenticated) {
+            throw new Error("Unauthorized access to file data");
+        }
     }
     parseEncryption() {
         const encryptionId = this._xrefs[0].encrypt;
@@ -8252,37 +8271,54 @@ class AnnotationEditor {
         }
         this._sourceData = pdfData;
         this._documentData = new DocumentData(pdfData);
-        this._annotationsByPageId = this._documentData.getSupportedAnnotations();
+    }
+    tryAuthenticate(password = "") {
+        if (!this._documentData.authenticated) {
+            return this._documentData.authenticate(password);
+        }
+        return true;
     }
     getRefinedData() {
+        const annotations = this.getAnnotationMap();
         const idsToDelete = [];
-        this._annotationsByPageId.forEach(x => {
-            x.forEach(y => {
-                if (y.id) {
-                    idsToDelete.push(y.id);
-                }
+        if (annotations === null || annotations === void 0 ? void 0 : annotations.size) {
+            this.getAnnotationMap().forEach(x => {
+                x.forEach(y => {
+                    if (y.id) {
+                        idsToDelete.push(y.id);
+                    }
+                });
             });
-        });
+        }
         return this._documentData.getRefinedData(idsToDelete);
     }
     getExportedData() {
         return null;
     }
     getPageAnnotations(pageId) {
-        const annotations = this._annotationsByPageId.get(pageId);
+        const annotations = this.getAnnotationMap().get(pageId);
         if (!annotations) {
             return [];
         }
         return annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
     }
     addAnnotation(pageId, annotation) {
-        const pageAnnotations = this._annotationsByPageId.get(pageId);
+        const pageAnnotations = this.getAnnotationMap().get(pageId);
         if (pageAnnotations) {
             pageAnnotations.push(annotation);
         }
         else {
-            this._annotationsByPageId.set(pageId, [annotation]);
+            this.getAnnotationMap().set(pageId, [annotation]);
         }
+    }
+    getAnnotationMap() {
+        if (this._annotationsByPageId) {
+            return this._annotationsByPageId;
+        }
+        if (!this._documentData.authenticated) {
+            throw new Error("Unauthorized access to file data");
+        }
+        this._annotationsByPageId = this._documentData.getSupportedAnnotations();
     }
 }
 
@@ -8587,19 +8623,28 @@ class TsPdfViewer {
                 throw new Error("Cannot load file data!");
             }
             const annotator = new AnnotationEditor(data);
+            let password;
+            while (true) {
+                const authenticated = annotator.tryAuthenticate(password);
+                if (!authenticated) {
+                    password = "ownerpassword";
+                    continue;
+                }
+                break;
+            }
             data = annotator.getRefinedData();
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();
                     return this.openPdfAsync(data);
                 }
-                this._pdfLoadingTask = getDocument(data);
+                this._pdfLoadingTask = getDocument({ data, password });
                 this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
                 doc = yield this._pdfLoadingTask.promise;
                 this._pdfLoadingTask = null;
             }
-            catch (_b) {
-                throw new Error("Cannot open PDF!");
+            catch (e) {
+                throw new Error(`Cannot open PDF: ${e.message}`);
             }
             yield this.onPdfLoadedAsync(doc);
         });

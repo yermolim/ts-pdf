@@ -35,12 +35,13 @@ export class XRefStream extends XRef {
     return this._trailerStream?.ID;
   }
   
-  constructor(trailer: TrailerStream) {
+  constructor(trailer: TrailerStream, offset: number) {
     super(xRefTypes.STREAM);
     this._trailerStream = trailer;
+    this._offset = offset;
   }
 
-  static createFrom(base: XRefStream, entries: XRefEntry[]) {
+  static createFrom(base: XRefStream, entries: XRefEntry[], offset: number) {
     if (!entries?.length || !base) {
       return null;
     }
@@ -48,21 +49,21 @@ export class XRefStream extends XRef {
     const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
     const size = Math.max(entriesSize, base.size);
 
-    return XRefStream.create(entries, size, base.prev, base.root, 
-      base.info, base.encrypt, base.id);
+    return XRefStream.create(entries, size, offset, base.root, 
+      base.offset, base.info, base.encrypt, base.id);
   }
 
-  static create(entries: XRefEntry[], size: number, prev: number, root: ObjectId, 
-    info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString]): XRefStream {
+  static create(entries: XRefEntry[], size: number, offset: number, root: ObjectId, 
+    prev?: number, info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString]): XRefStream {
 
-    if (!entries?.length || !size || !prev || !root) {
+    if (!entries?.length || !size || !offset || !root) {
       return null;
     }
 
     const trailer = new TrailerStream();
     trailer.Size = size;
-    trailer.Prev = prev;
     trailer.Root = root;
+    trailer.Prev = prev;
     trailer.Info = info;
     trailer.Encrypt = encrypt;
     trailer.ID = id;
@@ -76,7 +77,7 @@ export class XRefStream extends XRef {
     params.Colors = 1;
     params.BitsPerComponent = 8;
 
-    const stream = new XRefStream(trailer);
+    const stream = new XRefStream(trailer, offset);
     stream._trailerStream.Filter = streamFilters.FLATE;
     stream._trailerStream.DecodeParms = params;
     stream._trailerStream.W = w;
@@ -86,7 +87,7 @@ export class XRefStream extends XRef {
     return stream;
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<XRefStream> {
+  static parse(parseInfo: ParseInfo, offset: number): ParseResult<XRefStream> {
     if (!parseInfo) {
       return null;
     }
@@ -96,7 +97,7 @@ export class XRefStream extends XRef {
       return null;
     }
 
-    const xrefStream = new XRefStream(trailerStream.value);
+    const xrefStream = new XRefStream(trailerStream.value, offset);
   
     return {
       value: xrefStream,
@@ -105,8 +106,8 @@ export class XRefStream extends XRef {
     };
   }
 
-  createUpdate(entries: XRefEntry[]): XRefStream {
-    return XRefStream.createFrom(this, entries);
+  createUpdate(entries: XRefEntry[], offset: number): XRefStream {
+    return XRefStream.createFrom(this, entries, offset);
   }
 
   getEntries(): Iterable<XRefEntry> {   

@@ -6,8 +6,12 @@ import { XRefEntry } from "./x-ref-entry";
 
 export abstract class XRef implements IEncodable {
   protected readonly _type: XRefType;
-  public get type(): XRefType {
+  get type(): XRefType {
     return this._type;
+  }
+  protected _offset: number;
+  get offset(): number {
+    return this._offset;
   }
 
   abstract get size(): number;
@@ -21,7 +25,7 @@ export abstract class XRef implements IEncodable {
     this._type = type;
   }
   
-  abstract createUpdate(entries: XRefEntry[]): XRef;
+  abstract createUpdate(entries: XRefEntry[], offset: number): XRef;
 
   abstract getEntries(): Iterable<XRefEntry>;
   

@@ -105,6 +105,17 @@ export class TsPdfViewer {
     }
 
     const annotator = new AnnotationEditor(data);
+    let password: string;
+    while (true) {      
+      const authenticated = annotator.tryAuthenticate(password);
+      if (!authenticated) {
+        password = "ownerpassword";
+        continue;
+        // TODO: add user dialog
+      }
+      break;
+    }
+
     // data without supported annotations
     data = annotator.getRefinedData();
 
@@ -114,12 +125,12 @@ export class TsPdfViewer {
         return this.openPdfAsync(data);
       }
   
-      this._pdfLoadingTask = getDocument(data);
+      this._pdfLoadingTask = getDocument({data, password});
       this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
       doc = await this._pdfLoadingTask.promise;    
       this._pdfLoadingTask = null;
-    } catch {
-      throw new Error("Cannot open PDF!");
+    } catch (e) {
+      throw new Error(`Cannot open PDF: ${e.message}`);
     }
 
     await this.onPdfLoadedAsync(doc);

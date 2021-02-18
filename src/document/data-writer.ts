@@ -43,17 +43,13 @@ export class DataWriter {
     this._pointer += bytes.length;
   }
   
-  writeIndirectObject(ref: Reference, obj: IEncodable) {
-    if (!ref || !obj) {
+  writeIndirectObject(cryptInfo: CryptInfo, obj: IEncodable) {
+    if (!cryptInfo?.ref || !obj) {
       return;
     }
-    
-    const cryptInfo: CryptInfo = this._stringCryptor
-      ? { ref, stringCryptor: this._stringCryptor, streamCryptor: this._streamCryptor }
-      : null;
 
     const objBytes = [
-      ...this._encoder.encode(`${ref.id} ${ref.generation} `), 
+      ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `), 
       ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
       ...obj.toArray(cryptInfo), 
       ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,

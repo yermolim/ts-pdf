@@ -28,10 +28,11 @@ export class DocumentData {
   private readonly _docParser: DataParser;
   private readonly _version: string; 
 
+  private readonly _lastXrefOffset: number;
   private readonly _xrefs: XRef[];
   private readonly _referenceData: ReferenceData;
 
-  private _encryption: EncryptionDict;
+  private _encryption: EncryptionDict;  
   private _authResult: AuthenticationResult;
 
   private _catalog: CatalogDict;
@@ -44,6 +45,14 @@ export class DocumentData {
     } else {
       return 0;
     }
+  }
+  
+  get encrypted(): boolean {
+    return !!this._encryption;
+  }
+
+  get authenticated(): boolean {
+    return !this._encryption || !!this._authResult;
   }
 
   constructor(data: Uint8Array) {
@@ -60,6 +69,7 @@ export class DocumentData {
       throw new Error("Failed to parse cross-reference sections");
     }}
 
+    this._lastXrefOffset = lastXrefIndex.value;
     this._xrefs = xrefs;
     this._referenceData = new ReferenceData(xrefs);
     // DEBUG
@@ -68,27 +78,15 @@ export class DocumentData {
 
     this.parseEncryption();
     // DEBUG
-    console.log(this._encryption);  
-    if (this._encryption) {
-      // doc is encrypted
-      const cryptOptions = this._encryption.toCryptOptions();
-      const fileId = this._xrefs[0].id[0].hex;
-      const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
-      this._authResult = cryptorSource.authenticate("ownerpassword");
-      console.log(this._authResult);
-    }
-    
-    this.parsePageTree(); 
-    // DEBUG
-    console.log(this._catalog);    
-    console.log(this._pageRoot); 
-    console.log(this._pages);  
+    console.log(this._encryption);
   }    
 
   private static parseXref(parser: DataParser, start: number, max: number): XRef {
     if (!parser || !start) {
       return null;
     }
+
+    const offset = start;
     
     const xrefTableIndex = parser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
       {minIndex: start, closedOnly: true});
@@ -104,7 +102,7 @@ export class DocumentData {
         start = streamXrefIndex.value;
       } else {
         // TABLE
-        const xrefTable = XRefTable.parse(parser, start);
+        const xrefTable = XRefTable.parse(parser, start, offset);
         return xrefTable?.value;
       }
     } else {
@@ -119,7 +117,7 @@ export class DocumentData {
     if (!xrefStreamBounds) {      
       return null;
     }       
-    const xrefStream = XRefStream.parse({parser: parser, bounds: xrefStreamBounds});
+    const xrefStream = XRefStream.parse({parser: parser, bounds: xrefStreamBounds}, offset);
     return xrefStream?.value; 
   }  
   
@@ -140,7 +138,21 @@ export class DocumentData {
     return xrefs;
   }
 
+  authenticate(password: string): boolean {
+    if (this.authenticated) {
+      return true;
+    }
+
+    const cryptOptions = this._encryption.toCryptOptions();
+    const fileId = this._xrefs[0].id[0].hex;
+    const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
+    this._authResult = cryptorSource.authenticate(password);
+    return this.authenticated;
+  }
+
   getRefinedData(idsToDelete: number[]): Uint8Array {
+    this.checkAuthentication();
+
     const changeData = new ReferenceDataChange(this._referenceData);
     idsToDelete.forEach(x => changeData.setRefFree(x));
     
@@ -152,9 +164,9 @@ export class DocumentData {
     const entries = changeData.exportEntries();
 
     const lastXref = this._xrefs[0];
-    const newXref = lastXref.createUpdate(entries);
+    const newXref = lastXref.createUpdate(entries, newXrefOffset);
 
-    writer.writeIndirectObject(newXrefRef, newXref);
+    writer.writeIndirectObject({ref: newXrefRef}, newXref);
     writer.writeEof(newXrefOffset);  
 
     const bytes = writer.getCurrentData();
@@ -162,6 +174,16 @@ export class DocumentData {
   }
 
   getSupportedAnnotations(): Map<number, AnnotationDict[]> {
+    this.checkAuthentication();
+
+    if (!this._catalog) {      
+      this.parsePageTree(); 
+      // DEBUG
+      console.log(this._catalog);    
+      console.log(this._pageRoot); 
+      console.log(this._pages);
+    }
+
     const annotationMap = new Map<number, AnnotationDict[]>();
     
     for (const page of this._pages) {
@@ -229,6 +251,12 @@ export class DocumentData {
     }
 
     return annotationMap;
+  }
+
+  private checkAuthentication() {    
+    if (!this.authenticated) {      
+      throw new Error("Unauthorized access to file data");
+    }
   }
 
   private parseEncryption() {    

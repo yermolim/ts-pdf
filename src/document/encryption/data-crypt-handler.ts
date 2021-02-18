@@ -105,18 +105,15 @@ export class DataCryptHandler {
     const stringMethod = this._stringMethod;
     const streamMethod = this._streamMethod;
 
-    let authorized: "user" | "owner";
+    let owner = false;
     const ownerAuthenticated = this.authOwnerPassword(password);
     if (ownerAuthenticated) {
-      authorized = "owner";
+      owner = true;
     } else {      
       const userAuthenticated = this.authUserPassword(password);
-      authorized = userAuthenticated 
-        ? "user"
-        : null;
-    }
-    if (!authorized) {
-      return null;
+      if (!userAuthenticated) {
+        return null;
+      }
     }
 
     const key = this._lastEncryptionKey;
@@ -125,14 +122,14 @@ export class DataCryptHandler {
       case 1:
         const rc4_40 = new RC4DataCryptor(key);
         return {
-          authLevel: authorized, 
+          owner, 
           stringCryptor: rc4_40, 
           streamCryptor: rc4_40,
         };
       case 2:
         const rc4_128 = new RC4DataCryptor(key);
         return {
-          authLevel: authorized, 
+          owner, 
           stringCryptor: rc4_128, 
           streamCryptor: rc4_128,
         };
@@ -158,7 +155,7 @@ export class DataCryptHandler {
           throw new Error(`Invalid crypt method: ${streamMethod}`);
         }
         return {
-          authLevel: authorized, 
+          owner, 
           stringCryptor: v4stringCryptor, 
           streamCryptor: v4streamCryptor,
         };
@@ -180,7 +177,7 @@ export class DataCryptHandler {
           throw new Error(`Invalid crypt method: ${streamMethod}`);
         }  
         return {
-          authLevel: authorized, 
+          owner, 
           stringCryptor: v5stringCryptor, 
           streamCryptor: v5streamCryptor,
         };

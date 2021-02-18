@@ -19,7 +19,13 @@ export class AnnotationEditor {
 
     this._sourceData = pdfData;
     this._documentData = new DocumentData(pdfData);
-    this._annotationsByPageId = this._documentData.getSupportedAnnotations();
+  }
+
+  tryAuthenticate(password = ""): boolean {
+    if (!this._documentData.authenticated) {
+      return this._documentData.authenticate(password);
+    }
+    return true;
   }
 
   /**
@@ -28,15 +34,18 @@ export class AnnotationEditor {
    * returned data is used to render the remaining file content in PDF.js
    */
   getRefinedData(): Uint8Array {
+    const annotations = this.getAnnotationMap();
     const idsToDelete: number[] = [];
-    this._annotationsByPageId.forEach(x => {
-      x.forEach(y => {
-        // checking if the annotation has an id i.e. it is parsed from the file
-        if (y.id) {
-          idsToDelete.push(y.id);
-        }
+    if (annotations?.size) {
+      this.getAnnotationMap().forEach(x => {
+        x.forEach(y => {
+          // checking if the annotation has an id i.e. it is parsed from the file
+          if (y.id) {
+            idsToDelete.push(y.id);
+          }
+        });
       });
-    });
+    }
 
     return this._documentData.getRefinedData(idsToDelete);
   }
@@ -48,8 +57,8 @@ export class AnnotationEditor {
     return null;
   }
 
-  getPageAnnotations(pageId: number): AnnotationDict[] {   
-    const annotations = this._annotationsByPageId.get(pageId);
+  getPageAnnotations(pageId: number): AnnotationDict[] {     
+    const annotations = this.getAnnotationMap().get(pageId);
     if (!annotations) {
       return [];
     }
@@ -58,11 +67,21 @@ export class AnnotationEditor {
   }
 
   addAnnotation(pageId: number, annotation: AnnotationDict) {
-    const pageAnnotations = this._annotationsByPageId.get(pageId);
+    const pageAnnotations = this.getAnnotationMap().get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);
     } else {
-      this._annotationsByPageId.set(pageId, [annotation]);
+      this.getAnnotationMap().set(pageId, [annotation]);
     }
+  }
+
+  private getAnnotationMap(): Map<number, AnnotationDict[]> {
+    if (this._annotationsByPageId) {
+      return this._annotationsByPageId;
+    }
+    if (!this._documentData.authenticated) {
+      throw new Error("Unauthorized access to file data");
+    }    
+    this._annotationsByPageId = this._documentData.getSupportedAnnotations();
   }
 }
