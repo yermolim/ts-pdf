@@ -168,7 +168,7 @@ export class EncryptionDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -185,7 +185,7 @@ export class EncryptionDict extends PdfDict {
       bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
     }
     if (this.CF) {
-      bytes.push(...encoder.encode("/CF"), ...this.CF.toArray());
+      bytes.push(...encoder.encode("/CF"), ...this.CF.toArray(cryptInfo));
     }
     if (this.StmF) {
       bytes.push(...encoder.encode("/StmF"), ...encoder.encode(this.StmF));
@@ -200,35 +200,35 @@ export class EncryptionDict extends PdfDict {
       bytes.push(...encoder.encode("/R"), ...encoder.encode(" " + this.R));
     }
     if (this.O) {
-      bytes.push(...encoder.encode("/O"), ...this.O.toArray());
+      bytes.push(...encoder.encode("/O"), ...this.O.toArray(cryptInfo));
     }
     if (this.U) {
-      bytes.push(...encoder.encode("/U"), ...this.U.toArray());
+      bytes.push(...encoder.encode("/U"), ...this.U.toArray(cryptInfo));
     }
     if (this.OE) {
-      bytes.push(...encoder.encode("/OE"), ...this.OE.toArray());
+      bytes.push(...encoder.encode("/OE"), ...this.OE.toArray(cryptInfo));
     }
     if (this.UE) {
-      bytes.push(...encoder.encode("/UE"), ...this.UE.toArray());
+      bytes.push(...encoder.encode("/UE"), ...this.UE.toArray(cryptInfo));
     }
     if (this.P) {
       bytes.push(...encoder.encode("/P"), ...encoder.encode(" " + this.P));
     }
     if (this.Perms) {
-      bytes.push(...encoder.encode("/Perms"), ...this.Perms.toArray());
+      bytes.push(...encoder.encode("/Perms"), ...this.Perms.toArray(cryptInfo));
     }
     if (this.U) {
-      bytes.push(...encoder.encode("/U"), ...this.U.toArray());
+      bytes.push(...encoder.encode("/U"), ...this.U.toArray(cryptInfo));
     }
     if (this.EncryptMetadata) {
       bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
     }
     if (this.Recipients) {
       if (this.Recipients instanceof HexString) {
-        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray());
+        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray(cryptInfo));
       } else {        
         bytes.push(codes.L_BRACKET);
-        this.Recipients.forEach(x => bytes.push(...x.toArray()));
+        this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
         bytes.push(codes.R_BRACKET);
       }
     }
@@ -381,7 +381,7 @@ export class EncryptionDict extends PdfDict {
             }
             break;
           case "/O":
-            const ownerPassword = LiteralString.parse(parser, i);
+            const ownerPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (ownerPassword) {
               this.O = ownerPassword.value;
               i = ownerPassword.end + 1;              
@@ -390,7 +390,7 @@ export class EncryptionDict extends PdfDict {
             }
             break;
           case "/U":
-            const userPassword = LiteralString.parse(parser, i);
+            const userPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (userPassword) {
               this.U = userPassword.value;
               i = userPassword.end + 1;              
@@ -399,7 +399,7 @@ export class EncryptionDict extends PdfDict {
             }
             break;
           case "/OE":
-            const ownerPasswordKey = LiteralString.parse(parser, i);
+            const ownerPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (ownerPasswordKey) {
               this.OE = ownerPasswordKey.value;
               i = ownerPasswordKey.end + 1;              
@@ -408,7 +408,7 @@ export class EncryptionDict extends PdfDict {
             }
             break;
           case "/UE":
-            const userPasswordKey = LiteralString.parse(parser, i);
+            const userPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (userPasswordKey) {
               this.UE = userPasswordKey.value;
               i = userPasswordKey.end + 1;              
@@ -426,7 +426,7 @@ export class EncryptionDict extends PdfDict {
             }
             break;
           case "/Perms":
-            const flagsEncrypted = LiteralString.parse(parser, i);
+            const flagsEncrypted = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (flagsEncrypted) {
               this.Perms = flagsEncrypted.value;
               i = flagsEncrypted.end + 1;              
@@ -446,7 +446,7 @@ export class EncryptionDict extends PdfDict {
           case "/Recipients":            
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.STRING_HEX) {  
-              const recipient = HexString.parse(parser, i);  
+              const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);  
               if (recipient) {
                 this.Recipients = recipient.value;
                 i = recipient.end + 1;

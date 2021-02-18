@@ -88,7 +88,7 @@ export class XFormStream extends PdfStream {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -119,13 +119,13 @@ export class XFormStream extends PdfStream {
       );
     }
     if (this.Resources) {
-      bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray());
+      bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray(cryptInfo));
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray());
+      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
     }
     if (this.LastModified) {
-      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
     }
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
@@ -134,7 +134,7 @@ export class XFormStream extends PdfStream {
       bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(" " + this.StructParents));
     }
     if (this.Measure) {
-      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray());
+      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties
@@ -269,7 +269,7 @@ export class XFormStream extends PdfStream {
             }
             break;
           case "/LastModified":
-            const date = DateString.parse(parser, i);
+            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (date) {
               this.LastModified = date.value;
               i = date.end + 1;

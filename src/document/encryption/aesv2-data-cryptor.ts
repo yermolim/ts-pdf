@@ -1,5 +1,5 @@
-import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
-import { md5, aes, AES_INIT_VALUE } from "../crypto";
+import { int32ToBytes } from "../byte-functions";
+import { md5, aes, AES_INIT_VALUE, wordArrayToBytes } from "../crypto";
 import { IDataCryptor, Reference } from "../common-interfaces";
 
 /**
@@ -62,7 +62,7 @@ export class AESV2DataCryptor implements IDataCryptor {
     this._tempKey.set(AESV2_KEY_PADDING, this._n + 5);
     
     // 3. Initialize the MD5 hash function and pass the result of step 2 as input to this function
-    const hash = int32ArrayToBytes(md5(this._tempKey).words);
+    const hash = wordArrayToBytes(md5(this._tempKey));
 
     /*
     4. Use the first (n+5) bytes, up to a maximum of 16, of the output 
@@ -76,7 +76,7 @@ export class AESV2DataCryptor implements IDataCryptor {
     const n = Math.max(this._n + 5, 16);
     const key = hash.slice(0, n);
     iv ??= data.slice(0, 16);
-    const encrypted = int32ArrayToBytes(aes(data, key, iv).words);
+    const encrypted = wordArrayToBytes(aes(data, key, iv));
     return encrypted;
   }
 }

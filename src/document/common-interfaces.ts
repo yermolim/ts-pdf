@@ -39,9 +39,9 @@ export interface AuthenticationResult {
 }
 
 export interface CryptInfo {
-  stringCryptor: IDataCryptor;
-  streamCryptor: IDataCryptor;
   ref?: Reference;
+  stringCryptor?: IDataCryptor;
+  streamCryptor?: IDataCryptor;
 }
 
 export interface IEncodable {  

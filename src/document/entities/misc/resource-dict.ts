@@ -56,30 +56,30 @@ export class ResourceDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.ExtGState) {
-      bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray());
+      bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray(cryptInfo));
     }
     if (this.ColorSpace) {
-      bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray());
+      bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray(cryptInfo));
     }
     if (this.Pattern) {
-      bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray());
+      bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray(cryptInfo));
     }
     if (this.Shading) {
-      bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray());
+      bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray(cryptInfo));
     }
     if (this.XObject) {
-      bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray());
+      bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray(cryptInfo));
     }
     if (this.Font) {
-      bytes.push(...encoder.encode("/Font"), ...this.Font.toArray());
+      bytes.push(...encoder.encode("/Font"), ...this.Font.toArray(cryptInfo));
     }
     if (this.Properties) {
-      bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray());
+      bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray(cryptInfo));
     }
     if (this.ProcSet) {
       bytes.push(...encoder.encode("/ProcSet"), codes.L_BRACKET);

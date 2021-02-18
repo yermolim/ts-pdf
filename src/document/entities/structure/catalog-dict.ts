@@ -48,7 +48,7 @@ export class CatalogDict extends PdfDict {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -56,10 +56,10 @@ export class CatalogDict extends PdfDict {
       bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
     }
     if (this.Pages) {
-      bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray());
+      bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray(cryptInfo));
     }
     if (this.Lang) {
-      bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());
+      bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray(cryptInfo));
     }
 
     // TODO: handle remaining properties
@@ -116,7 +116,7 @@ export class CatalogDict extends PdfDict {
             }
             break;
           case "/Lang":
-            const lang = LiteralString.parse(parser, i);
+            const lang = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (lang) {
               this.Lang = lang.value;
               i = lang.end + 1;

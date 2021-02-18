@@ -71,18 +71,18 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.DA) {
-      bytes.push(...encoder.encode("/DA"), ...this.DA.toArray());
+      bytes.push(...encoder.encode("/DA"), ...this.DA.toArray(cryptInfo));
     }
     if (this.Q) {
       bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
     }
     if (this.DS) {
-      bytes.push(...encoder.encode("/DS"), ...this.DS.toArray());
+      bytes.push(...encoder.encode("/DS"), ...this.DS.toArray(cryptInfo));
     }
     if (this.CL) {
       bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
@@ -139,7 +139,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/DA":
-            const appearanceString = LiteralString.parse(parser, i);
+            const appearanceString = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (appearanceString) {
               this.DA = appearanceString.value;
               i = appearanceString.end + 1;
@@ -158,7 +158,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
             }
             break;            
           case "/DS":
-            const style = LiteralString.parse(parser, i);
+            const style = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (style) {
               this.DS = style.value;
               i = style.end + 1;

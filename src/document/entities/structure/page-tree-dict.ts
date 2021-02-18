@@ -48,16 +48,16 @@ export class PageTreeDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
     }
     if (this.Kids) {
       bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
-      this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
+      this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.Count) {

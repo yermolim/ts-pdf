@@ -21,6 +21,7 @@ import { XRefTable } from "./entities/x-refs/x-ref-table";
 import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { DataWriter } from "./data-writer";
 import { ReferenceData, ReferenceDataChange } from "./reference-data";
+import { AuthenticationResult, IDataCryptor } from "./common-interfaces";
 
 export class DocumentData {
   private readonly _data: Uint8Array; 
@@ -31,6 +32,7 @@ export class DocumentData {
   private readonly _referenceData: ReferenceData;
 
   private _encryption: EncryptionDict;
+  private _authResult: AuthenticationResult;
 
   private _catalog: CatalogDict;
   private _pageRoot: PageTreeDict;
@@ -72,8 +74,8 @@ export class DocumentData {
       const cryptOptions = this._encryption.toCryptOptions();
       const fileId = this._xrefs[0].id[0].hex;
       const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
-      const authResult = cryptorSource.authenticate("ownerpassword");
-      console.log(authResult);
+      this._authResult = cryptorSource.authenticate("ownerpassword");
+      console.log(this._authResult);
     }
     
     this.parsePageTree(); 
@@ -142,7 +144,7 @@ export class DocumentData {
     const changeData = new ReferenceDataChange(this._referenceData);
     idsToDelete.forEach(x => changeData.setRefFree(x));
     
-    const writer = new DataWriter(this._data);
+    const writer = new DataWriter(this._data, this._authResult);
 
     const newXrefOffset = writer.offset;
     const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
@@ -315,13 +317,14 @@ export class DocumentData {
       return null;
     }
     const parseInfoGetter = this.getObjectParseInfo;
-    const info = <ParseInfo>{
+    const info: ParseInfo = {
       parser: this._docParser, 
       bounds, 
       parseInfoGetter, 
-      ref: {
-        id: objectId.value.id,
-        generation: objectId.value.generation,
+      cryptInfo: {
+        ref: {id: objectId.value.id, generation: objectId.value.generation},
+        stringCryptor: this._authResult?.stringCryptor,
+        streamCryptor: this._authResult?.streamCryptor,
       },
     };
 

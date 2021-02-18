@@ -100,7 +100,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -137,7 +137,7 @@ export class LineAnnotation extends GeometricAnnotation {
       bytes.push(...encoder.encode("/CP"), ...encoder.encode(this.CP));
     }
     if (this.Measure) {
-      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray());
+      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
     }
     if (this.CO) {
       bytes.push(

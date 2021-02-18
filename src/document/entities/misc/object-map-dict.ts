@@ -25,12 +25,12 @@ export class ObjectMapDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     this._objectIdMap.forEach((v, k) => {
-      bytes.push(...encoder.encode(k), ...v.toArray());
+      bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo));
     });
 
     const totalBytes: number[] = [

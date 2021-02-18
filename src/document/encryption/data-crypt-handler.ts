@@ -1,8 +1,7 @@
 /* eslint-disable no-bitwise */
-import { arraysEqual, findSubarrayIndex, 
-  int32ArrayToBytes, int32ToBytes, xorBytes } from "../byte-functions";
+import { arraysEqual, findSubarrayIndex, int32ToBytes, xorBytes } from "../byte-functions";
 import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../const";
-import { md5, rc4, toWordArray } from "../crypto";
+import { md5, rc4, toWordArray, wordArrayToBytes } from "../crypto";
 import { CryptOptions, AuthenticationResult, IDataCryptor } from "../common-interfaces";
 import { AESV2DataCryptor } from "./aesv2-data-cryptor";
 import { AESV3DataCryptor } from "./aesv3-data-cryptor";
@@ -232,7 +231,7 @@ export class DataCryptHandler {
         ...metadata,
       ]);
       // 7. Finish the hash
-      let hash = int32ArrayToBytes(md5(dataToHash).words);
+      let hash = wordArrayToBytes(md5(dataToHash));
       const keyLength = this._keyLength >> 3;
 
       /*
@@ -242,7 +241,7 @@ export class DataCryptHandler {
       */
       if (this._revision >= 3) {
         for (let i = 0; i < 50; i++) {
-          hash = int32ArrayToBytes(md5(hash.slice(0, keyLength)).words);
+          hash = wordArrayToBytes(md5(hash.slice(0, keyLength)));
         }
       }
 
@@ -288,7 +287,7 @@ export class DataCryptHandler {
     where n is always 5 for revision 2 but, for revision 3 or greater, depends on the value 
     of the encryption dictionary’s Length entry
     */
-    const hashArray = int32ArrayToBytes(hash.words);
+    const hashArray = wordArrayToBytes(hash);
     const keyLength = this._keyLength >> 3;
     return hashArray.slice(0, keyLength);
   }
@@ -319,7 +318,7 @@ export class DataCryptHandler {
         hash = rc4(hash, xorBytes(key, i));
       }
     }
-    return int32ArrayToBytes(hash.words);
+    return wordArrayToBytes(hash);
   }
 
   protected computeUHash_R2(password?: string): Uint8Array {
@@ -331,7 +330,7 @@ export class DataCryptHandler {
     with the encryption key from the preceding step
     */
     const padding = new Uint8Array(PASSWORD_32_PADDING);
-    const u = int32ArrayToBytes(rc4(padding, key).words);
+    const u = wordArrayToBytes(rc4(padding, key));
     return u;
   }
 
@@ -363,7 +362,7 @@ export class DataCryptHandler {
     for (let i = 1; i < 20; i++) {
       hash = rc4(hash, xorBytes(key, i));
     }
-    return int32ArrayToBytes(hash.words);
+    return wordArrayToBytes(hash);
   }
   
   protected authOwnerPassword(password?: string): boolean {
@@ -377,7 +376,7 @@ export class DataCryptHandler {
         2. (Revision 2 only) Decrypt the value of the encryption dictionary’s O entry, 
         using an RC4 encryption function with the encryption key computed in step 1
         */
-        userPasswordPadded = int32ArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey).words);
+        userPasswordPadded = wordArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey));
       } else {
         /*
         2. (Revision 3 or greater) Do the following 20 times: Decrypt the value of the encryption 
@@ -390,7 +389,7 @@ export class DataCryptHandler {
         for (let i = 19; i >= 0; i--) {
           hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
         }
-        userPasswordPadded = int32ArrayToBytes(hash.words);
+        userPasswordPadded = wordArrayToBytes(hash);
       }
         
       // 3. The result of step 2 purports to be the user password
@@ -413,10 +412,6 @@ export class DataCryptHandler {
     let u: Uint8Array;
     if (this._revision === 2) {
       u = this.computeUHash_R2(password);
-
-      console.log(u);
-      console.log(this._uPasswordHash);
-
       return arraysEqual(this._uPasswordHash, u);
     } else if (this._revision === 3 || this._revision === 4) {
       u = this.computeUHash_R3R4(password); 

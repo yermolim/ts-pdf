@@ -1,5 +1,5 @@
-import { int32ToBytes, int32ArrayToBytes } from "../byte-functions";
-import { md5, rc4 } from "../crypto";
+import { int32ToBytes } from "../byte-functions";
+import { md5, rc4, wordArrayToBytes } from "../crypto";
 import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class RC4DataCryptor implements IDataCryptor {
@@ -36,20 +36,21 @@ export class RC4DataCryptor implements IDataCryptor {
     const idBytes = int32ToBytes(ref.id, true); 
     const genBytes = int32ToBytes(ref.generation, true); 
     this._tempKey.set(this._key, 0);
-    this._tempKey.set(idBytes.subarray(0, 3), this._n);
-    this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
+    this._tempKey.set(idBytes.slice(0, 3), this._n);
+    this._tempKey.set(genBytes.slice(0, 2), this._n + 3);
     
     // 3. Initialize the MD5 hash function and pass the result of step 2 as input to this function
-    const hash = int32ArrayToBytes(md5(this._tempKey).words);
+    const hash = wordArrayToBytes(md5(this._tempKey));
 
     /*
     4. Use the first (n+5) bytes, up to a maximum of 16, of the output 
     from the MD5 hash as the key for the RC4 or AES symmetric key algorithms, 
     along with the string or stream data to be encrypted
     */
-    const n = Math.max(this._n + 5, 16);
+    const n = Math.min(this._n + 5, 16);
     const key = hash.slice(0, n);
-    const encrypted = int32ArrayToBytes(rc4(data, key).words);
+
+    const encrypted = wordArrayToBytes(rc4(data, key));
     return encrypted;
   }
 

@@ -30,12 +30,12 @@ export class PopupAnnotation extends AnnotationDict {
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
     }
     if (this.Open) {
       bytes.push(...encoder.encode("/Open"), ...encoder.encode(" " + this.Open));

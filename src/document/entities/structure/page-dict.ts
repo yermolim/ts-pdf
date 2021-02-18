@@ -54,15 +54,15 @@ export class PageDict extends PdfDict {
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
+      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
     }
     if (this.LastModified) {
-      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
     }
     if (this.MediaBox) {
       bytes.push(
@@ -78,10 +78,10 @@ export class PageDict extends PdfDict {
     }
     if (this.Annots) {
       if (this.Annots instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toArray());
+        bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toArray(cryptInfo));
       } else {
         bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
-        this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
+        this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
         bytes.push(codes.R_BRACKET);
       }
     }
@@ -131,7 +131,7 @@ export class PageDict extends PdfDict {
             }
             break;
           case "/LastModified":
-            const date = DateString.parse(parser, i);
+            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (date) {
               this.LastModified = date.value;
               i = date.end + 1;

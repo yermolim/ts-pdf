@@ -89,12 +89,15 @@ export abstract class PdfStream extends PdfObject {
       bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
     }
     if (this.DecodeParms) {
-      bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray());
+      bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray(cryptInfo));
     }
+    const streamData = cryptInfo?.ref && cryptInfo.streamCryptor
+      ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
+      : this.streamData;  
     bytes.push(    
       ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,
       ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE,
-      ...this.streamData, ...keywordCodes.END_OF_LINE,
+      ...streamData, ...keywordCodes.END_OF_LINE,
       ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE
     );
 
@@ -109,7 +112,7 @@ export abstract class PdfStream extends PdfObject {
       return false;
     }
 
-    this._ref = parseInfo.ref;
+    this._ref = parseInfo.cryptInfo?.ref;
 
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -231,7 +234,10 @@ export abstract class PdfStream extends PdfObject {
     
     const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
     const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
-    const encodedData = parser.sliceCharCodes(streamStart, streamEnd);
+    const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
+    const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
+      ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
+      : streamBytes;
     if (!this.Length || this.Length !== encodedData.length) {    
       // TODO: replace error with 'return false;' after assuring that the code works correctly
       throw new Error("Incorrect stream length");

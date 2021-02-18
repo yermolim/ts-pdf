@@ -122,7 +122,7 @@ export class XRefTable extends XRef {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const trailerBytes = this._trailerDict.toArray(); 
+    const trailerBytes = this._trailerDict.toArray(cryptInfo); 
 
     const bytes: number[] = [
       ...keywordCodes.XREF_TABLE, ...keywordCodes.END_OF_LINE,

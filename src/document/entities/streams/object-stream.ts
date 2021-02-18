@@ -129,13 +129,13 @@ export class ObjectStream extends PdfStream {
       },
       type: <ObjectType>objectType,
       value,
-      ref: {id, generation: 0},
+      cryptInfo: {ref: {id, generation: 0}},
       streamId: this.id,
     };
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -146,7 +146,7 @@ export class ObjectStream extends PdfStream {
       bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
     }
     if (this.Extends) {
-      bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray());
+      bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [

@@ -1,4 +1,5 @@
 /* eslint-disable no-bitwise */
+import { hexStringToBytes } from "../../byte-functions";
 import { keywordCodes } from "../../codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
@@ -49,7 +50,7 @@ export class HexString implements IEncodable {
 
   static fromBytes(bytes: Uint8Array): HexString {  
     const literal = new TextDecoder().decode(bytes);  
-    const hex = this.literalToHex(literal);
+    const hex = hexStringToBytes(literal);
     return new HexString(literal, hex, bytes);
   }
 
@@ -61,18 +62,10 @@ export class HexString implements IEncodable {
   }
 
   static fromLiteralString(literal: string): HexString {
-    const hex = this.literalToHex(literal);
+    const hex = hexStringToBytes(literal);
     const bytes = new TextEncoder().encode(literal);
     return new HexString(literal, hex, bytes);
   };
-
-  private static literalToHex(literal: string): Uint8Array {    
-    const hex = new Uint8Array(literal.length / 2);
-    for (let i = 0, j = 0; i < literal.length; i += 2, j++) {
-      hex[j] = parseInt(literal.substr(i, 2), 16);
-    } 
-    return hex;
-  }
  
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     return new Uint8Array([

@@ -18,7 +18,7 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     return superBytes;
   }
   

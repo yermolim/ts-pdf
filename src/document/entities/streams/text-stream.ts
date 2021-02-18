@@ -24,7 +24,7 @@ export class TextStream extends PdfStream {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();
+    const superBytes = super.toArray(cryptInfo);
     return superBytes;
   }
 

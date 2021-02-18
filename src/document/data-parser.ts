@@ -1,8 +1,7 @@
-import { codes, keywordCodes, 
-  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, 
-  isRegularChar } from "./codes";
+import { codes, keywordCodes, isRegularChar,
+  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS } from "./codes";
 import { ObjectType, ValueType, valueTypes } from "./const";
-import { Reference } from "./common-interfaces";
+import { CryptInfo } from "./common-interfaces";
 
 export type SearchDirection = "straight" | "reverse";
 
@@ -23,11 +22,11 @@ export interface Bounds {
 export interface ParseInfo {
   parser: DataParser;
   bounds: Bounds;
-  type?: ObjectType;
-  value?: any;
-  ref?: Reference;
+  cryptInfo?: CryptInfo;
   /** parent object stream id */
   streamId?: number;
+  type?: ObjectType;
+  value?: any;
   parseInfoGetter?: (id: number) => ParseInfo;
 }
 

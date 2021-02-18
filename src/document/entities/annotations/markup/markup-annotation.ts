@@ -86,30 +86,30 @@ export abstract class MarkupAnnotation extends AnnotationDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.T) {
-      bytes.push(...encoder.encode("/T"), ...this.T.toArray());
+      bytes.push(...encoder.encode("/T"), ...this.T.toArray(cryptInfo));
     }
     if (this.Popup) {
-      bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray());
+      bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray(cryptInfo));
     }
     if (this.RC) {
-      bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
+      bytes.push(...encoder.encode("/RC"), ...this.RC.toArray(cryptInfo));
     }
     if (this.CA) {
       bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
     }
     if (this.CreationDate) {
-      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
+      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray(cryptInfo));
     }
     if (this.Subj) {
-      bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
+      bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray(cryptInfo));
     }
     if (this.IRT) {
-      bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray());
+      bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray(cryptInfo));
     }
     if (this.RT) {
       bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
@@ -153,7 +153,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
         name = parseResult.value;
         switch (name) {
           case "/T":
-            const title = LiteralString.parse(parser, i);
+            const title = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (title) {
               this.T = title.value;
               i = title.end + 1;
@@ -207,7 +207,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
               }              
               throw new Error("Can't parse /RC value reference");
             } else if (rcEntryType === valueTypes.STRING_LITERAL) { 
-              const popupTextFromLiteral = LiteralString.parse(parser, i);
+              const popupTextFromLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
               if (popupTextFromLiteral) {
                 this.RC = popupTextFromLiteral.value;
                 i = popupTextFromLiteral.end + 1;
@@ -227,7 +227,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
             }
             break;   
           case "/CreationDate":
-            const date = DateString.parse(parser, i);
+            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (date) {
               this.CreationDate = date.value;
               i = date.end + 1;   
@@ -236,7 +236,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
             }
             break;
           case "/Subj":
-            const subject = LiteralString.parse(parser, i);
+            const subject = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (subject) {
               this.Subj = subject.value;
               i = subject.end + 1;

@@ -33,32 +33,32 @@ export class AppearanceDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.N) {
       bytes.push(...encoder.encode("/N"));
       if (this.N instanceof ObjectMapDict) {        
-        bytes.push(...this.N.toArray());
+        bytes.push(...this.N.toArray(cryptInfo));
       } else {               
-        bytes.push(...this.N.toArray());
+        bytes.push(...this.N.toArray(cryptInfo));
       }
     }
     if (this.R) {
       bytes.push(...encoder.encode("/R"));
       if (this.R instanceof ObjectMapDict) {        
-        bytes.push(...this.R.toArray());
+        bytes.push(...this.R.toArray(cryptInfo));
       } else {               
-        bytes.push(...this.R.toArray());
+        bytes.push(...this.R.toArray(cryptInfo));
       }
     }
     if (this.D) {
       bytes.push(...encoder.encode("/D"));
       if (this.D instanceof ObjectMapDict) {        
-        bytes.push(...this.D.toArray());
+        bytes.push(...this.D.toArray(cryptInfo));
       } else {               
-        bytes.push(...this.D.toArray());
+        bytes.push(...this.D.toArray(cryptInfo));
       }
     }
 

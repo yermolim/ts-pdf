@@ -122,6 +122,6 @@ export class XRefStream extends XRef {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    return this._trailerStream.toArray();
+    return this._trailerStream.toArray(cryptInfo);
   }
 }

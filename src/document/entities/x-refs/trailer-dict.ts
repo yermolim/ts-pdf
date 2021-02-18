@@ -62,7 +62,7 @@ export class TrailerDict extends PdfDict {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -73,22 +73,22 @@ export class TrailerDict extends PdfDict {
       bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
     }
     if (this.Root) {
-      bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray());
+      bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
     }
     if (this.Encrypt) {
-      bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray());
+      bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
       // if (this.Encrypt instanceof ObjectId) {
       //   bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toRefArray());
       // } else {
-      //   bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray());
+      //   bytes.push(...encoder.encode("/Encrypt"), ...this.Encrypt.toArray(cryptInfo));
       // }
     }
     if (this.Info) {
-      bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray());
+      bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
     }
     if (this.ID) {
       bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, 
-        ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
+        ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
     }
 
     const totalBytes: number[] = [

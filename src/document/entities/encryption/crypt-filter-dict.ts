@@ -96,7 +96,7 @@ export class CryptFilterDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -114,10 +114,10 @@ export class CryptFilterDict extends PdfDict {
     }
     if (this.Recipients) {
       if (this.Recipients instanceof HexString) {
-        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray());
+        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray(cryptInfo));
       } else {        
         bytes.push(codes.L_BRACKET);
-        this.Recipients.forEach(x => bytes.push(...x.toArray()));
+        this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
         bytes.push(codes.R_BRACKET);
       }
     }
@@ -196,7 +196,7 @@ export class CryptFilterDict extends PdfDict {
           case "/Recipients":            
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.STRING_HEX) {  
-              const recipient = HexString.parse(parser, i);  
+              const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);  
               if (recipient) {
                 this.Recipients = recipient.value;
                 i = recipient.end + 1;

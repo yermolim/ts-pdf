@@ -49,33 +49,33 @@ export class InfoDict extends PdfDict {
   }  
    
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
     if (this.Title) {
-      bytes.push(...encoder.encode("/Title"), ...this.Title.toArray());
+      bytes.push(...encoder.encode("/Title"), ...this.Title.toArray(cryptInfo));
     }
     if (this.Author) {
-      bytes.push(...encoder.encode("/Author"), ...this.Author.toArray());
+      bytes.push(...encoder.encode("/Author"), ...this.Author.toArray(cryptInfo));
     }
     if (this.Subject) {
-      bytes.push(...encoder.encode("/Subject"), ...this.Subject.toArray());
+      bytes.push(...encoder.encode("/Subject"), ...this.Subject.toArray(cryptInfo));
     }
     if (this.Keywords) {
-      bytes.push(...encoder.encode("/Keywords"), ...this.Keywords.toArray());
+      bytes.push(...encoder.encode("/Keywords"), ...this.Keywords.toArray(cryptInfo));
     }
     if (this.Creator) {
-      bytes.push(...encoder.encode("/Creator"), ...this.Creator.toArray());
+      bytes.push(...encoder.encode("/Creator"), ...this.Creator.toArray(cryptInfo));
     }
     if (this.Producer) {
-      bytes.push(...encoder.encode("/Producer"), ...this.Producer.toArray());
+      bytes.push(...encoder.encode("/Producer"), ...this.Producer.toArray(cryptInfo));
     }
     if (this.CreationDate) {
-      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
+      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray(cryptInfo));
     }
     if (this.ModDate) {
-      bytes.push(...encoder.encode("/ModDate"), ...this.ModDate.toArray());
+      bytes.push(...encoder.encode("/ModDate"), ...this.ModDate.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [
@@ -112,7 +112,7 @@ export class InfoDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/Title":
-            const title = LiteralString.parse(parser, i);
+            const title = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (title) {
               this.Title = title.value;
               i = title.end + 1;
@@ -121,7 +121,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/Author":
-            const author = LiteralString.parse(parser, i);
+            const author = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (author) {
               this.Author = author.value;
               i = author.end + 1;
@@ -130,7 +130,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/Subject":
-            const subject = LiteralString.parse(parser, i);
+            const subject = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (subject) {
               this.Subject = subject.value;
               i = subject.end + 1;
@@ -139,7 +139,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/Keywords":
-            const keywords = LiteralString.parse(parser, i);
+            const keywords = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (keywords) {
               this.Keywords = keywords.value;
               i = keywords.end + 1;
@@ -148,7 +148,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/Creator":
-            const creator = LiteralString.parse(parser, i);
+            const creator = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (creator) {
               this.Creator = creator.value;
               i = creator.end + 1;
@@ -157,7 +157,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/Producer":
-            const producer = LiteralString.parse(parser, i);
+            const producer = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (producer) {
               this.Producer = producer.value;
               i = producer.end + 1;
@@ -166,7 +166,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/CreationDate":
-            const creationDate = DateString.parse(parser, i);
+            const creationDate = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (creationDate) {
               this.CreationDate = creationDate.value;
               i = creationDate.end + 1;
@@ -175,7 +175,7 @@ export class InfoDict extends PdfDict {
             }
             break;
           case "/ModDate":
-            const modDate = DateString.parse(parser, i);
+            const modDate = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (modDate) {
               this.ModDate = modDate.value;
               i = modDate.end + 1;

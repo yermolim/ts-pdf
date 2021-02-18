@@ -1093,11 +1093,11 @@ function int32ToBytes(int, le = false) {
     view.setInt32(0, int, le);
     return new Uint8Array(buffer);
 }
-function int32ArrayToBytes(intArr, le = false) {
-    const buffer = new ArrayBuffer(intArr.length * 4);
+function int32ArrayToBytes(ints, le = false) {
+    const buffer = new ArrayBuffer(ints.length * 4);
     const view = new DataView(buffer);
-    for (let i = 0; i < intArr.length; i++) {
-        view.setInt32(i * 4, intArr[i], le);
+    for (let i = 0; i < ints.length; i++) {
+        view.setInt32(i * 4, ints[i], le);
     }
     return new Uint8Array(buffer);
 }
@@ -1156,6 +1156,13 @@ function findSubarrayIndex(arr, sub) {
         }
     }
     return -1;
+}
+function hexStringToBytes(hexString) {
+    const bytes = new Uint8Array(hexString.length / 2);
+    for (let i = 0, j = 0; i < hexString.length; i += 2, j++) {
+        bytes[j] = parseInt(hexString.substr(i, 2), 16);
+    }
+    return bytes;
 }
 
 const objectTypes = {
@@ -1344,7 +1351,10 @@ const AES_INIT_VALUE = new Uint8Array([
     0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
 ]);
 function toWordArray(data) {
-    return Crypto.lib.WordArray.create(Array.from(bytesToInt32Array(data)));
+    return Crypto.lib.WordArray.create(data);
+}
+function wordArrayToBytes(wordArray) {
+    return int32ArrayToBytes(wordArray.words).slice(0, wordArray.sigBytes);
 }
 function md5(data) {
     if (data instanceof Uint8Array) {
@@ -1407,11 +1417,11 @@ class AESV2DataCryptor {
         this._tempKey.set(idBytes.subarray(0, 3), this._n);
         this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
         this._tempKey.set(AESV2_KEY_PADDING, this._n + 5);
-        const hash = int32ArrayToBytes(md5(this._tempKey).words);
+        const hash = wordArrayToBytes(md5(this._tempKey));
         const n = Math.max(this._n + 5, 16);
         const key = hash.slice(0, n);
         iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
-        const encrypted = int32ArrayToBytes(aes(data, key, iv).words);
+        const encrypted = wordArrayToBytes(aes(data, key, iv));
         return encrypted;
     }
 }
@@ -1435,7 +1445,7 @@ class AESV3DataCryptor {
     }
     run(data, id, generation, iv) {
         iv !== null && iv !== void 0 ? iv : (iv = data.slice(0, 16));
-        const encrypted = int32ArrayToBytes(aes(data, this._key, iv).words);
+        const encrypted = wordArrayToBytes(aes(data, this._key, iv));
         return encrypted;
     }
 }
@@ -1467,12 +1477,12 @@ class RC4DataCryptor {
         const idBytes = int32ToBytes(ref.id, true);
         const genBytes = int32ToBytes(ref.generation, true);
         this._tempKey.set(this._key, 0);
-        this._tempKey.set(idBytes.subarray(0, 3), this._n);
-        this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
-        const hash = int32ArrayToBytes(md5(this._tempKey).words);
-        const n = Math.max(this._n + 5, 16);
+        this._tempKey.set(idBytes.slice(0, 3), this._n);
+        this._tempKey.set(genBytes.slice(0, 2), this._n + 3);
+        const hash = wordArrayToBytes(md5(this._tempKey));
+        const n = Math.min(this._n + 5, 16);
         const key = hash.slice(0, n);
-        const encrypted = int32ArrayToBytes(rc4(data, key).words);
+        const encrypted = wordArrayToBytes(rc4(data, key));
         return encrypted;
     }
     decrypt(data, ref) {
@@ -1641,11 +1651,11 @@ class DataCryptHandler {
                 ...this._fileId,
                 ...metadata,
             ]);
-            let hash = int32ArrayToBytes(md5(dataToHash).words);
+            let hash = wordArrayToBytes(md5(dataToHash));
             const keyLength = this._keyLength >> 3;
             if (this._revision >= 3) {
                 for (let i = 0; i < 50; i++) {
-                    hash = int32ArrayToBytes(md5(hash.slice(0, keyLength)).words);
+                    hash = wordArrayToBytes(md5(hash.slice(0, keyLength)));
                 }
             }
             const encryptionKey = hash.slice(0, keyLength);
@@ -1667,7 +1677,7 @@ class DataCryptHandler {
                 hash = md5(hash);
             }
         }
-        const hashArray = int32ArrayToBytes(hash.words);
+        const hashArray = wordArrayToBytes(hash);
         const keyLength = this._keyLength >> 3;
         return hashArray.slice(0, keyLength);
     }
@@ -1680,12 +1690,12 @@ class DataCryptHandler {
                 hash = rc4(hash, xorBytes(key, i));
             }
         }
-        return int32ArrayToBytes(hash.words);
+        return wordArrayToBytes(hash);
     }
     computeUHash_R2(password) {
         const key = this.computeEncryptionKey(password);
         const padding = new Uint8Array(PASSWORD_32_PADDING);
-        const u = int32ArrayToBytes(rc4(padding, key).words);
+        const u = wordArrayToBytes(rc4(padding, key));
         return u;
     }
     computeUHash_R3R4(password) {
@@ -1699,21 +1709,21 @@ class DataCryptHandler {
         for (let i = 1; i < 20; i++) {
             hash = rc4(hash, xorBytes(key, i));
         }
-        return int32ArrayToBytes(hash.words);
+        return wordArrayToBytes(hash);
     }
     authOwnerPassword(password) {
         if ([2, 3, 4].includes(this._revision)) {
             const ownerEncryptionKey = this.computeOHashEncryptionKey_R2R3R4(password);
             let userPasswordPadded;
             if (this._revision === 2) {
-                userPasswordPadded = int32ArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey).words);
+                userPasswordPadded = wordArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey));
             }
             else {
                 let hash = toWordArray(this._oPasswordHash);
                 for (let i = 19; i >= 0; i--) {
                     hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
                 }
-                userPasswordPadded = int32ArrayToBytes(hash.words);
+                userPasswordPadded = wordArrayToBytes(hash);
             }
             const j = findSubarrayIndex(userPasswordPadded, new Uint8Array(PASSWORD_32_PADDING));
             const userPassword = new TextDecoder().decode(j === -1
@@ -1732,8 +1742,6 @@ class DataCryptHandler {
         let u;
         if (this._revision === 2) {
             u = this.computeUHash_R2(password);
-            console.log(u);
-            console.log(this._uPasswordHash);
             return arraysEqual(this._uPasswordHash, u);
         }
         else if (this._revision === 3 || this._revision === 4) {
@@ -2047,10 +2055,11 @@ class PdfDict extends PdfObject {
         return new Uint8Array(bytes);
     }
     tryParseProps(parseInfo) {
+        var _a;
         if (!parseInfo) {
             return false;
         }
-        this._ref = parseInfo.ref;
+        this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
         this._streamId = parseInfo.streamId;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
@@ -2105,7 +2114,7 @@ class FlateParamsDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Predictor) {
@@ -2940,16 +2949,20 @@ class PdfStream extends PdfObject {
             bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
         }
         if (this.DecodeParms) {
-            bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray());
+            bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray(cryptInfo));
         }
-        bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...this.streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE);
+        const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
+            ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
+            : this.streamData;
+        bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE);
         return new Uint8Array(bytes);
     }
     tryParseProps(parseInfo) {
+        var _a, _b;
         if (!parseInfo) {
             return false;
         }
-        this._ref = parseInfo.ref;
+        this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
@@ -3068,7 +3081,10 @@ class PdfStream extends PdfObject {
         }
         const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
         const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
-        const encodedData = parser.sliceCharCodes(streamStart, streamEnd);
+        const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
+        const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
+            ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
+            : streamBytes;
         if (!this.Length || this.Length !== encodedData.length) {
             throw new Error("Incorrect stream length");
         }
@@ -3092,7 +3108,7 @@ class TextStream extends PdfStream {
         return null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
     tryParseProps(parseInfo) {
@@ -3126,7 +3142,7 @@ class BorderStyleDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.W) {
@@ -3228,11 +3244,11 @@ class ObjectMapDict extends PdfDict {
         return this._objectIdMap.get(name);
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         this._objectIdMap.forEach((v, k) => {
-            bytes.push(...encoder.encode(k), ...v.toArray());
+            bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo));
         });
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -3295,34 +3311,34 @@ class AppearanceDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.N) {
             bytes.push(...encoder.encode("/N"));
             if (this.N instanceof ObjectMapDict) {
-                bytes.push(...this.N.toArray());
+                bytes.push(...this.N.toArray(cryptInfo));
             }
             else {
-                bytes.push(...this.N.toArray());
+                bytes.push(...this.N.toArray(cryptInfo));
             }
         }
         if (this.R) {
             bytes.push(...encoder.encode("/R"));
             if (this.R instanceof ObjectMapDict) {
-                bytes.push(...this.R.toArray());
+                bytes.push(...this.R.toArray(cryptInfo));
             }
             else {
-                bytes.push(...this.R.toArray());
+                bytes.push(...this.R.toArray(cryptInfo));
             }
         }
         if (this.D) {
             bytes.push(...encoder.encode("/D"));
             if (this.D instanceof ObjectMapDict) {
-                bytes.push(...this.D.toArray());
+                bytes.push(...this.D.toArray(cryptInfo));
             }
             else {
-                bytes.push(...this.D.toArray());
+                bytes.push(...this.D.toArray(cryptInfo));
             }
         }
         const totalBytes = [
@@ -3461,7 +3477,7 @@ class BorderEffectDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.S) {
@@ -3610,7 +3626,7 @@ class AnnotationDict extends PdfDict {
         this.Subtype = subType;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Subtype) {
@@ -3620,34 +3636,34 @@ class AnnotationDict extends PdfDict {
             bytes.push(...encoder.encode("/Rect"), codes.L_BRACKET, ...encoder.encode(this.Rect[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[3] + ""), codes.R_BRACKET);
         }
         if (this.Contents) {
-            bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
+            bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray(cryptInfo));
         }
         if (this.P) {
-            bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray());
+            bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray(cryptInfo));
         }
         if (this.NM) {
-            bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
+            bytes.push(...encoder.encode("/NM"), ...this.NM.toArray(cryptInfo));
         }
         if (this.M) {
-            bytes.push(...encoder.encode("/M"), ...this.M.toArray());
+            bytes.push(...encoder.encode("/M"), ...this.M.toArray(cryptInfo));
         }
         if (this.F) {
             bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
         }
         if (this.AP) {
-            bytes.push(...encoder.encode("/AP"), ...this.AP.toArray());
+            bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
         }
         if (this.AS) {
             bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
         }
         if (this.Border) {
-            bytes.push(...encoder.encode("/Border"), ...this.Border.toArray());
+            bytes.push(...encoder.encode("/Border"), ...this.Border.toArray(cryptInfo));
         }
         if (this.BS) {
-            bytes.push(...encoder.encode("/BS"), ...this.BS.toArray());
+            bytes.push(...encoder.encode("/BS"), ...this.BS.toArray(cryptInfo));
         }
         if (this.BE) {
-            bytes.push(...encoder.encode("/BE"), ...this.BE.toArray());
+            bytes.push(...encoder.encode("/BE"), ...this.BE.toArray(cryptInfo));
         }
         if (this.C) {
             bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
@@ -3697,7 +3713,7 @@ class AnnotationDict extends PdfDict {
                         }
                         break;
                     case "/Contents":
-                        const contents = LiteralString.parse(parser, i);
+                        const contents = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (contents) {
                             this.Contents = contents.value;
                             i = contents.end + 1;
@@ -3732,7 +3748,7 @@ class AnnotationDict extends PdfDict {
                         }
                         break;
                     case "/NM":
-                        const uniqueName = LiteralString.parse(parser, i);
+                        const uniqueName = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (uniqueName) {
                             this.NM = uniqueName.value;
                             i = uniqueName.end + 1;
@@ -3742,14 +3758,14 @@ class AnnotationDict extends PdfDict {
                         }
                         break;
                     case "/M":
-                        const date = DateString.parse(parser, i);
+                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
                         if (date) {
                             this.M = date.value;
                             i = date.end + 1;
                             break;
                         }
                         else {
-                            const dateLiteral = LiteralString.parse(parser, i);
+                            const dateLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                             if (dateLiteral) {
                                 this.M = dateLiteral.value;
                                 i = dateLiteral.end + 1;
@@ -3924,29 +3940,29 @@ class MarkupAnnotation extends AnnotationDict {
         this.RT = markupAnnotationReplyTypes.REPLY;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.T) {
-            bytes.push(...encoder.encode("/T"), ...this.T.toArray());
+            bytes.push(...encoder.encode("/T"), ...this.T.toArray(cryptInfo));
         }
         if (this.Popup) {
-            bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray());
+            bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray(cryptInfo));
         }
         if (this.RC) {
-            bytes.push(...encoder.encode("/RC"), ...this.RC.toArray());
+            bytes.push(...encoder.encode("/RC"), ...this.RC.toArray(cryptInfo));
         }
         if (this.CA) {
             bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
         }
         if (this.CreationDate) {
-            bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray());
+            bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray(cryptInfo));
         }
         if (this.Subj) {
-            bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray());
+            bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray(cryptInfo));
         }
         if (this.IRT) {
-            bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray());
+            bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray(cryptInfo));
         }
         if (this.RT) {
             bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
@@ -3979,7 +3995,7 @@ class MarkupAnnotation extends AnnotationDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/T":
-                        const title = LiteralString.parse(parser, i);
+                        const title = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (title) {
                             this.T = title.value;
                             i = title.end + 1;
@@ -4033,7 +4049,7 @@ class MarkupAnnotation extends AnnotationDict {
                             throw new Error("Can't parse /RC value reference");
                         }
                         else if (rcEntryType === valueTypes.STRING_LITERAL) {
-                            const popupTextFromLiteral = LiteralString.parse(parser, i);
+                            const popupTextFromLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                             if (popupTextFromLiteral) {
                                 this.RC = popupTextFromLiteral.value;
                                 i = popupTextFromLiteral.end + 1;
@@ -4053,7 +4069,7 @@ class MarkupAnnotation extends AnnotationDict {
                         }
                         break;
                     case "/CreationDate":
-                        const date = DateString.parse(parser, i);
+                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
                         if (date) {
                             this.CreationDate = date.value;
                             i = date.end + 1;
@@ -4063,7 +4079,7 @@ class MarkupAnnotation extends AnnotationDict {
                         }
                         break;
                     case "/Subj":
-                        const subject = LiteralString.parse(parser, i);
+                        const subject = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (subject) {
                             this.Subj = subject.value;
                             i = subject.end + 1;
@@ -4130,17 +4146,17 @@ class FreeTextAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.DA) {
-            bytes.push(...encoder.encode("/DA"), ...this.DA.toArray());
+            bytes.push(...encoder.encode("/DA"), ...this.DA.toArray(cryptInfo));
         }
         if (this.Q) {
             bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
         }
         if (this.DS) {
-            bytes.push(...encoder.encode("/DS"), ...this.DS.toArray());
+            bytes.push(...encoder.encode("/DS"), ...this.DS.toArray(cryptInfo));
         }
         if (this.CL) {
             bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
@@ -4184,7 +4200,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/DA":
-                        const appearanceString = LiteralString.parse(parser, i);
+                        const appearanceString = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (appearanceString) {
                             this.DA = appearanceString.value;
                             i = appearanceString.end + 1;
@@ -4205,7 +4221,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                         }
                         break;
                     case "/DS":
-                        const style = LiteralString.parse(parser, i);
+                        const style = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (style) {
                             this.DS = style.value;
                             i = style.end + 1;
@@ -4286,7 +4302,7 @@ class GeometricAnnotation extends MarkupAnnotation {
         super(type);
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.IC) {
@@ -4356,7 +4372,7 @@ class CircleAnnotation extends GeometricAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.RD) {
@@ -4430,7 +4446,7 @@ class MeasureDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Subtype) {
@@ -4515,7 +4531,7 @@ class LineAnnotation extends GeometricAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.L) {
@@ -4545,7 +4561,7 @@ class LineAnnotation extends GeometricAnnotation {
             bytes.push(...encoder.encode("/CP"), ...encoder.encode(this.CP));
         }
         if (this.Measure) {
-            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray());
+            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
         }
         if (this.CO) {
             bytes.push(...encoder.encode("/CO"), codes.L_BRACKET, ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET);
@@ -4736,7 +4752,7 @@ class SquareAnnotation extends GeometricAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.RD) {
@@ -4809,7 +4825,7 @@ class InkAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.InkList) {
@@ -4912,7 +4928,7 @@ class StampAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Name) {
@@ -4984,7 +5000,7 @@ class TextAnnotation extends MarkupAnnotation {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Open) {
@@ -5121,7 +5137,7 @@ class HexString {
     }
     static fromBytes(bytes) {
         const literal = new TextDecoder().decode(bytes);
-        const hex = this.literalToHex(literal);
+        const hex = hexStringToBytes(literal);
         return new HexString(literal, hex, bytes);
     }
     static fromHexBytes(hex) {
@@ -5131,18 +5147,11 @@ class HexString {
         return new HexString(literal, hex, bytes);
     }
     static fromLiteralString(literal) {
-        const hex = this.literalToHex(literal);
+        const hex = hexStringToBytes(literal);
         const bytes = new TextEncoder().encode(literal);
         return new HexString(literal, hex, bytes);
     }
     ;
-    static literalToHex(literal) {
-        const hex = new Uint8Array(literal.length / 2);
-        for (let i = 0, j = 0; i < literal.length; i += 2, j++) {
-            hex[j] = parseInt(literal.substr(i, 2), 16);
-        }
-        return hex;
-    }
     toArray(cryptInfo) {
         return new Uint8Array([
             ...keywordCodes.STR_HEX_START,
@@ -5168,7 +5177,7 @@ class CryptFilterDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.CFM) {
@@ -5185,11 +5194,11 @@ class CryptFilterDict extends PdfDict {
         }
         if (this.Recipients) {
             if (this.Recipients instanceof HexString) {
-                bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray());
+                bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray(cryptInfo));
             }
             else {
                 bytes.push(codes.L_BRACKET);
-                this.Recipients.forEach(x => bytes.push(...x.toArray()));
+                this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
                 bytes.push(codes.R_BRACKET);
             }
         }
@@ -5265,7 +5274,7 @@ class CryptFilterDict extends PdfDict {
                     case "/Recipients":
                         const entryType = parser.getValueTypeAt(i);
                         if (entryType === valueTypes.STRING_HEX) {
-                            const recipient = HexString.parse(parser, i);
+                            const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);
                             if (recipient) {
                                 this.Recipients = recipient.value;
                                 i = recipient.end + 1;
@@ -5316,11 +5325,11 @@ class CryptMapDict extends PdfDict {
         return this._filtersMap.get(name);
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this._filtersMap.size) {
-            this._filtersMap.forEach((v, k) => bytes.push(...encoder.encode(k), ...v.toArray()));
+            this._filtersMap.forEach((v, k) => bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo)));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -5391,7 +5400,7 @@ class EncryptionDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Filter) {
@@ -5407,7 +5416,7 @@ class EncryptionDict extends PdfDict {
             bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
         }
         if (this.CF) {
-            bytes.push(...encoder.encode("/CF"), ...this.CF.toArray());
+            bytes.push(...encoder.encode("/CF"), ...this.CF.toArray(cryptInfo));
         }
         if (this.StmF) {
             bytes.push(...encoder.encode("/StmF"), ...encoder.encode(this.StmF));
@@ -5422,36 +5431,36 @@ class EncryptionDict extends PdfDict {
             bytes.push(...encoder.encode("/R"), ...encoder.encode(" " + this.R));
         }
         if (this.O) {
-            bytes.push(...encoder.encode("/O"), ...this.O.toArray());
+            bytes.push(...encoder.encode("/O"), ...this.O.toArray(cryptInfo));
         }
         if (this.U) {
-            bytes.push(...encoder.encode("/U"), ...this.U.toArray());
+            bytes.push(...encoder.encode("/U"), ...this.U.toArray(cryptInfo));
         }
         if (this.OE) {
-            bytes.push(...encoder.encode("/OE"), ...this.OE.toArray());
+            bytes.push(...encoder.encode("/OE"), ...this.OE.toArray(cryptInfo));
         }
         if (this.UE) {
-            bytes.push(...encoder.encode("/UE"), ...this.UE.toArray());
+            bytes.push(...encoder.encode("/UE"), ...this.UE.toArray(cryptInfo));
         }
         if (this.P) {
             bytes.push(...encoder.encode("/P"), ...encoder.encode(" " + this.P));
         }
         if (this.Perms) {
-            bytes.push(...encoder.encode("/Perms"), ...this.Perms.toArray());
+            bytes.push(...encoder.encode("/Perms"), ...this.Perms.toArray(cryptInfo));
         }
         if (this.U) {
-            bytes.push(...encoder.encode("/U"), ...this.U.toArray());
+            bytes.push(...encoder.encode("/U"), ...this.U.toArray(cryptInfo));
         }
         if (this.EncryptMetadata) {
             bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
         }
         if (this.Recipients) {
             if (this.Recipients instanceof HexString) {
-                bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray());
+                bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray(cryptInfo));
             }
             else {
                 bytes.push(codes.L_BRACKET);
-                this.Recipients.forEach(x => bytes.push(...x.toArray()));
+                this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
                 bytes.push(codes.R_BRACKET);
             }
         }
@@ -5602,7 +5611,7 @@ class EncryptionDict extends PdfDict {
                         }
                         break;
                     case "/O":
-                        const ownerPassword = LiteralString.parse(parser, i);
+                        const ownerPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (ownerPassword) {
                             this.O = ownerPassword.value;
                             i = ownerPassword.end + 1;
@@ -5612,7 +5621,7 @@ class EncryptionDict extends PdfDict {
                         }
                         break;
                     case "/U":
-                        const userPassword = LiteralString.parse(parser, i);
+                        const userPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (userPassword) {
                             this.U = userPassword.value;
                             i = userPassword.end + 1;
@@ -5622,7 +5631,7 @@ class EncryptionDict extends PdfDict {
                         }
                         break;
                     case "/OE":
-                        const ownerPasswordKey = LiteralString.parse(parser, i);
+                        const ownerPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (ownerPasswordKey) {
                             this.OE = ownerPasswordKey.value;
                             i = ownerPasswordKey.end + 1;
@@ -5632,7 +5641,7 @@ class EncryptionDict extends PdfDict {
                         }
                         break;
                     case "/UE":
-                        const userPasswordKey = LiteralString.parse(parser, i);
+                        const userPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (userPasswordKey) {
                             this.UE = userPasswordKey.value;
                             i = userPasswordKey.end + 1;
@@ -5652,7 +5661,7 @@ class EncryptionDict extends PdfDict {
                         }
                         break;
                     case "/Perms":
-                        const flagsEncrypted = LiteralString.parse(parser, i);
+                        const flagsEncrypted = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (flagsEncrypted) {
                             this.Perms = flagsEncrypted.value;
                             i = flagsEncrypted.end + 1;
@@ -5674,7 +5683,7 @@ class EncryptionDict extends PdfDict {
                     case "/Recipients":
                         const entryType = parser.getValueTypeAt(i);
                         if (entryType === valueTypes.STRING_HEX) {
-                            const recipient = HexString.parse(parser, i);
+                            const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);
                             if (recipient) {
                                 this.Recipients = recipient.value;
                                 i = recipient.end + 1;
@@ -6433,12 +6442,12 @@ class ObjectStream extends PdfStream {
             },
             type: objectType,
             value,
-            ref: { id, generation: 0 },
+            cryptInfo: { ref: { id, generation: 0 } },
             streamId: this.id,
         };
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.N) {
@@ -6448,7 +6457,7 @@ class ObjectStream extends PdfStream {
             bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
         }
         if (this.Extends) {
-            bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray());
+            bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray(cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -6535,17 +6544,17 @@ class CatalogDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Version) {
             bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
         }
         if (this.Pages) {
-            bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray());
+            bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray(cryptInfo));
         }
         if (this.Lang) {
-            bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray());
+            bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray(cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -6595,7 +6604,7 @@ class CatalogDict extends PdfDict {
                         }
                         break;
                     case "/Lang":
-                        const lang = LiteralString.parse(parser, i);
+                        const lang = LiteralString.parse(parser, i, parseInfo.cryptInfo);
                         if (lang) {
                             this.Lang = lang.value;
                             i = lang.end + 1;
@@ -6633,14 +6642,14 @@ class PageDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
+            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
         }
         if (this.LastModified) {
-            bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray());
+            bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
         }
         if (this.MediaBox) {
             bytes.push(...encoder.encode("/MediaBox"), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
@@ -6650,11 +6659,11 @@ class PageDict extends PdfDict {
         }
         if (this.Annots) {
             if (this.Annots instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toArray());
+                bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toArray(cryptInfo));
             }
             else {
                 bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
-                this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
+                this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
                 bytes.push(codes.R_BRACKET);
             }
         }
@@ -6696,7 +6705,7 @@ class PageDict extends PdfDict {
                         }
                         break;
                     case "/LastModified":
-                        const date = DateString.parse(parser, i);
+                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
                         if (date) {
                             this.LastModified = date.value;
                             i = date.end + 1;
@@ -6778,15 +6787,15 @@ class PageTreeDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray());
+            bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
         }
         if (this.Kids) {
             bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
-            this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray()));
+            this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
             bytes.push(codes.R_BRACKET);
         }
         if (this.Count) {
@@ -6908,7 +6917,7 @@ class TrailerStream extends PdfStream {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Size) {
@@ -6918,16 +6927,16 @@ class TrailerStream extends PdfStream {
             bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray());
+            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
         }
         if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray());
+            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray());
+            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
         }
         if (this.ID) {
-            bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
         }
         if (this.Index) {
             bytes.push(...encoder.encode("/Index"), codes.L_BRACKET);
@@ -7438,7 +7447,7 @@ class XRefStream extends XRef {
         return entries;
     }
     toArray(cryptInfo) {
-        return this._trailerStream.toArray();
+        return this._trailerStream.toArray(cryptInfo);
     }
 }
 
@@ -7454,7 +7463,7 @@ class TrailerDict extends PdfDict {
             : null;
     }
     toArray(cryptInfo) {
-        const superBytes = super.toArray();
+        const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Size) {
@@ -7464,16 +7473,16 @@ class TrailerDict extends PdfDict {
             bytes.push(...encoder.encode("/Prev"), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray());
+            bytes.push(...encoder.encode("/Root"), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
         }
         if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray());
+            bytes.push(...encoder.encode("/Encrypt"), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray());
+            bytes.push(...encoder.encode("/Info"), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
         }
         if (this.ID) {
-            bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(), ...this.ID[1].toArray(), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/ID"), codes.L_BRACKET, ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -7670,7 +7679,7 @@ class XRefTable extends XRef {
         return entries;
     }
     toArray(cryptInfo) {
-        const trailerBytes = this._trailerDict.toArray();
+        const trailerBytes = this._trailerDict.toArray(cryptInfo);
         const bytes = [
             ...keywordCodes.XREF_TABLE, ...keywordCodes.END_OF_LINE,
             ...this._table,
@@ -7682,13 +7691,17 @@ class XRefTable extends XRef {
 }
 
 class DataWriter {
-    constructor(data) {
+    constructor(data, cryptInfo) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
         }
         this._data = [...data];
         this._pointer = data.length - 1;
         this._encoder = new TextEncoder();
+        if (cryptInfo) {
+            this._stringCryptor = cryptInfo.stringCryptor;
+            this._streamCryptor = cryptInfo.streamCryptor;
+        }
         this.fixEof();
     }
     get offset() {
@@ -7708,10 +7721,13 @@ class DataWriter {
         if (!ref || !obj) {
             return;
         }
+        const cryptInfo = this._stringCryptor
+            ? { ref, stringCryptor: this._stringCryptor, streamCryptor: this._streamCryptor }
+            : null;
         const objBytes = [
             ...this._encoder.encode(`${ref.id} ${ref.generation} `),
             ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-            ...obj.toArray(),
+            ...obj.toArray(cryptInfo),
             ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
         ];
         this.writeBytes(objBytes);
@@ -7962,7 +7978,7 @@ class ReferenceDataChange {
 class DocumentData {
     constructor(data) {
         this.getObjectParseInfo = (id) => {
-            var _a;
+            var _a, _b, _c;
             if (!id) {
                 return null;
             }
@@ -7983,9 +7999,10 @@ class DocumentData {
                 parser: this._docParser,
                 bounds,
                 parseInfoGetter,
-                ref: {
-                    id: objectId.value.id,
-                    generation: objectId.value.generation,
+                cryptInfo: {
+                    ref: { id: objectId.value.id, generation: objectId.value.generation },
+                    stringCryptor: (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.stringCryptor,
+                    streamCryptor: (_c = this._authResult) === null || _c === void 0 ? void 0 : _c.streamCryptor,
                 },
             };
             if (objectId.value.id === id) {
@@ -8027,8 +8044,8 @@ class DocumentData {
             const cryptOptions = this._encryption.toCryptOptions();
             const fileId = this._xrefs[0].id[0].hex;
             const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
-            const authResult = cryptorSource.authenticate("ownerpassword");
-            console.log(authResult);
+            this._authResult = cryptorSource.authenticate("ownerpassword");
+            console.log(this._authResult);
         }
         this.parsePageTree();
         console.log(this._catalog);
@@ -8094,7 +8111,7 @@ class DocumentData {
     getRefinedData(idsToDelete) {
         const changeData = new ReferenceDataChange(this._referenceData);
         idsToDelete.forEach(x => changeData.setRefFree(x));
-        const writer = new DataWriter(this._data);
+        const writer = new DataWriter(this._data, this._authResult);
         const newXrefOffset = writer.offset;
         const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
         const entries = changeData.exportEntries();

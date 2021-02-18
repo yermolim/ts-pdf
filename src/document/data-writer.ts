@@ -1,5 +1,5 @@
 import { codes, keywordCodes } from "./codes";
-import { IEncodable, Reference } from "./common-interfaces";
+import { CryptInfo, IDataCryptor, IEncodable, Reference } from "./common-interfaces";
 
 export class DataWriter {
   private readonly _data: number[];  
@@ -7,11 +7,14 @@ export class DataWriter {
 
   private _encoder: TextEncoder;
 
+  private _stringCryptor: IDataCryptor;
+  private _streamCryptor: IDataCryptor;
+
   public get offset(): number {
     return this._pointer;
   }
 
-  constructor(data: Uint8Array) {
+  constructor(data: Uint8Array, cryptInfo?: CryptInfo) {
     if (!data?.length) {
       throw new Error("Data is empty");
     }
@@ -19,6 +22,11 @@ export class DataWriter {
     this._pointer = data.length - 1;
 
     this._encoder = new TextEncoder();
+
+    if (cryptInfo) {
+      this._stringCryptor = cryptInfo.stringCryptor;
+      this._streamCryptor = cryptInfo.streamCryptor;
+    }
 
     this.fixEof();
   }
@@ -39,10 +47,15 @@ export class DataWriter {
     if (!ref || !obj) {
       return;
     }
+    
+    const cryptInfo: CryptInfo = this._stringCryptor
+      ? { ref, stringCryptor: this._stringCryptor, streamCryptor: this._streamCryptor }
+      : null;
+
     const objBytes = [
       ...this._encoder.encode(`${ref.id} ${ref.generation} `), 
       ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-      ...obj.toArray(), 
+      ...obj.toArray(cryptInfo), 
       ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
     ];
 

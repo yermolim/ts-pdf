@@ -81,7 +81,7 @@ export abstract class AnnotationDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -98,34 +98,34 @@ export abstract class AnnotationDict extends PdfDict {
       );
     }
     if (this.Contents) {
-      bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray());
+      bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray(cryptInfo));
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray());
+      bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray(cryptInfo));
     }
     if (this.NM) {
-      bytes.push(...encoder.encode("/NM"), ...this.NM.toArray());
+      bytes.push(...encoder.encode("/NM"), ...this.NM.toArray(cryptInfo));
     }
     if (this.M) {
-      bytes.push(...encoder.encode("/M"), ...this.M.toArray());
+      bytes.push(...encoder.encode("/M"), ...this.M.toArray(cryptInfo));
     }
     if (this.F) {
       bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
     }
     if (this.AP) {
-      bytes.push(...encoder.encode("/AP"), ...this.AP.toArray());
+      bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
     }
     if (this.AS) {
       bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
     }
     if (this.Border) {
-      bytes.push(...encoder.encode("/Border"), ...this.Border.toArray());
+      bytes.push(...encoder.encode("/Border"), ...this.Border.toArray(cryptInfo));
     }
     if (this.BS) {
-      bytes.push(...encoder.encode("/BS"), ...this.BS.toArray());
+      bytes.push(...encoder.encode("/BS"), ...this.BS.toArray(cryptInfo));
     }
     if (this.BE) {
-      bytes.push(...encoder.encode("/BE"), ...this.BE.toArray());
+      bytes.push(...encoder.encode("/BE"), ...this.BE.toArray(cryptInfo));
     }
     if (this.C) {
       bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
@@ -183,7 +183,7 @@ export abstract class AnnotationDict extends PdfDict {
             }
             break;        
           case "/Contents":
-            const contents = LiteralString.parse(parser, i);
+            const contents = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (contents) {
               this.Contents = contents.value;
               i = contents.end + 1;
@@ -215,7 +215,7 @@ export abstract class AnnotationDict extends PdfDict {
             }
             break;
           case "/NM":
-            const uniqueName = LiteralString.parse(parser, i);
+            const uniqueName = LiteralString.parse(parser, i, parseInfo.cryptInfo);
             if (uniqueName) {
               this.NM = uniqueName.value;
               i = uniqueName.end + 1;
@@ -224,13 +224,13 @@ export abstract class AnnotationDict extends PdfDict {
             }
             break;
           case "/M":
-            const date = DateString.parse(parser, i);
+            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (date) {
               this.M = date.value;
               i = date.end + 1;    
               break;      
             } else {   
-              const dateLiteral = LiteralString.parse(parser, i);
+              const dateLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
               if (dateLiteral) {
                 this.M = dateLiteral.value;
                 i = dateLiteral.end + 1; 

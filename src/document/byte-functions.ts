@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise */
 export function parseIntFromBytes(bytes: Uint8Array): number {
   if (!bytes?.length) {
     return 0;
@@ -32,11 +33,11 @@ export function int32ToBytes(int: number, le = false): Uint8Array {
   return new Uint8Array(buffer);
 }
 
-export function int32ArrayToBytes(intArr: number[], le = false): Uint8Array {
-  const buffer = new ArrayBuffer(intArr.length * 4);
+export function int32ArrayToBytes(ints: number[], le = false): Uint8Array {
+  const buffer = new ArrayBuffer(ints.length * 4);
   const view = new DataView(buffer);
-  for (let i = 0; i < intArr.length; i++) {
-    view.setInt32(i * 4, intArr[i], le);
+  for (let i = 0; i < ints.length; i++) {
+    view.setInt32(i * 4, ints[i], le);
   }
   return new Uint8Array(buffer);
 }
@@ -101,4 +102,12 @@ export function findSubarrayIndex(arr: Uint8Array, sub: Uint8Array): number {
     }
   }
   return -1;
+}
+
+export function hexStringToBytes(hexString: string): Uint8Array {    
+  const bytes = new Uint8Array(hexString.length / 2);
+  for (let i = 0, j = 0; i < hexString.length; i += 2, j++) {
+    bytes[j] = parseInt(hexString.substr(i, 2), 16);
+  } 
+  return bytes;
 }

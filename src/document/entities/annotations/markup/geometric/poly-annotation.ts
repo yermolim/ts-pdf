@@ -35,7 +35,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray();  
+    const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
@@ -48,7 +48,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
       bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
     }
     if (this.Measure) {
-      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray());
+      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [

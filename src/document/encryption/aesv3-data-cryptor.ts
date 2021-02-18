@@ -1,5 +1,4 @@
-import { int32ArrayToBytes } from "../byte-functions";
-import { AES_INIT_VALUE, aes } from "../crypto";
+import { AES_INIT_VALUE, aes, wordArrayToBytes } from "../crypto";
 import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class AESV3DataCryptor implements IDataCryptor {
@@ -35,7 +34,7 @@ export class AESV3DataCryptor implements IDataCryptor {
     is a 16-byte random number that is stored as the first 16 bytes of the encrypted stream or string
     */
     iv ??= data.slice(0, 16);
-    const encrypted = int32ArrayToBytes(aes(data, this._key, iv).words);    
+    const encrypted = wordArrayToBytes(aes(data, this._key, iv));    
     return encrypted;
   }
 }
