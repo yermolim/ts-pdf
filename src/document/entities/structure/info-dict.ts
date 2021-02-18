@@ -1,8 +1,8 @@
 import { dictTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { DateString } from "../common/date-string";
-import { LiteralString } from "../common/literal-string";
+import { DateString } from "../strings/date-string";
+import { LiteralString } from "../strings/literal-string";
 import { PdfDict } from "../core/pdf-dict";
 
 export class InfoDict extends PdfDict {

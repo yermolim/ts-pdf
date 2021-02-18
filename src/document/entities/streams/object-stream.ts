@@ -2,8 +2,8 @@ import { codes } from "../../codes";
 import { ObjectType, objectTypes, streamTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";
-import { HexString } from "../common/hex-string";
-import { LiteralString } from "../common/literal-string";
+import { HexString } from "../strings/hex-string";
+import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 

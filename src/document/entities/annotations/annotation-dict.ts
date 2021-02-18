@@ -1,6 +1,6 @@
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { DateString } from "../common/date-string";
+import { DateString } from "../strings/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
 import { AppearanceDict } from "../appearance/appearance-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
@@ -8,7 +8,7 @@ import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
 import { AnnotationType, dictTypes, Rect, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { LiteralString } from "../common/literal-string";
+import { LiteralString } from "../strings/literal-string";
 import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../interfaces";

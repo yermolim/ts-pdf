@@ -3,8 +3,8 @@ import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions,
   dictTypes, valueTypes } from "../../const";
 import { CryptInfo, CryptOptions } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { HexString } from "../common/hex-string";
-import { LiteralString } from "../common/literal-string";
+import { HexString } from "../strings/hex-string";
+import { LiteralString } from "../strings/literal-string";
 import { PdfDict } from "../core/pdf-dict";
 import { CryptFilterDict } from "./crypt-filter-dict";
 import { CryptMapDict } from "./crypt-map-dict";

@@ -1,7 +1,7 @@
 import { flatePredictors, streamFilters, xRefTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { HexString } from "../common/hex-string";
+import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
 import { FlateParamsDict } from "../encoding/flate-params-dict";
 import { TrailerStream } from "./trailer-stream";

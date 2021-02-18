@@ -1,6 +1,6 @@
 import { XRefType } from "../../const";
 import { CryptInfo, IEncodable } from "../../interfaces";
-import { HexString } from "../common/hex-string";
+import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
 import { XRefEntry } from "./x-ref-entry";
 

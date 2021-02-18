@@ -2,7 +2,7 @@ import { codes } from "../../codes";
 import { dictTypes, Rect, valueTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { DateString } from "../common/date-string";
+import { DateString } from "../strings/date-string";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 

@@ -2,7 +2,7 @@ import { keywordCodes } from "../../codes";
 import { xRefTypes } from "../../const";
 import { CryptInfo } from "../../interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
-import { HexString } from "../common/hex-string";
+import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
 import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";

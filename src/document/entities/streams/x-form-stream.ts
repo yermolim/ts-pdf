@@ -4,7 +4,7 @@ import { Matrix, Rect, streamTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
-import { DateString } from "../common/date-string";
+import { DateString } from "../strings/date-string";
 import { ResourceDict } from "../misc/resource-dict";
 import { codes } from "../../codes";
 import { MeasureDict } from "../misc/measure-dict";
