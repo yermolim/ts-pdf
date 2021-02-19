@@ -1,5 +1,6 @@
-import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { DocumentData } from "./document-data";
+import { AnnotationDict } from "./entities/annotations/annotation-dict";
+import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
 
 export class AnnotationEditor {
   private _sourceData: Uint8Array;
@@ -39,9 +40,13 @@ export class AnnotationEditor {
     if (annotations?.size) {
       this.getAnnotationMap().forEach(x => {
         x.forEach(y => {
-          // checking if the annotation has an id i.e. it is parsed from the file
           if (y.id) {
+            // if the annotation has an id than it is parsed from the file
             idsToDelete.push(y.id);
+            if (y instanceof MarkupAnnotation && y.Popup) {
+              // also, delete the associated popup if present
+              idsToDelete.push(y.Popup.id);
+            }
           }
         });
       });
@@ -83,5 +88,6 @@ export class AnnotationEditor {
       throw new Error("Unauthorized access to file data");
     }    
     this._annotationsByPageId = this._documentData.getSupportedAnnotations();
+    return this._annotationsByPageId;
   }
 }

@@ -495,6 +495,18 @@ export const blendModes = {
 } as const;
 export type BlendMode = typeof blendModes[keyof typeof blendModes];
 
+export const textRenderModes = {
+  FILL: 0,
+  STROKE: 1,
+  FILL_STROKE: 2,
+  INVISIBLE: 3,
+  FILL_USE_AS_CLIP: 4,
+  STROKE_USE_AS_CLIP: 5,
+  FILL_STROKE_USE_AS_CLIP: 6,
+  USE_AS_CLIP: 7,
+} as const;
+export type TextRenderMode = typeof textRenderModes[keyof typeof textRenderModes];
+
 
 export const supportedFilters = new Set<string>([
   streamFilters.FLATE,

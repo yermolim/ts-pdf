@@ -244,6 +244,9 @@ export class DocumentData {
         }
         if (annot) {
           annotations.push(annot.value);
+
+          // DEBUG
+          console.log(annot.value);
         }
       }
       

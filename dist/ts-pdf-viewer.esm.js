@@ -8245,6 +8245,7 @@ class DocumentData {
                 }
                 if (annot) {
                     annotations.push(annot.value);
+                    console.log(annot.value);
                 }
             }
             annotationMap.set(page.id, annotations);
@@ -8339,6 +8340,9 @@ class AnnotationEditor {
                 x.forEach(y => {
                     if (y.id) {
                         idsToDelete.push(y.id);
+                        if (y instanceof MarkupAnnotation && y.Popup) {
+                            idsToDelete.push(y.Popup.id);
+                        }
                     }
                 });
             });
@@ -8372,6 +8376,7 @@ class AnnotationEditor {
             throw new Error("Unauthorized access to file data");
         }
         this._annotationsByPageId = this._documentData.getSupportedAnnotations();
+        return this._annotationsByPageId;
     }
 }
 
