@@ -3,7 +3,7 @@ import { LineEndingType, lineEndingTypes, annotationTypes, Rect, valueTypes, Pai
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { ObjectId } from "../../../core/object-id";
-import { MeasureDict } from "../../../misc/measure-dict";
+import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
 
 export const lineIntents = {

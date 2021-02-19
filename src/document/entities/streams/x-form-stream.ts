@@ -5,9 +5,9 @@ import { ParseInfo, ParseResult } from "../../data-parser";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { DateString } from "../strings/date-string";
-import { ResourceDict } from "../misc/resource-dict";
+import { ResourceDict } from "../appearance/resource-dict";
 import { codes } from "../../codes";
-import { MeasureDict } from "../misc/measure-dict";
+import { MeasureDict } from "../appearance/measure-dict";
 import { CryptInfo } from "../../common-interfaces";
 
 export class XFormStream extends PdfStream {
@@ -59,15 +59,15 @@ export class XFormStream extends PdfStream {
    * The integer key of the form XObject’s entry in the structural parent tree
    * */
   StructParents: number;
-
-  /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
-   *  specifying the optional content properties for the annotation */
-  OC: OcMembershipDict | OcGroupDict;
   /** 
    * (Optional; PDF 1.7+) A measure dictionary that shall specify the scale and units 
    * that apply to the line annotation
    */
   Measure: MeasureDict;
+
+  /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
+   *  specifying the optional content properties for the annotation */
+  OC: OcMembershipDict | OcGroupDict;
 
   //TODO: add remaining properties
   //Group
@@ -249,7 +249,11 @@ export class XFormStream extends PdfStream {
             } else if (resEntryType === valueTypes.DICTIONARY) { 
               const resDictBounds = parser.getDictBoundsAt(i); 
               if (resDictBounds) {
-                const resDict = ResourceDict.parse({parser, bounds: resDictBounds});
+                const resDict = ResourceDict.parse({
+                  parser,
+                  bounds: resDictBounds,
+                  parseInfoGetter: parseInfo.parseInfoGetter,
+                });
                 if (resDict) {
                   this.Resources = resDict.value;
                   i = resDict.end + 1;
@@ -341,7 +345,12 @@ export class XFormStream extends PdfStream {
     if (!this.BBox) {
       // not all required properties parsed
       return false;
-    }
+    }    
+
+    // DEBUG
+    const chars: string[] = [];
+    this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
+    console.log(chars.join(""));
 
     return true;
   }

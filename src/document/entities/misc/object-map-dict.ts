@@ -23,6 +23,13 @@ export class ObjectMapDict extends PdfDict {
   getProp(name: string): ObjectId {
     return this._objectIdMap.get(name);
   }
+
+  *getProps(): Iterable<[string, ObjectId]> {
+    for (const pair of this._objectIdMap) {
+      yield pair;
+    }
+    return;
+  }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  

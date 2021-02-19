@@ -570,6 +570,9 @@ export class DataParser {
     if (value === codes.MINUS) {
       numberStr += "-";
       value = this._data[++i];
+    } else if (value === codes.DOT) {
+      numberStr += "0.";
+      value = this._data[++i];
     }
     while (DIGIT_CHARS.has(value)
       || (float && value === codes.DOT)) {

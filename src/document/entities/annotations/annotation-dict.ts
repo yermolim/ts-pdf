@@ -351,7 +351,11 @@ export abstract class AnnotationDict extends PdfDict {
             } else if (apEntryType === valueTypes.DICTIONARY) { 
               const apDictBounds = parser.getDictBoundsAt(i); 
               if (apDictBounds) {
-                const apDict = AppearanceDict.parse({parser, bounds: apDictBounds});
+                const apDict = AppearanceDict.parse({
+                  parser, 
+                  bounds: apDictBounds, 
+                  parseInfoGetter: parseInfo.parseInfoGetter,
+                });
                 if (apDict) {
                   this.AP = apDict.value;
                   i = apDict.end + 1;

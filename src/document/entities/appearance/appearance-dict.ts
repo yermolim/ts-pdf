@@ -4,6 +4,7 @@ import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "../misc/object-map-dict";
+import { XFormStream } from "../streams/x-form-stream";
 
 export class AppearanceDict extends PdfDict {
   /**
@@ -18,6 +19,8 @@ export class AppearanceDict extends PdfDict {
    * (Optional) The annotation’s down appearance
    */
   D: ObjectMapDict | ObjectId; 
+
+  protected _streamsMap = new Map<string, XFormStream>();
   
   constructor() {
     super(null);
@@ -30,6 +33,50 @@ export class AppearanceDict extends PdfDict {
     return parseResult
       ? {value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
+  }
+
+  fillStreamsMap(parseInfoGetter: (id: number) => ParseInfo) {
+    this._streamsMap.clear();
+
+    for (const prop of ["N", "R", "D"]) {
+      if (this[prop]) {
+        if (this[prop] instanceof ObjectId) {
+          const streamParseInfo = parseInfoGetter(this[prop].id);
+          if (!streamParseInfo) {
+            continue;
+          }
+          const stream = XFormStream.parse(streamParseInfo);
+          if (!stream) {
+            continue;
+          }
+          if (stream) {
+            this._streamsMap.set(`/${prop}`, stream.value);
+          }
+        } else {
+          for (const [name, objectId] of this[prop].getProps()) {
+            const streamParseInfo = parseInfoGetter(objectId.id);
+            if (!streamParseInfo) {
+              continue;
+            }
+            const stream = XFormStream.parse(streamParseInfo);
+            if (stream) {
+              this._streamsMap.set(`/${prop}${name}`, stream.value);
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  getStream(key: string): XFormStream {
+    return this._streamsMap.get(key);
+  }
+
+  *getStreams(): Iterable<XFormStream> {
+    for (const pair of this._streamsMap) {
+      yield pair[1];
+    }
+    return;
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -177,6 +224,10 @@ export class AppearanceDict extends PdfDict {
     if (!this.N) {
       // not all required properties parsed
       return false;
+    }
+
+    if (parseInfo.parseInfoGetter) {
+      this.fillStreamsMap(parseInfo.parseInfoGetter);
     }
 
     return true;

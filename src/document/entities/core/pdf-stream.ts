@@ -36,38 +36,18 @@ export abstract class PdfStream extends PdfObject {
   DL: number;
   
   protected _streamData: Uint8Array;
+  protected _decodedStreamData: Uint8Array;
   get streamData(): Uint8Array {
     return this._streamData;
   }
   set streamData(data: Uint8Array) { 
-    let encodedData: Uint8Array;   
-    if (this.DecodeParms) {
-      const params = this.DecodeParms;
-      encodedData = FlateDecoder.Encode(data,
-        params.Predictor,
-        params.Columns,
-        params.Colors,
-        params.BitsPerComponent); 
-    } else {      
-      encodedData = FlateDecoder.Encode(data);
-    }
-    this._streamData = encodedData;
-    this.Length = encodedData.length;
-    this.DL = data.length;
+    this.setStreamData(data);
   }
   get decodedStreamData(): Uint8Array {
-    let decodedData: Uint8Array;
-    if (this.DecodeParms) {
-      const params = this.DecodeParms;
-      decodedData = FlateDecoder.Decode(this._streamData,
-        params.Predictor,
-        params.Columns,
-        params.Colors,
-        params.BitsPerComponent); 
-    } else {      
-      decodedData = FlateDecoder.Decode(this._streamData);
+    if (!this._decodedStreamData) {
+      this.decodeStreamData();
     }
-    return decodedData;
+    return this._decodedStreamData;
   }
   
   protected constructor(type: StreamType = null) {
@@ -240,5 +220,38 @@ export abstract class PdfStream extends PdfObject {
     this._streamData = encodedData;
 
     return true;
+  }
+
+  protected setStreamData(data: Uint8Array) {
+    let encodedData: Uint8Array;   
+    if (this.DecodeParms) {
+      const params = this.DecodeParms;
+      encodedData = FlateDecoder.Encode(data,
+        params.Predictor,
+        params.Columns,
+        params.Colors,
+        params.BitsPerComponent); 
+    } else {      
+      encodedData = FlateDecoder.Encode(data);
+    }
+    this._streamData = encodedData;
+    this.Length = encodedData.length;
+    this.DL = data.length;
+    this._decodedStreamData = data;
+  }
+
+  protected decodeStreamData() {    
+    let decodedData: Uint8Array;
+    if (this.DecodeParms) {
+      const params = this.DecodeParms;
+      decodedData = FlateDecoder.Decode(this._streamData,
+        params.Predictor,
+        params.Columns,
+        params.Colors,
+        params.BitsPerComponent); 
+    } else {      
+      decodedData = FlateDecoder.Decode(this._streamData);
+    }
+    this._decodedStreamData = decodedData;
   }
 }

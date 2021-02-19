@@ -1392,6 +1392,37 @@ const lineEndingTypes = {
     ARROW_CLOSED_R: "/RClosedArrow",
     SLASH: "/Slash",
 };
+const lineCapStyles = {
+    BUTT: 0,
+    ROUND: 1,
+    SQUARE: 2,
+};
+const lineJoinStyles = {
+    MITER: 0,
+    ROUND: 1,
+    BEVEL: 2,
+};
+const renderingIntents = {
+    ABSOLUTE: "/AbsoluteColorimetric",
+    RELATIVE: "/RelativeColorimetric",
+    SATURATION: "/Saturation",
+    PERCEPTUAL: "/Perceptual",
+};
+const blendModes = {
+    NORMAL: "/Normal",
+    COMPATIBLE: "/Compatible",
+    MULTIPLY: "/Multiply",
+    SCREEN: "/Screen",
+    OVERLAY: "/Overlay",
+    DARKEN: "/Darken",
+    LIGHTEN: "/Lighten",
+    COLOR_DODGE: "/ColorDodge",
+    COLOR_BURN: "/ColorBurn",
+    HARD_LIGHT: "/HardLight",
+    SOFT_LIGHT: "/SoftLight",
+    DIFFERENCE: "/Difference",
+    EXCLUSION: "/Exclusion",
+};
 const supportedFilters = new Set([
     streamFilters.FLATE,
 ]);
@@ -2972,28 +3003,13 @@ class PdfStream extends PdfObject {
         return this._streamData;
     }
     set streamData(data) {
-        let encodedData;
-        if (this.DecodeParms) {
-            const params = this.DecodeParms;
-            encodedData = FlateDecoder.Encode(data, params.Predictor, params.Columns, params.Colors, params.BitsPerComponent);
-        }
-        else {
-            encodedData = FlateDecoder.Encode(data);
-        }
-        this._streamData = encodedData;
-        this.Length = encodedData.length;
-        this.DL = data.length;
+        this.setStreamData(data);
     }
     get decodedStreamData() {
-        let decodedData;
-        if (this.DecodeParms) {
-            const params = this.DecodeParms;
-            decodedData = FlateDecoder.Decode(this._streamData, params.Predictor, params.Columns, params.Colors, params.BitsPerComponent);
+        if (!this._decodedStreamData) {
+            this.decodeStreamData();
         }
-        else {
-            decodedData = FlateDecoder.Decode(this._streamData);
-        }
-        return decodedData;
+        return this._decodedStreamData;
     }
     toArray(cryptInfo) {
         const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
@@ -3144,6 +3160,31 @@ class PdfStream extends PdfObject {
             : streamBytes;
         this._streamData = encodedData;
         return true;
+    }
+    setStreamData(data) {
+        let encodedData;
+        if (this.DecodeParms) {
+            const params = this.DecodeParms;
+            encodedData = FlateDecoder.Encode(data, params.Predictor, params.Columns, params.Colors, params.BitsPerComponent);
+        }
+        else {
+            encodedData = FlateDecoder.Encode(data);
+        }
+        this._streamData = encodedData;
+        this.Length = encodedData.length;
+        this.DL = data.length;
+        this._decodedStreamData = data;
+    }
+    decodeStreamData() {
+        let decodedData;
+        if (this.DecodeParms) {
+            const params = this.DecodeParms;
+            decodedData = FlateDecoder.Decode(this._streamData, params.Predictor, params.Columns, params.Colors, params.BitsPerComponent);
+        }
+        else {
+            decodedData = FlateDecoder.Decode(this._streamData);
+        }
+        this._decodedStreamData = decodedData;
     }
 }
 
@@ -3297,6 +3338,12 @@ class ObjectMapDict extends PdfDict {
     getProp(name) {
         return this._objectIdMap.get(name);
     }
+    *getProps() {
+        for (const pair of this._objectIdMap) {
+            yield pair;
+        }
+        return;
+    }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
@@ -3353,9 +3400,857 @@ class ObjectMapDict extends PdfDict {
     }
 }
 
+class ImageStream extends PdfStream {
+    constructor() {
+        super(streamTypes.FORM_XOBJECT);
+        this.Subtype = "/Image";
+        this.Interpolate = false;
+    }
+    set streamData(data) {
+        this.setStreamData(data);
+    }
+    get decodedStreamData() {
+        if (!this._decodedStreamData) {
+            this.decodeStreamData();
+        }
+        return this._decodedStreamData;
+    }
+    static parse(parseInfo) {
+        const xForm = new ImageStream();
+        const parseResult = xForm.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+        }
+        if (this.Width) {
+            bytes.push(...encoder.encode("/Width"), ...encoder.encode(" " + this.Width));
+        }
+        if (this.Height) {
+            bytes.push(...encoder.encode("/Width"), ...encoder.encode(" " + this.Height));
+        }
+        if (this.ColorSpace) {
+            bytes.push(...encoder.encode("/ColorSpace"), ...encoder.encode(this.ColorSpace));
+        }
+        if (this.BitsPerComponent) {
+            bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(" " + this.BitsPerComponent));
+        }
+        if (this.Decode) {
+            bytes.push(...encoder.encode("/Decode"), codes.L_BRACKET);
+            this.Decode.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        bytes.push(...encoder.encode("/Interpolate"), ...encoder.encode(" " + !!this.Interpolate));
+        if (this.StructParent) {
+            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+        }
+        if (this.Metadata) {
+            bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        if (this.Type !== streamTypes.FORM_XOBJECT) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = parser.getDictBoundsAt(start);
+        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = parser.parseNameAt(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                return false;
+                            }
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/Width":
+                        const width = parser.parseNumberAt(i, false);
+                        if (width) {
+                            this.Width = width.value;
+                            i = width.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Width property value");
+                        }
+                        break;
+                    case "/Height":
+                        const height = parser.parseNumberAt(i, false);
+                        if (height) {
+                            this.Height = height.value;
+                            i = height.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Height property value");
+                        }
+                        break;
+                    case "/ColorSpace":
+                        const colorSpace = parser.parseNameAt(i, false);
+                        if (colorSpace) {
+                            this.ColorSpace = colorSpace.value;
+                            i = colorSpace.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /ColorSpace property value");
+                        }
+                        break;
+                    case "/BitsPerComponent":
+                        const bitsPerComponent = parser.parseNumberAt(i, false);
+                        if (bitsPerComponent) {
+                            this.BitsPerComponent = bitsPerComponent.value;
+                            i = bitsPerComponent.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BitsPerComponent property value");
+                        }
+                        break;
+                    case "/Decode":
+                        const decode = parser.parseNumberArrayAt(i, false);
+                        if (decode) {
+                            this.Decode = decode.value;
+                            i = decode.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Decode property value");
+                        }
+                        break;
+                    case "/Interpolate":
+                        const interpolate = parser.parseBoolAt(i, false);
+                        if (interpolate) {
+                            this.Interpolate = interpolate.value;
+                            i = interpolate.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Interpolate property value");
+                        }
+                        break;
+                    case "/StructParent":
+                        const parentKey = parser.parseNumberAt(i, false);
+                        if (parentKey) {
+                            this.StructParent = parentKey.value;
+                            i = parentKey.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StructParent property value");
+                        }
+                        break;
+                    case "/Metadata":
+                        const metaId = ObjectId.parseRef(parser, i);
+                        if (metaId) {
+                            this.Metadata = metaId.value;
+                            i = metaId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Metadata property value");
+                        }
+                        break;
+                    case "/OC":
+                    case "/Group":
+                    case "/OPI":
+                    case "/Intent":
+                    case "/ImageMask":
+                    case "/Mask":
+                    case "/Alternates":
+                    case "/SMask":
+                    case "/SMaskInData":
+                    case "/Group":
+                    case "/OPI":
+                    default:
+                        i = parser.skipToNextName(i, dictBounds.contentEnd);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Width && !this.Height) {
+            return false;
+        }
+        return true;
+    }
+    setStreamData(data) {
+    }
+    decodeStreamData() {
+    }
+}
+
+class GraphicsStateDict extends PdfDict {
+    constructor() {
+        super(dictTypes.GRAPHICS_STATE);
+    }
+    static parse(parseInfo) {
+        const graphicsState = new GraphicsStateDict();
+        const parseResult = graphicsState.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: graphicsState, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        return new Uint8Array();
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/LC":
+                        const lineCap = parser.parseNumberAt(i, true);
+                        if (lineCap && Object.values(lineCapStyles)
+                            .includes(lineCap.value)) {
+                            this.LC = lineCap.value;
+                            i = lineCap.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LC property value");
+                        }
+                        break;
+                    case "/OPM":
+                        const overprintMode = parser.parseNumberAt(i, true);
+                        if (overprintMode && ([0, 1].includes(overprintMode.value))) {
+                            this.OPM = overprintMode.value;
+                            i = overprintMode.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /OPM property value");
+                        }
+                        break;
+                    case "/LJ":
+                        const lineJoin = parser.parseNumberAt(i, true);
+                        if (lineJoin && Object.values(lineJoinStyles)
+                            .includes(lineJoin.value)) {
+                            this.LJ = lineJoin.value;
+                            i = lineJoin.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LJ property value");
+                        }
+                        break;
+                    case "/RI":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent && Object.values(renderingIntents)
+                            .includes(intent.value)) {
+                            this.RI = intent.value;
+                            i = intent.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RI property value");
+                        }
+                        break;
+                    case "/BM":
+                        const blendMode = parser.parseNameAt(i, true);
+                        if (blendMode && Object.values(blendModes)
+                            .includes(blendMode.value)) {
+                            this.BM = blendMode.value;
+                            i = blendMode.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BM property value");
+                        }
+                        break;
+                    case "/Font":
+                        const fontEntryType = parser.getValueTypeAt(i);
+                        if (fontEntryType === valueTypes.ARRAY) {
+                            const fontArrayBounds = parser.getArrayBoundsAt(i);
+                            if (fontArrayBounds) {
+                                const fontRef = ObjectId.parse(parser, fontArrayBounds.start + 1);
+                                if (fontRef) {
+                                    const fontSize = parser.parseNumberAt(fontRef.end + 1);
+                                    if (fontSize) {
+                                        this.Font = [fontRef.value, fontSize.value];
+                                        i = fontArrayBounds.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /Font property value type: ${fontEntryType}`);
+                        }
+                        throw new Error("Can't parse /Font property value");
+                    case "/D":
+                        const dashEntryType = parser.getValueTypeAt(i);
+                        if (dashEntryType === valueTypes.ARRAY) {
+                            const dashArrayBounds = parser.getArrayBoundsAt(i);
+                            if (dashArrayBounds) {
+                                const dashArray = parser.parseNumberArrayAt(dashArrayBounds.start + 1);
+                                if (dashArray) {
+                                    const dashPhase = parser.parseNumberAt(dashArray.end + 1);
+                                    if (dashPhase) {
+                                        this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
+                                        i = dashArrayBounds.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /D property value type: ${dashEntryType}`);
+                        }
+                        throw new Error("Can't parse /D property value");
+                    case "/OP":
+                    case "/op":
+                    case "/SA":
+                    case "/AIS":
+                    case "/TK":
+                        const boolValue = parser.parseBoolAt(i);
+                        if (boolValue) {
+                            this[name.substring(1)] = boolValue.value;
+                            i = boolValue.end + 1;
+                        }
+                        else {
+                            throw new Error(`Can't parse${name} property value`);
+                        }
+                        break;
+                    case "/LW":
+                    case "/ML":
+                    case "/FL":
+                    case "/SM":
+                    case "/CA":
+                    case "/ca":
+                        const numberValue = parser.parseNumberAt(i);
+                        if (numberValue) {
+                            this[name.substring(1)] = numberValue.value;
+                            i = numberValue.end + 1;
+                        }
+                        else {
+                            throw new Error(`Can't parse${name} property value`);
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class ResourceDict extends PdfDict {
+    constructor() {
+        super(null);
+        this._gsMap = new Map();
+        this._xObjectsMap = new Map();
+    }
+    static parse(parseInfo) {
+        const resourceDict = new ResourceDict();
+        const parseResult = resourceDict.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.ExtGState) {
+            bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray(cryptInfo));
+        }
+        if (this.ColorSpace) {
+            bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray(cryptInfo));
+        }
+        if (this.Pattern) {
+            bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray(cryptInfo));
+        }
+        if (this.Shading) {
+            bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray(cryptInfo));
+        }
+        if (this.XObject) {
+            bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray(cryptInfo));
+        }
+        if (this.Font) {
+            bytes.push(...encoder.encode("/Font"), ...this.Font.toArray(cryptInfo));
+        }
+        if (this.Properties) {
+            bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray(cryptInfo));
+        }
+        if (this.ProcSet) {
+            bytes.push(...encoder.encode("/ProcSet"), codes.L_BRACKET);
+            this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    fillMaps(parseInfoGetter) {
+        var _a;
+        this._gsMap.clear();
+        this._xObjectsMap.clear();
+        if (this.ExtGState) {
+            for (const [name, objectId] of this.ExtGState.getProps()) {
+                const streamParseInfo = parseInfoGetter(objectId.id);
+                if (!streamParseInfo) {
+                    continue;
+                }
+                const stream = GraphicsStateDict.parse(streamParseInfo);
+                if (stream) {
+                    this._gsMap.set(`/ExtGState${name}`, stream.value);
+                }
+            }
+        }
+        if (this.XObject) {
+            for (const [name, objectId] of this.XObject.getProps()) {
+                const streamParseInfo = parseInfoGetter(objectId.id);
+                if (!streamParseInfo) {
+                    continue;
+                }
+                const stream = (_a = XFormStream.parse(streamParseInfo)) !== null && _a !== void 0 ? _a : ImageStream.parse(streamParseInfo);
+                if (stream) {
+                    this._xObjectsMap.set(`/XObject${name}`, stream.value);
+                }
+            }
+        }
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/ExtGState":
+                    case "/ColorSpace":
+                    case "/Pattern":
+                    case "/Shading":
+                    case "/XObject":
+                    case "/Font":
+                    case "/Properties":
+                        const mapBounds = parser.getDictBoundsAt(i);
+                        if (mapBounds) {
+                            const map = ObjectMapDict.parse({ parser, bounds: mapBounds });
+                            if (map) {
+                                this[name.substring(1)] = map.value;
+                                i = mapBounds.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error(`Can't parse ${name} property value`);
+                    case "/ProcSet":
+                        const procedureNames = parser.parseNameArrayAt(i);
+                        if (procedureNames) {
+                            this.ProcSet = procedureNames.value;
+                            i = procedureNames.end + 1;
+                            break;
+                        }
+                        throw new Error("Can't parse /ProcSet property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (parseInfo.parseInfoGetter) {
+            this.fillMaps(parseInfo.parseInfoGetter);
+        }
+        return true;
+    }
+}
+
+class MeasureDict extends PdfDict {
+    constructor() {
+        super(dictTypes.MEASURE);
+        this.Subtype = "/RL";
+    }
+    static parse(parseInfo) {
+        const stamp = new MeasureDict();
+        const parseResult = stamp.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = parser.parseNameAt(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                return false;
+                            }
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class XFormStream extends PdfStream {
+    constructor() {
+        super(streamTypes.FORM_XOBJECT);
+        this.Subtype = "/Form";
+        this.FormType = 1;
+        this.Matrix = [1, 0, 0, 1, 0, 0];
+    }
+    static parse(parseInfo) {
+        const xForm = new XFormStream();
+        const parseResult = xForm.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+        }
+        if (this.FormType) {
+            bytes.push(...encoder.encode("/FormType"), ...encoder.encode(" " + this.FormType));
+        }
+        if (this.BBox) {
+            bytes.push(...encoder.encode("/BBox"), codes.L_BRACKET, ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.Matrix) {
+            bytes.push(...encoder.encode("/BBox"), codes.L_BRACKET, ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[3] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[4] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[5] + ""), codes.R_BRACKET);
+        }
+        if (this.Resources) {
+            bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray(cryptInfo));
+        }
+        if (this.Metadata) {
+            bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+        }
+        if (this.LastModified) {
+            bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
+        }
+        if (this.StructParent) {
+            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+        }
+        if (this.StructParents) {
+            bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(" " + this.StructParents));
+        }
+        if (this.Measure) {
+            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        if (this.Type !== streamTypes.FORM_XOBJECT) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = parser.getDictBoundsAt(start);
+        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = parser.parseNameAt(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                return false;
+                            }
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/FormType":
+                        const formType = parser.parseNumberAt(i, false);
+                        if (formType) {
+                            if (formType.value !== 1) {
+                                return false;
+                            }
+                            i = formType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/BBox":
+                        const boundingBox = parser.parseNumberArrayAt(i, true);
+                        if (boundingBox) {
+                            this.BBox = [
+                                boundingBox.value[0],
+                                boundingBox.value[1],
+                                boundingBox.value[2],
+                                boundingBox.value[3],
+                            ];
+                            i = boundingBox.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BBox property value");
+                        }
+                        break;
+                    case "/Matrix":
+                        const matrix = parser.parseNumberArrayAt(i, true);
+                        if (matrix) {
+                            this.Matrix = [
+                                matrix.value[0],
+                                matrix.value[1],
+                                matrix.value[2],
+                                matrix.value[3],
+                                matrix.value[4],
+                                matrix.value[5],
+                            ];
+                            i = matrix.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Matrix property value");
+                        }
+                        break;
+                    case "/Resources":
+                        const resEntryType = parser.getValueTypeAt(i);
+                        if (resEntryType === valueTypes.REF) {
+                            const resDictId = ObjectId.parseRef(parser, i);
+                            if (resDictId && parseInfo.parseInfoGetter) {
+                                const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
+                                if (resParseInfo) {
+                                    const resDict = ResourceDict.parse(resParseInfo);
+                                    if (resDict) {
+                                        this.Resources = resDict.value;
+                                        i = resDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /Resources value reference");
+                        }
+                        else if (resEntryType === valueTypes.DICTIONARY) {
+                            const resDictBounds = parser.getDictBoundsAt(i);
+                            if (resDictBounds) {
+                                const resDict = ResourceDict.parse({
+                                    parser,
+                                    bounds: resDictBounds,
+                                    parseInfoGetter: parseInfo.parseInfoGetter,
+                                });
+                                if (resDict) {
+                                    this.Resources = resDict.value;
+                                    i = resDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Resources value dictionary");
+                        }
+                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
+                    case "/Metadata":
+                        const metaId = ObjectId.parseRef(parser, i);
+                        if (metaId) {
+                            this.Metadata = metaId.value;
+                            i = metaId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Metadata property value");
+                        }
+                        break;
+                    case "/LastModified":
+                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
+                        if (date) {
+                            this.LastModified = date.value;
+                            i = date.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LastModified property value");
+                        }
+                        break;
+                    case "/StructParent":
+                        const parentKey = parser.parseNumberAt(i, false);
+                        if (parentKey) {
+                            this.StructParent = parentKey.value;
+                            i = parentKey.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StructParent property value");
+                        }
+                        break;
+                    case "/StructParents":
+                        const parentsKey = parser.parseNumberAt(i, false);
+                        if (parentsKey) {
+                            this.StructParents = parentsKey.value;
+                            i = parentsKey.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StructParents property value");
+                        }
+                        break;
+                    case "/Measure":
+                        const measureEntryType = parser.getValueTypeAt(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = ObjectId.parseRef(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetter) {
+                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                                    if (measureDict) {
+                                        this.Measure = measureDict.value;
+                                        i = measureDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = parser.getDictBoundsAt(i);
+                            if (measureDictBounds) {
+                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    case "/OC":
+                    case "/Group":
+                    case "/OPI":
+                    default:
+                        i = parser.skipToNextName(i, dictBounds.contentEnd);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.BBox) {
+            return false;
+        }
+        const chars = [];
+        this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
+        console.log(chars.join(""));
+        return true;
+    }
+}
+
 class AppearanceDict extends PdfDict {
     constructor() {
         super(null);
+        this._streamsMap = new Map();
     }
     static parse(parseInfo) {
         const appearance = new AppearanceDict();
@@ -3363,6 +4258,47 @@ class AppearanceDict extends PdfDict {
         return parseResult
             ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
+    }
+    fillStreamsMap(parseInfoGetter) {
+        this._streamsMap.clear();
+        for (const prop of ["N", "R", "D"]) {
+            if (this[prop]) {
+                if (this[prop] instanceof ObjectId) {
+                    const streamParseInfo = parseInfoGetter(this[prop].id);
+                    if (!streamParseInfo) {
+                        continue;
+                    }
+                    const stream = XFormStream.parse(streamParseInfo);
+                    if (!stream) {
+                        continue;
+                    }
+                    if (stream) {
+                        this._streamsMap.set(`/${prop}`, stream.value);
+                    }
+                }
+                else {
+                    for (const [name, objectId] of this[prop].getProps()) {
+                        const streamParseInfo = parseInfoGetter(objectId.id);
+                        if (!streamParseInfo) {
+                            continue;
+                        }
+                        const stream = XFormStream.parse(streamParseInfo);
+                        if (stream) {
+                            this._streamsMap.set(`/${prop}${name}`, stream.value);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    getStream(key) {
+        return this._streamsMap.get(key);
+    }
+    *getStreams() {
+        for (const pair of this._streamsMap) {
+            yield pair[1];
+        }
+        return;
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -3508,6 +4444,9 @@ class AppearanceDict extends PdfDict {
         }
         if (!this.N) {
             return false;
+        }
+        if (parseInfo.parseInfoGetter) {
+            this.fillStreamsMap(parseInfo.parseInfoGetter);
         }
         return true;
     }
@@ -3947,7 +4886,11 @@ class AnnotationDict extends PdfDict {
                         else if (apEntryType === valueTypes.DICTIONARY) {
                             const apDictBounds = parser.getDictBoundsAt(i);
                             if (apDictBounds) {
-                                const apDict = AppearanceDict.parse({ parser, bounds: apDictBounds });
+                                const apDict = AppearanceDict.parse({
+                                    parser,
+                                    bounds: apDictBounds,
+                                    parseInfoGetter: parseInfo.parseInfoGetter,
+                                });
                                 if (apDict) {
                                     this.AP = apDict.value;
                                     i = apDict.end + 1;
@@ -4472,77 +5415,6 @@ class CircleAnnotation extends GeometricAnnotation {
                         }
                         else {
                             throw new Error("Can't parse /RD property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class MeasureDict extends PdfDict {
-    constructor() {
-        super(dictTypes.MEASURE);
-        this.Subtype = "/RL";
-    }
-    static parse(parseInfo) {
-        const stamp = new MeasureDict();
-        const parseResult = stamp.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.Subtype) {
-            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i);
-                        if (subtype) {
-                            if (this.Subtype && this.Subtype !== subtype.value) {
-                                return false;
-                            }
-                            i = subtype.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
                         }
                         break;
                     default:
@@ -6185,6 +7057,10 @@ class DataParser {
         let value = this._data[i];
         if (value === codes.MINUS) {
             numberStr += "-";
+            value = this._data[++i];
+        }
+        else if (value === codes.DOT) {
+            numberStr += "0.";
             value = this._data[++i];
         }
         while (DIGIT_CHARS.has(value)

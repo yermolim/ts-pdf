@@ -2,7 +2,10 @@ import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
-import { ObjectMapDict } from "./object-map-dict";
+import { ObjectMapDict } from "../misc/object-map-dict";
+import { ImageStream } from "../streams/image-stream";
+import { XFormStream } from "../streams/x-form-stream";
+import { GraphicsStateDict } from "./graphics-state-dict";
 
 export class ResourceDict extends PdfDict {
   /** 
@@ -41,6 +44,9 @@ export class ResourceDict extends PdfDict {
    * (Optional) An array of predefined procedure set names
    * */
   ProcSet: string[];
+  
+  protected _gsMap = new Map<string, GraphicsStateDict>();
+  protected _xObjectsMap = new Map<string, XFormStream | ImageStream>();
   
   constructor() {
     super(null);
@@ -94,6 +100,38 @@ export class ResourceDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
+  fillMaps(parseInfoGetter: (id: number) => ParseInfo) {
+    this._gsMap.clear();
+    this._xObjectsMap.clear();
+
+    if (this.ExtGState) {
+      for (const [name, objectId] of this.ExtGState.getProps()) {
+        const streamParseInfo = parseInfoGetter(objectId.id);
+        if (!streamParseInfo) {
+          continue;
+        }
+        const stream = GraphicsStateDict.parse(streamParseInfo);
+        if (stream) {
+          this._gsMap.set(`/ExtGState${name}`, stream.value);
+        }
+      }
+    }
+
+    if (this.XObject) {
+      for (const [name, objectId] of this.XObject.getProps()) {
+        const streamParseInfo = parseInfoGetter(objectId.id);
+        if (!streamParseInfo) {
+          continue;
+        }
+        const stream = XFormStream.parse(streamParseInfo) 
+          ?? ImageStream.parse(streamParseInfo);
+        if (stream) {
+          this._xObjectsMap.set(`/XObject${name}`, stream.value);
+        }
+      }
+    }
+  }
+  
   /**
    * fill public properties from data using info/parser if available
    */
@@ -129,12 +167,7 @@ export class ResourceDict extends PdfDict {
           case "/Properties":
             const mapBounds = parser.getDictBoundsAt(i);
             if (mapBounds) {
-              const map = ObjectMapDict.parse({parser, bounds: mapBounds});
-
-              // DEBUG
-              console.log(parser.sliceChars(mapBounds.contentStart, mapBounds.contentEnd));
-              console.log(map);
-              
+              const map = ObjectMapDict.parse({parser, bounds: mapBounds});              
               if (map) {
                 this[name.substring(1)] = map.value;
                 i = mapBounds.end + 1;
@@ -159,6 +192,10 @@ export class ResourceDict extends PdfDict {
         break;
       }
     };
+
+    if (parseInfo.parseInfoGetter) {
+      this.fillMaps(parseInfo.parseInfoGetter);
+    }
 
     return true;
   }

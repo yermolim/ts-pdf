@@ -260,7 +260,7 @@ export class GraphicsStateDict extends PdfDict {
             if (numberValue) {
               this[name.substring(1)] = numberValue.value;
               i = numberValue.end + 1;
-            } else {              
+            } else {           
               throw new Error(`Can't parse${name} property value`);
             }
             break;
