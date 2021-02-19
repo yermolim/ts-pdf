@@ -156,7 +156,7 @@ export class DocumentData {
     const changeData = new ReferenceDataChange(this._referenceData);
     idsToDelete.forEach(x => changeData.setRefFree(x));
     
-    const writer = new DataWriter(this._data, this._authResult);
+    const writer = new DataWriter(this._data);
 
     const newXrefOffset = writer.offset;
     const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);

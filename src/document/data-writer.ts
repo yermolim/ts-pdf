@@ -7,14 +7,11 @@ export class DataWriter {
 
   private _encoder: TextEncoder;
 
-  private _stringCryptor: IDataCryptor;
-  private _streamCryptor: IDataCryptor;
-
   public get offset(): number {
     return this._pointer;
   }
 
-  constructor(data: Uint8Array, cryptInfo?: CryptInfo) {
+  constructor(data: Uint8Array) {
     if (!data?.length) {
       throw new Error("Data is empty");
     }
@@ -22,11 +19,6 @@ export class DataWriter {
     this._pointer = data.length - 1;
 
     this._encoder = new TextEncoder();
-
-    if (cryptInfo) {
-      this._stringCryptor = cryptInfo.stringCryptor;
-      this._streamCryptor = cryptInfo.streamCryptor;
-    }
 
     this.fixEof();
   }

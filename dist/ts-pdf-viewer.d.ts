@@ -60,6 +60,7 @@ export declare class TsPdfViewer {
 	private onViewerWheel;
 	private getVisiblePages;
 	private getCurrentPage;
+	private showPasswordDialogAsync;
 }
 
 export {};

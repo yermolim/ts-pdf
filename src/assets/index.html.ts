@@ -8,6 +8,8 @@ import icon_fit_viewer from "./icons/fit-viewer.png";
 import icon_fit_page from "./icons/fit-page.png";
 import icon_sidebar from "./icons/sidebar.png";
 import icon_hand from "./icons/hand.png";
+import icon_ok from "./icons/ok.png";
+import icon_close from "./icons/close.png";
 
 export const styles = /*html*/`
   <style>
@@ -319,6 +321,55 @@ export const styles = /*html*/`
     .hand .page-text span {
       cursor: grab;
     }
+    
+    #password-dialog {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--color-secondary-tr-final);
+      z-index: 2;
+    }
+    #password-dialog .form {
+      position: absolute;
+      display: flex;
+      flex-direction: row;
+      justify-content: stretch;
+      align-items: stretch;
+      flex-grow: 0;
+      flex-shrink: 0;
+      left: calc(50% - 160px);
+      top: calc(50% - 25px);
+      width: 320px;
+      height: 50px;  
+      background: var(--color-primary-tr-final);
+      box-shadow: 0 0 10px var(--color-shadow-final);
+    }
+    #password-dialog input {
+      width: 220px;
+      margin: 10px 0 10px 10px;
+      padding: 5px;
+      font-size: 16px;
+      outline: none;
+      border: none;
+      color: var(--color-fg-primary-final);
+      background-color: var(--color-primary-final);
+    }
+    #password-dialog input::placeholder {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--color-fg-primary-final);
+    }
+    #password-dialog .buttons {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      flex-grow: 1;
+      flex-shrink: 1;
+      width: 100px;
+    }
   </style>
 `;
 
@@ -367,4 +418,18 @@ export const html = /*html*/`
       </div>
     </div>
   </div>
+`;
+
+export const passwordDialogHtml =  /*html*/`
+    <div class="form">
+      <input id="password-input" type="password" maxlength="127"/>
+      <div class="buttons">
+        <div id="password-ok" class="panel-button">
+          <img src="${icon_ok}"/>
+        </div>
+        <div id="password-cancel" class="panel-button">
+          <img src="${icon_close}"/>
+        </div>
+      </div>
+    </div>
 `;

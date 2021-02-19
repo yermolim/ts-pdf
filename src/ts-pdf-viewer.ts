@@ -1,7 +1,7 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-import { html, styles } from "./assets/index.html";
+import { html, passwordDialogHtml, styles } from "./assets/index.html";
 import { clamp, getCenter, getDistance, Position } from "./common";
 import { ViewPage } from "./view-page";
 import { AnnotationEditor } from "./document/annotation-editor";
@@ -81,6 +81,7 @@ export class TsPdfViewer {
     this._shadowRoot.innerHTML = "";
   }
 
+  //#region open/close
   async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
     let data: Uint8Array;
     let doc: PDFDocumentProxy;
@@ -95,23 +96,24 @@ export class TsPdfViewer {
           blob = await res.blob();
         } else {
           blob = src;
-        }
-  
+        }  
         const buffer = await blob.arrayBuffer();
         data = new Uint8Array(buffer);
       }
-    } catch {
-      throw new Error("Cannot load file data!");
+    } catch (e) {
+      throw new Error(`Cannot load file data: ${e.message}`);
     }
 
     const annotator = new AnnotationEditor(data);
     let password: string;
     while (true) {      
       const authenticated = annotator.tryAuthenticate(password);
-      if (!authenticated) {
-        password = "ownerpassword";
+      if (!authenticated) {        
+        password = await this.showPasswordDialogAsync();
+        if (password === null) {          
+          throw new Error("File loading cancelled: authentication aborted");
+        }
         continue;
-        // TODO: add user dialog
       }
       break;
     }
@@ -228,7 +230,9 @@ export class TsPdfViewer {
       this._pages.push(page);
     } 
   }
+  //#endregion
   
+  //#region render
   private renderVisiblePreviews() {
     if (this._previewerHidden) {
       return;
@@ -277,7 +281,9 @@ export class TsPdfViewer {
       }
     }
   } 
-  
+  //#endregion
+
+  //#region scroll
   private scrollToPreview(pageNumber: number) { 
     const {top: cTop, height: cHeight} = this._previewer.getBoundingClientRect();
     const {top: pTop, height: pHeight} = this._pages[pageNumber].previewContainer.getBoundingClientRect();
@@ -298,8 +304,9 @@ export class TsPdfViewer {
     const scroll = pTop - (cTop - this._viewer.scrollTop);
     this._viewer.scrollTo(this._viewer.scrollLeft, scroll);
   }
+  //#endregion
 
-  //#region zooming
+  //#region zoom
   private setScale(scale: number, cursorPosition: Position = null) {
     if (!scale || scale === this._scale) {
       return;
@@ -620,7 +627,6 @@ export class TsPdfViewer {
 
   //#endregion
   
-
   //#region page numbers methods
   private getVisiblePages(container: HTMLDivElement, pages: ViewPage[], preview = false): Set<number> {
     const pagesVisible = new Set<number>();
@@ -678,4 +684,40 @@ export class TsPdfViewer {
     throw new Error("Incorrect argument");
   }
   //#endregion
+
+  private async showPasswordDialogAsync(): Promise<string> {
+
+    const passwordPromise = new Promise<string>((resolve, reject) => {
+
+      const dialogContainer = document.createElement("div");
+      dialogContainer.id = "password-dialog";
+      dialogContainer.innerHTML = passwordDialogHtml;
+      this._mainContainer.append(dialogContainer);
+
+      let value = "";      
+      const input = this._shadowRoot.getElementById("password-input") as HTMLInputElement;
+      input.placeholder = "Enter password...";
+      input.addEventListener("change", () => value = input.value);
+
+      const ok = () => {
+        dialogContainer.remove();
+        resolve(value);
+      };
+      const cancel = () => {
+        dialogContainer.remove();
+        resolve(null);
+      };
+
+      dialogContainer.addEventListener("click", (e: Event) => {
+        if (e.target === dialogContainer) {
+          cancel();
+        }
+      });
+      
+      this._shadowRoot.getElementById("password-ok").addEventListener("click", ok);
+      this._shadowRoot.getElementById("password-cancel").addEventListener("click", cancel);
+    });
+
+    return passwordPromise;
+  }
 }
