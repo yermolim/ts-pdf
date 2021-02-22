@@ -465,7 +465,10 @@ export class DataParser {
     const contentEnd = this.findNonSpaceIndex("reverse", end - 2);
     if (contentEnd < contentStart) {
       // should be possible only in an empty dict
-      return null;
+      return {
+        start, 
+        end,
+      };
     }
 
     return {
@@ -598,6 +601,27 @@ export class DataParser {
     let result = includeSlash
       ? "/"
       : "";
+    let value = this._data[i];
+    while (isRegularChar(value)) {
+      result += String.fromCharCode(value);
+      value = this._data[++i];
+    };
+
+    return result.length > 1 
+      ? {value: result, start, end: i - 1}
+      : null;
+  } 
+  
+  parseStringAt(start: number, skipEmpty = true): ParseResult<string>  {
+    if (skipEmpty) {
+      start = this.skipEmpty(start);
+    }
+    if (this.isOutside(start)) {
+      return null;
+    }
+
+    let i = start;
+    let result = "";
     let value = this._data[i];
     while (isRegularChar(value)) {
       result += String.fromCharCode(value);

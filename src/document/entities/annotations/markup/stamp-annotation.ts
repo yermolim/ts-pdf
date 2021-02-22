@@ -25,7 +25,7 @@ export class StampAnnotation extends MarkupAnnotation {
   /**
    * (Optional) The name of an icon that shall be used in displaying the annotation
    */
-  Name: StampType = stampTypes.DRAFT;
+  Name: StampType | string = stampTypes.DRAFT;
   
   constructor() {
     super(annotationTypes.STAMP);
@@ -69,6 +69,8 @@ export class StampAnnotation extends MarkupAnnotation {
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
+
+    parser.sliceChars(start, end);
     
     let i = parser.skipToNextName(start, end - 1);
     if (i === -1) {
@@ -85,8 +87,8 @@ export class StampAnnotation extends MarkupAnnotation {
         switch (name) {
           case "/Name":
             const type = parser.parseNameAt(i, true);
-            if (type && (<string[]>Object.values(stampTypes)).includes(type.value)) {
-              this.Name = <StampType>type.value;
+            if (type) {
+              this.Name = type.value;
               i = type.end + 1;              
             } else {              
               throw new Error("Can't parse /Name property value");
@@ -104,6 +106,11 @@ export class StampAnnotation extends MarkupAnnotation {
     
     if (!this.Name) {
       // not all required properties parsed
+      return false;
+    }
+
+    if (!(<string[]>Object.values(stampTypes)).includes(this.Name)) {         
+      // TODO: add support for custom stamps
       return false;
     }
 

@@ -170,9 +170,17 @@ export const dictTypes = {
   DEV_EXTENSIONS: "/DeveloperExtensions",
   GRAPHICS_STATE: "/ExtGState",
   CRYPT_FILTER: "/CryptFilter",
+  SOFT_MASK: "/Mask",
+  GROUP: "/Group",
   EMPTY: "",
 } as const;
 export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
+
+export const groupDictTypes = {
+  TRANSPARENCY: "/Transparency",
+} as const;
+export type GroupDictType = typeof groupDictTypes[keyof typeof groupDictTypes];
+
 
 export const valueTypes = {
   UNKNOWN: 0,
@@ -506,6 +514,29 @@ export const textRenderModes = {
   USE_AS_CLIP: 7,
 } as const;
 export type TextRenderMode = typeof textRenderModes[keyof typeof textRenderModes];
+
+export const colorSpaces = {
+  GRAYSCALE: "/DeviceGray",
+  RGB: "/DeviceRGB",
+  CMYK: "/DeviceCMYK",
+
+  // CIE_GRAYSCALE: "/CalGray",
+  // CIE_RGB: "/CalRGB",
+  // CIE_LAB: "/Lab",
+  // CIE_ICC: "/ICCBased",
+
+  // SPECIAL: "/DeviceN",
+  // SPECIAL_INDEXED: "/Indexed",
+  // SPECIAL_PATTERN: "/Pattern",
+  // SPECIAL_SEPARATION: "/Separation",
+} as const;
+export type ColorSpace = typeof colorSpaces[keyof typeof colorSpaces];
+
+export const softMaskTypes = {
+  ALPHA: "/Alpha",
+  LUMINOSITY: "/Luminosity",
+} as const;
+export type SoftMaskType = typeof softMaskTypes[keyof typeof softMaskTypes];
 
 
 export const supportedFilters = new Set<string>([

@@ -9,6 +9,7 @@ import { ResourceDict } from "../appearance/resource-dict";
 import { codes } from "../../codes";
 import { MeasureDict } from "../appearance/measure-dict";
 import { CryptInfo } from "../../common-interfaces";
+import { TransparencyGroupDict } from "../appearance/transparency-group-dict";
 
 export class XFormStream extends PdfStream {
   /**
@@ -64,13 +65,17 @@ export class XFormStream extends PdfStream {
    * that apply to the line annotation
    */
   Measure: MeasureDict;
+  /** 
+   * (Optional; PDF1.4+) A group attributes dictionary indicating that the contents 
+   * of the form XObject are to be treated as a group and specifying the attributes of that group
+   */
+  Group: TransparencyGroupDict;
 
   /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
    *  specifying the optional content properties for the annotation */
   OC: OcMembershipDict | OcGroupDict;
 
   //TODO: add remaining properties
-  //Group
   //OPI
   //PtData
   
@@ -135,6 +140,9 @@ export class XFormStream extends PdfStream {
     }
     if (this.Measure) {
       bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
+    }
+    if (this.Group) {
+      bytes.push(...encoder.encode("/Group"), ...this.Group.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties
@@ -249,18 +257,22 @@ export class XFormStream extends PdfStream {
             } else if (resEntryType === valueTypes.DICTIONARY) { 
               const resDictBounds = parser.getDictBoundsAt(i); 
               if (resDictBounds) {
-                const resDict = ResourceDict.parse({
-                  parser,
-                  bounds: resDictBounds,
-                  parseInfoGetter: parseInfo.parseInfoGetter,
-                });
-                if (resDict) {
-                  this.Resources = resDict.value;
-                  i = resDict.end + 1;
-                  break;
+                if (resDictBounds.contentStart) {
+                  const resDict = ResourceDict.parse({
+                    parser,
+                    bounds: resDictBounds,
+                    parseInfoGetter: parseInfo.parseInfoGetter,
+                  });
+                  if (resDict) {
+                    this.Resources = resDict.value;
+                  } else {                  
+                    throw new Error("Can't parse /Resources value dictionary");  
+                  }
                 }
-              }  
-              throw new Error("Can't parse /Resources value dictionary");  
+                i = resDictBounds.end + 1;
+                break;
+              }
+              throw new Error("Can't parse /Resources dictionary bounds"); 
             }
             throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);         
           case "/Metadata":
@@ -318,7 +330,8 @@ export class XFormStream extends PdfStream {
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
               const measureDictBounds = parser.getDictBoundsAt(i); 
               if (measureDictBounds) {
-                const measureDict = MeasureDict.parse({parser, bounds: measureDictBounds});
+                const measureDict = MeasureDict
+                  .parse({parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo});
                 if (measureDict) {
                   this.Measure = measureDict.value;
                   i = measureDict.end + 1;
@@ -327,10 +340,39 @@ export class XFormStream extends PdfStream {
               }  
               throw new Error("Can't parse /Measure value dictionary");  
             }
-            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);      
+            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+          case "/Group":            
+            const groupEntryType = parser.getValueTypeAt(i);
+            if (groupEntryType === valueTypes.REF) {              
+              const groupDictId = ObjectId.parseRef(parser, i);
+              if (groupDictId && parseInfo.parseInfoGetter) {
+                const groupParseInfo = parseInfo.parseInfoGetter(groupDictId.value.id);
+                if (groupParseInfo) {
+                  const groupDict = TransparencyGroupDict.parse(groupParseInfo);
+                  if (groupDict) {
+                    this.Group = groupDict.value;
+                    i = groupDict.end + 1;
+                    break;
+                  }
+                }
+              }              
+              throw new Error("Can't parse /Group value reference");
+            } else if (groupEntryType === valueTypes.DICTIONARY) { 
+              const groupDictBounds = parser.getDictBoundsAt(i); 
+              if (groupDictBounds) {
+                const groupDict = TransparencyGroupDict
+                  .parse({parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo});
+                if (groupDict) {
+                  this.Group = groupDict.value;
+                  i = groupDict.end + 1;
+                  break;
+                }
+              }  
+              throw new Error("Can't parse /Group value dictionary");  
+            }
+            throw new Error(`Unsupported /Group property value type: ${groupEntryType}`);        
             // TODO: handle remaining cases
           case "/OC":
-          case "/Group":
           case "/OPI":
           default:
             // skip to next name

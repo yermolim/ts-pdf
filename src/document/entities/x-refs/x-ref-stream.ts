@@ -3,7 +3,7 @@ import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
-import { FlateParamsDict } from "../encoding/flate-params-dict";
+import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { TrailerStream } from "./trailer-stream";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";
@@ -71,11 +71,11 @@ export class XRefStream extends XRef {
     const w: [number, number, number] = [1, 4, 2];
     const data = XRefEntry.toStreamBytes(entries, w);
 
-    const params = new FlateParamsDict();
-    params.Predictor = flatePredictors.PNG_UP;
-    params.Columns = 5;
-    params.Colors = 1;
-    params.BitsPerComponent = 8;
+    const params = new DecodeParamsDict();
+    params.setIntProp("/Predictor", flatePredictors.PNG_UP);
+    params.setIntProp("/Columns", 5);
+    params.setIntProp("/Colors", 1);
+    params.setIntProp("/BitsPerComponent", 8);
 
     const stream = new XRefStream(trailer, offset);
     stream._trailerStream.Filter = streamFilters.FLATE;

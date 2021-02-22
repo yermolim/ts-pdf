@@ -1,37 +1,28 @@
+import { dictTypes, GroupDictType, groupDictTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { FlateParamsDict } from "./flate-params-dict";
+import { PdfDict } from "../core/pdf-dict";
 
-export class LzwParamsDict extends FlateParamsDict {
+export abstract class GroupDict extends PdfDict {
   /**
-   * An indication of when to increase the code length. 
-   * If the value of this entry is 0, code length increases shall be postponed 
-   * as long as possible. If the value is 1, code length increases 
-   * shall occur one code early. This parameter is included because 
-   * LZW sample code distributed by some vendors increases the code length 
-   * one code earlier than necessary
+   * (Required) The group subtype, which identifies the type of group 
+   * whose attributes this dictionary describes and determines the format and meaning 
+   * of the dictionary’s remaining entries. The only group subtype defined in PDF 1.4 is Transparency; 
+   * Other group subtypes may be added in the future
    */
-  EarlyChange: 0 | 1 = 1;
+  S: GroupDictType = "/Transparency";
   
-  constructor() {
-    super();
-  }
-
-  static parse(parseInfo: ParseInfo): ParseResult<LzwParamsDict> {    
-    const dict = new LzwParamsDict();
-    const parseResult = dict.tryParseProps(parseInfo);
-
-    return parseResult
-      ? {value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  protected constructor() {
+    super(dictTypes.GROUP);
   }  
+
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
-    if (this.EarlyChange) {
-      bytes.push(...encoder.encode("/EarlyChange"), ...encoder.encode(" " + this.EarlyChange));
+    if (this.S) {
+      bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
     }
 
     const totalBytes: number[] = [
@@ -67,18 +58,21 @@ export class LzwParamsDict extends FlateParamsDict {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/EarlyChange":
-            const earlyChangeFlag = parser.parseNumberAt(i, false);
-            if (earlyChangeFlag) {
-              this.EarlyChange = earlyChangeFlag.value === 1
-                ? 1
-                : 0;
-              i = earlyChangeFlag.end + 1;
+          case "/S":
+            const intent = parser.parseNameAt(i, true);
+            if (intent) {
+              if ((<string[]>Object.values(groupDictTypes)).includes(intent.value)) {
+                this.S = <GroupDictType>intent.value;
+                i = intent.end + 1;    
+              } else {
+                // Unsupported subtype
+                return false;
+              }      
             } else {              
-              throw new Error("Can't parse /EarlyChange property value");
+              throw new Error("Can't parse /S property value");
             }
             break;
-          default:            
+          default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);
             break;

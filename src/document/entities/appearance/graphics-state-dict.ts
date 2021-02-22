@@ -4,6 +4,8 @@ import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
+import { codes } from "../../codes";
+import { SoftMaskDict } from "./soft-mask.dict";
 
 export class GraphicsStateDict extends PdfDict {
   /** 
@@ -24,7 +26,7 @@ export class GraphicsStateDict extends PdfDict {
   ML: number;
   /** 
    * (Optional; PDF 1.3+) The line dash pattern, expressed 
-   * as an array of the form [dashArray dashPhase ],
+   * as an array of the form [dashArray dashPhase],
    * where dashArray shall be itself an array and dashPhase shall be an integer
    * */
   D: [dashArray: [dash: number, gap: number], dashPhase: number];
@@ -80,6 +82,11 @@ export class GraphicsStateDict extends PdfDict {
    * */
   BM: BlendMode;
   /** 
+   * (Optional; PDF1.4+) The current soft mask, specifying the mask shape 
+   * or mask opacity values to be used in the transparent imaging model
+   * */
+  SMask: string | SoftMaskDict;
+  /** 
    * (Optional; PDF 1.4+) The current stroking alpha constant, 
    * specifying the constant shape or constant opacity value 
    * that shall be used for stroking operations in the transparent imaging model
@@ -102,7 +109,7 @@ export class GraphicsStateDict extends PdfDict {
   TK: boolean;
 
   // TODO: add remaining properties
-  // BG BG2 UCR UCR2 TR TR2 HT SMask
+  // BG BG2 UCR UCR2 TR TR2 HT
 
   constructor() {
     super(dictTypes.GRAPHICS_STATE);
@@ -118,8 +125,94 @@ export class GraphicsStateDict extends PdfDict {
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
-    // TODO: implement
-    return new Uint8Array();
+    const superBytes = super.toArray(cryptInfo);  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+    
+    if (this.LW) {
+      bytes.push(...encoder.encode("/LW"), ...encoder.encode(" " + this.LW));
+    }
+    if (this.LC) {
+      bytes.push(...encoder.encode("/LC"), ...encoder.encode(" " + this.LC));
+    }
+    if (this.LJ) {
+      bytes.push(...encoder.encode("/LJ"), ...encoder.encode(" " + this.LJ));
+    }
+    if (this.ML) {
+      bytes.push(...encoder.encode("/ML"), ...encoder.encode(" " + this.ML));
+    }
+    if (this.D) {
+      bytes.push(
+        ...encoder.encode("/D"), 
+        codes.L_BRACKET,
+        codes.L_BRACKET,
+        ...encoder.encode("" + this.D[0][0]),
+        ...encoder.encode(" " + this.D[0][1]),
+        codes.R_BRACKET,
+        ...encoder.encode(" " + this.D[1]),
+        codes.R_BRACKET,
+      );
+    }      
+    if (this.RI) {
+      bytes.push(...encoder.encode("/RI"), ...encoder.encode(this.RI));
+    }
+    if (this.OP) {
+      bytes.push(...encoder.encode("/OP"), ...encoder.encode(" " + this.OP));
+    }
+    if (this.op) {
+      bytes.push(...encoder.encode("/op"), ...encoder.encode(" " + this.op));
+    }
+    if (this.OPM) {
+      bytes.push(...encoder.encode("/OPM"), ...encoder.encode(" " + this.OPM));
+    }
+    if (this.Font) {
+      bytes.push(
+        ...encoder.encode("/Font"), 
+        codes.L_BRACKET,
+        ...this.Font[0].toArray(cryptInfo),
+        ...encoder.encode(" " + this.Font[1]),
+        codes.R_BRACKET,
+      );
+    }       
+    if (this.FL) {
+      bytes.push(...encoder.encode("/FL"), ...encoder.encode(" " + this.FL));
+    }
+    if (this.SM) {
+      bytes.push(...encoder.encode("/SM"), ...encoder.encode(" " + this.SM));
+    }
+    if (this.SA) {
+      bytes.push(...encoder.encode("/SA"), ...encoder.encode(" " + this.SA));
+    }
+    if (this.BM) {
+      bytes.push(...encoder.encode("/BM"), ...encoder.encode(this.BM));
+    }
+    if (this.SMask) {
+      if (this.SMask instanceof SoftMaskDict) {        
+        bytes.push(...encoder.encode("/SMask"), ...this.SMask.toArray(cryptInfo));
+      } else {
+        bytes.push(...encoder.encode("/SMask"), ...encoder.encode(this.SMask));
+      }
+    }
+    if (this.CA) {
+      bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
+    }
+    if (this.ca) {
+      bytes.push(...encoder.encode("/ca"), ...encoder.encode(" " + this.ca));
+    }
+    if (this.AIS) {
+      bytes.push(...encoder.encode("/AIS"), ...encoder.encode(" " + this.AIS));
+    }
+    if (this.TK) {
+      bytes.push(...encoder.encode("/AIS"), ...encoder.encode(" " + this.TK));
+    }
+    
+    //TODO: handle remaining properties
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
   }
   
   /**
@@ -196,7 +289,30 @@ export class GraphicsStateDict extends PdfDict {
             } else {              
               throw new Error("Can't parse /BM property value");
             }
-            break; 
+            break;             
+          case "/SMask":
+            const sMaskEntryType = parser.getValueTypeAt(i);
+            if (sMaskEntryType === valueTypes.NAME) {  
+              const sMaskName = parser.parseNameAt(i);  
+              if (sMaskName) {
+                this.SMask = sMaskName.value;
+                i = sMaskName.end + 1;
+                break;
+              }
+              throw new Error("Can't parse /SMask property name");
+            } else if (sMaskEntryType === valueTypes.DICTIONARY) { 
+              const sMaskDictBounds = parser.getDictBoundsAt(i); 
+              if (sMaskDictBounds) {
+                const sMaskDict = SoftMaskDict.parse({parser, bounds: sMaskDictBounds});
+                if (sMaskDict) {
+                  this.SMask = sMaskDict.value;
+                  i = sMaskDict.end + 1;
+                  break;
+                }
+              }  
+              throw new Error("Can't parse /SMask value dictionary");  
+            }
+            throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
           case "/Font":
             const fontEntryType = parser.getValueTypeAt(i);
             if (fontEntryType === valueTypes.ARRAY) {

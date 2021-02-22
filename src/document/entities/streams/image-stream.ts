@@ -1,11 +1,12 @@
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
-import { streamTypes } from "../../const";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../const";
+import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
+import { DecodeParamsDict } from "../encoding/decode-params-dict";
 
 // TODO: add separate logic for decoding images
 export class ImageStream extends PdfStream {
@@ -48,6 +49,20 @@ export class ImageStream extends PdfStream {
    */
   BitsPerComponent: number;
   /** 
+   * (Optional) A flag indicating whether the image is to be treated as an image mask. 
+   * If this flag is true, the value of BitsPerComponent must be 1 and Mask and ColorSpace 
+   * should not be specified; unmasked areas are painted using the current non-stroking color
+   * */
+  ImageMask = false;
+  /** 
+   * (Optional) An array of numbers describing how to map image samples 
+   * into the range of values appropriate for the image’s color space. If ImageMask is true, 
+   * the array must be either [0 1] or [1 0]; otherwise, its length must be twice 
+   * the number of color components required by ColorSpace. If the image uses
+   * the JPXDecode filter and ImageMask is false, Decode is ignored
+   * */
+  Mask: number[];
+  /** 
    * (Optional) An array of numbers describing how to map image samples 
    * into the range of values appropriate for the image’s color space. If ImageMask is true, 
    * the array must be either [0 1] or [1 0]; otherwise, its length must be twice 
@@ -59,6 +74,43 @@ export class ImageStream extends PdfStream {
    * (Optional) A flag indicating whether image interpolation is to be performed
    * */
   Interpolate = false;
+  
+  /**
+   * (Optional; PDF1.4+) A subsidiary image XObject defining a soft-mask image 
+   * to be used as a source of mask shape or mask opacity values in the transparent imaging model. 
+   * The alpha source parameter in the graphics state determines whether the mask values 
+   * are interpreted as shape or opacity. If present, this entry overrides the current soft mask 
+   * in the graphics state, as well as the image’s Mask entry, if any. 
+   * (However, the other transparency-related graphics state parameters—blend mode 
+   * and alpha constant—remain in effect.) 
+   * If SMask is absent, the image has no associated soft mask 
+   * (although the current soft mask in the graphics state may still apply)
+   */
+  SMask: ObjectId;
+  /**
+   * (Optional for images that use the JPXDecode filter, meaningless otherwise; PDF1.5+) 
+   * A code specifying how soft-mask information encoded with image samples should be used:
+   * [0] If present, encoded soft-mask image information should be ignored.
+   * [1] The image’s data stream includes encoded soft-mask values. 
+   * An application can create a soft-mask image from the information to be used 
+   * as a source of mask shape or mask opacity in the transparency imaging model.
+   * [2] The image’s data stream includes color channels that have been preblended with a background; 
+   * the image data also includes an opacity channel. 
+   * An application can create a soft-mask image with a Matte entry from the opacity 
+   * channel information to be used as a source of mask shape or mask opacity in the transparency model. 
+   * If this entry has a nonzero value, SMask should not be specified.
+   */
+  SMaskInData = 0;
+  
+  /**
+   * (Optional; PDF1.4+) An array of component values specifying the matte color 
+   * with which the image data in the parent image has been preblended. 
+   * The array consists of n numbers, where n is the number of components in the color space 
+   * specified by the ColorSpace entry in the parent image’s image dictionary; 
+   * the numbers must be valid color components in that color space. 
+   * If this entry is absent, the image data is not preblended
+   */
+  Matte: number[];  
   
   /** 
    * (Required if the image is a structural content item; PDF1.3+) 
@@ -81,12 +133,8 @@ export class ImageStream extends PdfStream {
 
   //TODO: add remaining properties
   //Intent
-  //ImageMask
-  //Mask
   //Alternates
-  //SMask
-  //SMaskInData
-  //Group
+  //ID
   //OPI
   
   set streamData(data: Uint8Array) { 
@@ -132,12 +180,29 @@ export class ImageStream extends PdfStream {
     if (this.BitsPerComponent) {
       bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(" " + this.BitsPerComponent));
     }
+    bytes.push(...encoder.encode("/ImageMask"), ...encoder.encode(" " + !!this.ImageMask));
+    if (this.Mask) {
+      bytes.push(...encoder.encode("/Mask"), codes.L_BRACKET);
+      this.Mask.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
+      bytes.push(codes.R_BRACKET);
+    }
     if (this.Decode) {
       bytes.push(...encoder.encode("/Decode"), codes.L_BRACKET);
       this.Decode.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
-    }
+    }    
     bytes.push(...encoder.encode("/Interpolate"), ...encoder.encode(" " + !!this.Interpolate));
+    if (this.SMask) {
+      bytes.push(...encoder.encode("/SMask"), ...this.SMask.toArray(cryptInfo));
+    }
+    if (this.SMaskInData) {
+      bytes.push(...encoder.encode("/SMaskInData"), ...encoder.encode(" " + this.SMaskInData));
+    }
+    if (this.Matte) {
+      bytes.push(...encoder.encode("/Matte"), codes.L_BRACKET);
+      this.Matte.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
+      bytes.push(codes.R_BRACKET);
+    }
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
     }
@@ -146,6 +211,11 @@ export class ImageStream extends PdfStream {
     }
     
     //TODO: handle remaining properties
+    //OC
+    //Intent
+    //Alternates
+    //ID
+    //OPI
 
     const totalBytes: number[] = [
       ...superBytes.subarray(0, 2), // <<
@@ -213,16 +283,27 @@ export class ImageStream extends PdfStream {
             } else {
               throw new Error("Can't parse /Height property value");
             }
-            break;              
+            break;    
           case "/ColorSpace":
-            const colorSpace = parser.parseNameAt(i, false);
-            if (colorSpace) {
-              this.ColorSpace = colorSpace.value;
-              i = colorSpace.end + 1;
-            } else {
-              throw new Error("Can't parse /ColorSpace property value");
+            const colorSpaceEntryType = parser.getValueTypeAt(i);
+            if (colorSpaceEntryType === valueTypes.NAME) {  
+              const colorSpaceName = parser.parseNameAt(i);  
+              if (colorSpaceName) {
+                this.ColorSpace = colorSpaceName.value;
+                i = colorSpaceName.end + 1;
+                break;
+              }
+              throw new Error("Can't parse /ColorSpace property name");
+            } else if (colorSpaceEntryType === valueTypes.ARRAY) { 
+              const colorSpaceArrayBounds = parser.getArrayBoundsAt(i); 
+              if (colorSpaceArrayBounds) {
+                // TODO: implement array-defined color spaces
+                i = colorSpaceArrayBounds.end + 1;
+                break;
+              }  
+              throw new Error("Can't parse /ColorSpace value dictionary");  
             }
-            break; 
+            throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
           case "/BitsPerComponent":
             const bitsPerComponent = parser.parseNumberAt(i, false);
             if (bitsPerComponent) {
@@ -231,7 +312,59 @@ export class ImageStream extends PdfStream {
             } else {
               throw new Error("Can't parse /BitsPerComponent property value");
             }
+            break;             
+          case "/ImageMask":
+            const imageMask = parser.parseBoolAt(i, false);
+            if (imageMask) {
+              this.ImageMask = imageMask.value;
+              i = imageMask.end + 1;
+              if (this.ImageMask) {
+                this.BitsPerComponent = 1;
+              }
+            } else {
+              throw new Error("Can't parse /ImageMask property value");
+            }
             break; 
+          case "/Mask":
+            const maskEntryType = parser.getValueTypeAt(i);            
+            if (maskEntryType === valueTypes.REF) {                  
+              const maskStreamId = ObjectId.parseRef(parser, i);
+              if (!maskStreamId) {                
+                throw new Error("Can't parse /Mask value reference: failed to parse ref");
+              }
+              const maskParseInfo = parseInfo.parseInfoGetter(maskStreamId.value.id);
+              if (!maskParseInfo) {
+                throw new Error("Can't parse /Mask value reference: failed to get image parse info");
+              }
+              const maskStream = ImageStream.parse(maskParseInfo);
+              if (!maskStream) {
+                throw new Error("Can't parse /Mask value reference: failed to parse image stream");
+              }
+              const maskStreamParser = new DataParser(new Uint8Array([
+                codes.L_BRACKET,
+                ...maskStream.value.decodedStreamData,
+                codes.R_BRACKET,
+              ]));
+              if (!maskStreamParser) {
+                throw new Error("Can't parse /Mask value reference: failed to get decoded image data");
+              }
+              const maskArray = maskStreamParser.parseNumberArrayAt(0, false);
+              if (!maskArray) {
+                throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
+              }       
+              this.Mask = maskArray.value;
+              i = maskStreamId.end + 1;
+              break; 
+            } else if (maskEntryType === valueTypes.ARRAY) {               
+              const maskArray = parser.parseNumberArrayAt(i, false);
+              if (maskArray) {
+                this.Mask = maskArray.value;
+                i = maskArray.end + 1;
+                break;
+              }
+              throw new Error("Can't parse /Mask property value");
+            }
+            throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
           case "/Decode":
             const decode = parser.parseNumberArrayAt(i, false);
             if (decode) {
@@ -249,7 +382,34 @@ export class ImageStream extends PdfStream {
             } else {
               throw new Error("Can't parse /Interpolate property value");
             }
+            break; 
+          case "/SMask":
+            const sMaskId = ObjectId.parseRef(parser, i);
+            if (sMaskId) {
+              this.SMask = sMaskId.value;
+              i = sMaskId.end + 1;
+            } else {              
+              throw new Error("Can't parse /SMask property value");
+            }
+            break;
+          case "/SMaskInData":
+            const smaskInData = parser.parseNumberAt(i, false);
+            if (smaskInData) {
+              this.SMaskInData = smaskInData.value;
+              i = smaskInData.end + 1;
+            } else {
+              throw new Error("Can't parse /SMaskInData property value");
+            }
             break;  
+          case "/Matte":
+            const matte = parser.parseNumberArrayAt(i, false);
+            if (matte) {
+              this.Matte = matte.value;
+              i = matte.end + 1;
+            } else {
+              throw new Error("Can't parse /Matte property value");
+            }
+            break;   
           case "/StructParent":
             const parentKey = parser.parseNumberAt(i, false);
             if (parentKey) {
@@ -269,16 +429,10 @@ export class ImageStream extends PdfStream {
             }
             break; 
             // TODO: handle remaining cases
-          case "/OC":
-          case "/Group":
-          case "/OPI":  
+          case "/OC": 
           case "/Intent":
-          case "/ImageMask":
-          case "/Mask":
           case "/Alternates":
-          case "/SMask":
-          case "/SMaskInData":
-          case "/Group":
+          case "/ID":
           case "/OPI":
           default:
             // skip to next name
@@ -295,14 +449,78 @@ export class ImageStream extends PdfStream {
       return false;
     }
 
+    if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
+      /*
+      If ImageMask is true, the value of BitsPerComponent must be 1 
+      and Mask and ColorSpace should not be specified
+      */
+      return false;
+    }
+
+    // If the image uses the JPXDecode filter and ImageMask is false, Decode is ignored
+    if (!this.Decode && !(this.Filter === streamFilters.JPX && !this.ImageMask)) {      
+      switch (this.ColorSpace) {
+        case colorSpaces.GRAYSCALE:        
+        // case colorSpaces.CIE_GRAYSCALE:        
+        // case colorSpaces.SPECIAL_SEPARATION:        
+          this.Decode = [0,1];
+          break;
+        case colorSpaces.RGB:        
+        // case colorSpaces.CIE_RGB:        
+          this.Decode = [0,1, 0,1, 0,1];
+          break;
+        case colorSpaces.CMYK: 
+          this.Decode = [0,1, 0,1, 0,1, 0,1];
+          break;
+        // case colorSpaces.SPECIAL_INDEXED: 
+        //   this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
+        //   break;
+        // case colorSpaces.SPECIAL_PATTERN: 
+        //   throw new Error("Pattern color space is not permitted with images");
+        // case colorSpaces.CIE_LAB: 
+        // case colorSpaces.CIE_ICC: 
+        // case colorSpaces.SPECIAL: 
+        default:
+          break;
+      }
+    }
+
+    if (!this.DecodeParms) {
+      this.DecodeParms = new DecodeParamsDict();
+    }
+    this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
+    this.DecodeParms.setIntProp("/Columns", this.Width);
+    switch (this.ColorSpace) {
+      case colorSpaces.GRAYSCALE:        
+      // case colorSpaces.CIE_GRAYSCALE: 
+      // case colorSpaces.SPECIAL_INDEXED:        
+      // case colorSpaces.SPECIAL_SEPARATION:        
+        this.DecodeParms.setIntProp("/Colors", 1);
+        break;
+      case colorSpaces.RGB:        
+      // case colorSpaces.CIE_RGB:        
+      // case colorSpaces.CIE_LAB:        
+        this.DecodeParms.setIntProp("/Colors", 3);
+        break;
+      case colorSpaces.CMYK:        
+        this.DecodeParms.setIntProp("/Colors", 4);
+        break;
+      // case colorSpaces.SPECIAL_PATTERN: 
+      //   throw new Error("Pattern color space is not permitted with images");
+      // case colorSpaces.CIE_ICC: 
+      // case colorSpaces.SPECIAL: 
+      default:
+        break;
+    }
+
     return true;
   }
   
-  protected setStreamData(data: Uint8Array) {
-    // TODO: implement
-  }
+  // protected setStreamData(data: Uint8Array) {
+  //   // TODO: implement
+  // }
   
-  protected decodeStreamData() {    
-    // TODO: implement
-  }
+  // protected decodeStreamData() {    
+  //   // TODO: implement
+  // }
 }

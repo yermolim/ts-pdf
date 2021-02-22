@@ -1,5 +1,6 @@
-import { StreamFilter, StreamType, supportedFilters, valueTypes } from "../../const";
-import { FlateParamsDict } from "../encoding/flate-params-dict";
+import { FlatePredictor, flatePredictors, StreamFilter, 
+  streamFilters, StreamType, supportedFilters, valueTypes } from "../../const";
+import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../codes";
@@ -27,7 +28,7 @@ export abstract class PdfStream extends PdfObject {
    * (Optional) A parameter dictionary or an array of such dictionaries, 
    * used by the filters specified by Filter
    */
-  DecodeParms: FlateParamsDict; // | Dict | (Dict | FlateParamsDict)[];
+  DecodeParms: DecodeParamsDict; // | Dict | (Dict | FlateParamsDict)[];
   /**
    * (Optional; PDF 1.5+) A non-negative integer representing the number of bytes 
    * in the decoded (defiltered) stream. It can be used to determine, for example, 
@@ -169,6 +170,7 @@ export abstract class PdfStream extends PdfObject {
               const filterNames = parser.parseNameArrayAt(i);
               if (filterNames) {
                 const filterArray = filterNames.value;
+                // TODO: add support for multiple filters
                 if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
                   this.Filter = <StreamFilter>filterArray[0];
                   i = filterNames.end + 1;
@@ -180,18 +182,33 @@ export abstract class PdfStream extends PdfObject {
             }
             throw new Error(`Unsupported /Filter property value type: ${entryType}`);
           case "/DecodeParms":
-            // TODO: add support for decode params arrays
-            const decodeParamsBounds = parser.getDictBoundsAt(i);
-            if (decodeParamsBounds) {
-              const params = FlateParamsDict.parse({parser, bounds: decodeParamsBounds});
-              if (params) {
-                this.DecodeParms = params.value;
+            const paramsEntryType = parser.getValueTypeAt(i);
+            if (paramsEntryType === valueTypes.DICTIONARY) {  
+              const decodeParamsBounds = parser.getDictBoundsAt(i);
+              if (decodeParamsBounds) {
+                const params = DecodeParamsDict.parse({parser, 
+                  bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo});
+                if (params) {
+                  this.DecodeParms = params.value;
+                  i = decodeParamsBounds.end + 1;
+                  break;
+                }
+              }              
+              throw new Error("Can't parse /DecodeParms property value");
+            } else if (paramsEntryType === valueTypes.ARRAY) {               
+              const paramsDicts = DecodeParamsDict.parseArray(parser, i, parseInfo.cryptInfo);
+              if (paramsDicts) {
+                const paramsArray = paramsDicts.value;
+                // TODO: add support for multiple filters
+                if (paramsArray.length === 1) {
+                  this.DecodeParms = paramsArray[0];
+                  i = paramsDicts.end + 1;
+                  break;
+                }
               }
-              i = decodeParamsBounds.end + 1;
-            } else {              
               throw new Error("Can't parse /DecodeParms property value");
             }
-            break;
+            throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
           case "/DL":
             const dl = parser.parseNumberAt(i, false);
             if (dl) {
@@ -217,8 +234,8 @@ export abstract class PdfStream extends PdfObject {
     const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
       ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
       : streamBytes;
-    this._streamData = encodedData;
-
+    this._streamData = encodedData;   
+    
     return true;
   }
 
@@ -227,10 +244,10 @@ export abstract class PdfStream extends PdfObject {
     if (this.DecodeParms) {
       const params = this.DecodeParms;
       encodedData = FlateDecoder.Encode(data,
-        params.Predictor,
-        params.Columns,
-        params.Colors,
-        params.BitsPerComponent); 
+        <FlatePredictor>params.getIntProp("/Predictor") || flatePredictors.NONE,
+        params.getIntProp("/Columns") || 1,
+        params.getIntProp("/Colors") || 1,
+        params.getIntProp("/BitsPerComponent") || 8); 
     } else {      
       encodedData = FlateDecoder.Encode(data);
     }
@@ -242,16 +259,25 @@ export abstract class PdfStream extends PdfObject {
 
   protected decodeStreamData() {    
     let decodedData: Uint8Array;
-    if (this.DecodeParms) {
-      const params = this.DecodeParms;
-      decodedData = FlateDecoder.Decode(this._streamData,
-        params.Predictor,
-        params.Columns,
-        params.Colors,
-        params.BitsPerComponent); 
-    } else {      
-      decodedData = FlateDecoder.Decode(this._streamData);
+
+    switch (this.Filter) {
+      case streamFilters.FLATE:
+        if (this.DecodeParms) {
+          const params = this.DecodeParms;
+          decodedData = FlateDecoder.Decode(this._streamData,
+            <FlatePredictor>params.getIntProp("/Predictor") || flatePredictors.NONE,
+            params.getIntProp("/Columns") || 1,
+            params.getIntProp("/Colors") || 1,
+            params.getIntProp("/BitsPerComponent") || 8); 
+        } else {      
+          decodedData = FlateDecoder.Decode(this._streamData);
+        }
+        break;
+      default:
+        decodedData = new Uint8Array(this._streamData);
+        break;
     }
+
     this._decodedStreamData = decodedData;
   }
 }
