@@ -2,6 +2,7 @@ import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
+import { SvgWithBox } from "../../../../common";
 
 export const stampTypes = {
   DRAFT: "/Draft",
@@ -38,8 +39,7 @@ export class StampAnnotation extends MarkupAnnotation {
     return parseResult
       ? {value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
-  }
-  
+  }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
@@ -55,6 +55,16 @@ export class StampAnnotation extends MarkupAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+  
+  render(): SvgWithBox {
+    const streamRenderResult = super.render();
+    if (streamRenderResult) {
+      return streamRenderResult;
+    }
+
+    // TODO: implement individual render methods
+    return null;
   }
   
   /**

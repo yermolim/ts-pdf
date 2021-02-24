@@ -39,6 +39,7 @@
  */
 
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import { v4 } from 'uuid';
 import Crypto from 'crypto-es';
 import Pako from 'pako';
 
@@ -96,6 +97,10 @@ const styles = `
       position: absolute;
       left: 0;
       top: 0;
+    }
+    .stretch {
+      width: 100%;
+      height: 100%;
     }
 
     #main-container {
@@ -373,6 +378,20 @@ const styles = `
       cursor: grab;
     }
     
+    .page-annotations {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .page-annotations.passive {
+      pointer-events: none;
+    }
+    
     #password-dialog {
       position: absolute;
       left: 0;
@@ -483,17 +502,11 @@ const passwordDialogHtml = `
     </div>
 `;
 
-function clamp(v, min, max) {
-    return Math.max(min, Math.min(v, max));
+function getRandomUuid() {
+    return v4();
 }
 function getDistance(x1, y1, x2, y2) {
     return Math.hypot(x2 - x1, y2 - y1);
-}
-function getCenter(x1, y1, x2, y2) {
-    return {
-        x: (x2 + x1) / 2,
-        y: (y2 + y1) / 2,
-    };
 }
 class LinkedListNode {
     constructor(data) {
@@ -653,6 +666,606 @@ class LinkedList {
     }
 }
 
+function clamp(v, min, max) {
+    return Math.max(min, Math.min(v, max));
+}
+class Mat3 {
+    constructor() {
+        this.length = 9;
+        this._matrix = new Array(this.length);
+        this._matrix[0] = 1;
+        this._matrix[1] = 0;
+        this._matrix[2] = 0;
+        this._matrix[3] = 0;
+        this._matrix[4] = 1;
+        this._matrix[5] = 0;
+        this._matrix[6] = 0;
+        this._matrix[7] = 0;
+        this._matrix[8] = 1;
+    }
+    get x_x() {
+        return this._matrix[0];
+    }
+    get x_y() {
+        return this._matrix[1];
+    }
+    get x_z() {
+        return this._matrix[2];
+    }
+    get y_x() {
+        return this._matrix[3];
+    }
+    get y_y() {
+        return this._matrix[4];
+    }
+    get y_z() {
+        return this._matrix[5];
+    }
+    get z_x() {
+        return this._matrix[6];
+    }
+    get z_y() {
+        return this._matrix[7];
+    }
+    get z_z() {
+        return this._matrix[8];
+    }
+    static fromMat3(m) {
+        return new Mat3().setFromMat3(m);
+    }
+    static multiply(m1, m2) {
+        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = m1._matrix;
+        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m2._matrix;
+        const m = new Mat3();
+        m.set(a11 * b11 + a12 * b21 + a13 * b31, a11 * b12 + a12 * b22 + a13 * b32, a11 * b13 + a12 * b23 + a13 * b33, a21 * b11 + a22 * b21 + a23 * b31, a21 * b12 + a22 * b22 + a23 * b32, a21 * b13 + a22 * b23 + a23 * b33, a31 * b11 + a32 * b21 + a33 * b31, a31 * b12 + a32 * b22 + a33 * b32, a31 * b13 + a32 * b23 + a33 * b33);
+        return m;
+    }
+    static multiplyScalar(m, s) {
+        const res = new Mat3();
+        for (let i = 0; i < this.length; i++) {
+            res._matrix[i] = m._matrix[i] * s;
+        }
+        return res;
+    }
+    static transpose(m) {
+        const res = new Mat3();
+        res.set(m.x_x, m.y_x, m.z_x, m.x_y, m.y_y, m.z_y, m.x_z, m.y_z, m.z_z);
+        return res;
+    }
+    static invert(m) {
+        const mTemp = new Mat3();
+        mTemp.set(m.y_y * m.z_z - m.z_y * m.y_z, m.y_x * m.z_z - m.z_x * m.y_z, m.y_x * m.z_y - m.z_x * m.y_y, m.x_y * m.z_z - m.z_y * m.x_z, m.x_x * m.z_z - m.z_x * m.x_z, m.x_x * m.z_y - m.z_x * m.x_y, m.x_y * m.y_z - m.y_y * m.x_z, m.x_x * m.y_z - m.y_x * m.x_z, m.x_x * m.y_y - m.y_x * m.x_y);
+        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
+        const det = m.x_x * mTemp.x_x + m.x_y * mTemp.x_y + m.x_z * mTemp.x_z;
+        const inversed = new Mat3();
+        if (!det) {
+            inversed.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        else {
+            const detInv = 1 / 10;
+            inversed.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
+        }
+        return inversed;
+    }
+    static buildScale(x, y = undefined) {
+        y !== null && y !== void 0 ? y : (y = x);
+        return new Mat3().set(x, 0, 0, 0, y, 0, 0, 0, 1);
+    }
+    static buildRotation(theta) {
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+        return new Mat3().set(c, s, 0, -s, c, 0, 0, 0, 1);
+    }
+    static buildTranslate(x, y) {
+        return new Mat3().set(1, 0, 0, 0, 1, 0, x, y, 1);
+    }
+    static equals(m1, m2, precision = 6) {
+        return m1.equals(m2, precision);
+    }
+    clone() {
+        return new Mat3().set(this.x_x, this.x_y, this.x_z, this.y_x, this.y_y, this.y_z, this.z_x, this.z_y, this.z_z);
+    }
+    set(x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z) {
+        this._matrix[0] = x_x;
+        this._matrix[1] = x_y;
+        this._matrix[2] = x_z;
+        this._matrix[3] = y_x;
+        this._matrix[4] = y_y;
+        this._matrix[5] = y_z;
+        this._matrix[6] = z_x;
+        this._matrix[7] = z_y;
+        this._matrix[8] = z_z;
+        return this;
+    }
+    setFromMat3(m) {
+        for (let i = 0; i < this.length; i++) {
+            this._matrix[i] = m._matrix[i];
+        }
+        return this;
+    }
+    multiply(m) {
+        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = this._matrix;
+        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m._matrix;
+        this._matrix[0] = a11 * b11 + a12 * b21 + a13 * b31;
+        this._matrix[1] = a11 * b12 + a12 * b22 + a13 * b32;
+        this._matrix[2] = a11 * b13 + a12 * b23 + a13 * b33;
+        this._matrix[3] = a21 * b11 + a22 * b21 + a23 * b31;
+        this._matrix[4] = a21 * b12 + a22 * b22 + a23 * b32;
+        this._matrix[5] = a21 * b13 + a22 * b23 + a23 * b33;
+        this._matrix[6] = a31 * b11 + a32 * b21 + a33 * b31;
+        this._matrix[7] = a31 * b12 + a32 * b22 + a33 * b32;
+        this._matrix[8] = a31 * b13 + a32 * b23 + a33 * b33;
+        return this;
+    }
+    multiplyScalar(s) {
+        for (let i = 0; i < this.length; i++) {
+            this._matrix[i] *= s;
+        }
+        return this;
+    }
+    transpose() {
+        const temp = new Mat3().setFromMat3(this);
+        this.set(temp.x_x, temp.y_x, temp.z_x, temp.x_y, temp.y_y, temp.z_y, temp.x_z, temp.y_z, temp.z_z);
+        return this;
+    }
+    invert() {
+        const mTemp = new Mat3();
+        mTemp.set(this.y_y * this.z_z - this.z_y * this.y_z, this.y_x * this.z_z - this.z_x * this.y_z, this.y_x * this.z_y - this.z_x * this.y_y, this.x_y * this.z_z - this.z_y * this.x_z, this.x_x * this.z_z - this.z_x * this.x_z, this.x_x * this.z_y - this.z_x * this.x_y, this.x_y * this.y_z - this.y_y * this.x_z, this.x_x * this.y_z - this.y_x * this.x_z, this.x_x * this.y_y - this.y_x * this.x_y);
+        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
+        const det = this.x_x * mTemp.x_x + this.x_y * mTemp.x_y + this.x_z * mTemp.x_z;
+        if (!det) {
+            this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        else {
+            const detInv = 1 / 10;
+            this.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
+        }
+        return this;
+    }
+    getDeterminant() {
+        const [a, b, c, d, e, f, g, h, i] = this._matrix;
+        return a * e * i - a * f * h + b * f * g - b * d * i + c * d * h - c * e * g;
+    }
+    equals(m, precision = 6) {
+        for (let i = 0; i < this.length; i++) {
+            if (+this._matrix[i].toFixed(precision) !== +m._matrix[i].toFixed(precision)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    applyScaling(x, y = undefined) {
+        const m = Mat3.buildScale(x, y);
+        return this.multiply(m);
+    }
+    applyTranslation(x, y) {
+        const m = Mat3.buildTranslate(x, y);
+        return this.multiply(m);
+    }
+    applyRotation(theta) {
+        const m = Mat3.buildRotation(theta);
+        return this.multiply(m);
+    }
+    toArray() {
+        return this._matrix.slice();
+    }
+    toIntArray() {
+        return new Int32Array(this);
+    }
+    toIntShortArray() {
+        return new Int32Array([
+            this._matrix[0],
+            this._matrix[1],
+            this._matrix[3],
+            this._matrix[4],
+            this._matrix[6],
+            this._matrix[7],
+        ]);
+    }
+    toFloatArray() {
+        return new Float32Array(this);
+    }
+    toFloatShortArray() {
+        return new Float32Array([
+            this._matrix[0],
+            this._matrix[1],
+            this._matrix[3],
+            this._matrix[4],
+            this._matrix[6],
+            this._matrix[7],
+        ]);
+    }
+    *[Symbol.iterator]() {
+        for (let i = 0; i < 16; i++) {
+            yield this._matrix[i];
+        }
+    }
+}
+class Vec2 {
+    constructor(x = 0, y = 0) {
+        this.length = 2;
+        this.x = x;
+        this.y = y;
+    }
+    static multiplyByScalar(v, s) {
+        return new Vec2(v.x * s, v.y * s);
+    }
+    static addScalar(v, s) {
+        return new Vec2(v.x + s, v.y + s);
+    }
+    static normalize(v) {
+        return new Vec2().setFromVec2(v).normalize();
+    }
+    static add(v1, v2) {
+        return new Vec2(v1.x + v2.x, v1.y + v2.y);
+    }
+    static substract(v1, v2) {
+        return new Vec2(v1.x - v2.x, v1.y - v2.y);
+    }
+    static dotProduct(v1, v2) {
+        return v1.x * v2.x + v1.y * v2.y;
+    }
+    static applyMat3(v, m) {
+        return v.clone().applyMat3(m);
+    }
+    static lerp(v1, v2, t) {
+        return v1.clone().lerp(v2, t);
+    }
+    static rotate(v, center, theta) {
+        return v.clone().rotate(center, theta);
+    }
+    static equals(v1, v2, precision = 6) {
+        return v1.equals(v2);
+    }
+    static getDistance(v1, v2) {
+        const x = v2.x - v1.x;
+        const y = v2.y - v1.y;
+        return Math.sqrt(x * x + y * y);
+    }
+    clone() {
+        return new Vec2(this.x, this.y);
+    }
+    set(x, y) {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+    setFromVec2(vec2) {
+        this.x = vec2.x;
+        this.y = vec2.y;
+        return this;
+    }
+    multiplyByScalar(s) {
+        this.x *= s;
+        this.y *= s;
+        return this;
+    }
+    addScalar(s) {
+        this.x += s;
+        this.y += s;
+        return this;
+    }
+    getMagnitude() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+    normalize() {
+        const m = this.getMagnitude();
+        if (m) {
+            this.x /= m;
+            this.y /= m;
+        }
+        return this;
+    }
+    add(v) {
+        this.x += v.x;
+        this.y += v.y;
+        return this;
+    }
+    substract(v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        return this;
+    }
+    dotProduct(v) {
+        return Vec2.dotProduct(this, v);
+    }
+    applyMat3(m) {
+        if (m.length !== 9) {
+            throw new Error("Matrix must contain 9 elements");
+        }
+        const { x, y } = this;
+        const [x_x, x_y, , y_x, y_y, , z_x, z_y,] = m;
+        this.x = x * x_x + y * y_x + z_x;
+        this.y = x * x_y + y * y_y + z_y;
+        return this;
+    }
+    lerp(v, t) {
+        this.x += t * (v.x - this.x);
+        this.y += t * (v.y - this.y);
+        return this;
+    }
+    rotate(center, theta) {
+        const s = Math.sin(theta);
+        const c = Math.cos(theta);
+        const x = this.x - center.x;
+        const y = this.y - center.y;
+        this.x = x * c - y * s + center.x;
+        this.y = x * s + y * c + center.y;
+        return this;
+    }
+    equals(v, precision = 6) {
+        return +this.x.toFixed(precision) === +v.x.toFixed(precision)
+            && +this.y.toFixed(precision) === +v.y.toFixed(precision);
+    }
+    toArray() {
+        return [this.x, this.y];
+    }
+    toIntArray() {
+        return new Int32Array(this);
+    }
+    toFloatArray() {
+        return new Float32Array(this);
+    }
+    *[Symbol.iterator]() {
+        yield this.x;
+        yield this.y;
+    }
+}
+class Vec3 {
+    constructor(x = 0, y = 0, z = 0) {
+        this.length = 3;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    static multiplyByScalar(v, s) {
+        return new Vec3(v.x * s, v.y * s, v.z * s);
+    }
+    static addScalar(v, s) {
+        return new Vec3(v.x + s, v.y + s, v.z + s);
+    }
+    static normalize(v) {
+        return new Vec3().setFromVec3(v).normalize();
+    }
+    static add(v1, v2) {
+        return new Vec3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+    }
+    static substract(v1, v2) {
+        return new Vec3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+    }
+    static dotProduct(v1, v2) {
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    }
+    static crossProduct(v1, v2) {
+        return new Vec3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
+    }
+    static onVector(v1, v2) {
+        return v1.clone().onVector(v2);
+    }
+    static onPlane(v, planeNormal) {
+        return v.clone().onPlane(planeNormal);
+    }
+    static applyMat3(v, m) {
+        return v.clone().applyMat3(m);
+    }
+    static lerp(v1, v2, t) {
+        return v1.clone().lerp(v2, t);
+    }
+    static equals(v1, v2, precision = 6) {
+        if (!v1) {
+            return false;
+        }
+        return v1.equals(v2, precision);
+    }
+    static getDistance(v1, v2) {
+        const x = v2.x - v1.x;
+        const y = v2.y - v1.y;
+        const z = v2.z - v1.z;
+        return Math.sqrt(x * x + y * y + z * z);
+    }
+    static getAngle(v1, v2) {
+        return v1.getAngle(v2);
+    }
+    clone() {
+        return new Vec3(this.x, this.y, this.z);
+    }
+    set(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        return this;
+    }
+    setFromVec3(v) {
+        this.x = v.x;
+        this.y = v.y;
+        this.z = v.z;
+        return this;
+    }
+    multiplyByScalar(s) {
+        this.x *= s;
+        this.y *= s;
+        this.z *= s;
+        return this;
+    }
+    addScalar(s) {
+        this.x += s;
+        this.y += s;
+        this.z += s;
+        return this;
+    }
+    getMagnitude() {
+        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+    }
+    getAngle(v) {
+        const d = this.getMagnitude() * v.getMagnitude();
+        if (!d) {
+            return Math.PI / 2;
+        }
+        const cos = this.dotProduct(v) / d;
+        return Math.acos(clamp(cos, -1, 1));
+    }
+    normalize() {
+        const m = this.getMagnitude();
+        if (m) {
+            this.x /= m;
+            this.y /= m;
+            this.z /= m;
+        }
+        return this;
+    }
+    add(v) {
+        this.x += v.x;
+        this.y += v.y;
+        this.z += v.z;
+        return this;
+    }
+    substract(v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        this.z -= v.z;
+        return this;
+    }
+    dotProduct(v) {
+        return Vec3.dotProduct(this, v);
+    }
+    crossProduct(v) {
+        this.x = this.y * v.z - this.z * v.y;
+        this.y = this.z * v.x - this.x * v.z;
+        this.z = this.x * v.y - this.y * v.x;
+        return this;
+    }
+    onVector(v) {
+        const magnitude = this.getMagnitude();
+        if (!magnitude) {
+            return this.set(0, 0, 0);
+        }
+        return v.clone().multiplyByScalar(v.clone().dotProduct(this) / (magnitude * magnitude));
+    }
+    onPlane(planeNormal) {
+        return this.substract(this.clone().onVector(planeNormal));
+    }
+    applyMat3(m) {
+        if (m.length !== 9) {
+            throw new Error("Matrix must contain 9 elements");
+        }
+        const { x, y, z } = this;
+        const [x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z] = m;
+        this.x = x * x_x + y * y_x + z * z_x;
+        this.y = x * x_y + y * y_y + z * z_y;
+        this.z = x * x_z + y * y_z + z * z_z;
+        return this;
+    }
+    lerp(v, t) {
+        this.x += t * (v.x - this.x);
+        this.y += t * (v.y - this.y);
+        this.z += t * (v.z - this.z);
+        return this;
+    }
+    equals(v, precision = 6) {
+        if (!v) {
+            return false;
+        }
+        return +this.x.toFixed(precision) === +v.x.toFixed(precision)
+            && +this.y.toFixed(precision) === +v.y.toFixed(precision)
+            && +this.z.toFixed(precision) === +v.z.toFixed(precision);
+    }
+    toArray() {
+        return [this.x, this.y, this.z];
+    }
+    toIntArray() {
+        return new Int32Array(this);
+    }
+    toFloatArray() {
+        return new Float32Array(this);
+    }
+    *[Symbol.iterator]() {
+        yield this.x;
+        yield this.y;
+        yield this.z;
+    }
+}
+function mat3From4Vec2(aMin, aMax, bMin, bMax) {
+    const mat = new Mat3();
+    const aLen = Vec2.substract(aMax, aMin).getMagnitude();
+    const bLen = Vec2.substract(bMax, bMin).getMagnitude();
+    const scale = bLen / aLen;
+    mat.applyScaling(scale);
+    const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
+    const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
+    const rotation = bTheta - aTheta;
+    mat.applyRotation(rotation);
+    const translation = Vec2.substract(bMin, aMin);
+    mat.applyTranslation(translation.x, translation.y);
+    return mat;
+}
+
+class PageAnnotationView {
+    constructor(annotationData, pageId, pageDimensions) {
+        this._svgByAnnotation = new Map();
+        this.onMouseDown = (e) => {
+        };
+        this.onMouseUp = (e) => {
+        };
+        if (!annotationData || isNaN(pageId) || !pageDimensions) {
+            throw new Error("Required argument not found");
+        }
+        this._pageId = pageId;
+        this._pageDimensions = pageDimensions;
+        this._container = document.createElement("div");
+        this._container.classList.add("page-annotations");
+        this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this._svg.classList.add("stretch");
+        this._svg.setAttribute("data-page-id", pageId + "");
+        this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
+        this._svg.setAttribute("transform", "scale(1, -1)");
+        this._container.append(this._svg);
+        this._pageAnnotations = annotationData.getPageAnnotations(pageId);
+        this.renderAnnotations();
+        this.switchEditMode(false);
+    }
+    destroy() {
+        this.remove();
+        this._container = null;
+    }
+    remove() {
+        var _a;
+        this.switchEditMode(false);
+        (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
+    }
+    append(parent) {
+        parent.append(this._container);
+    }
+    switchEditMode(value) {
+        value = value !== null && value !== void 0 ? value : !this._editModeOn;
+        this._editModeOn = value;
+        if (value) {
+            this._container.classList.remove("passive");
+        }
+        else {
+            this._container.classList.add("passive");
+        }
+    }
+    renderAnnotations() {
+        var _a;
+        this.clear();
+        for (let i = 0; i < ((_a = this._pageAnnotations) === null || _a === void 0 ? void 0 : _a.length) || 0; i++) {
+            const annotation = this._pageAnnotations[i];
+            const svgWithBox = annotation.render();
+            if (!svgWithBox) {
+                continue;
+            }
+            const { svg, box } = svgWithBox;
+            this._svgByAnnotation.set(annotation, svg);
+            this._svg.append(svg);
+        }
+        return true;
+    }
+    clear() {
+        this._svg.innerHTML = "";
+        this._svgByAnnotation.clear();
+    }
+}
+
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -662,7 +1275,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class ViewPageText {
+class PageTextView {
     constructor(pageProxy) {
         this.onMouseDown = (e) => {
             var _a;
@@ -690,7 +1303,7 @@ class ViewPageText {
     }
     static appendPageTextAsync(pageProxy, parent, scale) {
         return __awaiter(this, void 0, void 0, function* () {
-            const textObj = new ViewPageText(pageProxy);
+            const textObj = new PageTextView(pageProxy);
             yield textObj.renderTextLayerAsync(scale);
             parent.append(textObj._container);
             return textObj;
@@ -749,14 +1362,18 @@ var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class ViewPage {
-    constructor(pageProxy, maxScale, previewWidth) {
+class PageView {
+    constructor(pageProxy, annotationData, maxScale, previewWidth) {
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
+        }
+        if (!annotationData) {
+            throw new Error("Annotation data is not defined");
         }
         this._pageProxy = pageProxy;
         this._viewport = pageProxy.getViewport({ scale: 1 });
         this._maxScale = Math.max(maxScale, 1);
+        this._annotationData = annotationData;
         this.number = pageProxy.pageNumber;
         this.id = pageProxy.ref["num"];
         this.generation = pageProxy.ref["gen"];
@@ -851,9 +1468,12 @@ class ViewPage {
         this._previewContainer.innerHTML = "";
     }
     clearView() {
-        var _a, _b;
-        (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
-        (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+        var _a, _b, _c;
+        (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._annotations = null;
+        (_b = this._text) === null || _b === void 0 ? void 0 : _b.destroy();
+        this._text = null;
+        (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
         this._viewRendered = false;
     }
     cancelRenderTask() {
@@ -935,10 +1555,12 @@ class ViewPage {
         });
     }
     runViewRenderAsync() {
-        var _a, _b;
+        var _a, _b, _c;
         return __awaiter$1(this, void 0, void 0, function* () {
             const scale = this._scale;
             (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._text = null;
+            (_b = this._annotations) === null || _b === void 0 ? void 0 : _b.remove();
             const canvas = this.createViewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
@@ -949,11 +1571,16 @@ class ViewPage {
             if (!result || scale !== this._scale) {
                 return;
             }
-            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+            (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
             this._viewContainer.append(canvas);
             this._viewCanvas = canvas;
             this._viewRendered = true;
-            this._text = yield ViewPageText.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            if (!this._annotations) {
+                const { width: x, height: y } = this._dimensions;
+                this._annotations = new PageAnnotationView(this._annotationData, this.id, new Vec2(x, y));
+            }
+            this._annotations.append(this.viewContainer);
             if (scale === this._scale) {
                 this._scaleIsValid = true;
             }
@@ -1130,6 +1757,9 @@ const DIGIT_CHARS = new Set([
 function isRegularChar(code) {
     return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
+function isDigit(code) {
+    return DIGIT_CHARS.has(code);
+}
 
 function parseIntFromBytes(bytes) {
     if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
@@ -1283,11 +1913,6 @@ const authEvents = {
     DOC_OPEN: "/DocOpen",
     EMBEDDED_OPEN: "/EFOpen",
 };
-const justificationTypes = {
-    LEFT: 0,
-    CENTER: 1,
-    RIGHT: 2,
-};
 const streamTypes = {
     XREF: "/XRef",
     OBJECT_STREAM: "/ObjStm",
@@ -1361,42 +1986,6 @@ const annotationTypes = {
     PROJECTION: "/Projection",
     RICH_MEDIA: "/RichMedia",
 };
-const annotationStateModelTypes = {
-    MARKED: "/Marked",
-    REVIEW: "/Review",
-};
-const annotationMarkedStates = {
-    MARKED: "/Marked",
-    UNMARKED: "/Unmarked",
-};
-const annotationReviewStates = {
-    ACCEPTED: "/Accepted",
-    REJECTED: "/Rejected",
-    CANCELLED: "/Cancelled",
-    COMPLETED: "/Completed",
-    NONE: "/None",
-};
-const annotationIconTypes = {
-    COMMENT: "/Comment",
-    KEY: "/Key",
-    NOTE: "/Note",
-    HELP: "/Help",
-    NEW_PARAGRAPH: "/NewParagraph",
-    PARAGRAPH: "/Paragraph",
-    INSERT: "/Insert",
-};
-const lineEndingTypes = {
-    SQUARE: "/Square",
-    CIRCLE: "/Circle",
-    DIAMOND: "/Diamond",
-    ARROW_OPEN: "/OpenArrow",
-    ARROW_CLOSED: "/ClosedArrow",
-    NONE: "/None",
-    BUTT: "/Butt",
-    ARROW_OPEN_R: "/ROpenArrow",
-    ARROW_CLOSED_R: "/RClosedArrow",
-    SLASH: "/Slash",
-};
 const lineCapStyles = {
     BUTT: 0,
     ROUND: 1,
@@ -1427,6 +2016,16 @@ const blendModes = {
     SOFT_LIGHT: "/SoftLight",
     DIFFERENCE: "/Difference",
     EXCLUSION: "/Exclusion",
+};
+const textRenderModes = {
+    FILL: 0,
+    STROKE: 1,
+    FILL_STROKE: 2,
+    INVISIBLE: 3,
+    FILL_USE_AS_CLIP: 4,
+    STROKE_USE_AS_CLIP: 5,
+    FILL_STROKE_USE_AS_CLIP: 6,
+    USE_AS_CLIP: 7,
 };
 const colorSpaces = {
     GRAYSCALE: "/DeviceGray",
@@ -1861,6 +2460,66 @@ class DataCryptHandler {
     }
 }
 
+class DateString {
+    constructor(source, date) {
+        this.source = source;
+        this.date = date;
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+        if (end === -1) {
+            return null;
+        }
+        let bytes = parser.subCharCodes(start + 1, end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        try {
+            const date = DateString.fromArray(bytes);
+            return { value: date, start, end };
+        }
+        catch (_a) {
+            return null;
+        }
+    }
+    static fromDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
+        return new DateString(source, date);
+    }
+    static fromString(source) {
+        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
+        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
+        return new DateString(source, date);
+    }
+    static fromArray(arr) {
+        const source = new TextDecoder().decode(arr);
+        return DateString.fromString(source);
+    }
+    toArray(cryptInfo) {
+        let bytes = new TextEncoder().encode(this.source);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
+        }
+        return new Uint8Array([
+            ...keywordCodes.STR_LITERAL_START,
+            ...bytes,
+            ...keywordCodes.STR_LITERAL_END,
+        ]);
+    }
+}
+
 class LiteralString {
     constructor(literal, bytes) {
         this.literal = literal;
@@ -1995,66 +2654,6 @@ class LiteralString {
     }
 }
 
-class DateString {
-    constructor(source, date) {
-        this.source = source;
-        this.date = date;
-    }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
-        if (end === -1) {
-            return null;
-        }
-        let bytes = parser.subCharCodes(start + 1, end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        try {
-            const date = DateString.fromArray(bytes);
-            return { value: date, start, end };
-        }
-        catch (_a) {
-            return null;
-        }
-    }
-    static fromDate(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const seconds = String(date.getSeconds()).padStart(2, "0");
-        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
-        return new DateString(source, date);
-    }
-    static fromString(source) {
-        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
-        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
-        return new DateString(source, date);
-    }
-    static fromArray(arr) {
-        const source = new TextDecoder().decode(arr);
-        return DateString.fromString(source);
-    }
-    toArray(cryptInfo) {
-        let bytes = new TextEncoder().encode(this.source);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
-        }
-        return new Uint8Array([
-            ...keywordCodes.STR_LITERAL_START,
-            ...bytes,
-            ...keywordCodes.STR_LITERAL_END,
-        ]);
-    }
-}
-
 class ObjectId {
     constructor(id, generation) {
         this.id = id !== null && id !== void 0 ? id : 0;
@@ -2134,10 +2733,12 @@ class PdfObject {
         return this._ref;
     }
     get id() {
-        return this._ref.id;
+        var _a;
+        return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.id;
     }
     get generation() {
-        return this._ref.generation;
+        var _a;
+        return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.generation;
     }
 }
 
@@ -3618,11 +4219,17 @@ class DataParser {
                 const nextDelimIndex = this.findDelimiterIndex("straight", i + 1);
                 if (nextDelimIndex !== -1) {
                     const refEndIndex = this.findCharIndex(codes.R, "reverse", nextDelimIndex - 1);
-                    if (refEndIndex !== -1 && refEndIndex > i) {
+                    if (refEndIndex !== -1 && refEndIndex > i && !isRegularChar(arr[refEndIndex + 1])) {
                         return valueTypes.REF;
                     }
                 }
                 return valueTypes.NUMBER;
+            case codes.DOT:
+            case codes.MINUS:
+                if (isDigit(arr[i + 1])) {
+                    return valueTypes.NUMBER;
+                }
+                return valueTypes.UNKNOWN;
             case codes.s:
                 if (arr[i + 1] === codes.t
                     && arr[i + 2] === codes.r
@@ -3906,7 +4513,7 @@ class DataParser {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
-        return result.length > 1
+        return result.length !== 0
             ? { value: result, start, end: i - 1 }
             : null;
     }
@@ -4627,6 +5234,58 @@ class GraphicsStateDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
+    toParams() {
+        const params = {};
+        if (!isNaN(this.LW)) {
+            params.strokeWidth = this.LW;
+        }
+        if (!isNaN(this.LC)) {
+            switch (this.LC) {
+                case lineCapStyles.BUTT:
+                    params.strokeLineCap = "butt";
+                    break;
+                case lineCapStyles.ROUND:
+                    params.strokeLineCap = "round";
+                    break;
+                case lineCapStyles.SQUARE:
+                    params.strokeLineCap = "square";
+                    break;
+            }
+        }
+        if (!isNaN(this.LJ)) {
+            switch (this.LJ) {
+                case lineJoinStyles.BEVEL:
+                    params.strokeLineJoin = "bevel";
+                    break;
+                case lineJoinStyles.ROUND:
+                    params.strokeLineJoin = "round";
+                    break;
+                case lineJoinStyles.MITER:
+                    params.strokeLineJoin = "miter";
+                    break;
+            }
+        }
+        if (this.ML) {
+            params.strokeMiterLimit = this.ML;
+        }
+        if (this.D) {
+            params.strokeDashArray = `${this.D[0][0]} ${this.D[0][1]}`;
+            params.strokeDashOffset = this.D[1];
+        }
+        if (this.Font) ;
+        if (this.BM) {
+            params.strokeMiterLimit = this.ML;
+        }
+        if (this.SMask) ;
+        if (this.CA) {
+            params.strokeAlpha = this.CA;
+        }
+        if (this.ca) {
+            params.fillAlpha = this.ca;
+        }
+        if (this.AIS) ;
+        return params;
+    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -4856,6 +5515,15 @@ class ResourceDict extends PdfDict {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    getGraphicsState(name) {
+        return this._gsMap.get(name);
+    }
+    *getGraphicsStates() {
+        for (const pair of this._gsMap) {
+            yield pair;
+        }
+        return;
     }
     fillMaps(parseInfoGetter) {
         var _a;
@@ -5626,6 +6294,7 @@ class AppearanceDict extends PdfDict {
                             }
                         }
                         else {
+                            console.log(parser.sliceChars(i - 5, i + 10));
                             throw new Error(`Unsupported /N property value type: ${nEntryType}`);
                         }
                         throw new Error("Can't parse /N property value");
@@ -5857,6 +6526,466 @@ class BorderArray {
     }
 }
 
+class TextState {
+    constructor(params) {
+        Object.assign(this, TextState.defaultParams, params);
+    }
+    clone(params) {
+        const copy = new TextState(this);
+        if (params) {
+            return Object.assign(copy, params);
+        }
+        return copy;
+    }
+}
+TextState.defaultParams = {
+    fontFamily: "helvetica, sans-serif",
+    fontSize: "12px",
+    lineHeight: "1",
+    letterSpacing: "normal",
+    wordSpacing: "normal",
+    textHorScale: 1,
+    textRenderMode: textRenderModes.FILL,
+    textVertAlign: "0",
+    textKnockOut: true,
+};
+
+class GraphicsState {
+    constructor(params) {
+        var _a, _b, _c, _d;
+        Object.assign(this, GraphicsState.defaultParams, params);
+        this.matrix = (_a = this.matrix) === null || _a === void 0 ? void 0 : _a.clone();
+        this.textState = (_b = this.textState) === null || _b === void 0 ? void 0 : _b.clone();
+        this.strokeColor = (_c = this.strokeColor) === null || _c === void 0 ? void 0 : _c.clone();
+        this.fillColor = (_d = this.fillColor) === null || _d === void 0 ? void 0 : _d.clone();
+    }
+    get stroke() {
+        const { x: r, y: g, z: b } = this.strokeColor;
+        const a = this.strokeAlpha;
+        return `rgba(${r},${g},${b},${a})`;
+    }
+    get fill() {
+        const { x: r, y: g, z: b } = this.fillColor;
+        const a = this.fillAlpha;
+        return `rgba(${r},${g},${b},${a})`;
+    }
+    clone(params) {
+        const copy = new GraphicsState(this);
+        if (params) {
+            return Object.assign(copy, params);
+        }
+        return copy;
+    }
+    setColor(type, ...params) {
+        let r, g, b;
+        switch (params.length) {
+            case 1:
+                r = g = b = params[0] * 255;
+                break;
+            case 3:
+                r = params[0] * 255;
+                g = params[1] * 255;
+                b = params[2] * 255;
+                break;
+            case 4:
+                const [c, m, y, k] = params;
+                r = 255 * (1 - c) * (1 - k);
+                g = 255 * (1 - m) * (1 - k);
+                b = 255 * (1 - y) * (1 - k);
+                break;
+        }
+        if (type === "stroke") {
+            this.strokeColor.set(r, g, b);
+        }
+        else {
+            this.fillColor.set(r, g, b);
+        }
+    }
+}
+GraphicsState.defaultParams = {
+    matrix: new Mat3(),
+    textState: new TextState(),
+    strokeColorSpace: "rgb",
+    strokeAlpha: 1,
+    strokeColor: new Vec3(),
+    fillColorSpace: "rgb",
+    fillAlpha: 1,
+    fillColor: new Vec3(),
+    strokeWidth: 1,
+    strokeMiterLimit: 10,
+    strokeLineCap: "square",
+    strokeLineJoin: "miter",
+};
+
+class AppearanceStreamRenderer {
+    constructor(stream, rect, objectName) {
+        this._clipPaths = [];
+        this._graphicsStates = [];
+        if (!stream) {
+            throw new Error("Stream is not defined");
+        }
+        this._stream = stream;
+        this._parser = new DataParser(stream.decodedStreamData);
+        this._rect = rect;
+        this._objectName = objectName;
+        const matAA = AppearanceStreamRenderer.calcMatrix(stream, rect);
+        const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clipPath.id = `clip0-${objectName}`;
+        clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
+        this._clipPaths.push(clipPath);
+        this._graphicsStates.push(new GraphicsState({ matrix: matAA }));
+    }
+    get state() {
+        return this._graphicsStates[this._graphicsStates.length - 1];
+    }
+    static calcMatrix(stream, rect) {
+        const matrix = new Mat3();
+        if (stream.Matrix) {
+            const [m0, m1, m3, m4, m6, m7] = stream.Matrix;
+            matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+        }
+        const boxMin = new Vec2(stream.BBox[0], stream.BBox[1]);
+        const boxMax = new Vec2(stream.BBox[2], stream.BBox[3]);
+        const tBoxMin = Vec2.applyMat3(boxMin, matrix);
+        const tBoxMax = Vec2.applyMat3(boxMax, matrix);
+        const rectMin = new Vec2(rect[0], rect[1]);
+        const rectMax = new Vec2(rect[2], rect[3]);
+        const matA = mat3From4Vec2(tBoxMin, tBoxMax, rectMin, rectMax);
+        const matAA = Mat3.fromMat3(matrix).multiply(matA);
+        return matAA;
+    }
+    static parseNextCommand(parser, i) {
+        const parameters = [];
+        let operator;
+        command: while (!operator) {
+            const nextValueType = parser.getValueTypeAt(i, true);
+            switch (nextValueType) {
+                case valueTypes.NUMBER:
+                    const numberResult = parser.parseNumberAt(i, true);
+                    parameters.push(numberResult.value);
+                    i = numberResult.end + 1;
+                    break;
+                case valueTypes.NAME:
+                    const nameResult = parser.parseNameAt(i, true);
+                    parameters.push(nameResult.value);
+                    i = nameResult.end + 1;
+                    break;
+                case valueTypes.ARRAY:
+                    const arrayBounds = parser.getArrayBoundsAt(i);
+                    const numberArrayResult = parser.parseNumberArrayAt(i, true);
+                    if (numberArrayResult) {
+                        parameters.push(...numberArrayResult.value);
+                    }
+                    else {
+                        throw new Error(`Invalid appearance stream array: 
+            ${parser.sliceChars(arrayBounds.start, arrayBounds.end)}`);
+                    }
+                    i = arrayBounds.end + 1;
+                    break;
+                case valueTypes.UNKNOWN:
+                    const operatorResult = parser.parseStringAt(i);
+                    operator = operatorResult.value;
+                    i = operatorResult.end + 1;
+                    break command;
+                default:
+                    throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
+            }
+        }
+        return { endIndex: i, parameters, operator };
+    }
+    render() {
+        const outerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        outerGroup.setAttribute("data-name", this._objectName);
+        const lastCoord = new Vec2();
+        let lastOperator;
+        let d = "";
+        const addPath = (path) => {
+            outerGroup.append(path);
+            d = "";
+        };
+        let i = 0;
+        while (i !== -1) {
+            const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(this._parser, i);
+            i = this._parser.skipEmpty(endIndex + 1);
+            switch (operator) {
+                case "q":
+                    this.pushState();
+                    break;
+                case "Q":
+                    this.popState();
+                    break;
+                case "gs":
+                    const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
+                    if (!externalState) {
+                        throw new Error("External state specified in appearance stream not found");
+                    }
+                    const params = externalState.toParams();
+                    Object.assign(this.state, params);
+                    break;
+                case "cm":
+                    const [m0, m1, m3, m4, m6, m7] = parameters;
+                    const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+                    this.state.matrix.multiply(matrix);
+                    break;
+                case "w":
+                    this.state.strokeWidth = +parameters[0] || 1;
+                    break;
+                case "J":
+                    switch (parameters[0]) {
+                        case lineCapStyles.ROUND:
+                            this.state.strokeLineCap = "round";
+                            break;
+                        case lineCapStyles.SQUARE:
+                            this.state.strokeLineCap = "square";
+                            break;
+                        case lineCapStyles.BUTT:
+                        default:
+                            this.state.strokeLineCap = "butt";
+                            break;
+                    }
+                    break;
+                case "j":
+                    switch (parameters[0]) {
+                        case lineJoinStyles.BEVEL:
+                            this.state.strokeLineJoin = "bevel";
+                            break;
+                        case lineJoinStyles.ROUND:
+                            this.state.strokeLineJoin = "round";
+                            break;
+                        case lineJoinStyles.MITER:
+                        default:
+                            this.state.strokeLineJoin = "miter";
+                            break;
+                    }
+                    break;
+                case "M":
+                    this.state.strokeMiterLimit = +parameters[0] || 10;
+                    break;
+                case "d":
+                    this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
+                    break;
+                case "CS":
+                    switch (parameters[0]) {
+                        case colorSpaces.GRAYSCALE:
+                            this.state.strokeColorSpace = "grayscale";
+                            break;
+                        case colorSpaces.RGB:
+                            this.state.strokeColorSpace = "rgb";
+                            break;
+                        case colorSpaces.CMYK:
+                            this.state.strokeColorSpace = "cmyk";
+                            break;
+                        default:
+                            throw new Error("Unsupported color space in appearance stream");
+                    }
+                    break;
+                case "cs":
+                    switch (parameters[0]) {
+                        case colorSpaces.GRAYSCALE:
+                            this.state.fillColorSpace = "grayscale";
+                            break;
+                        case colorSpaces.RGB:
+                            this.state.fillColorSpace = "rgb";
+                            break;
+                        case colorSpaces.CMYK:
+                            this.state.fillColorSpace = "cmyk";
+                            break;
+                        default:
+                            throw new Error("Unsupported color space in appearance stream");
+                    }
+                    break;
+                case "G":
+                    this.state.strokeColorSpace = "grayscale";
+                    this.state.setColor("stroke", ...parameters);
+                    break;
+                case "g":
+                    this.state.fillColorSpace = "grayscale";
+                    this.state.setColor("fill", ...parameters);
+                    break;
+                case "RG":
+                    this.state.strokeColorSpace = "rgb";
+                    this.state.setColor("stroke", ...parameters);
+                    break;
+                case "rg":
+                    this.state.fillColorSpace = "rgb";
+                    this.state.setColor("fill", ...parameters);
+                    break;
+                case "K":
+                    this.state.strokeColorSpace = "cmyk";
+                    this.state.setColor("stroke", ...parameters);
+                    break;
+                case "k":
+                    this.state.fillColorSpace = "cmyk";
+                    this.state.setColor("fill", ...parameters);
+                    break;
+                case "SC":
+                    this.state.setColor("stroke", ...parameters);
+                    break;
+                case "cs":
+                    this.state.setColor("fill", ...parameters);
+                    break;
+                case "ri":
+                case "i":
+                    break;
+                case "m":
+                    const move = new Vec2(+parameters[0], +parameters[1]);
+                    move.applyMat3(this.state.matrix);
+                    d += ` M ${move.x} ${move.y}`;
+                    lastCoord.setFromVec2(move);
+                    break;
+                case "l":
+                    const line = new Vec2(+parameters[0], +parameters[1]);
+                    line.applyMat3(this.state.matrix);
+                    d += ` L ${line.x} ${line.y}`;
+                    lastCoord.setFromVec2(line);
+                    break;
+                case "re":
+                    const rMin = new Vec2(+parameters[0], +parameters[1]);
+                    const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
+                    rMin.applyMat3(this.state.matrix);
+                    rMax.applyMat3(this.state.matrix);
+                    d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMax.y} L ${rMin.x} ${rMin.y}`;
+                    lastCoord.setFromVec2(rMin);
+                    break;
+                case "c":
+                    const cControl1 = new Vec2(+parameters[0], +parameters[1]);
+                    const cControl2 = new Vec2(+parameters[2], +parameters[3]);
+                    const cEnd = new Vec2(+parameters[4], +parameters[5]);
+                    cControl1.applyMat3(this.state.matrix);
+                    cControl2.applyMat3(this.state.matrix);
+                    cEnd.applyMat3(this.state.matrix);
+                    d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
+                    lastCoord.setFromVec2(cEnd);
+                    break;
+                case "v":
+                    const vControl2 = new Vec2(+parameters[0], +parameters[1]);
+                    const vEnd = new Vec2(+parameters[2], +parameters[3]);
+                    vControl2.applyMat3(this.state.matrix);
+                    vEnd.applyMat3(this.state.matrix);
+                    d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
+                    lastCoord.setFromVec2(vEnd);
+                    break;
+                case "y":
+                    const yControl1 = new Vec2(+parameters[0], +parameters[1]);
+                    const yEnd = new Vec2(+parameters[2], +parameters[3]);
+                    yControl1.applyMat3(this.state.matrix);
+                    yEnd.applyMat3(this.state.matrix);
+                    d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
+                    lastCoord.setFromVec2(yEnd);
+                    break;
+                case "h":
+                    d += " Z";
+                    break;
+                case "S":
+                    addPath(this.drawPath(d, true, false));
+                    break;
+                case "s":
+                    addPath(this.drawPath(d, true, false, true));
+                    break;
+                case "F":
+                case "f":
+                    addPath(this.drawPath(d, false, true, true));
+                    break;
+                case "F*":
+                case "f*":
+                    addPath(this.drawPath(d, false, true, true, true));
+                    break;
+                case "B":
+                    addPath(this.drawPath(d, true, true, false, false));
+                    break;
+                case "B*":
+                    addPath(this.drawPath(d, true, true, false, true));
+                    break;
+                case "b":
+                    addPath(this.drawPath(d, true, true, true, false));
+                    break;
+                case "b*":
+                    addPath(this.drawPath(d, true, true, true, true));
+                    break;
+                case "n":
+                    if (lastOperator === "W" || lastOperator === "W*") {
+                        if (d[d.length - 1] !== "Z") {
+                            d += " Z";
+                        }
+                        const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                        clippingPath.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
+                        clippingPath.setAttribute("d", d);
+                        const lastCpIndex = this._clipPaths.length - 1;
+                        const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                        clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
+                        clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
+                        clipPath.id = `clip${lastCpIndex + 1}-${this._objectName}`;
+                        this._clipPaths.push(clipPath);
+                        this.state.clipPath = clipPath;
+                    }
+                    d = "";
+                    break;
+                case "W":
+                    break;
+                case "W*":
+                    break;
+                default:
+                    throw new Error(`Unsupported appearance stream operator: ${operator}`);
+            }
+            lastOperator = operator;
+        }
+        console.log(outerGroup);
+        return {
+            svg: outerGroup,
+            clipPaths: this._clipPaths,
+            box: {
+                min: new Vec2(this._rect[0], this._rect[1]),
+                max: new Vec2(this._rect[2], this._rect[3]),
+            },
+        };
+    }
+    pushState(params) {
+        const lastState = this._graphicsStates[this._graphicsStates.length - 1];
+        const newState = lastState.clone(params);
+        this._graphicsStates.push(newState);
+    }
+    popState() {
+        if (this._graphicsStates.length === 1) {
+            return null;
+        }
+        return this._graphicsStates.pop();
+    }
+    drawPath(d, stroke, fill, close = false, evenOdd = false) {
+        if (close && d[d.length - 1] !== "Z") {
+            d += " Z";
+        }
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
+        path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+        path.setAttribute("d", d);
+        path.setAttribute("mix-blend-mode", this.state.mixBlendMode);
+        if (fill) {
+            path.setAttribute("fill", this.state.fill);
+            path.setAttribute("fill-rule", evenOdd ? "evenodd" : "nonzero");
+        }
+        else {
+            path.setAttribute("fill", "none");
+        }
+        if (stroke) {
+            path.setAttribute("stroke", this.state.stroke);
+            path.setAttribute("stroke-width", this.state.strokeWidth + "");
+            path.setAttribute("stroke-miterlimit", this.state.strokeMiterLimit + "");
+            path.setAttribute("stroke-linecap", this.state.strokeLineCap);
+            path.setAttribute("stroke-linejoin", this.state.strokeLineJoin);
+            if (this.state.strokeDashArray) {
+                path.setAttribute("stroke-dasharray", this.state.strokeDashArray);
+            }
+            if (this.state.strokeDashOffset) {
+                path.setAttribute("stroke-dashoffset", this.state.strokeDashOffset + "");
+            }
+        }
+        else {
+            path.setAttribute("stroke", "none");
+        }
+        return path;
+    }
+}
+
 class AnnotationDict extends PdfDict {
     constructor(subType) {
         super(dictTypes.ANNOTATION);
@@ -5919,7 +7048,22 @@ class AnnotationDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
+    render() {
+        var _a;
+        const stream = (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
+        if (stream) {
+            try {
+                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+                return renderer.render();
+            }
+            catch (e) {
+                console.log(`Annotation stream render error: ${e.message}`);
+            }
+        }
+        return null;
+    }
     tryParseProps(parseInfo) {
+        var _a;
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
             return false;
@@ -6169,6 +7313,7 @@ class AnnotationDict extends PdfDict {
         if (!this.Subtype || !this.Rect) {
             return false;
         }
+        this.name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
         return true;
     }
 }
@@ -6370,621 +7515,6 @@ class MarkupAnnotation extends AnnotationDict {
     }
 }
 
-const freeTextIntents = {
-    PLAIN_TEXT: "/FreeText",
-    WITH_CALLOUT: "/FreeTextCallout",
-    CLICK_TO_TYPE: "/FreeTextTypeWriter",
-};
-class FreeTextAnnotation extends MarkupAnnotation {
-    constructor() {
-        super(annotationTypes.FREE_TEXT);
-        this.IT = freeTextIntents.PLAIN_TEXT;
-        this.LE = lineEndingTypes.NONE;
-    }
-    static parse(parseInfo) {
-        const freeText = new FreeTextAnnotation();
-        const parseResult = freeText.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.DA) {
-            bytes.push(...encoder.encode("/DA"), ...this.DA.toArray(cryptInfo));
-        }
-        if (this.Q) {
-            bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
-        }
-        if (this.DS) {
-            bytes.push(...encoder.encode("/DS"), ...this.DS.toArray(cryptInfo));
-        }
-        if (this.CL) {
-            bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
-            this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
-        }
-        if (this.IT) {
-            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
-        }
-        if (this.RD) {
-            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
-        }
-        if (this.LE) {
-            bytes.push(...encoder.encode("/LE"), ...encoder.encode(this.LE));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/DA":
-                        const appearanceString = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (appearanceString) {
-                            this.DA = appearanceString.value;
-                            i = appearanceString.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /DA property value");
-                        }
-                        break;
-                    case "/Q":
-                        const justification = parser.parseNumberAt(i, true);
-                        if (justification && Object.values(justificationTypes)
-                            .includes(justification.value)) {
-                            this.Q = justification.value;
-                            i = justification.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Q property value");
-                        }
-                        break;
-                    case "/DS":
-                        const style = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (style) {
-                            this.DS = style.value;
-                            i = style.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /DS property value");
-                        }
-                        break;
-                    case "/CL":
-                        const callout = parser.parseNumberArrayAt(i, true);
-                        if (callout) {
-                            this.CL = callout.value;
-                            i = callout.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CL property value");
-                        }
-                        break;
-                    case "/IT":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent) {
-                            if (intent.value === "/FreeTextTypewriter") {
-                                this.IT = freeTextIntents.CLICK_TO_TYPE;
-                                i = intent.end + 1;
-                                break;
-                            }
-                            else if (Object.values(freeTextIntents).includes(intent.value)) {
-                                this.IT = intent.value;
-                                i = intent.end + 1;
-                                break;
-                            }
-                        }
-                        throw new Error("Can't parse /IT property value");
-                    case "/RD":
-                        const innerRect = parser.parseNumberArrayAt(i, true);
-                        if (innerRect) {
-                            this.RD = [
-                                innerRect.value[0],
-                                innerRect.value[1],
-                                innerRect.value[2],
-                                innerRect.value[3],
-                            ];
-                            i = innerRect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RD property value");
-                        }
-                        break;
-                    case "/LE":
-                        const lineEndingType = parser.parseNameAt(i, true);
-                        if (lineEndingType && Object.values(lineEndingTypes)
-                            .includes(lineEndingType.value)) {
-                            this.LE = lineEndingType.value;
-                            i = lineEndingType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LE property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        if (!this.DA) {
-            return false;
-        }
-        return true;
-    }
-}
-
-class GeometricAnnotation extends MarkupAnnotation {
-    constructor(type) {
-        super(type);
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.IC) {
-            bytes.push(...encoder.encode("/IC"), codes.L_BRACKET);
-            this.IC.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/IC":
-                        const interiorColor = parser.parseNumberArrayAt(i, true);
-                        if (interiorColor) {
-                            this.IC = interiorColor.value;
-                            i = interiorColor.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /IC property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class CircleAnnotation extends GeometricAnnotation {
-    constructor() {
-        super(annotationTypes.CIRCLE);
-    }
-    static parse(parseInfo) {
-        const freeText = new CircleAnnotation();
-        const parseResult = freeText.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.RD) {
-            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/RD":
-                        const innerRect = parser.parseNumberArrayAt(i, true);
-                        if (innerRect) {
-                            this.RD = [
-                                innerRect.value[0],
-                                innerRect.value[1],
-                                innerRect.value[2],
-                                innerRect.value[3],
-                            ];
-                            i = innerRect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RD property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-const lineIntents = {
-    ARROW: "/LineArrow",
-    DIMESION: "/LineDimension",
-};
-const captionPositions = {
-    INLINE: "/Inline",
-    TOP: "/Top",
-};
-class LineAnnotation extends GeometricAnnotation {
-    constructor() {
-        super(annotationTypes.LINE);
-        this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
-        this.LL = 0;
-        this.LLE = 0;
-        this.Cap = false;
-        this.LLO = 0;
-        this.CP = captionPositions.INLINE;
-        this.CO = [0, 0];
-    }
-    static parse(parseInfo) {
-        const text = new LineAnnotation();
-        const parseResult = text.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.L) {
-            bytes.push(...encoder.encode("/L"), codes.L_BRACKET, ...encoder.encode(this.L[0] + ""), codes.WHITESPACE, ...encoder.encode(this.L[1] + ""), codes.WHITESPACE, ...encoder.encode(this.L[2] + ""), codes.WHITESPACE, ...encoder.encode(this.L[3] + ""), codes.R_BRACKET);
-        }
-        if (this.LE) {
-            bytes.push(...encoder.encode("/LE"), codes.L_BRACKET);
-            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
-            bytes.push(codes.R_BRACKET);
-        }
-        if (this.LL) {
-            bytes.push(...encoder.encode("/LL"), ...encoder.encode(" " + this.LL));
-        }
-        if (this.LLE) {
-            bytes.push(...encoder.encode("/LLE"), ...encoder.encode(" " + this.LLE));
-        }
-        if (this.Cap) {
-            bytes.push(...encoder.encode("/Cap"), ...encoder.encode(" " + this.Cap));
-        }
-        if (this.IT) {
-            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
-        }
-        if (this.LLO) {
-            bytes.push(...encoder.encode("/LLO"), ...encoder.encode(" " + this.LLO));
-        }
-        if (this.CP) {
-            bytes.push(...encoder.encode("/CP"), ...encoder.encode(this.CP));
-        }
-        if (this.Measure) {
-            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
-        }
-        if (this.CO) {
-            bytes.push(...encoder.encode("/CO"), codes.L_BRACKET, ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET);
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/L":
-                        const lineCoords = parser.parseNumberArrayAt(i, true);
-                        if (lineCoords) {
-                            this.L = [
-                                lineCoords.value[0],
-                                lineCoords.value[1],
-                                lineCoords.value[2],
-                                lineCoords.value[3],
-                            ];
-                            i = lineCoords.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /L property value");
-                        }
-                        break;
-                    case "/LE":
-                        const lineEndings = parser.parseNameArrayAt(i, true);
-                        if (lineEndings
-                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
-                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
-                            this.LE = [
-                                lineEndings.value[0],
-                                lineEndings.value[1],
-                            ];
-                            i = lineEndings.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LE property value");
-                        }
-                        break;
-                    case "/LL":
-                        const leaderLineLength = parser.parseNumberAt(i, false);
-                        if (leaderLineLength) {
-                            this.LL = leaderLineLength.value;
-                            i = leaderLineLength.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LL property value");
-                        }
-                        break;
-                    case "/LLE":
-                        const leaderLineExtLength = parser.parseNumberAt(i, false);
-                        if (leaderLineExtLength) {
-                            this.LLE = leaderLineExtLength.value;
-                            i = leaderLineExtLength.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LLE property value");
-                        }
-                        break;
-                    case "/Cap":
-                        const cap = parser.parseBoolAt(i, false);
-                        if (cap) {
-                            this.Cap = cap.value;
-                            i = cap.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Cap property value");
-                        }
-                        break;
-                    case "/IT":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent) {
-                            if (Object.values(lineIntents).includes(intent.value)) {
-                                this.IT = intent.value;
-                                i = intent.end + 1;
-                                break;
-                            }
-                        }
-                        throw new Error("Can't parse /IT property value");
-                    case "/LLO":
-                        const leaderLineOffset = parser.parseNumberAt(i, false);
-                        if (leaderLineOffset) {
-                            this.LLO = leaderLineOffset.value;
-                            i = leaderLineOffset.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LLO property value");
-                        }
-                        break;
-                    case "/CP":
-                        const captionPosition = parser.parseNameAt(i, true);
-                        if (captionPosition && Object.values(captionPositions)
-                            .includes(captionPosition.value[0])) {
-                            this.CP = captionPosition.value;
-                            i = captionPosition.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CP property value");
-                        }
-                        break;
-                    case "/Measure":
-                        const measureEntryType = parser.getValueTypeAt(i);
-                        if (measureEntryType === valueTypes.REF) {
-                            const measureDictId = ObjectId.parseRef(parser, i);
-                            if (measureDictId && parseInfo.parseInfoGetter) {
-                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
-                                if (measureParseInfo) {
-                                    const measureDict = MeasureDict.parse(measureParseInfo);
-                                    if (measureDict) {
-                                        this.Measure = measureDict.value;
-                                        i = measureDict.end + 1;
-                                        break;
-                                    }
-                                }
-                            }
-                            throw new Error("Can't parse /BS value reference");
-                        }
-                        else if (measureEntryType === valueTypes.DICTIONARY) {
-                            const measureDictBounds = parser.getDictBoundsAt(i);
-                            if (measureDictBounds) {
-                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
-                                if (measureDict) {
-                                    this.Measure = measureDict.value;
-                                    i = measureDict.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Measure value dictionary");
-                        }
-                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                    case "/CO":
-                        const captionOffset = parser.parseNumberArrayAt(i, true);
-                        if (captionOffset) {
-                            this.CO = [
-                                captionOffset.value[0],
-                                captionOffset.value[1],
-                            ];
-                            i = captionOffset.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CO property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
-class SquareAnnotation extends GeometricAnnotation {
-    constructor() {
-        super(annotationTypes.SQUARE);
-    }
-    static parse(parseInfo) {
-        const freeText = new SquareAnnotation();
-        const parseResult = freeText.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.RD) {
-            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/RD":
-                        const innerRect = parser.parseNumberArrayAt(i, true);
-                        if (innerRect) {
-                            this.RD = [
-                                innerRect.value[0],
-                                innerRect.value[1],
-                                innerRect.value[2],
-                                innerRect.value[3],
-                            ];
-                            i = innerRect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RD property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
 class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
@@ -7015,6 +7545,13 @@ class InkAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -7066,210 +7603,6 @@ class InkAnnotation extends MarkupAnnotation {
         }
         if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
             return false;
-        }
-        return true;
-    }
-}
-
-const stampTypes = {
-    DRAFT: "/Draft",
-    NOT_APPROVED: "/NotApproved",
-    APPROVED: "/Approved",
-    AS_IS: "/AsIs",
-    FOR_COMMENT: "/ForComment",
-    EXPERIMENTAL: "/Experimental",
-    FINAL: "/Final",
-    SOLD: "/Sold",
-    EXPIRED: "/Expired",
-    PUBLIC: "/ForPublicRelease",
-    NOT_PUBLIC: "/NotForPublicRelease",
-    DEPARTMENTAL: "/Departmental",
-    CONFIDENTIAL: "/Confidential",
-    SECRET: "/TopSecret",
-};
-class StampAnnotation extends MarkupAnnotation {
-    constructor() {
-        super(annotationTypes.STAMP);
-        this.Name = stampTypes.DRAFT;
-    }
-    static parse(parseInfo) {
-        const stamp = new StampAnnotation();
-        const parseResult = stamp.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.Name) {
-            bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        parser.sliceChars(start, end);
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Name":
-                        const type = parser.parseNameAt(i, true);
-                        if (type) {
-                            this.Name = type.value;
-                            i = type.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Name property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        if (!this.Name) {
-            return false;
-        }
-        if (!Object.values(stampTypes).includes(this.Name)) {
-            return false;
-        }
-        return true;
-    }
-}
-
-class TextAnnotation extends MarkupAnnotation {
-    constructor() {
-        super(annotationTypes.TEXT);
-        this.Open = false;
-    }
-    static parse(parseInfo) {
-        const text = new TextAnnotation();
-        const parseResult = text.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.Open) {
-            bytes.push(...encoder.encode("/Open"), ...encoder.encode(" " + this.Open));
-        }
-        if (this.Name) {
-            bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
-        }
-        if (this.State) {
-            bytes.push(...encoder.encode("/State"), ...encoder.encode(this.State));
-        }
-        if (this.StateModel) {
-            bytes.push(...encoder.encode("/StateModel"), ...encoder.encode(this.StateModel));
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Open":
-                        const opened = parser.parseBoolAt(i, true);
-                        if (opened) {
-                            this.Open = opened.value;
-                            i = opened.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Open property value");
-                        }
-                        break;
-                    case "/Name":
-                        const iconType = parser.parseNameAt(i, true);
-                        if (iconType && Object.values(annotationIconTypes)
-                            .includes(iconType.value)) {
-                            this.Name = iconType.value;
-                            i = iconType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Name property value");
-                        }
-                        break;
-                    case "/State":
-                        const state = parser.parseNameAt(i, true);
-                        if (state && Object.values(annotationMarkedStates)
-                            .concat(Object.values(annotationReviewStates))
-                            .includes(state.value)) {
-                            this.State = state.value;
-                            i = state.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /State property value");
-                        }
-                        break;
-                    case "/StateModel":
-                        const stateModelType = parser.parseNameAt(i, true);
-                        if (stateModelType && Object.values(annotationStateModelTypes)
-                            .includes(stateModelType.value)) {
-                            this.StateModel = stateModelType.value;
-                            i = stateModelType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StateModel property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
         }
         return true;
     }
@@ -9595,7 +9928,6 @@ class DocumentData {
                 throw new Error("Failed to parse cross-reference sections");
             }
         }
-        this._lastXrefOffset = lastXrefIndex.value;
         this._xrefs = xrefs;
         this._referenceData = new ReferenceData(xrefs);
         console.log(this._xrefs);
@@ -9724,30 +10056,6 @@ class DocumentData {
                 const annotationType = info.parser.parseDictSubtype(info.bounds);
                 let annot;
                 switch (annotationType) {
-                    case annotationTypes.TEXT:
-                        annot = TextAnnotation.parse(info);
-                        break;
-                    case annotationTypes.FREE_TEXT:
-                        annot = FreeTextAnnotation.parse(info);
-                        break;
-                    case annotationTypes.STAMP:
-                        annot = StampAnnotation.parse(info);
-                        break;
-                    case annotationTypes.CIRCLE:
-                        annot = CircleAnnotation.parse(info);
-                        break;
-                    case annotationTypes.SQUARE:
-                        annot = SquareAnnotation.parse(info);
-                        break;
-                    case annotationTypes.POLYGON:
-                        annot = SquareAnnotation.parse(info);
-                        break;
-                    case annotationTypes.POLYLINE:
-                        annot = SquareAnnotation.parse(info);
-                        break;
-                    case annotationTypes.LINE:
-                        annot = LineAnnotation.parse(info);
-                        break;
                     case annotationTypes.INK:
                         annot = InkAnnotation.parse(info);
                         break;
@@ -9824,7 +10132,7 @@ class DocumentData {
     ;
 }
 
-class AnnotationEditor {
+class AnnotationData {
     constructor(pdfData) {
         this.onAnnotationDictChange = {
             set: (target, prop, value) => true,
@@ -9877,6 +10185,9 @@ class AnnotationEditor {
             this.getAnnotationMap().set(pageId, [annotation]);
         }
     }
+    removeAnnotation(annotation) {
+        annotation.isDeleted = true;
+    }
     getAnnotationMap() {
         if (this._annotationsByPageId) {
             return this._annotationsByPageId;
@@ -9926,8 +10237,9 @@ class TsPdfViewer {
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
-        this.onPdfLoadedAsync = (doc) => __awaiter$2(this, void 0, void 0, function* () {
+        this.onPdfLoadedAsync = (doc, annotationData) => __awaiter$2(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
+            this._annotationData = annotationData;
             yield this.refreshPagesAsync();
             this.renderVisiblePreviews();
             this.renderVisiblePages();
@@ -10065,15 +10377,15 @@ class TsPdfViewer {
                     this._panelsHidden = false;
                 }
             }
-            this._pointerInfo.lastPos = { x: clientX, y: clientY };
+            this._pointerInfo.lastPos = new Vec2(clientX, clientY);
         };
         this.onViewerPointerDown = (event) => {
             if (this._mode !== "hand") {
                 return;
             }
             const { clientX, clientY } = event;
-            this._pointerInfo.downPos = { x: clientX, y: clientY };
-            this._pointerInfo.downScroll = { x: this._viewer.scrollLeft, y: this._viewer.scrollTop };
+            this._pointerInfo.downPos = new Vec2(clientX, clientY);
+            this._pointerInfo.downScroll = new Vec2(this._viewer.scrollLeft, this._viewer.scrollTop);
             const onPointerMove = (moveEvent) => {
                 const { x, y } = this._pointerInfo.downPos;
                 const { x: left, y: top } = this._pointerInfo.downScroll;
@@ -10110,7 +10422,7 @@ class TsPdfViewer {
                 const delta = dist - this._pinchInfo.lastDist;
                 const factor = Math.floor(delta / this._pinchInfo.minDist);
                 if (factor) {
-                    const center = getCenter(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+                    const center = new Vec2((mB.clientX + mA.clientX) / 2, (mB.clientY + mA.clientY) / 2);
                     this._pinchInfo.lastDist = dist;
                     this.zoom(factor * this._pinchInfo.sensitivity, center);
                 }
@@ -10189,10 +10501,10 @@ class TsPdfViewer {
             catch (e) {
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
-            const annotator = new AnnotationEditor(data);
+            const annotationData = new AnnotationData(data);
             let password;
             while (true) {
-                const authenticated = annotator.tryAuthenticate(password);
+                const authenticated = annotationData.tryAuthenticate(password);
                 if (!authenticated) {
                     password = yield this.showPasswordDialogAsync();
                     if (password === null) {
@@ -10202,7 +10514,7 @@ class TsPdfViewer {
                 }
                 break;
             }
-            data = annotator.getRefinedData();
+            data = annotationData.getRefinedData();
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();
@@ -10216,7 +10528,7 @@ class TsPdfViewer {
             catch (e) {
                 throw new Error(`Cannot open PDF: ${e.message}`);
             }
-            yield this.onPdfLoadedAsync(doc);
+            yield this.onPdfLoadedAsync(doc, annotationData);
         });
     }
     closePdfAsync() {
@@ -10272,7 +10584,7 @@ class TsPdfViewer {
             }
             for (let i = 0; i < docPagesNumber; i++) {
                 const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                const page = new ViewPage(pageProxy, this._maxScale, this._previewWidth);
+                const page = new PageView(pageProxy, this._annotationData, this._maxScale, this._previewWidth);
                 page.scale = this._scale;
                 page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
                 this._previewer.append(page.previewContainer);
@@ -10398,10 +10710,7 @@ class TsPdfViewer {
     }
     getViewerCenterPosition() {
         const { x, y, width, height } = this._viewer.getBoundingClientRect();
-        return {
-            x: x + width / 2,
-            y: y + height / 2,
-        };
+        return new Vec2(x + width / 2, y + height / 2);
     }
     getVisiblePages(container, pages, preview = false) {
         const pagesVisible = new Set();

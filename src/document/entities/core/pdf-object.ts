@@ -6,10 +6,10 @@ export abstract class PdfObject implements IEncodable {
     return this._ref;
   }
   get id(): number {
-    return this._ref.id;
+    return this._ref?.id;
   }
   get generation(): number {
-    return this._ref.generation;
+    return this._ref?.generation;
   }
 
   protected constructor() {

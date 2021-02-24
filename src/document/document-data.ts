@@ -28,7 +28,6 @@ export class DocumentData {
   private readonly _docParser: DataParser;
   private readonly _version: string; 
 
-  private readonly _lastXrefOffset: number;
   private readonly _xrefs: XRef[];
   private readonly _referenceData: ReferenceData;
 
@@ -69,7 +68,6 @@ export class DocumentData {
       throw new Error("Failed to parse cross-reference sections");
     }}
 
-    this._lastXrefOffset = lastXrefIndex.value;
     this._xrefs = xrefs;
     this._referenceData = new ReferenceData(xrefs);
     // DEBUG
@@ -212,30 +210,30 @@ export class DocumentData {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
         let annot: ParseResult<AnnotationDict>;
         switch (annotationType) {
-          case annotationTypes.TEXT:
-            annot = TextAnnotation.parse(info);
-            break;
-          case annotationTypes.FREE_TEXT:
-            annot = FreeTextAnnotation.parse(info);
-            break;
-          case annotationTypes.STAMP:
-            annot = StampAnnotation.parse(info);
-            break;
-          case annotationTypes.CIRCLE:
-            annot = CircleAnnotation.parse(info);
-            break;
-          case annotationTypes.SQUARE:
-            annot = SquareAnnotation.parse(info);
-            break;
-          case annotationTypes.POLYGON:
-            annot = SquareAnnotation.parse(info);
-            break;
-          case annotationTypes.POLYLINE:
-            annot = SquareAnnotation.parse(info);
-            break;
-          case annotationTypes.LINE:
-            annot = LineAnnotation.parse(info);
-            break;
+          // case annotationTypes.TEXT:
+          //   annot = TextAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.FREE_TEXT:
+          //   annot = FreeTextAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.STAMP:
+          //   annot = StampAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.CIRCLE:
+          //   annot = CircleAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.SQUARE:
+          //   annot = SquareAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.POLYGON:
+          //   annot = SquareAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.POLYLINE:
+          //   annot = SquareAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.LINE:
+          //   annot = LineAnnotation.parse(info);
+          //   break;
           case annotationTypes.INK:
             annot = InkAnnotation.parse(info);
             break;

@@ -3,6 +3,7 @@ import { annotationTypes, Rect } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { GeometricAnnotation } from "./geometric-annotation";
+import { SvgWithBox } from "../../../../../common";
 
 export class CircleAnnotation extends GeometricAnnotation {
   /**
@@ -47,6 +48,16 @@ export class CircleAnnotation extends GeometricAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }  
+  
+  render(): SvgWithBox {
+    const streamRenderResult = super.render();
+    if (streamRenderResult) {
+      return streamRenderResult;
+    }
+
+    // TODO: implement individual render methods
+    return null;
   }
   
   /**

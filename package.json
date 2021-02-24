@@ -45,6 +45,7 @@
     "@rollup/plugin-typescript": "^8.2.0",
     "@types/jasmine": "^3.6.3",
     "@types/resize-observer-browser": "^0.1.5",
+    "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.15.1",
     "@typescript-eslint/eslint-plugin-tslint": "^4.15.1",
     "@typescript-eslint/parser": "^4.15.1",
@@ -71,8 +72,10 @@
     "typescript": "^4.1.5"
   },
   "dependencies": {
+    "@svgdotjs/svg.js": "^3.0.16",
     "crypto-es": "^1.2.7",
     "pako": "^2.0.3",
-    "pdfjs-dist": "^2.6.347"
+    "pdfjs-dist": "^2.6.347",
+    "uuid": "^8.3.2"
   }
 }

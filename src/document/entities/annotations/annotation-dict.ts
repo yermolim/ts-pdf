@@ -12,8 +12,13 @@ import { LiteralString } from "../strings/literal-string";
 import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
+import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
+import { getRandomUuid, SvgWithBox } from "../../../common";
 
 export abstract class AnnotationDict extends PdfDict {
+  isDeleted: boolean;
+  name: string;
+
   /** (Required) The type of annotation that this dictionary describes */
   readonly Subtype: AnnotationType;
   
@@ -142,6 +147,20 @@ export abstract class AnnotationDict extends PdfDict {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }  
+
+  render(): SvgWithBox {   
+    const stream = this.AP?.getStream("/N");
+    if (stream) {
+      try {
+        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+        return renderer.render();
+      }
+      catch (e) {
+        console.log(`Annotation stream render error: ${e.message}`);
+      }
+    }
+    return null;
   }
   
   /**
@@ -390,6 +409,8 @@ export abstract class AnnotationDict extends PdfDict {
       // not all required properties parsed
       return false;
     }
+
+    this.name = this.NM?.literal || getRandomUuid();
 
     return true;
   }

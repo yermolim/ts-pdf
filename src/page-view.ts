@@ -1,10 +1,13 @@
 import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 import { PageViewport } from "pdfjs-dist/types/display/display_utils";
+import { AnnotationData } from "./document/annotation-data";
+import { Vec2 } from "./math";
+import { PageAnnotationView as PageAnnotationsView } from "./page-annotations-view";
 
-import { ViewPageText } from "./view-page-text";
+import { PageTextView } from "./page-text-view";
 
-export class ViewPage { 
+export class PageView { 
   readonly number: number;
   readonly id: number;
   readonly generation: number;
@@ -12,6 +15,7 @@ export class ViewPage {
   private readonly _pageProxy: PDFPageProxy; 
   private readonly _viewport: PageViewport; 
   private readonly _maxScale: number;
+  private readonly _annotationData: AnnotationData;
 
   private _dimensions: {
     width: number; 
@@ -44,7 +48,8 @@ export class ViewPage {
     return this.$viewRendered;
   }
 
-  private _text: ViewPageText;
+  private _text: PageTextView;
+  private _annotations: PageAnnotationsView;
 
   private _renderTask: {cancel: () => void; promise: Promise<void>};
   private _renderPromise: Promise<void>;
@@ -78,13 +83,17 @@ export class ViewPage {
     return this._scaleIsValid && this._viewRendered;
   }
 
-  constructor(pageProxy: PDFPageProxy, maxScale: number, previewWidth: number) {
+  constructor(pageProxy: PDFPageProxy, annotationData: AnnotationData, maxScale: number, previewWidth: number) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
+    }
+    if (!annotationData) {
+      throw new Error("Annotation data is not defined");
     }
     this._pageProxy = pageProxy;
     this._viewport = pageProxy.getViewport({scale: 1});
     this._maxScale = Math.max(maxScale, 1);
+    this._annotationData = annotationData;
 
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
@@ -154,7 +163,12 @@ export class ViewPage {
   }
 
   clearView() {
+    this._annotations?.destroy();
+    this._annotations = null;
+
     this._text?.destroy();
+    this._text = null;
+    
     this._viewCanvas?.remove();
     this._viewRendered = false;
   }
@@ -243,7 +257,11 @@ export class ViewPage {
 
   private async runViewRenderAsync(): Promise<void> { 
     const scale = this._scale;
+
     this._text?.destroy();
+    this._text = null;
+
+    this._annotations?.remove();
 
     // create a new canvas of the needed size and fill it with a rendered page
     const canvas = this.createViewCanvas();
@@ -265,7 +283,14 @@ export class ViewPage {
     this._viewRendered = true;
 
     // add text div on top of canvas
-    this._text = await ViewPageText.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+    this._text = await PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale); 
+
+    // add annotations div on top of canvas
+    if (!this._annotations) {
+      const {width: x, height: y} = this._dimensions;
+      this._annotations = new PageAnnotationsView(this._annotationData, this.id, new Vec2(x, y));
+    }
+    this._annotations.append(this.viewContainer);
 
     // check if scale not changed during text render
     if (scale === this._scale) {

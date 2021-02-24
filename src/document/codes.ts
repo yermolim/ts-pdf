@@ -202,3 +202,7 @@ export const EOL = [
 export function isRegularChar(code: number): boolean {
   return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
+
+export function isDigit(code: number): boolean {
+  return DIGIT_CHARS.has(code);
+}

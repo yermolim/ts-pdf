@@ -12,6 +12,7 @@ export declare class TsPdfViewer {
 	private _mainContainerResizeObserver;
 	private _pdfLoadingTask;
 	private _pdfDocument;
+	private _annotationData;
 	private _previewer;
 	private _viewer;
 	private _panelsHidden;

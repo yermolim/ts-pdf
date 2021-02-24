@@ -99,8 +99,20 @@ export class ResourceDict extends PdfDict {
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
   }
+
+  getGraphicsState(name: string): GraphicsStateDict {
+    return this._gsMap.get(name);
+  }
+
+  *getGraphicsStates(): Iterable<[string, GraphicsStateDict]> {
+    for (const pair of this._gsMap) {
+      yield pair;
+    }
+    return;
+  }
+
   
-  fillMaps(parseInfoGetter: (id: number) => ParseInfo) {
+  protected fillMaps(parseInfoGetter: (id: number) => ParseInfo) {
     this._gsMap.clear();
     this._xObjectsMap.clear();
 

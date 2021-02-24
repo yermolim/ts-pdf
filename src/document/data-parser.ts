@@ -1,5 +1,5 @@
 import { codes, keywordCodes, isRegularChar,
-  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS } from "./codes";
+  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./codes";
 import { ObjectType, ValueType, valueTypes } from "./const";
 import { CryptInfo } from "./common-interfaces";
 
@@ -293,11 +293,17 @@ export class DataParser {
         const nextDelimIndex = this.findDelimiterIndex("straight", i + 1);
         if (nextDelimIndex !== -1) {
           const refEndIndex = this.findCharIndex(codes.R, "reverse", nextDelimIndex - 1);
-          if (refEndIndex !== -1 && refEndIndex > i) {
+          if (refEndIndex !== -1 && refEndIndex > i && !isRegularChar(arr[refEndIndex + 1])) {
             return valueTypes.REF;
           }
         }
         return valueTypes.NUMBER;
+      case codes.DOT:
+      case codes.MINUS:
+        if (isDigit(arr[i + 1])) {          
+          return valueTypes.NUMBER;
+        }
+        return valueTypes.UNKNOWN;
       case codes.s:
         if (arr[i + 1] === codes.t
           && arr[i + 2] === codes.r
@@ -628,7 +634,7 @@ export class DataParser {
       value = this._data[++i];
     };
 
-    return result.length > 1 
+    return result.length !== 0 
       ? {value: result, start, end: i - 1}
       : null;
   } 

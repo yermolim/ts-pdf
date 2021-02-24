@@ -6,6 +6,7 @@ import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { codes } from "../../codes";
 import { SoftMaskDict } from "./soft-mask.dict";
+import { GraphicsStateParams } from "../../render/graphics-state";
 
 export class GraphicsStateDict extends PdfDict {
   /** 
@@ -213,6 +214,66 @@ export class GraphicsStateDict extends PdfDict {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+
+  toParams(): GraphicsStateParams {
+    const params: GraphicsStateParams = {};
+    if (!isNaN(this.LW)) {
+      params.strokeWidth = this.LW;
+    }
+    if (!isNaN(this.LC)) {
+      switch (this.LC) {
+        case lineCapStyles.BUTT:
+          params.strokeLineCap = "butt";
+          break;
+        case lineCapStyles.ROUND:
+          params.strokeLineCap = "round";
+          break;
+        case lineCapStyles.SQUARE:
+          params.strokeLineCap = "square";
+          break;
+      }
+    }
+    if (!isNaN(this.LJ)) {
+      switch (this.LJ) {
+        case lineJoinStyles.BEVEL:
+          params.strokeLineJoin = "bevel";
+          break;
+        case lineJoinStyles.ROUND:
+          params.strokeLineJoin = "round";
+          break;
+        case lineJoinStyles.MITER:
+          params.strokeLineJoin = "miter";
+          break;
+      }
+    }
+    if (this.ML) {
+      params.strokeMiterLimit = this.ML;
+    }
+    if (this.D) {
+      params.strokeDashArray = `${this.D[0][0]} ${this.D[0][1]}`;
+      params.strokeDashOffset = this.D[1];
+    }
+    if (this.Font) {
+      // TODO: implement
+    }
+    if (this.BM) {
+      params.strokeMiterLimit = this.ML;
+    }
+    if (this.SMask) {
+      // TODO: implement
+    }
+    if (this.CA) {
+      params.strokeAlpha = this.CA;
+    }
+    if (this.ca) {
+      params.fillAlpha = this.ca;
+    }
+    if (this.AIS) {
+      // TODO: implement
+    }
+
+    return params;
   }
   
   /**

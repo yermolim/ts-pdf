@@ -46,6 +46,10 @@ export const styles = /*html*/`
       left: 0;
       top: 0;
     }
+    .stretch {
+      width: 100%;
+      height: 100%;
+    }
 
     #main-container {
       box-sizing: border-box;
@@ -320,6 +324,20 @@ export const styles = /*html*/`
     }
     .hand .page-text span {
       cursor: grab;
+    }
+    
+    .page-annotations {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .page-annotations.passive {
+      pointer-events: none;
     }
     
     #password-dialog {

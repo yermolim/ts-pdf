@@ -2,6 +2,7 @@ import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 import { MarkupAnnotation } from "./markup-annotation";
+import { SvgWithBox } from "../../../../common";
 
 export const attachmentIconTypes = {
   PUSH_PIN: "/GraphPushPin",
@@ -26,5 +27,15 @@ export class FileAttachmentAnnotation extends MarkupAnnotation {
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
+  }
+  
+  render(): SvgWithBox {
+    const streamRenderResult = super.render();
+    if (streamRenderResult) {
+      return streamRenderResult;
+    }
+
+    // TODO: implement individual render methods
+    return null;
   }
 }

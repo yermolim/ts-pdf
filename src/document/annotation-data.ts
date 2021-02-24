@@ -2,7 +2,7 @@ import { DocumentData } from "./document-data";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
 
-export class AnnotationEditor {
+export class AnnotationData {
   private _sourceData: Uint8Array;
 
   private _documentData: DocumentData;
@@ -78,6 +78,10 @@ export class AnnotationEditor {
     } else {
       this.getAnnotationMap().set(pageId, [annotation]);
     }
+  }
+
+  removeAnnotation(annotation: AnnotationDict) {
+    annotation.isDeleted = true;
   }
 
   private getAnnotationMap(): Map<number, AnnotationDict[]> {

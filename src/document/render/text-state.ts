@@ -51,18 +51,14 @@ export class TextState {
   textKnockOut: boolean;
 
   constructor(params?: TextStateParams) {
-    params = params
-      ? Object.assign({}, TextState.defaultParams, params)
-      : TextState.defaultParams;
+    Object.assign(this, TextState.defaultParams, params);
+  }
 
-    this.fontFamily = params.fontFamily;
-    this.fontSize = params.fontSize;
-    this.lineHeight = params.lineHeight;
-    this.letterSpacing = params.letterSpacing;
-    this.wordSpacing = params.wordSpacing;
-    this.textHorScale = params.textHorScale;
-    this.textRenderMode = params.textRenderMode;
-    this.textVertAlign = params.textVertAlign;
-    this.textKnockOut = params.textKnockOut;
+  clone(params?: TextStateParams): TextState {
+    const copy = new TextState(this);
+    if (params) {
+      return Object.assign(copy, params);
+    }
+    return copy;
   }
 }

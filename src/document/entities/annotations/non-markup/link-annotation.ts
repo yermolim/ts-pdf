@@ -3,6 +3,7 @@ import { CryptInfo } from "../../../common-interfaces";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";
 import { AnnotationDict } from "../annotation-dict";
+import { SvgWithBox } from "../../../../common";
 
 export class LinkAnnotation extends AnnotationDict {
   /**
@@ -39,5 +40,15 @@ export class LinkAnnotation extends AnnotationDict {
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
+  }
+  
+  render(): SvgWithBox {
+    const streamRenderResult = super.render();
+    if (streamRenderResult) {
+      return streamRenderResult;
+    }
+
+    // TODO: implement individual render methods
+    return null;
   }
 }

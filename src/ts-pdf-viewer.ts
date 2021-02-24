@@ -2,9 +2,10 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
 import { html, passwordDialogHtml, styles } from "./assets/index.html";
-import { clamp, getCenter, getDistance, Position } from "./common";
-import { ViewPage } from "./view-page";
-import { AnnotationEditor } from "./document/annotation-editor";
+import { getDistance } from "./common";
+import { PageView } from "./page-view";
+import { AnnotationData } from "./document/annotation-data";
+import { clamp, Vec2 } from "./math";
 
 type ViewerMode = "normal" | "hand";
 
@@ -22,7 +23,9 @@ export class TsPdfViewer {
   private _mainContainerResizeObserver: ResizeObserver;
 
   private _pdfLoadingTask: PDFDocumentLoadingTask;
-  private _pdfDocument: PDFDocumentProxy;
+  private _pdfDocument: PDFDocumentProxy;  
+
+  private _annotationData: AnnotationData;
 
   private _previewer: HTMLDivElement;
   private _viewer: HTMLDivElement;
@@ -30,15 +33,15 @@ export class TsPdfViewer {
   private _panelsHidden: boolean;
   private _previewerHidden = true;
 
-  private _pages: ViewPage[] = [];
+  private _pages: PageView[] = [];
   private _currentPage = 0;
 
   private _mode: ViewerMode = "normal";
   
   private _pointerInfo = {
-    lastPos: <Position>null,
-    downPos: <Position>null,
-    downScroll: <Position>null, 
+    lastPos: <Vec2>null,
+    downPos: <Vec2>null,
+    downScroll: <Vec2>null, 
   };
   private _timers = {    
     hidePanels: 0,
@@ -104,10 +107,10 @@ export class TsPdfViewer {
       throw new Error(`Cannot load file data: ${e.message}`);
     }
 
-    const annotator = new AnnotationEditor(data);
+    const annotationData = new AnnotationData(data);
     let password: string;
     while (true) {      
-      const authenticated = annotator.tryAuthenticate(password);
+      const authenticated = annotationData.tryAuthenticate(password);
       if (!authenticated) {        
         password = await this.showPasswordDialogAsync();
         if (password === null) {          
@@ -119,7 +122,7 @@ export class TsPdfViewer {
     }
 
     // data without supported annotations
-    data = annotator.getRefinedData();
+    data = annotationData.getRefinedData();
 
     try {
       if (this._pdfLoadingTask) {
@@ -135,7 +138,7 @@ export class TsPdfViewer {
       throw new Error(`Cannot open PDF: ${e.message}`);
     }
 
-    await this.onPdfLoadedAsync(doc);
+    await this.onPdfLoadedAsync(doc, annotationData);
   }
 
   async closePdfAsync(): Promise<void> {
@@ -186,12 +189,13 @@ export class TsPdfViewer {
     // TODO: implement progress display
   };
 
-  private onPdfLoadedAsync = async (doc: PDFDocumentProxy) => {
+  private onPdfLoadedAsync = async (doc: PDFDocumentProxy, annotationData: AnnotationData) => {
     this._pdfDocument = doc;
+    this._annotationData = annotationData;
 
     await this.refreshPagesAsync();
     this.renderVisiblePreviews();
-    this.renderVisiblePages();
+    this.renderVisiblePages(); 
 
     this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
   };
@@ -221,7 +225,7 @@ export class TsPdfViewer {
     for (let i = 0; i < docPagesNumber; i++) {    
       const pageProxy = await this._pdfDocument.getPage(i + 1); 
 
-      const page = new ViewPage(pageProxy, this._maxScale, this._previewWidth);
+      const page = new PageView(pageProxy, this._annotationData, this._maxScale, this._previewWidth);
       page.scale = this._scale;
       page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
       this._previewer.append(page.previewContainer);
@@ -307,7 +311,7 @@ export class TsPdfViewer {
   //#endregion
 
   //#region zoom
-  private setScale(scale: number, cursorPosition: Position = null) {
+  private setScale(scale: number, cursorPosition: Vec2 = null) {
     if (!scale || scale === this._scale) {
       return;
     }
@@ -370,25 +374,22 @@ export class TsPdfViewer {
     setTimeout(() => this.renderVisiblePages(), 0);
   }
 
-  private zoom(diff: number, cursorPosition: Position = null) {
+  private zoom(diff: number, cursorPosition: Vec2 = null) {
     const scale = clamp(this._scale + diff, this._minScale, this._maxScale);
     this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
   }
 
-  private zoomOut(cursorPosition: Position = null) {
+  private zoomOut(cursorPosition: Vec2 = null) {
     this.zoom(-0.25, cursorPosition);
   }
   
-  private zoomIn(cursorPosition: Position = null) {
+  private zoomIn(cursorPosition: Vec2 = null) {
     this.zoom(0.25, cursorPosition);
   }
 
-  private getViewerCenterPosition(): Position {
+  private getViewerCenterPosition(): Vec2 {
     const {x, y, width, height} = this._viewer.getBoundingClientRect();
-    return <Position>{
-      x: x + width / 2,
-      y: y + height / 2,
-    };
+    return new Vec2(x + width / 2, y + height / 2);
   }
   //#endregion
   
@@ -536,7 +537,7 @@ export class TsPdfViewer {
       }
     }
 
-    this._pointerInfo.lastPos = {x: clientX, y: clientY};
+    this._pointerInfo.lastPos = new Vec2(clientX, clientY);
   };
 
   private onViewerPointerDown = (event: PointerEvent) => { 
@@ -545,8 +546,8 @@ export class TsPdfViewer {
     }
     
     const {clientX, clientY} = event;
-    this._pointerInfo.downPos = {x: clientX, y: clientY};
-    this._pointerInfo.downScroll = {x: this._viewer.scrollLeft, y: this._viewer.scrollTop};    
+    this._pointerInfo.downPos = new Vec2(clientX, clientY);
+    this._pointerInfo.downScroll = new Vec2(this._viewer.scrollLeft,this._viewer.scrollTop);    
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       const {x, y} = this._pointerInfo.downPos;
@@ -592,7 +593,7 @@ export class TsPdfViewer {
       const factor = Math.floor(delta / this._pinchInfo.minDist);  
 
       if (factor) {
-        const center = getCenter(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+        const center = new Vec2((mB.clientX + mA.clientX) / 2, (mB.clientY + mA.clientY) / 2);
         this._pinchInfo.lastDist = dist;
         this.zoom(factor * this._pinchInfo.sensitivity, center);
       }
@@ -628,7 +629,7 @@ export class TsPdfViewer {
   //#endregion
   
   //#region page numbers methods
-  private getVisiblePages(container: HTMLDivElement, pages: ViewPage[], preview = false): Set<number> {
+  private getVisiblePages(container: HTMLDivElement, pages: PageView[], preview = false): Set<number> {
     const pagesVisible = new Set<number>();
     if (!pages.length) {
       return pagesVisible;
@@ -655,7 +656,7 @@ export class TsPdfViewer {
     return pagesVisible;
   }
   
-  private getCurrentPage(container: HTMLDivElement, pages: ViewPage[], visiblePageNumbers: Set<number>): number {
+  private getCurrentPage(container: HTMLDivElement, pages: PageView[], visiblePageNumbers: Set<number>): number {
     const visiblePageNumbersArray = [...visiblePageNumbers];
     if (!visiblePageNumbersArray.length) {
       return -1;

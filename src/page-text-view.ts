@@ -2,7 +2,7 @@ import { renderTextLayer } from "pdfjs-dist";
 import { PDFPageProxy } from "pdfjs-dist/types/display/api";
 import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types/display/text_layer";
 
-export class ViewPageText {  
+export class PageTextView {  
   private _container: HTMLDivElement;
 
   private _pageProxy: PDFPageProxy;
@@ -22,8 +22,8 @@ export class ViewPageText {
     this._container.addEventListener("mouseup", this.onMouseUp);
   } 
 
-  static async appendPageTextAsync(pageProxy: PDFPageProxy, parent: HTMLElement, scale: number): Promise<ViewPageText> {
-    const textObj = new ViewPageText(pageProxy);
+  static async appendPageTextAsync(pageProxy: PDFPageProxy, parent: HTMLElement, scale: number): Promise<PageTextView> {
+    const textObj = new PageTextView(pageProxy);
     await textObj.renderTextLayerAsync(scale);
     parent.append(textObj._container);
     return textObj;

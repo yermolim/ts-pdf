@@ -1,3 +1,7 @@
+export function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(v, max));
+}
+
 export class Mat3 {
   readonly length = 9;
   private readonly _matrix: number[] = new Array(this.length);
@@ -51,17 +55,20 @@ export class Mat3 {
   }
 
   static multiply(m1: Mat3, m2: Mat3): Mat3 {    
+    const [a11,a12,a13,a21,a22,a23,a31,a32,a33] = m1._matrix; 
+    const [b11,b12,b13,b21,b22,b23,b31,b32,b33] = m2._matrix;
+
     const m = new Mat3();
     m.set(
-      m1.x_x * m2.x_x + m1.x_y * m2.y_x + m1.x_z * m2.z_x,
-      m1.x_x * m2.x_y + m1.x_y * m2.y_y + m1.x_z * m2.z_y,
-      m1.x_x * m2.x_z + m1.x_y * m2.y_z + m1.x_z * m2.z_z,
-      m1.y_x * m2.x_x + m1.y_y * m2.y_x + m1.y_z * m2.z_x,
-      m1.y_x * m2.x_y + m1.y_y * m2.y_y + m1.y_z * m2.z_y,
-      m1.y_x * m2.x_z + m1.y_y * m2.y_z + m1.y_z * m2.z_z,
-      m1.z_x * m2.x_x + m1.z_y * m2.y_x + m1.z_z * m2.z_x,
-      m1.z_x * m2.x_y + m1.z_y * m2.y_y + m1.z_z * m2.z_y,
-      m1.z_x * m2.x_z + m1.z_y * m2.y_z + m1.z_z * m2.z_z
+      a11 * b11 + a12 * b21 + a13 * b31,
+      a11 * b12 + a12 * b22 + a13 * b32,
+      a11 * b13 + a12 * b23 + a13 * b33,
+      a21 * b11 + a22 * b21 + a23 * b31,
+      a21 * b12 + a22 * b22 + a23 * b32,
+      a21 * b13 + a22 * b23 + a23 * b33,
+      a31 * b11 + a32 * b21 + a33 * b31,
+      a31 * b12 + a32 * b22 + a33 * b32,
+      a31 * b13 + a32 * b23 + a33 * b33,
     );
     return m;
   }
@@ -178,7 +185,7 @@ export class Mat3 {
     this._matrix[8] = z_z;
     return this;
   }
-
+  
   setFromMat3(m: Mat3): Mat3 {
     for (let i = 0; i < this.length; i++) {
       this._matrix[i] = m._matrix[i];
@@ -187,14 +194,18 @@ export class Mat3 {
   } 
 
   multiply(m: Mat3): Mat3 {
-    this._matrix[0] = this.x_x * m.x_x + this.x_y * m.y_x + this.x_z * m.z_x;
-    this._matrix[1] = this.x_x * m.x_y + this.x_y * m.y_y + this.x_z * m.z_y;
-    this._matrix[2] = this.x_x * m.x_z + this.x_y * m.y_z + this.x_z * m.z_z;
-    this._matrix[4] = this.y_x * m.x_x + this.y_y * m.y_x + this.y_z * m.z_x;
-    this._matrix[5] = this.y_x * m.x_y + this.y_y * m.y_y + this.y_z * m.z_y;
-    this._matrix[6] = this.y_x * m.x_z + this.y_y * m.y_z + this.y_z * m.z_z;
-    this._matrix[7] = this.z_x * m.x_x + this.z_y * m.y_x + this.z_z * m.z_x;
-    this._matrix[8] = this.z_x * m.x_y + this.z_y * m.y_y + this.z_z * m.z_y;
+    const [a11,a12,a13,a21,a22,a23,a31,a32,a33] = this._matrix; 
+    const [b11,b12,b13,b21,b22,b23,b31,b32,b33] = m._matrix;  
+
+    this._matrix[0] = a11 * b11 + a12 * b21 + a13 * b31;
+    this._matrix[1] = a11 * b12 + a12 * b22 + a13 * b32;
+    this._matrix[2] = a11 * b13 + a12 * b23 + a13 * b33;
+    this._matrix[3] = a21 * b11 + a22 * b21 + a23 * b31;
+    this._matrix[4] = a21 * b12 + a22 * b22 + a23 * b32;
+    this._matrix[5] = a21 * b13 + a22 * b23 + a23 * b33;
+    this._matrix[6] = a31 * b11 + a32 * b21 + a33 * b31;
+    this._matrix[7] = a31 * b12 + a32 * b22 + a33 * b32;
+    this._matrix[8] = a31 * b13 + a32 * b23 + a33 * b33;
 
     return this;
   }
@@ -291,9 +302,31 @@ export class Mat3 {
   toIntArray(): Int32Array {
     return new Int32Array(this);
   } 
+  
+  toIntShortArray(): Int32Array {
+    return new Int32Array([
+      this._matrix[0], 
+      this._matrix[1],
+      this._matrix[3],
+      this._matrix[4],
+      this._matrix[6],
+      this._matrix[7],
+    ]);
+  } 
 
   toFloatArray(): Float32Array {
     return new Float32Array(this);
+  } 
+  
+  toFloatShortArray(): Float32Array {
+    return new Float32Array([
+      this._matrix[0], 
+      this._matrix[1],
+      this._matrix[3],
+      this._matrix[4],
+      this._matrix[6],
+      this._matrix[7],
+    ]);
   } 
 
   *[Symbol.iterator](): Iterator<number> {
@@ -302,6 +335,7 @@ export class Mat3 {
     }
   }
 }
+
 export class Vec2 {
   readonly length = 2;
   x: number;
@@ -469,4 +503,273 @@ export class Vec2 {
     yield this.x;
     yield this.y;
   }
+}
+
+export class Vec3 {
+  readonly length = 3;
+  x: number;
+  y: number;
+  z: number;
+
+  constructor(x = 0, y = 0, z = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
+  
+  static multiplyByScalar(v: Vec3, s: number): Vec3 {
+    return new Vec3(v.x * s, v.y * s, v.z * s);
+  }
+  
+  static addScalar(v: Vec3, s: number): Vec3 {
+    return new Vec3(v.x + s, v.y + s, v.z + s);
+  }
+
+  static normalize(v: Vec3): Vec3 {
+    return new Vec3().setFromVec3(v).normalize();
+  }  
+
+  static add(v1: Vec3, v2: Vec3): Vec3 {
+    return new Vec3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+  }
+
+  static substract(v1: Vec3, v2: Vec3): Vec3 {
+    return new Vec3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+  }
+
+  static dotProduct(v1: Vec3, v2: Vec3): number {
+    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+  }
+
+  static crossProduct(v1: Vec3, v2: Vec3): Vec3 {
+    return new Vec3(
+      v1.y * v2.z - v1.z * v2.y,
+      v1.z * v2.x - v1.x * v2.z,
+      v1.x * v2.y - v1.y * v2.x
+    );
+  }  
+
+  static onVector(v1: Vec3, v2: Vec3): Vec3 {
+    return v1.clone().onVector(v2);
+  }  
+
+  static onPlane(v: Vec3, planeNormal: Vec3): Vec3 {
+    return v.clone().onPlane(planeNormal);
+  }  
+
+  static applyMat3(v: Vec3, m: Mat3): Vec3 {
+    return v.clone().applyMat3(m);
+  }
+
+  // static applyMat4(v: Vec3, m: Mat4): Vec3 {
+  //   return v.clone().applyMat4(m);
+  // }
+
+  static lerp(v1: Vec3, v2: Vec3, t: number): Vec3 {
+    return v1.clone().lerp(v2, t);
+  }
+
+  static equals(v1: Vec3, v2: Vec3, precision = 6): boolean {
+    if (!v1) {
+      return false;
+    }
+    return v1.equals(v2, precision);
+  }
+
+  static getDistance(v1: Vec3, v2: Vec3): number {
+    const x = v2.x - v1.x;
+    const y = v2.y - v1.y;
+    const z = v2.z - v1.z;
+    return Math.sqrt(x * x + y * y + z * z);
+  }
+
+  static getAngle(v1: Vec3, v2: Vec3): number {
+    return v1.getAngle(v2);
+  }
+  
+  clone(): Vec3 {
+    return new Vec3(this.x, this.y, this.z);
+  }
+
+  set(x: number, y: number, z: number): Vec3 {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    return this;
+  } 
+  
+  setFromVec3(v: Vec3): Vec3 {
+    this.x = v.x;
+    this.y = v.y;
+    this.z = v.z;
+    return this;
+  } 
+
+  multiplyByScalar(s: number): Vec3 {
+    this.x *= s;
+    this.y *= s;
+    this.z *= s;
+    return this;
+  }
+  
+  addScalar(s: number): Vec3 {
+    this.x += s;
+    this.y += s;
+    this.z += s;
+    return this;
+  }
+
+  getMagnitude(): number {
+    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+  }
+
+  getAngle(v: Vec3): number {
+    const d = this.getMagnitude() * v.getMagnitude();
+    if (!d) {
+      return Math.PI / 2;
+    }
+    const cos = this.dotProduct(v) / d;
+    return Math.acos(clamp(cos, -1, 1));
+  }
+
+  normalize(): Vec3 {
+    const m = this.getMagnitude();
+    if (m) {
+      this.x /= m;
+      this.y /= m;
+      this.z /= m;
+    }
+    return this;
+  }
+  
+  add(v: Vec3): Vec3 {
+    this.x += v.x;
+    this.y += v.y;
+    this.z += v.z;
+    return this;
+  }
+
+  substract(v: Vec3): Vec3 {
+    this.x -= v.x;
+    this.y -= v.y;
+    this.z -= v.z;
+    return this;
+  }
+
+  dotProduct(v: Vec3): number {
+    return Vec3.dotProduct(this, v);
+  }
+
+  crossProduct(v: Vec3): Vec3 {
+    this.x = this.y * v.z - this.z * v.y;
+    this.y = this.z * v.x - this.x * v.z;
+    this.z = this.x * v.y - this.y * v.x;
+    return this;
+  }
+
+  onVector(v: Vec3): Vec3 {
+    const magnitude = this.getMagnitude();
+    if (!magnitude) {
+      return this.set(0, 0, 0);
+    }
+
+    return v.clone().multiplyByScalar(v.clone().dotProduct(this) / (magnitude * magnitude));
+  }
+
+  onPlane(planeNormal: Vec3): Vec3 {
+    return this.substract(this.clone().onVector(planeNormal));
+  }
+  
+  applyMat3(m: Mat3): Vec3 {
+    if (m.length !== 9) {
+      throw new Error("Matrix must contain 9 elements");
+    }
+
+    const {x, y, z} = this;
+    const [x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z] = m;
+
+    this.x = x * x_x + y * y_x + z * z_x;
+    this.y = x * x_y + y * y_y + z * z_y;
+    this.z = x * x_z + y * y_z + z * z_z;
+
+    return this;
+  }
+
+  // applyMat4(m: Mat4): Vec3 {
+  //   if (m.length !== 16) {
+  //     throw new Error("Matrix must contain 16 elements");
+  //   }
+
+  //   const {x, y, z} = this;    
+  //   const [x_x, x_y, x_z, x_w, y_x, y_y, y_z, y_w, z_x, z_y, z_z, z_w, w_x, w_y, w_z, w_w] = m;
+  //   const w = 1 / (x * x_w + y * y_w + z * z_w + w_w);
+
+  //   this.x = (x * x_x + y * y_x + z * z_x + w_x) * w;
+  //   this.y = (x * x_y + y * y_y + z * z_y + w_y) * w;
+  //   this.z = (x * x_z + y * y_z + z * z_z + w_z) * w;
+
+  //   return this;
+  // }
+  
+  lerp(v: Vec3, t: number): Vec3 {
+    this.x += t * (v.x - this.x);
+    this.y += t * (v.y - this.y);
+    this.z += t * (v.z - this.z);
+    return this;
+  }
+  
+  equals(v: Vec3, precision = 6): boolean {
+    if (!v) {
+      return false;
+    }
+    return +this.x.toFixed(precision) === +v.x.toFixed(precision)
+      && +this.y.toFixed(precision) === +v.y.toFixed(precision)
+      && +this.z.toFixed(precision) === +v.z.toFixed(precision);
+  }
+
+  toArray(): number[] {
+    return [this.x, this.y, this.z];
+  } 
+  
+  toIntArray(): Int32Array {
+    return new Int32Array(this);
+  } 
+
+  toFloatArray(): Float32Array {
+    return new Float32Array(this);
+  } 
+
+  *[Symbol.iterator](): Iterator<number> {
+    yield this.x;
+    yield this.y;
+    yield this.z;
+  }
+}
+
+export function mat3From4Vec2(aMin: Vec2, aMax: Vec2, bMin: Vec2, bMax: Vec2): Mat3 {
+  const mat = new Mat3();
+
+  const aLen = Vec2.substract(aMax, aMin).getMagnitude();
+  const bLen = Vec2.substract(bMax, bMin).getMagnitude();
+  const scale = bLen / aLen;
+  mat.applyScaling(scale);
+
+  const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
+  const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
+  const rotation = bTheta - aTheta;
+  mat.applyRotation(rotation);
+
+  const translation = Vec2.substract(bMin, aMin);
+  mat.applyTranslation(translation.x, translation.y);
+
+  return mat;
+}
+
+export function mat3From8Numbers(...numbers: number[]): Mat3 {
+  const [aMinX, aMinY, aMaxX, aMaxY, bMinX, bMinY, bMaxX, bMaxY] = numbers;
+  const aMin = new Vec2(aMinX ?? 0, aMinY ?? 0);
+  const aMax = new Vec2(aMaxX ?? 0, aMaxY ?? 0);
+  const bMin = new Vec2(bMinX ?? 0, bMinY ?? 0);
+  const bMax = new Vec2(bMaxX ?? 0, bMaxY ?? 0);
+  return mat3From4Vec2(aMin, aMax, bMin, bMax);
 }
