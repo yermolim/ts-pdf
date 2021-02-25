@@ -1,14 +1,17 @@
 import { SvgWithBox } from "../../common";
 import { Mat3, mat3From4Vec2, Vec2 } from "../../math";
+import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, Rect, valueTypes } from "../const";
 import { DataParser } from "../data-parser";
 import { ImageStream } from "../entities/streams/image-stream";
 import { XFormStream } from "../entities/streams/x-form-stream";
+import { HexString } from "../entities/strings/hex-string";
+import { LiteralString } from "../entities/strings/literal-string";
 import { GraphicsState, GraphicsStateParams } from "./graphics-state";
 
 interface ParsedCommand {  
   endIndex: number;
-  parameters: (number | string)[];
+  parameters: (number | string | Uint8Array)[];
   operator: string;
 }
 
@@ -80,20 +83,18 @@ export class AppearanceStreamRenderer {
   }
 
   protected static parseNextCommand(parser: DataParser, i: number): ParsedCommand {
-    const parameters: (number | string)[] = [];
+    const parameters: (number | string | Uint8Array)[] = [];
     let operator: string;
     // parse parameters and operator
     command: while (!operator) {
       const nextValueType = parser.getValueTypeAt(i, true);
       switch (nextValueType) {
         case valueTypes.NUMBER:
-          // should be parameter
           const numberResult = parser.parseNumberAt(i, true);
           parameters.push(numberResult.value);
           i = numberResult.end + 1;
           break;
         case valueTypes.NAME:
-          // should be parameter
           const nameResult = parser.parseNameAt(i, true);
           parameters.push(nameResult.value);
           i = nameResult.end + 1;
@@ -109,6 +110,16 @@ export class AppearanceStreamRenderer {
             ${parser.sliceChars(arrayBounds.start, arrayBounds.end)}`);
           }
           i = arrayBounds.end + 1;
+          break;
+        case valueTypes.STRING_LITERAL:
+          const literalResult = LiteralString.parse(parser, i);
+          parameters.push(literalResult.value.literal);
+          i = literalResult.end + 1;
+          break;
+        case valueTypes.STRING_HEX:
+          const hexResult = HexString.parse(parser, i);
+          parameters.push(hexResult.value.hex);
+          i = hexResult.end + 1;
           break;
         case valueTypes.UNKNOWN:
           // should be operator
@@ -195,6 +206,49 @@ export class AppearanceStreamRenderer {
     }
     
     return path;
+  }
+
+  protected drawText(value: string): SVGTextElement {
+    // TODO: implement
+    throw new Error("Method is not implemented");
+  }
+
+  protected drawTextGroup(parser: DataParser): SVGGElement {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+
+    let i = 0;
+    while (i !== -1) {
+      const {endIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
+      i = parser.skipEmpty(endIndex + 1);
+  
+      switch (operator) {
+        //#region Text state operators
+        // TODO: implement operators
+        //#endregion
+
+        //#region Text positioning operators
+        // TODO: implement operators
+        //#endregion
+
+        //#region Text showing operators
+        // TODO: implement operators
+        case "Tj": // show string
+          break;
+        case "'": // move to next line + show string
+          break;
+        case "\"": // move to next line + show string with the specified spacings
+          break;
+        case "TJ": // show array of strings
+          break;
+          //#endregion
+
+        default:
+          break; // TODO: remove break after implementing operators
+          // throw new Error(`Unsupported appearance stream text operator: ${operator}`);
+      }
+    }
+
+    return g;
   }
 
   protected drawGroup(parser: DataParser): SVGGElement {
@@ -444,8 +498,20 @@ export class AppearanceStreamRenderer {
           //#endregion
           //#endregion
 
+        case "BT": // Text object
+          const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
+            closedOnly: true, 
+            minIndex: i,
+          });
+          if (textObjectEnd) {            
+            const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
+            g.append(textGroup);
+            i = parser.skipEmpty(textObjectEnd.end + 1);
+            break;
+          }
+          throw new Error("Can't find the appearance stream text object end");
+          
         case "Do":
-          // TODO: implement
           const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
           if (!stream) {            
             throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);

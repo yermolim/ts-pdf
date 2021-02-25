@@ -172,6 +172,7 @@ export const dictTypes = {
   CRYPT_FILTER: "/CryptFilter",
   SOFT_MASK: "/Mask",
   GROUP: "/Group",
+  FONT: "/Font",
   EMPTY: "",
 } as const;
 export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
@@ -537,6 +538,24 @@ export const softMaskTypes = {
   LUMINOSITY: "/Luminosity",
 } as const;
 export type SoftMaskType = typeof softMaskTypes[keyof typeof softMaskTypes];
+
+export const baseFonts = {
+  TNR: "/Times-Roman",
+  TNR_B: "/Times-Bold",
+  TNR_I: "/Times-Italic",
+  TNR_BI: "/Times-BoldItalic",
+  HELV: "/Helvetica",
+  HELV_B: "/Helvetica-Bold",
+  HELV_I: "/Helvetica-Oblique",
+  HELV_BI: "/Helvetica-BoldOblique",
+  COUR: "/Courier",
+  COUR_B: "/Courier-Bold",
+  COUR_I: "/Courier-Oblique",
+  COUR_BI: "/Courier-BoldOblique",
+  SYMBOL: "/Symbol",
+  ZAPF: "/ZapfDingbats",
+} as const;
+export type BaseFont = typeof baseFonts[keyof typeof baseFonts];
 
 
 export const supportedFilters = new Set<string>([

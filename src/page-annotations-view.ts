@@ -13,6 +13,7 @@ export class PageAnnotationView {
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
 
+  private _rendered: boolean;
   private _editModeOn: boolean;
   private _divModeTimer: number;
 
@@ -34,8 +35,7 @@ export class PageAnnotationView {
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
     this._container.append(this._svg);
 
-    this._pageAnnotations = annotationData.getPageAnnotations(pageId);    
-    this.renderAnnotations();
+    this._pageAnnotations = annotationData.getPageAnnotations(pageId);
 
     this.switchEditMode(false);
   } 
@@ -50,7 +50,11 @@ export class PageAnnotationView {
     this._container?.remove();
   }
 
-  append(parent: HTMLElement) {
+  async appendAsync(parent: HTMLElement) {
+    if (!this._rendered) {
+      await this.renderAnnotationsAsync();
+      this._rendered = true;
+    }
     parent.append(this._container);
   }
 
@@ -64,18 +68,21 @@ export class PageAnnotationView {
     }
   }
 
-  private renderAnnotations(): boolean {    
+  private renderAnnotation(annotation: AnnotationDict) {
+    const svgWithBox = annotation.render();
+    if (!svgWithBox) {
+      return;
+    }
+    const {svg, box} = svgWithBox;
+    this._svgByAnnotation.set(annotation, svg);
+    this._svg.append(svg);
+  }
+
+  private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
     for (let i = 0; i < this._pageAnnotations?.length || 0; i++) {
-      const annotation = this._pageAnnotations[i];
-      const svgWithBox = annotation.render();
-      if (!svgWithBox) {
-        continue;
-      }
-      const {svg, box} = svgWithBox;
-      this._svgByAnnotation.set(annotation, svg);
-      this._svg.append(svg);
+      setTimeout(() => this.renderAnnotation(this._pageAnnotations[i]), 0);
     }
 
     return true;

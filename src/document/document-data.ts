@@ -211,33 +211,33 @@ export class DocumentData {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
         let annot: ParseResult<AnnotationDict>;
         switch (annotationType) {
-          // case annotationTypes.TEXT:
-          //   annot = TextAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.FREE_TEXT:
-          //   annot = FreeTextAnnotation.parse(info);
-          //   break;
+          case annotationTypes.TEXT:
+            annot = TextAnnotation.parse(info);
+            break;
+          case annotationTypes.FREE_TEXT:
+            annot = FreeTextAnnotation.parse(info);
+            break;
           case annotationTypes.STAMP:
             annot = StampAnnotation.parse(info);
             break;
-          // case annotationTypes.CIRCLE:
-          //   annot = CircleAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.SQUARE:
-          //   annot = SquareAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.POLYGON:
-          //   annot = PolygonAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.POLYLINE:
-          //   annot = PolylineAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.LINE:
-          //   annot = LineAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.INK:
-          //   annot = InkAnnotation.parse(info);
-          //   break;
+          case annotationTypes.CIRCLE:
+            annot = CircleAnnotation.parse(info);
+            break;
+          case annotationTypes.SQUARE:
+            annot = SquareAnnotation.parse(info);
+            break;
+          case annotationTypes.POLYGON:
+            annot = PolygonAnnotation.parse(info);
+            break;
+          case annotationTypes.POLYLINE:
+            annot = PolylineAnnotation.parse(info);
+            break;
+          case annotationTypes.LINE:
+            annot = LineAnnotation.parse(info);
+            break;
+          case annotationTypes.INK:
+            annot = InkAnnotation.parse(info);
+            break;
           default:
             break;
         }

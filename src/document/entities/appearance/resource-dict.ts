@@ -5,6 +5,7 @@ import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "../misc/object-map-dict";
 import { ImageStream } from "../streams/image-stream";
 import { XFormStream } from "../streams/x-form-stream";
+import { FontDict } from "./font-dict";
 import { GraphicsStateDict } from "./graphics-state-dict";
 
 export class ResourceDict extends PdfDict {
@@ -46,6 +47,7 @@ export class ResourceDict extends PdfDict {
   ProcSet: string[];
   
   protected _gsMap = new Map<string, GraphicsStateDict>();
+  protected _fontsMap = new Map<string, FontDict>();
   protected _xObjectsMap = new Map<string, XFormStream | ImageStream>();
   
   constructor() {
@@ -111,6 +113,17 @@ export class ResourceDict extends PdfDict {
     return;
   }
   
+  getFont(name: string): FontDict {
+    return this._fontsMap.get(name);
+  }
+
+  *getFonts(): Iterable<[string, FontDict]> {
+    for (const pair of this._fontsMap) {
+      yield pair;
+    }
+    return;
+  }
+  
   getXObject(name: string): XFormStream | ImageStream {
     return this._xObjectsMap.get(name);
   }
@@ -160,6 +173,7 @@ export class ResourceDict extends PdfDict {
   
   protected fillMaps(parseInfoGetter: (id: number) => ParseInfo) {
     this._gsMap.clear();
+    this._fontsMap.clear();
     this._xObjectsMap.clear();
 
     if (this.ExtGState) {
@@ -185,6 +199,19 @@ export class ResourceDict extends PdfDict {
           ?? ImageStream.parse(streamParseInfo);
         if (stream) {
           this._xObjectsMap.set(`/XObject${name}`, stream.value);
+        }
+      }
+    }
+    
+    if (this.Font) {
+      for (const [name, objectId] of this.Font.getProps()) {
+        const dictParseInfo = parseInfoGetter(objectId.id);
+        if (!dictParseInfo) {
+          continue;
+        }
+        const dict = FontDict.parse(dictParseInfo);
+        if (dict) {
+          this._fontsMap.set(`/Font${name}`, dict.value);
         }
       }
     }

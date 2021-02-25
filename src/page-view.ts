@@ -261,8 +261,6 @@ export class PageView {
     this._text?.destroy();
     this._text = null;
 
-    this._annotations?.remove();
-
     // create a new canvas of the needed size and fill it with a rendered page
     const canvas = this.createViewCanvas();
     const params = <RenderParameters>{
@@ -289,8 +287,8 @@ export class PageView {
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
       this._annotations = new PageAnnotationsView(this._annotationData, this.id, new Vec2(x, y));
+      await this._annotations.appendAsync(this.viewContainer);
     }
-    this._annotations.append(this.viewContainer);
 
     // check if scale not changed during text render
     if (scale === this._scale) {

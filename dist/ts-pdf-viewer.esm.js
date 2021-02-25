@@ -1199,6 +1199,15 @@ function mat3From4Vec2(aMin, aMax, bMin, bMax) {
     return mat;
 }
 
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PageAnnotationView {
     constructor(annotationData, pageId, pageDimensions) {
         this._svgByAnnotation = new Map();
@@ -1220,7 +1229,6 @@ class PageAnnotationView {
         this._svg.setAttribute("transform", "scale(1, -1)");
         this._container.append(this._svg);
         this._pageAnnotations = annotationData.getPageAnnotations(pageId);
-        this.renderAnnotations();
         this.switchEditMode(false);
     }
     destroy() {
@@ -1232,8 +1240,14 @@ class PageAnnotationView {
         this.switchEditMode(false);
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
     }
-    append(parent) {
-        parent.append(this._container);
+    appendAsync(parent) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this._rendered) {
+                yield this.renderAnnotationsAsync();
+                this._rendered = true;
+            }
+            parent.append(this._container);
+        });
     }
     switchEditMode(value) {
         value = value !== null && value !== void 0 ? value : !this._editModeOn;
@@ -1245,20 +1259,24 @@ class PageAnnotationView {
             this._container.classList.add("passive");
         }
     }
-    renderAnnotations() {
-        var _a;
-        this.clear();
-        for (let i = 0; i < ((_a = this._pageAnnotations) === null || _a === void 0 ? void 0 : _a.length) || 0; i++) {
-            const annotation = this._pageAnnotations[i];
-            const svgWithBox = annotation.render();
-            if (!svgWithBox) {
-                continue;
-            }
-            const { svg, box } = svgWithBox;
-            this._svgByAnnotation.set(annotation, svg);
-            this._svg.append(svg);
+    renderAnnotation(annotation) {
+        const svgWithBox = annotation.render();
+        if (!svgWithBox) {
+            return;
         }
-        return true;
+        const { svg, box } = svgWithBox;
+        this._svgByAnnotation.set(annotation, svg);
+        this._svg.append(svg);
+    }
+    renderAnnotationsAsync() {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            this.clear();
+            for (let i = 0; i < ((_a = this._pageAnnotations) === null || _a === void 0 ? void 0 : _a.length) || 0; i++) {
+                setTimeout(() => this.renderAnnotation(this._pageAnnotations[i]), 0);
+            }
+            return true;
+        });
     }
     clear() {
         this._svg.innerHTML = "";
@@ -1266,7 +1284,7 @@ class PageAnnotationView {
     }
 }
 
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1302,7 +1320,7 @@ class PageTextView {
         this._container.addEventListener("mouseup", this.onMouseUp);
     }
     static appendPageTextAsync(pageProxy, parent, scale) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             const textObj = new PageTextView(pageProxy);
             yield textObj.renderTextLayerAsync(scale);
             parent.append(textObj._container);
@@ -1317,7 +1335,7 @@ class PageTextView {
         }
     }
     renderTextLayerAsync(scale) {
-        return __awaiter(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             this.clear();
             this.destroyRenderTask();
             const viewport = this._pageProxy.getViewport({ scale });
@@ -1353,7 +1371,7 @@ class PageTextView {
     }
 }
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1435,7 +1453,7 @@ class PageView {
         this._pageProxy.cleanup();
     }
     renderPreviewAsync(force = false) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             if (this._renderPromise) {
                 if (force) {
                     this.cancelRenderTask();
@@ -1450,7 +1468,7 @@ class PageView {
         });
     }
     renderViewAsync(force = false) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             if (this._renderPromise) {
                 if (force) {
                     this.cancelRenderTask();
@@ -1483,7 +1501,7 @@ class PageView {
         }
     }
     runRenderTaskAsync(renderParams) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this.cancelRenderTask();
             this._renderTask = this._pageProxy.render(renderParams);
             try {
@@ -1538,7 +1556,7 @@ class PageView {
         targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
     }
     runPreviewRenderAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             const canvas = this.createPreviewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
@@ -1555,12 +1573,11 @@ class PageView {
         });
     }
     runViewRenderAsync() {
-        var _a, _b, _c;
-        return __awaiter$1(this, void 0, void 0, function* () {
+        var _a, _b;
+        return __awaiter$2(this, void 0, void 0, function* () {
             const scale = this._scale;
             (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
             this._text = null;
-            (_b = this._annotations) === null || _b === void 0 ? void 0 : _b.remove();
             const canvas = this.createViewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
@@ -1571,7 +1588,7 @@ class PageView {
             if (!result || scale !== this._scale) {
                 return;
             }
-            (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
+            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
             this._viewContainer.append(canvas);
             this._viewCanvas = canvas;
             this._viewRendered = true;
@@ -1579,8 +1596,8 @@ class PageView {
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
                 this._annotations = new PageAnnotationView(this._annotationData, this.id, new Vec2(x, y));
+                yield this._annotations.appendAsync(this.viewContainer);
             }
-            this._annotations.append(this.viewContainer);
             if (scale === this._scale) {
                 this._scaleIsValid = true;
             }
@@ -1913,6 +1930,11 @@ const authEvents = {
     DOC_OPEN: "/DocOpen",
     EMBEDDED_OPEN: "/EFOpen",
 };
+const justificationTypes = {
+    LEFT: 0,
+    CENTER: 1,
+    RIGHT: 2,
+};
 const streamTypes = {
     XREF: "/XRef",
     OBJECT_STREAM: "/ObjStm",
@@ -1937,6 +1959,7 @@ const dictTypes = {
     CRYPT_FILTER: "/CryptFilter",
     SOFT_MASK: "/Mask",
     GROUP: "/Group",
+    FONT: "/Font",
     EMPTY: "",
 };
 const groupDictTypes = {
@@ -1985,6 +2008,42 @@ const annotationTypes = {
     REDACT: "/Redact",
     PROJECTION: "/Projection",
     RICH_MEDIA: "/RichMedia",
+};
+const annotationStateModelTypes = {
+    MARKED: "/Marked",
+    REVIEW: "/Review",
+};
+const annotationMarkedStates = {
+    MARKED: "/Marked",
+    UNMARKED: "/Unmarked",
+};
+const annotationReviewStates = {
+    ACCEPTED: "/Accepted",
+    REJECTED: "/Rejected",
+    CANCELLED: "/Cancelled",
+    COMPLETED: "/Completed",
+    NONE: "/None",
+};
+const annotationIconTypes = {
+    COMMENT: "/Comment",
+    KEY: "/Key",
+    NOTE: "/Note",
+    HELP: "/Help",
+    NEW_PARAGRAPH: "/NewParagraph",
+    PARAGRAPH: "/Paragraph",
+    INSERT: "/Insert",
+};
+const lineEndingTypes = {
+    SQUARE: "/Square",
+    CIRCLE: "/Circle",
+    DIAMOND: "/Diamond",
+    ARROW_OPEN: "/OpenArrow",
+    ARROW_CLOSED: "/ClosedArrow",
+    NONE: "/None",
+    BUTT: "/Butt",
+    ARROW_OPEN_R: "/ROpenArrow",
+    ARROW_CLOSED_R: "/RClosedArrow",
+    SLASH: "/Slash",
 };
 const lineCapStyles = {
     BUTT: 0,
@@ -2460,66 +2519,6 @@ class DataCryptHandler {
     }
 }
 
-class DateString {
-    constructor(source, date) {
-        this.source = source;
-        this.date = date;
-    }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
-        if (end === -1) {
-            return null;
-        }
-        let bytes = parser.subCharCodes(start + 1, end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        try {
-            const date = DateString.fromArray(bytes);
-            return { value: date, start, end };
-        }
-        catch (_a) {
-            return null;
-        }
-    }
-    static fromDate(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const seconds = String(date.getSeconds()).padStart(2, "0");
-        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
-        return new DateString(source, date);
-    }
-    static fromString(source) {
-        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
-        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
-        return new DateString(source, date);
-    }
-    static fromArray(arr) {
-        const source = new TextDecoder().decode(arr);
-        return DateString.fromString(source);
-    }
-    toArray(cryptInfo) {
-        let bytes = new TextEncoder().encode(this.source);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
-        }
-        return new Uint8Array([
-            ...keywordCodes.STR_LITERAL_START,
-            ...bytes,
-            ...keywordCodes.STR_LITERAL_END,
-        ]);
-    }
-}
-
 class LiteralString {
     constructor(literal, bytes) {
         this.literal = literal;
@@ -2649,6 +2648,66 @@ class LiteralString {
         return new Uint8Array([
             ...keywordCodes.STR_LITERAL_START,
             ...LiteralString.escape(bytes),
+            ...keywordCodes.STR_LITERAL_END,
+        ]);
+    }
+}
+
+class DateString {
+    constructor(source, date) {
+        this.source = source;
+        this.date = date;
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+        if (end === -1) {
+            return null;
+        }
+        let bytes = parser.subCharCodes(start + 1, end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        try {
+            const date = DateString.fromArray(bytes);
+            return { value: date, start, end };
+        }
+        catch (_a) {
+            return null;
+        }
+    }
+    static fromDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
+        return new DateString(source, date);
+    }
+    static fromString(source) {
+        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
+        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
+        return new DateString(source, date);
+    }
+    static fromArray(arr) {
+        const source = new TextDecoder().decode(arr);
+        return DateString.fromString(source);
+    }
+    toArray(cryptInfo) {
+        let bytes = new TextEncoder().encode(this.source);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
+        }
+        return new Uint8Array([
+            ...keywordCodes.STR_LITERAL_START,
+            ...bytes,
             ...keywordCodes.STR_LITERAL_END,
         ]);
     }
@@ -5048,6 +5107,110 @@ class ImageStream extends PdfStream {
     }
 }
 
+class FontDict extends PdfDict {
+    constructor() {
+        super(dictTypes.FONT);
+    }
+    static parse(parseInfo) {
+        const dict = new FontDict();
+        const parseResult = dict.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Subtype) {
+            bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(" " + this.Subtype));
+        }
+        if (this.BaseFont) {
+            bytes.push(...encoder.encode("/BaseFont"), ...encoder.encode(" " + this.BaseFont));
+        }
+        if (this.Encoding) {
+            bytes.push(...encoder.encode("/Encoding"), ...encoder.encode(" " + this.Encoding));
+        }
+        if (this.ToUnicode) {
+            bytes.push(...encoder.encode("/G"), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = parser.parseNameAt(i, true);
+                        if (subtype) {
+                            if (subtype.value === "/Type1" || subtype.value === "/TrueType") {
+                                this.Subtype = subtype.value;
+                                i = subtype.end + 1;
+                                break;
+                            }
+                            return false;
+                        }
+                        throw new Error("Can't parse /Subtype property value");
+                    case "/BaseFont":
+                        const baseFont = parser.parseNameAt(i, true);
+                        if (baseFont) {
+                            this.BaseFont = baseFont.value;
+                            i = baseFont.end + 1;
+                            break;
+                        }
+                        throw new Error("Can't parse /BaseFont property value");
+                    case "/Encoding":
+                        const encoding = parser.parseNameAt(i, true);
+                        if (encoding) {
+                            this.Encoding = encoding.value;
+                            i = encoding.end + 1;
+                            break;
+                        }
+                        throw new Error("Can't parse /Encoding property value");
+                    case "/ToUnicode":
+                        const cMapId = ObjectId.parseRef(parser, i);
+                        if (cMapId) {
+                            this.ToUnicode = cMapId.value;
+                            i = cMapId.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /ToUnicode property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
 class SoftMaskDict extends PdfDict {
     constructor() {
         super(dictTypes.SOFT_MASK);
@@ -5470,6 +5633,7 @@ class ResourceDict extends PdfDict {
     constructor() {
         super(null);
         this._gsMap = new Map();
+        this._fontsMap = new Map();
         this._xObjectsMap = new Map();
     }
     static parse(parseInfo) {
@@ -5525,6 +5689,15 @@ class ResourceDict extends PdfDict {
         }
         return;
     }
+    getFont(name) {
+        return this._fontsMap.get(name);
+    }
+    *getFonts() {
+        for (const pair of this._fontsMap) {
+            yield pair;
+        }
+        return;
+    }
     getXObject(name) {
         return this._xObjectsMap.get(name);
     }
@@ -5571,6 +5744,7 @@ class ResourceDict extends PdfDict {
     fillMaps(parseInfoGetter) {
         var _a;
         this._gsMap.clear();
+        this._fontsMap.clear();
         this._xObjectsMap.clear();
         if (this.ExtGState) {
             for (const [name, objectId] of this.ExtGState.getProps()) {
@@ -5593,6 +5767,18 @@ class ResourceDict extends PdfDict {
                 const stream = (_a = XFormStream.parse(streamParseInfo)) !== null && _a !== void 0 ? _a : ImageStream.parse(streamParseInfo);
                 if (stream) {
                     this._xObjectsMap.set(`/XObject${name}`, stream.value);
+                }
+            }
+        }
+        if (this.Font) {
+            for (const [name, objectId] of this.Font.getProps()) {
+                const dictParseInfo = parseInfoGetter(objectId.id);
+                if (!dictParseInfo) {
+                    continue;
+                }
+                const dict = FontDict.parse(dictParseInfo);
+                if (dict) {
+                    this._fontsMap.set(`/Font${name}`, dict.value);
                 }
             }
         }
@@ -6569,6 +6755,68 @@ class BorderArray {
     }
 }
 
+class HexString {
+    constructor(literal, hex, bytes) {
+        this.literal = literal;
+        this.hex = hex;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        const bounds = parser.getHexBounds(start, skipEmpty);
+        if (!bounds) {
+            return null;
+        }
+        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const hex = HexString.fromBytes(bytes);
+        return { value: hex, start: bounds.start, end: bounds.end };
+    }
+    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = hexStringToBytes(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexBytes(hex) {
+        let literal = "";
+        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromLiteralString(literal) {
+        const hex = hexStringToBytes(literal);
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(cryptInfo) {
+        return new Uint8Array([
+            ...keywordCodes.STR_HEX_START,
+            ...this.bytes,
+            ...keywordCodes.STR_HEX_END,
+        ]);
+    }
+}
+
 class TextState {
     constructor(params) {
         Object.assign(this, TextState.defaultParams, params);
@@ -6725,6 +6973,16 @@ class AppearanceStreamRenderer {
                     }
                     i = arrayBounds.end + 1;
                     break;
+                case valueTypes.STRING_LITERAL:
+                    const literalResult = LiteralString.parse(parser, i);
+                    parameters.push(literalResult.value.literal);
+                    i = literalResult.end + 1;
+                    break;
+                case valueTypes.STRING_HEX:
+                    const hexResult = HexString.parse(parser, i);
+                    parameters.push(hexResult.value.hex);
+                    i = hexResult.end + 1;
+                    break;
                 case valueTypes.UNKNOWN:
                     const operatorResult = parser.parseStringAt(i);
                     operator = operatorResult.value;
@@ -6796,6 +7054,18 @@ class AppearanceStreamRenderer {
             path.setAttribute("stroke", "none");
         }
         return path;
+    }
+    drawText(value) {
+        throw new Error("Method is not implemented");
+    }
+    drawTextGroup(parser) {
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        let i = 0;
+        while (i !== -1) {
+            const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+            i = parser.skipEmpty(endIndex + 1);
+        }
+        return g;
     }
     drawGroup(parser) {
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -7015,6 +7285,18 @@ class AppearanceStreamRenderer {
                     break;
                 case "W*":
                     break;
+                case "BT":
+                    const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
+                        closedOnly: true,
+                        minIndex: i,
+                    });
+                    if (textObjectEnd) {
+                        const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
+                        g.append(textGroup);
+                        i = parser.skipEmpty(textObjectEnd.end + 1);
+                        break;
+                    }
+                    throw new Error("Can't find the appearance stream text object end");
                 case "Do":
                     const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
                     if (!stream) {
@@ -7569,6 +7851,742 @@ class MarkupAnnotation extends AnnotationDict {
     }
 }
 
+const freeTextIntents = {
+    PLAIN_TEXT: "/FreeText",
+    WITH_CALLOUT: "/FreeTextCallout",
+    CLICK_TO_TYPE: "/FreeTextTypeWriter",
+};
+class FreeTextAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.FREE_TEXT);
+        this.IT = freeTextIntents.PLAIN_TEXT;
+        this.LE = lineEndingTypes.NONE;
+    }
+    static parse(parseInfo) {
+        const freeText = new FreeTextAnnotation();
+        const parseResult = freeText.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.DA) {
+            bytes.push(...encoder.encode("/DA"), ...this.DA.toArray(cryptInfo));
+        }
+        if (this.Q) {
+            bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
+        }
+        if (this.DS) {
+            bytes.push(...encoder.encode("/DS"), ...this.DS.toArray(cryptInfo));
+        }
+        if (this.CL) {
+            bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
+            this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+        }
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE"), ...encoder.encode(this.LE));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/DA":
+                        const appearanceString = LiteralString.parse(parser, i, parseInfo.cryptInfo);
+                        if (appearanceString) {
+                            this.DA = appearanceString.value;
+                            i = appearanceString.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DA property value");
+                        }
+                        break;
+                    case "/Q":
+                        const justification = parser.parseNumberAt(i, true);
+                        if (justification && Object.values(justificationTypes)
+                            .includes(justification.value)) {
+                            this.Q = justification.value;
+                            i = justification.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Q property value");
+                        }
+                        break;
+                    case "/DS":
+                        const style = LiteralString.parse(parser, i, parseInfo.cryptInfo);
+                        if (style) {
+                            this.DS = style.value;
+                            i = style.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /DS property value");
+                        }
+                        break;
+                    case "/CL":
+                        const callout = parser.parseNumberArrayAt(i, true);
+                        if (callout) {
+                            this.CL = callout.value;
+                            i = callout.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CL property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (intent.value === "/FreeTextTypewriter") {
+                                this.IT = freeTextIntents.CLICK_TO_TYPE;
+                                i = intent.end + 1;
+                                break;
+                            }
+                            else if (Object.values(freeTextIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/RD":
+                        const innerRect = parser.parseNumberArrayAt(i, true);
+                        if (innerRect) {
+                            this.RD = [
+                                innerRect.value[0],
+                                innerRect.value[1],
+                                innerRect.value[2],
+                                innerRect.value[3],
+                            ];
+                            i = innerRect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RD property value");
+                        }
+                        break;
+                    case "/LE":
+                        const lineEndingType = parser.parseNameAt(i, true);
+                        if (lineEndingType && Object.values(lineEndingTypes)
+                            .includes(lineEndingType.value)) {
+                            this.LE = lineEndingType.value;
+                            i = lineEndingType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.DA) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class GeometricAnnotation extends MarkupAnnotation {
+    constructor(type) {
+        super(type);
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.IC) {
+            bytes.push(...encoder.encode("/IC"), codes.L_BRACKET);
+            this.IC.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/IC":
+                        const interiorColor = parser.parseNumberArrayAt(i, true);
+                        if (interiorColor) {
+                            this.IC = interiorColor.value;
+                            i = interiorColor.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /IC property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class CircleAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.CIRCLE);
+    }
+    static parse(parseInfo) {
+        const freeText = new CircleAnnotation();
+        const parseResult = freeText.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/RD":
+                        const innerRect = parser.parseNumberArrayAt(i, true);
+                        if (innerRect) {
+                            this.RD = [
+                                innerRect.value[0],
+                                innerRect.value[1],
+                                innerRect.value[2],
+                                innerRect.value[3],
+                            ];
+                            i = innerRect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RD property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+const lineIntents = {
+    ARROW: "/LineArrow",
+    DIMESION: "/LineDimension",
+};
+const captionPositions = {
+    INLINE: "/Inline",
+    TOP: "/Top",
+};
+class LineAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.LINE);
+        this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        this.LL = 0;
+        this.LLE = 0;
+        this.Cap = false;
+        this.LLO = 0;
+        this.CP = captionPositions.INLINE;
+        this.CO = [0, 0];
+    }
+    static parse(parseInfo) {
+        const text = new LineAnnotation();
+        const parseResult = text.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.L) {
+            bytes.push(...encoder.encode("/L"), codes.L_BRACKET, ...encoder.encode(this.L[0] + ""), codes.WHITESPACE, ...encoder.encode(this.L[1] + ""), codes.WHITESPACE, ...encoder.encode(this.L[2] + ""), codes.WHITESPACE, ...encoder.encode(this.L[3] + ""), codes.R_BRACKET);
+        }
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE"), codes.L_BRACKET);
+            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.LL) {
+            bytes.push(...encoder.encode("/LL"), ...encoder.encode(" " + this.LL));
+        }
+        if (this.LLE) {
+            bytes.push(...encoder.encode("/LLE"), ...encoder.encode(" " + this.LLE));
+        }
+        if (this.Cap) {
+            bytes.push(...encoder.encode("/Cap"), ...encoder.encode(" " + this.Cap));
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+        }
+        if (this.LLO) {
+            bytes.push(...encoder.encode("/LLO"), ...encoder.encode(" " + this.LLO));
+        }
+        if (this.CP) {
+            bytes.push(...encoder.encode("/CP"), ...encoder.encode(this.CP));
+        }
+        if (this.Measure) {
+            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
+        }
+        if (this.CO) {
+            bytes.push(...encoder.encode("/CO"), codes.L_BRACKET, ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/L":
+                        const lineCoords = parser.parseNumberArrayAt(i, true);
+                        if (lineCoords) {
+                            this.L = [
+                                lineCoords.value[0],
+                                lineCoords.value[1],
+                                lineCoords.value[2],
+                                lineCoords.value[3],
+                            ];
+                            i = lineCoords.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /L property value");
+                        }
+                        break;
+                    case "/LE":
+                        const lineEndings = parser.parseNameArrayAt(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    case "/LL":
+                        const leaderLineLength = parser.parseNumberAt(i, false);
+                        if (leaderLineLength) {
+                            this.LL = leaderLineLength.value;
+                            i = leaderLineLength.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LL property value");
+                        }
+                        break;
+                    case "/LLE":
+                        const leaderLineExtLength = parser.parseNumberAt(i, false);
+                        if (leaderLineExtLength) {
+                            this.LLE = leaderLineExtLength.value;
+                            i = leaderLineExtLength.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LLE property value");
+                        }
+                        break;
+                    case "/Cap":
+                        const cap = parser.parseBoolAt(i, false);
+                        if (cap) {
+                            this.Cap = cap.value;
+                            i = cap.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Cap property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (Object.values(lineIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/LLO":
+                        const leaderLineOffset = parser.parseNumberAt(i, false);
+                        if (leaderLineOffset) {
+                            this.LLO = leaderLineOffset.value;
+                            i = leaderLineOffset.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LLO property value");
+                        }
+                        break;
+                    case "/CP":
+                        const captionPosition = parser.parseNameAt(i, true);
+                        if (captionPosition && Object.values(captionPositions)
+                            .includes(captionPosition.value[0])) {
+                            this.CP = captionPosition.value;
+                            i = captionPosition.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CP property value");
+                        }
+                        break;
+                    case "/Measure":
+                        const measureEntryType = parser.getValueTypeAt(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = ObjectId.parseRef(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetter) {
+                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                                    if (measureDict) {
+                                        this.Measure = measureDict.value;
+                                        i = measureDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /BS value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = parser.getDictBoundsAt(i);
+                            if (measureDictBounds) {
+                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    case "/CO":
+                        const captionOffset = parser.parseNumberArrayAt(i, true);
+                        if (captionOffset) {
+                            this.CO = [
+                                captionOffset.value[0],
+                                captionOffset.value[1],
+                            ];
+                            i = captionOffset.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CO property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class SquareAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.SQUARE);
+    }
+    static parse(parseInfo) {
+        const freeText = new SquareAnnotation();
+        const parseResult = freeText.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD"), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/RD":
+                        const innerRect = parser.parseNumberArrayAt(i, true);
+                        if (innerRect) {
+                            this.RD = [
+                                innerRect.value[0],
+                                innerRect.value[1],
+                                innerRect.value[2],
+                                innerRect.value[3],
+                            ];
+                            i = innerRect.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RD property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
+class InkAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.INK);
+    }
+    static parse(parseInfo) {
+        const ink = new InkAnnotation();
+        const parseResult = ink.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.InkList) {
+            bytes.push(...encoder.encode("/InkList"), codes.L_BRACKET);
+            this.InkList.forEach(x => {
+                bytes.push(codes.L_BRACKET);
+                x.forEach(y => bytes.push(...encoder.encode(" " + y)));
+                bytes.push(codes.R_BRACKET);
+            });
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        var _a;
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/InkList":
+                        const inkType = parser.getValueTypeAt(i);
+                        if (inkType === valueTypes.ARRAY) {
+                            const inkList = [];
+                            let inkSubList;
+                            let inkArrayPos = ++i;
+                            while (true) {
+                                inkSubList = parser.parseNumberArrayAt(inkArrayPos);
+                                if (!inkSubList) {
+                                    break;
+                                }
+                                inkList.push(inkSubList.value);
+                                inkArrayPos = inkSubList.end + 1;
+                            }
+                            this.InkList = inkList;
+                            break;
+                        }
+                        throw new Error("Can't parse /InkList property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
+            return false;
+        }
+        return true;
+    }
+}
+
 const stampTypes = {
     DRAFT: "/Draft",
     NOT_APPROVED: "/NotApproved",
@@ -7668,65 +8686,122 @@ class StampAnnotation extends MarkupAnnotation {
     }
 }
 
-class HexString {
-    constructor(literal, hex, bytes) {
-        this.literal = literal;
-        this.hex = hex;
-        this.bytes = bytes;
+class TextAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.TEXT);
+        this.Open = false;
     }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        const bounds = parser.getHexBounds(start, skipEmpty);
-        if (!bounds) {
-            return null;
-        }
-        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        const hex = HexString.fromBytes(bytes);
-        return { value: hex, start: bounds.start, end: bounds.end };
+    static parse(parseInfo) {
+        const text = new TextAnnotation();
+        const parseResult = text.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
     }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Open) {
+            bytes.push(...encoder.encode("/Open"), ...encoder.encode(" " + this.Open));
         }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
-            if (!current) {
+        if (this.Name) {
+            bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+        }
+        if (this.State) {
+            bytes.push(...encoder.encode("/State"), ...encoder.encode(this.State));
+        }
+        if (this.StateModel) {
+            bytes.push(...encoder.encode("/StateModel"), ...encoder.encode(this.StateModel));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Open":
+                        const opened = parser.parseBoolAt(i, true);
+                        if (opened) {
+                            this.Open = opened.value;
+                            i = opened.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Open property value");
+                        }
+                        break;
+                    case "/Name":
+                        const iconType = parser.parseNameAt(i, true);
+                        if (iconType && Object.values(annotationIconTypes)
+                            .includes(iconType.value)) {
+                            this.Name = iconType.value;
+                            i = iconType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Name property value");
+                        }
+                        break;
+                    case "/State":
+                        const state = parser.parseNameAt(i, true);
+                        if (state && Object.values(annotationMarkedStates)
+                            .concat(Object.values(annotationReviewStates))
+                            .includes(state.value)) {
+                            this.State = state.value;
+                            i = state.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /State property value");
+                        }
+                        break;
+                    case "/StateModel":
+                        const stateModelType = parser.parseNameAt(i, true);
+                        if (stateModelType && Object.values(annotationStateModelTypes)
+                            .includes(stateModelType.value)) {
+                            this.StateModel = stateModelType.value;
+                            i = stateModelType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StateModel property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
                 break;
             }
-            hexes.push(current.value);
-            i = current.end + 1;
         }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(bytes);
-        const hex = hexStringToBytes(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromHexBytes(hex) {
-        let literal = "";
-        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromLiteralString(literal) {
-        const hex = hexStringToBytes(literal);
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    ;
-    toArray(cryptInfo) {
-        return new Uint8Array([
-            ...keywordCodes.STR_HEX_START,
-            ...this.bytes,
-            ...keywordCodes.STR_HEX_END,
-        ]);
+        return true;
     }
 }
 
@@ -9929,6 +11004,237 @@ class ReferenceDataChange {
     }
 }
 
+const polyIntents = {
+    CLOUD: "/PolygonCloud",
+    POLYGON_DIMESION: "/PolygonDimension",
+    POLYLINE_DIMESION: "/PolyLineDimension",
+};
+class PolyAnnotation extends GeometricAnnotation {
+    constructor(type) {
+        super(type);
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Vertices) {
+            bytes.push(...encoder.encode("/Vertices"), codes.L_BRACKET);
+            this.Vertices.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+        }
+        if (this.Measure) {
+            bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Vertices":
+                        const vertices = parser.parseNumberArrayAt(i, true);
+                        if (vertices) {
+                            this.Vertices = vertices.value;
+                            i = vertices.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Vertices property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (Object.values(polyIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/Measure":
+                        const measureEntryType = parser.getValueTypeAt(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = ObjectId.parseRef(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetter) {
+                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                                    if (measureDict) {
+                                        this.Measure = measureDict.value;
+                                        i = measureDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = parser.getDictBoundsAt(i);
+                            if (measureDictBounds) {
+                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Vertices) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class PolygonAnnotation extends PolyAnnotation {
+    constructor() {
+        super(annotationTypes.POLYGON);
+    }
+    static parse(parseInfo) {
+        const text = new PolygonAnnotation();
+        const parseResult = text.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        return superBytes;
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        return true;
+    }
+}
+
+class PolylineAnnotation extends PolyAnnotation {
+    constructor() {
+        super(annotationTypes.POLYLINE);
+        this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+    }
+    static parse(parseInfo) {
+        const text = new PolylineAnnotation();
+        const parseResult = text.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE"), codes.L_BRACKET);
+            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    render() {
+        const streamRenderResult = super.render();
+        if (streamRenderResult) {
+            return streamRenderResult;
+        }
+        return null;
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/LE":
+                        const lineEndings = parser.parseNameAt(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
+    }
+}
+
 class DocumentData {
     constructor(data) {
         this.getObjectParseInfo = (id) => {
@@ -10116,8 +11422,32 @@ class DocumentData {
                 const annotationType = info.parser.parseDictSubtype(info.bounds);
                 let annot;
                 switch (annotationType) {
+                    case annotationTypes.TEXT:
+                        annot = TextAnnotation.parse(info);
+                        break;
+                    case annotationTypes.FREE_TEXT:
+                        annot = FreeTextAnnotation.parse(info);
+                        break;
                     case annotationTypes.STAMP:
                         annot = StampAnnotation.parse(info);
+                        break;
+                    case annotationTypes.CIRCLE:
+                        annot = CircleAnnotation.parse(info);
+                        break;
+                    case annotationTypes.SQUARE:
+                        annot = SquareAnnotation.parse(info);
+                        break;
+                    case annotationTypes.POLYGON:
+                        annot = PolygonAnnotation.parse(info);
+                        break;
+                    case annotationTypes.POLYLINE:
+                        annot = PolylineAnnotation.parse(info);
+                        break;
+                    case annotationTypes.LINE:
+                        annot = LineAnnotation.parse(info);
+                        break;
+                    case annotationTypes.INK:
+                        annot = InkAnnotation.parse(info);
                         break;
                 }
                 if (annot) {
@@ -10260,7 +11590,7 @@ class AnnotationData {
     }
 }
 
-var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -10297,7 +11627,7 @@ class TsPdfViewer {
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
-        this.onPdfLoadedAsync = (doc, annotationData) => __awaiter$2(this, void 0, void 0, function* () {
+        this.onPdfLoadedAsync = (doc, annotationData) => __awaiter$3(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
             this._annotationData = annotationData;
             yield this.refreshPagesAsync();
@@ -10305,7 +11635,7 @@ class TsPdfViewer {
             this.renderVisiblePages();
             this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
         });
-        this.onPdfClosedAsync = () => __awaiter$2(this, void 0, void 0, function* () {
+        this.onPdfClosedAsync = () => __awaiter$3(this, void 0, void 0, function* () {
             this._shadowRoot.querySelector("#panel-bottom").classList.add("disabled");
             if (this._pdfDocument) {
                 this._pdfDocument = null;
@@ -10538,7 +11868,7 @@ class TsPdfViewer {
         this._shadowRoot.innerHTML = "";
     }
     openPdfAsync(src) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             let data;
             let doc;
             try {
@@ -10592,7 +11922,7 @@ class TsPdfViewer {
         });
     }
     closePdfAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             if (this._pdfLoadingTask) {
                 if (!this._pdfLoadingTask.destroyed) {
                     yield this._pdfLoadingTask.destroy();
@@ -10631,7 +11961,7 @@ class TsPdfViewer {
     }
     refreshPagesAsync() {
         var _a;
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             this._pages.forEach(x => {
                 x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
                 x.destroy();
@@ -10822,7 +12152,7 @@ class TsPdfViewer {
         throw new Error("Incorrect argument");
     }
     showPasswordDialogAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             const passwordPromise = new Promise((resolve, reject) => {
                 const dialogContainer = document.createElement("div");
                 dialogContainer.id = "password-dialog";
