@@ -34,7 +34,7 @@ export class PageAnnotationView {
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
     this._container.append(this._svg);
 
-    this._pageAnnotations = annotationData.getPageAnnotations(pageId);
+    this._pageAnnotations = annotationData.getPageAnnotations(pageId);    
     this.renderAnnotations();
 
     this.switchEditMode(false);

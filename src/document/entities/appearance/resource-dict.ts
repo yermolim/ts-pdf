@@ -110,7 +110,53 @@ export class ResourceDict extends PdfDict {
     }
     return;
   }
+  
+  getXObject(name: string): XFormStream | ImageStream {
+    return this._xObjectsMap.get(name);
+  }
 
+  *getXObjects(): Iterable<[string, XFormStream | ImageStream]> {
+    for (const pair of this._xObjectsMap) {
+      yield pair;
+    }
+    return;
+  }
+  
+  getFormXObject(name: string): XFormStream {
+    const xObj = this._xObjectsMap.get(name);
+    if (xObj instanceof XFormStream) {
+      return xObj;
+    } else {
+      return null;
+    }
+  }
+
+  *getFormXObjects(): Iterable<[string, XFormStream]> {
+    for (const pair of this._xObjectsMap) {
+      if (pair[1] instanceof XFormStream) {
+        yield <[string, XFormStream]>pair;
+      }
+    }
+    return;
+  }
+  
+  getImageXObject(name: string): ImageStream {
+    const xObj = this._xObjectsMap.get(name);
+    if (xObj instanceof ImageStream) {
+      return xObj;
+    } else {
+      return null;
+    }
+  }
+
+  *getImageXObjects(): Iterable<[string, ImageStream]> {
+    for (const pair of this._xObjectsMap) {
+      if (pair[1] instanceof ImageStream) {
+        yield <[string, ImageStream]>pair;
+      }
+    }
+    return;
+  }
   
   protected fillMaps(parseInfoGetter: (id: number) => ParseInfo) {
     this._gsMap.clear();

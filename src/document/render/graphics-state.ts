@@ -102,12 +102,13 @@ export class GraphicsState {
         b = params[2] * 255;
         break;
       case 4: // cmyk
+        // TODO: implement conversion using some ICC profile?
         const [c, m, y, k] = params; 
         r = 255 * (1 - c) * (1 - k);
         g = 255 * (1 - m) * (1 - k);
         b = 255 * (1 - y) * (1 - k);
         break;
-    }    
+    }       
     if (type === "stroke") {
       this.strokeColor.set(r, g, b);
     } else {      

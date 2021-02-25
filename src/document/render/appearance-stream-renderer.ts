@@ -2,6 +2,7 @@ import { SvgWithBox } from "../../common";
 import { Mat3, mat3From4Vec2, Vec2 } from "../../math";
 import { colorSpaces, lineCapStyles, lineJoinStyles, Rect, valueTypes } from "../const";
 import { DataParser } from "../data-parser";
+import { ImageStream } from "../entities/streams/image-stream";
 import { XFormStream } from "../entities/streams/x-form-stream";
 import { GraphicsState, GraphicsStateParams } from "./graphics-state";
 
@@ -31,8 +32,7 @@ export class AppearanceStreamRenderer {
     this._stream = stream;
     this._parser = new DataParser(stream.decodedStreamData);
     this._rect = rect;
-    this._objectName = objectName;  
-    
+    this._objectName = objectName; 
 
     const matAA = AppearanceStreamRenderer.calcMatrix(stream, rect);
 
@@ -40,7 +40,6 @@ export class AppearanceStreamRenderer {
     clipPath.id = `clip0-${objectName}`;
     clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
     this._clipPaths.push(clipPath);
-    // FIX
 
     this._graphicsStates.push(new GraphicsState({matrix: matAA}));
   }  
@@ -76,7 +75,7 @@ export class AppearanceStreamRenderer {
     the appearance’s coordinate system to the annotation’s rectangle in default user space
     */
     const matAA = Mat3.fromMat3(matrix).multiply(matA);
-    
+
     return matAA;
   }
 
@@ -129,25 +128,89 @@ export class AppearanceStreamRenderer {
   render(): SvgWithBox {
     const outerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
     outerGroup.setAttribute("data-name", this._objectName);
-    // outerGroup.setAttribute("clipPath", `url(#${this._clipPaths[0].id})`);
-    // outerGroup.setAttribute("transform", `matrix(${Mat3.invert(this.state.matrix).toFloatShortArray().join(" ")})`);
 
-    // const width = this._cropBox.max.x - this._cropBox.min.x;
-    // const height = this._cropBox.max.y - this._cropBox.min.y;
-    // svg.setAttribute("viewBox", `0 0 ${width} ${height}`);  
+    const g = this.drawGroup(this._parser);
+    outerGroup.append(g);
 
+    return {
+      svg: outerGroup, 
+      clipPaths: this._clipPaths, 
+      box: {
+        min: new Vec2(this._rect[0], this._rect[1]), 
+        max: new Vec2(this._rect[2], this._rect[3]),
+      },
+    };
+  }
+
+  protected pushState(params?: GraphicsStateParams) {
+    const lastState = this._graphicsStates[this._graphicsStates.length - 1];
+    const newState = lastState.clone(params);
+    this._graphicsStates.push(newState);
+  }
+  
+  protected popState(): GraphicsState {
+    if (this._graphicsStates.length === 1) {
+      // can't pop the only state
+      return null;
+    }
+    return this._graphicsStates.pop();
+  }
+
+  protected drawPath(d: string, stroke: boolean, fill: boolean, 
+    close = false, evenOdd = false): SVGPathElement {
+    if (close && d[d.length - 1] !== "Z") {
+      d += " Z";
+    }
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
+    path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test
+    path.setAttribute("d", d);
+
+    if (this.state.mixBlendMode) {
+      path.setAttribute("mix-blend-mode", this.state.mixBlendMode);
+    }
+
+    if (fill) {
+      path.setAttribute("fill", this.state.fill);
+      path.setAttribute("fill-rule", evenOdd ? "evenodd" : "nonzero");
+    } else {
+      path.setAttribute("fill", "none");
+    }
+
+    if (stroke) {
+      path.setAttribute("stroke", this.state.stroke);
+      path.setAttribute("stroke-width", this.state.strokeWidth + "");
+      path.setAttribute("stroke-miterlimit", this.state.strokeMiterLimit + "");
+      path.setAttribute("stroke-linecap", this.state.strokeLineCap);
+      path.setAttribute("stroke-linejoin", this.state.strokeLineJoin);
+      if (this.state.strokeDashArray) {
+        path.setAttribute("stroke-dasharray", this.state.strokeDashArray);        
+      }
+      if (this.state.strokeDashOffset) {
+        path.setAttribute("stroke-dashoffset", this.state.strokeDashOffset + "");        
+      }
+    } else {
+      path.setAttribute("stroke", "none");
+    }
+    
+    return path;
+  }
+
+  protected drawGroup(parser: DataParser): SVGGElement {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     const lastCoord = new Vec2();
     let lastOperator: string;
     let d = "";  
     const addPath = (path: SVGPathElement) => {      
-      outerGroup.append(path);
+      g.append(path);
       d = "";
     };  
     let i = 0;
     while (i !== -1) {
-      const {endIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(this._parser, i);
-      i = this._parser.skipEmpty(endIndex + 1);
+      const {endIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
+      i = parser.skipEmpty(endIndex + 1);
   
       switch (operator) {
         //#region State operators
@@ -159,7 +222,7 @@ export class AppearanceStreamRenderer {
           this.popState();
           break;
         case "gs": // set external graphics state
-          const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${<string>parameters[0]}`);
+          const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
           if (!externalState) {
             throw new Error("External state specified in appearance stream not found");
           }
@@ -285,47 +348,36 @@ export class AppearanceStreamRenderer {
         //#region Path construction operators      
         case "m": // move
           const move = new Vec2(+parameters[0], +parameters[1]);
-          move.applyMat3(this.state.matrix);
           d += ` M ${move.x} ${move.y}`;
           lastCoord.setFromVec2(move);
           break;      
         case "l": // line to
           const line = new Vec2(+parameters[0], +parameters[1]);
-          line.applyMat3(this.state.matrix);
           d += ` L ${line.x} ${line.y}`;
           lastCoord.setFromVec2(line);
           break;     
         case "re": // rect
           const rMin = new Vec2(+parameters[0], +parameters[1]);
           const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
-          rMin.applyMat3(this.state.matrix);
-          rMax.applyMat3(this.state.matrix);
-          d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x, rMax.y} L ${rMin.x} ${rMin.y}`;
+          d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
           lastCoord.setFromVec2(rMin);
           break;   
         case "c": // cubic-bezier 1
           const cControl1 = new Vec2(+parameters[0], +parameters[1]);
           const cControl2 = new Vec2(+parameters[2], +parameters[3]);
           const cEnd = new Vec2(+parameters[4], +parameters[5]);
-          cControl1.applyMat3(this.state.matrix);
-          cControl2.applyMat3(this.state.matrix);
-          cEnd.applyMat3(this.state.matrix);
           d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
           lastCoord.setFromVec2(cEnd);
           break;   
         case "v": // cubic-bezier 2
           const vControl2 = new Vec2(+parameters[0], +parameters[1]);
           const vEnd = new Vec2(+parameters[2], +parameters[3]);
-          vControl2.applyMat3(this.state.matrix);
-          vEnd.applyMat3(this.state.matrix);
           d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
           lastCoord.setFromVec2(vEnd);
           break;
         case "y": // cubic-bezier 3
           const yControl1 = new Vec2(+parameters[0], +parameters[1]);
           const yEnd = new Vec2(+parameters[2], +parameters[3]);
-          yControl1.applyMat3(this.state.matrix);
-          yEnd.applyMat3(this.state.matrix);
           d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
           lastCoord.setFromVec2(yEnd);
           break;    
@@ -367,7 +419,7 @@ export class AppearanceStreamRenderer {
             }
 
             const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            clippingPath.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
+            // clippingPath.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`); // ???
             clippingPath.setAttribute("d", d);
 
             const lastCpIndex = this._clipPaths.length - 1;
@@ -392,6 +444,23 @@ export class AppearanceStreamRenderer {
           //#endregion
           //#endregion
 
+        case "Do":
+          // TODO: implement
+          const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
+          if (!stream) {            
+            throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
+          }
+          if (stream instanceof XFormStream) {
+            const subGroup = this.drawGroup(new DataParser(stream.decodedStreamData));
+            g.append(subGroup);
+          } else if (stream instanceof ImageStream) {
+            // TODO: implement
+            throw new Error("Unsupported appearance stream external object type: 'Image'");
+          } else {            
+            throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
+          }
+          break;
+
         default:
           throw new Error(`Unsupported appearance stream operator: ${operator}`);
       }
@@ -399,70 +468,6 @@ export class AppearanceStreamRenderer {
       lastOperator = operator;
     }
 
-    console.log(outerGroup);
-
-    return {
-      svg: outerGroup, 
-      clipPaths: this._clipPaths, 
-      box: {
-        min: new Vec2(this._rect[0], this._rect[1]), 
-        max: new Vec2(this._rect[2], this._rect[3]),
-      },
-    };
-  }
-
-  protected pushState(params?: GraphicsStateParams) {
-    const lastState = this._graphicsStates[this._graphicsStates.length - 1];
-    const newState = lastState.clone(params);
-    this._graphicsStates.push(newState);
-  }
-  
-  protected popState(): GraphicsState {
-    if (this._graphicsStates.length === 1) {
-      // can't pop the only state
-      return null;
-    }
-    return this._graphicsStates.pop();
-  }
-
-  protected drawPath(d: string, stroke: boolean, fill: boolean, 
-    close = false, evenOdd = false): SVGPathElement {
-    if (close && d[d.length - 1] !== "Z") {
-      d += " Z";
-    }
-
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
-    path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test
-    path.setAttribute("d", d);
-
-    if (this.state.mixBlendMode) {
-      path.setAttribute("mix-blend-mode", this.state.mixBlendMode);
-    }
-
-    if (fill) {
-      path.setAttribute("fill", this.state.fill);
-      path.setAttribute("fill-rule", evenOdd ? "evenodd" : "nonzero");
-    } else {
-      path.setAttribute("fill", "none");
-    }
-
-    if (stroke) {
-      path.setAttribute("stroke", this.state.stroke);
-      path.setAttribute("stroke-width", this.state.strokeWidth + "");
-      path.setAttribute("stroke-miterlimit", this.state.strokeMiterLimit + "");
-      path.setAttribute("stroke-linecap", this.state.strokeLineCap);
-      path.setAttribute("stroke-linejoin", this.state.strokeLineJoin);
-      if (this.state.strokeDashArray) {
-        path.setAttribute("stroke-dasharray", this.state.strokeDashArray);        
-      }
-      if (this.state.strokeDashOffset) {
-        path.setAttribute("stroke-dashoffset", this.state.strokeDashOffset + "");        
-      }
-    } else {
-      path.setAttribute("stroke", "none");
-    }
-    
-    return path;
+    return g;
   }
 }
