@@ -448,7 +448,7 @@ const styles = `
       cursor: pointer;
     } 
     .svg-annotation-rect.selected {
-      cursor: default;
+      cursor: grab;
     } 
     .svg-annotation-rect.selected .svg-rect-bg {
       fill: var(--color-text-selection-final);
@@ -1229,9 +1229,20 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 class PageAnnotationView {
     constructor(annotationData, pageId, pageDimensions) {
         this._svgByAnnotation = new Map();
-        this.onMouseDown = (e) => {
+        this._moveStartMatrix = new Mat3();
+        this._moveStartPoint = new Vec2();
+        this.onRectPointerDown = (e) => {
+            e.target;
         };
-        this.onMouseUp = (e) => {
+        this.onRectPointerMove = (e) => {
+        };
+        this.onRectPointerUp = (e) => {
+        };
+        this.onHandlePointerDown = (e) => {
+        };
+        this.onHandlePointerMove = (e) => {
+        };
+        this.onHandlePointerUp = (e) => {
         };
         if (!annotationData || isNaN(pageId) || !pageDimensions) {
             throw new Error("Required argument not found");
@@ -1306,7 +1317,7 @@ class PageAnnotationView {
             this.switchSelectedAnnotation(annotation);
         });
         this._svg.append(svg);
-        clipPaths.forEach(x => this._defs.append(x));
+        clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
     }
     renderAnnotationsAsync() {
         var _a;
@@ -6983,14 +6994,35 @@ class AppearanceStreamRenderer {
             const [m0, m1, m3, m4, m6, m7] = stream.Matrix;
             matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
         }
-        const boxMin = new Vec2(stream.BBox[0], stream.BBox[1]);
-        const boxMax = new Vec2(stream.BBox[2], stream.BBox[3]);
-        const tBoxMin = Vec2.applyMat3(boxMin, matrix);
-        const tBoxMax = Vec2.applyMat3(boxMax, matrix);
+        const boxLowerLeft = new Vec2(stream.BBox[0], stream.BBox[1]);
+        const boxUpperRight = new Vec2(stream.BBox[2], stream.BBox[3]);
+        const boxUpperLeft = new Vec2(boxLowerLeft.x, boxUpperRight.y);
+        const boxLowerRight = new Vec2(boxUpperRight.x, boxLowerLeft.y);
+        const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
+        const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
+        const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
+        const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);
+        const tBoxMin = new Vec2(Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
+        const tBoxMax = new Vec2(Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
         const rectMin = new Vec2(rect[0], rect[1]);
         const rectMax = new Vec2(rect[2], rect[3]);
         const matA = mat3From4Vec2(tBoxMin, tBoxMax, rectMin, rectMax);
         const matAA = Mat3.fromMat3(matrix).multiply(matA);
+        console.log("stream matrix");
+        console.log(matrix);
+        console.log("stream bbox");
+        console.log(boxLowerLeft);
+        console.log(boxUpperRight);
+        console.log("translated stream bbox");
+        console.log(tBoxMin);
+        console.log(tBoxMax);
+        console.log("annotation rect");
+        console.log(rectMin);
+        console.log(rectMax);
+        console.log("transformed stream matrix");
+        console.log(matA);
+        console.log("final matrix");
+        console.log(matAA);
         return matAA;
     }
     static parseNextCommand(parser, i) {
@@ -7429,6 +7461,10 @@ class AnnotationDict extends PdfDict {
     render() {
         return this.renderWrapper();
     }
+    applyRectTransform(mat) {
+    }
+    applyHandleTransform(mat, name) {
+    }
     tryParseProps(parseInfo) {
         var _a;
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -7702,9 +7738,9 @@ class AnnotationDict extends PdfDict {
         if (!content) {
             return null;
         }
-        const outerSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        outerSvg.setAttribute("data-name", this.name);
-        outerSvg.classList.add("svg-annotation-rect");
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        rect.setAttribute("data-annotation-name", this.name);
+        rect.classList.add("svg-annotation-rect");
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         bg.classList.add("svg-rect-bg");
         bg.setAttribute("x", this.Rect[0] + "");
@@ -7713,16 +7749,19 @@ class AnnotationDict extends PdfDict {
         bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
         bg.setAttribute("fill", "transparent");
         const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        minRectHandle.classList.add("svg-rect-handle", "min");
+        minRectHandle.classList.add("svg-rect-handle");
+        minRectHandle.setAttribute("data-handle-name", "min");
         minRectHandle.setAttribute("cx", this.Rect[0] + "");
         minRectHandle.setAttribute("cy", this.Rect[1] + "");
         const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        maxRectHandle.classList.add("svg-rect-handle", "max");
+        maxRectHandle.classList.add("svg-rect-handle");
+        minRectHandle.setAttribute("data-handle-name", "max");
         maxRectHandle.setAttribute("cx", this.Rect[2] + "");
         maxRectHandle.setAttribute("cy", this.Rect[3] + "");
-        outerSvg.append(bg, content.svg, minRectHandle, maxRectHandle);
+        rect.append(bg, content.svg, minRectHandle, maxRectHandle);
         return {
-            svg: outerSvg,
+            svg: rect,
+            handles: [minRectHandle, maxRectHandle],
             clipPaths: content.clipPaths,
         };
     }

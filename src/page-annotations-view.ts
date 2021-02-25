@@ -1,6 +1,6 @@
 import { AnnotationData } from "./document/annotation-data";
 import { AnnotationDict } from "./document/entities/annotations/annotation-dict";
-import { Vec2 } from "./math";
+import { Mat3, Vec2 } from "./math";
 
 export class PageAnnotationView {  
   private readonly _pageId: number;
@@ -16,6 +16,7 @@ export class PageAnnotationView {
   private _defs: SVGDefsElement;
 
   private _rendered: boolean;
+
   private _editModeOn: boolean;
   private _divModeTimer: number;
 
@@ -102,7 +103,7 @@ export class PageAnnotationView {
       this.switchSelectedAnnotation(annotation);
     });
     this._svg.append(svg);
-    clipPaths.forEach(x => this._defs.append(x));
+    clipPaths?.forEach(x => this._defs.append(x));
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
@@ -128,12 +129,4 @@ export class PageAnnotationView {
     this._svg.innerHTML = "";
     this._svgByAnnotation.clear();
   }
-
-  private onMouseDown = (e: MouseEvent) => {
-
-  };
-  
-  private onMouseUp = (e: MouseEvent) => {
-
-  };
 }

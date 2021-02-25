@@ -396,7 +396,7 @@ export const styles = /*html*/`
       cursor: pointer;
     } 
     .svg-annotation-rect.selected {
-      cursor: default;
+      cursor: grab;
     } 
     .svg-annotation-rect.selected .svg-rect-bg {
       fill: var(--color-text-selection-final);

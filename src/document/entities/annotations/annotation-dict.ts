@@ -14,10 +14,13 @@ import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
 import { getRandomUuid, RenderToSvgResult } from "../../../common";
+import { Mat3, Vec2 } from "../../../math";
 
 export abstract class AnnotationDict extends PdfDict {
   isDeleted: boolean;
   name: string;
+
+  //#region PDF properties
 
   /** (Required) The type of annotation that this dictionary describes */
   readonly Subtype: AnnotationType;
@@ -78,6 +81,13 @@ export abstract class AnnotationDict extends PdfDict {
   /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
    *  specifying the optional content properties for the annotation */
   OC: OcMembershipDict | OcGroupDict;
+
+  //#endregion
+  
+  //#region svg render properties
+  private _moveStartMatrix = new Mat3();
+  private _moveStartPoint = new Vec2();
+  //#endregion
 
   protected constructor(subType: AnnotationType) {
     super(dictTypes.ANNOTATION);
@@ -425,9 +435,9 @@ export abstract class AnnotationDict extends PdfDict {
       return null;
     }
 
-    const outerSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    outerSvg.setAttribute("data-name", this.name);
-    outerSvg.classList.add("svg-annotation-rect");
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    rect.setAttribute("data-annotation-name", this.name);
+    rect.classList.add("svg-annotation-rect");
 
     const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     bg.classList.add("svg-rect-bg");
@@ -438,19 +448,57 @@ export abstract class AnnotationDict extends PdfDict {
     bg.setAttribute("fill", "transparent");   
 
     const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    minRectHandle.classList.add("svg-rect-handle", "min");
+    minRectHandle.classList.add("svg-rect-handle");
+    minRectHandle.setAttribute("data-handle-name", "min");
     minRectHandle.setAttribute("cx", this.Rect[0] + "");
     minRectHandle.setAttribute("cy", this.Rect[1] + "");    
     const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    maxRectHandle.classList.add("svg-rect-handle", "max");
+    maxRectHandle.classList.add("svg-rect-handle");
+    minRectHandle.setAttribute("data-handle-name", "max");
     maxRectHandle.setAttribute("cx", this.Rect[2] + "");
     maxRectHandle.setAttribute("cy", this.Rect[3] + "");
     
-    outerSvg.append(bg, content.svg, minRectHandle, maxRectHandle);
+    rect.append(bg, content.svg, minRectHandle, maxRectHandle);
 
     return {
-      svg: outerSvg, 
+      svg: rect, 
+      handles: [minRectHandle, maxRectHandle],
       clipPaths: content.clipPaths,
     };
+  }    
+
+  protected applyRectTransform(mat: Mat3) {
+    // TODO: implement
   }
+
+  protected applyHandleTransform(mat: Mat3, name: string) {
+    // TODO: implement
+  }
+
+  //#region event handlers 
+  protected onRectPointerDown = (e: PointerEvent) => {
+    const target = e.target as HTMLElement;
+    
+  };
+
+  protected onRectPointerMove = (e: PointerEvent) => {
+
+  };
+  
+  protected onRectPointerUp = (e: PointerEvent) => {
+    
+  };
+  
+  protected onHandlePointerDown = (e: PointerEvent) => {
+
+  };
+
+  protected onHandlePointerMove = (e: PointerEvent) => {
+
+  };
+  
+  protected onHandlePointerUp = (e: PointerEvent) => {
+
+  };
+  //#endregion
 }

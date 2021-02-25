@@ -53,16 +53,28 @@ export class AppearanceStreamRenderer {
       const [m0, m1, m3, m4, m6, m7] = stream.Matrix;
       matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
     }
-    const boxMin = new Vec2(stream.BBox[0], stream.BBox[1]);
-    const boxMax = new Vec2(stream.BBox[2], stream.BBox[3]);
+    const boxLowerLeft = new Vec2(stream.BBox[0], stream.BBox[1]);
+    const boxUpperRight = new Vec2(stream.BBox[2], stream.BBox[3]);
+    const boxUpperLeft = new Vec2(boxLowerLeft.x, boxUpperRight.y);
+    const boxLowerRight = new Vec2(boxUpperRight.x, boxLowerLeft.y);
     /*
     The appearance’s bounding box (specified by its BBox entry) is transformed, 
     using Matrix, to produce a quadrilateral with arbitrary orientation. 
     The transformed appearance box is the smallest upright rectangle 
     that encompasses this quadrilateral.
     */
-    const tBoxMin = Vec2.applyMat3(boxMin, matrix);
-    const tBoxMax = Vec2.applyMat3(boxMax, matrix);
+    const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
+    const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
+    const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
+    const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);  
+    const tBoxMin = new Vec2(
+      Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x),
+      Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y),
+    );
+    const tBoxMax = new Vec2(
+      Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x),
+      Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y),
+    );
     /*
     A matrix A is computed that scales and translates the transformed appearance box 
     to align with the edges of the annotation’s rectangle (specified by the Rect entry). 
@@ -78,6 +90,23 @@ export class AppearanceStreamRenderer {
     the appearance’s coordinate system to the annotation’s rectangle in default user space
     */
     const matAA = Mat3.fromMat3(matrix).multiply(matA);
+
+    // DEBUG
+    // console.log("stream matrix");
+    // console.log(matrix);
+    // console.log("stream bbox");
+    // console.log(boxLowerLeft);
+    // console.log(boxUpperRight);
+    // console.log("translated stream bbox");
+    // console.log(tBoxMin);
+    // console.log(tBoxMax);
+    // console.log("annotation rect");
+    // console.log(rectMin);
+    // console.log(rectMax);
+    // console.log("transformed stream matrix");
+    // console.log(matA);
+    // console.log("final matrix");
+    // console.log(matAA);
 
     return matAA;
   }
