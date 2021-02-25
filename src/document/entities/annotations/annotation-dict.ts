@@ -430,12 +430,12 @@ export abstract class AnnotationDict extends PdfDict {
     outerSvg.classList.add("svg-annotation-rect");
 
     const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    bg.classList.add("svg-annotation-rect-bg");
+    bg.classList.add("svg-rect-bg");
     bg.setAttribute("x", this.Rect[0] + "");
     bg.setAttribute("y", this.Rect[1] + "");
     bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
     bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
-    bg.setAttribute("fill", "none");   
+    bg.setAttribute("fill", "transparent");   
 
     const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     minRectHandle.classList.add("svg-rect-handle", "min");

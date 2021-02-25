@@ -442,11 +442,21 @@ const styles = `
       flex-grow: 1;
       flex-shrink: 1;
       width: 100px;
-    }    
+    } 
 
-    .svg-annotation-rect .svg-rect-handle {
+    .svg-annotation-rect {
+      cursor: pointer;
+    } 
+    .svg-annotation-rect.selected {
+      cursor: default;
+    } 
+    .svg-annotation-rect.selected .svg-rect-bg {
+      fill: var(--color-text-selection-final);
+    } 
+    .svg-annotation-rect.selected .svg-rect-handle {
       r: 3;
-      fill: red;
+      fill: var(--color-primary-final);
+      cursor: pointer;
     }
   </style>
 `;
@@ -1237,8 +1247,8 @@ class PageAnnotationView {
         this._svg.setAttribute("transform", "scale(1, -1)");
         this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         this._container.append(this._svg);
-        this._pageAnnotations = annotationData.getPageAnnotations(pageId);
-        this.switchEditMode(false);
+        this._annotations = annotationData.getPageAnnotations(pageId);
+        this.switchEditMode(true);
     }
     destroy() {
         this.remove();
@@ -1258,6 +1268,22 @@ class PageAnnotationView {
             parent.append(this._container);
         });
     }
+    switchSelectedAnnotation(annotation) {
+        if (!this._editModeOn || annotation === this._selectedAnnotation) {
+            return;
+        }
+        if (this._selectedAnnotation) {
+            const oldSelectedSvg = this._svgByAnnotation.get(this._selectedAnnotation);
+            oldSelectedSvg === null || oldSelectedSvg === void 0 ? void 0 : oldSelectedSvg.classList.remove("selected");
+        }
+        const newSelectedSvg = this._svgByAnnotation.get(annotation);
+        if (!newSelectedSvg) {
+            return;
+        }
+        newSelectedSvg.classList.add("selected");
+        this._svg.append(newSelectedSvg);
+        this._selectedAnnotation = annotation;
+    }
     switchEditMode(value) {
         value = value !== null && value !== void 0 ? value : !this._editModeOn;
         this._editModeOn = value;
@@ -1266,6 +1292,7 @@ class PageAnnotationView {
         }
         else {
             this._container.classList.add("passive");
+            this.switchSelectedAnnotation(null);
         }
     }
     renderAnnotation(annotation) {
@@ -1275,17 +1302,27 @@ class PageAnnotationView {
         }
         const { svg, clipPaths } = svgWithBox;
         this._svgByAnnotation.set(annotation, svg);
+        svg.addEventListener("click", () => {
+            this.switchSelectedAnnotation(annotation);
+        });
         this._svg.append(svg);
         clipPaths.forEach(x => this._defs.append(x));
-        this._svg.append(this._defs);
     }
     renderAnnotationsAsync() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             this.clear();
-            for (let i = 0; i < ((_a = this._pageAnnotations) === null || _a === void 0 ? void 0 : _a.length) || 0; i++) {
-                setTimeout(() => this.renderAnnotation(this._pageAnnotations[i]), 0);
+            const promises = [];
+            for (let i = 0; i < ((_a = this._annotations) === null || _a === void 0 ? void 0 : _a.length) || 0; i++) {
+                promises.push(new Promise(resolve => {
+                    setTimeout(() => {
+                        this.renderAnnotation(this._annotations[i]);
+                        resolve();
+                    }, 0);
+                }));
             }
+            yield Promise.all(promises);
+            this._svg.append(this._defs);
             return true;
         });
     }
@@ -7669,12 +7706,12 @@ class AnnotationDict extends PdfDict {
         outerSvg.setAttribute("data-name", this.name);
         outerSvg.classList.add("svg-annotation-rect");
         const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        bg.classList.add("svg-annotation-rect-bg");
+        bg.classList.add("svg-rect-bg");
         bg.setAttribute("x", this.Rect[0] + "");
         bg.setAttribute("y", this.Rect[1] + "");
         bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
         bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
-        bg.setAttribute("fill", "none");
+        bg.setAttribute("fill", "transparent");
         const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         minRectHandle.classList.add("svg-rect-handle", "min");
         minRectHandle.setAttribute("cx", this.Rect[0] + "");

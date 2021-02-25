@@ -7,8 +7,9 @@ export class PageAnnotationView {
   private readonly _pageDimensions: Vec2;
 
   private _annotationData: AnnotationData;
-  private _pageAnnotations: AnnotationDict[];
+  private _annotations: AnnotationDict[];
   private _svgByAnnotation = new Map<AnnotationDict, SVGGraphicsElement>();
+  private _selectedAnnotation: AnnotationDict;
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
@@ -37,9 +38,9 @@ export class PageAnnotationView {
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
 
-    this._pageAnnotations = annotationData.getPageAnnotations(pageId);
+    this._annotations = annotationData.getPageAnnotations(pageId);
 
-    this.switchEditMode(false);
+    this.switchEditMode(true);
   } 
 
   destroy() {
@@ -60,6 +61,25 @@ export class PageAnnotationView {
     parent.append(this._container);
   }
 
+  private switchSelectedAnnotation(annotation: AnnotationDict) {
+    if (!this._editModeOn || annotation === this._selectedAnnotation) {
+      return;
+    }
+
+    if (this._selectedAnnotation) {
+      const oldSelectedSvg = this._svgByAnnotation.get(this._selectedAnnotation);
+      oldSelectedSvg?.classList.remove("selected");
+    }
+
+    const newSelectedSvg = this._svgByAnnotation.get(annotation);
+    if (!newSelectedSvg) {
+      return;
+    }
+    newSelectedSvg.classList.add("selected");
+    this._svg.append(newSelectedSvg); // reappend selected svg to move it to the top
+    this._selectedAnnotation = annotation;
+  }
+
   private switchEditMode(value?: boolean) {
     value = value ?? !this._editModeOn;
     this._editModeOn = value;
@@ -67,6 +87,7 @@ export class PageAnnotationView {
       this._container.classList.remove("passive");
     } else {
       this._container.classList.add("passive");
+      this.switchSelectedAnnotation(null);
     }
   }
 
@@ -77,17 +98,28 @@ export class PageAnnotationView {
     }
     const {svg, clipPaths} = svgWithBox;
     this._svgByAnnotation.set(annotation, svg);
+    svg.addEventListener("click", () => {
+      this.switchSelectedAnnotation(annotation);
+    });
     this._svg.append(svg);
     clipPaths.forEach(x => this._defs.append(x));
-    this._svg.append(this._defs);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
-    for (let i = 0; i < this._pageAnnotations?.length || 0; i++) {
-      setTimeout(() => this.renderAnnotation(this._pageAnnotations[i]), 0);
+    const promises: Promise<void>[] = [];
+    for (let i = 0; i < this._annotations?.length || 0; i++) {
+      promises.push(new Promise<void>(resolve => {
+        setTimeout(() => { 
+          this.renderAnnotation(this._annotations[i]);
+          resolve();
+        }, 0);
+      }));
     }
+
+    await Promise.all(promises);
+    this._svg.append(this._defs);
 
     return true;
   }

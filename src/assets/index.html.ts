@@ -390,11 +390,21 @@ export const styles = /*html*/`
       flex-grow: 1;
       flex-shrink: 1;
       width: 100px;
-    }    
+    } 
 
-    .svg-annotation-rect .svg-rect-handle {
+    .svg-annotation-rect {
+      cursor: pointer;
+    } 
+    .svg-annotation-rect.selected {
+      cursor: default;
+    } 
+    .svg-annotation-rect.selected .svg-rect-bg {
+      fill: var(--color-text-selection-final);
+    } 
+    .svg-annotation-rect.selected .svg-rect-handle {
       r: 3;
-      fill: red;
+      fill: var(--color-primary-final);
+      cursor: pointer;
     }
   </style>
 `;
