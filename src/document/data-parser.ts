@@ -1,6 +1,6 @@
 import { codes, keywordCodes, isRegularChar,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./codes";
-import { ObjectType, ValueType, valueTypes } from "./const";
+import { ObjectType, Rect, ValueType, valueTypes } from "./const";
 import { CryptInfo } from "./common-interfaces";
 
 export type SearchDirection = "straight" | "reverse";
@@ -20,13 +20,21 @@ export interface Bounds {
 }
 
 export interface ParseInfo {
+  /** parser instance used to parse the object */
   parser: DataParser;
+  /** object indices in the parser data array */
   bounds: Bounds;
+  /** encryption info (only for encrypted PDF files) */
   cryptInfo?: CryptInfo;
   /** parent object stream id */
   streamId?: number;
+  /** PDF object type */
   type?: ObjectType;
+  /** parsed value (only for primitive objects which are parsed in place) */
   value?: any;
+  /** max object rendering bounds */
+  rect?: Rect;
+  /** a function used to get ParseInfo for indirect objects */
   parseInfoGetter?: (id: number) => ParseInfo;
 }
 

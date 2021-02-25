@@ -19,6 +19,7 @@ import { Mat3, Vec2 } from "../../../math";
 export abstract class AnnotationDict extends PdfDict {
   isDeleted: boolean;
   name: string;
+  pageRect: Rect;
 
   //#region PDF properties
 
@@ -411,6 +412,7 @@ export abstract class AnnotationDict extends PdfDict {
     }
 
     this.name = this.NM?.literal || getRandomUuid();
+    this.pageRect = parseInfo.rect;
 
     return true;
   }

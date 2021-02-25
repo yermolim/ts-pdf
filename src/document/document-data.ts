@@ -208,6 +208,7 @@ export class DocumentData {
       const annotations: AnnotationDict[] = [];
       for (const objectId of annotationIds) {
         const info = this.getObjectParseInfo(objectId.id);  
+        info.rect = page.MediaBox;
         const annotationType = info.parser.parseDictSubtype(info.bounds);
         let annot: ParseResult<AnnotationDict>;
         switch (annotationType) {

@@ -1229,21 +1229,6 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 class PageAnnotationView {
     constructor(annotationData, pageId, pageDimensions) {
         this._svgByAnnotation = new Map();
-        this._moveStartMatrix = new Mat3();
-        this._moveStartPoint = new Vec2();
-        this.onRectPointerDown = (e) => {
-            e.target;
-        };
-        this.onRectPointerMove = (e) => {
-        };
-        this.onRectPointerUp = (e) => {
-        };
-        this.onHandlePointerDown = (e) => {
-        };
-        this.onHandlePointerMove = (e) => {
-        };
-        this.onHandlePointerUp = (e) => {
-        };
         if (!annotationData || isNaN(pageId) || !pageDimensions) {
             throw new Error("Required argument not found");
         }
@@ -6442,9 +6427,6 @@ class XFormStream extends PdfStream {
         if (!this.BBox) {
             return false;
         }
-        const chars = [];
-        this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
-        console.log(chars.join(""));
         return true;
     }
 }
@@ -7008,21 +6990,6 @@ class AppearanceStreamRenderer {
         const rectMax = new Vec2(rect[2], rect[3]);
         const matA = mat3From4Vec2(tBoxMin, tBoxMax, rectMin, rectMax);
         const matAA = Mat3.fromMat3(matrix).multiply(matA);
-        console.log("stream matrix");
-        console.log(matrix);
-        console.log("stream bbox");
-        console.log(boxLowerLeft);
-        console.log(boxUpperRight);
-        console.log("translated stream bbox");
-        console.log(tBoxMin);
-        console.log(tBoxMax);
-        console.log("annotation rect");
-        console.log(rectMin);
-        console.log(rectMax);
-        console.log("transformed stream matrix");
-        console.log(matA);
-        console.log("final matrix");
-        console.log(matAA);
         return matAA;
     }
     static parseNextCommand(parser, i) {
@@ -7401,6 +7368,21 @@ class AnnotationDict extends PdfDict {
         super(dictTypes.ANNOTATION);
         this.F = 0;
         this.Border = new BorderArray(0, 0, 1);
+        this._moveStartMatrix = new Mat3();
+        this._moveStartPoint = new Vec2();
+        this.onRectPointerDown = (e) => {
+            e.target;
+        };
+        this.onRectPointerMove = (e) => {
+        };
+        this.onRectPointerUp = (e) => {
+        };
+        this.onHandlePointerDown = (e) => {
+        };
+        this.onHandlePointerMove = (e) => {
+        };
+        this.onHandlePointerUp = (e) => {
+        };
         this.Subtype = subType;
     }
     toArray(cryptInfo) {
@@ -7460,10 +7442,6 @@ class AnnotationDict extends PdfDict {
     }
     render() {
         return this.renderWrapper();
-    }
-    applyRectTransform(mat) {
-    }
-    applyHandleTransform(mat, name) {
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -7717,6 +7695,7 @@ class AnnotationDict extends PdfDict {
             return false;
         }
         this.name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
+        this.pageRect = parseInfo.rect;
         return true;
     }
     renderAP() {
@@ -7764,6 +7743,10 @@ class AnnotationDict extends PdfDict {
             handles: [minRectHandle, maxRectHandle],
             clipPaths: content.clipPaths,
         };
+    }
+    applyRectTransform(mat) {
+    }
+    applyHandleTransform(mat, name) {
     }
 }
 
@@ -11496,6 +11479,7 @@ class DocumentData {
             const annotations = [];
             for (const objectId of annotationIds) {
                 const info = this.getObjectParseInfo(objectId.id);
+                info.rect = page.MediaBox;
                 const annotationType = info.parser.parseDictSubtype(info.bounds);
                 let annot;
                 switch (annotationType) {
