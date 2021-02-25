@@ -83,6 +83,9 @@ const styles = `
       pointer-events: none;
     }
 
+    .relative {
+      position: relative;
+    }
     .absolute {
       position: absolute;
     }
@@ -439,6 +442,11 @@ const styles = `
       flex-grow: 1;
       flex-shrink: 1;
       width: 100px;
+    }    
+
+    .svg-annotation-rect .svg-rect-handle {
+      r: 3;
+      fill: red;
     }
   </style>
 `;
@@ -1227,6 +1235,7 @@ class PageAnnotationView {
         this._svg.setAttribute("data-page-id", pageId + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
         this._svg.setAttribute("transform", "scale(1, -1)");
+        this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         this._container.append(this._svg);
         this._pageAnnotations = annotationData.getPageAnnotations(pageId);
         this.switchEditMode(false);
@@ -1264,9 +1273,11 @@ class PageAnnotationView {
         if (!svgWithBox) {
             return;
         }
-        const { svg, box } = svgWithBox;
+        const { svg, clipPaths } = svgWithBox;
         this._svgByAnnotation.set(annotation, svg);
         this._svg.append(svg);
+        clipPaths.forEach(x => this._defs.append(x));
+        this._svg.append(this._defs);
     }
     renderAnnotationsAsync() {
         var _a;
@@ -6921,7 +6932,7 @@ class AppearanceStreamRenderer {
         this._objectName = objectName;
         const matAA = AppearanceStreamRenderer.calcMatrix(stream, rect);
         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-        clipPath.id = `clip0-${objectName}`;
+        clipPath.id = `clip0_${objectName}`;
         clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
         this._clipPaths.push(clipPath);
         this._graphicsStates.push(new GraphicsState({ matrix: matAA }));
@@ -6995,17 +7006,10 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     render() {
-        const outerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        outerGroup.setAttribute("data-name", this._objectName);
         const g = this.drawGroup(this._parser);
-        outerGroup.append(g);
         return {
-            svg: outerGroup,
+            svg: g,
             clipPaths: this._clipPaths,
-            box: {
-                min: new Vec2(this._rect[0], this._rect[1]),
-                max: new Vec2(this._rect[2], this._rect[3]),
-            },
         };
     }
     pushState(params) {
@@ -7275,7 +7279,8 @@ class AppearanceStreamRenderer {
                         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
                         clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
                         clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
-                        clipPath.id = `clip${lastCpIndex + 1}-${this._objectName}`;
+                        clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
+                        clipPath.append(clippingPath);
                         this._clipPaths.push(clipPath);
                         this.state.clipPath = clipPath;
                     }
@@ -7385,18 +7390,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     render() {
-        var _a;
-        const stream = (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
-        if (stream) {
-            try {
-                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
-                return renderer.render();
-            }
-            catch (e) {
-                console.log(`Annotation stream render error: ${e.message}`);
-            }
-        }
-        return null;
+        return this.renderWrapper();
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -7651,6 +7645,49 @@ class AnnotationDict extends PdfDict {
         }
         this.name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
         return true;
+    }
+    renderAP() {
+        var _a;
+        const stream = (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
+        if (stream) {
+            try {
+                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+                return renderer.render();
+            }
+            catch (e) {
+                console.log(`Annotation stream render error: ${e.message}`);
+            }
+        }
+        return null;
+    }
+    renderWrapper(content) {
+        content !== null && content !== void 0 ? content : (content = this.renderAP());
+        if (!content) {
+            return null;
+        }
+        const outerSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        outerSvg.setAttribute("data-name", this.name);
+        outerSvg.classList.add("svg-annotation-rect");
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        bg.classList.add("svg-annotation-rect-bg");
+        bg.setAttribute("x", this.Rect[0] + "");
+        bg.setAttribute("y", this.Rect[1] + "");
+        bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
+        bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
+        bg.setAttribute("fill", "none");
+        const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        minRectHandle.classList.add("svg-rect-handle", "min");
+        minRectHandle.setAttribute("cx", this.Rect[0] + "");
+        minRectHandle.setAttribute("cy", this.Rect[1] + "");
+        const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        maxRectHandle.classList.add("svg-rect-handle", "max");
+        maxRectHandle.setAttribute("cx", this.Rect[2] + "");
+        maxRectHandle.setAttribute("cy", this.Rect[3] + "");
+        outerSvg.append(bg, content.svg, minRectHandle, maxRectHandle);
+        return {
+            svg: outerSvg,
+            clipPaths: content.clipPaths,
+        };
     }
 }
 

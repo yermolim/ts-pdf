@@ -12,6 +12,7 @@ export class PageAnnotationView {
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
+  private _defs: SVGDefsElement;
 
   private _rendered: boolean;
   private _editModeOn: boolean;
@@ -33,6 +34,7 @@ export class PageAnnotationView {
     this._svg.setAttribute("data-page-id", pageId + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
+    this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
 
     this._pageAnnotations = annotationData.getPageAnnotations(pageId);
@@ -73,9 +75,11 @@ export class PageAnnotationView {
     if (!svgWithBox) {
       return;
     }
-    const {svg, box} = svgWithBox;
+    const {svg, clipPaths} = svgWithBox;
     this._svgByAnnotation.set(annotation, svg);
     this._svg.append(svg);
+    clipPaths.forEach(x => this._defs.append(x));
+    this._svg.append(this._defs);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    

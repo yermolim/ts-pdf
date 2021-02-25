@@ -40,7 +40,7 @@ export class AppearanceStreamRenderer {
     const matAA = AppearanceStreamRenderer.calcMatrix(stream, rect);
 
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-    clipPath.id = `clip0-${objectName}`;
+    clipPath.id = `clip0_${objectName}`;
     clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
     this._clipPaths.push(clipPath);
 
@@ -137,19 +137,10 @@ export class AppearanceStreamRenderer {
   }
 
   render(): RenderToSvgResult {
-    const outerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    outerGroup.setAttribute("data-name", this._objectName);
-
     const g = this.drawGroup(this._parser);
-    outerGroup.append(g);
-
     return {
-      svg: outerGroup, 
-      clipPaths: this._clipPaths, 
-      box: {
-        min: new Vec2(this._rect[0], this._rect[1]), 
-        max: new Vec2(this._rect[2], this._rect[3]),
-      },
+      svg: g, 
+      clipPaths: this._clipPaths,
     };
   }
 
@@ -480,7 +471,8 @@ export class AppearanceStreamRenderer {
             const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
             clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
             clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
-            clipPath.id = `clip${lastCpIndex + 1}-${this._objectName}`;
+            clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
+            clipPath.append(clippingPath);
 
             this._clipPaths.push(clipPath);
             this.state.clipPath = clipPath;

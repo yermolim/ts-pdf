@@ -149,18 +149,8 @@ export abstract class AnnotationDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }  
 
-  render(): RenderToSvgResult {   
-    const stream = this.AP?.getStream("/N");
-    if (stream) {
-      try {
-        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
-        return renderer.render();
-      }
-      catch (e) {
-        console.log(`Annotation stream render error: ${e.message}`);
-      }
-    }
-    return null;
+  render(): RenderToSvgResult {
+    return this.renderWrapper();
   }
   
   /**
@@ -413,5 +403,54 @@ export abstract class AnnotationDict extends PdfDict {
     this.name = this.NM?.literal || getRandomUuid();
 
     return true;
+  }
+
+  protected renderAP(): RenderToSvgResult {
+    const stream = this.AP?.getStream("/N");
+    if (stream) {
+      try {
+        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+        return renderer.render();
+      }
+      catch (e) {
+        console.log(`Annotation stream render error: ${e.message}`);
+      }
+    }
+    return null;    
+  }
+
+  protected renderWrapper(content?: RenderToSvgResult): RenderToSvgResult {
+    content ??= this.renderAP();
+    if (!content) {
+      return null;
+    }
+
+    const outerSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    outerSvg.setAttribute("data-name", this.name);
+    outerSvg.classList.add("svg-annotation-rect");
+
+    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bg.classList.add("svg-annotation-rect-bg");
+    bg.setAttribute("x", this.Rect[0] + "");
+    bg.setAttribute("y", this.Rect[1] + "");
+    bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
+    bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
+    bg.setAttribute("fill", "none");   
+
+    const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    minRectHandle.classList.add("svg-rect-handle", "min");
+    minRectHandle.setAttribute("cx", this.Rect[0] + "");
+    minRectHandle.setAttribute("cy", this.Rect[1] + "");    
+    const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    maxRectHandle.classList.add("svg-rect-handle", "max");
+    maxRectHandle.setAttribute("cx", this.Rect[2] + "");
+    maxRectHandle.setAttribute("cy", this.Rect[3] + "");
+    
+    outerSvg.append(bg, content.svg, minRectHandle, maxRectHandle);
+
+    return {
+      svg: outerSvg, 
+      clipPaths: content.clipPaths,
+    };
   }
 }

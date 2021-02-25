@@ -31,6 +31,9 @@ export const styles = /*html*/`
       pointer-events: none;
     }
 
+    .relative {
+      position: relative;
+    }
     .absolute {
       position: absolute;
     }
@@ -387,6 +390,11 @@ export const styles = /*html*/`
       flex-grow: 1;
       flex-shrink: 1;
       width: 100px;
+    }    
+
+    .svg-annotation-rect .svg-rect-handle {
+      r: 3;
+      fill: red;
     }
   </style>
 `;
