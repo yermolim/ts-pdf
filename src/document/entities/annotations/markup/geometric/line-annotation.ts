@@ -156,13 +156,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }  
   
   render(): RenderToSvgResult {
-    const streamRenderResult = super.render();
-    if (streamRenderResult) {
-      return streamRenderResult;
-    }
-
-    // TODO: implement individual render methods
-    return null;
+    return super.render();
   }
   
   /**

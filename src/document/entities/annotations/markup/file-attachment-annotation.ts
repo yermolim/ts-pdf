@@ -29,13 +29,5 @@ export class FileAttachmentAnnotation extends MarkupAnnotation {
     return new Uint8Array();
   }
   
-  render(): RenderToSvgResult {
-    const streamRenderResult = super.render();
-    if (streamRenderResult) {
-      return streamRenderResult;
-    }
-
-    // TODO: implement individual render methods
-    return null;
-  }
+  // TODO: implement render method
 }

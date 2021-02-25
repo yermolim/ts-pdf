@@ -23,15 +23,7 @@ export class SquigglyAnnotation extends TextMarkupAnnotation {
     return superBytes;
   }  
   
-  render(): RenderToSvgResult {
-    const streamRenderResult = super.render();
-    if (streamRenderResult) {
-      return streamRenderResult;
-    }
-
-    // TODO: implement individual render methods
-    return null;
-  }
+  // TODO: implement render method
   
   /**
    * fill public properties from data using info/parser if available

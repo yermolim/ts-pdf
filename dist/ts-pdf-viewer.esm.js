@@ -7941,11 +7941,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -8154,11 +8150,7 @@ class CircleAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -8278,11 +8270,7 @@ class LineAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -8477,11 +8465,7 @@ class SquareAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -8563,11 +8547,7 @@ class InkAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -8667,11 +8647,7 @@ class StampAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -8759,11 +8735,7 @@ class TextAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -11174,11 +11146,7 @@ class PolygonAnnotation extends PolyAnnotation {
         return superBytes;
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -11218,11 +11186,7 @@ class PolylineAnnotation extends PolyAnnotation {
         return new Uint8Array(totalBytes);
     }
     render() {
-        const streamRenderResult = super.render();
-        if (streamRenderResult) {
-            return streamRenderResult;
-        }
-        return null;
+        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
