@@ -2,7 +2,7 @@ import { annotationTypes } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { PolyAnnotation } from "./poly-annotation";
-import { SvgWithBox } from "../../../../../common";
+import { RenderToSvgResult } from "../../../../../common";
 
 export class PolygonAnnotation extends PolyAnnotation {
     
@@ -24,7 +24,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     return superBytes;
   }  
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

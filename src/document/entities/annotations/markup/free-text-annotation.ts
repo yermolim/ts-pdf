@@ -6,7 +6,7 @@ import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";
-import { SvgWithBox } from "../../../../common";
+import { RenderToSvgResult } from "../../../../common";
 
 export const freeTextIntents = {
   PLAIN_TEXT: "/FreeText",
@@ -113,7 +113,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

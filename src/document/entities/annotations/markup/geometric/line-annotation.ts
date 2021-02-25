@@ -5,7 +5,7 @@ import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
-import { SvgWithBox } from "../../../../../common";
+import { RenderToSvgResult } from "../../../../../common";
 
 export const lineIntents = {
   ARROW: "/LineArrow",
@@ -155,7 +155,7 @@ export class LineAnnotation extends GeometricAnnotation {
     return new Uint8Array(totalBytes);
   }  
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

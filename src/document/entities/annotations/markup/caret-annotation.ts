@@ -3,7 +3,7 @@ import { annotationTypes, Rect } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
-import { SvgWithBox } from "../../../../common";
+import { RenderToSvgResult } from "../../../../common";
 
 export const caretSymbolTypes = {
   NONE: "/None",
@@ -63,7 +63,7 @@ export class CaretAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

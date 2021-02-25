@@ -1,7 +1,7 @@
 import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { MarkupAnnotation } from "./markup-annotation";
-import { SvgWithBox } from "../../../../common";
+import { RenderToSvgResult } from "../../../../common";
 
 export class ProjectionAnnotation extends MarkupAnnotation {
   // TODO: implement
@@ -15,7 +15,7 @@ export class ProjectionAnnotation extends MarkupAnnotation {
     return new Uint8Array();
   }
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

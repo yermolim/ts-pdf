@@ -3,7 +3,7 @@ import { CryptInfo } from "../../../common-interfaces";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";
 import { AnnotationDict } from "../annotation-dict";
-import { SvgWithBox } from "../../../../common";
+import { RenderToSvgResult } from "../../../../common";
 
 export class LinkAnnotation extends AnnotationDict {
   /**
@@ -42,7 +42,7 @@ export class LinkAnnotation extends AnnotationDict {
     return new Uint8Array();
   }
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

@@ -2,7 +2,7 @@ import { annotationTypes } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { TextMarkupAnnotation } from "./text-markup-annotation";
-import { SvgWithBox } from "../../../../../common";
+import { RenderToSvgResult } from "../../../../../common";
 
 export class StrikeoutAnnotation extends TextMarkupAnnotation {  
   constructor() {
@@ -23,7 +23,7 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
     return superBytes;
   }
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

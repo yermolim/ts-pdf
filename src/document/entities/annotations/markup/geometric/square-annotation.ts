@@ -3,7 +3,7 @@ import { annotationTypes, Rect } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { GeometricAnnotation } from "./geometric-annotation";
-import { SvgWithBox } from "../../../../../common";
+import { RenderToSvgResult } from "../../../../../common";
 
 export class SquareAnnotation extends GeometricAnnotation {
   /**
@@ -50,7 +50,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     return new Uint8Array(totalBytes);
   }  
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

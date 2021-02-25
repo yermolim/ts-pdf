@@ -3,7 +3,7 @@ import { annotationTypes, LineEndingType, lineEndingTypes } from "../../../../co
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { PolyAnnotation } from "./poly-annotation";
-import { SvgWithBox } from "../../../../../common";
+import { RenderToSvgResult } from "../../../../../common";
 
 export class PolylineAnnotation extends PolyAnnotation {  
   /**
@@ -46,7 +46,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     return new Uint8Array(totalBytes);
   }  
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;

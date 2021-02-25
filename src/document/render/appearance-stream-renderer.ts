@@ -1,4 +1,4 @@
-import { SvgWithBox } from "../../common";
+import { RenderToSvgResult } from "../../common";
 import { Mat3, mat3From4Vec2, Vec2 } from "../../math";
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, Rect, valueTypes } from "../const";
@@ -136,7 +136,7 @@ export class AppearanceStreamRenderer {
     return {endIndex: i, parameters, operator};
   }
 
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const outerGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
     outerGroup.setAttribute("data-name", this._objectName);
 

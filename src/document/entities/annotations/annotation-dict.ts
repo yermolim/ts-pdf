@@ -13,7 +13,7 @@ import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
-import { getRandomUuid, SvgWithBox } from "../../../common";
+import { getRandomUuid, RenderToSvgResult } from "../../../common";
 
 export abstract class AnnotationDict extends PdfDict {
   isDeleted: boolean;
@@ -149,7 +149,7 @@ export abstract class AnnotationDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }  
 
-  render(): SvgWithBox {   
+  render(): RenderToSvgResult {   
     const stream = this.AP?.getStream("/N");
     if (stream) {
       try {

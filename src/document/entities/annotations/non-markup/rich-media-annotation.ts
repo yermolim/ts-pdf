@@ -1,7 +1,7 @@
 import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { AnnotationDict } from "../annotation-dict";
-import { SvgWithBox } from "../../../../common";
+import { RenderToSvgResult } from "../../../../common";
 
 export class RichMediaAnnotation extends AnnotationDict {
   // TODO: implement
@@ -15,7 +15,7 @@ export class RichMediaAnnotation extends AnnotationDict {
     return new Uint8Array();
   }
   
-  render(): SvgWithBox {
+  render(): RenderToSvgResult {
     const streamRenderResult = super.render();
     if (streamRenderResult) {
       return streamRenderResult;
