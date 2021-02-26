@@ -10,6 +10,8 @@ import { codes } from "../../codes";
 import { MeasureDict } from "../appearance/measure-dict";
 import { CryptInfo } from "../../common-interfaces";
 import { TransparencyGroupDict } from "../appearance/transparency-group-dict";
+import { Mat3, Vec2 } from "../../../math";
+import { BBox } from "../../../common";
 
 export class XFormStream extends PdfStream {
   /**
@@ -78,6 +80,47 @@ export class XFormStream extends PdfStream {
   //TODO: add remaining properties
   //OPI
   //PtData
+
+  get matrix(): Mat3 {         
+    const apMatrix = new Mat3();
+    if (this.Matrix) {
+      const [m0, m1, m3, m4, m6, m7] = this.Matrix;
+      apMatrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+    }
+    return apMatrix;
+  }  
+  set matrix(matrix: Mat3) {  
+    if (!matrix) {
+      return;
+    }  
+    this.Matrix = <Matrix>[...matrix.toFloatShortArray()];
+  }
+  
+  get bBox(): BBox {
+    return {
+      ll: new Vec2(this.BBox[0], this.BBox[1]),
+      lr: new Vec2(this.BBox[2], this.BBox[1]),
+      ur: new Vec2(this.BBox[2], this.BBox[3]),
+      ul: new Vec2(this.BBox[0], this.BBox[3]),
+    };
+  }    
+  get transformedBBox(): BBox {
+    const matrix = new Mat3();
+    if (this.Matrix) {
+      const [m0, m1, m3, m4, m6, m7] = this.Matrix;
+      matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+    }
+    const bBoxLL = new Vec2(this.BBox[0], this.BBox[1]);
+    const bBoxLR = new Vec2(this.BBox[2], this.BBox[1]);
+    const bBoxUR = new Vec2(this.BBox[2], this.BBox[3]);
+    const bBoxUL = new Vec2(this.BBox[0], this.BBox[3]);
+    return {
+      ll: Vec2.applyMat3(bBoxLL, matrix),
+      lr: Vec2.applyMat3(bBoxLR, matrix),
+      ur: Vec2.applyMat3(bBoxUR, matrix),
+      ul: Vec2.applyMat3(bBoxUL, matrix),
+    };
+  }
   
   constructor() {
     super(streamTypes.FORM_XOBJECT);

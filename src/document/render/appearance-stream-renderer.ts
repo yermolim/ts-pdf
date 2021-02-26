@@ -1,5 +1,5 @@
 import { RenderToSvgResult } from "../../common";
-import { Mat3, mat3From4Vec2, Vec2 } from "../../math";
+import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../math";
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, Rect, valueTypes } from "../const";
 import { DataParser } from "../data-parser";
@@ -37,7 +37,7 @@ export class AppearanceStreamRenderer {
     this._rect = rect;
     this._objectName = objectName; 
 
-    const matAA = AppearanceStreamRenderer.calcMatrix(stream, rect);
+    const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream, rect);
 
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     clipPath.id = `clip0_${objectName}`;
@@ -47,33 +47,20 @@ export class AppearanceStreamRenderer {
     this._graphicsStates.push(new GraphicsState({matrix: matAA}));
   }  
 
-  protected static calcMatrix(stream: XFormStream, rect: Rect): Mat3 {
-    const matrix = new Mat3();
-    if (stream.Matrix) {
-      const [m0, m1, m3, m4, m6, m7] = stream.Matrix;
-      matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-    }
-    const boxLowerLeft = new Vec2(stream.BBox[0], stream.BBox[1]);
-    const boxUpperRight = new Vec2(stream.BBox[2], stream.BBox[3]);
-    const boxUpperLeft = new Vec2(boxLowerLeft.x, boxUpperRight.y);
-    const boxLowerRight = new Vec2(boxUpperRight.x, boxLowerLeft.y);
+  protected static calcBBoxToRectMatrix(stream: XFormStream, rect: Rect): Mat3 {
+    const matrix = stream.matrix;
+    const {ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL} = stream.bBox;
     /*
     The appearance’s bounding box (specified by its BBox entry) is transformed, 
     using Matrix, to produce a quadrilateral with arbitrary orientation. 
     The transformed appearance box is the smallest upright rectangle 
     that encompasses this quadrilateral.
     */
-    const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
-    const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
-    const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
-    const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);  
-    const tBoxMin = new Vec2(
-      Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x),
-      Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y),
-    );
-    const tBoxMax = new Vec2(
-      Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x),
-      Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y),
+    const {min: appBoxMin, max: appBoxMax} = vecMinMax(
+      Vec2.applyMat3(bBoxLL, matrix),
+      Vec2.applyMat3(bBoxLR, matrix), 
+      Vec2.applyMat3(bBoxUR, matrix),
+      Vec2.applyMat3(bBoxUL, matrix), 
     );
     /*
     A matrix A is computed that scales and translates the transformed appearance box 
@@ -84,29 +71,12 @@ export class AppearanceStreamRenderer {
     */   
     const rectMin = new Vec2(rect[0], rect[1]);
     const rectMax = new Vec2(rect[2], rect[3]);
-    const matA = mat3From4Vec2(tBoxMin, tBoxMax, rectMin, rectMax);
+    const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
     /*
     Matrix is concatenated with A to form a matrix AA that maps from 
     the appearance’s coordinate system to the annotation’s rectangle in default user space
     */
     const matAA = Mat3.fromMat3(matrix).multiply(matA);
-
-    // DEBUG
-    // console.log("stream matrix");
-    // console.log(matrix);
-    // console.log("stream bbox");
-    // console.log(boxLowerLeft);
-    // console.log(boxUpperRight);
-    // console.log("translated stream bbox");
-    // console.log(tBoxMin);
-    // console.log(tBoxMax);
-    // console.log("annotation rect");
-    // console.log(rectMin);
-    // console.log(rectMax);
-    // console.log("transformed stream matrix");
-    // console.log(matA);
-    // console.log("final matrix");
-    // console.log(matAA);
 
     return matAA;
   }

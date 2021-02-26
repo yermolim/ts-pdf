@@ -688,230 +688,6 @@ class LinkedList {
 function clamp(v, min, max) {
     return Math.max(min, Math.min(v, max));
 }
-class Mat3 {
-    constructor() {
-        this.length = 9;
-        this._matrix = new Array(this.length);
-        this._matrix[0] = 1;
-        this._matrix[1] = 0;
-        this._matrix[2] = 0;
-        this._matrix[3] = 0;
-        this._matrix[4] = 1;
-        this._matrix[5] = 0;
-        this._matrix[6] = 0;
-        this._matrix[7] = 0;
-        this._matrix[8] = 1;
-    }
-    get x_x() {
-        return this._matrix[0];
-    }
-    get x_y() {
-        return this._matrix[1];
-    }
-    get x_z() {
-        return this._matrix[2];
-    }
-    get y_x() {
-        return this._matrix[3];
-    }
-    get y_y() {
-        return this._matrix[4];
-    }
-    get y_z() {
-        return this._matrix[5];
-    }
-    get z_x() {
-        return this._matrix[6];
-    }
-    get z_y() {
-        return this._matrix[7];
-    }
-    get z_z() {
-        return this._matrix[8];
-    }
-    static fromMat3(m) {
-        return new Mat3().setFromMat3(m);
-    }
-    static multiply(m1, m2) {
-        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = m1._matrix;
-        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m2._matrix;
-        const m = new Mat3();
-        m.set(a11 * b11 + a12 * b21 + a13 * b31, a11 * b12 + a12 * b22 + a13 * b32, a11 * b13 + a12 * b23 + a13 * b33, a21 * b11 + a22 * b21 + a23 * b31, a21 * b12 + a22 * b22 + a23 * b32, a21 * b13 + a22 * b23 + a23 * b33, a31 * b11 + a32 * b21 + a33 * b31, a31 * b12 + a32 * b22 + a33 * b32, a31 * b13 + a32 * b23 + a33 * b33);
-        return m;
-    }
-    static multiplyScalar(m, s) {
-        const res = new Mat3();
-        for (let i = 0; i < this.length; i++) {
-            res._matrix[i] = m._matrix[i] * s;
-        }
-        return res;
-    }
-    static transpose(m) {
-        const res = new Mat3();
-        res.set(m.x_x, m.y_x, m.z_x, m.x_y, m.y_y, m.z_y, m.x_z, m.y_z, m.z_z);
-        return res;
-    }
-    static invert(m) {
-        const mTemp = new Mat3();
-        mTemp.set(m.y_y * m.z_z - m.z_y * m.y_z, m.y_x * m.z_z - m.z_x * m.y_z, m.y_x * m.z_y - m.z_x * m.y_y, m.x_y * m.z_z - m.z_y * m.x_z, m.x_x * m.z_z - m.z_x * m.x_z, m.x_x * m.z_y - m.z_x * m.x_y, m.x_y * m.y_z - m.y_y * m.x_z, m.x_x * m.y_z - m.y_x * m.x_z, m.x_x * m.y_y - m.y_x * m.x_y);
-        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
-        const det = m.x_x * mTemp.x_x + m.x_y * mTemp.x_y + m.x_z * mTemp.x_z;
-        const inversed = new Mat3();
-        if (!det) {
-            inversed.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
-        else {
-            const detInv = 1 / 10;
-            inversed.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
-        }
-        return inversed;
-    }
-    static buildScale(x, y = undefined) {
-        y !== null && y !== void 0 ? y : (y = x);
-        return new Mat3().set(x, 0, 0, 0, y, 0, 0, 0, 1);
-    }
-    static buildRotation(theta) {
-        const c = Math.cos(theta);
-        const s = Math.sin(theta);
-        return new Mat3().set(c, s, 0, -s, c, 0, 0, 0, 1);
-    }
-    static buildTranslate(x, y) {
-        return new Mat3().set(1, 0, 0, 0, 1, 0, x, y, 1);
-    }
-    static equals(m1, m2, precision = 6) {
-        return m1.equals(m2, precision);
-    }
-    clone() {
-        return new Mat3().set(this.x_x, this.x_y, this.x_z, this.y_x, this.y_y, this.y_z, this.z_x, this.z_y, this.z_z);
-    }
-    set(x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z) {
-        this._matrix[0] = x_x;
-        this._matrix[1] = x_y;
-        this._matrix[2] = x_z;
-        this._matrix[3] = y_x;
-        this._matrix[4] = y_y;
-        this._matrix[5] = y_z;
-        this._matrix[6] = z_x;
-        this._matrix[7] = z_y;
-        this._matrix[8] = z_z;
-        return this;
-    }
-    reset() {
-        this._matrix[0] = 1;
-        this._matrix[1] = 0;
-        this._matrix[2] = 0;
-        this._matrix[3] = 0;
-        this._matrix[4] = 1;
-        this._matrix[5] = 0;
-        this._matrix[6] = 0;
-        this._matrix[7] = 0;
-        this._matrix[8] = 1;
-        return this;
-    }
-    setFromMat3(m) {
-        for (let i = 0; i < this.length; i++) {
-            this._matrix[i] = m._matrix[i];
-        }
-        return this;
-    }
-    multiply(m) {
-        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = this._matrix;
-        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m._matrix;
-        this._matrix[0] = a11 * b11 + a12 * b21 + a13 * b31;
-        this._matrix[1] = a11 * b12 + a12 * b22 + a13 * b32;
-        this._matrix[2] = a11 * b13 + a12 * b23 + a13 * b33;
-        this._matrix[3] = a21 * b11 + a22 * b21 + a23 * b31;
-        this._matrix[4] = a21 * b12 + a22 * b22 + a23 * b32;
-        this._matrix[5] = a21 * b13 + a22 * b23 + a23 * b33;
-        this._matrix[6] = a31 * b11 + a32 * b21 + a33 * b31;
-        this._matrix[7] = a31 * b12 + a32 * b22 + a33 * b32;
-        this._matrix[8] = a31 * b13 + a32 * b23 + a33 * b33;
-        return this;
-    }
-    multiplyScalar(s) {
-        for (let i = 0; i < this.length; i++) {
-            this._matrix[i] *= s;
-        }
-        return this;
-    }
-    transpose() {
-        const temp = new Mat3().setFromMat3(this);
-        this.set(temp.x_x, temp.y_x, temp.z_x, temp.x_y, temp.y_y, temp.z_y, temp.x_z, temp.y_z, temp.z_z);
-        return this;
-    }
-    invert() {
-        const mTemp = new Mat3();
-        mTemp.set(this.y_y * this.z_z - this.z_y * this.y_z, this.y_x * this.z_z - this.z_x * this.y_z, this.y_x * this.z_y - this.z_x * this.y_y, this.x_y * this.z_z - this.z_y * this.x_z, this.x_x * this.z_z - this.z_x * this.x_z, this.x_x * this.z_y - this.z_x * this.x_y, this.x_y * this.y_z - this.y_y * this.x_z, this.x_x * this.y_z - this.y_x * this.x_z, this.x_x * this.y_y - this.y_x * this.x_y);
-        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
-        const det = this.x_x * mTemp.x_x + this.x_y * mTemp.x_y + this.x_z * mTemp.x_z;
-        if (!det) {
-            this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
-        else {
-            const detInv = 1 / 10;
-            this.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
-        }
-        return this;
-    }
-    getDeterminant() {
-        const [a, b, c, d, e, f, g, h, i] = this._matrix;
-        return a * e * i - a * f * h + b * f * g - b * d * i + c * d * h - c * e * g;
-    }
-    equals(m, precision = 6) {
-        for (let i = 0; i < this.length; i++) {
-            if (+this._matrix[i].toFixed(precision) !== +m._matrix[i].toFixed(precision)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    applyScaling(x, y = undefined) {
-        const m = Mat3.buildScale(x, y);
-        return this.multiply(m);
-    }
-    applyTranslation(x, y) {
-        const m = Mat3.buildTranslate(x, y);
-        return this.multiply(m);
-    }
-    applyRotation(theta) {
-        const m = Mat3.buildRotation(theta);
-        return this.multiply(m);
-    }
-    toArray() {
-        return this._matrix.slice();
-    }
-    toIntArray() {
-        return new Int32Array(this);
-    }
-    toIntShortArray() {
-        return new Int32Array([
-            this._matrix[0],
-            this._matrix[1],
-            this._matrix[3],
-            this._matrix[4],
-            this._matrix[6],
-            this._matrix[7],
-        ]);
-    }
-    toFloatArray() {
-        return new Float32Array(this);
-    }
-    toFloatShortArray() {
-        return new Float32Array([
-            this._matrix[0],
-            this._matrix[1],
-            this._matrix[3],
-            this._matrix[4],
-            this._matrix[6],
-            this._matrix[7],
-        ]);
-    }
-    *[Symbol.iterator]() {
-        for (let i = 0; i < 9; i++) {
-            yield this._matrix[i];
-        }
-    }
-}
 class Vec2 {
     constructor(x = 0, y = 0) {
         this.length = 2;
@@ -1215,19 +991,259 @@ class Vec3 {
         yield this.z;
     }
 }
-function mat3From4Vec2(aMin, aMax, bMin, bMax) {
+class Mat3 {
+    constructor() {
+        this.length = 9;
+        this._matrix = new Array(this.length);
+        this._matrix[0] = 1;
+        this._matrix[1] = 0;
+        this._matrix[2] = 0;
+        this._matrix[3] = 0;
+        this._matrix[4] = 1;
+        this._matrix[5] = 0;
+        this._matrix[6] = 0;
+        this._matrix[7] = 0;
+        this._matrix[8] = 1;
+    }
+    get x_x() {
+        return this._matrix[0];
+    }
+    get x_y() {
+        return this._matrix[1];
+    }
+    get x_z() {
+        return this._matrix[2];
+    }
+    get y_x() {
+        return this._matrix[3];
+    }
+    get y_y() {
+        return this._matrix[4];
+    }
+    get y_z() {
+        return this._matrix[5];
+    }
+    get z_x() {
+        return this._matrix[6];
+    }
+    get z_y() {
+        return this._matrix[7];
+    }
+    get z_z() {
+        return this._matrix[8];
+    }
+    static fromMat3(m) {
+        return new Mat3().setFromMat3(m);
+    }
+    static multiply(m1, m2) {
+        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = m1._matrix;
+        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m2._matrix;
+        const m = new Mat3();
+        m.set(a11 * b11 + a12 * b21 + a13 * b31, a11 * b12 + a12 * b22 + a13 * b32, a11 * b13 + a12 * b23 + a13 * b33, a21 * b11 + a22 * b21 + a23 * b31, a21 * b12 + a22 * b22 + a23 * b32, a21 * b13 + a22 * b23 + a23 * b33, a31 * b11 + a32 * b21 + a33 * b31, a31 * b12 + a32 * b22 + a33 * b32, a31 * b13 + a32 * b23 + a33 * b33);
+        return m;
+    }
+    static multiplyScalar(m, s) {
+        const res = new Mat3();
+        for (let i = 0; i < this.length; i++) {
+            res._matrix[i] = m._matrix[i] * s;
+        }
+        return res;
+    }
+    static transpose(m) {
+        const res = new Mat3();
+        res.set(m.x_x, m.y_x, m.z_x, m.x_y, m.y_y, m.z_y, m.x_z, m.y_z, m.z_z);
+        return res;
+    }
+    static invert(m) {
+        const mTemp = new Mat3();
+        mTemp.set(m.y_y * m.z_z - m.z_y * m.y_z, m.y_x * m.z_z - m.z_x * m.y_z, m.y_x * m.z_y - m.z_x * m.y_y, m.x_y * m.z_z - m.z_y * m.x_z, m.x_x * m.z_z - m.z_x * m.x_z, m.x_x * m.z_y - m.z_x * m.x_y, m.x_y * m.y_z - m.y_y * m.x_z, m.x_x * m.y_z - m.y_x * m.x_z, m.x_x * m.y_y - m.y_x * m.x_y);
+        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
+        const det = m.x_x * mTemp.x_x + m.x_y * mTemp.x_y + m.x_z * mTemp.x_z;
+        const inversed = new Mat3();
+        if (!det) {
+            inversed.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        else {
+            const detInv = 1 / 10;
+            inversed.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
+        }
+        return inversed;
+    }
+    static buildScale(x, y = undefined) {
+        y !== null && y !== void 0 ? y : (y = x);
+        return new Mat3().set(x, 0, 0, 0, y, 0, 0, 0, 1);
+    }
+    static buildRotation(theta) {
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+        return new Mat3().set(c, s, 0, -s, c, 0, 0, 0, 1);
+    }
+    static buildTranslate(x, y) {
+        return new Mat3().set(1, 0, 0, 0, 1, 0, x, y, 1);
+    }
+    static equals(m1, m2, precision = 6) {
+        return m1.equals(m2, precision);
+    }
+    clone() {
+        return new Mat3().set(this.x_x, this.x_y, this.x_z, this.y_x, this.y_y, this.y_z, this.z_x, this.z_y, this.z_z);
+    }
+    set(x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z) {
+        this._matrix[0] = x_x;
+        this._matrix[1] = x_y;
+        this._matrix[2] = x_z;
+        this._matrix[3] = y_x;
+        this._matrix[4] = y_y;
+        this._matrix[5] = y_z;
+        this._matrix[6] = z_x;
+        this._matrix[7] = z_y;
+        this._matrix[8] = z_z;
+        return this;
+    }
+    reset() {
+        this._matrix[0] = 1;
+        this._matrix[1] = 0;
+        this._matrix[2] = 0;
+        this._matrix[3] = 0;
+        this._matrix[4] = 1;
+        this._matrix[5] = 0;
+        this._matrix[6] = 0;
+        this._matrix[7] = 0;
+        this._matrix[8] = 1;
+        return this;
+    }
+    setFromMat3(m) {
+        for (let i = 0; i < this.length; i++) {
+            this._matrix[i] = m._matrix[i];
+        }
+        return this;
+    }
+    multiply(m) {
+        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = this._matrix;
+        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m._matrix;
+        this._matrix[0] = a11 * b11 + a12 * b21 + a13 * b31;
+        this._matrix[1] = a11 * b12 + a12 * b22 + a13 * b32;
+        this._matrix[2] = a11 * b13 + a12 * b23 + a13 * b33;
+        this._matrix[3] = a21 * b11 + a22 * b21 + a23 * b31;
+        this._matrix[4] = a21 * b12 + a22 * b22 + a23 * b32;
+        this._matrix[5] = a21 * b13 + a22 * b23 + a23 * b33;
+        this._matrix[6] = a31 * b11 + a32 * b21 + a33 * b31;
+        this._matrix[7] = a31 * b12 + a32 * b22 + a33 * b32;
+        this._matrix[8] = a31 * b13 + a32 * b23 + a33 * b33;
+        return this;
+    }
+    multiplyScalar(s) {
+        for (let i = 0; i < this.length; i++) {
+            this._matrix[i] *= s;
+        }
+        return this;
+    }
+    transpose() {
+        const temp = new Mat3().setFromMat3(this);
+        this.set(temp.x_x, temp.y_x, temp.z_x, temp.x_y, temp.y_y, temp.z_y, temp.x_z, temp.y_z, temp.z_z);
+        return this;
+    }
+    invert() {
+        const mTemp = new Mat3();
+        mTemp.set(this.y_y * this.z_z - this.z_y * this.y_z, this.y_x * this.z_z - this.z_x * this.y_z, this.y_x * this.z_y - this.z_x * this.y_y, this.x_y * this.z_z - this.z_y * this.x_z, this.x_x * this.z_z - this.z_x * this.x_z, this.x_x * this.z_y - this.z_x * this.x_y, this.x_y * this.y_z - this.y_y * this.x_z, this.x_x * this.y_z - this.y_x * this.x_z, this.x_x * this.y_y - this.y_x * this.x_y);
+        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
+        const det = this.x_x * mTemp.x_x + this.x_y * mTemp.x_y + this.x_z * mTemp.x_z;
+        if (!det) {
+            this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        else {
+            const detInv = 1 / 10;
+            this.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
+        }
+        return this;
+    }
+    getDeterminant() {
+        const [a, b, c, d, e, f, g, h, i] = this._matrix;
+        return a * e * i - a * f * h + b * f * g - b * d * i + c * d * h - c * e * g;
+    }
+    getTRS() {
+        const t = new Vec2(this.z_x, this.z_y);
+        const s_x = Math.sqrt(this.x_x * this.x_x + this.x_y * this.x_y);
+        const s_y = Math.sqrt(this.y_x * this.y_x + this.y_y * this.y_y);
+        const s = new Vec2(s_x, s_y);
+        const rCos = this.x_x / s_x;
+        const r = Math.acos(rCos);
+        return { t, r, s };
+    }
+    equals(m, precision = 6) {
+        for (let i = 0; i < this.length; i++) {
+            if (+this._matrix[i].toFixed(precision) !== +m._matrix[i].toFixed(precision)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    applyScaling(x, y = undefined) {
+        const m = Mat3.buildScale(x, y);
+        return this.multiply(m);
+    }
+    applyTranslation(x, y) {
+        const m = Mat3.buildTranslate(x, y);
+        return this.multiply(m);
+    }
+    applyRotation(theta) {
+        const m = Mat3.buildRotation(theta);
+        return this.multiply(m);
+    }
+    toArray() {
+        return this._matrix.slice();
+    }
+    toIntArray() {
+        return new Int32Array(this);
+    }
+    toIntShortArray() {
+        return new Int32Array([
+            this._matrix[0],
+            this._matrix[1],
+            this._matrix[3],
+            this._matrix[4],
+            this._matrix[6],
+            this._matrix[7],
+        ]);
+    }
+    toFloatArray() {
+        return new Float32Array(this);
+    }
+    toFloatShortArray() {
+        return new Float32Array([
+            this._matrix[0],
+            this._matrix[1],
+            this._matrix[3],
+            this._matrix[4],
+            this._matrix[6],
+            this._matrix[7],
+        ]);
+    }
+    *[Symbol.iterator]() {
+        for (let i = 0; i < 9; i++) {
+            yield this._matrix[i];
+        }
+    }
+}
+function mat3From4Vec2(aMin, aMax, bMin, bMax, noRotation = false) {
     const mat = new Mat3();
+    mat.applyTranslation(-aMin.x, -aMin.y);
     const aLen = Vec2.substract(aMax, aMin).getMagnitude();
     const bLen = Vec2.substract(bMax, bMin).getMagnitude();
     const scale = bLen / aLen;
     mat.applyScaling(scale);
-    const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
-    const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
-    const rotation = bTheta - aTheta;
-    mat.applyRotation(rotation);
-    const translation = Vec2.substract(bMin, aMin);
-    mat.applyTranslation(translation.x, translation.y);
+    if (!noRotation) {
+        const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
+        const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
+        const rotation = bTheta - aTheta;
+        mat.applyRotation(rotation);
+    }
+    mat.applyTranslation(bMin.x, bMin.y);
     return mat;
+}
+function vecMinMax(...values) {
+    const min = new Vec2(Math.min(...values.map(x => x.x)), Math.min(...values.map(x => x.y)));
+    const max = new Vec2(Math.max(...values.map(x => x.x)), Math.max(...values.map(x => x.y)));
+    return { min, max };
 }
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -6187,6 +6203,45 @@ class XFormStream extends PdfStream {
         this.FormType = 1;
         this.Matrix = [1, 0, 0, 1, 0, 0];
     }
+    get matrix() {
+        const apMatrix = new Mat3();
+        if (this.Matrix) {
+            const [m0, m1, m3, m4, m6, m7] = this.Matrix;
+            apMatrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+        }
+        return apMatrix;
+    }
+    set matrix(matrix) {
+        if (!matrix) {
+            return;
+        }
+        this.Matrix = [...matrix.toFloatShortArray()];
+    }
+    get bBox() {
+        return {
+            ll: new Vec2(this.BBox[0], this.BBox[1]),
+            lr: new Vec2(this.BBox[2], this.BBox[1]),
+            ur: new Vec2(this.BBox[2], this.BBox[3]),
+            ul: new Vec2(this.BBox[0], this.BBox[3]),
+        };
+    }
+    get transformedBBox() {
+        const matrix = new Mat3();
+        if (this.Matrix) {
+            const [m0, m1, m3, m4, m6, m7] = this.Matrix;
+            matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+        }
+        const bBoxLL = new Vec2(this.BBox[0], this.BBox[1]);
+        const bBoxLR = new Vec2(this.BBox[2], this.BBox[1]);
+        const bBoxUR = new Vec2(this.BBox[2], this.BBox[3]);
+        const bBoxUL = new Vec2(this.BBox[0], this.BBox[3]);
+        return {
+            ll: Vec2.applyMat3(bBoxLL, matrix),
+            lr: Vec2.applyMat3(bBoxLR, matrix),
+            ur: Vec2.applyMat3(bBoxUR, matrix),
+            ul: Vec2.applyMat3(bBoxUL, matrix),
+        };
+    }
     static parse(parseInfo) {
         const xForm = new XFormStream();
         const parseResult = xForm.tryParseProps(parseInfo);
@@ -7008,7 +7063,7 @@ class AppearanceStreamRenderer {
         this._parser = new DataParser(stream.decodedStreamData);
         this._rect = rect;
         this._objectName = objectName;
-        const matAA = AppearanceStreamRenderer.calcMatrix(stream, rect);
+        const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream, rect);
         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
         clipPath.id = `clip0_${objectName}`;
         clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
@@ -7018,25 +7073,13 @@ class AppearanceStreamRenderer {
     get state() {
         return this._graphicsStates[this._graphicsStates.length - 1];
     }
-    static calcMatrix(stream, rect) {
-        const matrix = new Mat3();
-        if (stream.Matrix) {
-            const [m0, m1, m3, m4, m6, m7] = stream.Matrix;
-            matrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-        }
-        const boxLowerLeft = new Vec2(stream.BBox[0], stream.BBox[1]);
-        const boxUpperRight = new Vec2(stream.BBox[2], stream.BBox[3]);
-        const boxUpperLeft = new Vec2(boxLowerLeft.x, boxUpperRight.y);
-        const boxLowerRight = new Vec2(boxUpperRight.x, boxLowerLeft.y);
-        const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
-        const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
-        const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
-        const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);
-        const tBoxMin = new Vec2(Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
-        const tBoxMax = new Vec2(Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
+    static calcBBoxToRectMatrix(stream, rect) {
+        const matrix = stream.matrix;
+        const { ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL } = stream.bBox;
+        const { min: appBoxMin, max: appBoxMax } = vecMinMax(Vec2.applyMat3(bBoxLL, matrix), Vec2.applyMat3(bBoxLR, matrix), Vec2.applyMat3(bBoxUR, matrix), Vec2.applyMat3(bBoxUL, matrix));
         const rectMin = new Vec2(rect[0], rect[1]);
         const rectMax = new Vec2(rect[2], rect[3]);
-        const matA = mat3From4Vec2(tBoxMin, tBoxMax, rectMin, rectMax);
+        const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
         const matAA = Mat3.fromMat3(matrix).multiply(matA);
         return matAA;
     }
@@ -7467,6 +7510,10 @@ class AnnotationDict extends PdfDict {
         };
         this.Subtype = subType;
     }
+    get apStream() {
+        var _a;
+        return (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
+    }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
@@ -7827,8 +7874,7 @@ class AnnotationDict extends PdfDict {
         return bg;
     }
     renderAP() {
-        var _a;
-        const stream = (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
+        const stream = this.apStream;
         if (stream) {
             try {
                 const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
@@ -7860,43 +7906,72 @@ class AnnotationDict extends PdfDict {
         this._svg.innerHTML = "";
         const content = this.renderContent() || this.renderAP();
         if (!content) {
+            this._svgContent = null;
+            this._svgClipPaths = null;
             return;
         }
         const bg = this.renderRectBg();
         const handles = this.renderHandles();
         this._svg.append(bg, content.svg, ...handles);
+        this._svgContent = content.svg;
         this._svgClipPaths = content.clipPaths;
     }
     applyRectTransform(matrix) {
-        let boxLowerLeft;
-        let boxLowerRight;
-        let boxUpperRight;
-        let boxUpperLeft;
+        let bBoxLL;
+        let bBoxLR;
+        let bBoxUR;
+        let bBoxUL;
         if (this._bBox) {
-            boxLowerLeft = this._bBox.ll;
-            boxLowerRight = this._bBox.lr;
-            boxUpperRight = this._bBox.ur;
-            boxUpperLeft = this._bBox.ul;
+            bBoxLL = this._bBox.ll;
+            bBoxLR = this._bBox.lr;
+            bBoxUR = this._bBox.ur;
+            bBoxUL = this._bBox.ul;
+        }
+        else if (this.apStream) {
+            const { ll: apTrBoxLL, lr: apTrBoxLR, ur: apTrBoxUR, ul: apTrBoxUL } = this.apStream.transformedBBox;
+            const { min: boxMin, max: boxMax } = vecMinMax(apTrBoxLL, apTrBoxLR, apTrBoxUR, apTrBoxUL);
+            const rectMin = new Vec2(this.Rect[0], this.Rect[1]);
+            const rectMax = new Vec2(this.Rect[2], this.Rect[3]);
+            const mat = mat3From4Vec2(boxMin, boxMax, rectMin, rectMax, true);
+            console.log(mat);
+            bBoxLL = apTrBoxLL.applyMat3(mat);
+            bBoxLR = apTrBoxLR.applyMat3(mat);
+            bBoxUR = apTrBoxUR.applyMat3(mat);
+            bBoxUL = apTrBoxUL.applyMat3(mat);
         }
         else {
-            boxLowerLeft = new Vec2(this.Rect[0], this.Rect[1]);
-            boxLowerRight = new Vec2(this.Rect[2], this.Rect[1]);
-            boxUpperRight = new Vec2(this.Rect[2], this.Rect[3]);
-            boxUpperLeft = new Vec2(this.Rect[0], this.Rect[3]);
+            bBoxLL = new Vec2(this.Rect[0], this.Rect[1]);
+            bBoxLR = new Vec2(this.Rect[2], this.Rect[1]);
+            bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
+            bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
         }
-        const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
-        const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);
-        const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
-        const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
+        const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
+        const bBoxMatrix = new Mat3()
+            .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
+            .multiply(matrix)
+            .applyTranslation(bBoxCenter.x, bBoxCenter.y);
+        const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
+        const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);
+        const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
+        const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
         this._bBox = {
-            ll: tBoxLowerLeft,
-            lr: tBoxLowerRight,
-            ur: tBoxUpperRight,
-            ul: tBoxUpperLeft,
+            ll: trBBoxLL,
+            lr: trBBoxLR,
+            ur: trBBoxUR,
+            ul: trBBoxUL,
         };
-        const tBoxMin = new Vec2(Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
-        const tBoxMax = new Vec2(Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
-        this.Rect = [tBoxMin.x, tBoxMin.y, tBoxMax.x, tBoxMax.y];
+        const { min: newRectMin, max: newRectMax } = vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
+        this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+        const stream = this.apStream;
+        if (stream) {
+            const { ll: apQuadLL, ur: apQuadUR } = stream.transformedBBox;
+            const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
+            const newApMatrix = stream.matrix
+                .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
+                .multiply(matrix)
+                .applyTranslation(apQuadCenter.x, apQuadCenter.y);
+            this.apStream.matrix = newApMatrix;
+        }
         this.updateRender();
     }
     applyHandleTransform(mat, name) {

@@ -13,13 +13,18 @@ import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
-import { getRandomUuid, RenderToSvgResult } from "../../../common";
-import { Mat3, Vec2, Vec3 } from "../../../math";
+import { BBox, getRandomUuid, RenderToSvgResult } from "../../../common";
+import { Mat3, mat3From4Vec2, Vec2, Vec3, vecMinMax } from "../../../math";
+import { XFormStream } from "../streams/x-form-stream";
 
 export abstract class AnnotationDict extends PdfDict {
   isDeleted: boolean;
   name: string;
   pageRect: Rect;
+
+  get apStream(): XFormStream {
+    return this.AP?.getStream("/N");
+  }
 
   //#region PDF properties
 
@@ -90,9 +95,10 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svg: SVGGraphicsElement;
   protected _svgCopy: SVGGraphicsElement;
   protected _svgCopyUse: SVGUseElement;
+  protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
   protected _svgMatrix = new Mat3();
-  protected _bBox: {ll: Vec2; lr: Vec2; ur: Vec2; ul: Vec2};
+  protected _bBox: BBox;
   
   protected _moveStartTimer: number;
   protected _moveStartPoint = new Vec2();
@@ -486,7 +492,7 @@ export abstract class AnnotationDict extends PdfDict {
   }
 
   protected renderAP(): RenderToSvgResult {
-    const stream = this.AP?.getStream("/N");
+    const stream = this.apStream;
     if (stream) {
       try {
         const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
@@ -522,7 +528,9 @@ export abstract class AnnotationDict extends PdfDict {
     this._svg.innerHTML = "";
 
     const content = this.renderContent() || this.renderAP();
-    if (!content) {
+    if (!content) { 
+      this._svgContent = null;
+      this._svgClipPaths = null;
       return;
     }    
     
@@ -530,77 +538,87 @@ export abstract class AnnotationDict extends PdfDict {
     const handles = this.renderHandles(); 
 
     this._svg.append(bg, content.svg, ...handles);  
+    this._svgContent = content.svg;
     this._svgClipPaths = content.clipPaths;
   }
 
-  protected applyRectTransform(matrix: Mat3) {
-    // this._svgMatrix.multiply(mat);
-    // this._svg.setAttribute("transform", 
-    //   `matrix(${this._svgMatrix.toFloatShortArray().join(" ")})`);
-    
-    // TODO: implement  
-    let boxLowerLeft: Vec2;
-    let boxLowerRight: Vec2;
-    let boxUpperRight: Vec2;
-    let boxUpperLeft: Vec2;
+  protected applyRectTransform(matrix: Mat3) {  
+    // DEBUG   
+    // matrix = Mat3.buildRotation(-30 * Math.PI / 180);
 
+    // get current bounding box (not axis-aligned)
+    let bBoxLL: Vec2;
+    let bBoxLR: Vec2;
+    let bBoxUR: Vec2;
+    let bBoxUL: Vec2;
     if (this._bBox) {
-      boxLowerLeft = this._bBox.ll;
-      boxLowerRight = this._bBox.lr;
-      boxUpperRight = this._bBox.ur;
-      boxUpperLeft = this._bBox.ul;
-    } else {
-      boxLowerLeft = new Vec2(this.Rect[0], this.Rect[1]);
-      boxLowerRight = new Vec2(this.Rect[2], this.Rect[1]);
-      boxUpperRight = new Vec2(this.Rect[2], this.Rect[3]);
-      boxUpperLeft = new Vec2(this.Rect[0], this.Rect[3]);
+      // use the saved bounding box if present
+      bBoxLL = this._bBox.ll;
+      bBoxLR = this._bBox.lr;
+      bBoxUR = this._bBox.ur;
+      bBoxUL = this._bBox.ul;
+    } else if (this.apStream) {
+      // or calculate a bounding box using the appearance stream data if present
+      // get the transformed bounding box from the appearance stream
+      const {ll: apTrBoxLL, lr: apTrBoxLR, ur: apTrBoxUR, ul: apTrBoxUL} =
+        this.apStream.transformedBBox;  
+      // compare it with the Rect
+      const {min: boxMin, max: boxMax} = 
+        vecMinMax(apTrBoxLL, apTrBoxLR, apTrBoxUR, apTrBoxUL);
+      const rectMin = new Vec2(this.Rect[0], this.Rect[1]);
+      const rectMax = new Vec2(this.Rect[2], this.Rect[3]);    
+      // transform the appearance stream bounding box to match the Rect scale and position
+      const mat = mat3From4Vec2(boxMin, boxMax, rectMin, rectMax, true);
+      console.log(mat);
+      bBoxLL = apTrBoxLL.applyMat3(mat);
+      bBoxLR = apTrBoxLR.applyMat3(mat);
+      bBoxUR = apTrBoxUR.applyMat3(mat);
+      bBoxUL = apTrBoxUL.applyMat3(mat);
+    } else {  
+      // else use the Rect property data
+      bBoxLL = new Vec2(this.Rect[0], this.Rect[1]);
+      bBoxLR = new Vec2(this.Rect[2], this.Rect[1]);
+      bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
+      bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
     }
 
-    // const boxCenter = Vec2.add(boxLowerLeft, boxUpperRight).multiplyByScalar(0.5);
-    // matrix = new Mat3()
-    //   .applyTranslation(-boxCenter.x, -boxCenter.y)
-    //   .applyRotation(-30 * Math.PI / 180)
-    //   .applyTranslation(boxCenter.x, boxCenter.y);
-        
-    const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
-    const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);  
-    const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
-    const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
+    // translate the bounding box to origin, apply the transformation and translate it back
+    const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
+    const bBoxMatrix = new Mat3()
+      .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
+      .multiply(matrix)
+      .applyTranslation(bBoxCenter.x, bBoxCenter.y);    
+    const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
+    const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);  
+    const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
+    const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
 
+    // store the new bounding box
     this._bBox = {
-      ll: tBoxLowerLeft,
-      lr: tBoxLowerRight,
-      ur: tBoxUpperRight,
-      ul: tBoxUpperLeft,
+      ll: trBBoxLL,
+      lr: trBBoxLR,
+      ur: trBBoxUR,
+      ul: trBBoxUL,
     };
 
-    const tBoxMin = new Vec2(
-      Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x),
-      Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y),
-    );
-    const tBoxMax = new Vec2(
-      Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x),
-      Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y),
-    );
-
-    this.Rect = [tBoxMin.x, tBoxMin.y, tBoxMax.x, tBoxMax.y];
+    // get an axis-aligned bounding box and assign it to the Rect property
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
+    this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     
-    // const stream = this.AP?.getStream("/N");
-    // if (stream) {      
-    //   const apMatrix = new Mat3();
-    //   if (stream.Matrix) {
-    //     const [m0, m1, m3, m4, m6, m7] = stream.Matrix;
-    //     apMatrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-    //   }
-    //   const [sbMinX, sbMinY, sbMaxX, sbMaxY] = stream.BBox;
-    //   const sbCenter = Vec2.add(new Vec2(sbMinX, sbMinY), new Vec2(sbMaxX, sbMaxY)).multiplyByScalar(0.5);
-
-    //   apMatrix
-    //     .applyTranslation(-sbCenter.x, -sbCenter.y)
-    //     .applyRotation(-30 * Math.PI / 180)
-    //     .applyTranslation(sbCenter.x, sbCenter.y);
-    //   stream.Matrix = <Matrix>[...apMatrix.toFloatShortArray()];
-    // }
+    // if the annotation has a content stream, update its matrix
+    const stream = this.apStream;
+    if (stream) {  
+      // get transformed appearance stream bounding box  
+      const { ll: apQuadLL, ur: apQuadUR} = stream.transformedBBox;
+      // translate the stream content to origin, apply the transformation and translate it back
+      const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
+      const newApMatrix = stream.matrix
+        .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
+        .multiply(matrix)
+        .applyTranslation(apQuadCenter.x, apQuadCenter.y);
+      this.apStream.matrix = newApMatrix;
+    }
 
     this.updateRender();
   }

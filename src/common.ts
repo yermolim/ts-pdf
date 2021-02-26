@@ -16,6 +16,13 @@ export interface RenderToSvgResult {
   clipPaths?: SVGClipPathElement[];
 }
 
+export interface BBox {
+  ll: Vec2; 
+  lr: Vec2; 
+  ur: Vec2; 
+  ul: Vec2;
+}
+
 export class LinkedListNode<T> {
   data: T;
   next: LinkedListNode<T>;
