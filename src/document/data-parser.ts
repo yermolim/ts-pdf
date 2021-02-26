@@ -513,7 +513,7 @@ export class DataParser {
       }
     }
     const arrayEnd = i - 1;
-    if (arrayEnd - start < 2) {
+    if (arrayEnd - start < 1) {
       return null;
     }
 

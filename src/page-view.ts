@@ -287,8 +287,8 @@ export class PageView {
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
       this._annotations = new PageAnnotationsView(this._annotationData, this.id, new Vec2(x, y));
-      await this._annotations.appendAsync(this.viewContainer);
     }
+    await this._annotations.appendAsync(this.viewContainer);
 
     // check if scale not changed during text render
     if (scale === this._scale) {

@@ -50,10 +50,6 @@ export class InkAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
   
-  render(): RenderToSvgResult {
-    return super.render();
-  }
-  
   /**
    * fill public properties from data using info/parser if available
    */

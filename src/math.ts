@@ -185,6 +185,22 @@ export class Mat3 {
     this._matrix[8] = z_z;
     return this;
   }
+
+  reset(): Mat3 {    
+    this._matrix[0] = 1;
+    this._matrix[1] = 0;
+    this._matrix[2] = 0;
+
+    this._matrix[3] = 0;
+    this._matrix[4] = 1;
+    this._matrix[5] = 0;
+
+    this._matrix[6] = 0;
+    this._matrix[7] = 0;
+    this._matrix[8] = 1;
+
+    return this;
+  }
   
   setFromMat3(m: Mat3): Mat3 {
     for (let i = 0; i < this.length; i++) {
@@ -330,7 +346,7 @@ export class Mat3 {
   } 
 
   *[Symbol.iterator](): Iterator<number> {
-    for (let i = 0; i < 16; i++) {      
+    for (let i = 0; i < 9; i++) {      
       yield this._matrix[i];
     }
   }

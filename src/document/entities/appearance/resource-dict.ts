@@ -171,13 +171,13 @@ export class ResourceDict extends PdfDict {
     return;
   }
   
-  protected fillMaps(parseInfoGetter: (id: number) => ParseInfo) {
+  protected fillMaps(parseInfoGetter: (id: number) => ParseInfo, cryptInfo?: CryptInfo) {
     this._gsMap.clear();
     this._fontsMap.clear();
     this._xObjectsMap.clear();
 
     if (this.ExtGState) {
-      for (const [name, objectId] of this.ExtGState.getProps()) {
+      for (const [name, objectId] of this.ExtGState.getObjectIds()) {
         const streamParseInfo = parseInfoGetter(objectId.id);
         if (!streamParseInfo) {
           continue;
@@ -187,10 +187,16 @@ export class ResourceDict extends PdfDict {
           this._gsMap.set(`/ExtGState${name}`, stream.value);
         }
       }
+      for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {        
+        const dict = GraphicsStateDict.parse(parseInfo);
+        if (dict) {
+          this._gsMap.set(`/ExtGState${name}`, dict.value);
+        }
+      }
     }
 
     if (this.XObject) {
-      for (const [name, objectId] of this.XObject.getProps()) {
+      for (const [name, objectId] of this.XObject.getObjectIds()) {
         const streamParseInfo = parseInfoGetter(objectId.id);
         if (!streamParseInfo) {
           continue;
@@ -204,7 +210,7 @@ export class ResourceDict extends PdfDict {
     }
     
     if (this.Font) {
-      for (const [name, objectId] of this.Font.getProps()) {
+      for (const [name, objectId] of this.Font.getObjectIds()) {
         const dictParseInfo = parseInfoGetter(objectId.id);
         if (!dictParseInfo) {
           continue;
@@ -279,7 +285,7 @@ export class ResourceDict extends PdfDict {
     };
 
     if (parseInfo.parseInfoGetter) {
-      this.fillMaps(parseInfo.parseInfoGetter);
+      this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
     }
 
     return true;

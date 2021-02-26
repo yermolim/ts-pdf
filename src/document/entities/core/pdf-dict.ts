@@ -52,7 +52,7 @@ export abstract class PdfDict extends PdfObject {
     const end = bounds.contentEnd || bounds.end;
 
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
+    if (i === -1) {     
       // no props found, so the dict is invalid
       return false;
     }

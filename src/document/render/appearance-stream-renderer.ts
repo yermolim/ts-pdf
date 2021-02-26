@@ -133,7 +133,14 @@ export class AppearanceStreamRenderer {
           const numberArrayResult = parser.parseNumberArrayAt(i, true);
           if (numberArrayResult) {
             // should be number array (for dash pattern)
-            parameters.push(...numberArrayResult.value);
+            const dashArray = numberArrayResult.value;
+            if (dashArray.length === 2) {
+              parameters.push(...dashArray);
+            } else if (dashArray.length === 1) {
+              parameters.push(dashArray[0], 0);
+            } else {
+              parameters.push(3, 0);
+            }
           } else {
             throw new Error(`Invalid appearance stream array: 
             ${parser.sliceChars(arrayBounds.start, arrayBounds.end)}`);
@@ -346,6 +353,7 @@ export class AppearanceStreamRenderer {
           break;
         case "d": // set stroke dash array
           this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
+          this.state.strokeDashOffset = +parameters[2];
           break;
         //#endregion
         //#region Color state operators

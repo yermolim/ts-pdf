@@ -1,11 +1,12 @@
 import { valueTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
 export class ObjectMapDict extends PdfDict {
   protected readonly _objectIdMap = new Map<string, ObjectId>();
+  protected readonly _dictParserMap = new Map<string, ParseInfo>();
   
   constructor() {
     super(null);
@@ -20,12 +21,23 @@ export class ObjectMapDict extends PdfDict {
       : null;
   }
   
-  getProp(name: string): ObjectId {
+  getObjectId(name: string): ObjectId {
     return this._objectIdMap.get(name);
   }
 
-  *getProps(): Iterable<[string, ObjectId]> {
+  *getObjectIds(): Iterable<[string, ObjectId]> {
     for (const pair of this._objectIdMap) {
+      yield pair;
+    }
+    return;
+  }
+  
+  getDictParser(name: string): ParseInfo {
+    return this._dictParserMap.get(name);
+  }
+
+  *getDictParsers(): Iterable<[string, ParseInfo]> {
+    for (const pair of this._dictParserMap) {
       yield pair;
     }
     return;
@@ -80,6 +92,23 @@ export class ObjectMapDict extends PdfDict {
               if (id) {
                 this._objectIdMap.set(name, id.value);
                 i = id.end + 1;
+                break;
+              }
+            } else if (entryType === valueTypes.DICTIONARY) {
+              const dictBounds = parser.getDictBoundsAt(i);
+              if (dictBounds) {
+                const dictParseInfo: ParseInfo = {
+                  parser: new DataParser(parser.sliceCharCodes(dictBounds.start, dictBounds.end)), 
+                  bounds: {
+                    start: 0, 
+                    end: dictBounds.end - dictBounds.start, 
+                    contentStart: dictBounds.contentStart - dictBounds.start,
+                    contentEnd: dictBounds.contentEnd - dictBounds.start,
+                  }, 
+                  cryptInfo: parseInfo.cryptInfo,
+                };
+                this._dictParserMap.set(name, dictParseInfo);
+                i = dictBounds.end + 1;
                 break;
               }
             }

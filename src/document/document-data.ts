@@ -73,12 +73,12 @@ export class DocumentData {
     this._xrefs = xrefs;
     this._referenceData = new ReferenceData(xrefs);
     // DEBUG
-    console.log(this._xrefs);    
-    console.log(this._referenceData);   
+    // console.log(this._xrefs);    
+    // console.log(this._referenceData);   
 
     this.parseEncryption();
     // DEBUG
-    console.log(this._encryption);
+    // console.log(this._encryption);
   }    
 
   private static parseXref(parser: DataParser, start: number, max: number): XRef {
@@ -179,9 +179,9 @@ export class DocumentData {
     if (!this._catalog) {      
       this.parsePageTree(); 
       // DEBUG
-      console.log(this._catalog);    
-      console.log(this._pageRoot); 
-      console.log(this._pages);
+      // console.log(this._catalog);    
+      // console.log(this._pageRoot); 
+      // console.log(this._pages);
     }
 
     const annotationMap = new Map<number, AnnotationDict[]>();
@@ -212,14 +212,14 @@ export class DocumentData {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
         let annot: ParseResult<AnnotationDict>;
         switch (annotationType) {
+          case annotationTypes.STAMP:
+            annot = StampAnnotation.parse(info);
+            break;
           case annotationTypes.TEXT:
             annot = TextAnnotation.parse(info);
             break;
           case annotationTypes.FREE_TEXT:
             annot = FreeTextAnnotation.parse(info);
-            break;
-          case annotationTypes.STAMP:
-            annot = StampAnnotation.parse(info);
             break;
           case annotationTypes.CIRCLE:
             annot = CircleAnnotation.parse(info);

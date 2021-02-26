@@ -399,7 +399,8 @@ export const styles = /*html*/`
       cursor: grab;
     } 
     .svg-annotation-rect.selected .svg-rect-bg {
-      fill: var(--color-text-selection-final);
+      stroke: var(--color-secondary-tr-final);
+      stroke-dasharray: 3 3;
     } 
     .svg-annotation-rect.selected .svg-rect-handle {
       r: 3;
@@ -410,7 +411,7 @@ export const styles = /*html*/`
 `;
 
 export const html = /*html*/`
-  <div id="main-container" class="hide-previewer">
+  <div id="main-container" class="hide-previewer" ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="panel-top"> 

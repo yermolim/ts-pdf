@@ -14,7 +14,6 @@ export class PageAnnotationView {
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
   private _defs: SVGDefsElement;
-
   private _rendered: boolean;
 
   private _editModeOn: boolean;
@@ -40,7 +39,7 @@ export class PageAnnotationView {
     this._container.append(this._svg);
 
     this._annotations = annotationData.getPageAnnotations(pageId);
-
+    
     this.switchEditMode(true);
   } 
 
@@ -99,9 +98,8 @@ export class PageAnnotationView {
     }
     const {svg, clipPaths} = svgWithBox;
     this._svgByAnnotation.set(annotation, svg);
-    svg.addEventListener("click", () => {
-      this.switchSelectedAnnotation(annotation);
-    });
+    svg.addEventListener("pointerdown", 
+      () => this.switchSelectedAnnotation(annotation));
     this._svg.append(svg);
     clipPaths?.forEach(x => this._defs.append(x));
   }

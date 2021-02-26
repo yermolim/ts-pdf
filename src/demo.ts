@@ -4,7 +4,8 @@ async function run(): Promise<void> {
   const viewer = new TsPdfViewer("#pdf-main-container", "assets/pdf.worker.min.js");
   // await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
-  await viewer.openPdfAsync("demo-annots2.pdf");
+  // await viewer.openPdfAsync("demo-annots2.pdf");
+  await viewer.openPdfAsync("demo-annots3.pdf");
   // await viewer.openPdfAsync("demo-acad.pdf");
   // await viewer.openPdfAsync("demo-adobe.pdf");
   // await viewer.openPdfAsync("demo-large.pdf");

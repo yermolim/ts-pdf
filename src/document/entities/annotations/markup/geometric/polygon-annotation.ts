@@ -24,10 +24,6 @@ export class PolygonAnnotation extends PolyAnnotation {
     return superBytes;
   }  
   
-  render(): RenderToSvgResult {
-    return super.render();
-  }
-  
   /**
    * fill public properties from data using info/parser if available
    */

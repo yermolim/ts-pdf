@@ -451,7 +451,8 @@ const styles = `
       cursor: grab;
     } 
     .svg-annotation-rect.selected .svg-rect-bg {
-      fill: var(--color-text-selection-final);
+      stroke: var(--color-secondary-tr-final);
+      stroke-dasharray: 3 3;
     } 
     .svg-annotation-rect.selected .svg-rect-handle {
       r: 3;
@@ -461,7 +462,7 @@ const styles = `
   </style>
 `;
 const html = `
-  <div id="main-container" class="hide-previewer">
+  <div id="main-container" class="hide-previewer" ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="panel-top"> 
@@ -795,6 +796,18 @@ class Mat3 {
         this._matrix[8] = z_z;
         return this;
     }
+    reset() {
+        this._matrix[0] = 1;
+        this._matrix[1] = 0;
+        this._matrix[2] = 0;
+        this._matrix[3] = 0;
+        this._matrix[4] = 1;
+        this._matrix[5] = 0;
+        this._matrix[6] = 0;
+        this._matrix[7] = 0;
+        this._matrix[8] = 1;
+        return this;
+    }
     setFromMat3(m) {
         for (let i = 0; i < this.length; i++) {
             this._matrix[i] = m._matrix[i];
@@ -894,7 +907,7 @@ class Mat3 {
         ]);
     }
     *[Symbol.iterator]() {
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < 9; i++) {
             yield this._matrix[i];
         }
     }
@@ -1298,9 +1311,7 @@ class PageAnnotationView {
         }
         const { svg, clipPaths } = svgWithBox;
         this._svgByAnnotation.set(annotation, svg);
-        svg.addEventListener("click", () => {
-            this.switchSelectedAnnotation(annotation);
-        });
+        svg.addEventListener("pointerdown", () => this.switchSelectedAnnotation(annotation));
         this._svg.append(svg);
         clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
     }
@@ -1640,8 +1651,8 @@ class PageView {
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
                 this._annotations = new PageAnnotationView(this._annotationData, this.id, new Vec2(x, y));
-                yield this._annotations.appendAsync(this.viewContainer);
             }
+            yield this._annotations.appendAsync(this.viewContainer);
             if (scale === this._scale) {
                 this._scaleIsValid = true;
             }
@@ -4089,83 +4100,6 @@ class BorderStyleDict extends PdfDict {
     }
 }
 
-class ObjectMapDict extends PdfDict {
-    constructor() {
-        super(null);
-        this._objectIdMap = new Map();
-    }
-    static parse(parseInfo) {
-        const objectMap = new ObjectMapDict();
-        const parseResult = objectMap.tryParseProps(parseInfo);
-        return parseResult
-            ? { value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
-    }
-    getProp(name) {
-        return this._objectIdMap.get(name);
-    }
-    *getProps() {
-        for (const pair of this._objectIdMap) {
-            yield pair;
-        }
-        return;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        this._objectIdMap.forEach((v, k) => {
-            bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo));
-        });
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    default:
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const id = ObjectId.parseRef(parser, i);
-                            if (id) {
-                                this._objectIdMap.set(name, id.value);
-                                i = id.end + 1;
-                                break;
-                            }
-                        }
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        return true;
-    }
-}
-
 class DataParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -4507,7 +4441,7 @@ class DataParser {
             }
         }
         const arrayEnd = i - 1;
-        if (arrayEnd - start < 2) {
+        if (arrayEnd - start < 1) {
             return null;
         }
         return { start, end: arrayEnd };
@@ -4807,6 +4741,111 @@ class DataParser {
             }
         }
         return -1;
+    }
+}
+
+class ObjectMapDict extends PdfDict {
+    constructor() {
+        super(null);
+        this._objectIdMap = new Map();
+        this._dictParserMap = new Map();
+    }
+    static parse(parseInfo) {
+        const objectMap = new ObjectMapDict();
+        const parseResult = objectMap.tryParseProps(parseInfo);
+        return parseResult
+            ? { value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
+            : null;
+    }
+    getObjectId(name) {
+        return this._objectIdMap.get(name);
+    }
+    *getObjectIds() {
+        for (const pair of this._objectIdMap) {
+            yield pair;
+        }
+        return;
+    }
+    getDictParser(name) {
+        return this._dictParserMap.get(name);
+    }
+    *getDictParsers() {
+        for (const pair of this._dictParserMap) {
+            yield pair;
+        }
+        return;
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        this._objectIdMap.forEach((v, k) => {
+            bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo));
+        });
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    tryParseProps(parseInfo) {
+        const superIsParsed = super.tryParseProps(parseInfo);
+        if (!superIsParsed) {
+            return false;
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        if (i === -1) {
+            return false;
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    default:
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.REF) {
+                            const id = ObjectId.parseRef(parser, i);
+                            if (id) {
+                                this._objectIdMap.set(name, id.value);
+                                i = id.end + 1;
+                                break;
+                            }
+                        }
+                        else if (entryType === valueTypes.DICTIONARY) {
+                            const dictBounds = parser.getDictBoundsAt(i);
+                            if (dictBounds) {
+                                const dictParseInfo = {
+                                    parser: new DataParser(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
+                                    bounds: {
+                                        start: 0,
+                                        end: dictBounds.end - dictBounds.start,
+                                        contentStart: dictBounds.contentStart - dictBounds.start,
+                                        contentEnd: dictBounds.contentEnd - dictBounds.start,
+                                    },
+                                    cryptInfo: parseInfo.cryptInfo,
+                                };
+                                this._dictParserMap.set(name, dictParseInfo);
+                                i = dictBounds.end + 1;
+                                break;
+                            }
+                        }
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return true;
     }
 }
 
@@ -5785,13 +5824,13 @@ class ResourceDict extends PdfDict {
         }
         return;
     }
-    fillMaps(parseInfoGetter) {
+    fillMaps(parseInfoGetter, cryptInfo) {
         var _a;
         this._gsMap.clear();
         this._fontsMap.clear();
         this._xObjectsMap.clear();
         if (this.ExtGState) {
-            for (const [name, objectId] of this.ExtGState.getProps()) {
+            for (const [name, objectId] of this.ExtGState.getObjectIds()) {
                 const streamParseInfo = parseInfoGetter(objectId.id);
                 if (!streamParseInfo) {
                     continue;
@@ -5801,9 +5840,15 @@ class ResourceDict extends PdfDict {
                     this._gsMap.set(`/ExtGState${name}`, stream.value);
                 }
             }
+            for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {
+                const dict = GraphicsStateDict.parse(parseInfo);
+                if (dict) {
+                    this._gsMap.set(`/ExtGState${name}`, dict.value);
+                }
+            }
         }
         if (this.XObject) {
-            for (const [name, objectId] of this.XObject.getProps()) {
+            for (const [name, objectId] of this.XObject.getObjectIds()) {
                 const streamParseInfo = parseInfoGetter(objectId.id);
                 if (!streamParseInfo) {
                     continue;
@@ -5815,7 +5860,7 @@ class ResourceDict extends PdfDict {
             }
         }
         if (this.Font) {
-            for (const [name, objectId] of this.Font.getProps()) {
+            for (const [name, objectId] of this.Font.getObjectIds()) {
                 const dictParseInfo = parseInfoGetter(objectId.id);
                 if (!dictParseInfo) {
                     continue;
@@ -5882,7 +5927,7 @@ class ResourceDict extends PdfDict {
             }
         }
         if (parseInfo.parseInfoGetter) {
-            this.fillMaps(parseInfo.parseInfoGetter);
+            this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
         }
         return true;
     }
@@ -6427,6 +6472,9 @@ class XFormStream extends PdfStream {
         if (!this.BBox) {
             return false;
         }
+        const chars = [];
+        this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
+        console.log(chars.join(""));
         return true;
     }
 }
@@ -7012,7 +7060,16 @@ class AppearanceStreamRenderer {
                     const arrayBounds = parser.getArrayBoundsAt(i);
                     const numberArrayResult = parser.parseNumberArrayAt(i, true);
                     if (numberArrayResult) {
-                        parameters.push(...numberArrayResult.value);
+                        const dashArray = numberArrayResult.value;
+                        if (dashArray.length === 2) {
+                            parameters.push(...dashArray);
+                        }
+                        else if (dashArray.length === 1) {
+                            parameters.push(dashArray[0], 0);
+                        }
+                        else {
+                            parameters.push(3, 0);
+                        }
                     }
                     else {
                         throw new Error(`Invalid appearance stream array: 
@@ -7176,6 +7233,7 @@ class AppearanceStreamRenderer {
                     break;
                 case "d":
                     this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
+                    this.state.strokeDashOffset = +parameters[2];
                     break;
                 case "CS":
                     switch (parameters[0]) {
@@ -7368,14 +7426,38 @@ class AnnotationDict extends PdfDict {
         super(dictTypes.ANNOTATION);
         this.F = 0;
         this.Border = new BorderArray(0, 0, 1);
-        this._moveStartMatrix = new Mat3();
+        this._svgId = getRandomUuid();
+        this._svgMatrix = new Mat3();
         this._moveStartPoint = new Vec2();
+        this._moveMatrix = new Mat3();
         this.onRectPointerDown = (e) => {
-            e.target;
+            document.addEventListener("pointerup", this.onRectPointerUp);
+            document.addEventListener("pointerout", this.onRectPointerUp);
+            this._moveStartTimer = setTimeout(() => {
+                this._moveStartTimer = null;
+                this._svg.after(this._svgCopy);
+                this._moveStartPoint.set(e.clientX, e.clientY);
+                document.addEventListener("pointermove", this.onRectPointerMove);
+            }, 200);
         };
         this.onRectPointerMove = (e) => {
+            this._moveMatrix.reset()
+                .applyTranslation(e.clientX - this._moveStartPoint.x, -1 * (e.clientY - this._moveStartPoint.y));
+            this._svgCopyUse.setAttribute("transform", `matrix(${this._moveMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onRectPointerUp = (e) => {
+        this.onRectPointerUp = () => {
+            document.removeEventListener("pointermove", this.onRectPointerMove);
+            document.removeEventListener("pointerup", this.onRectPointerUp);
+            document.removeEventListener("pointerout", this.onRectPointerUp);
+            if (this._moveStartTimer) {
+                clearTimeout(this._moveStartTimer);
+                this._moveStartTimer = null;
+                return;
+            }
+            this._svgCopy.remove();
+            this._svgCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+            this.applyRectTransform(this._moveMatrix);
+            this._moveMatrix.reset();
         };
         this.onHandlePointerDown = (e) => {
         };
@@ -7441,7 +7523,18 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     render() {
-        return this.renderWrapper();
+        if (!this._svg) {
+            const rect = this.renderRect();
+            const { copy, use } = this.renderRectCopy();
+            this._svg = rect;
+            this._svgCopy = copy;
+            this._svgCopyUse = use;
+        }
+        this.updateRender();
+        return {
+            svg: this._svg,
+            clipPaths: this._svgClipPaths,
+        };
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -7698,6 +7791,41 @@ class AnnotationDict extends PdfDict {
         this.pageRect = parseInfo.rect;
         return true;
     }
+    renderRectCopy() {
+        const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
+        copySymbol.id = this._svgId + "_symbol";
+        const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        copySymbolUse.setAttribute("href", `#${this._svgId}`);
+        copySymbolUse.setAttribute("viewBox", `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+        copySymbol.append(copySymbolUse);
+        copyDefs.append(copySymbol);
+        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.setAttribute("href", `#${this._svgId}_symbol`);
+        use.setAttribute("opacity", "0.2");
+        copy.append(copyDefs, use);
+        return { copy, use };
+    }
+    renderRect() {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        rect.id = this._svgId;
+        rect.classList.add("svg-annotation-rect");
+        rect.setAttribute("data-annotation-name", this.name);
+        rect.addEventListener("pointerdown", this.onRectPointerDown);
+        return rect;
+    }
+    renderRectBg() {
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        bg.classList.add("svg-rect-bg");
+        bg.setAttribute("data-annotation-name", this.name);
+        bg.setAttribute("x", this.Rect[0] + "");
+        bg.setAttribute("y", this.Rect[1] + "");
+        bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
+        bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
+        bg.setAttribute("fill", "transparent");
+        return bg;
+    }
     renderAP() {
         var _a;
         const stream = (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
@@ -7712,21 +7840,10 @@ class AnnotationDict extends PdfDict {
         }
         return null;
     }
-    renderWrapper(content) {
-        content !== null && content !== void 0 ? content : (content = this.renderAP());
-        if (!content) {
-            return null;
-        }
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        rect.setAttribute("data-annotation-name", this.name);
-        rect.classList.add("svg-annotation-rect");
-        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        bg.classList.add("svg-rect-bg");
-        bg.setAttribute("x", this.Rect[0] + "");
-        bg.setAttribute("y", this.Rect[1] + "");
-        bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
-        bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
-        bg.setAttribute("fill", "transparent");
+    renderContent() {
+        return null;
+    }
+    renderHandles() {
         const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         minRectHandle.classList.add("svg-rect-handle");
         minRectHandle.setAttribute("data-handle-name", "min");
@@ -7737,14 +7854,50 @@ class AnnotationDict extends PdfDict {
         minRectHandle.setAttribute("data-handle-name", "max");
         maxRectHandle.setAttribute("cx", this.Rect[2] + "");
         maxRectHandle.setAttribute("cy", this.Rect[3] + "");
-        rect.append(bg, content.svg, minRectHandle, maxRectHandle);
-        return {
-            svg: rect,
-            handles: [minRectHandle, maxRectHandle],
-            clipPaths: content.clipPaths,
-        };
+        return [minRectHandle, maxRectHandle];
     }
-    applyRectTransform(mat) {
+    updateRender() {
+        this._svg.innerHTML = "";
+        const content = this.renderContent() || this.renderAP();
+        if (!content) {
+            return;
+        }
+        const bg = this.renderRectBg();
+        const handles = this.renderHandles();
+        this._svg.append(bg, content.svg, ...handles);
+        this._svgClipPaths = content.clipPaths;
+    }
+    applyRectTransform(matrix) {
+        let boxLowerLeft;
+        let boxLowerRight;
+        let boxUpperRight;
+        let boxUpperLeft;
+        if (this._bBox) {
+            boxLowerLeft = this._bBox.ll;
+            boxLowerRight = this._bBox.lr;
+            boxUpperRight = this._bBox.ur;
+            boxUpperLeft = this._bBox.ul;
+        }
+        else {
+            boxLowerLeft = new Vec2(this.Rect[0], this.Rect[1]);
+            boxLowerRight = new Vec2(this.Rect[2], this.Rect[1]);
+            boxUpperRight = new Vec2(this.Rect[2], this.Rect[3]);
+            boxUpperLeft = new Vec2(this.Rect[0], this.Rect[3]);
+        }
+        const tBoxLowerLeft = Vec2.applyMat3(boxLowerLeft, matrix);
+        const tBoxLowerRight = Vec2.applyMat3(boxLowerRight, matrix);
+        const tBoxUpperRight = Vec2.applyMat3(boxUpperRight, matrix);
+        const tBoxUpperLeft = Vec2.applyMat3(boxUpperLeft, matrix);
+        this._bBox = {
+            ll: tBoxLowerLeft,
+            lr: tBoxLowerRight,
+            ur: tBoxUpperRight,
+            ul: tBoxUpperLeft,
+        };
+        const tBoxMin = new Vec2(Math.min(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.min(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
+        const tBoxMax = new Vec2(Math.max(tBoxLowerLeft.x, tBoxUpperRight.x, tBoxUpperLeft.x, tBoxLowerRight.x), Math.max(tBoxLowerLeft.y, tBoxUpperRight.y, tBoxUpperLeft.y, tBoxLowerRight.y));
+        this.Rect = [tBoxMin.x, tBoxMin.y, tBoxMax.x, tBoxMax.y];
+        this.updateRender();
     }
     applyHandleTransform(mat, name) {
     }
@@ -7999,9 +8152,6 @@ class FreeTextAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    render() {
-        return super.render();
-    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -8208,9 +8358,6 @@ class CircleAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    render() {
-        return super.render();
-    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -8327,9 +8474,6 @@ class LineAnnotation extends GeometricAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
-    }
-    render() {
-        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -8523,9 +8667,6 @@ class SquareAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    render() {
-        return super.render();
-    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -8604,9 +8745,6 @@ class InkAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
-    }
-    render() {
-        return super.render();
     }
     tryParseProps(parseInfo) {
         var _a;
@@ -8705,9 +8843,6 @@ class StampAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    render() {
-        return super.render();
-    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -8792,9 +8927,6 @@ class TextAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
-    }
-    render() {
-        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -11204,9 +11336,6 @@ class PolygonAnnotation extends PolyAnnotation {
         const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
-    render() {
-        return super.render();
-    }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
         if (!superIsParsed) {
@@ -11243,9 +11372,6 @@ class PolylineAnnotation extends PolyAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
-    }
-    render() {
-        return super.render();
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -11356,10 +11482,7 @@ class DocumentData {
         }
         this._xrefs = xrefs;
         this._referenceData = new ReferenceData(xrefs);
-        console.log(this._xrefs);
-        console.log(this._referenceData);
         this.parseEncryption();
-        console.log(this._encryption);
     }
     get size() {
         var _a;
@@ -11454,9 +11577,6 @@ class DocumentData {
         this.checkAuthentication();
         if (!this._catalog) {
             this.parsePageTree();
-            console.log(this._catalog);
-            console.log(this._pageRoot);
-            console.log(this._pages);
         }
         const annotationMap = new Map();
         for (const page of this._pages) {
@@ -11483,14 +11603,14 @@ class DocumentData {
                 const annotationType = info.parser.parseDictSubtype(info.bounds);
                 let annot;
                 switch (annotationType) {
+                    case annotationTypes.STAMP:
+                        annot = StampAnnotation.parse(info);
+                        break;
                     case annotationTypes.TEXT:
                         annot = TextAnnotation.parse(info);
                         break;
                     case annotationTypes.FREE_TEXT:
                         annot = FreeTextAnnotation.parse(info);
-                        break;
-                    case annotationTypes.STAMP:
-                        annot = StampAnnotation.parse(info);
                         break;
                     case annotationTypes.CIRCLE:
                         annot = CircleAnnotation.parse(info);
@@ -11586,7 +11706,10 @@ class DocumentData {
 class AnnotationData {
     constructor(pdfData) {
         this.onAnnotationDictChange = {
-            set: (target, prop, value) => true,
+            set: (target, prop, value) => {
+                target[prop] = value;
+                return true;
+            },
         };
         if (!(pdfData === null || pdfData === void 0 ? void 0 : pdfData.length)) {
             throw new Error("Data is empty");

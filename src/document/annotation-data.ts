@@ -10,7 +10,10 @@ export class AnnotationData {
   private _annotationsByPageId: Map<number, AnnotationDict[]>;
 
   private onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
-    set: (target: AnnotationDict, prop: string, value: any) => true,
+    set: (target: AnnotationDict, prop: string, value: any) => {
+      target[prop] = value;
+      return true;
+    },
   };
 
   constructor(pdfData: Uint8Array) {
