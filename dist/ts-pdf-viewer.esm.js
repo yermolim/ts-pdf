@@ -2887,6 +2887,9 @@ class PdfObject {
     get ref() {
         return this._ref;
     }
+    set ref(ref) {
+        this._ref = ref;
+    }
     get id() {
         var _a;
         return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.id;
@@ -4821,7 +4824,7 @@ class ObjectMapDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         this._objectIdMap.forEach((v, k) => {
-            bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo));
+            bytes.push(...encoder.encode(k), codes.WHITESPACE, ...v.toArray(cryptInfo));
         });
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -5771,8 +5774,27 @@ class ResourceDict extends PdfDict {
         const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
-        if (this.ExtGState) {
-            bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray(cryptInfo));
+        if (this._gsMap.size) {
+            bytes.push(...encoder.encode("/ExtGState"));
+            bytes.push(...keywordCodes.DICT_START);
+            for (const [name, gsDict] of this._gsMap) {
+                bytes.push(...encoder.encode(name.slice(10)));
+                bytes.push(...gsDict.toArray(cryptInfo));
+            }
+            bytes.push(...keywordCodes.DICT_END);
+        }
+        if (this._xObjectsMap.size) {
+            bytes.push(...encoder.encode("/XObject"));
+            bytes.push(...keywordCodes.DICT_START);
+            for (const [name, xObject] of this._xObjectsMap) {
+                const ref = xObject.ref;
+                if (!ref) {
+                    throw new Error("XObject has no reference");
+                }
+                bytes.push(...encoder.encode(name.slice(8)));
+                bytes.push(...new ObjectId(ref.id, ref.generation).toArray(cryptInfo));
+            }
+            bytes.push(...keywordCodes.DICT_END);
         }
         if (this.ColorSpace) {
             bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray(cryptInfo));
@@ -5782,9 +5804,6 @@ class ResourceDict extends PdfDict {
         }
         if (this.Shading) {
             bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray(cryptInfo));
-        }
-        if (this.XObject) {
-            bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray(cryptInfo));
         }
         if (this.Font) {
             bytes.push(...encoder.encode("/Font"), ...this.Font.toArray(cryptInfo));
@@ -5813,6 +5832,9 @@ class ResourceDict extends PdfDict {
         }
         return;
     }
+    setGraphicsState(name, state) {
+        this._gsMap.set(`/ExtGState${name}`, state);
+    }
     getFont(name) {
         return this._fontsMap.get(name);
     }
@@ -5831,39 +5853,8 @@ class ResourceDict extends PdfDict {
         }
         return;
     }
-    getFormXObject(name) {
-        const xObj = this._xObjectsMap.get(name);
-        if (xObj instanceof XFormStream) {
-            return xObj;
-        }
-        else {
-            return null;
-        }
-    }
-    *getFormXObjects() {
-        for (const pair of this._xObjectsMap) {
-            if (pair[1] instanceof XFormStream) {
-                yield pair;
-            }
-        }
-        return;
-    }
-    getImageXObject(name) {
-        const xObj = this._xObjectsMap.get(name);
-        if (xObj instanceof ImageStream) {
-            return xObj;
-        }
-        else {
-            return null;
-        }
-    }
-    *getImageXObjects() {
-        for (const pair of this._xObjectsMap) {
-            if (pair[1] instanceof ImageStream) {
-                yield pair;
-            }
-        }
-        return;
+    setXObject(name, xObject) {
+        this._xObjectsMap.set(`/XObject${name}`, xObject);
     }
     fillMaps(parseInfoGetter, cryptInfo) {
         var _a;
@@ -6568,6 +6559,59 @@ class AppearanceDict extends PdfDict {
             ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
     }
+    getStream(key) {
+        return this._streamsMap.get(key);
+    }
+    *getStreams() {
+        for (const pair of this._streamsMap) {
+            yield pair[1];
+        }
+        return;
+    }
+    setStream(key, stream) {
+        return this._streamsMap.set(key, stream);
+    }
+    clearStreams() {
+        this._streamsMap.clear();
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.N) {
+            bytes.push(...encoder.encode("/N "));
+            if (this.N instanceof ObjectMapDict) {
+                bytes.push(...this.N.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...this.N.toArray(cryptInfo));
+            }
+        }
+        if (this.R) {
+            bytes.push(...encoder.encode("/R "));
+            if (this.R instanceof ObjectMapDict) {
+                bytes.push(...this.R.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...this.R.toArray(cryptInfo));
+            }
+        }
+        if (this.D) {
+            bytes.push(...encoder.encode("/D "));
+            if (this.D instanceof ObjectMapDict) {
+                bytes.push(...this.D.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...this.D.toArray(cryptInfo));
+            }
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
     fillStreamsMap(parseInfoGetter) {
         this._streamsMap.clear();
         for (const prop of ["N", "R", "D"]) {
@@ -6599,53 +6643,6 @@ class AppearanceDict extends PdfDict {
                 }
             }
         }
-    }
-    getStream(key) {
-        return this._streamsMap.get(key);
-    }
-    *getStreams() {
-        for (const pair of this._streamsMap) {
-            yield pair[1];
-        }
-        return;
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.N) {
-            bytes.push(...encoder.encode("/N"));
-            if (this.N instanceof ObjectMapDict) {
-                bytes.push(...this.N.toArray(cryptInfo));
-            }
-            else {
-                bytes.push(...this.N.toArray(cryptInfo));
-            }
-        }
-        if (this.R) {
-            bytes.push(...encoder.encode("/R"));
-            if (this.R instanceof ObjectMapDict) {
-                bytes.push(...this.R.toArray(cryptInfo));
-            }
-            else {
-                bytes.push(...this.R.toArray(cryptInfo));
-            }
-        }
-        if (this.D) {
-            bytes.push(...encoder.encode("/D"));
-            if (this.D instanceof ObjectMapDict) {
-                bytes.push(...this.D.toArray(cryptInfo));
-            }
-            else {
-                bytes.push(...this.D.toArray(cryptInfo));
-            }
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -7646,7 +7643,13 @@ class AnnotationDict extends PdfDict {
     }
     get apStream() {
         var _a;
-        return (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStream("/N");
+        if (!this._apStream) {
+            this._apStream = [...(_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStreams()][0];
+        }
+        return this._apStream;
+    }
+    set apStream(value) {
+        this._apStream = value;
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -7673,9 +7676,6 @@ class AnnotationDict extends PdfDict {
         if (this.F) {
             bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
         }
-        if (this.AP) {
-            bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
-        }
         if (this.AS) {
             bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
         }
@@ -7695,6 +7695,21 @@ class AnnotationDict extends PdfDict {
         }
         if (this.StructParent) {
             bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+        }
+        if (this.apStream) {
+            if (!this.AP) {
+                this.AP = new AppearanceDict();
+            }
+            const apStreamRef = this.apStream.ref;
+            if (!apStreamRef) {
+                throw new Error("Appearance stream has no reference");
+            }
+            this.AP.N = new ObjectId(apStreamRef.id, apStreamRef.generation);
+            this.AP.R = null;
+            this.AP.D = null;
+            this.AP.clearStreams();
+            this.AP.setStream("/N", this.apStream);
+            bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -7981,8 +7996,6 @@ class AnnotationDict extends PdfDict {
             const newApMatrix = stream.matrix.multiply(matrix);
             this.apStream.matrix = newApMatrix;
         }
-    }
-    applyHandleTransform(mat, name) {
     }
     getCurrentRotation() {
         var _a;
@@ -11834,21 +11847,6 @@ class DocumentData {
         this._authResult = cryptorSource.authenticate(password);
         return this.authenticated;
     }
-    getRefinedData(idsToDelete) {
-        this.checkAuthentication();
-        const changeData = new ReferenceDataChange(this._referenceData);
-        idsToDelete.forEach(x => changeData.setRefFree(x));
-        const writer = new DataWriter(this._data);
-        const newXrefOffset = writer.offset;
-        const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
-        const entries = changeData.exportEntries();
-        const lastXref = this._xrefs[0];
-        const newXref = lastXref.createUpdate(entries, newXrefOffset);
-        writer.writeIndirectObject({ ref: newXrefRef }, newXref);
-        writer.writeEof(newXrefOffset);
-        const bytes = writer.getCurrentData();
-        return bytes;
-    }
     getSupportedAnnotations() {
         var _a;
         this.checkAuthentication();
@@ -11916,6 +11914,24 @@ class DocumentData {
             annotationMap.set(page.id, annotations);
         }
         return annotationMap;
+    }
+    getRefinedData(idsToDelete) {
+        this.checkAuthentication();
+        const changeData = new ReferenceDataChange(this._referenceData);
+        idsToDelete.forEach(x => changeData.setRefFree(x));
+        const writer = new DataWriter(this._data);
+        const lastXref = this._xrefs[0];
+        const newXrefOffset = writer.offset;
+        const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
+        const newXrefEntries = changeData.exportEntries();
+        const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
+        writer.writeIndirectObject({ ref: newXrefRef }, newXref);
+        writer.writeEof(newXrefOffset);
+        const bytes = writer.getCurrentData();
+        return bytes;
+    }
+    getUpdatedData() {
+        return null;
     }
     checkAuthentication() {
         if (!this.authenticated) {

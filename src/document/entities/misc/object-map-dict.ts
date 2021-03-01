@@ -3,6 +3,7 @@ import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
+import { codes } from "../../codes";
 
 export class ObjectMapDict extends PdfDict {
   protected readonly _objectIdMap = new Map<string, ObjectId>();
@@ -49,7 +50,7 @@ export class ObjectMapDict extends PdfDict {
     const bytes: number[] = [];  
 
     this._objectIdMap.forEach((v, k) => {
-      bytes.push(...encoder.encode(k), ...v.toArray(cryptInfo));
+      bytes.push(...encoder.encode(k), codes.WHITESPACE, ...v.toArray(cryptInfo));
     });
 
     const totalBytes: number[] = [

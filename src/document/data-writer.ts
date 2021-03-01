@@ -1,5 +1,5 @@
 import { codes, keywordCodes } from "./codes";
-import { CryptInfo, IDataCryptor, IEncodable, Reference } from "./common-interfaces";
+import { CryptInfo, IEncodable } from "./common-interfaces";
 
 export class DataWriter {
   private readonly _data: number[];  

@@ -17,16 +17,10 @@ import { BBox, getRandomUuid, RenderToSvgResult } from "../../../common";
 import { Mat3, mat3From4Vec2, Vec2, Vec3, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
 
-type ScaleHandleType = "ll" | "lr" | "ur" | "ul";
-
 export abstract class AnnotationDict extends PdfDict {
   isDeleted: boolean;
   name: string;
   pageRect: Rect;
-
-  get apStream(): XFormStream {
-    return this.AP?.getStream("/N");
-  }
 
   //#region PDF properties
 
@@ -91,7 +85,18 @@ export abstract class AnnotationDict extends PdfDict {
   OC: OcMembershipDict | OcGroupDict;
 
   //#endregion
-  
+    
+  protected _apStream: XFormStream;
+  get apStream(): XFormStream {
+    if (!this._apStream) {
+      this._apStream = [...this.AP?.getStreams()][0];
+    }
+    return this._apStream;
+  }
+  set apStream(value: XFormStream)  {
+    this._apStream = value;
+  }
+
   //#region edit-related properties
   protected _bBox: BBox;
   
@@ -154,9 +159,9 @@ export abstract class AnnotationDict extends PdfDict {
     if (this.F) {
       bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
     }
-    if (this.AP) {
-      bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
-    }
+    // if (this.AP) {
+    //   bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
+    // }
     if (this.AS) {
       bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
     }
@@ -177,6 +182,23 @@ export abstract class AnnotationDict extends PdfDict {
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
     }
+
+    if (this.apStream) {
+      if (!this.AP) {
+        this.AP = new AppearanceDict();
+      }
+      const apStreamRef = this.apStream.ref;
+      if (!apStreamRef) {
+        throw new Error("Appearance stream has no reference");
+      }
+      this.AP.N = new ObjectId(apStreamRef.id, apStreamRef.generation);
+      this.AP.R = null;
+      this.AP.D = null;
+      this.AP.clearStreams();
+      this.AP.setStream("/N", this.apStream);
+      bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
+    }
+
     // TODO: handle remaining properties
 
     const totalBytes: number[] = [
@@ -472,10 +494,6 @@ export abstract class AnnotationDict extends PdfDict {
       const newApMatrix = stream.matrix.multiply(matrix);
       this.apStream.matrix = newApMatrix;
     }
-  }
-
-  protected applyHandleTransform(mat: Mat3, name: string) {
-    // TODO: implement
   }
   //#endregion
 
@@ -953,7 +971,6 @@ export abstract class AnnotationDict extends PdfDict {
     this.updateRender();
   };
   //#endregion
-
 
   //#endregion
 }

@@ -1,6 +1,7 @@
-import { codes } from "../../codes";
+import { codes, keywordCodes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
+import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "../misc/object-map-dict";
 import { ImageStream } from "../streams/image-stream";
@@ -68,9 +69,36 @@ export class ResourceDict extends PdfDict {
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
 
-    if (this.ExtGState) {
-      bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray(cryptInfo));
+    if (this._gsMap.size) {  
+      bytes.push(...encoder.encode("/ExtGState"));    
+      bytes.push(...keywordCodes.DICT_START);
+      for (const [name, gsDict] of this._gsMap) {
+        bytes.push(...encoder.encode(name.slice(10))); // remove '/ExtGState' prefix
+        bytes.push(...gsDict.toArray(cryptInfo));
+      }
+      bytes.push(...keywordCodes.DICT_END);
     }
+    if (this._xObjectsMap.size) {
+      bytes.push(...encoder.encode("/XObject"));
+      bytes.push(...keywordCodes.DICT_START);      
+      for (const [name, xObject] of this._xObjectsMap) {
+        const ref = xObject.ref;
+        if (!ref) {
+          throw new Error("XObject has no reference");
+        }
+        bytes.push(...encoder.encode(name.slice(8))); // remove '/XObject' prefix
+        bytes.push(...new ObjectId(ref.id, ref.generation) .toArray(cryptInfo));
+      }
+      bytes.push(...keywordCodes.DICT_END);
+    }
+
+    // if (this.ExtGState) {
+    //   bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray(cryptInfo));
+    // }
+    // if (this.XObject) {
+    //   bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray(cryptInfo));
+    // }
+
     if (this.ColorSpace) {
       bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray(cryptInfo));
     }
@@ -79,9 +107,6 @@ export class ResourceDict extends PdfDict {
     }
     if (this.Shading) {
       bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray(cryptInfo));
-    }
-    if (this.XObject) {
-      bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray(cryptInfo));
     }
     if (this.Font) {
       bytes.push(...encoder.encode("/Font"), ...this.Font.toArray(cryptInfo));
@@ -112,6 +137,10 @@ export class ResourceDict extends PdfDict {
     }
     return;
   }
+
+  setGraphicsState(name: string, state: GraphicsStateDict) {
+    this._gsMap.set(`/ExtGState${name}`, state);
+  }
   
   getFont(name: string): FontDict {
     return this._fontsMap.get(name);
@@ -135,41 +164,45 @@ export class ResourceDict extends PdfDict {
     return;
   }
   
-  getFormXObject(name: string): XFormStream {
-    const xObj = this._xObjectsMap.get(name);
-    if (xObj instanceof XFormStream) {
-      return xObj;
-    } else {
-      return null;
-    }
-  }
-
-  *getFormXObjects(): Iterable<[string, XFormStream]> {
-    for (const pair of this._xObjectsMap) {
-      if (pair[1] instanceof XFormStream) {
-        yield <[string, XFormStream]>pair;
-      }
-    }
-    return;
+  setXObject(name: string, xObject: XFormStream | ImageStream) {
+    this._xObjectsMap.set(`/XObject${name}`, xObject);
   }
   
-  getImageXObject(name: string): ImageStream {
-    const xObj = this._xObjectsMap.get(name);
-    if (xObj instanceof ImageStream) {
-      return xObj;
-    } else {
-      return null;
-    }
-  }
+  // getFormXObject(name: string): XFormStream {
+  //   const xObj = this._xObjectsMap.get(name);
+  //   if (xObj instanceof XFormStream) {
+  //     return xObj;
+  //   } else {
+  //     return null;
+  //   }
+  // }
 
-  *getImageXObjects(): Iterable<[string, ImageStream]> {
-    for (const pair of this._xObjectsMap) {
-      if (pair[1] instanceof ImageStream) {
-        yield <[string, ImageStream]>pair;
-      }
-    }
-    return;
-  }
+  // *getFormXObjects(): Iterable<[string, XFormStream]> {
+  //   for (const pair of this._xObjectsMap) {
+  //     if (pair[1] instanceof XFormStream) {
+  //       yield <[string, XFormStream]>pair;
+  //     }
+  //   }
+  //   return;
+  // }
+  
+  // getImageXObject(name: string): ImageStream {
+  //   const xObj = this._xObjectsMap.get(name);
+  //   if (xObj instanceof ImageStream) {
+  //     return xObj;
+  //   } else {
+  //     return null;
+  //   }
+  // }
+
+  // *getImageXObjects(): Iterable<[string, ImageStream]> {
+  //   for (const pair of this._xObjectsMap) {
+  //     if (pair[1] instanceof ImageStream) {
+  //       yield <[string, ImageStream]>pair;
+  //     }
+  //   }
+  //   return;
+  // }
   
   protected fillMaps(parseInfoGetter: (id: number) => ParseInfo, cryptInfo?: CryptInfo) {
     this._gsMap.clear();

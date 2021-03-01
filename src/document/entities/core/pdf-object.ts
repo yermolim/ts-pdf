@@ -5,6 +5,9 @@ export abstract class PdfObject implements IEncodable {
   get ref(): Reference {
     return this._ref;
   }
+  set ref(ref: Reference) {
+    this._ref = ref;
+  }
   get id(): number {
     return this._ref?.id;
   }

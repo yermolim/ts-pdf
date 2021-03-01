@@ -34,8 +34,64 @@ export class AppearanceDict extends PdfDict {
       ? {value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
       : null;
   }
+  
+  getStream(key: string): XFormStream {
+    return this._streamsMap.get(key);
+  }
 
-  fillStreamsMap(parseInfoGetter: (id: number) => ParseInfo) {
+  *getStreams(): Iterable<XFormStream> {
+    for (const pair of this._streamsMap) {
+      yield pair[1];
+    }
+    return;
+  }
+  
+  setStream(key: string, stream: XFormStream) {
+    return this._streamsMap.set(key, stream);
+  }
+  
+  clearStreams() {
+    this._streamsMap.clear();
+  }
+
+  toArray(cryptInfo?: CryptInfo): Uint8Array {
+    const superBytes = super.toArray(cryptInfo);  
+    const encoder = new TextEncoder();  
+    const bytes: number[] = [];  
+
+    if (this.N) {
+      bytes.push(...encoder.encode("/N "));
+      if (this.N instanceof ObjectMapDict) {        
+        bytes.push(...this.N.toArray(cryptInfo));
+      } else {               
+        bytes.push(...this.N.toArray(cryptInfo));
+      }
+    }
+    if (this.R) {
+      bytes.push(...encoder.encode("/R "));
+      if (this.R instanceof ObjectMapDict) {        
+        bytes.push(...this.R.toArray(cryptInfo));
+      } else {               
+        bytes.push(...this.R.toArray(cryptInfo));
+      }
+    }
+    if (this.D) {
+      bytes.push(...encoder.encode("/D "));
+      if (this.D instanceof ObjectMapDict) {        
+        bytes.push(...this.D.toArray(cryptInfo));
+      } else {               
+        bytes.push(...this.D.toArray(cryptInfo));
+      }
+    }
+
+    const totalBytes: number[] = [
+      ...superBytes.subarray(0, 2), // <<
+      ...bytes, 
+      ...superBytes.subarray(2, superBytes.length)];
+    return new Uint8Array(totalBytes);
+  }
+
+  protected fillStreamsMap(parseInfoGetter: (id: number) => ParseInfo) {
     this._streamsMap.clear();
 
     for (const prop of ["N", "R", "D"]) {
@@ -66,54 +122,6 @@ export class AppearanceDict extends PdfDict {
         }
       }
     }
-  }
-  
-  getStream(key: string): XFormStream {
-    return this._streamsMap.get(key);
-  }
-
-  *getStreams(): Iterable<XFormStream> {
-    for (const pair of this._streamsMap) {
-      yield pair[1];
-    }
-    return;
-  }
-  
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
-    const superBytes = super.toArray(cryptInfo);  
-    const encoder = new TextEncoder();  
-    const bytes: number[] = [];  
-
-    if (this.N) {
-      bytes.push(...encoder.encode("/N"));
-      if (this.N instanceof ObjectMapDict) {        
-        bytes.push(...this.N.toArray(cryptInfo));
-      } else {               
-        bytes.push(...this.N.toArray(cryptInfo));
-      }
-    }
-    if (this.R) {
-      bytes.push(...encoder.encode("/R"));
-      if (this.R instanceof ObjectMapDict) {        
-        bytes.push(...this.R.toArray(cryptInfo));
-      } else {               
-        bytes.push(...this.R.toArray(cryptInfo));
-      }
-    }
-    if (this.D) {
-      bytes.push(...encoder.encode("/D"));
-      if (this.D instanceof ObjectMapDict) {        
-        bytes.push(...this.D.toArray(cryptInfo));
-      } else {               
-        bytes.push(...this.D.toArray(cryptInfo));
-      }
-    }
-
-    const totalBytes: number[] = [
-      ...superBytes.subarray(0, 2), // <<
-      ...bytes, 
-      ...superBytes.subarray(2, superBytes.length)];
-    return new Uint8Array(totalBytes);
   }
   
   /**

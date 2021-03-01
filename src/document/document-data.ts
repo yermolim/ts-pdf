@@ -150,29 +150,6 @@ export class DocumentData {
     return this.authenticated;
   }
 
-  getRefinedData(idsToDelete: number[]): Uint8Array {
-    this.checkAuthentication();
-
-    const changeData = new ReferenceDataChange(this._referenceData);
-    idsToDelete.forEach(x => changeData.setRefFree(x));
-    
-    const writer = new DataWriter(this._data);
-
-    const newXrefOffset = writer.offset;
-    const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
-
-    const entries = changeData.exportEntries();
-
-    const lastXref = this._xrefs[0];
-    const newXref = lastXref.createUpdate(entries, newXrefOffset);
-
-    writer.writeIndirectObject({ref: newXrefRef}, newXref);
-    writer.writeEof(newXrefOffset);  
-
-    const bytes = writer.getCurrentData();
-    return bytes;
-  }
-
   getSupportedAnnotations(): Map<number, AnnotationDict[]> {
     this.checkAuthentication();
 
@@ -254,6 +231,31 @@ export class DocumentData {
     }
 
     return annotationMap;
+  }  
+
+  getRefinedData(idsToDelete: number[]): Uint8Array {
+    this.checkAuthentication();
+
+    const changeData = new ReferenceDataChange(this._referenceData);
+    idsToDelete.forEach(x => changeData.setRefFree(x));
+    
+    const writer = new DataWriter(this._data);
+    
+    const lastXref = this._xrefs[0];
+    const newXrefOffset = writer.offset;
+    const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
+    const newXrefEntries = changeData.exportEntries();
+    const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
+    writer.writeIndirectObject({ref: newXrefRef}, newXref);
+
+    writer.writeEof(newXrefOffset);  
+
+    const bytes = writer.getCurrentData();
+    return bytes;
+  }
+
+  getUpdatedData(): Uint8Array {
+    return null;
   }
 
   private checkAuthentication() {    
