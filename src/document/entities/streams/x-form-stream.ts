@@ -433,9 +433,9 @@ export class XFormStream extends PdfStream {
     }    
 
     // DEBUG
-    const chars: string[] = [];
-    this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
-    console.log(chars.join(""));
+    // const chars: string[] = [];
+    // this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
+    // console.log(chars.join(""));
 
     return true;
   }

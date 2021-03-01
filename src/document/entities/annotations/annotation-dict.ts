@@ -90,7 +90,18 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#endregion
   
-  //#region svg render properties
+  //#region edit-related properties
+  protected _bBox: BBox;
+  
+  protected _moveStartTimer: number;
+  protected _moveStartPoint = new Vec2();
+  protected _moveMatrix = new Mat3();
+
+  protected _centerOfRotation = new Vec2();
+  protected _currentAngle = 0;
+  //#endregion
+
+  //#region render-related properties
   protected readonly _svgId = getRandomUuid();
   protected _svg: SVGGraphicsElement;
   protected _svgCopy: SVGGraphicsElement;
@@ -98,11 +109,6 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
   protected _svgMatrix = new Mat3();
-  protected _bBox: BBox;
-  
-  protected _moveStartTimer: number;
-  protected _moveStartPoint = new Vec2();
-  protected _moveMatrix = new Mat3();
   //#endregion
 
   protected constructor(subType: AnnotationType) {
@@ -443,114 +449,79 @@ export abstract class AnnotationDict extends PdfDict {
     this.pageRect = parseInfo.rect;
 
     return true;
+  }  
+
+  //#region annotation edit methods
+  protected applyRectTransform(matrix: Mat3) {
+    // get current bounding box (not axis-aligned)
+    const { 
+      ll: bBoxLL,
+      lr: bBoxLR,
+      ur: bBoxUR,
+      ul: bBoxUL,
+    } =  this.getLocalBB();
+    // translate the bounding box to origin, apply the transformation and translate it back
+    const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
+    const bBoxMatrix = new Mat3()
+      .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
+      .multiply(matrix)
+      .applyTranslation(bBoxCenter.x, bBoxCenter.y);    
+    const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
+    const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);  
+    const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
+    const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
+    // store the new bounding box
+    this._bBox = {
+      ll: trBBoxLL,
+      lr: trBBoxLR,
+      ur: trBBoxUR,
+      ul: trBBoxUL,
+    };
+
+    // get an axis-aligned bounding box and assign it to the Rect property
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
+    this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+    
+    // if the annotation has a content stream, update its matrix
+    const stream = this.apStream;
+    if (stream) {  
+      // get transformed appearance stream bounding box  
+      const { ll: apQuadLL, ur: apQuadUR} = stream.transformedBBox;
+      // translate the stream content to origin, apply the transformation and translate it back
+      const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
+      const newApMatrix = stream.matrix
+        .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
+        .multiply(matrix)
+        .applyTranslation(apQuadCenter.x, apQuadCenter.y);
+      this.apStream.matrix = newApMatrix;
+    }
   }
+
+  protected applyHandleTransform(mat: Mat3, name: string) {
+    // TODO: implement
+  }
+  //#endregion
 
   //#region protected render methods
-  protected renderRectCopy(): {copy: SVGGraphicsElement; use: SVGUseElement} {
-    const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
-    const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-    copySymbol.id = this._svgId + "_symbol";
-    const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    copySymbolUse.setAttribute("href", `#${this._svgId}`);
-    copySymbolUse.setAttribute("viewBox", 
-      `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
-    copySymbol.append(copySymbolUse);
-    copyDefs.append(copySymbol);
-
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", `#${this._svgId}_symbol`);
-    use.setAttribute("opacity", "0.2");
-    
-    copy.append(copyDefs, use);
-
-    return {copy, use};
-  }
-
-  protected renderRect(): SVGGraphicsElement {    
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    rect.id = this._svgId;
-    rect.classList.add("svg-annotation-rect");
-    rect.setAttribute("data-annotation-name", this.name);    
-    rect.addEventListener("pointerdown", this.onRectPointerDown);
-
-    return rect;
-  }
-
-  protected renderRectBg(): SVGGraphicsElement {
-    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    bg.classList.add("svg-rect-bg");
-    bg.setAttribute("data-annotation-name", this.name);
-    bg.setAttribute("x", this.Rect[0] + "");
-    bg.setAttribute("y", this.Rect[1] + "");
-    bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
-    bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
-    bg.setAttribute("fill", "transparent");  
-
-    return bg;
-  }
-
-  protected renderAP(): RenderToSvgResult {
-    const stream = this.apStream;
-    if (stream) {
-      try {
-        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
-        return renderer.render();
-      }
-      catch (e) {
-        console.log(`Annotation stream render error: ${e.message}`);
-      }
+  //#region common methods used for rendering purposes
+  protected getCurrentRotation(): number {
+    // TODO: try to implement getting rotation without using AP (if possible)
+    const matrix = this.apStream?.matrix;
+    if (!matrix) {
+      return 0;
     }
-    return null;    
+    const {r} = matrix.getTRS();
+    return r;
   }
 
-  protected renderContent(): RenderToSvgResult {
-    return null;
-  } 
-
-  protected renderHandles(): SVGGraphicsElement[] {    
-    const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    minRectHandle.classList.add("svg-rect-handle");
-    minRectHandle.setAttribute("data-handle-name", "min");
-    minRectHandle.setAttribute("cx", this.Rect[0] + "");
-    minRectHandle.setAttribute("cy", this.Rect[1] + "");    
-    const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    maxRectHandle.classList.add("svg-rect-handle");
-    minRectHandle.setAttribute("data-handle-name", "max");
-    maxRectHandle.setAttribute("cx", this.Rect[2] + "");
-    maxRectHandle.setAttribute("cy", this.Rect[3] + "");
-
-    return [minRectHandle, maxRectHandle];
-  } 
-
-  protected updateRender() {
-    this._svg.innerHTML = "";
-
-    const content = this.renderContent() || this.renderAP();
-    if (!content) { 
-      this._svgContent = null;
-      this._svgClipPaths = null;
-      return;
-    }    
-    
-    const bg = this.renderRectBg();
-    const handles = this.renderHandles(); 
-
-    this._svg.append(bg, content.svg, ...handles);  
-    this._svgContent = content.svg;
-    this._svgClipPaths = content.clipPaths;
-  }
-
-  protected applyRectTransform(matrix: Mat3) {  
-    // DEBUG   
-    // matrix = Mat3.buildRotation(-30 * Math.PI / 180);
-
-    // get current bounding box (not axis-aligned)
+  protected getLocalBB(): BBox {    
     let bBoxLL: Vec2;
     let bBoxLR: Vec2;
     let bBoxUR: Vec2;
     let bBoxUL: Vec2;
+    
     if (this._bBox) {
       // use the saved bounding box if present
       bBoxLL = this._bBox.ll;
@@ -580,63 +551,173 @@ export abstract class AnnotationDict extends PdfDict {
       bBoxLR = new Vec2(this.Rect[2], this.Rect[1]);
       bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
       bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
-    }
+    }   
 
-    // translate the bounding box to origin, apply the transformation and translate it back
-    const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
-    const bBoxMatrix = new Mat3()
-      .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
-      .multiply(matrix)
-      .applyTranslation(bBoxCenter.x, bBoxCenter.y);    
-    const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
-    const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);  
-    const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
-    const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
-
-    // store the new bounding box
-    this._bBox = {
-      ll: trBBoxLL,
-      lr: trBBoxLR,
-      ur: trBBoxUR,
-      ul: trBBoxUL,
+    return {
+      ll: bBoxLL,
+      lr: bBoxLR,
+      ur: bBoxUR,
+      ul: bBoxUL,
     };
+  }
+  //#endregion
 
-    // get an axis-aligned bounding box and assign it to the Rect property
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
-    this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-    
-    // if the annotation has a content stream, update its matrix
-    const stream = this.apStream;
-    if (stream) {  
-      // get transformed appearance stream bounding box  
-      const { ll: apQuadLL, ur: apQuadUR} = stream.transformedBBox;
-      // translate the stream content to origin, apply the transformation and translate it back
-      const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
-      const newApMatrix = stream.matrix
-        .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
-        .multiply(matrix)
-        .applyTranslation(apQuadCenter.x, apQuadCenter.y);
-      this.apStream.matrix = newApMatrix;
-    }
+  //#region annotation container render
+  protected renderRectBg(): SVGGraphicsElement {
+    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    bg.classList.add("svg-rect-bg");
+    bg.setAttribute("data-annotation-name", this.name);
+    bg.setAttribute("x", this.Rect[0] + "");
+    bg.setAttribute("y", this.Rect[1] + "");
+    bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
+    bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
+    bg.setAttribute("fill", "transparent");  
 
-    this.updateRender();
+    return bg;
   }
 
-  protected applyHandleTransform(mat: Mat3, name: string) {
-    // TODO: implement
+  protected renderRect(): SVGGraphicsElement {    
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    rect.id = this._svgId;
+    rect.classList.add("svg-annotation-rect");
+    rect.setAttribute("data-annotation-name", this.name);    
+    rect.addEventListener("pointerdown", this.onRectPointerDown);
+
+    return rect;
+  }
+
+  protected renderRectCopy(): {copy: SVGGraphicsElement; use: SVGUseElement} {
+    const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+    const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
+    copySymbol.id = this._svgId + "_symbol";
+    const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    copySymbolUse.setAttribute("href", `#${this._svgId}`);
+    copySymbolUse.setAttribute("viewBox", 
+      `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+    copySymbol.append(copySymbolUse);
+    copyDefs.append(copySymbol);
+
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", `#${this._svgId}_symbol`);
+    use.setAttribute("opacity", "0.2");
+    
+    copy.append(copyDefs, use);
+
+    return {copy, use};
+  }
+  //#endregion
+
+  //#region annotation content render
+  /**
+   * default annotation content renderer using the appearance stream
+   */
+  protected renderAP(): RenderToSvgResult {
+    const stream = this.apStream;
+    if (stream) {
+      try {
+        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+        return renderer.render();
+      }
+      catch (e) {
+        console.log(`Annotation stream render error: ${e.message}`);
+      }
+    }
+    return null;    
+  }
+
+  /**
+   * override in subclass to apply a custom annotation content renderer
+   */
+  protected renderContent(): RenderToSvgResult {
+    return null;
+  } 
+  //#endregion
+
+  //#region render of the annotation control handles 
+  protected renderScaleHandles(): SVGGraphicsElement[] {    
+    const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    minRectHandle.classList.add("svg-rect-handle-scale");
+    minRectHandle.setAttribute("data-handle-name", "min");
+    minRectHandle.setAttribute("cx", this.Rect[0] + "");
+    minRectHandle.setAttribute("cy", this.Rect[1] + "");    
+    const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    maxRectHandle.classList.add("svg-rect-handle-scale");
+    minRectHandle.setAttribute("data-handle-name", "max");
+    maxRectHandle.setAttribute("cx", this.Rect[2] + "");
+    maxRectHandle.setAttribute("cy", this.Rect[3] + "");  
+
+    return [minRectHandle, maxRectHandle];
+  } 
+  
+  protected renderRotationHandle(): SVGGraphicsElement { 
+    const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+    const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+    const currentRotation = this.getCurrentRotation();
+
+    const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    rotationGroup.classList.add("svg-rect-rotation");
+    rotationGroup.setAttribute("data-handle-name", "center");  
+     
+    const rotationGroupCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    rotationGroupCircle.classList.add("circle");
+    rotationGroupCircle.setAttribute("cx", centerX + "");
+    rotationGroupCircle.setAttribute("cy", centerY + "");
+    
+    const matrix = new Mat3()
+      .applyTranslation(-centerX, -centerY + 35)
+      .applyRotation(currentRotation)
+      .applyTranslation(centerX, centerY);
+    const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    centerRectHandle.classList.add("svg-rect-handle-rotation");
+    centerRectHandle.setAttribute("data-handle-name", "center");
+    centerRectHandle.setAttribute("cx", centerX + "");
+    centerRectHandle.setAttribute("cy", centerY + "");
+    centerRectHandle.setAttribute("transform", `matrix(${matrix.toFloatShortArray().join(" ")})`);
+    centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
+
+    rotationGroup.append(rotationGroupCircle, centerRectHandle);
+    return rotationGroup;
+  } 
+
+  /**
+   * override in subclass to apply a custom annotation handles renderer
+   */
+  protected renderHandles(): SVGGraphicsElement[] {   
+    return [...this.renderScaleHandles(), this.renderRotationHandle()];
+  } 
+  //#endregion
+
+  protected updateRender() {
+    this._svg.innerHTML = "";
+
+    const content = this.renderContent() || this.renderAP();
+    if (!content) { 
+      this._svgContent = null;
+      this._svgClipPaths = null;
+      return;
+    }    
+    
+    const bg = this.renderRectBg();
+    const handles = this.renderHandles(); 
+
+    this._svg.append(bg, content.svg, ...handles);  
+    this._svgContent = content.svg;
+    this._svgClipPaths = content.clipPaths;
   }
   //#endregion
 
   //#region event handlers 
+
+  //#region translation handlers
   protected onRectPointerDown = (e: PointerEvent) => {    
     document.addEventListener("pointerup", this.onRectPointerUp);
     document.addEventListener("pointerout", this.onRectPointerUp);    
 
     // set timeout to prevent an accidental annotation translation
     this._moveStartTimer = setTimeout(() => {
-      this._moveStartTimer = null;
-      
+      this._moveStartTimer = null;      
       this._svg.after(this._svgCopy);
       this._moveStartPoint.set(e.clientX, e.clientY);
       document.addEventListener("pointermove", this.onRectPointerMove);
@@ -666,18 +747,65 @@ export abstract class AnnotationDict extends PdfDict {
 
     this.applyRectTransform(this._moveMatrix);
     this._moveMatrix.reset();
+
+    this.updateRender();
+  };
+  //#endregion
+  
+  //#region rotation handlers
+  protected onRotationHandlePointerDown = (e: PointerEvent) => {    
+    document.addEventListener("pointerup", this.onRotationHandlePointerUp);
+    document.addEventListener("pointerout", this.onRotationHandlePointerUp);    
+
+    // set timeout to prevent an accidental annotation rotation
+    this._moveStartTimer = setTimeout(() => {
+      this._moveStartTimer = null;      
+      this._svg.after(this._svgCopy);
+      const {x, y, width, height} = this._svg.getBoundingClientRect();
+      this._centerOfRotation.set(x + width / 2, y + height / 2);
+      document.addEventListener("pointermove", this.onRotationHandlePointerMove);
+    }, 200);
+
+    e.stopPropagation();
+  };
+
+  protected onRotationHandlePointerMove = (e: PointerEvent) => {
+    const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+    const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+    const currentRotation = this.getCurrentRotation();
+    const angle = Math.atan2(
+      e.clientY - this._centerOfRotation.y, 
+      e.clientX - this._centerOfRotation.x
+    ) + Math.PI / 2 - currentRotation;
+    this._currentAngle = angle;
+    this._moveMatrix.reset()
+      .applyTranslation(-centerX, -centerY)
+      .applyRotation(angle)
+      .applyTranslation(centerX, centerY);
+    this._svgCopyUse.setAttribute("transform", 
+      `matrix(${this._moveMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onHandlePointerDown = (e: PointerEvent) => {
+  protected onRotationHandlePointerUp = (e: PointerEvent) => {
+    document.removeEventListener("pointermove", this.onRotationHandlePointerDown);
+    document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
+    document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
 
+    if (this._moveStartTimer) {
+      clearTimeout(this._moveStartTimer);
+      this._moveStartTimer = null;
+      return;
+    }
+    
+    this._svgCopy.remove();
+    this._svgCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+
+    this.applyRectTransform(this._moveMatrix.reset().applyRotation(this._currentAngle));
+    this._moveMatrix.reset();
+
+    this.updateRender();
   };
+  //#endregion
 
-  protected onHandlePointerMove = (e: PointerEvent) => {
-
-  };
-  
-  protected onHandlePointerUp = (e: PointerEvent) => {
-
-  };
   //#endregion
 }

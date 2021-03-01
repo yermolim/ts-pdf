@@ -454,10 +454,20 @@ const styles = `
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     } 
-    .svg-annotation-rect.selected .svg-rect-handle {
-      r: 3;
+    .svg-annotation-rect.selected .svg-rect-handle-scale,
+    .svg-annotation-rect.selected .svg-rect-handle-rotation {
+      r: 5;
       fill: var(--color-primary-final);
       cursor: pointer;
+    }
+    .svg-annotation-rect.selected .svg-rect-rotation {
+      fill: none;
+      cursor: pointer;
+    }
+    .svg-annotation-rect.selected .svg-rect-rotation .circle {
+      r: 25;
+      stroke: var(--color-secondary-tr-final);
+      stroke-dasharray: 3 3;
     }
   </style>
 `;
@@ -1076,7 +1086,7 @@ class Mat3 {
     static buildRotation(theta) {
         const c = Math.cos(theta);
         const s = Math.sin(theta);
-        return new Mat3().set(c, s, 0, -s, c, 0, 0, 0, 1);
+        return new Mat3().set(c, -s, 0, s, c, 0, 0, 0, 1);
     }
     static buildTranslate(x, y) {
         return new Mat3().set(1, 0, 0, 0, 1, 0, x, y, 1);
@@ -1165,8 +1175,16 @@ class Mat3 {
         const s_x = Math.sqrt(this.x_x * this.x_x + this.x_y * this.x_y);
         const s_y = Math.sqrt(this.y_x * this.y_x + this.y_y * this.y_y);
         const s = new Vec2(s_x, s_y);
-        const rCos = this.x_x / s_x;
-        const r = Math.acos(rCos);
+        const sign = Math.atan(-this.x_y / this.x_x);
+        const angle = Math.acos(this.x_x / s_x);
+        let r;
+        if ((angle > Math.PI / 2 && sign > 0)
+            || (angle < Math.PI / 2 && sign < 0)) {
+            r = 2 * Math.PI - angle;
+        }
+        else {
+            r = angle;
+        }
         return { t, r, s };
     }
     equals(m, precision = 6) {
@@ -6527,9 +6545,6 @@ class XFormStream extends PdfStream {
         if (!this.BBox) {
             return false;
         }
-        const chars = [];
-        this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
-        console.log(chars.join(""));
         return true;
     }
 }
@@ -7469,10 +7484,12 @@ class AnnotationDict extends PdfDict {
         super(dictTypes.ANNOTATION);
         this.F = 0;
         this.Border = new BorderArray(0, 0, 1);
-        this._svgId = getRandomUuid();
-        this._svgMatrix = new Mat3();
         this._moveStartPoint = new Vec2();
         this._moveMatrix = new Mat3();
+        this._centerOfRotation = new Vec2();
+        this._currentAngle = 0;
+        this._svgId = getRandomUuid();
+        this._svgMatrix = new Mat3();
         this.onRectPointerDown = (e) => {
             document.addEventListener("pointerup", this.onRectPointerUp);
             document.addEventListener("pointerout", this.onRectPointerUp);
@@ -7501,12 +7518,46 @@ class AnnotationDict extends PdfDict {
             this._svgCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyRectTransform(this._moveMatrix);
             this._moveMatrix.reset();
+            this.updateRender();
         };
-        this.onHandlePointerDown = (e) => {
+        this.onRotationHandlePointerDown = (e) => {
+            document.addEventListener("pointerup", this.onRotationHandlePointerUp);
+            document.addEventListener("pointerout", this.onRotationHandlePointerUp);
+            this._moveStartTimer = setTimeout(() => {
+                this._moveStartTimer = null;
+                this._svg.after(this._svgCopy);
+                const { x, y, width, height } = this._svg.getBoundingClientRect();
+                this._centerOfRotation.set(x + width / 2, y + height / 2);
+                document.addEventListener("pointermove", this.onRotationHandlePointerMove);
+            }, 200);
+            e.stopPropagation();
         };
-        this.onHandlePointerMove = (e) => {
+        this.onRotationHandlePointerMove = (e) => {
+            const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+            const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+            const currentRotation = this.getCurrentRotation();
+            const angle = Math.atan2(e.clientY - this._centerOfRotation.y, e.clientX - this._centerOfRotation.x) + Math.PI / 2 - currentRotation;
+            this._currentAngle = angle;
+            this._moveMatrix.reset()
+                .applyTranslation(-centerX, -centerY)
+                .applyRotation(angle)
+                .applyTranslation(centerX, centerY);
+            this._svgCopyUse.setAttribute("transform", `matrix(${this._moveMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onHandlePointerUp = (e) => {
+        this.onRotationHandlePointerUp = (e) => {
+            document.removeEventListener("pointermove", this.onRotationHandlePointerDown);
+            document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
+            document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
+            if (this._moveStartTimer) {
+                clearTimeout(this._moveStartTimer);
+                this._moveStartTimer = null;
+                return;
+            }
+            this._svgCopy.remove();
+            this._svgCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+            this.applyRectTransform(this._moveMatrix.reset().applyRotation(this._currentAngle));
+            this._moveMatrix.reset();
+            this.updateRender();
         };
         this.Subtype = subType;
     }
@@ -7838,85 +7889,48 @@ class AnnotationDict extends PdfDict {
         this.pageRect = parseInfo.rect;
         return true;
     }
-    renderRectCopy() {
-        const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-        copySymbol.id = this._svgId + "_symbol";
-        const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        copySymbolUse.setAttribute("href", `#${this._svgId}`);
-        copySymbolUse.setAttribute("viewBox", `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
-        copySymbol.append(copySymbolUse);
-        copyDefs.append(copySymbol);
-        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-        use.setAttribute("href", `#${this._svgId}_symbol`);
-        use.setAttribute("opacity", "0.2");
-        copy.append(copyDefs, use);
-        return { copy, use };
-    }
-    renderRect() {
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        rect.id = this._svgId;
-        rect.classList.add("svg-annotation-rect");
-        rect.setAttribute("data-annotation-name", this.name);
-        rect.addEventListener("pointerdown", this.onRectPointerDown);
-        return rect;
-    }
-    renderRectBg() {
-        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        bg.classList.add("svg-rect-bg");
-        bg.setAttribute("data-annotation-name", this.name);
-        bg.setAttribute("x", this.Rect[0] + "");
-        bg.setAttribute("y", this.Rect[1] + "");
-        bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
-        bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
-        bg.setAttribute("fill", "transparent");
-        return bg;
-    }
-    renderAP() {
+    applyRectTransform(matrix) {
+        const { ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL, } = this.getLocalBB();
+        const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
+        const bBoxMatrix = new Mat3()
+            .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
+            .multiply(matrix)
+            .applyTranslation(bBoxCenter.x, bBoxCenter.y);
+        const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
+        const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);
+        const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
+        const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
+        this._bBox = {
+            ll: trBBoxLL,
+            lr: trBBoxLR,
+            ur: trBBoxUR,
+            ul: trBBoxUL,
+        };
+        const { min: newRectMin, max: newRectMax } = vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
+        this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
         const stream = this.apStream;
         if (stream) {
-            try {
-                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
-                return renderer.render();
-            }
-            catch (e) {
-                console.log(`Annotation stream render error: ${e.message}`);
-            }
+            const { ll: apQuadLL, ur: apQuadUR } = stream.transformedBBox;
+            const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
+            const newApMatrix = stream.matrix
+                .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
+                .multiply(matrix)
+                .applyTranslation(apQuadCenter.x, apQuadCenter.y);
+            this.apStream.matrix = newApMatrix;
         }
-        return null;
     }
-    renderContent() {
-        return null;
+    applyHandleTransform(mat, name) {
     }
-    renderHandles() {
-        const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        minRectHandle.classList.add("svg-rect-handle");
-        minRectHandle.setAttribute("data-handle-name", "min");
-        minRectHandle.setAttribute("cx", this.Rect[0] + "");
-        minRectHandle.setAttribute("cy", this.Rect[1] + "");
-        const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        maxRectHandle.classList.add("svg-rect-handle");
-        minRectHandle.setAttribute("data-handle-name", "max");
-        maxRectHandle.setAttribute("cx", this.Rect[2] + "");
-        maxRectHandle.setAttribute("cy", this.Rect[3] + "");
-        return [minRectHandle, maxRectHandle];
-    }
-    updateRender() {
-        this._svg.innerHTML = "";
-        const content = this.renderContent() || this.renderAP();
-        if (!content) {
-            this._svgContent = null;
-            this._svgClipPaths = null;
-            return;
+    getCurrentRotation() {
+        var _a;
+        const matrix = (_a = this.apStream) === null || _a === void 0 ? void 0 : _a.matrix;
+        if (!matrix) {
+            return 0;
         }
-        const bg = this.renderRectBg();
-        const handles = this.renderHandles();
-        this._svg.append(bg, content.svg, ...handles);
-        this._svgContent = content.svg;
-        this._svgClipPaths = content.clipPaths;
+        const { r } = matrix.getTRS();
+        return r;
     }
-    applyRectTransform(matrix) {
+    getLocalBB() {
         let bBoxLL;
         let bBoxLR;
         let bBoxUR;
@@ -7945,36 +7959,118 @@ class AnnotationDict extends PdfDict {
             bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
             bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
         }
-        const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
-        const bBoxMatrix = new Mat3()
-            .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
-            .multiply(matrix)
-            .applyTranslation(bBoxCenter.x, bBoxCenter.y);
-        const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
-        const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);
-        const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
-        const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
-        this._bBox = {
-            ll: trBBoxLL,
-            lr: trBBoxLR,
-            ur: trBBoxUR,
-            ul: trBBoxUL,
+        return {
+            ll: bBoxLL,
+            lr: bBoxLR,
+            ur: bBoxUR,
+            ul: bBoxUL,
         };
-        const { min: newRectMin, max: newRectMax } = vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
-        this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+    }
+    renderRectBg() {
+        const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        bg.classList.add("svg-rect-bg");
+        bg.setAttribute("data-annotation-name", this.name);
+        bg.setAttribute("x", this.Rect[0] + "");
+        bg.setAttribute("y", this.Rect[1] + "");
+        bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
+        bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
+        bg.setAttribute("fill", "transparent");
+        return bg;
+    }
+    renderRect() {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        rect.id = this._svgId;
+        rect.classList.add("svg-annotation-rect");
+        rect.setAttribute("data-annotation-name", this.name);
+        rect.addEventListener("pointerdown", this.onRectPointerDown);
+        return rect;
+    }
+    renderRectCopy() {
+        const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
+        copySymbol.id = this._svgId + "_symbol";
+        const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        copySymbolUse.setAttribute("href", `#${this._svgId}`);
+        copySymbolUse.setAttribute("viewBox", `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+        copySymbol.append(copySymbolUse);
+        copyDefs.append(copySymbol);
+        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.setAttribute("href", `#${this._svgId}_symbol`);
+        use.setAttribute("opacity", "0.2");
+        copy.append(copyDefs, use);
+        return { copy, use };
+    }
+    renderAP() {
         const stream = this.apStream;
         if (stream) {
-            const { ll: apQuadLL, ur: apQuadUR } = stream.transformedBBox;
-            const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
-            const newApMatrix = stream.matrix
-                .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
-                .multiply(matrix)
-                .applyTranslation(apQuadCenter.x, apQuadCenter.y);
-            this.apStream.matrix = newApMatrix;
+            try {
+                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+                return renderer.render();
+            }
+            catch (e) {
+                console.log(`Annotation stream render error: ${e.message}`);
+            }
         }
-        this.updateRender();
+        return null;
     }
-    applyHandleTransform(mat, name) {
+    renderContent() {
+        return null;
+    }
+    renderScaleHandles() {
+        const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        minRectHandle.classList.add("svg-rect-handle-scale");
+        minRectHandle.setAttribute("data-handle-name", "min");
+        minRectHandle.setAttribute("cx", this.Rect[0] + "");
+        minRectHandle.setAttribute("cy", this.Rect[1] + "");
+        const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        maxRectHandle.classList.add("svg-rect-handle-scale");
+        minRectHandle.setAttribute("data-handle-name", "max");
+        maxRectHandle.setAttribute("cx", this.Rect[2] + "");
+        maxRectHandle.setAttribute("cy", this.Rect[3] + "");
+        return [minRectHandle, maxRectHandle];
+    }
+    renderRotationHandle() {
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const currentRotation = this.getCurrentRotation();
+        const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        rotationGroup.classList.add("svg-rect-rotation");
+        rotationGroup.setAttribute("data-handle-name", "center");
+        const rotationGroupCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        rotationGroupCircle.classList.add("circle");
+        rotationGroupCircle.setAttribute("cx", centerX + "");
+        rotationGroupCircle.setAttribute("cy", centerY + "");
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY + 35)
+            .applyRotation(currentRotation)
+            .applyTranslation(centerX, centerY);
+        const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        centerRectHandle.classList.add("svg-rect-handle-rotation");
+        centerRectHandle.setAttribute("data-handle-name", "center");
+        centerRectHandle.setAttribute("cx", centerX + "");
+        centerRectHandle.setAttribute("cy", centerY + "");
+        centerRectHandle.setAttribute("transform", `matrix(${matrix.toFloatShortArray().join(" ")})`);
+        centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
+        rotationGroup.append(rotationGroupCircle, centerRectHandle);
+        return rotationGroup;
+    }
+    renderHandles() {
+        return [...this.renderScaleHandles(), this.renderRotationHandle()];
+    }
+    updateRender() {
+        this._svg.innerHTML = "";
+        const content = this.renderContent() || this.renderAP();
+        if (!content) {
+            this._svgContent = null;
+            this._svgClipPaths = null;
+            return;
+        }
+        const bg = this.renderRectBg();
+        const handles = this.renderHandles();
+        this._svg.append(bg, content.svg, ...handles);
+        this._svgContent = content.svg;
+        this._svgClipPaths = content.clipPaths;
     }
 }
 

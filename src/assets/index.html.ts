@@ -402,10 +402,20 @@ export const styles = /*html*/`
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     } 
-    .svg-annotation-rect.selected .svg-rect-handle {
-      r: 3;
+    .svg-annotation-rect.selected .svg-rect-handle-scale,
+    .svg-annotation-rect.selected .svg-rect-handle-rotation {
+      r: 5;
       fill: var(--color-primary-final);
       cursor: pointer;
+    }
+    .svg-annotation-rect.selected .svg-rect-rotation {
+      fill: none;
+      cursor: pointer;
+    }
+    .svg-annotation-rect.selected .svg-rect-rotation .circle {
+      r: 25;
+      stroke: var(--color-secondary-tr-final);
+      stroke-dasharray: 3 3;
     }
   </style>
 `;
