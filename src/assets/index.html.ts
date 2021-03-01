@@ -392,28 +392,35 @@ export const styles = /*html*/`
       width: 100px;
     } 
 
-    .svg-annotation-rect {
+    .svg-annotation {
       cursor: pointer;
     } 
-    .svg-annotation-rect.selected {
+    .svg-annotation.selected {
       cursor: grab;
     } 
-    .svg-annotation-rect.selected .svg-rect-bg {
+    .svg-annot-rect,
+    .svg-annot-box {
+      fill: transparent;
+    }
+    .svg-annotation.selected .svg-annot-rect,
+    .svg-annotation.selected .svg-annot-box {
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     } 
-    .svg-annotation-rect.selected .svg-rect-handle-scale,
-    .svg-annotation-rect.selected .svg-rect-handle-rotation {
+    .svg-annotation.selected .svg-annot-handle-scale,
+    .svg-annotation.selected .svg-annot-handle-rotation {
       r: 5;
       fill: var(--color-primary-final);
       cursor: pointer;
     }
-    .svg-annotation-rect.selected .svg-rect-rotation {
+    .svg-annotation.selected .svg-annot-rotation {
       fill: none;
       cursor: pointer;
     }
-    .svg-annotation-rect.selected .svg-rect-rotation .circle {
+    .svg-annotation.selected .svg-annot-rotation .circle {
       r: 25;
+    }
+    .svg-annotation.selected .svg-annot-rotation .dashed {
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     }

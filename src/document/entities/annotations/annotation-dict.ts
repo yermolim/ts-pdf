@@ -17,6 +17,8 @@ import { BBox, getRandomUuid, RenderToSvgResult } from "../../../common";
 import { Mat3, mat3From4Vec2, Vec2, Vec3, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
 
+type ScaleHandleType = "ll" | "lr" | "ur" | "ul";
+
 export abstract class AnnotationDict extends PdfDict {
   isDeleted: boolean;
   name: string;
@@ -93,22 +95,25 @@ export abstract class AnnotationDict extends PdfDict {
   //#region edit-related properties
   protected _bBox: BBox;
   
-  protected _moveStartTimer: number;
-  protected _moveStartPoint = new Vec2();
-  protected _moveMatrix = new Mat3();
+  protected _transformationTimer: number; 
+  protected _transformationMatrix = new Mat3(); 
+  protected _transformationPoint = new Vec2();
 
-  protected _centerOfRotation = new Vec2();
-  protected _currentAngle = 0;
+  protected _currentAngle = 0; 
+  protected _boxX = new Vec2();
+  protected _boxY = new Vec2();
+  protected _boxXLength: number;
+  protected _boxYLength: number;
   //#endregion
 
   //#region render-related properties
   protected readonly _svgId = getRandomUuid();
   protected _svg: SVGGraphicsElement;
-  protected _svgCopy: SVGGraphicsElement;
-  protected _svgCopyUse: SVGUseElement;
+  protected _svgBox: SVGGraphicsElement;
+  protected _svgContentCopy: SVGGraphicsElement;
+  protected _svgContentCopyUse: SVGUseElement;
   protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
-  protected _svgMatrix = new Mat3();
   //#endregion
 
   protected constructor(subType: AnnotationType) {
@@ -183,11 +188,7 @@ export abstract class AnnotationDict extends PdfDict {
 
   render(): RenderToSvgResult {
     if (!this._svg) {
-      const rect = this.renderRect();   
-      const {copy, use} = this.renderRectCopy(); 
-      this._svg = rect;
-      this._svgCopy = copy;
-      this._svgCopyUse = use; 
+      this._svg = this.renderMainElement();
     }
 
     this.updateRender();    
@@ -453,47 +454,22 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region annotation edit methods
   protected applyRectTransform(matrix: Mat3) {
-    // get current bounding box (not axis-aligned)
-    const { 
-      ll: bBoxLL,
-      lr: bBoxLR,
-      ur: bBoxUR,
-      ul: bBoxUL,
-    } =  this.getLocalBB();
-    // translate the bounding box to origin, apply the transformation and translate it back
-    const bBoxCenter = Vec2.add(bBoxLL, bBoxUR).multiplyByScalar(0.5);
-    const bBoxMatrix = new Mat3()
-      .applyTranslation(-bBoxCenter.x, -bBoxCenter.y)
-      .multiply(matrix)
-      .applyTranslation(bBoxCenter.x, bBoxCenter.y);    
-    const trBBoxLL = Vec2.applyMat3(bBoxLL, bBoxMatrix);
-    const trBBoxLR = Vec2.applyMat3(bBoxLR, bBoxMatrix);  
-    const trBBoxUR = Vec2.applyMat3(bBoxUR, bBoxMatrix);
-    const trBBoxUL = Vec2.applyMat3(bBoxUL, bBoxMatrix);
-    // store the new bounding box
-    this._bBox = {
-      ll: trBBoxLL,
-      lr: trBBoxLR,
-      ur: trBBoxUR,
-      ul: trBBoxUL,
-    };
+    // transform current bounding box (not axis-aligned)
+    const bBox =  this.getLocalBB();
+    bBox.ll.applyMat3(matrix);
+    bBox.lr.applyMat3(matrix);
+    bBox.ur.applyMat3(matrix);
+    bBox.ul.applyMat3(matrix);
 
     // get an axis-aligned bounding box and assign it to the Rect property
     const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(trBBoxLL, trBBoxLR, trBBoxUR, trBBoxUL);
+      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
     this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     
     // if the annotation has a content stream, update its matrix
     const stream = this.apStream;
-    if (stream) {  
-      // get transformed appearance stream bounding box  
-      const { ll: apQuadLL, ur: apQuadUR} = stream.transformedBBox;
-      // translate the stream content to origin, apply the transformation and translate it back
-      const apQuadCenter = Vec2.add(apQuadLL, apQuadUR).multiplyByScalar(0.5);
-      const newApMatrix = stream.matrix
-        .applyTranslation(-apQuadCenter.x, -apQuadCenter.y)
-        .multiply(matrix)
-        .applyTranslation(apQuadCenter.x, apQuadCenter.y);
+    if (stream) {
+      const newApMatrix = stream.matrix.multiply(matrix);
       this.apStream.matrix = newApMatrix;
     }
   }
@@ -540,7 +516,6 @@ export abstract class AnnotationDict extends PdfDict {
       const rectMax = new Vec2(this.Rect[2], this.Rect[3]);    
       // transform the appearance stream bounding box to match the Rect scale and position
       const mat = mat3From4Vec2(boxMin, boxMax, rectMin, rectMax, true);
-      console.log(mat);
       bBoxLL = apTrBoxLL.applyMat3(mat);
       bBoxLR = apTrBoxLR.applyMat3(mat);
       bBoxUR = apTrBoxUR.applyMat3(mat);
@@ -551,61 +526,89 @@ export abstract class AnnotationDict extends PdfDict {
       bBoxLR = new Vec2(this.Rect[2], this.Rect[1]);
       bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
       bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
-    }   
-
-    return {
+    }  
+    
+    this._bBox = {
       ll: bBoxLL,
       lr: bBoxLR,
       ur: bBoxUR,
       ul: bBoxUL,
-    };
+    }; 
+
+    return this._bBox;
+  }
+
+  /**
+   * get 2D vector with a position of the specified point in page coords 
+   * (0, 0 is lower-left corner of the page)
+   * @param clientX 
+   * @param clientY 
+   */
+  protected convertClientCoordsToPage(clientX: number, clientY: number): Vec2 {
+    // html coords (0,0 is top-left corner)
+    const {x, y, width, height} = this._svgBox.getBoundingClientRect();
+    const rectMinScaled = new Vec2(x, y);
+    const rectMaxScaled = new Vec2(x + width, y + height);
+    const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
+    // the lower-left corner of the page. keep in mind that PDF Rect uses inversed coords
+    const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
+    // invert Y coord
+    const position = new Vec2(
+      (clientX - pageLowerLeft.x) / pageScale,
+      (pageLowerLeft.y - clientY) / pageScale,
+    );
+
+    return position;
+  }
+  
+  protected convertPageCoordsToClient(pageX: number, pageY: number): Vec2 {
+    // html coords (0,0 is top-left corner)
+    const {x, y, width, height} = this._svgBox.getBoundingClientRect();
+    const rectMinScaled = new Vec2(x, y);
+    const rectMaxScaled = new Vec2(x + width, y + height);
+    const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
+    // the lower-left corner of the page. keep in mind that PDF Rect uses inversed coords
+    const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
+    // invert Y coord
+    const position = new Vec2(
+      pageLowerLeft.x + (pageX * pageScale),
+      pageLowerLeft.y - (pageY * pageScale),
+    );
+
+    return position;
   }
   //#endregion
 
   //#region annotation container render
-  protected renderRectBg(): SVGGraphicsElement {
-    const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    bg.classList.add("svg-rect-bg");
-    bg.setAttribute("data-annotation-name", this.name);
-    bg.setAttribute("x", this.Rect[0] + "");
-    bg.setAttribute("y", this.Rect[1] + "");
-    bg.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
-    bg.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
-    bg.setAttribute("fill", "transparent");  
+  protected renderRect(): SVGGraphicsElement {
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.classList.add("svg-annot-rect");
+    rect.setAttribute("data-annotation-name", this.name);
+    rect.setAttribute("x", this.Rect[0] + "");
+    rect.setAttribute("y", this.Rect[1] + "");
+    rect.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
+    rect.setAttribute("height", this.Rect[3] - this.Rect[1] + "");
 
-    return bg;
+    return rect;
+  }
+  
+  protected renderBox(): SVGGraphicsElement {
+    const {ll, lr, ur, ul} = this.getLocalBB();
+    const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    boxPath.classList.add("svg-annot-box");
+    boxPath.setAttribute("data-annotation-name", this.name);
+    boxPath.setAttribute("d", `M ${ll.x} ${ll.y} L ${lr.x} ${lr.y} L ${ur.x} ${ur.y} L ${ul.x} ${ul.y} Z`);
+
+    return boxPath;
   }
 
-  protected renderRect(): SVGGraphicsElement {    
+  protected renderMainElement(): SVGGraphicsElement {    
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    rect.id = this._svgId;
-    rect.classList.add("svg-annotation-rect");
+    rect.classList.add("svg-annotation");
     rect.setAttribute("data-annotation-name", this.name);    
     rect.addEventListener("pointerdown", this.onRectPointerDown);
 
     return rect;
-  }
-
-  protected renderRectCopy(): {copy: SVGGraphicsElement; use: SVGUseElement} {
-    const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-
-    const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-    copySymbol.id = this._svgId + "_symbol";
-    const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    copySymbolUse.setAttribute("href", `#${this._svgId}`);
-    copySymbolUse.setAttribute("viewBox", 
-      `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
-    copySymbol.append(copySymbolUse);
-    copyDefs.append(copySymbol);
-
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", `#${this._svgId}_symbol`);
-    use.setAttribute("opacity", "0.2");
-    
-    copy.append(copyDefs, use);
-
-    return {copy, use};
   }
   //#endregion
 
@@ -632,23 +635,47 @@ export abstract class AnnotationDict extends PdfDict {
    */
   protected renderContent(): RenderToSvgResult {
     return null;
-  } 
+  }   
+
+  protected renderContentCopy(): {copy: SVGGraphicsElement; use: SVGUseElement} {
+    const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+    const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
+    copySymbol.id = this._svgId + "_symbol";
+    const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    copySymbolUse.setAttribute("href", `#${this._svgId}`);
+    copySymbolUse.setAttribute("viewBox", 
+      `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+    copySymbol.append(copySymbolUse);
+    copyDefs.append(copySymbol);
+
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", `#${this._svgId}_symbol`);
+    use.setAttribute("opacity", "0.2");
+    
+    copy.append(copyDefs, use);
+
+    return {copy, use};
+  }
   //#endregion
 
   //#region render of the annotation control handles 
-  protected renderScaleHandles(): SVGGraphicsElement[] {    
-    const minRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    minRectHandle.classList.add("svg-rect-handle-scale");
-    minRectHandle.setAttribute("data-handle-name", "min");
-    minRectHandle.setAttribute("cx", this.Rect[0] + "");
-    minRectHandle.setAttribute("cy", this.Rect[1] + "");    
-    const maxRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    maxRectHandle.classList.add("svg-rect-handle-scale");
-    minRectHandle.setAttribute("data-handle-name", "max");
-    maxRectHandle.setAttribute("cx", this.Rect[2] + "");
-    maxRectHandle.setAttribute("cy", this.Rect[3] + "");  
+  protected renderScaleHandles(): SVGGraphicsElement[] { 
+    const bBox = this.getLocalBB();
 
-    return [minRectHandle, maxRectHandle];
+    const handles: SVGGraphicsElement[] = [];
+    ["ll", "lr", "ur", "ul"].forEach(x => {
+      const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      handle.classList.add("svg-annot-handle-scale");
+      handle.setAttribute("data-handle-name", x);
+      handle.setAttribute("cx", bBox[x].x + "");
+      handle.setAttribute("cy", bBox[x].y + ""); 
+      handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); 
+      handles.push(handle);   
+    });
+
+    return handles;
   } 
   
   protected renderRotationHandle(): SVGGraphicsElement { 
@@ -657,27 +684,35 @@ export abstract class AnnotationDict extends PdfDict {
     const currentRotation = this.getCurrentRotation();
 
     const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    rotationGroup.classList.add("svg-rect-rotation");
+    rotationGroup.classList.add("svg-annot-rotation");
     rotationGroup.setAttribute("data-handle-name", "center");  
      
     const rotationGroupCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    rotationGroupCircle.classList.add("circle");
+    rotationGroupCircle.classList.add("circle", "dashed");
     rotationGroupCircle.setAttribute("cx", centerX + "");
     rotationGroupCircle.setAttribute("cy", centerY + "");
-    
-    const matrix = new Mat3()
+
+    const handleMatrix = new Mat3()
       .applyTranslation(-centerX, -centerY + 35)
       .applyRotation(currentRotation)
       .applyTranslation(centerX, centerY);
+    const handleCenter = new Vec2(centerX, centerY).applyMat3(handleMatrix);
+    
+    const rotationGroupLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    rotationGroupLine.classList.add("dashed");
+    rotationGroupLine.setAttribute("x1", centerX + "");
+    rotationGroupLine.setAttribute("y1", centerY + "");
+    rotationGroupLine.setAttribute("x2", handleCenter.x + "");
+    rotationGroupLine.setAttribute("y2", handleCenter.y + "");
+    
     const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    centerRectHandle.classList.add("svg-rect-handle-rotation");
+    centerRectHandle.classList.add("svg-annot-handle-rotation");
     centerRectHandle.setAttribute("data-handle-name", "center");
-    centerRectHandle.setAttribute("cx", centerX + "");
-    centerRectHandle.setAttribute("cy", centerY + "");
-    centerRectHandle.setAttribute("transform", `matrix(${matrix.toFloatShortArray().join(" ")})`);
+    centerRectHandle.setAttribute("cx", handleCenter.x + "");
+    centerRectHandle.setAttribute("cy", handleCenter.y + "");
     centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
 
-    rotationGroup.append(rotationGroupCircle, centerRectHandle);
+    rotationGroup.append(rotationGroupCircle, rotationGroupLine, centerRectHandle);
     return rotationGroup;
   } 
 
@@ -692,19 +727,32 @@ export abstract class AnnotationDict extends PdfDict {
   protected updateRender() {
     this._svg.innerHTML = "";
 
-    const content = this.renderContent() || this.renderAP();
-    if (!content) { 
+    const contentResult = this.renderContent() || this.renderAP();
+    if (!contentResult) { 
+      this._svgBox = null;
       this._svgContent = null;
+      this._svgContentCopy = null;
+      this._svgContentCopyUse = null;
       this._svgClipPaths = null;
       return;
-    }    
+    }  
+    const content = contentResult.svg;
+    content.id = this._svgId;
+    content.classList.add("svg-annotation-content");
+    content.setAttribute("data-annotation-name", this.name); 
+    const {copy, use} = this.renderContentCopy(); 
     
-    const bg = this.renderRectBg();
+    const rect = this.renderRect();
+    const box = this.renderBox();
     const handles = this.renderHandles(); 
 
-    this._svg.append(bg, content.svg, ...handles);  
-    this._svgContent = content.svg;
-    this._svgClipPaths = content.clipPaths;
+    this._svg.append(rect, box, contentResult.svg, ...handles);  
+
+    this._svgBox = box;
+    this._svgContent = content;
+    this._svgContentCopy = copy;
+    this._svgContentCopyUse = use; 
+    this._svgClipPaths = contentResult.clipPaths;
   }
   //#endregion
 
@@ -713,22 +761,24 @@ export abstract class AnnotationDict extends PdfDict {
   //#region translation handlers
   protected onRectPointerDown = (e: PointerEvent) => {    
     document.addEventListener("pointerup", this.onRectPointerUp);
-    document.addEventListener("pointerout", this.onRectPointerUp);    
+    document.addEventListener("pointerout", this.onRectPointerUp);   
 
     // set timeout to prevent an accidental annotation translation
-    this._moveStartTimer = setTimeout(() => {
-      this._moveStartTimer = null;      
-      this._svg.after(this._svgCopy);
-      this._moveStartPoint.set(e.clientX, e.clientY);
+    this._transformationTimer = setTimeout(() => {
+      this._transformationTimer = null;      
+      this._svg.after(this._svgContentCopy);
+      this._transformationPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
       document.addEventListener("pointermove", this.onRectPointerMove);
     }, 200);
   };
 
   protected onRectPointerMove = (e: PointerEvent) => {
-    this._moveMatrix.reset()
-      .applyTranslation(e.clientX - this._moveStartPoint.x, -1 * (e.clientY - this._moveStartPoint.y));
-    this._svgCopyUse.setAttribute("transform", 
-      `matrix(${this._moveMatrix.toFloatShortArray().join(" ")})`);
+    const current = this.convertClientCoordsToPage(e.clientX, e.clientY);
+    this._transformationMatrix.reset()
+      .applyTranslation(current.x - this._transformationPoint.x, 
+        current.y - this._transformationPoint.y);
+    this._svgContentCopyUse.setAttribute("transform", 
+      `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onRectPointerUp = () => {
@@ -736,17 +786,17 @@ export abstract class AnnotationDict extends PdfDict {
     document.removeEventListener("pointerup", this.onRectPointerUp);
     document.removeEventListener("pointerout", this.onRectPointerUp);
 
-    if (this._moveStartTimer) {
-      clearTimeout(this._moveStartTimer);
-      this._moveStartTimer = null;
+    if (this._transformationTimer) {
+      clearTimeout(this._transformationTimer);
+      this._transformationTimer = null;
       return;
     }
     
-    this._svgCopy.remove();
-    this._svgCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+    this._svgContentCopy.remove();
+    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
-    this.applyRectTransform(this._moveMatrix);
-    this._moveMatrix.reset();
+    this.applyRectTransform(this._transformationMatrix);
+    this._transformationMatrix.reset();
 
     this.updateRender();
   };
@@ -758,11 +808,9 @@ export abstract class AnnotationDict extends PdfDict {
     document.addEventListener("pointerout", this.onRotationHandlePointerUp);    
 
     // set timeout to prevent an accidental annotation rotation
-    this._moveStartTimer = setTimeout(() => {
-      this._moveStartTimer = null;      
-      this._svg.after(this._svgCopy);
-      const {x, y, width, height} = this._svg.getBoundingClientRect();
-      this._centerOfRotation.set(x + width / 2, y + height / 2);
+    this._transformationTimer = setTimeout(() => {
+      this._transformationTimer = null;      
+      this._svg.after(this._svgContentCopy);
       document.addEventListener("pointermove", this.onRotationHandlePointerMove);
     }, 200);
 
@@ -772,40 +820,140 @@ export abstract class AnnotationDict extends PdfDict {
   protected onRotationHandlePointerMove = (e: PointerEvent) => {
     const centerX = (this.Rect[0] + this.Rect[2]) / 2;
     const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+    const clientCenter = this.convertPageCoordsToClient(centerX, centerY);
     const currentRotation = this.getCurrentRotation();
     const angle = Math.atan2(
-      e.clientY - this._centerOfRotation.y, 
-      e.clientX - this._centerOfRotation.x
+      e.clientY - clientCenter.y, 
+      e.clientX - clientCenter.x
     ) + Math.PI / 2 - currentRotation;
     this._currentAngle = angle;
-    this._moveMatrix.reset()
+    this._transformationMatrix.reset()
       .applyTranslation(-centerX, -centerY)
       .applyRotation(angle)
       .applyTranslation(centerX, centerY);
-    this._svgCopyUse.setAttribute("transform", 
-      `matrix(${this._moveMatrix.toFloatShortArray().join(" ")})`);
+    this._svgContentCopyUse.setAttribute("transform", 
+      `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
   protected onRotationHandlePointerUp = (e: PointerEvent) => {
-    document.removeEventListener("pointermove", this.onRotationHandlePointerDown);
+    document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
     document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
     document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
 
-    if (this._moveStartTimer) {
-      clearTimeout(this._moveStartTimer);
-      this._moveStartTimer = null;
+    if (this._transformationTimer) {
+      clearTimeout(this._transformationTimer);
+      this._transformationTimer = null;
       return;
     }
     
-    this._svgCopy.remove();
-    this._svgCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+    this._svgContentCopy.remove();
+    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
-    this.applyRectTransform(this._moveMatrix.reset().applyRotation(this._currentAngle));
-    this._moveMatrix.reset();
+    this.applyRectTransform(this._transformationMatrix);
+    this._transformationMatrix.reset();
 
     this.updateRender();
   };
   //#endregion
+  
+  //#region scale handlers
+  protected onScaleHandlePointerDown = (e: PointerEvent) => { 
+    document.addEventListener("pointerup", this.onScaleHandlePointerUp);
+    document.addEventListener("pointerout", this.onScaleHandlePointerUp); 
+
+    const target = e.target as HTMLElement;
+
+    const {ll, lr, ur, ul} = this.getLocalBB();
+    const handleName = target.dataset["handleName"];
+    switch (handleName) {
+      case "ll": 
+        this._transformationPoint.setFromVec2(ur);
+        this._boxX.setFromVec2(ul).substract(ur);
+        this._boxY.setFromVec2(lr).substract(ur);      
+        break;
+      case "lr":
+        this._transformationPoint.setFromVec2(ul);
+        this._boxX.setFromVec2(ur).substract(ul);
+        this._boxY.setFromVec2(ll).substract(ul); 
+        break;
+      case "ur":
+        this._transformationPoint.setFromVec2(ll); 
+        this._boxX.setFromVec2(lr).substract(ll);
+        this._boxY.setFromVec2(ul).substract(ll);
+        break;
+      case "ul":
+        this._transformationPoint.setFromVec2(lr); 
+        this._boxX.setFromVec2(ll).substract(lr);
+        this._boxY.setFromVec2(ur).substract(lr);
+        break;
+      default:
+        // execution should not reach here
+        throw new Error(`Invalid handle name: ${handleName}`);
+    }
+    this._boxXLength = this._boxX.getMagnitude();
+    this._boxYLength = this._boxY.getMagnitude();
+
+    // set timeout to prevent an accidental annotation rotation
+    this._transformationTimer = setTimeout(() => {
+      this._transformationTimer = null;      
+      this._svg.after(this._svgContentCopy);
+      document.addEventListener("pointermove", this.onScaleHandlePointerMove);
+    }, 200);
+
+    e.stopPropagation();
+  };
+
+  protected onScaleHandlePointerMove = (e: PointerEvent) => {
+    const current = this.convertClientCoordsToPage(e.clientX, e.clientY)
+      .substract(this._transformationPoint);
+    const currentLength = current.getMagnitude();
+
+    const cos = Math.abs(current.dotProduct(this._boxX)) / currentLength / this._boxXLength;
+    const pXLength = cos * currentLength;
+    const pYLength = Math.sqrt(currentLength * currentLength - pXLength * pXLength);    
+
+    const scaleX = pXLength / this._boxXLength;
+    const scaleY = pYLength / this._boxYLength;
+    
+    const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+    const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+    const currentRotation = this.getCurrentRotation();
+
+    this._transformationMatrix.reset()
+      .applyTranslation(-centerX, -centerY)
+      .applyRotation(-currentRotation)
+      .applyScaling(scaleX, scaleY)
+      .applyRotation(currentRotation)
+      .applyTranslation(centerX, centerY);
+    const translation = this._transformationPoint.clone().substract(
+      this._transformationPoint.clone().applyMat3(this._transformationMatrix));
+    this._transformationMatrix.applyTranslation(translation.x, translation.y);
+    
+    this._svgContentCopyUse.setAttribute("transform", 
+      `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+  };
+  
+  protected onScaleHandlePointerUp = (e: PointerEvent) => {
+    document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
+    document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
+    document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
+
+    if (this._transformationTimer) {
+      clearTimeout(this._transformationTimer);
+      this._transformationTimer = null;
+      return;
+    }
+    
+    this._svgContentCopy.remove();
+    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+
+    this.applyRectTransform(this._transformationMatrix);
+    this._transformationMatrix.reset();
+
+    this.updateRender();
+  };
+  //#endregion
+
 
   //#endregion
 }
