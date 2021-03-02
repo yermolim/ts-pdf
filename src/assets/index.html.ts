@@ -431,7 +431,8 @@ export const styles = /*html*/`
 `;
 
 export const html = /*html*/`
-  <div id="main-container" class="hide-previewer" ondragstart="return false;" ondrop="return false;">
+  <div id="main-container" class="hide-previewer" 
+    ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="panel-top"> 

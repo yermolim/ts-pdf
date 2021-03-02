@@ -484,7 +484,8 @@ const styles = `
   </style>
 `;
 const html = `
-  <div id="main-container" class="hide-previewer" ondragstart="return false;" ondrop="return false;">
+  <div id="main-container" class="hide-previewer" 
+    ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
     <div id="panel-top"> 
@@ -11623,38 +11624,23 @@ class DocumentData {
         }
         return annotationMap;
     }
-    getRefinedData(idsToDelete) {
-        this.checkAuthentication();
-        const changeData = new ReferenceDataChange(this._referenceData);
-        const writer = new DataWriter(this._data);
-        idsToDelete.forEach(x => changeData.setRefFree(x));
-        this.writeXref(changeData, writer);
-        const bytes = writer.getCurrentData();
-        return bytes;
-    }
-    getUpdatedData(annotations) {
+    getUpdatedData(infos) {
         var _a, _b;
         this.checkAuthentication();
         const changeData = new ReferenceDataChange(this._referenceData);
         const writer = new DataWriter(this._data);
-        const stringCryptor = (_a = this._authResult) === null || _a === void 0 ? void 0 : _a.stringCryptor;
-        const streamCryptor = (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.streamCryptor;
-        for (const annotation of annotations) {
-            const apStream = annotation.apStream;
-            if (apStream.ref) {
-                changeData.updateUsedRef(this._referenceData.usedMap.get(apStream.ref.id));
+        (_a = this._authResult) === null || _a === void 0 ? void 0 : _a.stringCryptor;
+        (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.streamCryptor;
+        for (const info of infos) {
+            for (const annotation of info.deleted) {
+                if (!annotation.id) {
+                    continue;
+                }
+                changeData.setRefFree(annotation.id);
+                if (annotation instanceof MarkupAnnotation && annotation.Popup) {
+                    changeData.setRefFree(annotation.Popup.id);
+                }
             }
-            else {
-                apStream.ref = changeData.takeFreeRef(writer.offset);
-            }
-            writer.writeIndirectObject({ ref: apStream.ref, stringCryptor, streamCryptor }, apStream);
-            if (annotation.ref) {
-                changeData.updateUsedRef(this._referenceData.usedMap.get(annotation.ref.id));
-            }
-            else {
-                annotation.ref = changeData.takeFreeRef(writer.offset);
-            }
-            writer.writeIndirectObject({ ref: annotation.ref, stringCryptor, streamCryptor }, annotation);
         }
         this.writeXref(changeData, writer);
         const bytes = writer.getCurrentData();
@@ -11754,20 +11740,19 @@ class AnnotationData {
     }
     getRefinedData() {
         const annotations = this.getAnnotationMap();
-        const idsToDelete = [];
+        const updateInfos = [];
         if (annotations === null || annotations === void 0 ? void 0 : annotations.size) {
-            this.getAnnotationMap().forEach(x => {
-                x.forEach(y => {
-                    if (y.id) {
-                        idsToDelete.push(y.id);
-                        if (y instanceof MarkupAnnotation && y.Popup) {
-                            idsToDelete.push(y.Popup.id);
-                        }
-                    }
-                });
+            this.getAnnotationMap().forEach((v, k) => {
+                const updateInfo = {
+                    pageId: k,
+                    deleted: v.slice(),
+                    edited: [],
+                    added: [],
+                };
+                updateInfos.push(updateInfo);
             });
         }
-        return this._documentData.getRefinedData(idsToDelete);
+        return this._documentData.getUpdatedData(updateInfos);
     }
     getExportedData() {
         return null;

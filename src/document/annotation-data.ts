@@ -1,12 +1,9 @@
-import { DocumentData } from "./document-data";
+import { DocumentData, PageUpdateAnnotsInfo } from "./document-data";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
-import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
 
 export class AnnotationData {
   private _sourceData: Uint8Array;
-
   private _documentData: DocumentData;
-
   private _annotationsByPageId: Map<number, AnnotationDict[]>;
 
   private onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
@@ -39,23 +36,21 @@ export class AnnotationData {
    */
   getRefinedData(): Uint8Array {
     const annotations = this.getAnnotationMap();
-    const idsToDelete: number[] = [];
+    const updateInfos: PageUpdateAnnotsInfo[] = [];
+
     if (annotations?.size) {
-      this.getAnnotationMap().forEach(x => {
-        x.forEach(y => {
-          if (y.id) {
-            // if the annotation has an id than it is parsed from the file
-            idsToDelete.push(y.id);
-            if (y instanceof MarkupAnnotation && y.Popup) {
-              // also, delete the associated popup if present
-              idsToDelete.push(y.Popup.id);
-            }
-          }
-        });
+      this.getAnnotationMap().forEach((v, k) => {
+        const updateInfo: PageUpdateAnnotsInfo = {
+          pageId: k,
+          deleted: v.slice(),
+          edited: [],
+          added: [],
+        };
+        updateInfos.push(updateInfo);
       });
     }
 
-    return this._documentData.getRefinedData(idsToDelete);
+    return this._documentData.getUpdatedData(updateInfos);
   }
 
   /**

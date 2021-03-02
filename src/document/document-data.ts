@@ -24,6 +24,14 @@ import { ReferenceData, ReferenceDataChange } from "./reference-data";
 import { AuthenticationResult } from "./common-interfaces";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
+import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
+
+export interface PageUpdateAnnotsInfo {
+  pageId: number;
+  deleted: AnnotationDict[];
+  edited: AnnotationDict[];
+  added: AnnotationDict[];
+}
 
 export class DocumentData {
   private readonly _data: Uint8Array; 
@@ -233,19 +241,7 @@ export class DocumentData {
     return annotationMap;
   }  
 
-  getRefinedData(idsToDelete: number[]): Uint8Array {
-    this.checkAuthentication();
-    const changeData = new ReferenceDataChange(this._referenceData);
-    const writer = new DataWriter(this._data);
-
-    idsToDelete.forEach(x => changeData.setRefFree(x));    
-    
-    this.writeXref(changeData, writer);
-    const bytes = writer.getCurrentData();
-    return bytes;
-  }
-
-  getUpdatedData(annotations: AnnotationDict[]): Uint8Array {
+  getUpdatedData(infos: PageUpdateAnnotsInfo[]): Uint8Array {
     this.checkAuthentication();    
     const changeData = new ReferenceDataChange(this._referenceData);       
     const writer = new DataWriter(this._data);
@@ -253,28 +249,45 @@ export class DocumentData {
     const stringCryptor = this._authResult?.stringCryptor;
     const streamCryptor = this._authResult?.streamCryptor;
 
-    for (const annotation of annotations) {
-      // TODO: add handling xObjects and external graphics states
-
-      // write appearance stream
-      const apStream = annotation.apStream;
-      if (apStream.ref) {
-        changeData.updateUsedRef(this._referenceData.usedMap.get(apStream.ref.id));
-      } else {
-        apStream.ref = changeData.takeFreeRef(writer.offset);
+    for (const info of infos) {
+      for (const annotation of info.deleted) {
+        if (!annotation.id) {
+          continue; 
+        }
+        changeData.setRefFree(annotation.id);
+        // if the annotation has an id than it is parsed from the file
+        if (annotation instanceof MarkupAnnotation && annotation.Popup) {
+          // also, delete the associated popup if present
+          changeData.setRefFree(annotation.Popup.id);
+        }      
       }
-      writer.writeIndirectObject({ref: apStream.ref, stringCryptor, streamCryptor}, apStream);
-      
-      // write annotation dict
-      if (annotation.ref) {
-        changeData.updateUsedRef(this._referenceData.usedMap.get(annotation.ref.id));
-      } else {
-        annotation.ref = changeData.takeFreeRef(writer.offset);
-      }
-      writer.writeIndirectObject({ref: annotation.ref, stringCryptor, streamCryptor}, annotation);
-
-      // TODO: implement /Annots array change
     }
+
+    // for (const annotation of annotations) {
+
+    //   // TODO: add handling of changed or added resources 
+    //   // (xObjects and external graphics states)
+
+    //   // write appearance stream
+    //   const apStream = annotation.apStream;
+    //   if (apStream.ref) {
+    //     changeData.updateUsedRef(this._referenceData.usedMap.get(apStream.ref.id));
+    //   } else {
+    //     apStream.ref = changeData.takeFreeRef(writer.offset);
+    //   }
+    //   writer.writeIndirectObject({ref: apStream.ref, stringCryptor, streamCryptor}, apStream);
+      
+    //   // write annotation dict
+    //   if (annotation.ref) {
+    //     changeData.updateUsedRef(this._referenceData.usedMap.get(annotation.ref.id));
+    //   } else {
+    //     annotation.ref = changeData.takeFreeRef(writer.offset);
+    //   }
+    //   writer.writeIndirectObject({ref: annotation.ref, stringCryptor, streamCryptor}, annotation);
+
+    //   // TODO: implement /Annots array change
+      
+    // }
 
     this.writeXref(changeData, writer);
     const bytes = writer.getCurrentData();
