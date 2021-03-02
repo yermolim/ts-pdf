@@ -160,8 +160,10 @@ export abstract class PdfStream extends PdfObject {
                 this.Filter = <StreamFilter>filter.value;
                 i = filter.end + 1;
                 break;
-              } else {              
-                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+              } else {  
+                // throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+                console.log(`Unsupported /Filter property value: ${filter.value}`);
+                return false;            
               }
             } else if (entryType === valueTypes.ARRAY) {              
               const filterNames = parser.parseNameArrayAt(i);
@@ -172,8 +174,10 @@ export abstract class PdfStream extends PdfObject {
                   this.Filter = <StreamFilter>filterArray[0];
                   i = filterNames.end + 1;
                   break;
-                } else {                  
-                  throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                } else {  
+                  // throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                  console.log(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                  return false;                  
                 }
               }
             }

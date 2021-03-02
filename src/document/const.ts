@@ -526,10 +526,10 @@ export const colorSpaces = {
   // CIE_LAB: "/Lab",
   // CIE_ICC: "/ICCBased",
 
-  // SPECIAL: "/DeviceN",
-  // SPECIAL_INDEXED: "/Indexed",
-  // SPECIAL_PATTERN: "/Pattern",
-  // SPECIAL_SEPARATION: "/Separation",
+  SPECIAL: "/DeviceN",
+  SPECIAL_INDEXED: "/Indexed",
+  SPECIAL_PATTERN: "/Pattern",
+  SPECIAL_SEPARATION: "/Separation",
 } as const;
 export type ColorSpace = typeof colorSpaces[keyof typeof colorSpaces];
 
@@ -560,6 +560,9 @@ export type BaseFont = typeof baseFonts[keyof typeof baseFonts];
 
 export const supportedFilters = new Set<string>([
   streamFilters.FLATE,
+  streamFilters.DCT,
+  streamFilters.JBIG2,
+  streamFilters.JPX,
 ]);
 
 export const maxGeneration = 65535;

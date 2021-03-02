@@ -16,9 +16,6 @@ export class PageAnnotationView {
   private _defs: SVGDefsElement;
   private _rendered: boolean;
 
-  private _editModeOn: boolean;
-  private _divModeTimer: number;
-
   constructor(annotationData: AnnotationData, pageId: number, pageDimensions: Vec2) {
     if (!annotationData || isNaN(pageId) || !pageDimensions) {
       throw new Error("Required argument not found");
@@ -30,17 +27,22 @@ export class PageAnnotationView {
     this._container.classList.add("page-annotations");
     // this._container.addEventListener("mousedown", this.onMouseDown);
     // this._container.addEventListener("mouseup", this.onMouseUp);
+
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this._svg.classList.add("stretch");
     this._svg.setAttribute("data-page-id", pageId + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
+    this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
+      if (e.target === this._svg) {
+        this.switchSelectedAnnotation(null);
+      }
+    });
+    
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
 
     this._annotations = annotationData.getPageAnnotations(pageId);
-    
-    this.switchEditMode(true);
   } 
 
   destroy() {
@@ -49,9 +51,8 @@ export class PageAnnotationView {
   }
 
   remove() {    
-    this.switchEditMode(false);
     this._container?.remove();
-  }
+  }  
 
   async appendAsync(parent: HTMLElement) {
     if (!this._rendered) {
@@ -62,7 +63,7 @@ export class PageAnnotationView {
   }
 
   private switchSelectedAnnotation(annotation: AnnotationDict) {
-    if (!this._editModeOn || annotation === this._selectedAnnotation) {
+    if (annotation === this._selectedAnnotation) {
       return;
     }
 
@@ -78,17 +79,6 @@ export class PageAnnotationView {
     newSelectedSvg.classList.add("selected");
     this._svg.append(newSelectedSvg); // reappend selected svg to move it to the top
     this._selectedAnnotation = annotation;
-  }
-
-  private switchEditMode(value?: boolean) {
-    value = value ?? !this._editModeOn;
-    this._editModeOn = value;
-    if (value) {
-      this._container.classList.remove("passive");
-    } else {
-      this._container.classList.add("passive");
-      this.switchSelectedAnnotation(null);
-    }
   }
 
   private renderAnnotation(annotation: AnnotationDict) {

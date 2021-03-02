@@ -213,7 +213,7 @@ export abstract class AnnotationDict extends PdfDict {
       this._svg = this.renderMainElement();
     }
 
-    this.updateRender();    
+    this.updateRenderAsync();    
 
     return {
       svg: this._svg,
@@ -587,12 +587,12 @@ export abstract class AnnotationDict extends PdfDict {
   /**
    * default annotation content renderer using the appearance stream
    */
-  protected renderAP(): RenderToSvgResult {
+  protected async renderApAsync(): Promise<RenderToSvgResult> {
     const stream = this.apStream;
     if (stream) {
       try {
         const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
-        return renderer.render();
+        return await renderer.renderAsync();
       }
       catch (e) {
         console.log(`Annotation stream render error: ${e.message}`);
@@ -695,10 +695,10 @@ export abstract class AnnotationDict extends PdfDict {
   } 
   //#endregion
 
-  protected updateRender() {
+  protected async updateRenderAsync() {
     this._svg.innerHTML = "";
 
-    const contentResult = this.renderContent() || this.renderAP();
+    const contentResult = this.renderContent() || await this.renderApAsync();
     if (!contentResult) { 
       this._svgBox = null;
       this._svgContent = null;
@@ -769,7 +769,7 @@ export abstract class AnnotationDict extends PdfDict {
     this.applyRectTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
 
-    this.updateRender();
+    this.updateRenderAsync();
   };
   //#endregion
   
@@ -823,7 +823,7 @@ export abstract class AnnotationDict extends PdfDict {
     this.applyRectTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
 
-    this.updateRender();
+    this.updateRenderAsync();
   };
   //#endregion
   
@@ -921,7 +921,7 @@ export abstract class AnnotationDict extends PdfDict {
     this.applyRectTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
 
-    this.updateRender();
+    this.updateRenderAsync();
   };
   //#endregion
 

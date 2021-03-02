@@ -7,7 +7,9 @@ import icon_plus from "./icons/plus.png";
 import icon_fit_viewer from "./icons/fit-viewer.png";
 import icon_fit_page from "./icons/fit-page.png";
 import icon_sidebar from "./icons/sidebar.png";
+import icon_caret from "./icons/caret.png";
 import icon_hand from "./icons/hand.png";
+import icon_popup from "./icons/popup.png";
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
 
@@ -237,7 +239,7 @@ export const styles = /*html*/`
       padding-top: 0px;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
-    #viewer.hand {
+    #viewer.mode-hand {
       cursor: grab !important;
       user-select: none !important;
     }
@@ -325,7 +327,7 @@ export const styles = /*html*/`
     .page-text ::selection {
       background: var(--color-text-selection-final);
     }
-    .hand .page-text span {
+    .mode-hand .page-text span {
       cursor: grab;
     }
     
@@ -339,7 +341,8 @@ export const styles = /*html*/`
       padding: 0;
       overflow: hidden;
     }
-    .page-annotations.passive {
+    .mode-text .page-annotations,
+    .mode-hand .page-annotations {
       pointer-events: none;
     }
     
@@ -395,32 +398,32 @@ export const styles = /*html*/`
     .svg-annotation {
       cursor: pointer;
     } 
-    .svg-annotation.selected {
-      cursor: grab;
-    } 
     .svg-annot-rect,
     .svg-annot-box {
       fill: transparent;
     }
-    .svg-annotation.selected .svg-annot-rect,
-    .svg-annotation.selected .svg-annot-box {
+    .mode-annotation .svg-annotation.selected {
+      cursor: grab;
+    } 
+    .mode-annotation .svg-annotation.selected .svg-annot-rect,
+    .mode-annotation .svg-annotation.selected .svg-annot-box {
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     } 
-    .svg-annotation.selected .svg-annot-handle-scale,
-    .svg-annotation.selected .svg-annot-handle-rotation {
+    .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
+    .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
       r: 5;
       fill: var(--color-primary-final);
       cursor: pointer;
     }
-    .svg-annotation.selected .svg-annot-rotation {
+    .mode-annotation .svg-annotation.selected .svg-annot-rotation {
       fill: none;
       cursor: pointer;
     }
-    .svg-annotation.selected .svg-annot-rotation .circle {
+    .mode-annotation .svg-annotation.selected .svg-annot-rotation .circle {
       r: 25;
     }
-    .svg-annotation.selected .svg-annot-rotation .dashed {
+    .mode-annotation .svg-annotation.selected .svg-annot-rotation .dashed {
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     }
@@ -436,11 +439,17 @@ export const html = /*html*/`
         <div id="toggle-previewer" class="panel-button panel-item">
           <img src="${icon_sidebar}"/>
         </div> 
-        <div id="toggle-hand" class="panel-button panel-item">
+      </div>
+      <div id="modes" class="subpanel panel-item">
+        <div id="button-mode-text" class="panel-button panel-item">
+          <img src="${icon_caret}"/>
+        </div> 
+        <div id="button-mode-hand" class="panel-button panel-item">
           <img src="${icon_hand}"/>
         </div> 
-      </div>
-      <div id="annotator" class="subpanel panel-item">
+        <div id="button-mode-annotation" class="panel-button panel-item">
+          <img src="${icon_popup}"/>
+        </div> 
       </div>
     </div>
     <div id="panel-bottom" class="disabled">

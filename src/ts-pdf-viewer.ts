@@ -7,7 +7,7 @@ import { PageView } from "./page-view";
 import { AnnotationData } from "./document/annotation-data";
 import { clamp, Vec2 } from "./math";
 
-type ViewerMode = "normal" | "hand";
+type ViewerMode = "text" | "hand" | "annotation";
 
 export class TsPdfViewer {
   private readonly _visibleAdjPages = 0;
@@ -36,7 +36,7 @@ export class TsPdfViewer {
   private _pages: PageView[] = [];
   private _currentPage = 0;
 
-  private _mode: ViewerMode = "normal";
+  private _mode: ViewerMode;
   
   private _pointerInfo = {
     lastPos: <Vec2>null,
@@ -159,20 +159,23 @@ export class TsPdfViewer {
     const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
     paginatorInput.addEventListener("input", this.onPaginatorInput);
     paginatorInput.addEventListener("change", this.onPaginatorChange);    
-    this._shadowRoot.querySelector("#paginator-prev").addEventListener("click", this.onPaginatorPrevClick);
-    this._shadowRoot.querySelector("#paginator-next").addEventListener("click", this.onPaginatorNextClick);
+    this._shadowRoot.querySelector("#paginator-prev")
+      .addEventListener("click", this.onPaginatorPrevClick);
+    this._shadowRoot.querySelector("#paginator-next")
+      .addEventListener("click", this.onPaginatorNextClick);
 
-    this._shadowRoot.querySelector("#zoom-out").addEventListener("click", this.onZoomOutClick);
-    this._shadowRoot.querySelector("#zoom-in").addEventListener("click", this.onZoomInClick);
-    this._shadowRoot.querySelector("#zoom-fit-viewer").addEventListener("click", this.onZoomFitViewerClick);
-    this._shadowRoot.querySelector("#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
+    this._shadowRoot.querySelector("#zoom-out")
+      .addEventListener("click", this.onZoomOutClick);
+    this._shadowRoot.querySelector("#zoom-in")
+      .addEventListener("click", this.onZoomInClick);
+    this._shadowRoot.querySelector("#zoom-fit-viewer")
+      .addEventListener("click", this.onZoomFitViewerClick);
+    this._shadowRoot.querySelector("#zoom-fit-page")
+      .addEventListener("click", this.onZoomFitPageClick);
 
-    this._shadowRoot.querySelector("div#toggle-previewer").addEventListener("click", this.onPreviewerToggleClick);
-    this._shadowRoot.querySelector("div#toggle-hand").addEventListener("click", this.onHandToggleClick);
-
-    this._previewer = this._shadowRoot.querySelector("div#previewer");
+    this._previewer = this._shadowRoot.querySelector("#previewer");
     this._previewer.addEventListener("scroll", this.onPreviewerScroll);
-    this._viewer = this._shadowRoot.querySelector("div#viewer");
+    this._viewer = this._shadowRoot.querySelector("#viewer");
     this._viewer.addEventListener("scroll", this.onViewerScroll);
     this._viewer.addEventListener("wheel", this.onViewerWheel);
     this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
@@ -182,7 +185,17 @@ export class TsPdfViewer {
     this._mainContainer = this._shadowRoot.querySelector("div#main-container");
     const resizeObserver = new ResizeObserver(this.onMainContainerResize);
     resizeObserver.observe(this._mainContainer);
-    this._mainContainerResizeObserver = resizeObserver;
+    this._mainContainerResizeObserver = resizeObserver;    
+
+    this._shadowRoot.querySelector("#toggle-previewer")
+      .addEventListener("click", this.onPreviewerToggleClick);
+    this._shadowRoot.querySelector("#button-mode-text")
+      .addEventListener("click", this.onTextModeButtonClick);
+    this._shadowRoot.querySelector("#button-mode-hand")
+      .addEventListener("click", this.onHandModeButtonClick);
+    this._shadowRoot.querySelector("#button-mode-annotation")
+      .addEventListener("click", this.onAnnotationModeButtonClick);
+    this.toggleMode("text");
   }
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
@@ -393,6 +406,49 @@ export class TsPdfViewer {
   }
   //#endregion
   
+  //#region mode
+  private toggleMode(mode: ViewerMode) {
+    if (!mode || mode === this._mode) {
+      return;
+    }
+    switch (this._mode) {
+      case "text":
+        this._viewer.classList.remove("mode-text");
+        this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
+        break;
+      case "hand":
+        this._viewer.classList.remove("mode-hand");
+        this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
+        break;
+      case "annotation":
+        this._viewer.classList.remove("mode-annotation");
+        this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
+        break;
+      default:
+        // mode hasn't been set yet. do nothing
+        break;
+    }
+    switch (mode) {
+      case "text":
+        this._viewer.classList.add("mode-text");
+        this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
+        break;
+      case "hand":
+        this._viewer.classList.add("mode-hand");
+        this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
+        break;
+      case "annotation":
+        this._viewer.classList.add("mode-annotation");
+        this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
+        break;
+      default:
+        // Execution should not come here
+        throw new Error(`Invalid viewer mode: ${mode}`);
+    }
+    this._mode = mode;
+  }
+  //#endregion
+
   //#region event handlers
   private onMainContainerResize = (entries: ResizeObserverEntry[], observer: ResizeObserver) => {    
     const {width} = this._mainContainer.getBoundingClientRect();
@@ -403,16 +459,16 @@ export class TsPdfViewer {
     }
   };
 
-  private onHandToggleClick = () => {
-    if (this._mode === "hand") {
-      this._mode = "normal";
-      this._viewer.classList.remove("hand");
-      this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
-    } else {
-      this._mode = "hand";
-      this._viewer.classList.add("hand");
-      this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
-    }
+  private onTextModeButtonClick = () => {
+    this.toggleMode("text");
+  };
+
+  private onHandModeButtonClick = () => {
+    this.toggleMode("hand");
+  };
+  
+  private onAnnotationModeButtonClick = () => {
+    this.toggleMode("annotation");
   };
 
   //#region previewer events

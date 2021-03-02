@@ -170,7 +170,6 @@ export class AppearanceDict extends PdfDict {
                 }
               }
             } else {
-              console.log(parser.sliceChars(i - 5, i + 10));
               throw new Error(`Unsupported /N property value type: ${nEntryType}`);
             }
             throw new Error("Can't parse /N property value");

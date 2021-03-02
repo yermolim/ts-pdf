@@ -41,8 +41,11 @@ export declare class TsPdfViewer {
 	private zoomOut;
 	private zoomIn;
 	private getViewerCenterPosition;
+	private toggleMode;
 	private onMainContainerResize;
-	private onHandToggleClick;
+	private onTextModeButtonClick;
+	private onHandModeButtonClick;
+	private onAnnotationModeButtonClick;
 	private onPreviewerToggleClick;
 	private onPreviewerPageClick;
 	private onPreviewerScroll;

@@ -7,9 +7,12 @@ import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
+import { IndexedColorSpaceArray } from "../appearance/indexed-color-space-array";
 
 // TODO: add separate logic for decoding images
 export class ImageStream extends PdfStream {
+  //#region PDF properties
+
   /**
    * (Required) The type of XObject that this dictionary describes; must be Image for an image XObject
    */
@@ -41,8 +44,8 @@ export class ImageStream extends PdfStream {
    * the number of bits is the same for all color components. Valid values are 1, 2, 4, 8, and (in PDF 1.5+) 16. 
    * If ImageMask is true, this entry is optional, and if specified, its value must be 1. 
    * If the image stream uses a filter, the value of BitsPerComponent must be consistent with the size of the data 
-   * samples that the filter delivers. In par-ticular, a CCITTFaxDecode or JBIG2Decode filter always 
-   * delivers 1-bit sam-ples, a RunLengthDecode or DCTDecode filter delivers 8-bit samples, 
+   * samples that the filter delivers. In particular, a CCITTFaxDecode or JBIG2Decode filter always 
+   * delivers 1-bit samples, a RunLengthDecode or DCTDecode filter delivers 8-bit samples, 
    * and an LZWDecode or FlateDecode filter delivers samples of a specified size if a predictor function is used. 
    * If the image stream uses the JPXDecode filter, this entry is optional and ignored if present. 
    * The bit depth is determined in the process of decoding the JPEG2000 image
@@ -136,7 +139,14 @@ export class ImageStream extends PdfStream {
   //Alternates
   //ID
   //OPI
+
+  //#endregion
   
+  protected _sMask: ImageStream;
+  get sMask(): ImageStream {
+    return this._sMask;
+  }
+
   set streamData(data: Uint8Array) { 
     this.setStreamData(data);
   }
@@ -146,6 +156,10 @@ export class ImageStream extends PdfStream {
     }
     return this._decodedStreamData;
   }
+
+  protected _indexedColorSpace: IndexedColorSpaceArray;
+  
+  protected _imageUrl: string;
   
   constructor() {
     super(streamTypes.FORM_XOBJECT);
@@ -175,7 +189,11 @@ export class ImageStream extends PdfStream {
       bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Height));
     }
     if (this.ColorSpace) {
-      bytes.push(...encoder.encode("/ColorSpace "), ...encoder.encode(this.ColorSpace));
+      if (this._indexedColorSpace) {
+        bytes.push(...encoder.encode("/ColorSpace "), ...this._indexedColorSpace.toArray(cryptInfo));
+      } else {
+        bytes.push(...encoder.encode("/ColorSpace "), ...encoder.encode(this.ColorSpace));
+      }
     }
     if (this.BitsPerComponent) {
       bytes.push(...encoder.encode("/BitsPerComponent "), ...encoder.encode(" " + this.BitsPerComponent));
@@ -222,6 +240,87 @@ export class ImageStream extends PdfStream {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+
+  async getImageUrlAsync(): Promise<string> {
+    if (this._imageUrl) {
+      // revoke old url
+      URL.revokeObjectURL(this._imageUrl);
+    }
+
+    if (this.Filter === streamFilters.DCT
+      || this.Filter === streamFilters.JBIG2
+      || this.Filter === streamFilters.JPX) {
+      // JPEG image. no additional operations needed          
+      const blob = new Blob([this.decodedStreamData], {
+        type: "application/octet-binary",
+      });
+      const imageUrl = URL.createObjectURL(blob);
+      this._imageUrl = imageUrl;
+      return imageUrl;
+      // DEBUG
+      // const img = new Image();
+      // img.onload = () => {
+      //   URL.revokeObjectURL(url);
+      //   console.log(img);
+      //   document.body.append(img);
+      // };
+      // img.onerror = (e: string | Event) => {
+      //   console.log(this.Filter);
+      //   console.log(e);
+      // };
+      // img.src = url;
+    }
+
+    if (this.Filter === streamFilters.FLATE) {
+      // PNG image.
+      const length = this.Width * this.Height; 
+      // get alpha value
+      let alpha: Uint8Array;
+      if (this.sMask) {
+        // use sMask values as alpha
+        alpha = this.sMask.decodedStreamData;
+        if (alpha.length !== length) {
+          throw new Error(`Invalid alpha mask data length: ${alpha.length} (must be ${length})`);
+        }
+      } else {
+        // fill alpha with max values
+        alpha = new Uint8Array(length).fill(255);
+      }
+      // fill data array with RGBA values
+      const data = new Uint8ClampedArray(length * 4);
+      for (let i = 0; i < length; i++) {
+        const [r, g, b] = this.getColor(i);
+        data[i * 4] = r;
+        data[i * 4 + 1] = g;
+        data[i * 4 + 2] = b;
+        data[i * 4 + 3] = alpha[i];
+      }      
+      const imageData = new ImageData(data, this.Width, this.Height);
+      // convert RGBA array to url using canvas
+      const urlPromise = new Promise<string>((resolve, reject) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = this.Width;
+        canvas.height = this.Height;
+        canvas.getContext("2d").putImageData(imageData, 0, 0);
+        canvas.toBlob((blob: Blob) => {
+          const url = URL.createObjectURL(blob);  
+          resolve(url);          
+          //DEBUG
+          // const img = document.createElement("img");
+          // img.onload = () => {
+          //   URL.revokeObjectURL(url);
+          // };
+          // img.src = url;
+          // document.body.appendChild(img);  
+        });
+      });
+      const imageUrl = await urlPromise; 
+      this._imageUrl = imageUrl;     
+      return imageUrl;
+    }
+
+    throw new Error(`Unsupported image filter type: ${this.Filter}`);
   }
 
   /**
@@ -301,15 +400,47 @@ export class ImageStream extends PdfStream {
                 i = colorSpaceName.end + 1;
                 break;
               }
-              throw new Error("Can't parse /ColorSpace property name");
+              throw new Error("Can't parse /ColorSpace name");
             } else if (colorSpaceEntryType === valueTypes.ARRAY) { 
               const colorSpaceArrayBounds = parser.getArrayBoundsAt(i); 
               if (colorSpaceArrayBounds) {
-                // TODO: implement array-defined color spaces
-                i = colorSpaceArrayBounds.end + 1;
-                break;
+                const indexedColorSpace = IndexedColorSpaceArray.parse({
+                  parser, 
+                  bounds: colorSpaceArrayBounds,
+                  cryptInfo: parseInfo.cryptInfo,
+                  parseInfoGetter: parseInfo.parseInfoGetter,
+                });
+                if (indexedColorSpace) {
+                  this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
+                  this._indexedColorSpace = indexedColorSpace.value;
+                  i = colorSpaceArrayBounds.end + 1;
+                  break;
+                }
+                // TODO: add support for other special color spaces
+                throw new Error("Can't parse /ColorSpace object:" +
+                  parser.sliceChars(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end)); 
               }  
-              throw new Error("Can't parse /ColorSpace value dictionary");  
+              throw new Error("Can't parse /ColorSpace value array");  
+            } else if (colorSpaceEntryType === valueTypes.REF) { 
+              const colorSpaceRef = ObjectId.parseRef(parser, i); 
+              if (colorSpaceRef) {
+                const colorSpaceParseInfo = parseInfo.parseInfoGetter(colorSpaceRef.value.id);
+                if (colorSpaceParseInfo) {
+                  const indexedColorSpace = IndexedColorSpaceArray.parse(colorSpaceParseInfo);
+                  if (indexedColorSpace) {
+                    this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
+                    this._indexedColorSpace = indexedColorSpace.value;
+                    i = colorSpaceRef.end + 1;
+                    break;
+                  }
+                  // TODO: add support for other special color spaces
+                  throw new Error("Can't parse /ColorSpace object:" +
+                    colorSpaceParseInfo.parser.sliceChars(
+                      colorSpaceParseInfo.bounds.start, 
+                      colorSpaceParseInfo.bounds.end)); 
+                }
+              }  
+              throw new Error("Can't parse /ColorSpace ref");  
             }
             throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
            
@@ -411,15 +542,16 @@ export class ImageStream extends PdfStream {
         case colorSpaces.CMYK: 
           this.Decode = [0,1, 0,1, 0,1, 0,1];
           break;
-        // case colorSpaces.SPECIAL_INDEXED: 
-        //   this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
-        //   break;
+        case colorSpaces.SPECIAL_INDEXED: 
+          this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
+          break;
         // case colorSpaces.SPECIAL_PATTERN: 
         //   throw new Error("Pattern color space is not permitted with images");
         // case colorSpaces.CIE_LAB: 
         // case colorSpaces.CIE_ICC: 
         // case colorSpaces.SPECIAL: 
-        default:
+        default:  
+          this.Decode = [0,1];
           break;
       }
     }
@@ -427,32 +559,78 @@ export class ImageStream extends PdfStream {
     if (!this.DecodeParms) {
       this.DecodeParms = new DecodeParamsDict();
     }
-    this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
-    this.DecodeParms.setIntProp("/Columns", this.Width);
-    switch (this.ColorSpace) {
-      case colorSpaces.GRAYSCALE:        
-      // case colorSpaces.CIE_GRAYSCALE: 
-      // case colorSpaces.SPECIAL_INDEXED:        
-      // case colorSpaces.SPECIAL_SEPARATION:        
-        this.DecodeParms.setIntProp("/Colors", 1);
-        break;
-      case colorSpaces.RGB:        
-      // case colorSpaces.CIE_RGB:        
-      // case colorSpaces.CIE_LAB:        
-        this.DecodeParms.setIntProp("/Colors", 3);
-        break;
-      case colorSpaces.CMYK:        
-        this.DecodeParms.setIntProp("/Colors", 4);
-        break;
-      // case colorSpaces.SPECIAL_PATTERN: 
-      //   throw new Error("Pattern color space is not permitted with images");
-      // case colorSpaces.CIE_ICC: 
-      // case colorSpaces.SPECIAL: 
-      default:
-        break;
+    if (!this.DecodeParms.getIntProp("/BitsPerComponent")) {
+      this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
     }
-
+    if (!this.DecodeParms.getIntProp("/Columns")) {
+      this.DecodeParms.setIntProp("/Columns", this.Width);
+    }
+    if (!this.DecodeParms.getIntProp("/Colors")) {
+      switch (this.ColorSpace) {
+        case colorSpaces.GRAYSCALE:  
+        case colorSpaces.SPECIAL_INDEXED:     
+        // case colorSpaces.CIE_GRAYSCALE:       
+        // case colorSpaces.SPECIAL_SEPARATION:        
+          this.DecodeParms.setIntProp("/Colors", 1);
+          break;
+        case colorSpaces.RGB:        
+        // case colorSpaces.CIE_RGB:        
+        // case colorSpaces.CIE_LAB:        
+          this.DecodeParms.setIntProp("/Colors", 3);
+          break;
+        case colorSpaces.CMYK:        
+          this.DecodeParms.setIntProp("/Colors", 4);
+          break;
+        // case colorSpaces.SPECIAL_PATTERN: 
+        //   throw new Error("Pattern color space is not permitted with images");
+        // case colorSpaces.CIE_ICC: 
+        // case colorSpaces.SPECIAL: 
+        default:
+          this.DecodeParms.setIntProp("/Colors", 1);
+          break;
+      }
+    }
+    
+    if (this.SMask) {
+      const sMaskParseInfo = parseInfo.parseInfoGetter(this.SMask.id);
+      if (!sMaskParseInfo) {
+        throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
+      }
+      const sMask = ImageStream.parse(sMaskParseInfo);
+      if (!sMask) {
+        throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
+      }
+      this._sMask = sMask.value;
+    }
+    
     return true;
+  }
+  
+  protected getColor(index: number): [r: number, g: number, b: number] {
+    const data = this.decodedStreamData;
+    switch (this.ColorSpace) {
+      case colorSpaces.GRAYSCALE:    
+        const gray = data[index];        
+        return [gray, gray, gray];
+      case colorSpaces.RGB:      
+        return [
+          data[index * 3], 
+          data[index * 3 + 1], 
+          data[index * 3 + 2],
+        ];
+      case colorSpaces.CMYK:  
+        const c = data[index * 4] / 255;
+        const m = data[index * 4 + 1] / 255;   
+        const y = data[index * 4 + 2] / 255;   
+        const k = data[index * 4 + 3] / 255;      
+        return [
+          255 * (1 - c) * (1 - k),
+          255 * (1 - m) * (1 - k),
+          255 * (1 - y) * (1 - k),  
+        ];
+      case colorSpaces.SPECIAL_INDEXED:
+        return this._indexedColorSpace?.getColor(index) || [0, 0, 0];
+    }
   }
   
   // protected setStreamData(data: Uint8Array) {
@@ -460,6 +638,6 @@ export class ImageStream extends PdfStream {
   // }
   
   // protected decodeStreamData() {    
-  //   // TODO: implement
+  //   this._decodedStreamData = new Uint8Array(this._streamData);
   // }
 }

@@ -142,8 +142,8 @@ export class AppearanceStreamRenderer {
     return {endIndex: i, parameters, operator};
   }
 
-  render(): RenderToSvgResult {
-    const g = this.drawGroup(this._parser);
+  async renderAsync(): Promise<RenderToSvgResult> {
+    const g = await this.drawGroupAsync(this._parser);
     return {
       svg: g, 
       clipPaths: this._clipPaths,
@@ -248,7 +248,7 @@ export class AppearanceStreamRenderer {
     return g;
   }
 
-  protected drawGroup(parser: DataParser): SVGGElement {
+  protected async drawGroupAsync(parser: DataParser): Promise<SVGGElement> {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
 
     const lastCoord = new Vec2();
@@ -283,7 +283,7 @@ export class AppearanceStreamRenderer {
         case "cm": // apply transformation matrix
           const [m0, m1, m3, m4, m6, m7] = <number[]>parameters;
           const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-          this.state.matrix.multiply(matrix);
+          this.state.matrix = matrix.multiply(this.state.matrix);
           break;
         //#endregion
         //#region Stroke state operators
@@ -516,11 +516,30 @@ export class AppearanceStreamRenderer {
             throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
           }
           if (stream instanceof XFormStream) {
-            const subGroup = this.drawGroup(new DataParser(stream.decodedStreamData));
+            const subGroup = await this.drawGroupAsync(new DataParser(stream.decodedStreamData));
             g.append(subGroup);
-          } else if (stream instanceof ImageStream) {
-            // TODO: implement
-            throw new Error("Unsupported appearance stream external object type: 'Image'");
+          } else if (stream instanceof ImageStream) {   
+            const url = await stream.getImageUrlAsync();
+            if (!url) {              
+              throw new Error("Can't get image url from external image stream");
+            }
+
+            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            image.onerror = e => {
+              console.log(`Loading external image stream failed: ${e}`);
+            };
+            image.setAttribute("href", url);
+            image.setAttribute("width", stream.Width + "");
+            image.setAttribute("height", stream.Height + "");   
+            const imageMatrix = new Mat3()
+              .applyTranslation(-stream.Width / 2, -stream.Height / 2)
+              .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
+              .applyTranslation(stream.Width / 2, stream.Height / 2)
+              .applyScaling(1 / stream.Width, 1 / stream.Height)
+              .multiply(this.state.matrix);                     
+            image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
+            image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test
+            g.append(image);
           } else {            
             throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
           }

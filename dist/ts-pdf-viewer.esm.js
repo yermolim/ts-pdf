@@ -57,11 +57,15 @@ var img$5 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeA
 
 var img$6 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABcmlDQ1BpY2MAACiRdZE9S8NQFIbftkpFWwrqIOKQoYpCC0VBHKWCXapDW8GqS3KbtEKShpsUKa6Ci0PBQXTxa/Af6Cq4KgiCIoi4+Af8WqTEc5tCi7Qn3JyH9573cO+5gD+tM8PuSQCG6fBMKimt5tek4Dt8GEQYQ5iSmW0tZRdz6Bo/j1RN8RAXvbrXdYyBgmozwNdHPMss7hDPE6e3HEvwHvEwK8kF4hPiGKcDEt8KXfH4TXDR4y/BPJdZAPyip1RsY6WNWYkbxJPEUUOvsOZ5xE1CqrmSpTxKaww2MkghCQkKKtiEDgdxyibNrLMv0fAto0weRn8LVXByFFEib4zUCnVVKWukq/TpqIq5/5+nrc1Me91DSaD31XU/x4HgPlCvue7vqevWz4DAC3BttvxlmtPcN+m1lhY9BiI7wOVNS1MOgKtdYOTZkrnckAK0/JoGfFwA4TwwdA/0r3uzau7j/AnIbdMT3QGHR8AE1Uc2/gDt82gCvNGYhAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAcpJREFUeNrtWwFuwyAMjBEPWNf8/4XpugesoWMKUppBYidQ5cAnVZWaRtGdDxscoC6Bvu9d7PfRue6sMETJa8MwRC8Slzi6ACkhiEu8FgGWQpiucdBW9FNj5wiWzyvxjOk5/muVm30n8Xfjl8NfkNeEMLHo10Cem/CbyAHeCZMb/sGePfqTfXfh5/Hovu/3F25Lx9ujiURad6WIld1xHDtjTLLshXv8f7Zgka2dY04ClQNCxDmR5eL0Dvi63Vavf16vh1xjzzy13YKUPPQQWFaDHOShBJjX8VzkIRdDa+RDvvBlskoBOOSlVcLURr7KIVCKPIQAJclDJsGc5FkzwdBUqJE8pANykocTIDd59mKI2zIv0Q8oSR7GAaXIQwhQkjx0GVQBGI5xjEWRrTGqkmGjQ0AFUAFUABVABVAB2sXmRMi3pEbnSDLJyNm3h3MAEvnsAqCRZw0Bb/l5Q2THjg1qaghoFVABVAAVQAVQAVQAFUCCI9thxYSJXj5WcspCHaACNNgP+LhcTr+gySqAX/nNX2nP99ujI/aaX3NAbAPDkQ0RSNFfPTUWbkA/QLUVTNoT9RpOj+rJ0aUDJE5AdkDy8LRECEQBUrnsCeUexwK5uUFRAAAAAElFTkSuQmCC";
 
-var img$7 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABcWlDQ1BpY2MAACiRdZE9S8NQFIbfpkpFqx3qIMUhQxWHFoqCOEoFu1SHtoJVl+Q2aYQkDUmKFFfBxaHgILr4NfgPdBVcFQRBEURc/AN+LVLiuU2hRdoTbs7De897uPdcQMjqzHD6UoBhunYukxZXi2ti6B0BxDACAVGJOdZSfrGAnvHzSNUUD0neq3dd1xgqKQ4DAgPEs8yyXeJ54uyWa3HeIx5lmlQiPiFO2HRA4luuyz6/cS77/MXZLuQWAIH3FMsdLHcw02yDeIo4buhV1joPv0lYMVfylGO0xuEghwzSECGjik3ocJGkbNLMuvtSTd8yKuRh9LdQg02OMjTyJkitUleFskq6Qp+OGp/7/3k66sy03z2cBvpfPe9zAgjtA4265/2eel7jDAi+ANdm21+hOc19k15va/FjILIDXN60NfkAuNoFxp4tyZaaUpCWoKrAxwUwXASi98Dguj+r1j7On4DCNj3RHXB4BExSfWTjD603Z+Sp2ztrAAAACXBIWXMAAAsTAAALEwEAmpwYAAADGklEQVR42uVbC47jIAytESeY6f1P2NkjLCOqInmoP5g4BChSpLZJAT8/G9sQuDHtfr+Tv/9P6WZp/35+tP6lDsEyXgBg7z0eD3qAVsE9AWgU/s8cOQG+vr+bAOCAiK2Cn9CS4TnwGrTIWYAItw9voGmfo56DJlI1DnD38jx75qGxOvcZRwuuCV++V888zaCmLyUkvlc+S0BE6uZBtBMDKHjYbvnMzVG6Rz0bvbSaByWo+0frR0GQWCSZicSE0Kv93Fm5mAl10V/4PSkrSGpRkgrAUXoatWbq8yVA8ujfFQBOg56UbxXQCoIXACytvUHwBjkepffL+Q0PYGqQseaxw5WWyScDcmyPr6uEYOzdnT3YcTcxwMsBtsTlXv1aVoJwpv0bNH16tDl8FThTmwygXeYSBtn61YAmLn6YlgFW0Bg/UgueatMYWQ+AWRiFQZjSBOql6kwneWlF6MyaA8E+6EqHtUleEQUeMD2ofcJH1QRPS4cno7tp/NjoMGbSIljpL4EfPo3ybwzAOzd5aRC0DSOTllEgBEPykBSAlmzBkjkhILyWJLb2Vy7qP54heW89oGu/rgiEKskiRdGETyurBUr7L08L0sA9FdhpTYBaZopmpMKjBwjO+5KiuVD9xVYPSuzXTRdAtdQRc90TnyMIBxBetuHib+jQxjYgPNnQ68m3igOsjm0nEALl4Q2BzvIgRC3Qwaewciu5A9pzr4sM65nAQRYszYioxPzqQUXsDzJbOMZMDwAX6GQB6vM522WDStKzdYt1HlCzQNrBXZEROAxuDYS2YUGtrAwGmw1+SmsNhdMm2n87Wxha1/PdvH/xa8GQg69eEL3ufMBszg+zPBjD2jRwgmfavv7CxC7rvqbcgA89E4cKYQNfkCTlDt0XmGDZezNt1QmuGBgJwvNvjeE/t5Siy3ncq/f9LcJTrA1Wp7GAQ2SFJ0+ItGx5C0XQNJPmhYIuiG+Otm5P9QzQypwjpmSlPR4TNDoTr6iRA40+ak/l95QD1+RaemdIE96UDqMDCUuBYBW+lhM0O1VC4nQl/SkW1MJrcvwCJhH28gf87HUAAAAASUVORK5CYII=";
+var img$7 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIU/N4piFBEtRCxSRLFQCApiKRFMoxYxgq8mu24SIRuX3Q0itoKNRcBCtPFV+A+0FWwVBEERRGz8A74akfVOVohIMsvs/Tgz5zJzBrTJvGG59TGwCp6TTMQjc/MLkcYXQmiE6aQ9bbj21MxEiprj8446VW8HVa/a+6qO8LLpGlDXJDxi2I4nPCY8uebZireFO41celn4UHjAkQMKXyldD/hZcTbgd8VOKjkOmuoZyf5h/Q8bOccS7heOWvmi8XsedZMWszA7I7VbZg8uSRLEiaBTZIU8HoNSC5JZdV+s7JtmVTyG/G3WccSRJSfeAVGL0tWUmhHdlC/Pusr9f55uZngo6N4Sh4Yn33/rhcYd+C75/teR738fQ+gRLgoV/6rkNPoheqmiRQ+gbRPOLiuavgvnW9D1YKeddFkKydQyGXg9hdZ56LiB5sUgq991Tu4htSFPdA17+9An+9uWfgCZXmfbLPy9EwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAtBJREFUeNrlWwtuwjAMra2cALj/CWFHWLYiQKGLEzu282GRqiFo3bznT23PhY1Yl8vl/vd6vW6VFTf5AitZp/P5JQsByPMoHEABr12oAE/d21IWG0+gTuywYrLx2OumR8sOSnmg3LwaONcFiqZT0j4jBngAhoZYVDX/HLbQCfgRWJT6MkVGycefn0tEQO5HS7YJWWwCanI5+y8REKxUu99UEEhzsQO0hFOKK5GFrdrfhT2PQU+RJiVVCdA8WkYA0O4DPTdrHUg5AKUk4AhNzURy0DIqDH4uJB/3sH+mAt+fVPg7Ri+Nx5bonpFtIscrFeZkfFGxeSs5pLLQGfww2Vy3xIXAu9wDO2xMY7bgTQJODF5EQi4Q59zg+B1ODt7FElIS4HQ+v/34dbv1Ah8NrqleW+t14OSad7cEXAi8Cwm4GHgVCRbl8Azgm0igiqagBf/rR+BZCVaKGaor/ZY2l/aEC2reNCaE9LGXtrgy1diM4KuW8Lt/YPcDMqayAniVO+CiZm/mDvhB4JtIwA8DLyYBt3++Qmsw6bUa8wq2FeOoRoTjErkw9io6ZgR/dwGLVHMl8Mf+BzIaCCtYQvOTC5m9tJlJUD22JdVg1h0etQKsCP7lAtyO6mSWYJKwoaQWn4gEs2wVGxOOkSSYpuqaVHgECeZ1ingqy3BTUXl+E/gU3z4aYFEM9bAEc/B38wdonxLrSIJreW5ZDnuQYAaecm3UChjQNDG7B/m/QcoNJiDBXDZ22CiMluM6K1wQDoqgaqb12mMdS/6hcINlFqZDz9z3hVYnIcUVtg9dZmNyveZ+e4En3xpLL+aAfp43G0Fdp8UVsSCOKKWzEyKcbtAKbpAL4hwMotfmDF6vE78252mJr1RYo+G9KfpojHIOiYuwjlalNI3LCwYopFle1ChAky2GI7iOSc4xz+/SVK0+BrlEPH6HwgyR1MebSOBOqVHf/wB4polu0KoYHQAAAABJRU5ErkJggg==";
 
-var img$8 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIU/EyXigxSxELFIEcXCoCiIWEkEbaJFEsFXk6x5CHksuxsk2Ao2FoKFaOOr8B9oK9gqCIIiiNj4B3w1EtY72UCCJLPM3o8zcy4zZ8AVzmo5s3UUcnnLiMyF/EvLK37POy58eBhhKq6Z+nx0NkbT8fNIi6oPQdWr+b6Go3M9aWrQ0i48oemGJTwtHN60dMW7wj1aJr4ufCI8bMgBhW+VnnD4TXHa4S/FRiwyAy7V05+u40QdaxkjJzwkHMhli1r1POomXcn8YlRqn8x+TCLMEcJPgiIbZLEISs1LZo19oxXfAgXxaPLXKWGII01GvMOiFqVrUmpK9KR8WUoq9/95mqnxMad7VwjaXm37cwA8+1Des+3fU9sun4H7Ba7zNX9Bcpr8Fn2vpgWOwbsNlzc1LXEAVzvQ+6zHjXhFcst0pVLwcQHdy+C7h45VJ6vqOudPENuSJ7qDwyMYlP3etT9GwWgrP+9tUQAAAAlwSFlzAAALEwAACxMBAJqcGAAACZpJREFUeNrNW11sHNUVvnN31xtt145nZxfbiL+KQHAfioIqpYT0oVJ5ICEUVPKAFEFf7AZIlLa0lZBaVaoUqX+o1DStGh7a0qhqRVRKoZEpUh8KhUi0BFWqsEhIUCqR2N3ZtWM79npn5/Y7w665e3d2/nbG3itZO56Znbnnu+fnO+ee1VjCo1QqjTYajbuEpt0uGBvXbPuTgvMRfF6jcT5A99hC1JmmzeHcLK5d0Bh7VxPiHc75G+Vy+VKS89OSeGihUNiJjwdtTdvDGfuU2z22bTMI2HHsct8Mrp0Stn2yWq2exinRlwBA6CGs8gQmOokJ35oEsHj2WSB1HKg8CzAW+gIAXde3YlJPYFmOYA2H2AYMaMUizGfKtqynFhYWqpsFgKYXixOw1aM4LnrNFyv3DkD6O45noCUzol6/CL+wuDQ6ukg35C9fHkylUoNaJnMDJrSdCTEOKXdDyB24nPJ4tmkz9p150/wlvWfDABgqlW5O2/avcbi7yy0WhJgWQvwWq/Vq1FXaunXrMIC5G885ADDuwalMl1vf5Jr2CBzm2cQBwKo/JBqN47DzvMvlKkxhql6r/Wxpaakcp9rn8/niwMDAY4gWR8jluJjFMrTsILThRFIAcDi6H2AC33B5+QpW4Puapv3ENM3FhMNqHubzVYTOJ7EIuQ5HydjTVdN8IqhJBAVgoGAYhOz+TtcsTmFCh6DmF9gGjuHh4RsBwDNYkH0uILxQ1fWH2LlztTgAGMDKv4AX7VHOr0H4b1YqlSm2icMwjMfhI57C/LLKpemKrt/vB4IfABpW/g/qykPlL6c43wd1/yfrg1EsFu+wGo2XoBHXKrzhT+ALX/Iyh5QPufkRkJ1QHnpOZDKfr5bL/2F9Mq5evXopm83+EYd74IeM9dXTtNu25HL66srKdGgNIG+PGP87VfhMJrN7bm5ulvXhGBkZuaa2tvZaBxMV4hGY6nOBAaA4zy3rDB40KKs9Vv6uhbm586yPB7jDTeAM/5DNAXO/mk6ldoAnvNcR2txAIZIjC08ODzZ/X78LTwPR6AORSt2LVV93fhQuLSGec5OXu6j+RAfDg7eHw3vL018YxoYK6vW+hXL5DDLRrymC7kTEeNTTBCixgeM4C+9RkuM87Gdv0MlUTHPDhe/2TsjzIszhPvnWhmVtk6l5uwYgq5OFJ4ZHJCfMZJLWhJDPP0z2L38ducW3XE3AyeeR0rZdBL2NwvCSBIFWG/OiP9H6Aw9wvRcc4CKuH21PTcUhSrI6AKBihpLPV4nbB5lQF3KSFOlhLlWhrlUihO2fUtosOcQ8T6cnOwGw7UnliVNBExs3EIC0owkb7RzVMTs7uww/9nSb4xNisuX/eKuGp5CHOqW0UVQzYcrLotQE6/X6L5zc5WOKeDMc5C5ZAx5Uwt50lHweRCNWnyB/L6rwNBYXF01o+CnF4e9fB8BWMj1kVyd6dVK9ghBSeF/Vgz87oRQxnNCuOXV725Zr7zZiZbHXYqObwARMNy3x4hVeAOB5geyOohxQqLQlgEJcz2nTQkl4zvQqvJ9jDANcL6rfNp9K5Qpy4n8pp+/ktGOj2MZrccfsoCGyCzg9qb5Cel5ve7Cm7eC0XaXcNxOn53ZT+W6aQIDJfz5RRQtiTop2v6v4gXFOe3UKKrECENUx+ql+WOHdFheO8SZOG5VtANTrF5OI4WEmHIfXd9UAIf6raOIIhxro8knasUmSx8chfMTVd7bUFA0ogADyLfLJ1nbVZoIQlyap48qVK0uKRmR5P1VzklJ9z8gAtWirm9NG5Wbk80mqfmsMDQ3lFROw0oj7RHrWt5hol5Y0LcJK+U6wh8ywZ+GbqfCgYgL/ozDYVuKmLeogDtXtnFcNYBNCnls+cL1CzWcpDF5QjGx7D+9wBaGb8H48PwzXDwjAdkUDPuDUkKQEy/Ee39MGgpfwQeYcc0FlXAFkhlM3lhIsPxdkYlE0oYvwws/u4yqvIe3frWjAGQ0PHwMj+lBJhw1khPMxVGe6Oq+gqh9Xyd0wjEG8jNLhtJQb3MipD49a0WTfQG0pQQhJAPsUEa9pMUcRWu27ZeFx4n2natwMD6eUmw+E8S0+mhI2l/cMeVFBQJJ3QPn/L+slMWpCbJsB5/dQT04IahoKBC9QwlaMAhKgAia4VwHg5DoA1IHpNCF+PDJOQ1I4fh4IBB+N0IJGizCOMZ1O057ggKTi5+fL5dfXAXDskTow22PEEWpISgKEsKoftbxGY2xsjFjuEWX1j7d8EJfC37NKuligbqwImVoU4uJLdaNWm1fX1g4r+53LtmUdl8pkHw3qvaX2UwXlJ6nhwCcU9gxCUKoblhIXCoXrYNrfVujvsa67w0Dmx6x9Hy2HkPhM2AmFASEs1VXNwYsbQNWnlIbO+Xq9/sM2QOR/iPxQ763iC+6lVjQ/r6yqYosneAkYlee3hPYSXi8WJ/HwBxQy8F3aJfKL4RzCkIe8U/piDUjuwoTf7qHYIZJKctQxXCrdzizrtFztgu2/NV+tkkwNXxKDyd5iNRrUJPUJ6QGXYE+7qAeH9fHQdf0GQU1SjF0nzX0lxfkdpml2VLx5F9WkHyYcVIoJY3CSr1ArWr8Knx8dLUHNXpGFbzq+Q27COwWgruFjZeXfW3K5YajIZ6X00bAs64vZbPblWq02328rzxuNv2Ghbmsze9s+hgh3NGpay3XDOKk6E6jUh+lUal8vPiF2m7ftl9WVh+96qVKpPKDava8JyLI6XdeMTSvmcC1AeGPYMB7b9JWHt3ccniI8otlfK4XCfi/hgxOWbduyumn+Hj7g/o5Ya9t/xsdhSi03UnCH5CDOd4S61sqT8AHa5VPBAm+lsbq6+jw1HuOFO9U6G9Lnr+RyOcq63l5eXq4nKThx+0w2+3W883k4t0+7LAjZ/Jcx50Dz0CIg/zAo8s/lECkNkxqSqCdHJRy9DkppkdUdZB91gHZw8OavVh6Hzf8qVBISkdTcagnxGy5FCGWsUU9Osy3lVWpOiKjm1Lb3BSpmNPP5AVdHBZKDOP9wt1AXOwAtX0i9t4i732MuP2KSRoM6M6g5obk/P0O7tJR5tvbqaMeGNi2obt8sXY9TARPf+YyPmc4TvQXAx/ycXRIAOAPZok7tp9SB2eWXZLEPSmkpq6PEpldTi42PU/up04Fp2xOIFtsSkVyI81TMoHw+jj6mWAGQn+k0IVIfnm3v7RkMId6nAibV8JplrP788bRXvKbMkhqSqCeH2lKoMwOfJfiCdDOU1nBcob062q6iHRvatMCl00nzi/8Dx0Tcgl7ehnwAAAAASUVORK5CYII=";
+var img$8 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABcWlDQ1BpY2MAACiRdZE9S8NQFIbfpkpFqx3qIMUhQxWHFoqCOEoFu1SHtoJVl+Q2aYQkDUmKFFfBxaHgILr4NfgPdBVcFQRBEURc/AN+LVLiuU2hRdoTbs7De897uPdcQMjqzHD6UoBhunYukxZXi2ti6B0BxDACAVGJOdZSfrGAnvHzSNUUD0neq3dd1xgqKQ4DAgPEs8yyXeJ54uyWa3HeIx5lmlQiPiFO2HRA4luuyz6/cS77/MXZLuQWAIH3FMsdLHcw02yDeIo4buhV1joPv0lYMVfylGO0xuEghwzSECGjik3ocJGkbNLMuvtSTd8yKuRh9LdQg02OMjTyJkitUleFskq6Qp+OGp/7/3k66sy03z2cBvpfPe9zAgjtA4265/2eel7jDAi+ANdm21+hOc19k15va/FjILIDXN60NfkAuNoFxp4tyZaaUpCWoKrAxwUwXASi98Dguj+r1j7On4DCNj3RHXB4BExSfWTjD603Z+Sp2ztrAAAACXBIWXMAAAsTAAALEwEAmpwYAAADGklEQVR42uVbC47jIAytESeY6f1P2NkjLCOqInmoP5g4BChSpLZJAT8/G9sQuDHtfr+Tv/9P6WZp/35+tP6lDsEyXgBg7z0eD3qAVsE9AWgU/s8cOQG+vr+bAOCAiK2Cn9CS4TnwGrTIWYAItw9voGmfo56DJlI1DnD38jx75qGxOvcZRwuuCV++V888zaCmLyUkvlc+S0BE6uZBtBMDKHjYbvnMzVG6Rz0bvbSaByWo+0frR0GQWCSZicSE0Kv93Fm5mAl10V/4PSkrSGpRkgrAUXoatWbq8yVA8ujfFQBOg56UbxXQCoIXACytvUHwBjkepffL+Q0PYGqQseaxw5WWyScDcmyPr6uEYOzdnT3YcTcxwMsBtsTlXv1aVoJwpv0bNH16tDl8FThTmwygXeYSBtn61YAmLn6YlgFW0Bg/UgueatMYWQ+AWRiFQZjSBOql6kwneWlF6MyaA8E+6EqHtUleEQUeMD2ofcJH1QRPS4cno7tp/NjoMGbSIljpL4EfPo3ybwzAOzd5aRC0DSOTllEgBEPykBSAlmzBkjkhILyWJLb2Vy7qP54heW89oGu/rgiEKskiRdGETyurBUr7L08L0sA9FdhpTYBaZopmpMKjBwjO+5KiuVD9xVYPSuzXTRdAtdQRc90TnyMIBxBetuHib+jQxjYgPNnQ68m3igOsjm0nEALl4Q2BzvIgRC3Qwaewciu5A9pzr4sM65nAQRYszYioxPzqQUXsDzJbOMZMDwAX6GQB6vM522WDStKzdYt1HlCzQNrBXZEROAxuDYS2YUGtrAwGmw1+SmsNhdMm2n87Wxha1/PdvH/xa8GQg69eEL3ufMBszg+zPBjD2jRwgmfavv7CxC7rvqbcgA89E4cKYQNfkCTlDt0XmGDZezNt1QmuGBgJwvNvjeE/t5Siy3ncq/f9LcJTrA1Wp7GAQ2SFJ0+ItGx5C0XQNJPmhYIuiG+Otm5P9QzQypwjpmSlPR4TNDoTr6iRA40+ak/l95QD1+RaemdIE96UDqMDCUuBYBW+lhM0O1VC4nQl/SkW1MJrcvwCJhH28gf87HUAAAAASUVORK5CYII=";
 
-var img$9 = "data:image/png;base64,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";
+var img$9 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIU/N4piFBEtRCxSRLFQCApiKRFMoxYxgq8mu24SIRuX3Q0itoKNRcBCtPFV+A+0FWwVBEERRGz8A74akfVOVohIMsvs/Tgz5zJzBrTJvGG59TGwCp6TTMQjc/MLkcYXQmiE6aQ9bbj21MxEiprj8446VW8HVa/a+6qO8LLpGlDXJDxi2I4nPCY8uebZireFO41celn4UHjAkQMKXyldD/hZcTbgd8VOKjkOmuoZyf5h/Q8bOccS7heOWvmi8XsedZMWszA7I7VbZg8uSRLEiaBTZIU8HoNSC5JZdV+s7JtmVTyG/G3WccSRJSfeAVGL0tWUmhHdlC/Pusr9f55uZngo6N4Sh4Yn33/rhcYd+C75/teR738fQ+gRLgoV/6rkNPoheqmiRQ+gbRPOLiuavgvnW9D1YKeddFkKydQyGXg9hdZ56LiB5sUgq991Tu4htSFPdA17+9An+9uWfgCZXmfbLPy9EwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAhxJREFUeNrtW1lywyAMtRhO0OT+J3SaHqCxanfijsuAEQaEWDTjn2CM3kMbS2ByyP1+R9vvC+IkVRSAs22eZ2sjUIHXToCLCKACb4UAkwg1dS7gm32X78TIOp45RhZw73FOsWlO4NzyJhbOiFC22W8BPDXgdxEDNktwuZmWPvtmvAiR79dr+no+/2EzLV7nVCBFgLOl3WVZJqWUM+3tfbZ3fKJrNu0UNYmOncFYCwktdDbQlJlNRkBp+Xw8Tts/brcoq4H1A2gMSAmCUuthr+4m3iu2hIINJli37tcCKoeZSXaB4CDoiPLkgWxZ5Opi6Czg7cHSfMcXRKtxAQp4LhdoBnwVBOQEX3UWSAF+FEKbBWxMBrLZVCG0d/p9THZ87wt9KBbw94ClU9MuYOquMw7UbCnc/VpgEDAIaEhitsQ4MgFItQCuNIjDBYQSwFUHgOQYAD1bwEiDzRBw3HEJPWWpUUyMuhfgLhJ0dyZvHKnrkKtlIwgOAgYB7RNAvTJbo9iwjauyLmZauyzpwqh9HWonwufScMX3z66nHc7pkxK3fhcpVSu1rslyXf54xLYrnBK8OUbS/YCdkZRZYFM81hJSEmlzaedd4VRExJCQEjz5P0MJBH3xhvk7/jQokATk0jdnirsKAjl1zZ3jQ8Egt54cRQ4VFJbQkavK84HDUvpxlrkoUTfuOh+l6VVioYOSdCq50kNBuhQloegO1A9Y7hjyBIja5wAAAABJRU5ErkJggg==";
+
+var img$a = "data:image/png;base64,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";
+
+var img$b = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIU/EyXigxSxELFIEcXCoCiIWEkEbaJFEsFXk6x5CHksuxsk2Ao2FoKFaOOr8B9oK9gqCIIiiNj4B3w1EtY72UCCJLPM3o8zcy4zZ8AVzmo5s3UUcnnLiMyF/EvLK37POy58eBhhKq6Z+nx0NkbT8fNIi6oPQdWr+b6Go3M9aWrQ0i48oemGJTwtHN60dMW7wj1aJr4ufCI8bMgBhW+VnnD4TXHa4S/FRiwyAy7V05+u40QdaxkjJzwkHMhli1r1POomXcn8YlRqn8x+TCLMEcJPgiIbZLEISs1LZo19oxXfAgXxaPLXKWGII01GvMOiFqVrUmpK9KR8WUoq9/95mqnxMad7VwjaXm37cwA8+1Des+3fU9sun4H7Ba7zNX9Bcpr8Fn2vpgWOwbsNlzc1LXEAVzvQ+6zHjXhFcst0pVLwcQHdy+C7h45VJ6vqOudPENuSJ7qDwyMYlP3etT9GwWgrP+9tUQAAAAlwSFlzAAALEwAACxMBAJqcGAAACRlJREFUeNrlW1toHFUYnjm7my3rJs3s7DaJ1FoxtMYHS0Wo1fgg6IO9eEH7IJTqS2LVlnoHQRGEgrdijVYxffBWRLFYL7VEBR+s1kLViCAGW6tUsE3c2c092ezsHL9/uklmzs7sJdnZWfFAyXZm9sz5v/9+WVnyeCUSidZcLnctl+U1XJI6ZMO4hDPWgr/LZMYa6BmD86wky0O4Noh7f8iS9KvM+U+MsWPJZPKsl+eTvdg0Foutw587DFnewCTpcqdnDMOQQGDBZ4fnBnDvCDeMg+l0+jgu8boEAEQ3gctdOGg3DrzKC2Cx90kg1QtU9gOMkboAQFGUpTjUw2DLLvCwSarBglSMQX16DF3fMzIykvYLAFmJx7ugq7vxOV7svODcTwDpa3wegJQM8Gz2DOzC2Hhr6xg9ED13rjEQCDTKodAKHGi1xHkHqOwEkWtxO1Bkb82QpCeHNe11ek/NAGhKJC4NGsab+Njp8ogOIvo45++AW18ulEtLly5tBjA3Yp+tAOMmXAq5PPodk+W7YDBPeg4AuH4nz+V6oedRh9tpqEJPNpN5ZXx8PFlNsY9Go/GGhob74C12kclxUIsJSNl2SMMBrwBgMHTP4gCPOLx8Chx4RpblFzVNG/PYrUahPg/AdT4OJkQKDKUk7U1r2sPlqkS5ADTEVJWQ3VJomvkRHGgHxPwPqYarubn5YgDwMhiy2QGEQ2lFuVM6dSpTDQAawPlDeNEG4foMiH80lUr1SD4uVVXvh43Yg/OFhVt9KUW5tRQIpQCQwfn3Rc5D5M8FGNsMcf9eqoMVj8ev1HO5TyERFwpxw0eIF24vpg6BEsHN80C2S9j0FA+Frk8nk79IdbImJyfPhsPhD/FxA+yQOsc9Wb5sSSSiTE9N9VUsAWTt4ePfFYkPhUKdQ0NDg1IdrpaWlmWZmZmjBZEo53dBVd8uGwDy80zX+7FRo1XswflrR4aGTkt1vBA7rETM8K1VHXD2yWAgsBZxwm8Frs0JFApyrMSTwYPO31zvxNOCN/qTBwKbwPU540fuUuf8bSd6mYPodxVEeLD2MHgnitoLVeW1JLTY+0aSyX5kog8KhK6Dx7i3qApQYgPDcRLWI2H189CfjeUeJqVpco2Jl/FOt0TtY6jDzZZLqZyut1tDc7sEIKuzEk8RHgU5lXDCa0lw2L/Y+3aS/lu/jtziMUcVMPN5pLS2mwhvFxLheQVCpfsiBjgDGnbbU1O+g5KsAgComCHk82mK7Uu9xE3kEZzwWhBfSuXgtl+itNliEKMsGOwuBMAwugW56ik3sXE6BJA2D41/vhFPa3BwcAJ2bK/N8HHePWv/2GwNTwgespTSVnJIOgzEzbGS5Rfx88RkXzNzl/kQ8VIYyGusEnCH4Pb6FpLPI9CQq2kTqkE8rbGxMQ0SfkQw+FvmADCETA/Z1YGFcsxNEioFoVrEW/KCA0IRw3Ttslm3Nwxr7d2Ar4wvttjoRAAB4yYlXhI/6+WAQsqWAHJ+EaOmhZDw9C+W+FKGsdbEm99PpUaRE/8gXF7PqGMj6MbRarkuN3Vwc5FeEW9xed/YmC3Laxm1q4TnBqrpv51E3kkSvCY+L92/Cnagg1GvTkClqgCUYxhrQbwTc2EYVzJqVNoAyGbPeBHGVuoivUiq4N3+EiSxhUEMFOtF6th4lciUS5RXGSW11AQJiCEAZEusF2fbVX6B4GU6PTo6Oi5IRJhJ//PFIBa2ujk1Kv2q5HhdT2hqaooKKqAz+H1b0ENdWr+I9xoEoc5JKvAPuUFbiZta1LUk3k3nvQABHL9ICM0HyQ3aKj5mf77GxNeqqAIAVgsS8CejgSTBWXb4wfmF5g4Vrg4BkAFG01iCs7zOL7GvNHeoOA6Q5U5BAvplbN4GpP8W0mEVGeGwX5UcL6JDVVUbsSmlw0FLbnAxozk8GkWz2gYaS/GzjFWtoorA7RutxOPC72bVOO8ejggPb/WLeK/Ka0jytgr//2yuJEZDiDbjwNhNNJPjF/HVdpEIgGLYaKMAwME5AGgC0xxCnF8hcyDJR+JLfb8SwxgMBqkn2GAR8dPDyeQ3cwDQJXMC0+4jdtFAkp/EV8NFtrW10SDVLoH7vVK+XM8s7m+/kC7GaBrLb+IXaxinZ2Z2Cv3OCUPXey1lsvOLZm9p/FRA+XEaOHDb3E0MvUppy6ko28CJxZZDtZ8Qwt99rt1hIPOCZO+jReASXy52IJErXrfHy4kgLaLeIwx0Dmez2edsgFj/Q8EPzd4KtmATjaKVw5VazAaUk0PQUuLxbty8TQgGnqIukZD7FGaN0CuykOstX8wAyWtA7I//hSJHcyKxRtL149ZqF3T/xHA6TTTlXCVg9lkaPDZnb+elIKzncoeL2YN6WYqirAC1hwXipwKMbROJdwNAMqeuGdsuFBPaYCQ/p1G0eiU+2tqagFX+HEQtFwzfDk3THMv9roOS01NTPy+JRJqhI1db0kdV1/VbwuHw4UwmM1xvnGe53Fdg1GU2tTeMffBwu11rBKWqSIqqHhSNCUTq72AgsLlebIKp8yT2Audhuz5NpVK3OYl+URWw0mpOXUtSn6AOFwKEY82qep/vnIe1Nw2eQDy82RepWGxLMeLLkYDzq709rGjae7ABtxb4WsP4BH92UmpZS8LNIAd+vsDVzXKeiC9jXD5QnuNN5aanpz+gwWO8cJ1YZ0P6fE8kEqGs68eJiYmsl4RTbB8Khx/COz+AcbvCgSGk83fjzGWdQ14A8tsQIr8KNbjA4bZGA0k0kyMGHItdlNIiq9sunZ8ALUjV879auR86/0Yl+y4ockMOsErn/C1m8RDCmqGZnPxYypc0nLBAMaexvRuomJHP5xscDRWCHPLzbq6u6gDM2kKavYXffVpy+BGTZeVoMoOGE/L9+QHq0lLmOduro44NNS2obp8vXXdQARPfuaqEmg5TeAuA95Uydl4AYC5EhwqNn9IEpssvyaq+KEqlrI4Sm8WqWtWSFxo/NScwDaML3qLdE8o5P03FDMrnqzHHVFUArHuaQ4g0h2cYGxcNBue/UwGTanj5MlZ9/ni6mL+mzJIGkmgmh8ZSaDIDfxOwBcG8K83gc4p6ddSuoo4NNS1w67jX8cW/7UTXYK9/2wQAAAAASUVORK5CYII=";
 
 const styles = `
   <style>
@@ -289,7 +293,7 @@ const styles = `
       padding-top: 0px;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
-    #viewer.hand {
+    #viewer.mode-hand {
       cursor: grab !important;
       user-select: none !important;
     }
@@ -377,7 +381,7 @@ const styles = `
     .page-text ::selection {
       background: var(--color-text-selection-final);
     }
-    .hand .page-text span {
+    .mode-hand .page-text span {
       cursor: grab;
     }
     
@@ -391,7 +395,8 @@ const styles = `
       padding: 0;
       overflow: hidden;
     }
-    .page-annotations.passive {
+    .mode-text .page-annotations,
+    .mode-hand .page-annotations {
       pointer-events: none;
     }
     
@@ -447,32 +452,32 @@ const styles = `
     .svg-annotation {
       cursor: pointer;
     } 
-    .svg-annotation.selected {
-      cursor: grab;
-    } 
     .svg-annot-rect,
     .svg-annot-box {
       fill: transparent;
     }
-    .svg-annotation.selected .svg-annot-rect,
-    .svg-annotation.selected .svg-annot-box {
+    .mode-annotation .svg-annotation.selected {
+      cursor: grab;
+    } 
+    .mode-annotation .svg-annotation.selected .svg-annot-rect,
+    .mode-annotation .svg-annotation.selected .svg-annot-box {
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     } 
-    .svg-annotation.selected .svg-annot-handle-scale,
-    .svg-annotation.selected .svg-annot-handle-rotation {
+    .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
+    .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
       r: 5;
       fill: var(--color-primary-final);
       cursor: pointer;
     }
-    .svg-annotation.selected .svg-annot-rotation {
+    .mode-annotation .svg-annotation.selected .svg-annot-rotation {
       fill: none;
       cursor: pointer;
     }
-    .svg-annotation.selected .svg-annot-rotation .circle {
+    .mode-annotation .svg-annotation.selected .svg-annot-rotation .circle {
       r: 25;
     }
-    .svg-annotation.selected .svg-annot-rotation .dashed {
+    .mode-annotation .svg-annotation.selected .svg-annot-rotation .dashed {
       stroke: var(--color-secondary-tr-final);
       stroke-dasharray: 3 3;
     }
@@ -487,11 +492,17 @@ const html = `
         <div id="toggle-previewer" class="panel-button panel-item">
           <img src="${img$6}"/>
         </div> 
-        <div id="toggle-hand" class="panel-button panel-item">
+      </div>
+      <div id="modes" class="subpanel panel-item">
+        <div id="button-mode-text" class="panel-button panel-item">
           <img src="${img$7}"/>
         </div> 
-      </div>
-      <div id="annotator" class="subpanel panel-item">
+        <div id="button-mode-hand" class="panel-button panel-item">
+          <img src="${img$8}"/>
+        </div> 
+        <div id="button-mode-annotation" class="panel-button panel-item">
+          <img src="${img$9}"/>
+        </div> 
       </div>
     </div>
     <div id="panel-bottom" class="disabled">
@@ -529,10 +540,10 @@ const passwordDialogHtml = `
       <input id="password-input" type="password" maxlength="127"/>
       <div class="buttons">
         <div id="password-ok" class="panel-button">
-          <img src="${img$8}"/>
+          <img src="${img$a}"/>
         </div>
         <div id="password-cancel" class="panel-button">
-          <img src="${img$9}"/>
+          <img src="${img$b}"/>
         </div>
       </div>
     </div>
@@ -1295,10 +1306,14 @@ class PageAnnotationView {
         this._svg.setAttribute("data-page-id", pageId + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
         this._svg.setAttribute("transform", "scale(1, -1)");
+        this._svg.addEventListener("pointerdown", (e) => {
+            if (e.target === this._svg) {
+                this.switchSelectedAnnotation(null);
+            }
+        });
         this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         this._container.append(this._svg);
         this._annotations = annotationData.getPageAnnotations(pageId);
-        this.switchEditMode(true);
     }
     destroy() {
         this.remove();
@@ -1306,7 +1321,6 @@ class PageAnnotationView {
     }
     remove() {
         var _a;
-        this.switchEditMode(false);
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
     }
     appendAsync(parent) {
@@ -1319,7 +1333,7 @@ class PageAnnotationView {
         });
     }
     switchSelectedAnnotation(annotation) {
-        if (!this._editModeOn || annotation === this._selectedAnnotation) {
+        if (annotation === this._selectedAnnotation) {
             return;
         }
         if (this._selectedAnnotation) {
@@ -1333,17 +1347,6 @@ class PageAnnotationView {
         newSelectedSvg.classList.add("selected");
         this._svg.append(newSelectedSvg);
         this._selectedAnnotation = annotation;
-    }
-    switchEditMode(value) {
-        value = value !== null && value !== void 0 ? value : !this._editModeOn;
-        this._editModeOn = value;
-        if (value) {
-            this._container.classList.remove("passive");
-        }
-        else {
-            this._container.classList.add("passive");
-            this.switchSelectedAnnotation(null);
-        }
     }
     renderAnnotation(annotation) {
         const svgWithBox = annotation.render();
@@ -2186,6 +2189,10 @@ const colorSpaces = {
     GRAYSCALE: "/DeviceGray",
     RGB: "/DeviceRGB",
     CMYK: "/DeviceCMYK",
+    SPECIAL: "/DeviceN",
+    SPECIAL_INDEXED: "/Indexed",
+    SPECIAL_PATTERN: "/Pattern",
+    SPECIAL_SEPARATION: "/Separation",
 };
 const softMaskTypes = {
     ALPHA: "/Alpha",
@@ -2193,6 +2200,9 @@ const softMaskTypes = {
 };
 const supportedFilters = new Set([
     streamFilters.FLATE,
+    streamFilters.DCT,
+    streamFilters.JBIG2,
+    streamFilters.JPX,
 ]);
 const maxGeneration = 65535;
 
@@ -3938,7 +3948,8 @@ class PdfStream extends PdfObject {
                                 break;
                             }
                             else {
-                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+                                console.log(`Unsupported /Filter property value: ${filter.value}`);
+                                return false;
                             }
                         }
                         else if (entryType === valueTypes.ARRAY) {
@@ -3951,7 +3962,8 @@ class PdfStream extends PdfObject {
                                     break;
                                 }
                                 else {
-                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                                    console.log(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                                    return false;
                                 }
                             }
                         }
@@ -4913,6 +4925,199 @@ class ObjectMapDict extends PdfDict {
     }
 }
 
+class HexString {
+    constructor(literal, hex, bytes) {
+        this.literal = literal;
+        this.hex = hex;
+        this.bytes = bytes;
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        const bounds = parser.getHexBounds(start, skipEmpty);
+        if (!bounds) {
+            return null;
+        }
+        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const hex = HexString.fromBytes(bytes);
+        return { value: hex, start: bounds.start, end: bounds.end };
+    }
+    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = hexStringToBytes(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexBytes(hex) {
+        let literal = "";
+        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromLiteralString(literal) {
+        const hex = hexStringToBytes(literal);
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(cryptInfo) {
+        return new Uint8Array([
+            ...keywordCodes.STR_HEX_START,
+            ...this.bytes,
+            ...keywordCodes.STR_HEX_END,
+        ]);
+    }
+}
+
+class IndexedColorSpaceArray {
+    constructor(baseColorSpace, highestValue, lookupArray) {
+        switch (baseColorSpace) {
+            case colorSpaces.GRAYSCALE:
+                this.componentsNumber = 1;
+                break;
+            case colorSpaces.RGB:
+                this.componentsNumber = 3;
+                break;
+            case colorSpaces.CMYK:
+                this.componentsNumber = 4;
+                break;
+            default:
+                throw new Error(`Unsupported base color space for indexed color space: ${baseColorSpace}`);
+        }
+        this.baseColorSpace = baseColorSpace;
+        if (lookupArray.length !== this.componentsNumber * (highestValue + 1)) {
+            throw new Error(`Invalid lookup array length: ${lookupArray.length}`);
+        }
+        this.highestValue = highestValue;
+        this.lookupArray = lookupArray;
+        console.log(this);
+    }
+    static parse(parseInfo, skipEmpty = true) {
+        const { parser, bounds, cryptInfo } = parseInfo;
+        let i;
+        if (skipEmpty) {
+            i = parser.findNonSpaceIndex("straight", bounds.start);
+        }
+        const start = i;
+        if (i < 0 || i > parser.maxIndex
+            || parser.getCharCode(i) !== codes.L_BRACKET) {
+            console.log("Color space array start not found");
+            return null;
+        }
+        i++;
+        const type = parser.parseNameAt(i);
+        if (!type || type.value !== "/Indexed") {
+            console.log("Array is not representing an indexed color space");
+            return null;
+        }
+        i = type.end + 1;
+        const base = parser.parseNameAt(i);
+        if (!base) {
+            console.log("Can't parse base color space name of the indexed color space");
+            return null;
+        }
+        i = base.end + 2;
+        const highestValue = parser.parseNumberAt(i);
+        if (!highestValue || isNaN(highestValue.value)) {
+            console.log("Can't parse the highest value of the indexed color space");
+            return null;
+        }
+        i = highestValue.end + 1;
+        let lookupArray;
+        const lookupEntryType = parser.getValueTypeAt(i);
+        if (lookupEntryType === valueTypes.REF) {
+            try {
+                const lookupId = ObjectId.parseRef(parser, i);
+                const lookupParseInfo = parseInfo.parseInfoGetter(lookupId.value.id);
+                const lookupStream = TextStream.parse(lookupParseInfo);
+                lookupArray = lookupStream.value.decodedStreamData;
+                i = lookupId.end + 1;
+            }
+            catch (e) {
+                throw new Error(`Can't parse indexed color array lookup ref: ${e.message}`);
+            }
+        }
+        else if (lookupEntryType === valueTypes.STRING_HEX) {
+            const lookupHex = HexString.parse(parser, i, cryptInfo);
+            if (lookupHex) {
+                lookupArray = lookupHex.value.hex;
+                i = lookupHex.end + 1;
+            }
+            else {
+                throw new Error("Can't parse indexed color array lookup hex string");
+            }
+        }
+        try {
+            const colorSpace = new IndexedColorSpaceArray(base.value, highestValue.value, lookupArray);
+            return {
+                value: colorSpace,
+                start,
+                end: i - 1,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const encoder = new TextEncoder();
+        const bytes = [];
+        bytes.push(codes.L_BRACKET, ...encoder.encode("/Indexed "), ...encoder.encode(this.baseColorSpace + " "), ...encoder.encode(this.highestValue + " "), ...HexString.fromHexBytes(this.lookupArray).toArray(cryptInfo), codes.R_BRACKET);
+        return new Uint8Array(bytes);
+    }
+    getColor(index) {
+        switch (this.baseColorSpace) {
+            case colorSpaces.GRAYSCALE:
+                const gray = this.lookupArray[index];
+                return [gray, gray, gray];
+            case colorSpaces.RGB:
+                return [
+                    this.lookupArray[index * 3],
+                    this.lookupArray[index * 3 + 1],
+                    this.lookupArray[index * 3 + 2],
+                ];
+            case colorSpaces.CMYK:
+                const c = this.lookupArray[index * 4] / 255;
+                const m = this.lookupArray[index * 4 + 1] / 255;
+                const y = this.lookupArray[index * 4 + 2] / 255;
+                const k = this.lookupArray[index * 4 + 3] / 255;
+                return [
+                    255 * (1 - c) * (1 - k),
+                    255 * (1 - m) * (1 - k),
+                    255 * (1 - y) * (1 - k),
+                ];
+        }
+    }
+}
+
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ImageStream extends PdfStream {
     constructor() {
         super(streamTypes.FORM_XOBJECT);
@@ -4920,6 +5125,9 @@ class ImageStream extends PdfStream {
         this.ImageMask = false;
         this.Interpolate = false;
         this.SMaskInData = 0;
+    }
+    get sMask() {
+        return this._sMask;
     }
     set streamData(data) {
         this.setStreamData(data);
@@ -4951,7 +5159,12 @@ class ImageStream extends PdfStream {
             bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Height));
         }
         if (this.ColorSpace) {
-            bytes.push(...encoder.encode("/ColorSpace "), ...encoder.encode(this.ColorSpace));
+            if (this._indexedColorSpace) {
+                bytes.push(...encoder.encode("/ColorSpace "), ...this._indexedColorSpace.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...encoder.encode("/ColorSpace "), ...encoder.encode(this.ColorSpace));
+            }
         }
         if (this.BitsPerComponent) {
             bytes.push(...encoder.encode("/BitsPerComponent "), ...encoder.encode(" " + this.BitsPerComponent));
@@ -4991,6 +5204,59 @@ class ImageStream extends PdfStream {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    getImageUrlAsync() {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            if (this._imageUrl) {
+                URL.revokeObjectURL(this._imageUrl);
+            }
+            if (this.Filter === streamFilters.DCT
+                || this.Filter === streamFilters.JBIG2
+                || this.Filter === streamFilters.JPX) {
+                const blob = new Blob([this.decodedStreamData], {
+                    type: "application/octet-binary",
+                });
+                const imageUrl = URL.createObjectURL(blob);
+                this._imageUrl = imageUrl;
+                return imageUrl;
+            }
+            if (this.Filter === streamFilters.FLATE) {
+                const length = this.Width * this.Height;
+                let alpha;
+                if (this.sMask) {
+                    alpha = this.sMask.decodedStreamData;
+                    if (alpha.length !== length) {
+                        throw new Error(`Invalid alpha mask data length: ${alpha.length} (must be ${length})`);
+                    }
+                }
+                else {
+                    alpha = new Uint8Array(length).fill(255);
+                }
+                const data = new Uint8ClampedArray(length * 4);
+                for (let i = 0; i < length; i++) {
+                    const [r, g, b] = this.getColor(i);
+                    data[i * 4] = r;
+                    data[i * 4 + 1] = g;
+                    data[i * 4 + 2] = b;
+                    data[i * 4 + 3] = alpha[i];
+                }
+                const imageData = new ImageData(data, this.Width, this.Height);
+                const urlPromise = new Promise((resolve, reject) => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = this.Width;
+                    canvas.height = this.Height;
+                    canvas.getContext("2d").putImageData(imageData, 0, 0);
+                    canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        resolve(url);
+                    });
+                });
+                const imageUrl = yield urlPromise;
+                this._imageUrl = imageUrl;
+                return imageUrl;
+            }
+            throw new Error(`Unsupported image filter type: ${this.Filter}`);
+        });
     }
     tryParseProps(parseInfo) {
         const superIsParsed = super.tryParseProps(parseInfo);
@@ -5056,15 +5322,45 @@ class ImageStream extends PdfStream {
                                 i = colorSpaceName.end + 1;
                                 break;
                             }
-                            throw new Error("Can't parse /ColorSpace property name");
+                            throw new Error("Can't parse /ColorSpace name");
                         }
                         else if (colorSpaceEntryType === valueTypes.ARRAY) {
                             const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
                             if (colorSpaceArrayBounds) {
-                                i = colorSpaceArrayBounds.end + 1;
-                                break;
+                                const indexedColorSpace = IndexedColorSpaceArray.parse({
+                                    parser,
+                                    bounds: colorSpaceArrayBounds,
+                                    cryptInfo: parseInfo.cryptInfo,
+                                    parseInfoGetter: parseInfo.parseInfoGetter,
+                                });
+                                if (indexedColorSpace) {
+                                    this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
+                                    this._indexedColorSpace = indexedColorSpace.value;
+                                    i = colorSpaceArrayBounds.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /ColorSpace object:" +
+                                    parser.sliceChars(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
                             }
-                            throw new Error("Can't parse /ColorSpace value dictionary");
+                            throw new Error("Can't parse /ColorSpace value array");
+                        }
+                        else if (colorSpaceEntryType === valueTypes.REF) {
+                            const colorSpaceRef = ObjectId.parseRef(parser, i);
+                            if (colorSpaceRef) {
+                                const colorSpaceParseInfo = parseInfo.parseInfoGetter(colorSpaceRef.value.id);
+                                if (colorSpaceParseInfo) {
+                                    const indexedColorSpace = IndexedColorSpaceArray.parse(colorSpaceParseInfo);
+                                    if (indexedColorSpace) {
+                                        this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
+                                        this._indexedColorSpace = indexedColorSpace.value;
+                                        i = colorSpaceRef.end + 1;
+                                        break;
+                                    }
+                                    throw new Error("Can't parse /ColorSpace object:" +
+                                        colorSpaceParseInfo.parser.sliceChars(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end));
+                                }
+                            }
+                            throw new Error("Can't parse /ColorSpace ref");
                         }
                         throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
                     case "/ImageMask":
@@ -5152,25 +5448,79 @@ class ImageStream extends PdfStream {
                 case colorSpaces.CMYK:
                     this.Decode = [0, 1, 0, 1, 0, 1, 0, 1];
                     break;
+                case colorSpaces.SPECIAL_INDEXED:
+                    this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
+                    break;
+                default:
+                    this.Decode = [0, 1];
+                    break;
             }
         }
         if (!this.DecodeParms) {
             this.DecodeParms = new DecodeParamsDict();
         }
-        this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
-        this.DecodeParms.setIntProp("/Columns", this.Width);
-        switch (this.ColorSpace) {
-            case colorSpaces.GRAYSCALE:
-                this.DecodeParms.setIntProp("/Colors", 1);
-                break;
-            case colorSpaces.RGB:
-                this.DecodeParms.setIntProp("/Colors", 3);
-                break;
-            case colorSpaces.CMYK:
-                this.DecodeParms.setIntProp("/Colors", 4);
-                break;
+        if (!this.DecodeParms.getIntProp("/BitsPerComponent")) {
+            this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
+        }
+        if (!this.DecodeParms.getIntProp("/Columns")) {
+            this.DecodeParms.setIntProp("/Columns", this.Width);
+        }
+        if (!this.DecodeParms.getIntProp("/Colors")) {
+            switch (this.ColorSpace) {
+                case colorSpaces.GRAYSCALE:
+                case colorSpaces.SPECIAL_INDEXED:
+                    this.DecodeParms.setIntProp("/Colors", 1);
+                    break;
+                case colorSpaces.RGB:
+                    this.DecodeParms.setIntProp("/Colors", 3);
+                    break;
+                case colorSpaces.CMYK:
+                    this.DecodeParms.setIntProp("/Colors", 4);
+                    break;
+                default:
+                    this.DecodeParms.setIntProp("/Colors", 1);
+                    break;
+            }
+        }
+        if (this.SMask) {
+            const sMaskParseInfo = parseInfo.parseInfoGetter(this.SMask.id);
+            if (!sMaskParseInfo) {
+                throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
+            }
+            const sMask = ImageStream.parse(sMaskParseInfo);
+            if (!sMask) {
+                throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
+            }
+            this._sMask = sMask.value;
         }
         return true;
+    }
+    getColor(index) {
+        var _a;
+        const data = this.decodedStreamData;
+        switch (this.ColorSpace) {
+            case colorSpaces.GRAYSCALE:
+                const gray = data[index];
+                return [gray, gray, gray];
+            case colorSpaces.RGB:
+                return [
+                    data[index * 3],
+                    data[index * 3 + 1],
+                    data[index * 3 + 2],
+                ];
+            case colorSpaces.CMYK:
+                const c = data[index * 4] / 255;
+                const m = data[index * 4 + 1] / 255;
+                const y = data[index * 4 + 2] / 255;
+                const k = data[index * 4 + 3] / 255;
+                return [
+                    255 * (1 - c) * (1 - k),
+                    255 * (1 - m) * (1 - k),
+                    255 * (1 - y) * (1 - k),
+                ];
+            case colorSpaces.SPECIAL_INDEXED:
+                return ((_a = this._indexedColorSpace) === null || _a === void 0 ? void 0 : _a.getColor(index)) || [0, 0, 0];
+        }
     }
 }
 
@@ -6504,7 +6854,6 @@ class AppearanceDict extends PdfDict {
                             }
                         }
                         else {
-                            console.log(parser.sliceChars(i - 5, i + 10));
                             throw new Error(`Unsupported /N property value type: ${nEntryType}`);
                         }
                         throw new Error("Can't parse /N property value");
@@ -6729,68 +7078,6 @@ class BorderArray {
     }
 }
 
-class HexString {
-    constructor(literal, hex, bytes) {
-        this.literal = literal;
-        this.hex = hex;
-        this.bytes = bytes;
-    }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        const bounds = parser.getHexBounds(start, skipEmpty);
-        if (!bounds) {
-            return null;
-        }
-        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        const hex = HexString.fromBytes(bytes);
-        return { value: hex, start: bounds.start, end: bounds.end };
-    }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
-            if (!current) {
-                break;
-            }
-            hexes.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(bytes);
-        const hex = hexStringToBytes(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromHexBytes(hex) {
-        let literal = "";
-        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromLiteralString(literal) {
-        const hex = hexStringToBytes(literal);
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    ;
-    toArray(cryptInfo) {
-        return new Uint8Array([
-            ...keywordCodes.STR_HEX_START,
-            ...this.bytes,
-            ...keywordCodes.STR_HEX_END,
-        ]);
-    }
-}
-
 class TextState {
     constructor(params) {
         Object.assign(this, TextState.defaultParams, params);
@@ -6882,6 +7169,15 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class AppearanceStreamRenderer {
     constructor(stream, rect, objectName) {
         this._clipPaths = [];
@@ -6971,12 +7267,14 @@ class AppearanceStreamRenderer {
         }
         return { endIndex: i, parameters, operator };
     }
-    render() {
-        const g = this.drawGroup(this._parser);
-        return {
-            svg: g,
-            clipPaths: this._clipPaths,
-        };
+    renderAsync() {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            const g = yield this.drawGroupAsync(this._parser);
+            return {
+                svg: g,
+                clipPaths: this._clipPaths,
+            };
+        });
     }
     pushState(params) {
         const lastState = this._graphicsStates[this._graphicsStates.length - 1];
@@ -7037,263 +7335,293 @@ class AppearanceStreamRenderer {
         }
         return g;
     }
-    drawGroup(parser) {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        const lastCoord = new Vec2();
-        let lastOperator;
-        let d = "";
-        const addPath = (path) => {
-            g.append(path);
-            d = "";
-        };
-        let i = 0;
-        while (i !== -1) {
-            const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
-            i = parser.skipEmpty(endIndex + 1);
-            switch (operator) {
-                case "q":
-                    this.pushState();
-                    break;
-                case "Q":
-                    this.popState();
-                    break;
-                case "gs":
-                    const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
-                    if (!externalState) {
-                        throw new Error("External state specified in appearance stream not found");
-                    }
-                    const params = externalState.toParams();
-                    Object.assign(this.state, params);
-                    break;
-                case "cm":
-                    const [m0, m1, m3, m4, m6, m7] = parameters;
-                    const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-                    this.state.matrix.multiply(matrix);
-                    break;
-                case "w":
-                    this.state.strokeWidth = +parameters[0] || 1;
-                    break;
-                case "J":
-                    switch (parameters[0]) {
-                        case lineCapStyles.ROUND:
-                            this.state.strokeLineCap = "round";
-                            break;
-                        case lineCapStyles.SQUARE:
-                            this.state.strokeLineCap = "square";
-                            break;
-                        case lineCapStyles.BUTT:
-                        default:
-                            this.state.strokeLineCap = "butt";
-                            break;
-                    }
-                    break;
-                case "j":
-                    switch (parameters[0]) {
-                        case lineJoinStyles.BEVEL:
-                            this.state.strokeLineJoin = "bevel";
-                            break;
-                        case lineJoinStyles.ROUND:
-                            this.state.strokeLineJoin = "round";
-                            break;
-                        case lineJoinStyles.MITER:
-                        default:
-                            this.state.strokeLineJoin = "miter";
-                            break;
-                    }
-                    break;
-                case "M":
-                    this.state.strokeMiterLimit = +parameters[0] || 10;
-                    break;
-                case "d":
-                    this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
-                    this.state.strokeDashOffset = +parameters[2];
-                    break;
-                case "CS":
-                    switch (parameters[0]) {
-                        case colorSpaces.GRAYSCALE:
-                            this.state.strokeColorSpace = "grayscale";
-                            break;
-                        case colorSpaces.RGB:
-                            this.state.strokeColorSpace = "rgb";
-                            break;
-                        case colorSpaces.CMYK:
-                            this.state.strokeColorSpace = "cmyk";
-                            break;
-                        default:
-                            throw new Error("Unsupported color space in appearance stream");
-                    }
-                    break;
-                case "cs":
-                    switch (parameters[0]) {
-                        case colorSpaces.GRAYSCALE:
-                            this.state.fillColorSpace = "grayscale";
-                            break;
-                        case colorSpaces.RGB:
-                            this.state.fillColorSpace = "rgb";
-                            break;
-                        case colorSpaces.CMYK:
-                            this.state.fillColorSpace = "cmyk";
-                            break;
-                        default:
-                            throw new Error("Unsupported color space in appearance stream");
-                    }
-                    break;
-                case "G":
-                    this.state.strokeColorSpace = "grayscale";
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "g":
-                    this.state.fillColorSpace = "grayscale";
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "RG":
-                    this.state.strokeColorSpace = "rgb";
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "rg":
-                    this.state.fillColorSpace = "rgb";
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "K":
-                    this.state.strokeColorSpace = "cmyk";
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "k":
-                    this.state.fillColorSpace = "cmyk";
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "SC":
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "cs":
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "ri":
-                case "i":
-                    break;
-                case "m":
-                    const move = new Vec2(+parameters[0], +parameters[1]);
-                    d += ` M ${move.x} ${move.y}`;
-                    lastCoord.setFromVec2(move);
-                    break;
-                case "l":
-                    const line = new Vec2(+parameters[0], +parameters[1]);
-                    d += ` L ${line.x} ${line.y}`;
-                    lastCoord.setFromVec2(line);
-                    break;
-                case "re":
-                    const rMin = new Vec2(+parameters[0], +parameters[1]);
-                    const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
-                    d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
-                    lastCoord.setFromVec2(rMin);
-                    break;
-                case "c":
-                    const cControl1 = new Vec2(+parameters[0], +parameters[1]);
-                    const cControl2 = new Vec2(+parameters[2], +parameters[3]);
-                    const cEnd = new Vec2(+parameters[4], +parameters[5]);
-                    d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
-                    lastCoord.setFromVec2(cEnd);
-                    break;
-                case "v":
-                    const vControl2 = new Vec2(+parameters[0], +parameters[1]);
-                    const vEnd = new Vec2(+parameters[2], +parameters[3]);
-                    d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
-                    lastCoord.setFromVec2(vEnd);
-                    break;
-                case "y":
-                    const yControl1 = new Vec2(+parameters[0], +parameters[1]);
-                    const yEnd = new Vec2(+parameters[2], +parameters[3]);
-                    d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
-                    lastCoord.setFromVec2(yEnd);
-                    break;
-                case "h":
-                    d += " Z";
-                    break;
-                case "S":
-                    addPath(this.drawPath(d, true, false));
-                    break;
-                case "s":
-                    addPath(this.drawPath(d, true, false, true));
-                    break;
-                case "F":
-                case "f":
-                    addPath(this.drawPath(d, false, true, true));
-                    break;
-                case "F*":
-                case "f*":
-                    addPath(this.drawPath(d, false, true, true, true));
-                    break;
-                case "B":
-                    addPath(this.drawPath(d, true, true, false, false));
-                    break;
-                case "B*":
-                    addPath(this.drawPath(d, true, true, false, true));
-                    break;
-                case "b":
-                    addPath(this.drawPath(d, true, true, true, false));
-                    break;
-                case "b*":
-                    addPath(this.drawPath(d, true, true, true, true));
-                    break;
-                case "n":
-                    if (lastOperator === "W" || lastOperator === "W*") {
-                        if (d[d.length - 1] !== "Z") {
-                            d += " Z";
-                        }
-                        const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                        clippingPath.setAttribute("d", d);
-                        const lastCpIndex = this._clipPaths.length - 1;
-                        const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-                        clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
-                        clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
-                        clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
-                        clipPath.append(clippingPath);
-                        this._clipPaths.push(clipPath);
-                        this.state.clipPath = clipPath;
-                    }
-                    d = "";
-                    break;
-                case "W":
-                    break;
-                case "W*":
-                    break;
-                case "BT":
-                    const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
-                        closedOnly: true,
-                        minIndex: i,
-                    });
-                    if (textObjectEnd) {
-                        const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
-                        g.append(textGroup);
-                        i = parser.skipEmpty(textObjectEnd.end + 1);
+    drawGroupAsync(parser) {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const lastCoord = new Vec2();
+            let lastOperator;
+            let d = "";
+            const addPath = (path) => {
+                g.append(path);
+                d = "";
+            };
+            let i = 0;
+            while (i !== -1) {
+                const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+                i = parser.skipEmpty(endIndex + 1);
+                switch (operator) {
+                    case "q":
+                        this.pushState();
                         break;
-                    }
-                    throw new Error("Can't find the appearance stream text object end");
-                case "Do":
-                    const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
-                    if (!stream) {
-                        throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
-                    }
-                    if (stream instanceof XFormStream) {
-                        const subGroup = this.drawGroup(new DataParser(stream.decodedStreamData));
-                        g.append(subGroup);
-                    }
-                    else if (stream instanceof ImageStream) {
-                        throw new Error("Unsupported appearance stream external object type: 'Image'");
-                    }
-                    else {
-                        throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
-                    }
-                    break;
-                default:
-                    throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                    case "Q":
+                        this.popState();
+                        break;
+                    case "gs":
+                        const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
+                        if (!externalState) {
+                            throw new Error("External state specified in appearance stream not found");
+                        }
+                        const params = externalState.toParams();
+                        Object.assign(this.state, params);
+                        break;
+                    case "cm":
+                        const [m0, m1, m3, m4, m6, m7] = parameters;
+                        const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+                        this.state.matrix = matrix.multiply(this.state.matrix);
+                        break;
+                    case "w":
+                        this.state.strokeWidth = +parameters[0] || 1;
+                        break;
+                    case "J":
+                        switch (parameters[0]) {
+                            case lineCapStyles.ROUND:
+                                this.state.strokeLineCap = "round";
+                                break;
+                            case lineCapStyles.SQUARE:
+                                this.state.strokeLineCap = "square";
+                                break;
+                            case lineCapStyles.BUTT:
+                            default:
+                                this.state.strokeLineCap = "butt";
+                                break;
+                        }
+                        break;
+                    case "j":
+                        switch (parameters[0]) {
+                            case lineJoinStyles.BEVEL:
+                                this.state.strokeLineJoin = "bevel";
+                                break;
+                            case lineJoinStyles.ROUND:
+                                this.state.strokeLineJoin = "round";
+                                break;
+                            case lineJoinStyles.MITER:
+                            default:
+                                this.state.strokeLineJoin = "miter";
+                                break;
+                        }
+                        break;
+                    case "M":
+                        this.state.strokeMiterLimit = +parameters[0] || 10;
+                        break;
+                    case "d":
+                        this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
+                        this.state.strokeDashOffset = +parameters[2];
+                        break;
+                    case "CS":
+                        switch (parameters[0]) {
+                            case colorSpaces.GRAYSCALE:
+                                this.state.strokeColorSpace = "grayscale";
+                                break;
+                            case colorSpaces.RGB:
+                                this.state.strokeColorSpace = "rgb";
+                                break;
+                            case colorSpaces.CMYK:
+                                this.state.strokeColorSpace = "cmyk";
+                                break;
+                            default:
+                                throw new Error("Unsupported color space in appearance stream");
+                        }
+                        break;
+                    case "cs":
+                        switch (parameters[0]) {
+                            case colorSpaces.GRAYSCALE:
+                                this.state.fillColorSpace = "grayscale";
+                                break;
+                            case colorSpaces.RGB:
+                                this.state.fillColorSpace = "rgb";
+                                break;
+                            case colorSpaces.CMYK:
+                                this.state.fillColorSpace = "cmyk";
+                                break;
+                            default:
+                                throw new Error("Unsupported color space in appearance stream");
+                        }
+                        break;
+                    case "G":
+                        this.state.strokeColorSpace = "grayscale";
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "g":
+                        this.state.fillColorSpace = "grayscale";
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "RG":
+                        this.state.strokeColorSpace = "rgb";
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "rg":
+                        this.state.fillColorSpace = "rgb";
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "K":
+                        this.state.strokeColorSpace = "cmyk";
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "k":
+                        this.state.fillColorSpace = "cmyk";
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "SC":
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "cs":
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "ri":
+                    case "i":
+                        break;
+                    case "m":
+                        const move = new Vec2(+parameters[0], +parameters[1]);
+                        d += ` M ${move.x} ${move.y}`;
+                        lastCoord.setFromVec2(move);
+                        break;
+                    case "l":
+                        const line = new Vec2(+parameters[0], +parameters[1]);
+                        d += ` L ${line.x} ${line.y}`;
+                        lastCoord.setFromVec2(line);
+                        break;
+                    case "re":
+                        const rMin = new Vec2(+parameters[0], +parameters[1]);
+                        const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
+                        d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
+                        lastCoord.setFromVec2(rMin);
+                        break;
+                    case "c":
+                        const cControl1 = new Vec2(+parameters[0], +parameters[1]);
+                        const cControl2 = new Vec2(+parameters[2], +parameters[3]);
+                        const cEnd = new Vec2(+parameters[4], +parameters[5]);
+                        d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
+                        lastCoord.setFromVec2(cEnd);
+                        break;
+                    case "v":
+                        const vControl2 = new Vec2(+parameters[0], +parameters[1]);
+                        const vEnd = new Vec2(+parameters[2], +parameters[3]);
+                        d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
+                        lastCoord.setFromVec2(vEnd);
+                        break;
+                    case "y":
+                        const yControl1 = new Vec2(+parameters[0], +parameters[1]);
+                        const yEnd = new Vec2(+parameters[2], +parameters[3]);
+                        d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
+                        lastCoord.setFromVec2(yEnd);
+                        break;
+                    case "h":
+                        d += " Z";
+                        break;
+                    case "S":
+                        addPath(this.drawPath(d, true, false));
+                        break;
+                    case "s":
+                        addPath(this.drawPath(d, true, false, true));
+                        break;
+                    case "F":
+                    case "f":
+                        addPath(this.drawPath(d, false, true, true));
+                        break;
+                    case "F*":
+                    case "f*":
+                        addPath(this.drawPath(d, false, true, true, true));
+                        break;
+                    case "B":
+                        addPath(this.drawPath(d, true, true, false, false));
+                        break;
+                    case "B*":
+                        addPath(this.drawPath(d, true, true, false, true));
+                        break;
+                    case "b":
+                        addPath(this.drawPath(d, true, true, true, false));
+                        break;
+                    case "b*":
+                        addPath(this.drawPath(d, true, true, true, true));
+                        break;
+                    case "n":
+                        if (lastOperator === "W" || lastOperator === "W*") {
+                            if (d[d.length - 1] !== "Z") {
+                                d += " Z";
+                            }
+                            const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                            clippingPath.setAttribute("d", d);
+                            const lastCpIndex = this._clipPaths.length - 1;
+                            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                            clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
+                            clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
+                            clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
+                            clipPath.append(clippingPath);
+                            this._clipPaths.push(clipPath);
+                            this.state.clipPath = clipPath;
+                        }
+                        d = "";
+                        break;
+                    case "W":
+                        break;
+                    case "W*":
+                        break;
+                    case "BT":
+                        const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
+                            closedOnly: true,
+                            minIndex: i,
+                        });
+                        if (textObjectEnd) {
+                            const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
+                            g.append(textGroup);
+                            i = parser.skipEmpty(textObjectEnd.end + 1);
+                            break;
+                        }
+                        throw new Error("Can't find the appearance stream text object end");
+                    case "Do":
+                        const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
+                        if (!stream) {
+                            throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
+                        }
+                        if (stream instanceof XFormStream) {
+                            const subGroup = yield this.drawGroupAsync(new DataParser(stream.decodedStreamData));
+                            g.append(subGroup);
+                        }
+                        else if (stream instanceof ImageStream) {
+                            const url = yield stream.getImageUrlAsync();
+                            if (!url) {
+                                throw new Error("Can't get image url from external image stream");
+                            }
+                            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                            image.onerror = e => {
+                                console.log(`Loading external image stream failed: ${e}`);
+                            };
+                            image.setAttribute("href", url);
+                            image.setAttribute("width", stream.Width + "");
+                            image.setAttribute("height", stream.Height + "");
+                            const imageMatrix = new Mat3()
+                                .applyTranslation(-stream.Width / 2, -stream.Height / 2)
+                                .applyScaling(1, -1)
+                                .applyTranslation(stream.Width / 2, stream.Height / 2)
+                                .applyScaling(1 / stream.Width, 1 / stream.Height)
+                                .multiply(this.state.matrix);
+                            image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
+                            image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+                            g.append(image);
+                        }
+                        else {
+                            throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
+                        }
+                        break;
+                    default:
+                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                }
+                lastOperator = operator;
             }
-            lastOperator = operator;
-        }
-        return g;
+            return g;
+        });
     }
 }
 
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class AnnotationDict extends PdfDict {
     constructor(subType) {
         super(dictTypes.ANNOTATION);
@@ -7334,7 +7662,7 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyRectTransform(this._transformationMatrix);
             this._transformationMatrix.reset();
-            this.updateRender();
+            this.updateRenderAsync();
         };
         this.onRotationHandlePointerDown = (e) => {
             document.addEventListener("pointerup", this.onRotationHandlePointerUp);
@@ -7372,7 +7700,7 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyRectTransform(this._transformationMatrix);
             this._transformationMatrix.reset();
-            this.updateRender();
+            this.updateRenderAsync();
         };
         this.onScaleHandlePointerDown = (e) => {
             document.addEventListener("pointerup", this.onScaleHandlePointerUp);
@@ -7448,7 +7776,7 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
             this.applyRectTransform(this._transformationMatrix);
             this._transformationMatrix.reset();
-            this.updateRender();
+            this.updateRenderAsync();
         };
         this.Subtype = subType;
     }
@@ -7533,7 +7861,7 @@ class AnnotationDict extends PdfDict {
         if (!this._svg) {
             this._svg = this.renderMainElement();
         }
-        this.updateRender();
+        this.updateRenderAsync();
         return {
             svg: this._svg,
             clipPaths: this._svgClipPaths,
@@ -7831,18 +8159,20 @@ class AnnotationDict extends PdfDict {
         rect.addEventListener("pointerdown", this.onRectPointerDown);
         return rect;
     }
-    renderAP() {
-        const stream = this.apStream;
-        if (stream) {
-            try {
-                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
-                return renderer.render();
+    renderApAsync() {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            const stream = this.apStream;
+            if (stream) {
+                try {
+                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+                    return yield renderer.renderAsync();
+                }
+                catch (e) {
+                    console.log(`Annotation stream render error: ${e.message}`);
+                }
             }
-            catch (e) {
-                console.log(`Annotation stream render error: ${e.message}`);
-            }
-        }
-        return null;
+            return null;
+        });
     }
     renderContent() {
         return null;
@@ -7911,31 +8241,33 @@ class AnnotationDict extends PdfDict {
     renderHandles() {
         return [...this.renderScaleHandles(), this.renderRotationHandle()];
     }
-    updateRender() {
-        this._svg.innerHTML = "";
-        const contentResult = this.renderContent() || this.renderAP();
-        if (!contentResult) {
-            this._svgBox = null;
-            this._svgContent = null;
-            this._svgContentCopy = null;
-            this._svgContentCopyUse = null;
-            this._svgClipPaths = null;
-            return;
-        }
-        const content = contentResult.svg;
-        content.id = this._svgId;
-        content.classList.add("svg-annotation-content");
-        content.setAttribute("data-annotation-name", this.name);
-        const { copy, use } = this.renderContentCopy();
-        const rect = this.renderRect();
-        const box = this.renderBox();
-        const handles = this.renderHandles();
-        this._svg.append(rect, box, contentResult.svg, ...handles);
-        this._svgBox = box;
-        this._svgContent = content;
-        this._svgContentCopy = copy;
-        this._svgContentCopyUse = use;
-        this._svgClipPaths = contentResult.clipPaths;
+    updateRenderAsync() {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            this._svg.innerHTML = "";
+            const contentResult = this.renderContent() || (yield this.renderApAsync());
+            if (!contentResult) {
+                this._svgBox = null;
+                this._svgContent = null;
+                this._svgContentCopy = null;
+                this._svgContentCopyUse = null;
+                this._svgClipPaths = null;
+                return;
+            }
+            const content = contentResult.svg;
+            content.id = this._svgId;
+            content.classList.add("svg-annotation-content");
+            content.setAttribute("data-annotation-name", this.name);
+            const { copy, use } = this.renderContentCopy();
+            const rect = this.renderRect();
+            const box = this.renderBox();
+            const handles = this.renderHandles();
+            this._svg.append(rect, box, contentResult.svg, ...handles);
+            this._svgBox = box;
+            this._svgContent = content;
+            this._svgContentCopy = copy;
+            this._svgContentCopyUse = use;
+            this._svgClipPaths = contentResult.clipPaths;
+        });
     }
 }
 
@@ -8743,9 +9075,6 @@ class StampAnnotation extends MarkupAnnotation {
             }
         }
         if (!this.Name) {
-            return false;
-        }
-        if (!Object.values(stampTypes).includes(this.Name)) {
             return false;
         }
         return true;
@@ -11474,7 +11803,7 @@ class AnnotationData {
     }
 }
 
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11493,7 +11822,6 @@ class TsPdfViewer {
         this._previewerHidden = true;
         this._pages = [];
         this._currentPage = 0;
-        this._mode = "normal";
         this._pointerInfo = {
             lastPos: null,
             downPos: null,
@@ -11511,7 +11839,7 @@ class TsPdfViewer {
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
-        this.onPdfLoadedAsync = (doc, annotationData) => __awaiter$3(this, void 0, void 0, function* () {
+        this.onPdfLoadedAsync = (doc, annotationData) => __awaiter$6(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
             this._annotationData = annotationData;
             yield this.refreshPagesAsync();
@@ -11519,7 +11847,7 @@ class TsPdfViewer {
             this.renderVisiblePages();
             this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
         });
-        this.onPdfClosedAsync = () => __awaiter$3(this, void 0, void 0, function* () {
+        this.onPdfClosedAsync = () => __awaiter$6(this, void 0, void 0, function* () {
             this._shadowRoot.querySelector("#panel-bottom").classList.add("disabled");
             if (this._pdfDocument) {
                 this._pdfDocument = null;
@@ -11535,17 +11863,14 @@ class TsPdfViewer {
                 this._mainContainer.classList.remove("mobile");
             }
         };
-        this.onHandToggleClick = () => {
-            if (this._mode === "hand") {
-                this._mode = "normal";
-                this._viewer.classList.remove("hand");
-                this._shadowRoot.querySelector("div#toggle-hand").classList.remove("on");
-            }
-            else {
-                this._mode = "hand";
-                this._viewer.classList.add("hand");
-                this._shadowRoot.querySelector("div#toggle-hand").classList.add("on");
-            }
+        this.onTextModeButtonClick = () => {
+            this.toggleMode("text");
+        };
+        this.onHandModeButtonClick = () => {
+            this.toggleMode("hand");
+        };
+        this.onAnnotationModeButtonClick = () => {
+            this.toggleMode("annotation");
         };
         this.onPreviewerToggleClick = () => {
             if (this._previewerHidden) {
@@ -11752,7 +12077,7 @@ class TsPdfViewer {
         this._shadowRoot.innerHTML = "";
     }
     openPdfAsync(src) {
-        return __awaiter$3(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             let data;
             let doc;
             try {
@@ -11806,7 +12131,7 @@ class TsPdfViewer {
         });
     }
     closePdfAsync() {
-        return __awaiter$3(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             if (this._pdfLoadingTask) {
                 if (!this._pdfLoadingTask.destroyed) {
                     yield this._pdfLoadingTask.destroy();
@@ -11822,17 +12147,21 @@ class TsPdfViewer {
         const paginatorInput = this._shadowRoot.getElementById("paginator-input");
         paginatorInput.addEventListener("input", this.onPaginatorInput);
         paginatorInput.addEventListener("change", this.onPaginatorChange);
-        this._shadowRoot.querySelector("#paginator-prev").addEventListener("click", this.onPaginatorPrevClick);
-        this._shadowRoot.querySelector("#paginator-next").addEventListener("click", this.onPaginatorNextClick);
-        this._shadowRoot.querySelector("#zoom-out").addEventListener("click", this.onZoomOutClick);
-        this._shadowRoot.querySelector("#zoom-in").addEventListener("click", this.onZoomInClick);
-        this._shadowRoot.querySelector("#zoom-fit-viewer").addEventListener("click", this.onZoomFitViewerClick);
-        this._shadowRoot.querySelector("#zoom-fit-page").addEventListener("click", this.onZoomFitPageClick);
-        this._shadowRoot.querySelector("div#toggle-previewer").addEventListener("click", this.onPreviewerToggleClick);
-        this._shadowRoot.querySelector("div#toggle-hand").addEventListener("click", this.onHandToggleClick);
-        this._previewer = this._shadowRoot.querySelector("div#previewer");
+        this._shadowRoot.querySelector("#paginator-prev")
+            .addEventListener("click", this.onPaginatorPrevClick);
+        this._shadowRoot.querySelector("#paginator-next")
+            .addEventListener("click", this.onPaginatorNextClick);
+        this._shadowRoot.querySelector("#zoom-out")
+            .addEventListener("click", this.onZoomOutClick);
+        this._shadowRoot.querySelector("#zoom-in")
+            .addEventListener("click", this.onZoomInClick);
+        this._shadowRoot.querySelector("#zoom-fit-viewer")
+            .addEventListener("click", this.onZoomFitViewerClick);
+        this._shadowRoot.querySelector("#zoom-fit-page")
+            .addEventListener("click", this.onZoomFitPageClick);
+        this._previewer = this._shadowRoot.querySelector("#previewer");
         this._previewer.addEventListener("scroll", this.onPreviewerScroll);
-        this._viewer = this._shadowRoot.querySelector("div#viewer");
+        this._viewer = this._shadowRoot.querySelector("#viewer");
         this._viewer.addEventListener("scroll", this.onViewerScroll);
         this._viewer.addEventListener("wheel", this.onViewerWheel);
         this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
@@ -11842,10 +12171,19 @@ class TsPdfViewer {
         const resizeObserver = new ResizeObserver(this.onMainContainerResize);
         resizeObserver.observe(this._mainContainer);
         this._mainContainerResizeObserver = resizeObserver;
+        this._shadowRoot.querySelector("#toggle-previewer")
+            .addEventListener("click", this.onPreviewerToggleClick);
+        this._shadowRoot.querySelector("#button-mode-text")
+            .addEventListener("click", this.onTextModeButtonClick);
+        this._shadowRoot.querySelector("#button-mode-hand")
+            .addEventListener("click", this.onHandModeButtonClick);
+        this._shadowRoot.querySelector("#button-mode-annotation")
+            .addEventListener("click", this.onAnnotationModeButtonClick);
+        this.toggleMode("text");
     }
     refreshPagesAsync() {
         var _a;
-        return __awaiter$3(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             this._pages.forEach(x => {
                 x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
                 x.destroy();
@@ -11986,6 +12324,42 @@ class TsPdfViewer {
         const { x, y, width, height } = this._viewer.getBoundingClientRect();
         return new Vec2(x + width / 2, y + height / 2);
     }
+    toggleMode(mode) {
+        if (!mode || mode === this._mode) {
+            return;
+        }
+        switch (this._mode) {
+            case "text":
+                this._viewer.classList.remove("mode-text");
+                this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
+                break;
+            case "hand":
+                this._viewer.classList.remove("mode-hand");
+                this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
+                break;
+            case "annotation":
+                this._viewer.classList.remove("mode-annotation");
+                this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
+                break;
+        }
+        switch (mode) {
+            case "text":
+                this._viewer.classList.add("mode-text");
+                this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
+                break;
+            case "hand":
+                this._viewer.classList.add("mode-hand");
+                this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
+                break;
+            case "annotation":
+                this._viewer.classList.add("mode-annotation");
+                this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
+                break;
+            default:
+                throw new Error(`Invalid viewer mode: ${mode}`);
+        }
+        this._mode = mode;
+    }
     getVisiblePages(container, pages, preview = false) {
         const pagesVisible = new Set();
         if (!pages.length) {
@@ -12036,7 +12410,7 @@ class TsPdfViewer {
         throw new Error("Incorrect argument");
     }
     showPasswordDialogAsync() {
-        return __awaiter$3(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             const passwordPromise = new Promise((resolve, reject) => {
                 const dialogContainer = document.createElement("div");
                 dialogContainer.id = "password-dialog";

@@ -103,11 +103,6 @@ export class StampAnnotation extends MarkupAnnotation {
       return false;
     }
 
-    if (!(<string[]>Object.values(stampTypes)).includes(this.Name)) {         
-      // TODO: add support for custom stamps
-      return false;
-    }
-
     return true;
   }
 }
