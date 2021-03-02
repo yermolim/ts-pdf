@@ -70,7 +70,7 @@ export class ResourceDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this._gsMap.size) {  
-      bytes.push(...encoder.encode("/ExtGState"));    
+      bytes.push(...encoder.encode("/ExtGState "));    
       bytes.push(...keywordCodes.DICT_START);
       for (const [name, gsDict] of this._gsMap) {
         bytes.push(...encoder.encode(name.slice(10)), codes.WHITESPACE); // remove '/ExtGState' prefix
@@ -83,7 +83,7 @@ export class ResourceDict extends PdfDict {
       bytes.push(...keywordCodes.DICT_END);
     }
     if (this._xObjectsMap.size) {
-      bytes.push(...encoder.encode("/XObject"), ...keywordCodes.DICT_START);
+      bytes.push(...encoder.encode("/XObject "), ...keywordCodes.DICT_START);
       for (const [name, xObject] of this._xObjectsMap) {
         const ref = xObject.ref;
         if (!ref) {
@@ -96,29 +96,29 @@ export class ResourceDict extends PdfDict {
     }
 
     // if (this.ExtGState) {
-    //   bytes.push(...encoder.encode("/ExtGState"), ...this.ExtGState.toArray(cryptInfo));
+    //   bytes.push(...encoder.encode("/ExtGState "), ...this.ExtGState.toArray(cryptInfo));
     // }
     // if (this.XObject) {
-    //   bytes.push(...encoder.encode("/XObject"), ...this.XObject.toArray(cryptInfo));
+    //   bytes.push(...encoder.encode("/XObject "), ...this.XObject.toArray(cryptInfo));
     // }
 
     if (this.ColorSpace) {
-      bytes.push(...encoder.encode("/ColorSpace"), ...this.ColorSpace.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/ColorSpace "), ...this.ColorSpace.toArray(cryptInfo));
     }
     if (this.Pattern) {
-      bytes.push(...encoder.encode("/Pattern"), ...this.Pattern.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Pattern "), ...this.Pattern.toArray(cryptInfo));
     }
     if (this.Shading) {
-      bytes.push(...encoder.encode("/Shading"), ...this.Shading.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Shading "), ...this.Shading.toArray(cryptInfo));
     }
     if (this.Font) {
-      bytes.push(...encoder.encode("/Font"), ...this.Font.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Font "), ...this.Font.toArray(cryptInfo));
     }
     if (this.Properties) {
-      bytes.push(...encoder.encode("/Properties"), ...this.Properties.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Properties "), ...this.Properties.toArray(cryptInfo));
     }
     if (this.ProcSet) {
-      bytes.push(...encoder.encode("/ProcSet"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/ProcSet "), codes.L_BRACKET);
       this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x))); 
       bytes.push(codes.R_BRACKET);
     }

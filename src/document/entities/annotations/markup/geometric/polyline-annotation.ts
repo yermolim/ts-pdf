@@ -34,7 +34,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     const bytes: number[] = [];  
 
     if (this.LE) {
-      bytes.push(...encoder.encode("/LE"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/LE "), codes.L_BRACKET);
       this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
       bytes.push(codes.R_BRACKET);
     }

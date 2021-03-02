@@ -45,7 +45,7 @@ export class CaretAnnotation extends MarkupAnnotation {
 
     if (this.RD) {
       bytes.push(
-        ...encoder.encode("/RD"), codes.L_BRACKET, 
+        ...encoder.encode("/RD "), codes.L_BRACKET, 
         ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
@@ -53,7 +53,7 @@ export class CaretAnnotation extends MarkupAnnotation {
       );
     }
     if (this.Sy) {
-      bytes.push(...encoder.encode("/Sy"), ...encoder.encode(this.Sy));
+      bytes.push(...encoder.encode("/Sy "), ...encoder.encode(this.Sy));
     }
 
     const totalBytes: number[] = [

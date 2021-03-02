@@ -140,13 +140,13 @@ export class ObjectStream extends PdfStream {
     const bytes: number[] = [];  
 
     if (this.N) {
-      bytes.push(...encoder.encode("/N"), ...encoder.encode(" " + this.N));
+      bytes.push(...encoder.encode("/N "), ...encoder.encode(" " + this.N));
     }
     if (this.First) {
-      bytes.push(...encoder.encode("/First"), ...encoder.encode(" " + this.First));
+      bytes.push(...encoder.encode("/First "), ...encoder.encode(" " + this.First));
     }
     if (this.Extends) {
-      bytes.push(...encoder.encode("/Extends"), codes.WHITESPACE, ...this.Extends.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Extends "), codes.WHITESPACE, ...this.Extends.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [

@@ -34,7 +34,7 @@ export class InkAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.InkList) {
-      bytes.push(...encoder.encode("/InkList"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/InkList "), codes.L_BRACKET);
       this.InkList.forEach(x => {        
         bytes.push(codes.L_BRACKET);
         x.forEach(y => bytes.push(...encoder.encode(" " + y)));         

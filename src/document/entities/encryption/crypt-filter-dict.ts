@@ -101,20 +101,20 @@ export class CryptFilterDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.CFM) {
-      bytes.push(...encoder.encode("/CFM"), ...encoder.encode(this.CFM));
+      bytes.push(...encoder.encode("/CFM "), ...encoder.encode(this.CFM));
     }
     if (this.AuthEvent) {
-      bytes.push(...encoder.encode("/AuthEvent"), ...encoder.encode(this.AuthEvent));
+      bytes.push(...encoder.encode("/AuthEvent "), ...encoder.encode(this.AuthEvent));
     }
     if (this.Length) {
-      bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
+      bytes.push(...encoder.encode("/Length "), ...encoder.encode(" " + this.Length));
     }
     if (this.EncryptMetadata) {
-      bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
+      bytes.push(...encoder.encode("/EncryptMetadata "), ...encoder.encode(" " + this.EncryptMetadata));
     }
     if (this.Recipients) {
       if (this.Recipients instanceof HexString) {
-        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Recipients "), ...this.Recipients.toArray(cryptInfo));
       } else {        
         bytes.push(codes.L_BRACKET);
         this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));

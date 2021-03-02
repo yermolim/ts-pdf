@@ -22,7 +22,7 @@ export abstract class GroupDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.S) {
-      bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+      bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
     }
 
     const totalBytes: number[] = [

@@ -35,7 +35,7 @@ export class CircleAnnotation extends GeometricAnnotation {
 
     if (this.RD) {
       bytes.push(
-        ...encoder.encode("/RD"), codes.L_BRACKET, 
+        ...encoder.encode("/RD "), codes.L_BRACKET, 
         ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 

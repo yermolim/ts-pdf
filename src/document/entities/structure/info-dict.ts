@@ -54,28 +54,28 @@ export class InfoDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Title) {
-      bytes.push(...encoder.encode("/Title"), ...this.Title.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Title "), ...this.Title.toArray(cryptInfo));
     }
     if (this.Author) {
-      bytes.push(...encoder.encode("/Author"), ...this.Author.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Author "), ...this.Author.toArray(cryptInfo));
     }
     if (this.Subject) {
-      bytes.push(...encoder.encode("/Subject"), ...this.Subject.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Subject "), ...this.Subject.toArray(cryptInfo));
     }
     if (this.Keywords) {
-      bytes.push(...encoder.encode("/Keywords"), ...this.Keywords.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Keywords "), ...this.Keywords.toArray(cryptInfo));
     }
     if (this.Creator) {
-      bytes.push(...encoder.encode("/Creator"), ...this.Creator.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Creator "), ...this.Creator.toArray(cryptInfo));
     }
     if (this.Producer) {
-      bytes.push(...encoder.encode("/Producer"), ...this.Producer.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Producer "), ...this.Producer.toArray(cryptInfo));
     }
     if (this.CreationDate) {
-      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/CreationDate "), ...this.CreationDate.toArray(cryptInfo));
     }
     if (this.ModDate) {
-      bytes.push(...encoder.encode("/ModDate"), ...this.ModDate.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/ModDate "), ...this.ModDate.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [

@@ -64,15 +64,15 @@ export abstract class PdfStream extends PdfObject {
     
     const encoder = new TextEncoder();
     const bytes: number[] = [...keywordCodes.DICT_START];
-    bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + streamData.length));
+    bytes.push(...encoder.encode("/Length "), ...encoder.encode(" " + streamData.length));
     if (this.Type) {
       bytes.push(...keywordCodes.TYPE, ...encoder.encode(this.Type));
     }
     if (this.Filter) {
-      bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
+      bytes.push(...encoder.encode("/Filter "), ...encoder.encode(this.Filter));
     }
     if (this.DecodeParms) {
-      bytes.push(...encoder.encode("/DecodeParms"), ...this.DecodeParms.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/DecodeParms "), ...this.DecodeParms.toArray(cryptInfo));
     } 
     bytes.push(    
       ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,

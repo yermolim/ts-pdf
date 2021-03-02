@@ -173,59 +173,59 @@ export class EncryptionDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Filter) {
-      bytes.push(...encoder.encode("/Filter"), ...encoder.encode(this.Filter));
+      bytes.push(...encoder.encode("/Filter "), ...encoder.encode(this.Filter));
     }
     if (this.SubFilter) {
-      bytes.push(...encoder.encode("/SubFilter"), ...encoder.encode(this.SubFilter));
+      bytes.push(...encoder.encode("/SubFilter "), ...encoder.encode(this.SubFilter));
     }
     if (this.V) {
-      bytes.push(...encoder.encode("/V"), ...encoder.encode(" " + this.V));
+      bytes.push(...encoder.encode("/V "), ...encoder.encode(" " + this.V));
     }
     if (this.Length) {
-      bytes.push(...encoder.encode("/Length"), ...encoder.encode(" " + this.Length));
+      bytes.push(...encoder.encode("/Length "), ...encoder.encode(" " + this.Length));
     }
     if (this.CF) {
-      bytes.push(...encoder.encode("/CF"), ...this.CF.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/CF "), ...this.CF.toArray(cryptInfo));
     }
     if (this.StmF) {
-      bytes.push(...encoder.encode("/StmF"), ...encoder.encode(this.StmF));
+      bytes.push(...encoder.encode("/StmF "), ...encoder.encode(this.StmF));
     }
     if (this.StrF) {
-      bytes.push(...encoder.encode("/StrF"), ...encoder.encode(this.StrF));
+      bytes.push(...encoder.encode("/StrF "), ...encoder.encode(this.StrF));
     }
     if (this.EFF) {
-      bytes.push(...encoder.encode("/EFF"), ...encoder.encode(this.EFF));
+      bytes.push(...encoder.encode("/EFF "), ...encoder.encode(this.EFF));
     }
     if (this.R) {
-      bytes.push(...encoder.encode("/R"), ...encoder.encode(" " + this.R));
+      bytes.push(...encoder.encode("/R "), ...encoder.encode(" " + this.R));
     }
     if (this.O) {
-      bytes.push(...encoder.encode("/O"), ...this.O.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/O "), ...this.O.toArray(cryptInfo));
     }
     if (this.U) {
-      bytes.push(...encoder.encode("/U"), ...this.U.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/U "), ...this.U.toArray(cryptInfo));
     }
     if (this.OE) {
-      bytes.push(...encoder.encode("/OE"), ...this.OE.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/OE "), ...this.OE.toArray(cryptInfo));
     }
     if (this.UE) {
-      bytes.push(...encoder.encode("/UE"), ...this.UE.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/UE "), ...this.UE.toArray(cryptInfo));
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P"), ...encoder.encode(" " + this.P));
+      bytes.push(...encoder.encode("/P "), ...encoder.encode(" " + this.P));
     }
     if (this.Perms) {
-      bytes.push(...encoder.encode("/Perms"), ...this.Perms.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Perms "), ...this.Perms.toArray(cryptInfo));
     }
     if (this.U) {
-      bytes.push(...encoder.encode("/U"), ...this.U.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/U "), ...this.U.toArray(cryptInfo));
     }
     if (this.EncryptMetadata) {
-      bytes.push(...encoder.encode("/EncryptMetadata"), ...encoder.encode(" " + this.EncryptMetadata));
+      bytes.push(...encoder.encode("/EncryptMetadata "), ...encoder.encode(" " + this.EncryptMetadata));
     }
     if (this.Recipients) {
       if (this.Recipients instanceof HexString) {
-        bytes.push(...encoder.encode("/Recipients"), ...this.Recipients.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Recipients "), ...this.Recipients.toArray(cryptInfo));
       } else {        
         bytes.push(codes.L_BRACKET);
         this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));

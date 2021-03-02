@@ -59,18 +59,18 @@ export class SoftMaskDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.S) {
-      bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+      bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
     }
     if (this.G) {
-      bytes.push(...encoder.encode("/G"), codes.WHITESPACE, ...this.G.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.G.toArray(cryptInfo));
     }
     if (this.BC) {
-      bytes.push(...encoder.encode("/BC"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/BC "), codes.L_BRACKET);
       this.BC.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.TR) {
-      bytes.push(...encoder.encode("/TR"), ...encoder.encode(" " + this.TR));
+      bytes.push(...encoder.encode("/TR "), ...encoder.encode(" " + this.TR));
     }    
     //TODO: handle TR as function
 

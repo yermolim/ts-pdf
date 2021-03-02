@@ -53,13 +53,13 @@ export class CatalogDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Version) {
-      bytes.push(...encoder.encode("/Version"), ...encoder.encode(this.Version));
+      bytes.push(...encoder.encode("/Version "), ...encoder.encode(this.Version));
     }
     if (this.Pages) {
-      bytes.push(...encoder.encode("/Pages"), codes.WHITESPACE, ...this.Pages.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Pages "), codes.WHITESPACE, ...this.Pages.toArray(cryptInfo));
     }
     if (this.Lang) {
-      bytes.push(...encoder.encode("/Lang"), ...this.Lang.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Lang "), ...this.Lang.toArray(cryptInfo));
     }
 
     // TODO: handle remaining properties

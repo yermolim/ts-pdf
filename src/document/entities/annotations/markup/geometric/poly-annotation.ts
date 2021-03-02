@@ -40,15 +40,15 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.Vertices) {
-      bytes.push(...encoder.encode("/Vertices"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/Vertices "), codes.L_BRACKET);
       this.Vertices.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.IT) {
-      bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+      bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
     }
     if (this.Measure) {
-      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [

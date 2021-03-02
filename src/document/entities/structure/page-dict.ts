@@ -162,17 +162,17 @@ export class PageDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
     }
     if (this.LastModified) {
-      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
     }
     if (this.Resources) {
-      bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Resources "), ...this.Resources.toArray(cryptInfo));
     }
     if (this.MediaBox) {
       bytes.push(
-        ...encoder.encode("/MediaBox"), codes.L_BRACKET, 
+        ...encoder.encode("/MediaBox "), codes.L_BRACKET, 
         ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, 
@@ -181,7 +181,7 @@ export class PageDict extends PdfDict {
     }
     if (this.CropBox) {
       bytes.push(
-        ...encoder.encode("/CropBox"), codes.L_BRACKET, 
+        ...encoder.encode("/CropBox "), codes.L_BRACKET, 
         ...encoder.encode(this.CropBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.CropBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.CropBox[2] + ""), codes.WHITESPACE, 
@@ -190,7 +190,7 @@ export class PageDict extends PdfDict {
     }
     if (this.BleedBox) {
       bytes.push(
-        ...encoder.encode("/BleedBox"), codes.L_BRACKET, 
+        ...encoder.encode("/BleedBox "), codes.L_BRACKET, 
         ...encoder.encode(this.BleedBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.BleedBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.BleedBox[2] + ""), codes.WHITESPACE, 
@@ -199,7 +199,7 @@ export class PageDict extends PdfDict {
     }
     if (this.TrimBox) {
       bytes.push(
-        ...encoder.encode("/TrimBox"), codes.L_BRACKET, 
+        ...encoder.encode("/TrimBox "), codes.L_BRACKET, 
         ...encoder.encode(this.TrimBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.TrimBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.TrimBox[2] + ""), codes.WHITESPACE, 
@@ -208,7 +208,7 @@ export class PageDict extends PdfDict {
     }
     if (this.ArtBox) {
       bytes.push(
-        ...encoder.encode("/ArtBox"), codes.L_BRACKET, 
+        ...encoder.encode("/ArtBox "), codes.L_BRACKET, 
         ...encoder.encode(this.ArtBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.ArtBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.ArtBox[2] + ""), codes.WHITESPACE, 
@@ -217,60 +217,60 @@ export class PageDict extends PdfDict {
     }
     if (this.Contents) {
       if (this.Contents instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/Contents"), codes.WHITESPACE, ...this.Contents.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Contents "), codes.WHITESPACE, ...this.Contents.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/Contents"), codes.L_BRACKET);
+        bytes.push(...encoder.encode("/Contents "), codes.L_BRACKET);
         this.Contents.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
         bytes.push(codes.R_BRACKET);
       }
     }
     if (this.Rotate) {
-      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
+      bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));
     }
     if (this.Thumb) {
-      bytes.push(...encoder.encode("/Thumb"), codes.WHITESPACE, ...this.Thumb.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Thumb "), codes.WHITESPACE, ...this.Thumb.toArray(cryptInfo));
     }    
     if (this.B) {
       if (this.B instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/B"), codes.WHITESPACE, ...this.B.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/B "), codes.WHITESPACE, ...this.B.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/B"), codes.L_BRACKET);
+        bytes.push(...encoder.encode("/B "), codes.L_BRACKET);
         this.B.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
         bytes.push(codes.R_BRACKET);
       }
     }
     if (this.Dur) {
-      bytes.push(...encoder.encode("/Dur"), ...encoder.encode(" " + this.Dur));
+      bytes.push(...encoder.encode("/Dur "), ...encoder.encode(" " + this.Dur));
     }
     if (this.Annots) {
       if (this.Annots instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/Annots"), codes.WHITESPACE, ...this.Annots.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Annots "), codes.WHITESPACE, ...this.Annots.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/Annots"), codes.L_BRACKET);
+        bytes.push(...encoder.encode("/Annots "), codes.L_BRACKET);
         this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
         bytes.push(codes.R_BRACKET);
       }
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
     } 
     if (this.StructParent) {
-      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+      bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
     }
     if (this.ID) {
-      bytes.push(...encoder.encode("/ID"), codes.WHITESPACE, ...this.ID.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/ID "), codes.WHITESPACE, ...this.ID.toArray(cryptInfo));
     }
     if (this.PZ) {
-      bytes.push(...encoder.encode("/PZ"), ...encoder.encode(" " + this.PZ));
+      bytes.push(...encoder.encode("/PZ "), ...encoder.encode(" " + this.PZ));
     }
     if (this.Tabs) {
-      bytes.push(...encoder.encode("/Tabs"), ...encoder.encode(this.Tabs));
+      bytes.push(...encoder.encode("/Tabs "), ...encoder.encode(this.Tabs));
     }
     if (this.TemplateInstantiated) {
-      bytes.push(...encoder.encode("/TemplateInstantiated"), ...encoder.encode(this.TemplateInstantiated));
+      bytes.push(...encoder.encode("/TemplateInstantiated "), ...encoder.encode(this.TemplateInstantiated));
     }
     if (this.UserUnit) {
-      bytes.push(...encoder.encode("/UserUnit"), ...encoder.encode(" " + this.UserUnit));
+      bytes.push(...encoder.encode("/UserUnit "), ...encoder.encode(" " + this.UserUnit));
     }
 
     // TODO: handle remaining properties

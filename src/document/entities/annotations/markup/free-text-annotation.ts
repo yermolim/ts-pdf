@@ -77,25 +77,25 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.DA) {
-      bytes.push(...encoder.encode("/DA"), ...this.DA.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/DA "), ...this.DA.toArray(cryptInfo));
     }
     if (this.Q) {
-      bytes.push(...encoder.encode("/Q"), ...encoder.encode(" " + this.Q));
+      bytes.push(...encoder.encode("/Q "), ...encoder.encode(" " + this.Q));
     }
     if (this.DS) {
-      bytes.push(...encoder.encode("/DS"), ...this.DS.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/DS "), ...this.DS.toArray(cryptInfo));
     }
     if (this.CL) {
-      bytes.push(...encoder.encode("/CL"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/CL "), codes.L_BRACKET);
       this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.IT) {
-      bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
+      bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
     }
     if (this.RD) {
       bytes.push(
-        ...encoder.encode("/RD"), codes.L_BRACKET, 
+        ...encoder.encode("/RD "), codes.L_BRACKET, 
         ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
@@ -103,7 +103,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       );
     }
     if (this.LE) {
-      bytes.push(...encoder.encode("/LE"), ...encoder.encode(this.LE));
+      bytes.push(...encoder.encode("/LE "), ...encoder.encode(this.LE));
     }
 
     const totalBytes: number[] = [

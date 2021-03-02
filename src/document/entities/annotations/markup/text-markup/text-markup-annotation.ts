@@ -22,7 +22,7 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.QuadPoints) {
-      bytes.push(...encoder.encode("/QuadPoints"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/QuadPoints "), codes.L_BRACKET);
       this.QuadPoints.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }

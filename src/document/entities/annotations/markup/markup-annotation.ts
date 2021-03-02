@@ -82,28 +82,28 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     const bytes: number[] = [];  
 
     if (this.T) {
-      bytes.push(...encoder.encode("/T"), ...this.T.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/T "), ...this.T.toArray(cryptInfo));
     }
     if (this.Popup) {
-      bytes.push(...encoder.encode("/Popup"), codes.WHITESPACE, ...this.Popup.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Popup "), codes.WHITESPACE, ...this.Popup.toArray(cryptInfo));
     }
     if (this.RC) {
-      bytes.push(...encoder.encode("/RC"), ...this.RC.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
     }
     if (this.CA) {
-      bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
+      bytes.push(...encoder.encode("/CA "), ...encoder.encode(" " + this.CA));
     }
     if (this.CreationDate) {
-      bytes.push(...encoder.encode("/CreationDate"), ...this.CreationDate.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/CreationDate "), ...this.CreationDate.toArray(cryptInfo));
     }
     if (this.Subj) {
-      bytes.push(...encoder.encode("/Subj"), ...this.Subj.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Subj "), ...this.Subj.toArray(cryptInfo));
     }
     if (this.IRT) {
-      bytes.push(...encoder.encode("/IRT"), codes.WHITESPACE, ...this.IRT.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/IRT "), codes.WHITESPACE, ...this.IRT.toArray(cryptInfo));
     }
     if (this.RT) {
-      bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
+      bytes.push(...encoder.encode("/RT "), ...encoder.encode(this.RT));
     }
 
     const totalBytes: number[] = [

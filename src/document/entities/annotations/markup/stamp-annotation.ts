@@ -47,7 +47,7 @@ export class StampAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.Name) {
-      bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+      bytes.push(...encoder.encode("/Name "), ...encoder.encode(this.Name));
     }
 
     const totalBytes: number[] = [

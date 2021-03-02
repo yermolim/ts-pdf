@@ -141,14 +141,14 @@ export class XFormStream extends PdfStream {
     const bytes: number[] = [];  
 
     if (this.Subtype) {
-      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+      bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
     if (this.FormType) {
-      bytes.push(...encoder.encode("/FormType"), ...encoder.encode(" " + this.FormType));
+      bytes.push(...encoder.encode("/FormType "), ...encoder.encode(" " + this.FormType));
     }
     if (this.BBox) {
       bytes.push(
-        ...encoder.encode("/BBox"), codes.L_BRACKET, 
+        ...encoder.encode("/BBox "), codes.L_BRACKET, 
         ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, 
@@ -157,7 +157,7 @@ export class XFormStream extends PdfStream {
     }
     if (this.Matrix) {
       bytes.push(
-        ...encoder.encode("/BBox"), codes.L_BRACKET, 
+        ...encoder.encode("/BBox "), codes.L_BRACKET, 
         ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, 
@@ -167,25 +167,25 @@ export class XFormStream extends PdfStream {
       );
     }
     if (this.Resources) {
-      bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Resources "), ...this.Resources.toArray(cryptInfo));
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
     }
     if (this.LastModified) {
-      bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
     }
     if (this.StructParent) {
-      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+      bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
     }
     if (this.StructParents) {
-      bytes.push(...encoder.encode("/StructParents"), ...encoder.encode(" " + this.StructParents));
+      bytes.push(...encoder.encode("/StructParents "), ...encoder.encode(" " + this.StructParents));
     }
     if (this.Measure) {
-      bytes.push(...encoder.encode("/Measure"), ...this.Measure.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
     }
     if (this.Group) {
-      bytes.push(...encoder.encode("/Group"), ...this.Group.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Group "), ...this.Group.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties

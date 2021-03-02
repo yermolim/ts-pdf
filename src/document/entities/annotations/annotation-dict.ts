@@ -137,7 +137,7 @@ export abstract class AnnotationDict extends PdfDict {
     }
     if (this.Rect) {
       bytes.push(
-        ...encoder.encode("/Rect"), codes.L_BRACKET, 
+        ...encoder.encode("/Rect "), codes.L_BRACKET, 
         ...encoder.encode(this.Rect[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.Rect[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.Rect[2] + ""), codes.WHITESPACE, 
@@ -160,7 +160,7 @@ export abstract class AnnotationDict extends PdfDict {
       bytes.push(...encoder.encode("/F "), ...encoder.encode(" " + this.F));
     }
     // if (this.AP) {
-    //   bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
+    //   bytes.push(...encoder.encode("/AP "), ...this.AP.toArray(cryptInfo));
     // }
     if (this.AS) {
       bytes.push(...encoder.encode("/AS "), ...encoder.encode(this.AS));
@@ -180,7 +180,7 @@ export abstract class AnnotationDict extends PdfDict {
       bytes.push(codes.R_BRACKET);
     }
     if (this.StructParent) {
-      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+      bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
     }
 
     if (this.apStream) {

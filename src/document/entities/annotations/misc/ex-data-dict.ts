@@ -28,7 +28,7 @@ export class ExDataDict extends PdfDict {
     const bytes: number[] = [];  
     
     if (this.Subtype) {
-      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+      bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
 
     const totalBytes: number[] = [

@@ -46,16 +46,16 @@ export class TextAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.Open) {
-      bytes.push(...encoder.encode("/Open"), ...encoder.encode(" " + this.Open));
+      bytes.push(...encoder.encode("/Open "), ...encoder.encode(" " + this.Open));
     }
     if (this.Name) {
-      bytes.push(...encoder.encode("/Name"), ...encoder.encode(this.Name));
+      bytes.push(...encoder.encode("/Name "), ...encoder.encode(this.Name));
     }
     if (this.State) {
-      bytes.push(...encoder.encode("/State"), ...encoder.encode(this.State));
+      bytes.push(...encoder.encode("/State "), ...encoder.encode(this.State));
     }
     if (this.StateModel) {
-      bytes.push(...encoder.encode("/StateModel"), ...encoder.encode(this.StateModel));
+      bytes.push(...encoder.encode("/StateModel "), ...encoder.encode(this.StateModel));
     }
 
     const totalBytes: number[] = [

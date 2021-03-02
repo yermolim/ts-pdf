@@ -166,48 +166,48 @@ export class ImageStream extends PdfStream {
     const bytes: number[] = [];  
 
     if (this.Subtype) {
-      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+      bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
     if (this.Width) {
-      bytes.push(...encoder.encode("/Width"), ...encoder.encode(" " + this.Width));
+      bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Width));
     }
     if (this.Height) {
-      bytes.push(...encoder.encode("/Width"), ...encoder.encode(" " + this.Height));
+      bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Height));
     }
     if (this.ColorSpace) {
-      bytes.push(...encoder.encode("/ColorSpace"), ...encoder.encode(this.ColorSpace));
+      bytes.push(...encoder.encode("/ColorSpace "), ...encoder.encode(this.ColorSpace));
     }
     if (this.BitsPerComponent) {
-      bytes.push(...encoder.encode("/BitsPerComponent"), ...encoder.encode(" " + this.BitsPerComponent));
+      bytes.push(...encoder.encode("/BitsPerComponent "), ...encoder.encode(" " + this.BitsPerComponent));
     }
-    bytes.push(...encoder.encode("/ImageMask"), ...encoder.encode(" " + !!this.ImageMask));
+    bytes.push(...encoder.encode("/ImageMask "), ...encoder.encode(" " + !!this.ImageMask));
     if (this.Mask) {
-      bytes.push(...encoder.encode("/Mask"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/Mask "), codes.L_BRACKET);
       this.Mask.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.Decode) {
-      bytes.push(...encoder.encode("/Decode"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/Decode "), codes.L_BRACKET);
       this.Decode.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }    
-    bytes.push(...encoder.encode("/Interpolate"), ...encoder.encode(" " + !!this.Interpolate));
+    bytes.push(...encoder.encode("/Interpolate "), ...encoder.encode(" " + !!this.Interpolate));
     if (this.SMask) {
-      bytes.push(...encoder.encode("/SMask"), ...this.SMask.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/SMask "), ...this.SMask.toArray(cryptInfo));
     }
     if (this.SMaskInData) {
-      bytes.push(...encoder.encode("/SMaskInData"), ...encoder.encode(" " + this.SMaskInData));
+      bytes.push(...encoder.encode("/SMaskInData "), ...encoder.encode(" " + this.SMaskInData));
     }
     if (this.Matte) {
-      bytes.push(...encoder.encode("/Matte"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/Matte "), codes.L_BRACKET);
       this.Matte.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.StructParent) {
-      bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+      bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties

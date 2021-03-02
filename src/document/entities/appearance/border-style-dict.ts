@@ -45,14 +45,14 @@ export class BorderStyleDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.W) {
-      bytes.push(...encoder.encode("/W"), ...encoder.encode(" " + this.W));
+      bytes.push(...encoder.encode("/W "), ...encoder.encode(" " + this.W));
     }
     if (this.S) {
-      bytes.push(...encoder.encode("/S"), ...encoder.encode(this.S));
+      bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
     }
     if (this.D) {
       bytes.push(
-        ...encoder.encode("/D"), codes.L_BRACKET, 
+        ...encoder.encode("/D "), codes.L_BRACKET, 
         ...encoder.encode(this.D[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.D[1] + ""), codes.R_BRACKET,
       );

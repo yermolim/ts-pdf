@@ -29,7 +29,7 @@ export class MeasureDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Subtype) {
-      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+      bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
 
     // TODO: handle remaining properties

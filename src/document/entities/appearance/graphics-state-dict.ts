@@ -131,20 +131,20 @@ export class GraphicsStateDict extends PdfDict {
     const bytes: number[] = [];  
     
     if (this.LW) {
-      bytes.push(...encoder.encode("/LW"), ...encoder.encode(" " + this.LW));
+      bytes.push(...encoder.encode("/LW "), ...encoder.encode(" " + this.LW));
     }
     if (this.LC) {
-      bytes.push(...encoder.encode("/LC"), ...encoder.encode(" " + this.LC));
+      bytes.push(...encoder.encode("/LC "), ...encoder.encode(" " + this.LC));
     }
     if (this.LJ) {
-      bytes.push(...encoder.encode("/LJ"), ...encoder.encode(" " + this.LJ));
+      bytes.push(...encoder.encode("/LJ "), ...encoder.encode(" " + this.LJ));
     }
     if (this.ML) {
-      bytes.push(...encoder.encode("/ML"), ...encoder.encode(" " + this.ML));
+      bytes.push(...encoder.encode("/ML "), ...encoder.encode(" " + this.ML));
     }
     if (this.D) {
       bytes.push(
-        ...encoder.encode("/D"), 
+        ...encoder.encode("/D "), 
         codes.L_BRACKET,
         codes.L_BRACKET,
         ...encoder.encode("" + this.D[0][0]),
@@ -155,20 +155,20 @@ export class GraphicsStateDict extends PdfDict {
       );
     }      
     if (this.RI) {
-      bytes.push(...encoder.encode("/RI"), ...encoder.encode(this.RI));
+      bytes.push(...encoder.encode("/RI "), ...encoder.encode(this.RI));
     }
     if (this.OP) {
-      bytes.push(...encoder.encode("/OP"), ...encoder.encode(" " + this.OP));
+      bytes.push(...encoder.encode("/OP "), ...encoder.encode(" " + this.OP));
     }
     if (this.op) {
-      bytes.push(...encoder.encode("/op"), ...encoder.encode(" " + this.op));
+      bytes.push(...encoder.encode("/op "), ...encoder.encode(" " + this.op));
     }
     if (this.OPM) {
-      bytes.push(...encoder.encode("/OPM"), ...encoder.encode(" " + this.OPM));
+      bytes.push(...encoder.encode("/OPM "), ...encoder.encode(" " + this.OPM));
     }
     if (this.Font) {
       bytes.push(
-        ...encoder.encode("/Font"), 
+        ...encoder.encode("/Font "), 
         codes.L_BRACKET,
         ...this.Font[0].toArray(cryptInfo),
         ...encoder.encode(" " + this.Font[1]),
@@ -176,35 +176,35 @@ export class GraphicsStateDict extends PdfDict {
       );
     }       
     if (this.FL) {
-      bytes.push(...encoder.encode("/FL"), ...encoder.encode(" " + this.FL));
+      bytes.push(...encoder.encode("/FL "), ...encoder.encode(" " + this.FL));
     }
     if (this.SM) {
-      bytes.push(...encoder.encode("/SM"), ...encoder.encode(" " + this.SM));
+      bytes.push(...encoder.encode("/SM "), ...encoder.encode(" " + this.SM));
     }
     if (this.SA) {
-      bytes.push(...encoder.encode("/SA"), ...encoder.encode(" " + this.SA));
+      bytes.push(...encoder.encode("/SA "), ...encoder.encode(" " + this.SA));
     }
     if (this.BM) {
-      bytes.push(...encoder.encode("/BM"), ...encoder.encode(this.BM));
+      bytes.push(...encoder.encode("/BM "), ...encoder.encode(this.BM));
     }
     if (this.SMask) {
       if (this.SMask instanceof SoftMaskDict) {        
-        bytes.push(...encoder.encode("/SMask"), ...this.SMask.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/SMask "), ...this.SMask.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/SMask"), ...encoder.encode(this.SMask));
+        bytes.push(...encoder.encode("/SMask "), ...encoder.encode(this.SMask));
       }
     }
     if (this.CA) {
-      bytes.push(...encoder.encode("/CA"), ...encoder.encode(" " + this.CA));
+      bytes.push(...encoder.encode("/CA "), ...encoder.encode(" " + this.CA));
     }
     if (this.ca) {
-      bytes.push(...encoder.encode("/ca"), ...encoder.encode(" " + this.ca));
+      bytes.push(...encoder.encode("/ca "), ...encoder.encode(" " + this.ca));
     }
     if (this.AIS) {
-      bytes.push(...encoder.encode("/AIS"), ...encoder.encode(" " + this.AIS));
+      bytes.push(...encoder.encode("/AIS "), ...encoder.encode(" " + this.AIS));
     }
     if (this.TK) {
-      bytes.push(...encoder.encode("/AIS"), ...encoder.encode(" " + this.TK));
+      bytes.push(...encoder.encode("/AIS "), ...encoder.encode(" " + this.TK));
     }
     
     //TODO: handle remaining properties

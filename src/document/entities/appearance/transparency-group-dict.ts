@@ -69,13 +69,13 @@ export class TransparencyGroupDict extends GroupDict {
     const bytes: number[] = [];  
 
     if (this.CS) {
-      bytes.push(...encoder.encode("/CS"), ...encoder.encode(this.CS));
+      bytes.push(...encoder.encode("/CS "), ...encoder.encode(this.CS));
     }
     if (this.I) {
-      bytes.push(...encoder.encode("/I"), ...encoder.encode(" " + this.I));
+      bytes.push(...encoder.encode("/I "), ...encoder.encode(" " + this.I));
     }
     if (this.K) {
-      bytes.push(...encoder.encode("/K"), ...encoder.encode(" " + this.K));
+      bytes.push(...encoder.encode("/K "), ...encoder.encode(" " + this.K));
     }
 
     const totalBytes: number[] = [

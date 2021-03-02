@@ -54,16 +54,16 @@ export class FontDict extends PdfDict {
     const bytes: number[] = [];  
     
     if (this.Subtype) {
-      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(" " + this.Subtype));
+      bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(" " + this.Subtype));
     }
     if (this.BaseFont) {
-      bytes.push(...encoder.encode("/BaseFont"), ...encoder.encode(" " + this.BaseFont));
+      bytes.push(...encoder.encode("/BaseFont "), ...encoder.encode(" " + this.BaseFont));
     }
     if (this.Encoding) {
-      bytes.push(...encoder.encode("/Encoding"), ...encoder.encode(" " + this.Encoding));
+      bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
     }
     if (this.ToUnicode) {
-      bytes.push(...encoder.encode("/G"), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties if needed

@@ -53,19 +53,19 @@ export class PageTreeDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent"), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
     }
     if (this.Kids) {
-      bytes.push(...encoder.encode("/Kids"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/Kids "), codes.L_BRACKET);
       this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
       bytes.push(codes.R_BRACKET);
     }
     if (this.Count) {
-      bytes.push(...encoder.encode("/Count"), ...encoder.encode(" " + this.Count));
+      bytes.push(...encoder.encode("/Count "), ...encoder.encode(" " + this.Count));
     }
     if (this.MediaBox) {
       bytes.push(
-        ...encoder.encode("/MediaBox"), codes.L_BRACKET, 
+        ...encoder.encode("/MediaBox "), codes.L_BRACKET, 
         ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, 
@@ -73,7 +73,7 @@ export class PageTreeDict extends PdfDict {
       );
     }
     if (this.Rotate) {
-      bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
+      bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));
     }
 
     const totalBytes: number[] = [
