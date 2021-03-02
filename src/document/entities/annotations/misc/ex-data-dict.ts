@@ -75,7 +75,8 @@ export class ExDataDict extends PdfDict {
             } else {
               throw new Error("Can't parse /Subtype property value");
             }
-            break;  
+            break; 
+             
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

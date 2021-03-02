@@ -109,56 +109,23 @@ export class PageTreeDict extends PdfDict {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/Parent":
-            const parentId = ObjectId.parseRef(parser, i);
-            if (parentId) {
-              this.Parent = parentId.value;
-              i = parentId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Parent property value");
-            }
+          case "/Parent":            
+            i = this.parseRefProp(name, parser, i);
             break;
-          case "/Kids":
-            const kidIds = ObjectId.parseRefArray(parser, i);
-            if (kidIds) {
-              this.Kids = kidIds.value;
-              i = kidIds.end + 1;
-            } else {              
-              throw new Error("Can't parse /Kids property value");
-            }
+            
+          case "/Kids":            
+            i = this.parseRefArrayProp(name, parser, i);
             break;
+            
           case "/Count":
-            const count = parser.parseNumberAt(i, false);
-            if (count) {
-              this.Count = count.value;
-              i = count.end + 1;
-            } else {              
-              throw new Error("Can't parse /Count property value");
-            }
-            break;
-          case "/MediaBox":
-            const mediaBox = parser.parseNumberArrayAt(i, true);
-            if (mediaBox) {
-              this.MediaBox = [
-                mediaBox.value[0],
-                mediaBox.value[1],
-                mediaBox.value[2],
-                mediaBox.value[3],
-              ];
-              i = mediaBox.end + 1;
-            } else {              
-              throw new Error("Can't parse /MediaBox property value");
-            }
-            break;
           case "/Rotate":
-            const rotate = parser.parseNumberAt(i, false);
-            if (rotate) {
-              this.Rotate = rotate.value;
-              i = rotate.end + 1;
-            } else {              
-              throw new Error("Can't parse /Rotate property value");
-            }
+            i = this.parseNumberProp(name, parser, i, false);
             break;
+
+          case "/MediaBox":
+            i = this.parseNumberArrayProp(name, parser, i, true);
+            break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

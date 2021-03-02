@@ -133,7 +133,7 @@ export abstract class AnnotationDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Subtype) {
-      bytes.push(...encoder.encode("/Subtype"), ...encoder.encode(this.Subtype));
+      bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
     if (this.Rect) {
       bytes.push(
@@ -145,37 +145,37 @@ export abstract class AnnotationDict extends PdfDict {
       );
     }
     if (this.Contents) {
-      bytes.push(...encoder.encode("/Contents"), ...this.Contents.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Contents "), ...this.Contents.toArray(cryptInfo));
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P"), codes.WHITESPACE, ...this.P.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/P "), codes.WHITESPACE, ...this.P.toArray(cryptInfo));
     }
     if (this.NM) {
-      bytes.push(...encoder.encode("/NM"), ...this.NM.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/NM "), ...this.NM.toArray(cryptInfo));
     }
     if (this.M) {
-      bytes.push(...encoder.encode("/M"), ...this.M.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/M "), ...this.M.toArray(cryptInfo));
     }
     if (this.F) {
-      bytes.push(...encoder.encode("/F"), ...encoder.encode(" " + this.F));
+      bytes.push(...encoder.encode("/F "), ...encoder.encode(" " + this.F));
     }
     // if (this.AP) {
     //   bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
     // }
     if (this.AS) {
-      bytes.push(...encoder.encode("/AS"), ...encoder.encode(this.AS));
+      bytes.push(...encoder.encode("/AS "), ...encoder.encode(this.AS));
     }
     if (this.Border) {
-      bytes.push(...encoder.encode("/Border"), ...this.Border.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Border "), ...this.Border.toArray(cryptInfo));
     }
     if (this.BS) {
-      bytes.push(...encoder.encode("/BS"), ...this.BS.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/BS "), ...this.BS.toArray(cryptInfo));
     }
     if (this.BE) {
-      bytes.push(...encoder.encode("/BE"), ...this.BE.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/BE "), ...this.BE.toArray(cryptInfo));
     }
     if (this.C) {
-      bytes.push(...encoder.encode("/C"), codes.L_BRACKET);
+      bytes.push(...encoder.encode("/C "), codes.L_BRACKET);
       this.C.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
@@ -196,7 +196,7 @@ export abstract class AnnotationDict extends PdfDict {
       this.AP.D = null;
       this.AP.clearStreams();
       this.AP.setStream("/N", this.apStream);
-      bytes.push(...encoder.encode("/AP"), ...this.AP.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/AP "), ...this.AP.toArray(cryptInfo));
     }
 
     // TODO: handle remaining properties
@@ -258,48 +258,21 @@ export abstract class AnnotationDict extends PdfDict {
             } else {
               throw new Error("Can't parse /Subtype property value");
             }
-            break;        
-          case "/Contents":
-            const contents = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (contents) {
-              this.Contents = contents.value;
-              i = contents.end + 1;
-            } else {              
-              throw new Error("Can't parse /Contents property value");
-            }
             break;
+          
           case "/Rect":
-            const rect = parser.parseNumberArrayAt(i, true);
-            if (rect) {
-              this.Rect = [
-                rect.value[0],
-                rect.value[1],
-                rect.value[2],
-                rect.value[3],
-              ];
-              i = rect.end + 1;
-            } else {              
-              throw new Error("Can't parse /Rect property value");
-            }
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
+          
           case "/P":
-            const pageId = ObjectId.parseRef(parser, i);
-            if (pageId) {
-              this.P = pageId.value;
-              i = pageId.end + 1;
-            } else {              
-              throw new Error("Can't parse /P property value");
-            }
+            i = this.parseRefProp(name, parser, i);
             break;
+          
+          case "/Contents":
           case "/NM":
-            const uniqueName = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (uniqueName) {
-              this.NM = uniqueName.value;
-              i = uniqueName.end + 1;
-            } else {              
-              throw new Error("Can't parse /NM property value");
-            }
+            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
+          
           case "/M":
             const date = DateString.parse(parser, i, parseInfo.cryptInfo);
             if (date) {
@@ -315,33 +288,16 @@ export abstract class AnnotationDict extends PdfDict {
               } 
             }
             throw new Error("Can't parse /M property value"); 
-          case "/F":
-            const flags = parser.parseNumberAt(i, false);
-            if (flags) {
-              this.F = flags.value;
-              i = flags.end + 1;
-            } else {              
-              throw new Error("Can't parse /F property value");
-            }
-            break;          
+       
           case "/C":
-            const color = parser.parseNumberArrayAt(i, true);
-            if (color) {
-              this.C = color.value;
-              i = color.end + 1;
-            } else {              
-              throw new Error("Can't parse /C property value");
-            }
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
+          
+          case "/F":
           case "/StructParent":
-            const structureKey = parser.parseNumberAt(i, false);
-            if (structureKey) {
-              this.StructParent = structureKey.value;
-              i = structureKey.end + 1;
-            } else {              
-              throw new Error("Can't parse /StructParent property value");
-            }
+            i = this.parseNumberProp(name, parser, i, false);
             break;
+          
           case "/Border":
             const borderArray = BorderArray.parse(parser, i);
             if (borderArray) {
@@ -409,6 +365,7 @@ export abstract class AnnotationDict extends PdfDict {
               throw new Error("Can't parse /BE value dictionary");  
             }
             throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
+          
           case "/AP":          
             const apEntryType = parser.getValueTypeAt(i);
             if (apEntryType === valueTypes.REF) {              
@@ -442,15 +399,11 @@ export abstract class AnnotationDict extends PdfDict {
               throw new Error("Can't parse /AP value dictionary");  
             }
             throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
+          
           case "/AS":
-            const stateName = parser.parseNameAt(i, true);
-            if (stateName) {
-              this.AS = stateName.value;
-              i = stateName.end + 1;
-            } else {              
-              throw new Error("Can't parse /AS property value");
-            }
+            i = this.parseNameProp(name, parser, i);
             break;
+          
           // TODO: handle remaining properties
           case "/OC":
           default:

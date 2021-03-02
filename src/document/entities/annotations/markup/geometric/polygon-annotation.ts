@@ -33,33 +33,6 @@ export class PolygonAnnotation extends PolyAnnotation {
       return false;
     }
 
-    // const {parser, bounds} = parseInfo;
-    // const start = bounds.contentStart || bounds.start;
-    // const end = bounds.contentEnd || bounds.end; 
-    
-    // let i = parser.skipToNextName(start, end - 1);
-    // if (i === -1) {
-    //   // no required props found
-    //   return false;
-    // }
-    // let name: string;
-    // let parseResult: ParseResult<string>;
-    // while (true) {
-    //   parseResult = parser.parseNameAt(i);
-    //   if (parseResult) {
-    //     i = parseResult.end + 1;
-    //     name = parseResult.value;
-    //     switch (name) {
-    //       default:
-    //         // skip to next name
-    //         i = parser.skipToNextName(i, end - 1);
-    //         break;
-    //     }
-    //   } else {
-    //     break;
-    //   }
-    // };
-
     return true;
   }
 }

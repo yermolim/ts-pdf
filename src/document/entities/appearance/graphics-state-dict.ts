@@ -412,20 +412,16 @@ export class GraphicsStateDict extends PdfDict {
               throw new Error(`Unsupported /D property value type: ${dashEntryType}`);
             }
             throw new Error("Can't parse /D property value");
+          
           // bool values
           case "/OP":
           case "/op":
           case "/SA":
           case "/AIS":
           case "/TK":
-            const boolValue = parser.parseBoolAt(i);
-            if (boolValue) {
-              this[name.substring(1)] = boolValue.value;
-              i = boolValue.end + 1;
-            } else {              
-              throw new Error(`Can't parse${name} property value`);
-            }
+            i = this.parseBoolProp(name, parser, i);
             break;
+          
           // number values
           case "/LW":
           case "/ML":
@@ -433,14 +429,9 @@ export class GraphicsStateDict extends PdfDict {
           case "/SM":
           case "/CA":
           case "/ca":
-            const numberValue = parser.parseNumberAt(i);
-            if (numberValue) {
-              this[name.substring(1)] = numberValue.value;
-              i = numberValue.end + 1;
-            } else {           
-              throw new Error(`Can't parse${name} property value`);
-            }
+            i = this.parseNumberProp(name, parser, i);
             break;
+
           // TODO: add cases for remaining properties
           default:
             // skip to next name

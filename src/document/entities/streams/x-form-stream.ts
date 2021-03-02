@@ -250,37 +250,26 @@ export class XFormStream extends PdfStream {
             } else {
               throw new Error("Can't parse /Subtype property value");
             }
-            break;          
+            break; 
+
           case "/BBox":
-            const boundingBox = parser.parseNumberArrayAt(i, true);
-            if (boundingBox) {
-              this.BBox = [
-                boundingBox.value[0],
-                boundingBox.value[1],
-                boundingBox.value[2],
-                boundingBox.value[3],
-              ];
-              i = boundingBox.end + 1;
-            } else {              
-              throw new Error("Can't parse /BBox property value");
-            }
-            break;          
           case "/Matrix":
-            const matrix = parser.parseNumberArrayAt(i, true);
-            if (matrix) {
-              this.Matrix = [
-                matrix.value[0],
-                matrix.value[1],
-                matrix.value[2],
-                matrix.value[3],
-                matrix.value[4],
-                matrix.value[5],
-              ];
-              i = matrix.end + 1;
-            } else {              
-              throw new Error("Can't parse /Matrix property value");
-            }
-            break;          
+            i = this.parseNumberArrayProp(name, parser, i, true);
+            break; 
+
+          case "/LastModified":
+            i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
+            break;
+
+          case "/Metadata":
+            i = this.parseRefProp(name, parser, i);
+            break;
+
+          case "/StructParent":
+          case "/StructParents":
+            i = this.parseNumberProp(name, parser, i, false);
+            break;
+
           case "/Resources":
             const resEntryType = parser.getValueTypeAt(i);
             if (resEntryType === valueTypes.REF) {              
@@ -318,42 +307,6 @@ export class XFormStream extends PdfStream {
               throw new Error("Can't parse /Resources dictionary bounds"); 
             }
             throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);         
-          case "/Metadata":
-            const metaId = ObjectId.parseRef(parser, i);
-            if (metaId) {
-              this.Metadata = metaId.value;
-              i = metaId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Metadata property value");
-            }
-            break;
-          case "/LastModified":
-            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
-            if (date) {
-              this.LastModified = date.value;
-              i = date.end + 1;
-            } else {              
-              throw new Error("Can't parse /LastModified property value");
-            }
-            break;  
-          case "/StructParent":
-            const parentKey = parser.parseNumberAt(i, false);
-            if (parentKey) {
-              this.StructParent = parentKey.value;
-              i = parentKey.end + 1;
-            } else {              
-              throw new Error("Can't parse /StructParent property value");
-            }
-            break;          
-          case "/StructParents":
-            const parentsKey = parser.parseNumberAt(i, false);
-            if (parentsKey) {
-              this.StructParents = parentsKey.value;
-              i = parentsKey.end + 1;
-            } else {              
-              throw new Error("Can't parse /StructParents property value");
-            }
-            break;
           case "/Measure":            
             const measureEntryType = parser.getValueTypeAt(i);
             if (measureEntryType === valueTypes.REF) {              
@@ -414,7 +367,8 @@ export class XFormStream extends PdfStream {
               throw new Error("Can't parse /Group value dictionary");  
             }
             throw new Error(`Unsupported /Group property value type: ${groupEntryType}`);        
-            // TODO: handle remaining cases
+
+          // TODO: handle remaining cases
           case "/OC":
           case "/OPI":
           default:

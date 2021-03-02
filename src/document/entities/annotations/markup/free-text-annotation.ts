@@ -139,15 +139,11 @@ export class FreeTextAnnotation extends MarkupAnnotation {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/DA":
-            const appearanceString = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (appearanceString) {
-              this.DA = appearanceString.value;
-              i = appearanceString.end + 1;
-            } else {              
-              throw new Error("Can't parse /DA property value");
-            }
+          case "/DA":         
+          case "/DS":            
+            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
+
           case "/Q":
             const justification = parser.parseNumberAt(i, true);
             if (justification && (<number[]>Object.values(justificationTypes))
@@ -157,25 +153,23 @@ export class FreeTextAnnotation extends MarkupAnnotation {
             } else {              
               throw new Error("Can't parse /Q property value");
             }
-            break;            
-          case "/DS":
-            const style = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (style) {
-              this.DS = style.value;
-              i = style.end + 1;
+            break;
+          case "/LE":
+            const lineEndingType = parser.parseNameAt(i, true);
+            if (lineEndingType && (<string[]>Object.values(lineEndingTypes))
+              .includes(lineEndingType.value)) {
+              this.LE = <LineEndingType>lineEndingType.value;
+              i = lineEndingType.end + 1;              
             } else {              
-              throw new Error("Can't parse /DS property value");
+              throw new Error("Can't parse /LE property value");
             }
             break;
+
           case "/CL":
-            const callout = parser.parseNumberArrayAt(i, true);
-            if (callout) {
-              this.CL = callout.value;
-              i = callout.end + 1;
-            } else {              
-              throw new Error("Can't parse /CL property value");
-            }
+          case "/RD":  
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
+
           case "/IT":
             const intent = parser.parseNameAt(i, true);
             if (intent) {
@@ -191,30 +185,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
               }
             }
             throw new Error("Can't parse /IT property value");
-          case "/RD":
-            const innerRect = parser.parseNumberArrayAt(i, true);
-            if (innerRect) {
-              this.RD = [
-                innerRect.value[0],
-                innerRect.value[1],
-                innerRect.value[2],
-                innerRect.value[3],
-              ];
-              i = innerRect.end + 1;
-            } else {              
-              throw new Error("Can't parse /RD property value");
-            }
-            break;
-          case "/LE":
-            const lineEndingType = parser.parseNameAt(i, true);
-            if (lineEndingType && (<string[]>Object.values(lineEndingTypes))
-              .includes(lineEndingType.value)) {
-              this.LE = <LineEndingType>lineEndingType.value;
-              i = lineEndingType.end + 1;              
-            } else {              
-              throw new Error("Can't parse /LE property value");
-            }
-            break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

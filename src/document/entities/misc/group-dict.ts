@@ -72,6 +72,7 @@ export abstract class GroupDict extends PdfDict {
               throw new Error("Can't parse /S property value");
             }
             break;
+          
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

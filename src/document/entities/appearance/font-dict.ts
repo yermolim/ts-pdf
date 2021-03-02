@@ -113,31 +113,16 @@ export class FontDict extends PdfDict {
               return false;   
             }
             throw new Error("Can't parse /Subtype property value");
+          
           case "/BaseFont":
-            const baseFont = parser.parseNameAt(i, true);
-            if (baseFont) {
-              this.BaseFont = baseFont.value;
-              i = baseFont.end + 1;  
-              break;   
-            } 
-            throw new Error("Can't parse /BaseFont property value");
           case "/Encoding":
-            const encoding = parser.parseNameAt(i, true);
-            if (encoding) {
-              this.Encoding = encoding.value;
-              i = encoding.end + 1;  
-              break;   
-            } 
-            throw new Error("Can't parse /Encoding property value");   
+            i = this.parseNameProp(name, parser, i);
+            break;
+          
           case "/ToUnicode":
-            const cMapId = ObjectId.parseRef(parser, i);
-            if (cMapId) {
-              this.ToUnicode = cMapId.value;
-              i = cMapId.end + 1;
-            } else {              
-              throw new Error("Can't parse /ToUnicode property value");
-            }
+            i = this.parseRefProp(name, parser, i);
             break; 
+
           // TODO: add cases for remaining properties if needed
           default:
             // skip to next name

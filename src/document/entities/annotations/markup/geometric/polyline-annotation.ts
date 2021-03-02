@@ -86,6 +86,7 @@ export class PolylineAnnotation extends PolyAnnotation {
               throw new Error("Can't parse /LE property value");
             }
             break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

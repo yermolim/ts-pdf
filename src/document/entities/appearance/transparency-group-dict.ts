@@ -135,24 +135,12 @@ export class TransparencyGroupDict extends GroupDict {
               throw new Error("Can't parse /CS value dictionary");  
             }
             throw new Error(`Unsupported /CS property value type: ${colorSpaceEntryType}`);
+          
           case "/I":
-            const isolated = parser.parseBoolAt(i, false);
-            if (isolated) {
-              this.I = isolated.value;
-              i = isolated.end + 1;
-            } else {
-              throw new Error("Can't parse /I property value");
-            }
-            break; 
           case "/K":
-            const knockout = parser.parseBoolAt(i, false);
-            if (knockout) {
-              this.K = knockout.value;
-              i = knockout.end + 1;
-            } else {
-              throw new Error("Can't parse /K property value");
-            }
-            break; 
+            i = this.parseBoolProp(name, parser, i);
+            break;
+          
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

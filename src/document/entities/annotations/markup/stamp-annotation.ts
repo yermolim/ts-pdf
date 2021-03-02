@@ -86,13 +86,7 @@ export class StampAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/Name":
-            const type = parser.parseNameAt(i, true);
-            if (type) {
-              this.Name = type.value;
-              i = type.end + 1;              
-            } else {              
-              throw new Error("Can't parse /Name property value");
-            }
+            i = this.parseNameProp(name, parser, i);
             break;  
           default:
             // skip to next name

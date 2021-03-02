@@ -76,6 +76,7 @@ export abstract class PdfDict extends PdfObject {
               return true;
             }
             throw new Error("Can't parse /Type property value");
+
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

@@ -85,14 +85,9 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/Vertices":
-            const vertices = parser.parseNumberArrayAt(i, true);
-            if (vertices) {
-              this.Vertices = vertices.value;
-              i = vertices.end + 1;
-            } else {              
-              throw new Error("Can't parse /Vertices property value");
-            }
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
+
           case "/IT":
             const intent = parser.parseNameAt(i, true);
             if (intent) {
@@ -103,6 +98,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
               }
             }
             throw new Error("Can't parse /IT property value");
+
           case "/Measure":            
             const measureEntryType = parser.getValueTypeAt(i);
             if (measureEntryType === valueTypes.REF) {              
@@ -132,6 +128,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
               throw new Error("Can't parse /Measure value dictionary");  
             }
             throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);            
+          
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

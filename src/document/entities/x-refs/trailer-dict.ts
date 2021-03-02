@@ -125,32 +125,15 @@ export class TrailerDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/Size":
-            const size = parser.parseNumberAt(i, false);
-            if (size) {
-              this.Size = size.value;
-              i = size.end + 1;
-            } else {              
-              throw new Error("Can't parse /Size property value");
-            }
-            break;
           case "/Prev":
-            const prev = parser.parseNumberAt(i, false);
-            if (prev) {
-              this.Prev = prev.value;
-              i = prev.end + 1;
-            } else {              
-              throw new Error("Can't parse /Size property value");
-            }
+            i = this.parseNumberProp(name, parser, i, false);
             break;
+
           case "/Root":
-            const rootId = ObjectId.parseRef(parser, i);
-            if (rootId) {
-              this.Root = rootId.value;
-              i = rootId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Root property value");
-            }
+          case "/Info":
+            i = this.parseRefProp(name, parser, i);
             break;
+
           case "/Encrypt":
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.REF) {              
@@ -176,15 +159,7 @@ export class TrailerDict extends PdfDict {
             //   throw new Error("Can't parse /Encrypt property value");
             }
             throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-          case "/Info":
-            const infoId = ObjectId.parseRef(parser, i);
-            if (infoId) {
-              this.Info = infoId.value;
-              i = infoId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Info property value");
-            }
-            break;
+
           case "/ID":
             const ids = HexString.parseArray(parser, i);
             if (ids) {
@@ -194,6 +169,7 @@ export class TrailerDict extends PdfDict {
               throw new Error("Can't parse /ID property value");
             }
             break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

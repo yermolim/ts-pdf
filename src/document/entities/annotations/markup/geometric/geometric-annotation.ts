@@ -60,13 +60,7 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/IC":
-            const interiorColor = parser.parseNumberArrayAt(i, true);
-            if (interiorColor) {
-              this.IC = interiorColor.value;
-              i = interiorColor.end + 1;
-            } else {              
-              throw new Error("Can't parse /IC property value");
-            }
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
           default:
             // skip to next name

@@ -295,23 +295,13 @@ export class EncryptionDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/Filter":
-            const filter = parser.parseNameAt(i, true);
-            if (filter) {
-              this.Filter = filter.value;
-              i = filter.end + 1;              
-            } else {              
-              throw new Error("Can't parse /Filter property value");
-            }
-            break; 
           case "/SubFilter":
-            const subFilter = parser.parseNameAt(i, true);
-            if (subFilter) {
-              this.SubFilter = subFilter.value;
-              i = subFilter.end + 1;              
-            } else {              
-              throw new Error("Can't parse /SubFilter property value");
-            }
+          case "/StmF":
+          case "/StrF":
+          case "/EFF":
+            i = this.parseNameProp(name, parser, i);
             break; 
+
           case "/V":
             const algorithm = parser.parseNumberAt(i, false);
             if (algorithm && (<number[]>Object.values(cryptVersions))
@@ -320,54 +310,6 @@ export class EncryptionDict extends PdfDict {
               i = algorithm.end + 1;              
             } else {              
               throw new Error("Can't parse /V property value");
-            }
-            break;
-          case "/Length":
-            const length = parser.parseNumberAt(i, false);
-            if (length) {
-              this.Length = length.value;
-              i = length.end + 1;
-            } else {              
-              throw new Error("Can't parse /Length property value");
-            }
-            break;
-          case "/CF":
-            const dictBounds = parser.getDictBoundsAt(i);
-            if (bounds) {
-              const cryptMap = CryptMapDict.parse({parser, bounds: dictBounds});
-              if (cryptMap) {
-                this.CF = cryptMap.value;
-                i = cryptMap.end + 1;
-              }
-            } else {              
-              throw new Error("Can't parse /CF property value");
-            }
-            break;
-          case "/StmF":
-            const streamFilter = parser.parseNameAt(i, true);
-            if (streamFilter) {
-              this.StmF = streamFilter.value;
-              i = streamFilter.end + 1;              
-            } else {              
-              throw new Error("Can't parse /StmF property value");
-            }
-            break; 
-          case "/StrF":
-            const stringFilter = parser.parseNameAt(i, true);
-            if (stringFilter) {
-              this.StrF = stringFilter.value;
-              i = stringFilter.end + 1;              
-            } else {              
-              throw new Error("Can't parse /StrF property value");
-            }
-            break; 
-          case "/EFF":
-            const embeddedFilter = parser.parseNameAt(i, true);
-            if (embeddedFilter) {
-              this.EFF = embeddedFilter.value;
-              i = embeddedFilter.end + 1;              
-            } else {              
-              throw new Error("Can't parse /EFF property value");
             }
             break;
           case "/R":
@@ -380,69 +322,37 @@ export class EncryptionDict extends PdfDict {
               throw new Error("Can't parse /R property value");
             }
             break;
-          case "/O":
-            const ownerPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (ownerPassword) {
-              this.O = ownerPassword.value;
-              i = ownerPassword.end + 1;              
-            } else {              
-              throw new Error("Can't parse /O property value");
-            }
-            break;
-          case "/U":
-            const userPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (userPassword) {
-              this.U = userPassword.value;
-              i = userPassword.end + 1;              
-            } else {              
-              throw new Error("Can't parse /U property value");
-            }
-            break;
-          case "/OE":
-            const ownerPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (ownerPasswordKey) {
-              this.OE = ownerPasswordKey.value;
-              i = ownerPasswordKey.end + 1;              
-            } else {              
-              throw new Error("Can't parse /OE property value");
-            }
-            break;
-          case "/UE":
-            const userPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (userPasswordKey) {
-              this.UE = userPasswordKey.value;
-              i = userPasswordKey.end + 1;              
-            } else {              
-              throw new Error("Can't parse /UE property value");
-            }
-            break;
+
+          case "/Length":
           case "/P":
-            const flags = parser.parseNumberAt(i, false);
-            if (flags) {
-              this.P = flags.value;
-              i = flags.end + 1;
-            } else {              
-              throw new Error("Can't parse /P property value");
-            }
-            break;
+            i = this.parseNumberProp(name, parser, i, false);
+            break; 
+
+          case "/O":
+          case "/U":
+          case "/OE":
+          case "/UE":
           case "/Perms":
-            const flagsEncrypted = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (flagsEncrypted) {
-              this.Perms = flagsEncrypted.value;
-              i = flagsEncrypted.end + 1;              
-            } else {              
-              throw new Error("Can't parse /Perms property value");
-            }
+            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
+  
           case "/EncryptMetadata":
-            const encryptMetadata = parser.parseBoolAt(i);
-            if (encryptMetadata) {
-              this.EncryptMetadata = encryptMetadata.value;
-              i = encryptMetadata.end + 1;
+            i = this.parseBoolProp(name, parser, i);
+            break;  
+
+          case "/CF":
+            const dictBounds = parser.getDictBoundsAt(i);
+            if (bounds) {
+              const cryptMap = CryptMapDict.parse({parser, bounds: dictBounds});
+              if (cryptMap) {
+                this.CF = cryptMap.value;
+                i = cryptMap.end + 1;
+              }
             } else {              
-              throw new Error("Can't parse /EncryptMetadata property value");
+              throw new Error("Can't parse /CF property value");
             }
-            break;          
+            break;            
+
           case "/Recipients":            
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.STRING_HEX) {  
@@ -465,8 +375,8 @@ export class EncryptionDict extends PdfDict {
               }
             }
             throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-          default:
-            
+
+          default:  
             // skip to next name
             i = parser.skipToNextName(i, end - 1);
             break;

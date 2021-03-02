@@ -266,24 +266,32 @@ export class ImageStream extends PdfStream {
               throw new Error("Can't parse /Subtype property value");
             }
             break;
+
           case "/Width":
-            const width = parser.parseNumberAt(i, false);
-            if (width) {
-              this.Width = width.value;
-              i = width.end + 1;
-            } else {
-              throw new Error("Can't parse /Width property value");
-            }
-            break;    
           case "/Height":
-            const height = parser.parseNumberAt(i, false);
-            if (height) {
-              this.Height = height.value;
-              i = height.end + 1;
-            } else {
-              throw new Error("Can't parse /Height property value");
-            }
-            break;    
+          case "/BitsPerComponent":
+          case "/SMaskInData":
+          case "/StructParent":
+            i = this.parseNumberProp(name, parser, i, false);
+            break; 
+            
+          case "/Decode":
+            i = this.parseNumberArrayProp(name, parser, i, false);
+            break; 
+
+          case "/Matte":
+            i = this.parseNumberArrayProp(name, parser, i, true);
+            break; 
+
+          case "/Interpolate":
+            i = this.parseBoolProp(name, parser, i);
+            break; 
+
+          case "/SMask":
+          case "/Metadata":
+            i = this.parseRefProp(name, parser, i);
+            break;
+             
           case "/ColorSpace":
             const colorSpaceEntryType = parser.getValueTypeAt(i);
             if (colorSpaceEntryType === valueTypes.NAME) {  
@@ -304,15 +312,7 @@ export class ImageStream extends PdfStream {
               throw new Error("Can't parse /ColorSpace value dictionary");  
             }
             throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
-          case "/BitsPerComponent":
-            const bitsPerComponent = parser.parseNumberAt(i, false);
-            if (bitsPerComponent) {
-              this.BitsPerComponent = bitsPerComponent.value;
-              i = bitsPerComponent.end + 1;
-            } else {
-              throw new Error("Can't parse /BitsPerComponent property value");
-            }
-            break;             
+           
           case "/ImageMask":
             const imageMask = parser.parseBoolAt(i, false);
             if (imageMask) {
@@ -325,6 +325,7 @@ export class ImageStream extends PdfStream {
               throw new Error("Can't parse /ImageMask property value");
             }
             break; 
+          
           case "/Mask":
             const maskEntryType = parser.getValueTypeAt(i);            
             if (maskEntryType === valueTypes.REF) {                  
@@ -365,70 +366,8 @@ export class ImageStream extends PdfStream {
               throw new Error("Can't parse /Mask property value");
             }
             throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
-          case "/Decode":
-            const decode = parser.parseNumberArrayAt(i, false);
-            if (decode) {
-              this.Decode = decode.value;
-              i = decode.end + 1;
-            } else {
-              throw new Error("Can't parse /Decode property value");
-            }
-            break;  
-          case "/Interpolate":
-            const interpolate = parser.parseBoolAt(i, false);
-            if (interpolate) {
-              this.Interpolate = interpolate.value;
-              i = interpolate.end + 1;
-            } else {
-              throw new Error("Can't parse /Interpolate property value");
-            }
-            break; 
-          case "/SMask":
-            const sMaskId = ObjectId.parseRef(parser, i);
-            if (sMaskId) {
-              this.SMask = sMaskId.value;
-              i = sMaskId.end + 1;
-            } else {              
-              throw new Error("Can't parse /SMask property value");
-            }
-            break;
-          case "/SMaskInData":
-            const smaskInData = parser.parseNumberAt(i, false);
-            if (smaskInData) {
-              this.SMaskInData = smaskInData.value;
-              i = smaskInData.end + 1;
-            } else {
-              throw new Error("Can't parse /SMaskInData property value");
-            }
-            break;  
-          case "/Matte":
-            const matte = parser.parseNumberArrayAt(i, false);
-            if (matte) {
-              this.Matte = matte.value;
-              i = matte.end + 1;
-            } else {
-              throw new Error("Can't parse /Matte property value");
-            }
-            break;   
-          case "/StructParent":
-            const parentKey = parser.parseNumberAt(i, false);
-            if (parentKey) {
-              this.StructParent = parentKey.value;
-              i = parentKey.end + 1;
-            } else {              
-              throw new Error("Can't parse /StructParent property value");
-            }
-            break;      
-          case "/Metadata":
-            const metaId = ObjectId.parseRef(parser, i);
-            if (metaId) {
-              this.Metadata = metaId.value;
-              i = metaId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Metadata property value");
-            }
-            break; 
-            // TODO: handle remaining cases
+              
+          // TODO: handle remaining cases
           case "/OC": 
           case "/Intent":
           case "/Alternates":

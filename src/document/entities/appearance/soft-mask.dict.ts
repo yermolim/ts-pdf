@@ -117,24 +117,15 @@ export class SoftMaskDict extends PdfDict {
               throw new Error("Can't parse /S property value");
             }
             break;         
+          
           case "/G":
-            const transparencyGroupId = ObjectId.parseRef(parser, i);
-            if (transparencyGroupId) {
-              this.G = transparencyGroupId.value;
-              i = transparencyGroupId.end + 1;
-            } else {              
-              throw new Error("Can't parse /G property value");
-            }
+            i = this.parseRefProp(name, parser, i);
             break; 
-          case "/BC":
-            const backdropArray = parser.parseNumberArrayAt(i, false);
-            if (backdropArray) {
-              this.BC = backdropArray.value;
-              i = backdropArray.end + 1;
-            } else {
-              throw new Error("Can't parse /BC property value");
-            }
+          
+          case "/BC":            
+            i = this.parseNumberArrayProp(name, parser, i);
             break;   
+          
           //TODO: handle TR as function 
           case "/TR":
           default:

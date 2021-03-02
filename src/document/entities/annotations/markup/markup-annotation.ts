@@ -67,15 +67,6 @@ export abstract class MarkupAnnotation extends AnnotationDict {
    */
   RT: MarkupAnnotationReplyType = markupAnnotationReplyTypes.REPLY;
   /**
-   * (Optional; PDF 1.6+) A name describing the intent of the markup annotation. 
-   * Intents allow conforming readers to distinguish between different uses 
-   * and behaviors of a single markup annotation type. 
-   * If this entry is not present or its value is the same as the annotation type, 
-   * the annotation shall have no explicit intent and should behave in a generic manner 
-   * in a conforming reader
-   */
-  // IT: string;
-  /**
    * (Optional; PDF 1.7+) An external data dictionary specifying data 
    * that shall be associated with the annotation
    */
@@ -114,10 +105,6 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     if (this.RT) {
       bytes.push(...encoder.encode("/RT"), ...encoder.encode(this.RT));
     }
-    // if (this.IT) {
-    //   bytes.push(...encoder.encode("/IT"), ...encoder.encode(this.IT));
-    // }
-    // TODO: handle ExData
 
     const totalBytes: number[] = [
       ...superBytes.subarray(0, 2), // <<
@@ -153,23 +140,15 @@ export abstract class MarkupAnnotation extends AnnotationDict {
         name = parseResult.value;
         switch (name) {
           case "/T":
-            const title = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (title) {
-              this.T = title.value;
-              i = title.end + 1;
-            } else {              
-              throw new Error("Can't parse /T property value");
-            }
+          case "/Subj":
+            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
+          
           case "/Popup":
-            const popupId = ObjectId.parseRef(parser, i);
-            if (popupId) {
-              this.Popup = popupId.value;
-              i = popupId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Popup property value");
-            }
+          case "/IRT":
+            i = this.parseRefProp(name, parser, i);
             break;
+
           case "/RC":    
             // TODO: test it   
             const rcEntryType = parser.getValueTypeAt(i);
@@ -217,42 +196,15 @@ export abstract class MarkupAnnotation extends AnnotationDict {
               throw new Error("Can't parse /RC property value"); 
             }
             throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
+          
           case "/CA":
-            const opacity = parser.parseNumberAt(i, true);
-            if (opacity) {
-              this.CA = opacity.value;
-              i = opacity.end + 1;
-            } else {              
-              throw new Error("Can't parse /CA property value");
-            }
+            i = this.parseNumberProp(name, parser, i, true);
             break;   
+          
           case "/CreationDate":
-            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
-            if (date) {
-              this.CreationDate = date.value;
-              i = date.end + 1;   
-            } else {
-              throw new Error("Can't parse /CreationDate property value"); 
-            }
+            i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
             break;
-          case "/Subj":
-            const subject = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (subject) {
-              this.Subj = subject.value;
-              i = subject.end + 1;
-            } else {              
-              throw new Error("Can't parse /Subj property value");
-            }
-            break;
-          case "/IRT":
-            const refId = ObjectId.parseRef(parser, i);
-            if (refId) {
-              this.IRT = refId.value;
-              i = refId.end + 1;
-            } else {              
-              throw new Error("Can't parse /IRT property value");
-            }
-            break;
+
           case "/RT":
             const replyType = parser.parseNameAt(i, true);
             if (replyType && (<string[]>Object.values(markupAnnotationReplyTypes))
@@ -263,15 +215,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
               throw new Error("Can't parse /RT property value");
             }
             break; 
-          // case "/IT":
-          //   const intent = parser.parseNameAt(i);
-          //   if (intent) {
-          //     this.IT = intent.value;
-          //     i = intent.end + 1;
-          //   } else {
-          //     throw new Error("Can't parse /IT property value");
-          //   }
-          //   break;  
+          
           case "/ExData":
             // TODO: handle this case
             break;

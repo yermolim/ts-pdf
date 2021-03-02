@@ -146,15 +146,12 @@ export abstract class PdfStream extends PdfObject {
               throw new Error("Can't parse /Type property value");
             }
             break;
+          
           case "/Length":
-            const length = parser.parseNumberAt(i, false);
-            if (length) {
-              this.Length = length.value;
-              i = length.end + 1;
-            } else {              
-              throw new Error("Can't parse /Length property value");
-            }
+          case "/DL":
+            i = this.parseNumberProp(name, parser, i, false);
             break;
+            
           case "/Filter":
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.NAME) {  
@@ -208,16 +205,8 @@ export abstract class PdfStream extends PdfObject {
               }
               throw new Error("Can't parse /DecodeParms property value");
             }
-            throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
-          case "/DL":
-            const dl = parser.parseNumberAt(i, false);
-            if (dl) {
-              this.DL = dl.value;
-              i = dl.end + 1;
-            } else {              
-              throw new Error("Can't parse /DL property value");
-            }
-            break;
+            throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);      
+
           default:
             // skip value to next name
             i = parser.skipToNextName(i, dictBounds.contentEnd);

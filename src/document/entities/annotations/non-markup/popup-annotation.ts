@@ -78,23 +78,13 @@ export class PopupAnnotation extends AnnotationDict {
         name = parseResult.value;
         switch (name) {
           case "/Parent":
-            const parentId = ObjectId.parseRef(parser, i);
-            if (parentId) {
-              this.Parent = parentId.value;
-              i = parentId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Parent property value");
-            }
+            i = this.parseRefProp(name, parser, i);
             break;
+            
           case "/Open":
-            const opened = parser.parseBoolAt(i);
-            if (opened) {
-              this.Open = opened.value;
-              i = opened.end + 1;
-            } else {              
-              throw new Error("Can't parse /Open property value");
-            }
+            i = this.parseBoolProp(name, parser, i);
             break;
+
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

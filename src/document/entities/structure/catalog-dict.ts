@@ -97,33 +97,18 @@ export class CatalogDict extends PdfDict {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/Version":
-            const version = parser.parseNameAt(i, false, false);
-            if (version) {
-              this.Version = version.value;
-              i = version.end + 1;
-            } else {              
-              throw new Error("Can't parse /Version property value");
-            }
+          case "/Version":            
+            i = this.parseNameProp(name, parser, i);
             break;
-          case "/Pages":
-            const rootPageTreeId = ObjectId.parseRef(parser, i);
-            if (rootPageTreeId) {
-              this.Pages = rootPageTreeId.value;
-              i = rootPageTreeId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Pages property value");
-            }
+
+          case "/Pages":            
+            i = this.parseRefProp(name, parser, i);
             break;
-          case "/Lang":
-            const lang = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (lang) {
-              this.Lang = lang.value;
-              i = lang.end + 1;
-            } else {              
-              throw new Error("Can't parse /Lang property value");
-            }
+
+          case "/Lang":            
+            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
+
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

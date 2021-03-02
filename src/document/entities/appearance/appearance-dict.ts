@@ -174,6 +174,7 @@ export class AppearanceDict extends PdfDict {
               throw new Error(`Unsupported /N property value type: ${nEntryType}`);
             }
             throw new Error("Can't parse /N property value");
+            
           case "/R":
             const rEntryType = parser.getValueTypeAt(i);
             if (rEntryType === valueTypes.REF) {              
@@ -197,6 +198,7 @@ export class AppearanceDict extends PdfDict {
               throw new Error(`Unsupported /R property value type: ${rEntryType}`);
             }
             throw new Error("Can't parse /R property value");
+
           case "/D":
             const dEntryType = parser.getValueTypeAt(i);
             if (dEntryType === valueTypes.REF) {              

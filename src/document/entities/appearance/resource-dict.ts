@@ -73,20 +73,23 @@ export class ResourceDict extends PdfDict {
       bytes.push(...encoder.encode("/ExtGState"));    
       bytes.push(...keywordCodes.DICT_START);
       for (const [name, gsDict] of this._gsMap) {
-        bytes.push(...encoder.encode(name.slice(10))); // remove '/ExtGState' prefix
-        bytes.push(...gsDict.toArray(cryptInfo));
+        bytes.push(...encoder.encode(name.slice(10)), codes.WHITESPACE); // remove '/ExtGState' prefix
+        if (gsDict.ref) {          
+          bytes.push(...new ObjectId(gsDict.ref.id, gsDict.ref.generation).toArray(cryptInfo));
+        } else {
+          bytes.push(...gsDict.toArray(cryptInfo));
+        }
       }
       bytes.push(...keywordCodes.DICT_END);
     }
     if (this._xObjectsMap.size) {
-      bytes.push(...encoder.encode("/XObject"));
-      bytes.push(...keywordCodes.DICT_START);      
+      bytes.push(...encoder.encode("/XObject"), ...keywordCodes.DICT_START);
       for (const [name, xObject] of this._xObjectsMap) {
         const ref = xObject.ref;
         if (!ref) {
           throw new Error("XObject has no reference");
         }
-        bytes.push(...encoder.encode(name.slice(8))); // remove '/XObject' prefix
+        bytes.push(...encoder.encode(name.slice(8)), codes.WHITESPACE); // remove '/XObject' prefix
         bytes.push(...new ObjectId(ref.id, ref.generation) .toArray(cryptInfo));
       }
       bytes.push(...keywordCodes.DICT_END);
@@ -167,42 +170,6 @@ export class ResourceDict extends PdfDict {
   setXObject(name: string, xObject: XFormStream | ImageStream) {
     this._xObjectsMap.set(`/XObject${name}`, xObject);
   }
-  
-  // getFormXObject(name: string): XFormStream {
-  //   const xObj = this._xObjectsMap.get(name);
-  //   if (xObj instanceof XFormStream) {
-  //     return xObj;
-  //   } else {
-  //     return null;
-  //   }
-  // }
-
-  // *getFormXObjects(): Iterable<[string, XFormStream]> {
-  //   for (const pair of this._xObjectsMap) {
-  //     if (pair[1] instanceof XFormStream) {
-  //       yield <[string, XFormStream]>pair;
-  //     }
-  //   }
-  //   return;
-  // }
-  
-  // getImageXObject(name: string): ImageStream {
-  //   const xObj = this._xObjectsMap.get(name);
-  //   if (xObj instanceof ImageStream) {
-  //     return xObj;
-  //   } else {
-  //     return null;
-  //   }
-  // }
-
-  // *getImageXObjects(): Iterable<[string, ImageStream]> {
-  //   for (const pair of this._xObjectsMap) {
-  //     if (pair[1] instanceof ImageStream) {
-  //       yield <[string, ImageStream]>pair;
-  //     }
-  //   }
-  //   return;
-  // }
   
   protected fillMaps(parseInfoGetter: (id: number) => ParseInfo, cryptInfo?: CryptInfo) {
     this._gsMap.clear();
@@ -293,20 +260,17 @@ export class ResourceDict extends PdfDict {
             if (mapBounds) {
               const map = ObjectMapDict.parse({parser, bounds: mapBounds});              
               if (map) {
-                this[name.substring(1)] = map.value;
+                this[name.slice(1)] = map.value;
                 i = mapBounds.end + 1;
                 break;
               }
             }            
             throw new Error(`Can't parse ${name} property value`);
+
           case "/ProcSet":                     
-            const procedureNames = parser.parseNameArrayAt(i);
-            if (procedureNames) {
-              this.ProcSet = procedureNames.value;
-              i = procedureNames.end + 1;
-              break;
-            } 
-            throw new Error("Can't parse /ProcSet property value");
+            i = this.parseNameArrayProp(name, parser, i);
+            break;
+          
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

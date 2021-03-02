@@ -2749,66 +2749,6 @@ class LiteralString {
     }
 }
 
-class DateString {
-    constructor(source, date) {
-        this.source = source;
-        this.date = date;
-    }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
-        if (end === -1) {
-            return null;
-        }
-        let bytes = parser.subCharCodes(start + 1, end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        try {
-            const date = DateString.fromArray(bytes);
-            return { value: date, start, end };
-        }
-        catch (_a) {
-            return null;
-        }
-    }
-    static fromDate(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const seconds = String(date.getSeconds()).padStart(2, "0");
-        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
-        return new DateString(source, date);
-    }
-    static fromString(source) {
-        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
-        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
-        return new DateString(source, date);
-    }
-    static fromArray(arr) {
-        const source = new TextDecoder().decode(arr);
-        return DateString.fromString(source);
-    }
-    toArray(cryptInfo) {
-        let bytes = new TextEncoder().encode(this.source);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
-        }
-        return new Uint8Array([
-            ...keywordCodes.STR_LITERAL_START,
-            ...bytes,
-            ...keywordCodes.STR_LITERAL_END,
-        ]);
-    }
-}
-
 class ObjectId {
     constructor(id, generation) {
         this.id = id !== null && id !== void 0 ? id : 0;
@@ -2881,6 +2821,66 @@ class ObjectId {
     }
 }
 
+class DateString {
+    constructor(source, date) {
+        this.source = source;
+        this.date = date;
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        if (skipEmpty) {
+            start = parser.skipEmpty(start);
+        }
+        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+        if (end === -1) {
+            return null;
+        }
+        let bytes = parser.subCharCodes(start + 1, end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        try {
+            const date = DateString.fromArray(bytes);
+            return { value: date, start, end };
+        }
+        catch (_a) {
+            return null;
+        }
+    }
+    static fromDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const hours = String(date.getHours()).padStart(2, "0");
+        const minutes = String(date.getMinutes()).padStart(2, "0");
+        const seconds = String(date.getSeconds()).padStart(2, "0");
+        const source = `D:${year}${month}${day}${hours}${minutes}${seconds}`;
+        return new DateString(source, date);
+    }
+    static fromString(source) {
+        const result = /D:(?<Y>\d{4})(?<M>\d{2})(?<D>\d{2})(?<h>\d{2})(?<m>\d{2})(?<s>\d{2})/.exec(source);
+        const date = new Date(+result.groups.Y, +result.groups.M - 1, +result.groups.D, +result.groups.h, +result.groups.m, +result.groups.s);
+        return new DateString(source, date);
+    }
+    static fromArray(arr) {
+        const source = new TextDecoder().decode(arr);
+        return DateString.fromString(source);
+    }
+    toArray(cryptInfo) {
+        let bytes = new TextEncoder().encode(this.source);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
+        }
+        return new Uint8Array([
+            ...keywordCodes.STR_LITERAL_START,
+            ...bytes,
+            ...keywordCodes.STR_LITERAL_END,
+        ]);
+    }
+}
+
 class PdfObject {
     constructor() {
     }
@@ -2897,6 +2897,49 @@ class PdfObject {
     get generation() {
         var _a;
         return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.generation;
+    }
+    parseRefProp(propName, parser, index) {
+        const parsed = ObjectId.parseRef(parser, index);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseRefArrayProp(propName, parser, index) {
+        const parsed = ObjectId.parseRefArray(parser, index);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseBoolProp(propName, parser, index) {
+        const parsed = parser.parseBoolAt(index);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseNameProp(propName, parser, index, includeSlash = true) {
+        const parsed = parser.parseNameAt(index, includeSlash);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseNameArrayProp(propName, parser, index, includeSlash = true) {
+        const parsed = parser.parseNameArrayAt(index, includeSlash);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseNumberProp(propName, parser, index, float = true) {
+        const parsed = parser.parseNumberAt(index, float);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseNumberArrayProp(propName, parser, index, float = true) {
+        const parsed = parser.parseNumberArrayAt(index, float);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseDateProp(propName, parser, index, cryptInfo) {
+        const parsed = DateString.parse(parser, index, cryptInfo);
+        return this.setParsedProp(propName, parsed);
+    }
+    parseLiteralProp(propName, parser, index, cryptInfo) {
+        const parsed = LiteralString.parse(parser, index, cryptInfo);
+        return this.setParsedProp(propName, parsed);
+    }
+    setParsedProp(propName, parsed) {
+        if (!parsed) {
+            throw new Error(`Can't parse ${propName} property value`);
+        }
+        this[propName.slice(1)] = parsed.value;
+        return parsed.end + 1;
     }
 }
 
@@ -3882,14 +3925,8 @@ class PdfStream extends PdfObject {
                         }
                         break;
                     case "/Length":
-                        const length = parser.parseNumberAt(i, false);
-                        if (length) {
-                            this.Length = length.value;
-                            i = length.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Length property value");
-                        }
+                    case "/DL":
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/Filter":
                         const entryType = parser.getValueTypeAt(i);
@@ -3947,16 +3984,6 @@ class PdfStream extends PdfObject {
                             throw new Error("Can't parse /DecodeParms property value");
                         }
                         throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
-                    case "/DL":
-                        const dl = parser.parseNumberAt(i, false);
-                        if (dl) {
-                            this.DL = dl.value;
-                            i = dl.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /DL property value");
-                        }
-                        break;
                     default:
                         i = parser.skipToNextName(i, dictBounds.contentEnd);
                         break;
@@ -4099,14 +4126,7 @@ class BorderStyleDict extends PdfDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/W":
-                        const width = parser.parseNumberAt(i, true);
-                        if (width) {
-                            this.W = width.value;
-                            i = width.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /W property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, true);
                         break;
                     case "/S":
                         const style = parser.parseNameAt(i, true);
@@ -5008,24 +5028,24 @@ class ImageStream extends PdfStream {
                         }
                         break;
                     case "/Width":
-                        const width = parser.parseNumberAt(i, false);
-                        if (width) {
-                            this.Width = width.value;
-                            i = width.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Width property value");
-                        }
-                        break;
                     case "/Height":
-                        const height = parser.parseNumberAt(i, false);
-                        if (height) {
-                            this.Height = height.value;
-                            i = height.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Height property value");
-                        }
+                    case "/BitsPerComponent":
+                    case "/SMaskInData":
+                    case "/StructParent":
+                        i = this.parseNumberProp(name, parser, i, false);
+                        break;
+                    case "/Decode":
+                        i = this.parseNumberArrayProp(name, parser, i, false);
+                        break;
+                    case "/Matte":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    case "/Interpolate":
+                        i = this.parseBoolProp(name, parser, i);
+                        break;
+                    case "/SMask":
+                    case "/Metadata":
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/ColorSpace":
                         const colorSpaceEntryType = parser.getValueTypeAt(i);
@@ -5047,16 +5067,6 @@ class ImageStream extends PdfStream {
                             throw new Error("Can't parse /ColorSpace value dictionary");
                         }
                         throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
-                    case "/BitsPerComponent":
-                        const bitsPerComponent = parser.parseNumberAt(i, false);
-                        if (bitsPerComponent) {
-                            this.BitsPerComponent = bitsPerComponent.value;
-                            i = bitsPerComponent.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BitsPerComponent property value");
-                        }
-                        break;
                     case "/ImageMask":
                         const imageMask = parser.parseBoolAt(i, false);
                         if (imageMask) {
@@ -5111,76 +5121,6 @@ class ImageStream extends PdfStream {
                             throw new Error("Can't parse /Mask property value");
                         }
                         throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
-                    case "/Decode":
-                        const decode = parser.parseNumberArrayAt(i, false);
-                        if (decode) {
-                            this.Decode = decode.value;
-                            i = decode.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Decode property value");
-                        }
-                        break;
-                    case "/Interpolate":
-                        const interpolate = parser.parseBoolAt(i, false);
-                        if (interpolate) {
-                            this.Interpolate = interpolate.value;
-                            i = interpolate.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Interpolate property value");
-                        }
-                        break;
-                    case "/SMask":
-                        const sMaskId = ObjectId.parseRef(parser, i);
-                        if (sMaskId) {
-                            this.SMask = sMaskId.value;
-                            i = sMaskId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /SMask property value");
-                        }
-                        break;
-                    case "/SMaskInData":
-                        const smaskInData = parser.parseNumberAt(i, false);
-                        if (smaskInData) {
-                            this.SMaskInData = smaskInData.value;
-                            i = smaskInData.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /SMaskInData property value");
-                        }
-                        break;
-                    case "/Matte":
-                        const matte = parser.parseNumberArrayAt(i, false);
-                        if (matte) {
-                            this.Matte = matte.value;
-                            i = matte.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Matte property value");
-                        }
-                        break;
-                    case "/StructParent":
-                        const parentKey = parser.parseNumberAt(i, false);
-                        if (parentKey) {
-                            this.StructParent = parentKey.value;
-                            i = parentKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StructParent property value");
-                        }
-                        break;
-                    case "/Metadata":
-                        const metaId = ObjectId.parseRef(parser, i);
-                        if (metaId) {
-                            this.Metadata = metaId.value;
-                            i = metaId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Metadata property value");
-                        }
-                        break;
                     case "/OC":
                     case "/Intent":
                     case "/Alternates":
@@ -5300,30 +5240,11 @@ class FontDict extends PdfDict {
                         }
                         throw new Error("Can't parse /Subtype property value");
                     case "/BaseFont":
-                        const baseFont = parser.parseNameAt(i, true);
-                        if (baseFont) {
-                            this.BaseFont = baseFont.value;
-                            i = baseFont.end + 1;
-                            break;
-                        }
-                        throw new Error("Can't parse /BaseFont property value");
                     case "/Encoding":
-                        const encoding = parser.parseNameAt(i, true);
-                        if (encoding) {
-                            this.Encoding = encoding.value;
-                            i = encoding.end + 1;
-                            break;
-                        }
-                        throw new Error("Can't parse /Encoding property value");
+                        i = this.parseNameProp(name, parser, i);
+                        break;
                     case "/ToUnicode":
-                        const cMapId = ObjectId.parseRef(parser, i);
-                        if (cMapId) {
-                            this.ToUnicode = cMapId.value;
-                            i = cMapId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /ToUnicode property value");
-                        }
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -5407,24 +5328,10 @@ class SoftMaskDict extends PdfDict {
                         }
                         break;
                     case "/G":
-                        const transparencyGroupId = ObjectId.parseRef(parser, i);
-                        if (transparencyGroupId) {
-                            this.G = transparencyGroupId.value;
-                            i = transparencyGroupId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /G property value");
-                        }
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/BC":
-                        const backdropArray = parser.parseNumberArrayAt(i, false);
-                        if (backdropArray) {
-                            this.BC = backdropArray.value;
-                            i = backdropArray.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BC property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i);
                         break;
                     case "/TR":
                     default:
@@ -5719,14 +5626,7 @@ class GraphicsStateDict extends PdfDict {
                     case "/SA":
                     case "/AIS":
                     case "/TK":
-                        const boolValue = parser.parseBoolAt(i);
-                        if (boolValue) {
-                            this[name.substring(1)] = boolValue.value;
-                            i = boolValue.end + 1;
-                        }
-                        else {
-                            throw new Error(`Can't parse${name} property value`);
-                        }
+                        i = this.parseBoolProp(name, parser, i);
                         break;
                     case "/LW":
                     case "/ML":
@@ -5734,14 +5634,7 @@ class GraphicsStateDict extends PdfDict {
                     case "/SM":
                     case "/CA":
                     case "/ca":
-                        const numberValue = parser.parseNumberAt(i);
-                        if (numberValue) {
-                            this[name.substring(1)] = numberValue.value;
-                            i = numberValue.end + 1;
-                        }
-                        else {
-                            throw new Error(`Can't parse${name} property value`);
-                        }
+                        i = this.parseNumberProp(name, parser, i);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -5778,20 +5671,24 @@ class ResourceDict extends PdfDict {
             bytes.push(...encoder.encode("/ExtGState"));
             bytes.push(...keywordCodes.DICT_START);
             for (const [name, gsDict] of this._gsMap) {
-                bytes.push(...encoder.encode(name.slice(10)));
-                bytes.push(...gsDict.toArray(cryptInfo));
+                bytes.push(...encoder.encode(name.slice(10)), codes.WHITESPACE);
+                if (gsDict.ref) {
+                    bytes.push(...new ObjectId(gsDict.ref.id, gsDict.ref.generation).toArray(cryptInfo));
+                }
+                else {
+                    bytes.push(...gsDict.toArray(cryptInfo));
+                }
             }
             bytes.push(...keywordCodes.DICT_END);
         }
         if (this._xObjectsMap.size) {
-            bytes.push(...encoder.encode("/XObject"));
-            bytes.push(...keywordCodes.DICT_START);
+            bytes.push(...encoder.encode("/XObject"), ...keywordCodes.DICT_START);
             for (const [name, xObject] of this._xObjectsMap) {
                 const ref = xObject.ref;
                 if (!ref) {
                     throw new Error("XObject has no reference");
                 }
-                bytes.push(...encoder.encode(name.slice(8)));
+                bytes.push(...encoder.encode(name.slice(8)), codes.WHITESPACE);
                 bytes.push(...new ObjectId(ref.id, ref.generation).toArray(cryptInfo));
             }
             bytes.push(...keywordCodes.DICT_END);
@@ -5935,20 +5832,15 @@ class ResourceDict extends PdfDict {
                         if (mapBounds) {
                             const map = ObjectMapDict.parse({ parser, bounds: mapBounds });
                             if (map) {
-                                this[name.substring(1)] = map.value;
+                                this[name.slice(1)] = map.value;
                                 i = mapBounds.end + 1;
                                 break;
                             }
                         }
                         throw new Error(`Can't parse ${name} property value`);
                     case "/ProcSet":
-                        const procedureNames = parser.parseNameArrayAt(i);
-                        if (procedureNames) {
-                            this.ProcSet = procedureNames.value;
-                            i = procedureNames.end + 1;
-                            break;
-                        }
-                        throw new Error("Can't parse /ProcSet property value");
+                        i = this.parseNameArrayProp(name, parser, i);
+                        break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -6180,24 +6072,8 @@ class TransparencyGroupDict extends GroupDict {
                         }
                         throw new Error(`Unsupported /CS property value type: ${colorSpaceEntryType}`);
                     case "/I":
-                        const isolated = parser.parseBoolAt(i, false);
-                        if (isolated) {
-                            this.I = isolated.value;
-                            i = isolated.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /I property value");
-                        }
-                        break;
                     case "/K":
-                        const knockout = parser.parseBoolAt(i, false);
-                        if (knockout) {
-                            this.K = knockout.value;
-                            i = knockout.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /K property value");
-                        }
+                        i = this.parseBoolProp(name, parser, i);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -6357,36 +6233,18 @@ class XFormStream extends PdfStream {
                         }
                         break;
                     case "/BBox":
-                        const boundingBox = parser.parseNumberArrayAt(i, true);
-                        if (boundingBox) {
-                            this.BBox = [
-                                boundingBox.value[0],
-                                boundingBox.value[1],
-                                boundingBox.value[2],
-                                boundingBox.value[3],
-                            ];
-                            i = boundingBox.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BBox property value");
-                        }
-                        break;
                     case "/Matrix":
-                        const matrix = parser.parseNumberArrayAt(i, true);
-                        if (matrix) {
-                            this.Matrix = [
-                                matrix.value[0],
-                                matrix.value[1],
-                                matrix.value[2],
-                                matrix.value[3],
-                                matrix.value[4],
-                                matrix.value[5],
-                            ];
-                            i = matrix.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Matrix property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    case "/LastModified":
+                        i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/Metadata":
+                        i = this.parseRefProp(name, parser, i);
+                        break;
+                    case "/StructParent":
+                    case "/StructParents":
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/Resources":
                         const resEntryType = parser.getValueTypeAt(i);
@@ -6427,46 +6285,6 @@ class XFormStream extends PdfStream {
                             throw new Error("Can't parse /Resources dictionary bounds");
                         }
                         throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
-                    case "/Metadata":
-                        const metaId = ObjectId.parseRef(parser, i);
-                        if (metaId) {
-                            this.Metadata = metaId.value;
-                            i = metaId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Metadata property value");
-                        }
-                        break;
-                    case "/LastModified":
-                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
-                        if (date) {
-                            this.LastModified = date.value;
-                            i = date.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LastModified property value");
-                        }
-                        break;
-                    case "/StructParent":
-                        const parentKey = parser.parseNumberAt(i, false);
-                        if (parentKey) {
-                            this.StructParent = parentKey.value;
-                            i = parentKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StructParent property value");
-                        }
-                        break;
-                    case "/StructParents":
-                        const parentsKey = parser.parseNumberAt(i, false);
-                        if (parentsKey) {
-                            this.StructParents = parentsKey.value;
-                            i = parentsKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StructParents property value");
-                        }
-                        break;
                     case "/Measure":
                         const measureEntryType = parser.getValueTypeAt(i);
                         if (measureEntryType === valueTypes.REF) {
@@ -6824,14 +6642,7 @@ class BorderEffectDict extends PdfDict {
                         }
                         break;
                     case "/L":
-                        const intensity = parser.parseNumberAt(i, true);
-                        if (intensity) {
-                            this.L = Math.min(Math.max(0, intensity.value), 2);
-                            i = intensity.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /L property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, true);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -7761,50 +7572,15 @@ class AnnotationDict extends PdfDict {
                             throw new Error("Can't parse /Subtype property value");
                         }
                         break;
-                    case "/Contents":
-                        const contents = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (contents) {
-                            this.Contents = contents.value;
-                            i = contents.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Contents property value");
-                        }
-                        break;
                     case "/Rect":
-                        const rect = parser.parseNumberArrayAt(i, true);
-                        if (rect) {
-                            this.Rect = [
-                                rect.value[0],
-                                rect.value[1],
-                                rect.value[2],
-                                rect.value[3],
-                            ];
-                            i = rect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Rect property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     case "/P":
-                        const pageId = ObjectId.parseRef(parser, i);
-                        if (pageId) {
-                            this.P = pageId.value;
-                            i = pageId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /P property value");
-                        }
+                        i = this.parseRefProp(name, parser, i);
                         break;
+                    case "/Contents":
                     case "/NM":
-                        const uniqueName = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (uniqueName) {
-                            this.NM = uniqueName.value;
-                            i = uniqueName.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /NM property value");
-                        }
+                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
                         break;
                     case "/M":
                         const date = DateString.parse(parser, i, parseInfo.cryptInfo);
@@ -7822,35 +7598,12 @@ class AnnotationDict extends PdfDict {
                             }
                         }
                         throw new Error("Can't parse /M property value");
-                    case "/F":
-                        const flags = parser.parseNumberAt(i, false);
-                        if (flags) {
-                            this.F = flags.value;
-                            i = flags.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /F property value");
-                        }
-                        break;
                     case "/C":
-                        const color = parser.parseNumberArrayAt(i, true);
-                        if (color) {
-                            this.C = color.value;
-                            i = color.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /C property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
+                    case "/F":
                     case "/StructParent":
-                        const structureKey = parser.parseNumberAt(i, false);
-                        if (structureKey) {
-                            this.StructParent = structureKey.value;
-                            i = structureKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StructParent property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/Border":
                         const borderArray = BorderArray.parse(parser, i);
@@ -7957,14 +7710,7 @@ class AnnotationDict extends PdfDict {
                         }
                         throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
                     case "/AS":
-                        const stateName = parser.parseNameAt(i, true);
-                        if (stateName) {
-                            this.AS = stateName.value;
-                            i = stateName.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /AS property value");
-                        }
+                        i = this.parseNameProp(name, parser, i);
                         break;
                     case "/OC":
                     default:
@@ -8258,24 +8004,12 @@ class MarkupAnnotation extends AnnotationDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/T":
-                        const title = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (title) {
-                            this.T = title.value;
-                            i = title.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /T property value");
-                        }
+                    case "/Subj":
+                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
                         break;
                     case "/Popup":
-                        const popupId = ObjectId.parseRef(parser, i);
-                        if (popupId) {
-                            this.Popup = popupId.value;
-                            i = popupId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Popup property value");
-                        }
+                    case "/IRT":
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/RC":
                         const rcEntryType = parser.getValueTypeAt(i);
@@ -8322,44 +8056,10 @@ class MarkupAnnotation extends AnnotationDict {
                         }
                         throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
                     case "/CA":
-                        const opacity = parser.parseNumberAt(i, true);
-                        if (opacity) {
-                            this.CA = opacity.value;
-                            i = opacity.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CA property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, true);
                         break;
                     case "/CreationDate":
-                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
-                        if (date) {
-                            this.CreationDate = date.value;
-                            i = date.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CreationDate property value");
-                        }
-                        break;
-                    case "/Subj":
-                        const subject = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (subject) {
-                            this.Subj = subject.value;
-                            i = subject.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subj property value");
-                        }
-                        break;
-                    case "/IRT":
-                        const refId = ObjectId.parseRef(parser, i);
-                        if (refId) {
-                            this.IRT = refId.value;
-                            i = refId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /IRT property value");
-                        }
+                        i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
                         break;
                     case "/RT":
                         const replyType = parser.parseNameAt(i, true);
@@ -8463,14 +8163,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/DA":
-                        const appearanceString = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (appearanceString) {
-                            this.DA = appearanceString.value;
-                            i = appearanceString.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /DA property value");
-                        }
+                    case "/DS":
+                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
                         break;
                     case "/Q":
                         const justification = parser.parseNumberAt(i, true);
@@ -8483,25 +8177,20 @@ class FreeTextAnnotation extends MarkupAnnotation {
                             throw new Error("Can't parse /Q property value");
                         }
                         break;
-                    case "/DS":
-                        const style = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (style) {
-                            this.DS = style.value;
-                            i = style.end + 1;
+                    case "/LE":
+                        const lineEndingType = parser.parseNameAt(i, true);
+                        if (lineEndingType && Object.values(lineEndingTypes)
+                            .includes(lineEndingType.value)) {
+                            this.LE = lineEndingType.value;
+                            i = lineEndingType.end + 1;
                         }
                         else {
-                            throw new Error("Can't parse /DS property value");
+                            throw new Error("Can't parse /LE property value");
                         }
                         break;
                     case "/CL":
-                        const callout = parser.parseNumberArrayAt(i, true);
-                        if (callout) {
-                            this.CL = callout.value;
-                            i = callout.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CL property value");
-                        }
+                    case "/RD":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     case "/IT":
                         const intent = parser.parseNameAt(i, true);
@@ -8518,32 +8207,6 @@ class FreeTextAnnotation extends MarkupAnnotation {
                             }
                         }
                         throw new Error("Can't parse /IT property value");
-                    case "/RD":
-                        const innerRect = parser.parseNumberArrayAt(i, true);
-                        if (innerRect) {
-                            this.RD = [
-                                innerRect.value[0],
-                                innerRect.value[1],
-                                innerRect.value[2],
-                                innerRect.value[3],
-                            ];
-                            i = innerRect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RD property value");
-                        }
-                        break;
-                    case "/LE":
-                        const lineEndingType = parser.parseNameAt(i, true);
-                        if (lineEndingType && Object.values(lineEndingTypes)
-                            .includes(lineEndingType.value)) {
-                            this.LE = lineEndingType.value;
-                            i = lineEndingType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LE property value");
-                        }
-                        break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -8601,14 +8264,7 @@ class GeometricAnnotation extends MarkupAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/IC":
-                        const interiorColor = parser.parseNumberArrayAt(i, true);
-                        if (interiorColor) {
-                            this.IC = interiorColor.value;
-                            i = interiorColor.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /IC property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -8669,19 +8325,7 @@ class CircleAnnotation extends GeometricAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/RD":
-                        const innerRect = parser.parseNumberArrayAt(i, true);
-                        if (innerRect) {
-                            this.RD = [
-                                innerRect.value[0],
-                                innerRect.value[1],
-                                innerRect.value[2],
-                                innerRect.value[3],
-                            ];
-                            i = innerRect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RD property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -8786,19 +8430,8 @@ class LineAnnotation extends GeometricAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/L":
-                        const lineCoords = parser.parseNumberArrayAt(i, true);
-                        if (lineCoords) {
-                            this.L = [
-                                lineCoords.value[0],
-                                lineCoords.value[1],
-                                lineCoords.value[2],
-                                lineCoords.value[3],
-                            ];
-                            i = lineCoords.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /L property value");
-                        }
+                    case "/CO":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     case "/LE":
                         const lineEndings = parser.parseNameArrayAt(i, true);
@@ -8815,36 +8448,6 @@ class LineAnnotation extends GeometricAnnotation {
                             throw new Error("Can't parse /LE property value");
                         }
                         break;
-                    case "/LL":
-                        const leaderLineLength = parser.parseNumberAt(i, false);
-                        if (leaderLineLength) {
-                            this.LL = leaderLineLength.value;
-                            i = leaderLineLength.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LL property value");
-                        }
-                        break;
-                    case "/LLE":
-                        const leaderLineExtLength = parser.parseNumberAt(i, false);
-                        if (leaderLineExtLength) {
-                            this.LLE = leaderLineExtLength.value;
-                            i = leaderLineExtLength.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LLE property value");
-                        }
-                        break;
-                    case "/Cap":
-                        const cap = parser.parseBoolAt(i, false);
-                        if (cap) {
-                            this.Cap = cap.value;
-                            i = cap.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Cap property value");
-                        }
-                        break;
                     case "/IT":
                         const intent = parser.parseNameAt(i, true);
                         if (intent) {
@@ -8855,16 +8458,6 @@ class LineAnnotation extends GeometricAnnotation {
                             }
                         }
                         throw new Error("Can't parse /IT property value");
-                    case "/LLO":
-                        const leaderLineOffset = parser.parseNumberAt(i, false);
-                        if (leaderLineOffset) {
-                            this.LLO = leaderLineOffset.value;
-                            i = leaderLineOffset.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LLO property value");
-                        }
-                        break;
                     case "/CP":
                         const captionPosition = parser.parseNameAt(i, true);
                         if (captionPosition && Object.values(captionPositions)
@@ -8875,6 +8468,14 @@ class LineAnnotation extends GeometricAnnotation {
                         else {
                             throw new Error("Can't parse /CP property value");
                         }
+                        break;
+                    case "/LL":
+                    case "/LLE":
+                    case "/LLO":
+                        i = this.parseNumberProp(name, parser, i, false);
+                        break;
+                    case "/Cap":
+                        i = this.parseBoolProp(name, parser, i);
                         break;
                     case "/Measure":
                         const measureEntryType = parser.getValueTypeAt(i);
@@ -8906,19 +8507,6 @@ class LineAnnotation extends GeometricAnnotation {
                             throw new Error("Can't parse /Measure value dictionary");
                         }
                         throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                    case "/CO":
-                        const captionOffset = parser.parseNumberArrayAt(i, true);
-                        if (captionOffset) {
-                            this.CO = [
-                                captionOffset.value[0],
-                                captionOffset.value[1],
-                            ];
-                            i = captionOffset.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CO property value");
-                        }
-                        break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -8978,19 +8566,7 @@ class SquareAnnotation extends GeometricAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/RD":
-                        const innerRect = parser.parseNumberArrayAt(i, true);
-                        if (innerRect) {
-                            this.RD = [
-                                innerRect.value[0],
-                                innerRect.value[1],
-                                innerRect.value[2],
-                                innerRect.value[3],
-                            ];
-                            i = innerRect.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RD property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -9155,14 +8731,7 @@ class StampAnnotation extends MarkupAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/Name":
-                        const type = parser.parseNameAt(i, true);
-                        if (type) {
-                            this.Name = type.value;
-                            i = type.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Name property value");
-                        }
+                        i = this.parseNameProp(name, parser, i);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -9239,14 +8808,7 @@ class TextAnnotation extends MarkupAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/Open":
-                        const opened = parser.parseBoolAt(i, true);
-                        if (opened) {
-                            this.Open = opened.value;
-                            i = opened.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Open property value");
-                        }
+                        i = this.parseBoolProp(name, parser, i);
                         break;
                     case "/Name":
                         const iconType = parser.parseNameAt(i, true);
@@ -9386,24 +8948,10 @@ class CryptFilterDict extends PdfDict {
                         }
                         break;
                     case "/Length":
-                        const length = parser.parseNumberAt(i, false);
-                        if (length) {
-                            this.Length = length.value;
-                            i = length.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Length property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/EncryptMetadata":
-                        const encrypt = parser.parseBoolAt(i, false);
-                        if (encrypt) {
-                            this.EncryptMetadata = encrypt.value;
-                            i = encrypt.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /EncryptMetadata property value");
-                        }
+                        i = this.parseBoolProp(name, parser, i);
                         break;
                     case "/Recipients":
                         const entryType = parser.getValueTypeAt(i);
@@ -9650,24 +9198,11 @@ class EncryptionDict extends PdfDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/Filter":
-                        const filter = parser.parseNameAt(i, true);
-                        if (filter) {
-                            this.Filter = filter.value;
-                            i = filter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Filter property value");
-                        }
-                        break;
                     case "/SubFilter":
-                        const subFilter = parser.parseNameAt(i, true);
-                        if (subFilter) {
-                            this.SubFilter = subFilter.value;
-                            i = subFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /SubFilter property value");
-                        }
+                    case "/StmF":
+                    case "/StrF":
+                    case "/EFF":
+                        i = this.parseNameProp(name, parser, i);
                         break;
                     case "/V":
                         const algorithm = parser.parseNumberAt(i, false);
@@ -9678,59 +9213,6 @@ class EncryptionDict extends PdfDict {
                         }
                         else {
                             throw new Error("Can't parse /V property value");
-                        }
-                        break;
-                    case "/Length":
-                        const length = parser.parseNumberAt(i, false);
-                        if (length) {
-                            this.Length = length.value;
-                            i = length.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Length property value");
-                        }
-                        break;
-                    case "/CF":
-                        const dictBounds = parser.getDictBoundsAt(i);
-                        if (bounds) {
-                            const cryptMap = CryptMapDict.parse({ parser, bounds: dictBounds });
-                            if (cryptMap) {
-                                this.CF = cryptMap.value;
-                                i = cryptMap.end + 1;
-                            }
-                        }
-                        else {
-                            throw new Error("Can't parse /CF property value");
-                        }
-                        break;
-                    case "/StmF":
-                        const streamFilter = parser.parseNameAt(i, true);
-                        if (streamFilter) {
-                            this.StmF = streamFilter.value;
-                            i = streamFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StmF property value");
-                        }
-                        break;
-                    case "/StrF":
-                        const stringFilter = parser.parseNameAt(i, true);
-                        if (stringFilter) {
-                            this.StrF = stringFilter.value;
-                            i = stringFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StrF property value");
-                        }
-                        break;
-                    case "/EFF":
-                        const embeddedFilter = parser.parseNameAt(i, true);
-                        if (embeddedFilter) {
-                            this.EFF = embeddedFilter.value;
-                            i = embeddedFilter.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /EFF property value");
                         }
                         break;
                     case "/R":
@@ -9744,74 +9226,31 @@ class EncryptionDict extends PdfDict {
                             throw new Error("Can't parse /R property value");
                         }
                         break;
-                    case "/O":
-                        const ownerPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (ownerPassword) {
-                            this.O = ownerPassword.value;
-                            i = ownerPassword.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /O property value");
-                        }
-                        break;
-                    case "/U":
-                        const userPassword = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (userPassword) {
-                            this.U = userPassword.value;
-                            i = userPassword.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /U property value");
-                        }
-                        break;
-                    case "/OE":
-                        const ownerPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (ownerPasswordKey) {
-                            this.OE = ownerPasswordKey.value;
-                            i = ownerPasswordKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /OE property value");
-                        }
-                        break;
-                    case "/UE":
-                        const userPasswordKey = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (userPasswordKey) {
-                            this.UE = userPasswordKey.value;
-                            i = userPasswordKey.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /UE property value");
-                        }
-                        break;
+                    case "/Length":
                     case "/P":
-                        const flags = parser.parseNumberAt(i, false);
-                        if (flags) {
-                            this.P = flags.value;
-                            i = flags.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /P property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
+                    case "/O":
+                    case "/U":
+                    case "/OE":
+                    case "/UE":
                     case "/Perms":
-                        const flagsEncrypted = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (flagsEncrypted) {
-                            this.Perms = flagsEncrypted.value;
-                            i = flagsEncrypted.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Perms property value");
-                        }
+                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
                         break;
                     case "/EncryptMetadata":
-                        const encryptMetadata = parser.parseBoolAt(i);
-                        if (encryptMetadata) {
-                            this.EncryptMetadata = encryptMetadata.value;
-                            i = encryptMetadata.end + 1;
+                        i = this.parseBoolProp(name, parser, i);
+                        break;
+                    case "/CF":
+                        const dictBounds = parser.getDictBoundsAt(i);
+                        if (bounds) {
+                            const cryptMap = CryptMapDict.parse({ parser, bounds: dictBounds });
+                            if (cryptMap) {
+                                this.CF = cryptMap.value;
+                                i = cryptMap.end + 1;
+                            }
                         }
                         else {
-                            throw new Error("Can't parse /EncryptMetadata property value");
+                            throw new Error("Can't parse /CF property value");
                         }
                         break;
                     case "/Recipients":
@@ -10011,34 +9450,11 @@ class ObjectStream extends PdfStream {
                 name = parseResult.value;
                 switch (name) {
                     case "/N":
-                        const n = parser.parseNumberAt(i, false);
-                        if (n) {
-                            this.N = n.value;
-                            i = n.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /N property value");
-                        }
-                        break;
                     case "/First":
-                        const first = parser.parseNumberAt(i, false);
-                        if (first) {
-                            this.First = first.value;
-                            i = first.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /First property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/Extends":
-                        const parentId = ObjectId.parseRef(parser, i);
-                        if (parentId) {
-                            this.Extends = parentId.value;
-                            i = parentId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Extends property value");
-                        }
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     default:
                         i = parser.skipToNextName(i, dictBounds.contentEnd);
@@ -10105,34 +9521,13 @@ class CatalogDict extends PdfDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/Version":
-                        const version = parser.parseNameAt(i, false, false);
-                        if (version) {
-                            this.Version = version.value;
-                            i = version.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Version property value");
-                        }
+                        i = this.parseNameProp(name, parser, i);
                         break;
                     case "/Pages":
-                        const rootPageTreeId = ObjectId.parseRef(parser, i);
-                        if (rootPageTreeId) {
-                            this.Pages = rootPageTreeId.value;
-                            i = rootPageTreeId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Pages property value");
-                        }
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/Lang":
-                        const lang = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                        if (lang) {
-                            this.Lang = lang.value;
-                            i = lang.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Lang property value");
-                        }
+                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -10172,11 +9567,52 @@ class PageDict extends PdfDict {
         if (this.LastModified) {
             bytes.push(...encoder.encode("/LastModified"), ...this.LastModified.toArray(cryptInfo));
         }
+        if (this.Resources) {
+            bytes.push(...encoder.encode("/Resources"), ...this.Resources.toArray(cryptInfo));
+        }
         if (this.MediaBox) {
             bytes.push(...encoder.encode("/MediaBox"), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
         }
+        if (this.CropBox) {
+            bytes.push(...encoder.encode("/CropBox"), codes.L_BRACKET, ...encoder.encode(this.CropBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CropBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.CropBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.CropBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.BleedBox) {
+            bytes.push(...encoder.encode("/BleedBox"), codes.L_BRACKET, ...encoder.encode(this.BleedBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.BleedBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.BleedBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.BleedBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.TrimBox) {
+            bytes.push(...encoder.encode("/TrimBox"), codes.L_BRACKET, ...encoder.encode(this.TrimBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.TrimBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.TrimBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.TrimBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.ArtBox) {
+            bytes.push(...encoder.encode("/ArtBox"), codes.L_BRACKET, ...encoder.encode(this.ArtBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.ArtBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.ArtBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.ArtBox[3] + ""), codes.R_BRACKET);
+        }
+        if (this.Contents) {
+            if (this.Contents instanceof ObjectId) {
+                bytes.push(...encoder.encode("/Contents"), codes.WHITESPACE, ...this.Contents.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...encoder.encode("/Contents"), codes.L_BRACKET);
+                this.Contents.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
+                bytes.push(codes.R_BRACKET);
+            }
+        }
         if (this.Rotate) {
             bytes.push(...encoder.encode("/Rotate"), ...encoder.encode(" " + this.Rotate));
+        }
+        if (this.Thumb) {
+            bytes.push(...encoder.encode("/Thumb"), codes.WHITESPACE, ...this.Thumb.toArray(cryptInfo));
+        }
+        if (this.B) {
+            if (this.B instanceof ObjectId) {
+                bytes.push(...encoder.encode("/B"), codes.WHITESPACE, ...this.B.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...encoder.encode("/B"), codes.L_BRACKET);
+                this.B.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
+                bytes.push(codes.R_BRACKET);
+            }
+        }
+        if (this.Dur) {
+            bytes.push(...encoder.encode("/Dur"), ...encoder.encode(" " + this.Dur));
         }
         if (this.Annots) {
             if (this.Annots instanceof ObjectId) {
@@ -10187,6 +9623,27 @@ class PageDict extends PdfDict {
                 this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
                 bytes.push(codes.R_BRACKET);
             }
+        }
+        if (this.Metadata) {
+            bytes.push(...encoder.encode("/Metadata"), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+        }
+        if (this.StructParent) {
+            bytes.push(...encoder.encode("/StructParent"), ...encoder.encode(" " + this.StructParent));
+        }
+        if (this.ID) {
+            bytes.push(...encoder.encode("/ID"), codes.WHITESPACE, ...this.ID.toArray(cryptInfo));
+        }
+        if (this.PZ) {
+            bytes.push(...encoder.encode("/PZ"), ...encoder.encode(" " + this.PZ));
+        }
+        if (this.Tabs) {
+            bytes.push(...encoder.encode("/Tabs"), ...encoder.encode(this.Tabs));
+        }
+        if (this.TemplateInstantiated) {
+            bytes.push(...encoder.encode("/TemplateInstantiated"), ...encoder.encode(this.TemplateInstantiated));
+        }
+        if (this.UserUnit) {
+            bytes.push(...encoder.encode("/UserUnit"), ...encoder.encode(" " + this.UserUnit));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -10216,69 +9673,119 @@ class PageDict extends PdfDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/Parent":
-                        const parentId = ObjectId.parseRef(parser, i);
-                        if (parentId) {
-                            this.Parent = parentId.value;
-                            i = parentId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Parent property value");
-                        }
+                    case "/Thumb":
+                    case "/Metadata":
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/LastModified":
-                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
-                        if (date) {
-                            this.LastModified = date.value;
-                            i = date.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LastModified property value");
-                        }
+                        i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
                         break;
+                    case "/Resources":
+                        const resEntryType = parser.getValueTypeAt(i);
+                        if (resEntryType === valueTypes.REF) {
+                            const resDictId = ObjectId.parseRef(parser, i);
+                            if (resDictId && parseInfo.parseInfoGetter) {
+                                const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
+                                if (resParseInfo) {
+                                    const resDict = ResourceDict.parse(resParseInfo);
+                                    if (resDict) {
+                                        this.Resources = resDict.value;
+                                        i = resDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /Resources value reference");
+                        }
+                        else if (resEntryType === valueTypes.DICTIONARY) {
+                            const resDictBounds = parser.getDictBoundsAt(i);
+                            if (resDictBounds) {
+                                if (resDictBounds.contentStart) {
+                                    const resDict = ResourceDict.parse({
+                                        parser,
+                                        bounds: resDictBounds,
+                                        parseInfoGetter: parseInfo.parseInfoGetter,
+                                    });
+                                    if (resDict) {
+                                        this.Resources = resDict.value;
+                                    }
+                                    else {
+                                        throw new Error("Can't parse /Resources value dictionary");
+                                    }
+                                }
+                                i = resDictBounds.end + 1;
+                                break;
+                            }
+                            throw new Error("Can't parse /Resources dictionary bounds");
+                        }
+                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
                     case "/MediaBox":
-                        const mediaBox = parser.parseNumberArrayAt(i, true);
-                        if (mediaBox) {
-                            this.MediaBox = [
-                                mediaBox.value[0],
-                                mediaBox.value[1],
-                                mediaBox.value[2],
-                                mediaBox.value[3],
-                            ];
-                            i = mediaBox.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /MediaBox property value");
-                        }
+                    case "/CropBox":
+                    case "/BleedBox":
+                    case "/TrimBox":
+                    case "/ArtBox":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
-                    case "/Rotate":
-                        const rotate = parser.parseNumberAt(i, false);
-                        if (rotate) {
-                            this.Rotate = rotate.value;
-                            i = rotate.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Rotate property value");
-                        }
-                        break;
+                    case "/Contents":
+                    case "/B":
                     case "/Annots":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const annotArrayId = ObjectId.parseRef(parser, i);
-                            if (annotArrayId) {
-                                this.Annots = annotArrayId.value;
-                                i = annotArrayId.end + 1;
+                        const refEntryType = parser.getValueTypeAt(i);
+                        if (refEntryType === valueTypes.REF) {
+                            const refArrayId = ObjectId.parseRef(parser, i);
+                            if (refArrayId) {
+                                this[name.slice(1)] = refArrayId.value;
+                                i = refArrayId.end + 1;
                                 break;
                             }
                         }
-                        else if (entryType === valueTypes.ARRAY) {
-                            const annotIds = ObjectId.parseRefArray(parser, i);
-                            if (annotIds) {
-                                this.Annots = annotIds.value;
-                                i = annotIds.end + 1;
+                        else if (refEntryType === valueTypes.ARRAY) {
+                            const refIds = ObjectId.parseRefArray(parser, i);
+                            if (refIds) {
+                                this[name.slice(1)] = refIds.value;
+                                i = refIds.end + 1;
                                 break;
                             }
                         }
-                        throw new Error(`Unsupported /Annots property value type: ${entryType}`);
+                        throw new Error(`Unsupported ${name} property value type: ${refEntryType}`);
+                    case "/Rotate":
+                    case "/Dur":
+                    case "/StructParent":
+                    case "/PZ":
+                    case "/UserUnit":
+                        i = this.parseNumberProp(name, parser, i, false);
+                        break;
+                    case "/ID":
+                        const webCaptureIdEntryType = parser.getValueTypeAt(i);
+                        if (webCaptureIdEntryType === valueTypes.REF) {
+                            const webCaptureRefId = ObjectId.parseRef(parser, i);
+                            if (webCaptureRefId) {
+                                if (webCaptureRefId && parseInfo.parseInfoGetter) {
+                                    const webCaptureIdParseInfo = parseInfo.parseInfoGetter(webCaptureRefId.value.id);
+                                    if (webCaptureIdParseInfo) {
+                                        const webCaptureId = HexString.parse(webCaptureIdParseInfo.parser, webCaptureIdParseInfo.bounds.start, webCaptureIdParseInfo.cryptInfo);
+                                        if (webCaptureId) {
+                                            this.ID = webCaptureId.value;
+                                            i = webCaptureRefId.end + 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /ID property value");
+                        }
+                        else if (webCaptureIdEntryType === valueTypes.STRING_HEX) {
+                            const webCaptureId = HexString.parse(parser, i, parseInfo.cryptInfo);
+                            if (webCaptureId) {
+                                this.ID = webCaptureId.value;
+                                i = webCaptureId.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error(`Unsupported /ID property value type: ${webCaptureIdEntryType}`);
+                    case "/Tabs":
+                    case "/TemplateInstantiated":
+                        i = this.parseNameProp(name, parser, i);
+                        break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -10356,59 +9863,17 @@ class PageTreeDict extends PdfDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/Parent":
-                        const parentId = ObjectId.parseRef(parser, i);
-                        if (parentId) {
-                            this.Parent = parentId.value;
-                            i = parentId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Parent property value");
-                        }
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/Kids":
-                        const kidIds = ObjectId.parseRefArray(parser, i);
-                        if (kidIds) {
-                            this.Kids = kidIds.value;
-                            i = kidIds.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Kids property value");
-                        }
+                        i = this.parseRefArrayProp(name, parser, i);
                         break;
                     case "/Count":
-                        const count = parser.parseNumberAt(i, false);
-                        if (count) {
-                            this.Count = count.value;
-                            i = count.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Count property value");
-                        }
+                    case "/Rotate":
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/MediaBox":
-                        const mediaBox = parser.parseNumberArrayAt(i, true);
-                        if (mediaBox) {
-                            this.MediaBox = [
-                                mediaBox.value[0],
-                                mediaBox.value[1],
-                                mediaBox.value[2],
-                                mediaBox.value[3],
-                            ];
-                            i = mediaBox.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /MediaBox property value");
-                        }
-                        break;
-                    case "/Rotate":
-                        const rotate = parser.parseNumberAt(i, false);
-                        if (rotate) {
-                            this.Rotate = rotate.value;
-                            i = rotate.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Rotate property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     default:
                         i = parser.skipToNextName(i, end - 1);
@@ -10499,34 +9964,12 @@ class TrailerStream extends PdfStream {
                 name = parseResult.value;
                 switch (name) {
                     case "/Size":
-                        const size = parser.parseNumberAt(i, false);
-                        if (size) {
-                            this.Size = size.value;
-                            i = size.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Size property value");
-                        }
-                        break;
                     case "/Prev":
-                        const prev = parser.parseNumberAt(i, false);
-                        if (prev) {
-                            this.Prev = prev.value;
-                            i = prev.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Size property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/Root":
-                        const rootId = ObjectId.parseRef(parser, i);
-                        if (rootId) {
-                            this.Root = rootId.value;
-                            i = rootId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Root property value");
-                        }
+                    case "/Info":
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/Encrypt":
                         const entryType = parser.getValueTypeAt(i);
@@ -10542,16 +9985,6 @@ class TrailerStream extends PdfStream {
                             }
                         }
                         throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                    case "/Info":
-                        const infoId = ObjectId.parseRef(parser, i);
-                        if (infoId) {
-                            this.Info = infoId.value;
-                            i = infoId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Info property value");
-                        }
-                        break;
                     case "/ID":
                         const ids = HexString.parseArray(parser, i);
                         if (ids) {
@@ -10563,24 +9996,8 @@ class TrailerStream extends PdfStream {
                         }
                         break;
                     case "/Index":
-                        const index = parser.parseNumberArrayAt(i);
-                        if (index) {
-                            this.Index = index.value;
-                            i = index.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Index property value");
-                        }
-                        break;
                     case "/W":
-                        const w = parser.parseNumberArrayAt(i);
-                        if (w) {
-                            this.W = [w.value[0], w.value[1], w.value[2]];
-                            i = w.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /W property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, false);
                         break;
                     default:
                         i = parser.skipToNextName(i, dictBounds.contentEnd);
@@ -11037,34 +10454,12 @@ class TrailerDict extends PdfDict {
                 name = parseResult.value;
                 switch (name) {
                     case "/Size":
-                        const size = parser.parseNumberAt(i, false);
-                        if (size) {
-                            this.Size = size.value;
-                            i = size.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Size property value");
-                        }
-                        break;
                     case "/Prev":
-                        const prev = parser.parseNumberAt(i, false);
-                        if (prev) {
-                            this.Prev = prev.value;
-                            i = prev.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Size property value");
-                        }
+                        i = this.parseNumberProp(name, parser, i, false);
                         break;
                     case "/Root":
-                        const rootId = ObjectId.parseRef(parser, i);
-                        if (rootId) {
-                            this.Root = rootId.value;
-                            i = rootId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Root property value");
-                        }
+                    case "/Info":
+                        i = this.parseRefProp(name, parser, i);
                         break;
                     case "/Encrypt":
                         const entryType = parser.getValueTypeAt(i);
@@ -11080,16 +10475,6 @@ class TrailerDict extends PdfDict {
                             }
                         }
                         throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                    case "/Info":
-                        const infoId = ObjectId.parseRef(parser, i);
-                        if (infoId) {
-                            this.Info = infoId.value;
-                            i = infoId.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Info property value");
-                        }
-                        break;
                     case "/ID":
                         const ids = HexString.parseArray(parser, i);
                         if (ids) {
@@ -11546,14 +10931,7 @@ class PolyAnnotation extends GeometricAnnotation {
                 name = parseResult.value;
                 switch (name) {
                     case "/Vertices":
-                        const vertices = parser.parseNumberArrayAt(i, true);
-                        if (vertices) {
-                            this.Vertices = vertices.value;
-                            i = vertices.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Vertices property value");
-                        }
+                        i = this.parseNumberArrayProp(name, parser, i, true);
                         break;
                     case "/IT":
                         const intent = parser.parseNameAt(i, true);
@@ -11852,6 +11230,7 @@ class DocumentData {
         this.checkAuthentication();
         if (!this._catalog) {
             this.parsePageTree();
+            console.log(this._pages);
         }
         const annotationMap = new Map();
         for (const page of this._pages) {
@@ -11918,20 +11297,39 @@ class DocumentData {
     getRefinedData(idsToDelete) {
         this.checkAuthentication();
         const changeData = new ReferenceDataChange(this._referenceData);
-        idsToDelete.forEach(x => changeData.setRefFree(x));
         const writer = new DataWriter(this._data);
-        const lastXref = this._xrefs[0];
-        const newXrefOffset = writer.offset;
-        const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
-        const newXrefEntries = changeData.exportEntries();
-        const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
-        writer.writeIndirectObject({ ref: newXrefRef }, newXref);
-        writer.writeEof(newXrefOffset);
+        idsToDelete.forEach(x => changeData.setRefFree(x));
+        this.writeXref(changeData, writer);
         const bytes = writer.getCurrentData();
         return bytes;
     }
-    getUpdatedData() {
-        return null;
+    getUpdatedData(annotations) {
+        var _a, _b;
+        this.checkAuthentication();
+        const changeData = new ReferenceDataChange(this._referenceData);
+        const writer = new DataWriter(this._data);
+        const stringCryptor = (_a = this._authResult) === null || _a === void 0 ? void 0 : _a.stringCryptor;
+        const streamCryptor = (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.streamCryptor;
+        for (const annotation of annotations) {
+            const apStream = annotation.apStream;
+            if (apStream.ref) {
+                changeData.updateUsedRef(this._referenceData.usedMap.get(apStream.ref.id));
+            }
+            else {
+                apStream.ref = changeData.takeFreeRef(writer.offset);
+            }
+            writer.writeIndirectObject({ ref: apStream.ref, stringCryptor, streamCryptor }, apStream);
+            if (annotation.ref) {
+                changeData.updateUsedRef(this._referenceData.usedMap.get(annotation.ref.id));
+            }
+            else {
+                annotation.ref = changeData.takeFreeRef(writer.offset);
+            }
+            writer.writeIndirectObject({ ref: annotation.ref, stringCryptor, streamCryptor }, annotation);
+        }
+        this.writeXref(changeData, writer);
+        const bytes = writer.getCurrentData();
+        return bytes;
     }
     checkAuthentication() {
         if (!this.authenticated) {
@@ -11994,6 +11392,15 @@ class DocumentData {
         }
     }
     ;
+    writeXref(changeData, writer) {
+        const lastXref = this._xrefs[0];
+        const newXrefOffset = writer.offset;
+        const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
+        const newXrefEntries = changeData.exportEntries();
+        const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
+        writer.writeIndirectObject({ ref: newXrefRef }, newXref);
+        writer.writeEof(newXrefOffset);
+    }
 }
 
 class AnnotationData {

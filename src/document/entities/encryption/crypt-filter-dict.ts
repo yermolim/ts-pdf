@@ -175,24 +175,15 @@ export class CryptFilterDict extends PdfDict {
               throw new Error("Can't parse /AuthEvent property value");
             }
             break;
-          case "/Length":
-            const length = parser.parseNumberAt(i, false);
-            if (length) {
-              this.Length = length.value;
-              i = length.end + 1;
-            } else {              
-              throw new Error("Can't parse /Length property value");
-            }
+          
+          case "/Length":            
+            i = this.parseNumberProp(name, parser, i, false);  
             break;
-          case "/EncryptMetadata":
-            const encrypt = parser.parseBoolAt(i, false);
-            if (encrypt) {
-              this.EncryptMetadata = encrypt.value;
-              i = encrypt.end + 1;
-            } else {              
-              throw new Error("Can't parse /EncryptMetadata property value");
-            }
+          
+          case "/EncryptMetadata":            
+            i = this.parseBoolProp(name, parser, i);  
             break;
+
           case "/Recipients":            
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.STRING_HEX) {  
@@ -215,6 +206,7 @@ export class CryptFilterDict extends PdfDict {
               }
             }
             throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+          
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

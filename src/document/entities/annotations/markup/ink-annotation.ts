@@ -94,6 +94,7 @@ export class InkAnnotation extends MarkupAnnotation {
               break;
             }
             throw new Error("Can't parse /InkList property value");
+
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

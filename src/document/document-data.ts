@@ -21,7 +21,7 @@ import { XRefTable } from "./entities/x-refs/x-ref-table";
 import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { DataWriter } from "./data-writer";
 import { ReferenceData, ReferenceDataChange } from "./reference-data";
-import { AuthenticationResult, IDataCryptor } from "./common-interfaces";
+import { AuthenticationResult } from "./common-interfaces";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
 
@@ -158,7 +158,7 @@ export class DocumentData {
       // DEBUG
       // console.log(this._catalog);    
       // console.log(this._pageRoot); 
-      // console.log(this._pages);
+      console.log(this._pages);
     }
 
     const annotationMap = new Map<number, AnnotationDict[]>();
@@ -235,27 +235,50 @@ export class DocumentData {
 
   getRefinedData(idsToDelete: number[]): Uint8Array {
     this.checkAuthentication();
-
     const changeData = new ReferenceDataChange(this._referenceData);
-    idsToDelete.forEach(x => changeData.setRefFree(x));
-    
     const writer = new DataWriter(this._data);
+
+    idsToDelete.forEach(x => changeData.setRefFree(x));    
     
-    const lastXref = this._xrefs[0];
-    const newXrefOffset = writer.offset;
-    const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
-    const newXrefEntries = changeData.exportEntries();
-    const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
-    writer.writeIndirectObject({ref: newXrefRef}, newXref);
-
-    writer.writeEof(newXrefOffset);  
-
+    this.writeXref(changeData, writer);
     const bytes = writer.getCurrentData();
     return bytes;
   }
 
-  getUpdatedData(): Uint8Array {
-    return null;
+  getUpdatedData(annotations: AnnotationDict[]): Uint8Array {
+    this.checkAuthentication();    
+    const changeData = new ReferenceDataChange(this._referenceData);       
+    const writer = new DataWriter(this._data);
+
+    const stringCryptor = this._authResult?.stringCryptor;
+    const streamCryptor = this._authResult?.streamCryptor;
+
+    for (const annotation of annotations) {
+      // TODO: add handling xObjects and external graphics states
+
+      // write appearance stream
+      const apStream = annotation.apStream;
+      if (apStream.ref) {
+        changeData.updateUsedRef(this._referenceData.usedMap.get(apStream.ref.id));
+      } else {
+        apStream.ref = changeData.takeFreeRef(writer.offset);
+      }
+      writer.writeIndirectObject({ref: apStream.ref, stringCryptor, streamCryptor}, apStream);
+      
+      // write annotation dict
+      if (annotation.ref) {
+        changeData.updateUsedRef(this._referenceData.usedMap.get(annotation.ref.id));
+      } else {
+        annotation.ref = changeData.takeFreeRef(writer.offset);
+      }
+      writer.writeIndirectObject({ref: annotation.ref, stringCryptor, streamCryptor}, annotation);
+
+      // TODO: implement /Annots array change
+    }
+
+    this.writeXref(changeData, writer);
+    const bytes = writer.getCurrentData();
+    return bytes;
   }
 
   private checkAuthentication() {    
@@ -381,4 +404,14 @@ export class DocumentData {
 
     return null;
   };
+
+  private writeXref(changeData: ReferenceDataChange, writer: DataWriter) {
+    const lastXref = this._xrefs[0];
+    const newXrefOffset = writer.offset;
+    const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
+    const newXrefEntries = changeData.exportEntries();
+    const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
+    writer.writeIndirectObject({ref: newXrefRef}, newXref);
+    writer.writeEof(newXrefOffset);  
+  }
 }

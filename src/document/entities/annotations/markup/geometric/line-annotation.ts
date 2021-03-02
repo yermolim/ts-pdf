@@ -182,19 +182,10 @@ export class LineAnnotation extends GeometricAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/L":
-            const lineCoords = parser.parseNumberArrayAt(i, true);
-            if (lineCoords) {
-              this.L = [
-                lineCoords.value[0],
-                lineCoords.value[1],
-                lineCoords.value[2],
-                lineCoords.value[3],
-              ];
-              i = lineCoords.end + 1;
-            } else {              
-              throw new Error("Can't parse /L property value");
-            }
+          case "/CO":
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
+          
           case "/LE":
             const lineEndings = parser.parseNameArrayAt(i, true);
             if (lineEndings
@@ -208,34 +199,7 @@ export class LineAnnotation extends GeometricAnnotation {
             } else {              
               throw new Error("Can't parse /LE property value");
             }
-            break;           
-          case "/LL":
-            const leaderLineLength = parser.parseNumberAt(i, false);
-            if (leaderLineLength) {
-              this.LL = leaderLineLength.value;
-              i = leaderLineLength.end + 1;
-            } else {              
-              throw new Error("Can't parse /LL property value");
-            }
-            break;           
-          case "/LLE":
-            const leaderLineExtLength = parser.parseNumberAt(i, false);
-            if (leaderLineExtLength) {
-              this.LLE = leaderLineExtLength.value;
-              i = leaderLineExtLength.end + 1;
-            } else {              
-              throw new Error("Can't parse /LLE property value");
-            }
-            break;      
-          case "/Cap":
-            const cap = parser.parseBoolAt(i, false);
-            if (cap) {
-              this.Cap = cap.value;
-              i = cap.end + 1;
-            } else {              
-              throw new Error("Can't parse /Cap property value");
-            }
-            break;   
+            break;
           case "/IT":
             const intent = parser.parseNameAt(i, true);
             if (intent) {
@@ -245,16 +209,7 @@ export class LineAnnotation extends GeometricAnnotation {
                 break;          
               }
             }
-            throw new Error("Can't parse /IT property value");          
-          case "/LLO":
-            const leaderLineOffset = parser.parseNumberAt(i, false);
-            if (leaderLineOffset) {
-              this.LLO = leaderLineOffset.value;
-              i = leaderLineOffset.end + 1;
-            } else {              
-              throw new Error("Can't parse /LLO property value");
-            }
-            break;   
+            throw new Error("Can't parse /IT property value");
           case "/CP":
             const captionPosition = parser.parseNameAt(i, true);
             if (captionPosition && (<string[]>Object.values(captionPositions))
@@ -264,7 +219,18 @@ export class LineAnnotation extends GeometricAnnotation {
             } else {              
               throw new Error("Can't parse /CP property value");
             }
-            break;
+            break; 
+
+          case "/LL":      
+          case "/LLE":
+          case "/LLO":
+            i = this.parseNumberProp(name, parser, i, false);
+            break; 
+
+          case "/Cap":
+            i = this.parseBoolProp(name, parser, i);
+            break; 
+
           case "/Measure":            
             const measureEntryType = parser.getValueTypeAt(i);
             if (measureEntryType === valueTypes.REF) {              
@@ -294,18 +260,7 @@ export class LineAnnotation extends GeometricAnnotation {
               throw new Error("Can't parse /Measure value dictionary");  
             }
             throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);   
-          case "/CO":
-            const captionOffset = parser.parseNumberArrayAt(i, true);
-            if (captionOffset) {
-              this.CO = [
-                captionOffset.value[0],
-                captionOffset.value[1],
-              ];
-              i = captionOffset.end + 1;
-            } else {              
-              throw new Error("Can't parse /CO property value");
-            }
-            break; 
+
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

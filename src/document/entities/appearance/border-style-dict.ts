@@ -92,14 +92,9 @@ export class BorderStyleDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/W":
-            const width = parser.parseNumberAt(i, true);
-            if (width) {
-              this.W = width.value;
-              i = width.end + 1;
-            } else {              
-              throw new Error("Can't parse /W property value");
-            }
+            i = this.parseNumberProp(name, parser, i, true);
             break;
+
           case "/S":
             const style = parser.parseNameAt(i, true);
             if (style && (<string[]>Object.values(borderStyles)).includes(style.value)) {
@@ -109,6 +104,7 @@ export class BorderStyleDict extends PdfDict {
               throw new Error("Can't parse /S property value");
             }
             break;  
+
           case "/D":
             const dashGap = parser.parseNumberArrayAt(i, true);
             if (dashGap) {
@@ -121,6 +117,7 @@ export class BorderStyleDict extends PdfDict {
               throw new Error("Can't parse /D property value");
             }
             break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

@@ -111,78 +111,20 @@ export class InfoDict extends PdfDict {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/Title":
-            const title = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (title) {
-              this.Title = title.value;
-              i = title.end + 1;
-            } else {              
-              throw new Error("Can't parse /Title property value");
-            }
-            break;
+          case "/Title": 
           case "/Author":
-            const author = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (author) {
-              this.Author = author.value;
-              i = author.end + 1;
-            } else {              
-              throw new Error("Can't parse /Author property value");
-            }
+          case "/Subject": 
+          case "/Keywords": 
+          case "/Creator": 
+          case "/Producer":        
+            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
-          case "/Subject":
-            const subject = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (subject) {
-              this.Subject = subject.value;
-              i = subject.end + 1;
-            } else {              
-              throw new Error("Can't parse /Subject property value");
-            }
+
+          case "/CreationDate": 
+          case "/ModDate":           
+            i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
             break;
-          case "/Keywords":
-            const keywords = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (keywords) {
-              this.Keywords = keywords.value;
-              i = keywords.end + 1;
-            } else {              
-              throw new Error("Can't parse /Keywords property value");
-            }
-            break;
-          case "/Creator":
-            const creator = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (creator) {
-              this.Creator = creator.value;
-              i = creator.end + 1;
-            } else {              
-              throw new Error("Can't parse /Creator property value");
-            }
-            break;
-          case "/Producer":
-            const producer = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-            if (producer) {
-              this.Producer = producer.value;
-              i = producer.end + 1;
-            } else {              
-              throw new Error("Can't parse /Producer property value");
-            }
-            break;
-          case "/CreationDate":
-            const creationDate = DateString.parse(parser, i, parseInfo.cryptInfo);
-            if (creationDate) {
-              this.CreationDate = creationDate.value;
-              i = creationDate.end + 1;
-            } else {              
-              throw new Error("Can't parse /CreationDate property value");
-            }
-            break;
-          case "/ModDate":
-            const modDate = DateString.parse(parser, i, parseInfo.cryptInfo);
-            if (modDate) {
-              this.ModDate = modDate.value;
-              i = modDate.end + 1;
-            } else {              
-              throw new Error("Can't parse /ModDate property value");
-            }
-            break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

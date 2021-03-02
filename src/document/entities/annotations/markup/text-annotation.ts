@@ -92,14 +92,9 @@ export class TextAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/Open":
-            const opened = parser.parseBoolAt(i, true);
-            if (opened) {
-              this.Open = opened.value;
-              i = opened.end + 1;
-            } else {              
-              throw new Error("Can't parse /Open property value");
-            }
+            i = this.parseBoolProp(name, parser, i);
             break;
+          
           case "/Name":
             const iconType = parser.parseNameAt(i, true);
             if (iconType && (<string[]>Object.values(annotationIconTypes))

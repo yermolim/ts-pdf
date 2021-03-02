@@ -82,15 +82,11 @@ export class BorderEffectDict extends PdfDict {
               throw new Error("Can't parse /S property value");
             }
             break;  
+          
           case "/L":
-            const intensity = parser.parseNumberAt(i, true);
-            if (intensity) {
-              this.L = Math.min(Math.max(0, intensity.value), 2);
-              i = intensity.end + 1;
-            } else {              
-              throw new Error("Can't parse /L property value");
-            }
+            i = this.parseNumberProp(name, parser, i, true);
             break;
+            
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

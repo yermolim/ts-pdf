@@ -77,18 +77,7 @@ export class CircleAnnotation extends GeometricAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/RD":
-            const innerRect = parser.parseNumberArrayAt(i, true);
-            if (innerRect) {
-              this.RD = [
-                innerRect.value[0],
-                innerRect.value[1],
-                innerRect.value[2],
-                innerRect.value[3],
-              ];
-              i = innerRect.end + 1;
-            } else {              
-              throw new Error("Can't parse /RD property value");
-            }
+            i = this.parseNumberArrayProp(name, parser, i, true);
             break;
           default:
             // skip to next name

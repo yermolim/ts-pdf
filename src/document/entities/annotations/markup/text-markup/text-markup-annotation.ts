@@ -60,15 +60,10 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
-          case "/QuadPoints":
-            const quadPoints = parser.parseNumberArrayAt(i, true);
-            if (quadPoints) {
-              this.QuadPoints = quadPoints.value;
-              i = quadPoints.end + 1;
-            } else {              
-              throw new Error("Can't parse /QuadPoints property value");
-            }
-            break;       
+          case "/QuadPoints":            
+            i = this.parseNumberArrayProp(name, parser, i, true);
+            break;
+                   
           default:
             // skip to next name
             i = parser.skipToNextName(i, end - 1);

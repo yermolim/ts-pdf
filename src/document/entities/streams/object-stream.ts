@@ -187,32 +187,14 @@ export class ObjectStream extends PdfStream {
         name = parseResult.value;
         switch (name) {
           case "/N":
-            const n = parser.parseNumberAt(i, false);
-            if (n) {
-              this.N = n.value;
-              i = n.end + 1;
-            } else {              
-              throw new Error("Can't parse /N property value");
-            }
-            break;
           case "/First":
-            const first = parser.parseNumberAt(i, false);
-            if (first) {
-              this.First = first.value;
-              i = first.end + 1;
-            } else {              
-              throw new Error("Can't parse /First property value");
-            }
+            i = this.parseNumberProp(name, parser, i, false);
             break;
+
           case "/Extends":
-            const parentId = ObjectId.parseRef(parser, i);
-            if (parentId) {
-              this.Extends = parentId.value;
-              i = parentId.end + 1;
-            } else {              
-              throw new Error("Can't parse /Extends property value");
-            }
+            i = this.parseRefProp(name, parser, i);
             break;
+
           default:
             // skip to next name
             i = parser.skipToNextName(i, dictBounds.contentEnd);
