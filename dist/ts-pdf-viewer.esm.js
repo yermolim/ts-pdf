@@ -2628,8 +2628,14 @@ class DataCryptHandler {
 
 class LiteralString {
     constructor(literal, bytes) {
-        this.literal = literal;
-        this.bytes = bytes;
+        this._literal = literal;
+        this._bytes = bytes;
+    }
+    get literal() {
+        return this._literal;
+    }
+    get bytes() {
+        return this._bytes.slice();
     }
     static parse(parser, start, cryptInfo = null, skipEmpty = true) {
         const bounds = parser.getLiteralBounds(start, skipEmpty);
@@ -2750,8 +2756,8 @@ class LiteralString {
     }
     toArray(cryptInfo) {
         const bytes = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor
-            ? cryptInfo.stringCryptor.encrypt(this.bytes, cryptInfo.ref)
-            : this.bytes;
+            ? cryptInfo.stringCryptor.encrypt(this._bytes, cryptInfo.ref)
+            : this._bytes;
         return new Uint8Array([
             ...keywordCodes.STR_LITERAL_START,
             ...LiteralString.escape(bytes),
@@ -2834,8 +2840,14 @@ class ObjectId {
 
 class DateString {
     constructor(source, date) {
-        this.source = source;
-        this.date = date;
+        this._source = source;
+        this._date = new Date(date);
+    }
+    get source() {
+        return this._source;
+    }
+    get date() {
+        return new Date(this._date);
     }
     static parse(parser, start, cryptInfo = null, skipEmpty = true) {
         if (skipEmpty) {
@@ -2880,7 +2892,7 @@ class DateString {
         return DateString.fromString(source);
     }
     toArray(cryptInfo) {
-        let bytes = new TextEncoder().encode(this.source);
+        let bytes = new TextEncoder().encode(this._source);
         if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
             bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
         }
@@ -4928,9 +4940,18 @@ class ObjectMapDict extends PdfDict {
 
 class HexString {
     constructor(literal, hex, bytes) {
-        this.literal = literal;
-        this.hex = hex;
-        this.bytes = bytes;
+        this._literal = literal;
+        this._hex = hex;
+        this._bytes = bytes;
+    }
+    get literal() {
+        return this._literal;
+    }
+    get hex() {
+        return this._hex.slice();
+    }
+    get bytes() {
+        return this._bytes.slice();
     }
     static parse(parser, start, cryptInfo = null, skipEmpty = true) {
         const bounds = parser.getHexBounds(start, skipEmpty);
@@ -4982,7 +5003,7 @@ class HexString {
     toArray(cryptInfo) {
         return new Uint8Array([
             ...keywordCodes.STR_HEX_START,
-            ...this.bytes,
+            ...this._bytes,
             ...keywordCodes.STR_HEX_END,
         ]);
     }
@@ -7634,6 +7655,13 @@ class AnnotationDict extends PdfDict {
         this._boxX = new Vec2();
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
+        this.onAnnotationDictChange = {
+            set: (target, prop, value) => {
+                console.log(prop);
+                target[prop] = value;
+                return true;
+            },
+        };
         this.onRectPointerDown = (e) => {
             document.addEventListener("pointerup", this.onRectPointerUp);
             document.addEventListener("pointerout", this.onRectPointerUp);
@@ -7780,6 +7808,8 @@ class AnnotationDict extends PdfDict {
             this.updateRenderAsync();
         };
         this.Subtype = subType;
+        this._proxy = new Proxy(this, this.onAnnotationDictChange);
+        return this._proxy;
     }
     get apStream() {
         var _a;
@@ -8059,17 +8089,18 @@ class AnnotationDict extends PdfDict {
         return true;
     }
     applyRectTransform(matrix) {
-        const bBox = this.getLocalBB();
+        const dict = this._proxy;
+        const bBox = dict.getLocalBB();
         bBox.ll.applyMat3(matrix);
         bBox.lr.applyMat3(matrix);
         bBox.ur.applyMat3(matrix);
         bBox.ul.applyMat3(matrix);
         const { min: newRectMin, max: newRectMax } = vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-        this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-        const stream = this.apStream;
+        dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+        const stream = dict.apStream;
         if (stream) {
             const newApMatrix = stream.matrix.multiply(matrix);
-            this.apStream.matrix = newApMatrix;
+            dict.apStream.matrix = newApMatrix;
         }
     }
     getCurrentRotation() {
@@ -11722,6 +11753,7 @@ class AnnotationData {
     constructor(pdfData) {
         this.onAnnotationDictChange = {
             set: (target, prop, value) => {
+                console.log(prop);
                 target[prop] = value;
                 return true;
             },
@@ -11759,10 +11791,7 @@ class AnnotationData {
     }
     getPageAnnotations(pageId) {
         const annotations = this.getAnnotationMap().get(pageId);
-        if (!annotations) {
-            return [];
-        }
-        return annotations.map(x => new Proxy(x, this.onAnnotationDictChange));
+        return annotations || [];
     }
     addAnnotation(pageId, annotation) {
         const pageAnnotations = this.getAnnotationMap().get(pageId);

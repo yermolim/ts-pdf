@@ -54,7 +54,7 @@ export class AnnotationData {
   }
 
   /**
-   * get the data with all changes made by AnnotationEditor applied.
+   * get the data with all changes made to annotations applied.
    */
   getExportedData(): Uint8Array {
     return null;
@@ -62,11 +62,12 @@ export class AnnotationData {
 
   getPageAnnotations(pageId: number): AnnotationDict[] {     
     const annotations = this.getAnnotationMap().get(pageId);
-    if (!annotations) {
-      return [];
-    }
-    return annotations.map(x => 
-      new Proxy<AnnotationDict>(x, this.onAnnotationDictChange));
+    return annotations || [];
+    // if (!annotations) {
+    //   return [];
+    // }
+    // return annotations.map(x => 
+    //   new Proxy<AnnotationDict>(x, this.onAnnotationDictChange));
   }
 
   addAnnotation(pageId: number, annotation: AnnotationDict) {

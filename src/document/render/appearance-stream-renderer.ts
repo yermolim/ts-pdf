@@ -1,7 +1,8 @@
 import { RenderToSvgResult } from "../../common";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../math";
 import { codes } from "../codes";
-import { colorSpaces, lineCapStyles, lineJoinStyles, Rect, valueTypes } from "../const";
+import { colorSpaces, lineCapStyles, lineJoinStyles, valueTypes } from "../const";
+import { Rect } from "../common-interfaces";
 import { DataParser } from "../data-parser";
 import { ImageStream } from "../entities/streams/image-stream";
 import { XFormStream } from "../entities/streams/x-form-stream";

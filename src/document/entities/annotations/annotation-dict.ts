@@ -3,15 +3,13 @@ import { PdfDict } from "../core/pdf-dict";
 import { DateString } from "../strings/date-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
 import { AppearanceDict } from "../appearance/appearance-dict";
-import { OcGroupDict } from "../optional-content/oc-group-dict";
-import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
-import { AnnotationType, dictTypes, Matrix, Rect, valueTypes } from "../../const";
+import { AnnotationType, dictTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { LiteralString } from "../strings/literal-string";
 import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo, Rect } from "../../common-interfaces";
 import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
 import { BBox, getRandomUuid, RenderToSvgResult } from "../../../common";
 import { Mat3, mat3From4Vec2, Vec2, Vec3, vecMinMax } from "../../../math";
@@ -74,18 +72,20 @@ export abstract class AnnotationDict extends PdfDict {
    * representing a color of icon background, title bar and link border.
    * The number of array elements determines the color space in which the color is defined: 
    * 0 - transparent; 1 - gray; 3 - RGB; 4 - CMYK */
-  C: number[];
+  C: readonly number[];
 
   /** (Required if the annotation is a structural content item; PDF 1.3+) 
    * The integer key of the annotation’s entry in the structural parent tree */
   StructParent: number;
 
-  /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
-   *  specifying the optional content properties for the annotation */
-  OC: OcMembershipDict | OcGroupDict;
+  // /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
+  //  *  specifying the optional content properties for the annotation */
+  // OC: OcMembershipDict | OcGroupDict;
 
   //#endregion
-    
+  
+  protected _proxy: AnnotationDict;
+
   protected _apStream: XFormStream;
   get apStream(): XFormStream {
     if (!this._apStream) {
@@ -119,12 +119,23 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svgContentCopyUse: SVGUseElement;
   protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
-  //#endregion
+  //#endregion  
+  
+  private onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
+    set: (target: AnnotationDict, prop: string, value: any) => {
+      console.log(prop);
+      target[prop] = value;
+      return true;
+    },
+  };
 
   protected constructor(subType: AnnotationType) {
     super(dictTypes.ANNOTATION);
 
     this.Subtype = subType;
+
+    this._proxy = new Proxy<AnnotationDict>(this, this.onAnnotationDictChange);
+    return this._proxy;
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -429,8 +440,10 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region annotation edit methods
   protected applyRectTransform(matrix: Mat3) {
+    const dict = this._proxy;
+
     // transform current bounding box (not axis-aligned)
-    const bBox =  this.getLocalBB();
+    const bBox =  dict.getLocalBB();
     bBox.ll.applyMat3(matrix);
     bBox.lr.applyMat3(matrix);
     bBox.ur.applyMat3(matrix);
@@ -439,13 +452,13 @@ export abstract class AnnotationDict extends PdfDict {
     // get an axis-aligned bounding box and assign it to the Rect property
     const {min: newRectMin, max: newRectMax} = 
       vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-    this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     
     // if the annotation has a content stream, update its matrix
-    const stream = this.apStream;
+    const stream = dict.apStream;
     if (stream) {
       const newApMatrix = stream.matrix.multiply(matrix);
-      this.apStream.matrix = newApMatrix;
+      dict.apStream.matrix = newApMatrix;
     }
   }
   //#endregion

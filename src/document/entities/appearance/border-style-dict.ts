@@ -1,6 +1,6 @@
 import { codes } from "../../codes";
-import { dictTypes, Pair } from "../../const";
-import { CryptInfo } from "../../common-interfaces";
+import { dictTypes } from "../../const";
+import { CryptInfo, Pair } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
 

@@ -1,6 +1,6 @@
 import { codes } from "../../../codes";
-import { annotationTypes, Rect } from "../../../const";
-import { CryptInfo } from "../../../common-interfaces";
+import { annotationTypes } from "../../../const";
+import { CryptInfo, Rect } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 import { RenderToSvgResult } from "../../../../common";

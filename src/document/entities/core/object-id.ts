@@ -2,6 +2,9 @@ import { codes } from "../../codes";
 import { CryptInfo, IEncodable, Reference } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
+/**
+ * Immutable class representing PDF indirect object reference
+ */
 export class ObjectId implements Reference, IEncodable {
   /** A positive integer object number */
   readonly id: number;

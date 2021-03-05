@@ -3,9 +3,24 @@ import { codes, keywordCodes } from "../../codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
+/**
+ * Immutable class representing PDF literal string
+ */
 export class LiteralString implements IEncodable {
-  private constructor(readonly literal: string,
-    readonly bytes: Uint8Array) { }
+  private readonly _literal: string;
+  get literal(): string {
+    return this._literal;
+  }
+
+  private readonly _bytes: Uint8Array;
+  get bytes(): Uint8Array {
+    return this._bytes.slice();
+  }
+
+  private constructor(literal: string, bytes: Uint8Array) { 
+    this._literal = literal;
+    this._bytes = bytes;
+  }
     
   static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<LiteralString>  {  
@@ -147,8 +162,8 @@ export class LiteralString implements IEncodable {
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     const bytes = cryptInfo?.ref && cryptInfo.stringCryptor
-      ? cryptInfo.stringCryptor.encrypt(this.bytes, cryptInfo.ref)
-      : this.bytes; 
+      ? cryptInfo.stringCryptor.encrypt(this._bytes, cryptInfo.ref)
+      : this._bytes; 
     return new Uint8Array([
       ...keywordCodes.STR_LITERAL_START, 
       ...LiteralString.escape(bytes), 

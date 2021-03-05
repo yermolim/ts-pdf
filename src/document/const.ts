@@ -566,7 +566,3 @@ export const supportedFilters = new Set<string>([
 ]);
 
 export const maxGeneration = 65535;
-
-export type Rect = [ll_x: number, ll_y: number, ur_x: number, ur_y: number];
-export type Pair = [x: number, y: number];
-export type Matrix = [a: number, b: number, d: number, e: number, g: number, h: number];

@@ -1,6 +1,6 @@
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
-import { Matrix, Rect, streamTypes, valueTypes } from "../../const";
+import { streamTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { OcMembershipDict } from "../optional-content/oc-membership-dict";
 import { OcGroupDict } from "../optional-content/oc-group-dict";
@@ -8,7 +8,7 @@ import { DateString } from "../strings/date-string";
 import { ResourceDict } from "../appearance/resource-dict";
 import { codes } from "../../codes";
 import { MeasureDict } from "../appearance/measure-dict";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo, Matrix, Rect } from "../../common-interfaces";
 import { TransparencyGroupDict } from "../appearance/transparency-group-dict";
 import { Mat3, Vec2 } from "../../../math";
 import { BBox } from "../../../common";
@@ -93,7 +93,7 @@ export class XFormStream extends PdfStream {
     if (!matrix) {
       return;
     }  
-    this.Matrix = <Matrix>[...matrix.toFloatShortArray()];
+    this.Matrix = <Matrix><unknown>[...matrix.toFloatShortArray()];
   }
   
   get bBox(): BBox {

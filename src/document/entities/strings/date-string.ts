@@ -2,9 +2,24 @@ import { codes, keywordCodes } from "../../codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
+/**
+ * Immutablse class representing PDF date
+ */
 export class DateString implements IEncodable {
-  private constructor(readonly source: string, 
-    readonly date: Date) { }
+  private readonly _source: string;
+  get source(): string {
+    return this._source;
+  }
+  
+  private readonly _date: Date;
+  get date(): Date {
+    return new Date(this._date);
+  }
+
+  private constructor(source: string, date: Date) {
+    this._source = source;
+    this._date = new Date(date);
+  }
     
   static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<DateString>  {       
@@ -63,7 +78,7 @@ export class DateString implements IEncodable {
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array { 
-    let bytes = new TextEncoder().encode(this.source);
+    let bytes = new TextEncoder().encode(this._source);
     if (cryptInfo?.ref && cryptInfo.stringCryptor) {
       bytes = cryptInfo.stringCryptor.encrypt(bytes, cryptInfo.ref);
     }

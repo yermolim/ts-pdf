@@ -2,6 +2,9 @@ import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
+/**
+ * Immutable class representing PDF border array
+ */
 export class BorderArray {
   readonly hCornerR: number;
   readonly vCornerR: number;

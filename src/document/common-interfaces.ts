@@ -65,3 +65,18 @@ export interface IStream {
   
   getByteRange?(start: number, end: number): Uint8Array;
 }
+
+/**
+ * readonly tuple of two numbers
+ */
+export type Pair = readonly [x: number, y: number];
+
+/**
+ * readonly tuple of six numbers
+ */
+export type Matrix = readonly [a: number, b: number, d: number, e: number, g: number, h: number];
+
+/**
+ * readonly tuple of four numbers
+ */
+export type Rect = readonly [ll_x: number, ll_y: number, ur_x: number, ur_y: number];

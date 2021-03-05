@@ -4,10 +4,30 @@ import { keywordCodes } from "../../codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
+/**
+ * Immutable class representing PDF byte string
+ */
 export class HexString implements IEncodable {
-  private constructor(readonly literal: string, 
-    readonly hex: Uint8Array,
-    readonly bytes: Uint8Array) { }
+  private readonly _literal: string;
+  get literal(): string {
+    return this._literal;
+  }
+  
+  private readonly _hex: Uint8Array;
+  get hex(): Uint8Array {
+    return this._hex.slice();
+  }
+
+  private readonly _bytes: Uint8Array;
+  get bytes(): Uint8Array {
+    return this._bytes.slice();
+  }
+
+  private constructor(literal: string, hex: Uint8Array, bytes: Uint8Array) {
+    this._literal = literal;
+    this._hex = hex;
+    this._bytes = bytes;
+  }
     
   static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): ParseResult<HexString>  {   
@@ -70,7 +90,7 @@ export class HexString implements IEncodable {
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     return new Uint8Array([
       ...keywordCodes.STR_HEX_START, 
-      ...this.bytes, 
+      ...this._bytes, 
       ...keywordCodes.STR_HEX_END,
     ]);
   }
