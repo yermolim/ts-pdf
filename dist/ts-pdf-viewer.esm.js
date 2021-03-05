@@ -1828,6 +1828,7 @@ const keywordCodes = {
     PREV: [codes.SLASH, codes.P, codes.r, codes.e, codes.v],
     TYPE: [codes.SLASH, codes.T, codes.y, codes.p, codes.e],
     SUBTYPE: [codes.SLASH, codes.S, codes.u, codes.b, codes.t, codes.y, codes.p, codes.e],
+    FORM: [codes.SLASH, codes.F, codes.o, codes.r, codes.m],
     XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
     XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],
     XREF_HYBRID: [codes.X, codes.R, codes.e, codes.f, codes.S, codes.t, codes.m],
@@ -2986,7 +2987,7 @@ class PdfDict extends PdfObject {
     parseProps(parseInfo) {
         var _a;
         if (!parseInfo) {
-            return false;
+            throw new Error("Parse info is empty");
         }
         this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
         this._streamId = parseInfo.streamId;
@@ -2995,7 +2996,7 @@ class PdfDict extends PdfObject {
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
         if (i === -1) {
-            return false;
+            throw new Error("Dict is empty (has no properties)");
         }
         let name;
         let parseResult;
@@ -3009,9 +3010,9 @@ class PdfDict extends PdfObject {
                         const type = parser.parseNameAt(i);
                         if (type) {
                             if (this.Type && this.Type !== type.value) {
-                                return false;
+                                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
                             }
-                            return true;
+                            return;
                         }
                         throw new Error("Can't parse /Type property value");
                     default:
@@ -3023,7 +3024,6 @@ class PdfDict extends PdfObject {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -3036,11 +3036,18 @@ class DecodeParamsDict extends PdfDict {
         this._refPropMap = new Map();
     }
     static parse(parseInfo) {
-        const dict = new DecodeParamsDict();
-        const parseResult = dict.parseProps(parseInfo);
-        return parseResult
-            ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new DecodeParamsDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
         const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
@@ -3101,17 +3108,11 @@ class DecodeParamsDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -3160,7 +3161,6 @@ class DecodeParamsDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -3860,7 +3860,7 @@ class FlateDecoder {
 }
 
 class PdfStream extends PdfObject {
-    constructor(type = null) {
+    constructor(type) {
         super();
         this.Type = type;
     }
@@ -3898,7 +3898,7 @@ class PdfStream extends PdfObject {
     parseProps(parseInfo) {
         var _a, _b;
         if (!parseInfo) {
-            return false;
+            throw new Error("Parse info is empty");
         }
         this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
         const { parser, bounds } = parseInfo;
@@ -3911,7 +3911,7 @@ class PdfStream extends PdfObject {
             closedOnly: true
         });
         if (!streamEndIndex) {
-            return false;
+            throw new Error("Object is not a stream");
         }
         const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
             direction: "reverse",
@@ -3920,12 +3920,12 @@ class PdfStream extends PdfObject {
             closedOnly: true
         });
         if (!streamStartIndex) {
-            return false;
+            throw new Error("Stream start is out of the data bounds");
         }
         const dictBounds = parser.getDictBoundsAt(start);
         let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
         if (i === -1) {
-            return false;
+            throw new Error("Dict is empty (has no properties)");
         }
         let name;
         let parseResult;
@@ -3939,7 +3939,7 @@ class PdfStream extends PdfObject {
                         const type = parser.parseNameAt(i);
                         if (type) {
                             if (this.Type && this.Type !== type.value) {
-                                return false;
+                                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
                             }
                             i = type.end + 1;
                         }
@@ -3961,8 +3961,7 @@ class PdfStream extends PdfObject {
                                 break;
                             }
                             else {
-                                console.log(`Unsupported /Filter property value: ${filter.value}`);
-                                return false;
+                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
                             }
                         }
                         else if (entryType === valueTypes.ARRAY) {
@@ -3975,8 +3974,7 @@ class PdfStream extends PdfObject {
                                     break;
                                 }
                                 else {
-                                    console.log(`Unsupported /Filter property value: ${filterArray.toString()}`);
-                                    return false;
+                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
                                 }
                             }
                         }
@@ -4025,7 +4023,6 @@ class PdfStream extends PdfObject {
             ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
             : streamBytes;
         this._streamData = encodedData;
-        return true;
     }
     setStreamData(data) {
         let encodedData;
@@ -4066,11 +4063,18 @@ class TextStream extends PdfStream {
         super(type);
     }
     static parse(parseInfo) {
-        const stream = new TextStream();
-        const parseResult = stream.parseProps(parseInfo);
-        return parseResult
-            ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TextStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getText() {
         return null;
@@ -4080,11 +4084,7 @@ class TextStream extends PdfStream {
         return superBytes;
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        return true;
+        super.parseProps(parseInfo);
     }
 }
 
@@ -4103,11 +4103,18 @@ class BorderStyleDict extends PdfDict {
         this.D = [3, 0];
     }
     static parse(parseInfo) {
-        const borderStyle = new BorderStyleDict();
-        const parseResult = borderStyle.parseProps(parseInfo);
-        return parseResult
-            ? { value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new BorderStyleDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -4131,17 +4138,11 @@ class BorderStyleDict extends PdfDict {
     }
     parseProps(parseInfo) {
         var _a, _b;
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -4185,7 +4186,6 @@ class BorderStyleDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -4840,11 +4840,18 @@ class ObjectMapDict extends PdfDict {
         this._dictParserMap = new Map();
     }
     static parse(parseInfo) {
-        const objectMap = new ObjectMapDict();
-        const parseResult = objectMap.parseProps(parseInfo);
-        return parseResult
-            ? { value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ObjectMapDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getObjectId(name) {
         return this._objectIdMap.get(name);
@@ -4879,17 +4886,11 @@ class ObjectMapDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -4934,7 +4935,6 @@ class ObjectMapDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -5161,11 +5161,18 @@ class ImageStream extends PdfStream {
         return this._decodedStreamData;
     }
     static parse(parseInfo) {
-        const xForm = new ImageStream();
-        const parseResult = xForm.parseProps(parseInfo);
-        return parseResult
-            ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ImageStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -5281,20 +5288,11 @@ class ImageStream extends PdfStream {
         });
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        if (this.Type !== streamTypes.FORM_XOBJECT) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
         let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -5307,7 +5305,7 @@ class ImageStream extends PdfStream {
                         const subtype = parser.parseNameAt(i);
                         if (subtype) {
                             if (this.Subtype && this.Subtype !== subtype.value) {
-                                return false;
+                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
                             i = subtype.end + 1;
                         }
@@ -5454,10 +5452,10 @@ class ImageStream extends PdfStream {
             }
         }
         if (!this.Width && !this.Height) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
-            return false;
+            throw new Error("Mutually exclusive properties found");
         }
         if (!this.Decode && !(this.Filter === streamFilters.JPX && !this.ImageMask)) {
             switch (this.ColorSpace) {
@@ -5515,7 +5513,6 @@ class ImageStream extends PdfStream {
             }
             this._sMask = sMask.value;
         }
-        return true;
     }
     getColor(index) {
         var _a;
@@ -5551,11 +5548,18 @@ class FontDict extends PdfDict {
         super(dictTypes.FONT);
     }
     static parse(parseInfo) {
-        const dict = new FontDict();
-        const parseResult = dict.parseProps(parseInfo);
-        return parseResult
-            ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FontDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -5581,17 +5585,11 @@ class FontDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -5608,7 +5606,7 @@ class FontDict extends PdfDict {
                                 i = subtype.end + 1;
                                 break;
                             }
-                            return false;
+                            throw new Error(`Font type is not supported: ${subtype.value}`);
                         }
                         throw new Error("Can't parse /Subtype property value");
                     case "/BaseFont":
@@ -5627,7 +5625,6 @@ class FontDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -5637,11 +5634,18 @@ class SoftMaskDict extends PdfDict {
         this.TR = "/Identity";
     }
     static parse(parseInfo) {
-        const graphicsState = new SoftMaskDict();
-        const parseResult = graphicsState.parseProps(parseInfo);
-        return parseResult
-            ? { value: graphicsState, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new SoftMaskDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -5669,17 +5673,11 @@ class SoftMaskDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -5715,7 +5713,6 @@ class SoftMaskDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -5724,11 +5721,18 @@ class GraphicsStateDict extends PdfDict {
         super(dictTypes.GRAPHICS_STATE);
     }
     static parse(parseInfo) {
-        const graphicsState = new GraphicsStateDict();
-        const parseResult = graphicsState.parseProps(parseInfo);
-        return parseResult
-            ? { value: graphicsState, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new GraphicsStateDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -5856,17 +5860,11 @@ class GraphicsStateDict extends PdfDict {
         return params;
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6017,7 +6015,6 @@ class GraphicsStateDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -6029,11 +6026,18 @@ class ResourceDict extends PdfDict {
         this._xObjectsMap = new Map();
     }
     static parse(parseInfo) {
-        const resourceDict = new ResourceDict();
-        const parseResult = resourceDict.parseProps(parseInfo);
-        return parseResult
-            ? { value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ResourceDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6126,7 +6130,6 @@ class ResourceDict extends PdfDict {
         this._xObjectsMap.set(`/XObject${name}`, xObject);
     }
     fillMaps(parseInfoGetter, cryptInfo) {
-        var _a;
         this._gsMap.clear();
         this._fontsMap.clear();
         this._xObjectsMap.clear();
@@ -6154,7 +6157,14 @@ class ResourceDict extends PdfDict {
                 if (!streamParseInfo) {
                     continue;
                 }
-                const stream = (_a = XFormStream.parse(streamParseInfo)) !== null && _a !== void 0 ? _a : ImageStream.parse(streamParseInfo);
+                const stream = streamParseInfo.parser
+                    .findSubarrayIndex(keywordCodes.FORM, {
+                    direction: "straight",
+                    minIndex: streamParseInfo.bounds.start,
+                    maxIndex: streamParseInfo.bounds.end,
+                })
+                    ? XFormStream.parse(streamParseInfo)
+                    : ImageStream.parse(streamParseInfo);
                 if (stream) {
                     this._xObjectsMap.set(`/XObject${name}`, stream.value);
                 }
@@ -6174,17 +6184,11 @@ class ResourceDict extends PdfDict {
         }
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6225,7 +6229,6 @@ class ResourceDict extends PdfDict {
         if (parseInfo.parseInfoGetter) {
             this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
         }
-        return true;
     }
 }
 
@@ -6235,11 +6238,18 @@ class MeasureDict extends PdfDict {
         this.Subtype = "/RL";
     }
     static parse(parseInfo) {
-        const stamp = new MeasureDict();
-        const parseResult = stamp.parseProps(parseInfo);
-        return parseResult
-            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new MeasureDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6256,17 +6266,11 @@ class MeasureDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6279,7 +6283,7 @@ class MeasureDict extends PdfDict {
                         const subtype = parser.parseNameAt(i);
                         if (subtype) {
                             if (this.Subtype && this.Subtype !== subtype.value) {
-                                return false;
+                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
                             i = subtype.end + 1;
                         }
@@ -6296,7 +6300,6 @@ class MeasureDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -6320,17 +6323,11 @@ class GroupDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6347,7 +6344,7 @@ class GroupDict extends PdfDict {
                                 i = intent.end + 1;
                             }
                             else {
-                                return false;
+                                throw new Error(`Ivalid dict subtype: '${intent.value}'`);
                             }
                         }
                         else {
@@ -6363,7 +6360,6 @@ class GroupDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -6374,11 +6370,18 @@ class TransparencyGroupDict extends GroupDict {
         this.K = false;
     }
     static parse(parseInfo) {
-        const group = new TransparencyGroupDict();
-        const parseResult = group.parseProps(parseInfo);
-        return parseResult
-            ? { value: group, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TransparencyGroupDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6401,20 +6404,14 @@ class TransparencyGroupDict extends GroupDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         if (this.S !== "/Transparency") {
-            return false;
+            throw new Error("Not a transparency dict");
         }
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6456,7 +6453,6 @@ class TransparencyGroupDict extends GroupDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -6507,11 +6503,18 @@ class XFormStream extends PdfStream {
         };
     }
     static parse(parseInfo) {
-        const xForm = new XFormStream();
-        const parseResult = xForm.parseProps(parseInfo);
-        return parseResult
-            ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new XFormStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6558,20 +6561,11 @@ class XFormStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        if (this.Type !== streamTypes.FORM_XOBJECT) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
         let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6584,7 +6578,7 @@ class XFormStream extends PdfStream {
                         const subtype = parser.parseNameAt(i);
                         if (subtype) {
                             if (this.Subtype && this.Subtype !== subtype.value) {
-                                return false;
+                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
                             i = subtype.end + 1;
                         }
@@ -6596,12 +6590,12 @@ class XFormStream extends PdfStream {
                         const formType = parser.parseNumberAt(i, false);
                         if (formType) {
                             if (formType.value !== 1) {
-                                return false;
+                                throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
                             }
                             i = formType.end + 1;
                         }
                         else {
-                            throw new Error("Can't parse /Subtype property value");
+                            throw new Error("Can't parse /FormType property value");
                         }
                         break;
                     case "/BBox":
@@ -6731,9 +6725,8 @@ class XFormStream extends PdfStream {
             }
         }
         if (!this.BBox) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -6743,11 +6736,18 @@ class AppearanceDict extends PdfDict {
         this._streamsMap = new Map();
     }
     static parse(parseInfo) {
-        const appearance = new AppearanceDict();
-        const parseResult = appearance.parseProps(parseInfo);
-        return parseResult
-            ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new AppearanceDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getStream(key) {
         return this._streamsMap.get(key);
@@ -6835,17 +6835,11 @@ class AppearanceDict extends PdfDict {
         }
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -6939,12 +6933,11 @@ class AppearanceDict extends PdfDict {
             }
         }
         if (!this.N) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         if (parseInfo.parseInfoGetter) {
             this.fillStreamsMap(parseInfo.parseInfoGetter);
         }
-        return true;
     }
 }
 
@@ -6959,11 +6952,18 @@ class BorderEffectDict extends PdfDict {
         this.L = 0;
     }
     static parse(parseInfo) {
-        const borderEffect = new BorderEffectDict();
-        const parseResult = borderEffect.parseProps(parseInfo);
-        return parseResult
-            ? { value: borderEffect, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new BorderEffectDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6983,17 +6983,11 @@ class BorderEffectDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -7024,7 +7018,6 @@ class BorderEffectDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -7808,8 +7801,6 @@ class AnnotationDict extends PdfDict {
             this.updateRenderAsync();
         };
         this.Subtype = subType;
-        this._proxy = new Proxy(this, this.onAnnotationDictChange);
-        return this._proxy;
     }
     get apStream() {
         var _a;
@@ -7900,17 +7891,11 @@ class AnnotationDict extends PdfDict {
     }
     parseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -7923,7 +7908,7 @@ class AnnotationDict extends PdfDict {
                         const subtype = parser.parseNameAt(i);
                         if (subtype) {
                             if (this.Subtype && this.Subtype !== subtype.value) {
-                                return false;
+                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
                             i = subtype.end + 1;
                         }
@@ -8082,14 +8067,13 @@ class AnnotationDict extends PdfDict {
             }
         }
         if (!this.Subtype || !this.Rect) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         this.name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
         this.pageRect = parseInfo.rect;
-        return true;
     }
     applyRectTransform(matrix) {
-        const dict = this._proxy;
+        const dict = this._proxy || this;
         const bBox = dict.getLocalBB();
         bBox.ll.applyMat3(matrix);
         bBox.lr.applyMat3(matrix);
@@ -8348,17 +8332,11 @@ class MarkupAnnotation extends AnnotationDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -8448,9 +8426,8 @@ class MarkupAnnotation extends AnnotationDict {
             }
         }
         if (!this.Subtype || !this.Rect) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -8466,11 +8443,18 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.LE = lineEndingTypes.NONE;
     }
     static parse(parseInfo) {
-        const freeText = new FreeTextAnnotation();
-        const parseResult = freeText.parseProps(parseInfo);
-        return parseResult
-            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FreeTextAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -8507,17 +8491,11 @@ class FreeTextAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -8581,9 +8559,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
             }
         }
         if (!this.DA) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -8608,17 +8585,11 @@ class GeometricAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -8639,7 +8610,6 @@ class GeometricAnnotation extends MarkupAnnotation {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -8648,11 +8618,18 @@ class CircleAnnotation extends GeometricAnnotation {
         super(annotationTypes.CIRCLE);
     }
     static parse(parseInfo) {
-        const freeText = new CircleAnnotation();
-        const parseResult = freeText.parseProps(parseInfo);
-        return parseResult
-            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CircleAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -8669,17 +8646,11 @@ class CircleAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -8700,7 +8671,6 @@ class CircleAnnotation extends GeometricAnnotation {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -8724,11 +8694,18 @@ class LineAnnotation extends GeometricAnnotation {
         this.CO = [0, 0];
     }
     static parse(parseInfo) {
-        const text = new LineAnnotation();
-        const parseResult = text.parseProps(parseInfo);
-        return parseResult
-            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new LineAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -8774,17 +8751,11 @@ class LineAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -8880,7 +8851,6 @@ class LineAnnotation extends GeometricAnnotation {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -8889,11 +8859,18 @@ class SquareAnnotation extends GeometricAnnotation {
         super(annotationTypes.SQUARE);
     }
     static parse(parseInfo) {
-        const freeText = new SquareAnnotation();
-        const parseResult = freeText.parseProps(parseInfo);
-        return parseResult
-            ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new SquareAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -8910,17 +8887,11 @@ class SquareAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -8941,7 +8912,6 @@ class SquareAnnotation extends GeometricAnnotation {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -8950,11 +8920,18 @@ class InkAnnotation extends MarkupAnnotation {
         super(annotationTypes.INK);
     }
     static parse(parseInfo) {
-        const ink = new InkAnnotation();
-        const parseResult = ink.parseProps(parseInfo);
-        return parseResult
-            ? { value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new InkAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -8978,17 +8955,11 @@ class InkAnnotation extends MarkupAnnotation {
     }
     parseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9025,9 +8996,8 @@ class InkAnnotation extends MarkupAnnotation {
             }
         }
         if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -9053,11 +9023,20 @@ class StampAnnotation extends MarkupAnnotation {
         this.Name = stampTypes.DRAFT;
     }
     static parse(parseInfo) {
-        const stamp = new StampAnnotation();
-        const parseResult = stamp.parseProps(parseInfo);
-        return parseResult
-            ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new StampAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onAnnotationDictChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -9074,18 +9053,12 @@ class StampAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         parser.sliceChars(start, end);
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9107,9 +9080,8 @@ class StampAnnotation extends MarkupAnnotation {
             }
         }
         if (!this.Name) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -9119,11 +9091,18 @@ class TextAnnotation extends MarkupAnnotation {
         this.Open = false;
     }
     static parse(parseInfo) {
-        const text = new TextAnnotation();
-        const parseResult = text.parseProps(parseInfo);
-        return parseResult
-            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TextAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -9149,17 +9128,11 @@ class TextAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9214,7 +9187,6 @@ class TextAnnotation extends MarkupAnnotation {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -9227,11 +9199,18 @@ class CryptFilterDict extends PdfDict {
         this.EncryptMetadata = true;
     }
     static parse(parseInfo) {
-        const cryptFilter = new CryptFilterDict();
-        const parseResult = cryptFilter.parseProps(parseInfo);
-        return parseResult
-            ? { value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CryptFilterDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -9267,17 +9246,11 @@ class CryptFilterDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9348,7 +9321,6 @@ class CryptFilterDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -9358,11 +9330,18 @@ class CryptMapDict extends PdfDict {
         this._filtersMap = new Map();
     }
     static parse(parseInfo) {
-        const cryptMap = new CryptMapDict();
-        const parseResult = cryptMap.parseProps(parseInfo);
-        return parseResult
-            ? { value: cryptMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CryptMapDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getProp(name) {
         return this._filtersMap.get(name);
@@ -9382,17 +9361,11 @@ class CryptMapDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9422,7 +9395,6 @@ class CryptMapDict extends PdfDict {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -9436,11 +9408,18 @@ class EncryptionDict extends PdfDict {
         this.EncryptMetadata = true;
     }
     static parse(parseInfo) {
-        const encryption = new EncryptionDict();
-        const parseResult = encryption.parseProps(parseInfo);
-        return parseResult
-            ? { value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new EncryptionDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -9539,17 +9518,11 @@ class EncryptionDict extends PdfDict {
     }
     parseProps(parseInfo) {
         var _a, _b;
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9649,7 +9622,7 @@ class EncryptionDict extends PdfDict {
             }
         }
         if (!this.Filter) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         if (this.Filter === "/Standard"
             && (!this.R
@@ -9657,11 +9630,11 @@ class EncryptionDict extends PdfDict {
                 || !this.U
                 || isNaN(this.P)
                 || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms)))) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
             && !this.Recipients) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         if (this.StrF !== "/Identity") {
             this.stringFilter = (_a = this.CF) === null || _a === void 0 ? void 0 : _a.getProp(this.StrF);
@@ -9669,7 +9642,6 @@ class EncryptionDict extends PdfDict {
         if (this.StmF !== "/Identity") {
             this.streamFilter = (_b = this.CF) === null || _b === void 0 ? void 0 : _b.getProp(this.StmF);
         }
-        return true;
     }
 }
 
@@ -9678,11 +9650,18 @@ class ObjectStream extends PdfStream {
         super(streamTypes.OBJECT_STREAM);
     }
     static parse(parseInfo) {
-        const stream = new ObjectStream();
-        const parseResult = stream.parseProps(parseInfo);
-        return parseResult
-            ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ObjectStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getObjectData(id) {
         if (!this._streamData || !this.N || !this.First) {
@@ -9788,20 +9767,11 @@ class ObjectStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        if (this.Type !== streamTypes.OBJECT_STREAM) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
         let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9826,7 +9796,6 @@ class ObjectStream extends PdfStream {
                 break;
             }
         }
-        return true;
     }
 }
 
@@ -9835,11 +9804,18 @@ class CatalogDict extends PdfDict {
         super(dictTypes.CATALOG);
     }
     static parse(parseInfo) {
-        const catalog = new CatalogDict();
-        const parseResult = catalog.parseProps(parseInfo);
-        return parseResult
-            ? { value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CatalogDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -9862,17 +9838,11 @@ class CatalogDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -9900,9 +9870,8 @@ class CatalogDict extends PdfDict {
             }
         }
         if (!this.Pages) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -9912,11 +9881,18 @@ class PageDict extends PdfDict {
         this.Rotate = 0;
     }
     static parse(parseInfo) {
-        const page = new PageDict();
-        const parseResult = page.parseProps(parseInfo);
-        return parseResult
-            ? { value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PageDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -10014,17 +9990,11 @@ class PageDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -10157,9 +10127,8 @@ class PageDict extends PdfDict {
             }
         }
         if (!this.Parent) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -10169,11 +10138,18 @@ class PageTreeDict extends PdfDict {
         this.Rotate = 0;
     }
     static parse(parseInfo) {
-        const pageTree = new PageTreeDict();
-        const parseResult = pageTree.parseProps(parseInfo);
-        return parseResult
-            ? { value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PageTreeDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -10204,17 +10180,11 @@ class PageTreeDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -10246,9 +10216,8 @@ class PageTreeDict extends PdfDict {
             }
         }
         if (!this.Kids || isNaN(this.Count)) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -10257,11 +10226,18 @@ class TrailerStream extends PdfStream {
         super(streamTypes.XREF);
     }
     static parse(parseInfo) {
-        const trailer = new TrailerStream();
-        const parseResult = trailer.parseProps(parseInfo);
-        return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TrailerStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -10302,20 +10278,11 @@ class TrailerStream extends PdfStream {
     }
     parseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        if (this.Type !== dictTypes.XREF) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const dictBounds = parser.getDictBoundsAt(start);
         let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -10370,12 +10337,11 @@ class TrailerStream extends PdfStream {
             }
         }
         if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
         if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
             this.Index = [0, this.Size];
         }
-        return true;
     }
 }
 
@@ -10759,11 +10725,18 @@ class TrailerDict extends PdfDict {
         super(dictTypes.EMPTY);
     }
     static parse(parseInfo) {
-        const trailer = new TrailerDict();
-        const parseResult = trailer.parseProps(parseInfo);
-        return parseResult
-            ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TrailerDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -10795,17 +10768,11 @@ class TrailerDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -10856,9 +10823,8 @@ class TrailerDict extends PdfDict {
             }
         }
         if (!this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -11272,17 +11238,11 @@ class PolyAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -11344,9 +11304,8 @@ class PolyAnnotation extends GeometricAnnotation {
             }
         }
         if (!this.Vertices) {
-            return false;
+            throw new Error("Not all required properties parsed");
         }
-        return true;
     }
 }
 
@@ -11355,22 +11314,25 @@ class PolygonAnnotation extends PolyAnnotation {
         super(annotationTypes.POLYGON);
     }
     static parse(parseInfo) {
-        const text = new PolygonAnnotation();
-        const parseResult = text.parseProps(parseInfo);
-        return parseResult
-            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PolygonAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
-        return true;
+        super.parseProps(parseInfo);
     }
 }
 
@@ -11380,11 +11342,18 @@ class PolylineAnnotation extends PolyAnnotation {
         this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
     }
     static parse(parseInfo) {
-        const text = new PolylineAnnotation();
-        const parseResult = text.parseProps(parseInfo);
-        return parseResult
-            ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
-            : null;
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PolylineAnnotation();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -11403,17 +11372,11 @@ class PolylineAnnotation extends PolyAnnotation {
         return new Uint8Array(totalBytes);
     }
     parseProps(parseInfo) {
-        const superIsParsed = super.parseProps(parseInfo);
-        if (!superIsParsed) {
-            return false;
-        }
+        super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
         let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            return false;
-        }
         let name;
         let parseResult;
         while (true) {
@@ -11446,7 +11409,6 @@ class PolylineAnnotation extends PolyAnnotation {
                 break;
             }
         }
-        return true;
     }
 }
 

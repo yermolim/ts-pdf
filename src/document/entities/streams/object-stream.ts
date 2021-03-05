@@ -26,13 +26,18 @@ export class ObjectStream extends PdfStream {
     super(streamTypes.OBJECT_STREAM);
   }  
   
-  static parse(parseInfo: ParseInfo): ParseResult<ObjectStream> {    
-    const stream = new ObjectStream();
-    const parseResult = stream.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<ObjectStream> { 
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new ObjectStream();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
 
   getObjectData(id: number): ParseInfo  { 
@@ -159,25 +164,13 @@ export class ObjectStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
-    if (this.Type !== streamTypes.OBJECT_STREAM) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -204,7 +197,5 @@ export class ObjectStream extends PdfStream {
         break;
       }
     };
-
-    return true;
   }
 }

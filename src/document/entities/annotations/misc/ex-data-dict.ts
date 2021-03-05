@@ -8,18 +8,23 @@ export class ExDataDict extends PdfDict {
    * (Required) A name specifying the type of data that the markup annotation shall be associated with
    */
   readonly Subtype = "/Markup3D";
-  
+   
   constructor() {
     super(dictTypes.EXTERNAL_DATA);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<ExDataDict> {    
-    const text = new ExDataDict();
-    const parseResult = text.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<ExDataDict> { 
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new ExDataDict();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -41,21 +46,13 @@ export class ExDataDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -68,8 +65,7 @@ export class ExDataDict extends PdfDict {
             const subtype = parser.parseNameAt(i);
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
-                // wrong object subtype
-                return false;
+                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -88,10 +84,7 @@ export class ExDataDict extends PdfDict {
     };
 
     if (!this.Subtype) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }
-
-    return true;
   }
 }

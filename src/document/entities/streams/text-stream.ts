@@ -9,13 +9,18 @@ export class TextStream extends PdfStream {
     super(type);
   }  
 
-  static parse(parseInfo: ParseInfo): ParseResult<TextStream> {    
-    const stream = new TextStream();
-    const parseResult = stream.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<TextStream> {
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new TextStream();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
   
   getText(): string {
@@ -31,12 +36,8 @@ export class TextStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
-    return true;
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
+    
   }
 }

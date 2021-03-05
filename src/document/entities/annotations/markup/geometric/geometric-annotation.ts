@@ -36,21 +36,13 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -71,7 +63,5 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
         break;
       }
     };
-
-    return true;
   }
 }

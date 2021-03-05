@@ -30,15 +30,22 @@ export class StampAnnotation extends MarkupAnnotation {
   
   constructor() {
     super(annotationTypes.STAMP);
-  }  
+  }
 
-  static parse(parseInfo: ParseInfo): ParseResult<StampAnnotation> {    
-    const stamp = new StampAnnotation();
-    const parseResult = stamp.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<StampAnnotation> {
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new StampAnnotation();
+      pdfObject.parseProps(parseInfo); 
+      const proxy = new Proxy<StampAnnotation>(pdfObject, pdfObject.onAnnotationDictChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -60,12 +67,8 @@ export class StampAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -73,10 +76,6 @@ export class StampAnnotation extends MarkupAnnotation {
     parser.sliceChars(start, end);
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -99,10 +98,7 @@ export class StampAnnotation extends MarkupAnnotation {
     };
     
     if (!this.Name) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }
-
-    return true;
   }
 }

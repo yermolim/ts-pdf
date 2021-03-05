@@ -39,9 +39,9 @@ export abstract class PdfDict extends PdfObject {
   /**
    * try parse and fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
+  protected parseProps(parseInfo: ParseInfo) {
     if (!parseInfo) {
-      return false;
+      throw new Error("Parse info is empty");
     }
 
     this._ref = parseInfo.cryptInfo?.ref;
@@ -53,8 +53,7 @@ export abstract class PdfDict extends PdfObject {
 
     let i = parser.skipToNextName(start, end - 1);
     if (i === -1) {     
-      // no props found, so the dict is invalid
-      return false;
+      throw new Error("Dict is empty (has no properties)");
     }
     let name: string;
     let parseResult: ParseResult<string>;
@@ -69,11 +68,10 @@ export abstract class PdfDict extends PdfObject {
             if (type) {
               if (this.Type && this.Type !== type.value) {
                 // wrong object type
-                return false;
+                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
               }
-              // TEMP: now we are only interested in /Type value, so no need to proceed further
-              //i = type.end + 1;
-              return true;
+              // we are only interested in /Type value, so no need to proceed further
+              return;
             }
             throw new Error("Can't parse /Type property value");
 
@@ -86,7 +84,5 @@ export abstract class PdfDict extends PdfObject {
         break;
       }
     };
-
-    return true;
   }
 }

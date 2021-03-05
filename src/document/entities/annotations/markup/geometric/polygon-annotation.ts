@@ -2,7 +2,6 @@ import { annotationTypes } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { PolyAnnotation } from "./poly-annotation";
-import { RenderToSvgResult } from "../../../../../common";
 
 export class PolygonAnnotation extends PolyAnnotation {
     
@@ -10,13 +9,18 @@ export class PolygonAnnotation extends PolyAnnotation {
     super(annotationTypes.POLYGON);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<PolygonAnnotation> {    
-    const text = new PolygonAnnotation();
-    const parseResult = text.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<PolygonAnnotation> { 
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    } 
+    try {
+      const pdfObject = new PolygonAnnotation();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -27,12 +31,8 @@ export class PolygonAnnotation extends PolyAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
-    return true;
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
+    
   }
 }

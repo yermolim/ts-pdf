@@ -55,13 +55,18 @@ export class ResourceDict extends PdfDict {
     super(null);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<ResourceDict> {    
-    const resourceDict = new ResourceDict();
-    const parseResult = resourceDict.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<ResourceDict> { 
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    } 
+    try {
+      const pdfObject = new ResourceDict();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -201,8 +206,14 @@ export class ResourceDict extends PdfDict {
         if (!streamParseInfo) {
           continue;
         }
-        const stream = XFormStream.parse(streamParseInfo) 
-          ?? ImageStream.parse(streamParseInfo);
+        const stream = streamParseInfo.parser
+          .findSubarrayIndex(keywordCodes.FORM, {
+            direction: "straight",
+            minIndex: streamParseInfo.bounds.start,
+            maxIndex: streamParseInfo.bounds.end,
+          })
+          ? XFormStream.parse(streamParseInfo) 
+          : ImageStream.parse(streamParseInfo);
         if (stream) {
           this._xObjectsMap.set(`/XObject${name}`, stream.value);
         }
@@ -226,21 +237,13 @@ export class ResourceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -284,7 +287,5 @@ export class ResourceDict extends PdfDict {
     if (parseInfo.parseInfoGetter) {
       this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
     }
-
-    return true;
   }
 }

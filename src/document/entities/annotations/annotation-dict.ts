@@ -121,7 +121,7 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svgClipPaths: SVGClipPathElement[];
   //#endregion  
   
-  private onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
+  protected onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
     set: (target: AnnotationDict, prop: string, value: any) => {
       console.log(prop);
       target[prop] = value;
@@ -133,9 +133,6 @@ export abstract class AnnotationDict extends PdfDict {
     super(dictTypes.ANNOTATION);
 
     this.Subtype = subType;
-
-    this._proxy = new Proxy<AnnotationDict>(this, this.onAnnotationDictChange);
-    return this._proxy;
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -235,21 +232,13 @@ export abstract class AnnotationDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -263,7 +252,7 @@ export abstract class AnnotationDict extends PdfDict {
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                return false;
+                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -428,19 +417,16 @@ export abstract class AnnotationDict extends PdfDict {
     };
     
     if (!this.Subtype || !this.Rect) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }
 
     this.name = this.NM?.literal || getRandomUuid();
     this.pageRect = parseInfo.rect;
-
-    return true;
   }  
 
   //#region annotation edit methods
   protected applyRectTransform(matrix: Mat3) {
-    const dict = this._proxy;
+    const dict = this._proxy || this;
 
     // transform current bounding box (not axis-aligned)
     const bBox =  dict.getLocalBB();

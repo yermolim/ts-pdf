@@ -158,13 +158,18 @@ export class EncryptionDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<EncryptionDict> {    
-    const encryption = new EncryptionDict();
-    const parseResult = encryption.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<EncryptionDict> {
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new EncryptionDict();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -271,21 +276,13 @@ export class EncryptionDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -387,8 +384,7 @@ export class EncryptionDict extends PdfDict {
     };
         
     if (!this.Filter) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }    
 
     if (this.Filter === "/Standard" 
@@ -399,14 +395,12 @@ export class EncryptionDict extends PdfDict {
           || isNaN(this.P)
           || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms))
         )) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }    
     
     if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
       && ! this.Recipients) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }
 
     if (this.StrF !== "/Identity") {
@@ -415,7 +409,5 @@ export class EncryptionDict extends PdfDict {
     if (this.StmF !== "/Identity") {
       this.streamFilter = this.CF?.getProp(this.StmF);
     }
-
-    return true;
   }
 }

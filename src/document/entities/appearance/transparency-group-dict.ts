@@ -52,15 +52,20 @@ export class TransparencyGroupDict extends GroupDict {
   
   constructor() {
     super();
-  }  
+  }
   
-  static parse(parseInfo: ParseInfo): ParseResult<TransparencyGroupDict> {    
-    const group = new TransparencyGroupDict();
-    const parseResult = group.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: group, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<TransparencyGroupDict> {
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new TransparencyGroupDict();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -88,14 +93,10 @@ export class TransparencyGroupDict extends GroupDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     if (this.S !== "/Transparency") {
-      return false;
+      throw new Error("Not a transparency dict");
     }
 
     const {parser, bounds} = parseInfo;
@@ -103,10 +104,6 @@ export class TransparencyGroupDict extends GroupDict {
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -150,7 +147,5 @@ export class TransparencyGroupDict extends GroupDict {
         break;
       }
     };
-
-    return true;
   }
 }

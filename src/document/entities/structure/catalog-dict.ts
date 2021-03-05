@@ -38,13 +38,18 @@ export class CatalogDict extends PdfDict {
     super(dictTypes.CATALOG);
   }  
   
-  static parse(parseInfo: ParseInfo): ParseResult<CatalogDict> {    
-    const catalog = new CatalogDict();
-    const parseResult = catalog.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<CatalogDict> {   
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new CatalogDict();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -74,21 +79,13 @@ export class CatalogDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -120,10 +117,7 @@ export class CatalogDict extends PdfDict {
     };    
     
     if (!this.Pages) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }    
-
-    return true;
   }
 }

@@ -130,6 +130,7 @@ export const keywordCodes = {
   PREV: [codes.SLASH, codes.P, codes.r, codes.e, codes.v],
   TYPE: [codes.SLASH, codes.T, codes.y, codes.p, codes.e],
   SUBTYPE: [codes.SLASH, codes.S, codes.u, codes.b, codes.t, codes.y, codes.p, codes.e],
+  FORM: [codes.SLASH, codes.F, codes.o, codes.r, codes.m],
   
   XREF_TABLE: [codes.x, codes.r, codes.e, codes.f],
   XREF_STREAM: [codes.SLASH, codes.X, codes.R, codes.e, codes.f],

@@ -51,7 +51,7 @@ export abstract class PdfStream extends PdfObject {
     return this._decodedStreamData;
   }
   
-  protected constructor(type: StreamType = null) {
+  protected constructor(type: StreamType) {
     super();
     this.Type = type;
   }  
@@ -87,9 +87,9 @@ export abstract class PdfStream extends PdfObject {
   /**
    * try parse and fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
+  protected parseProps(parseInfo: ParseInfo) {
     if (!parseInfo) {
-      return false;
+      throw new Error("Parse info is empty");
     }
 
     this._ref = parseInfo.cryptInfo?.ref;
@@ -105,8 +105,7 @@ export abstract class PdfStream extends PdfObject {
       closedOnly: true
     });
     if (!streamEndIndex) {
-      // this is not a stream object
-      return false;
+      throw new Error("Object is not a stream");
     }   
     const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
       direction: "reverse", 
@@ -115,15 +114,13 @@ export abstract class PdfStream extends PdfObject {
       closedOnly: true
     });
     if (!streamStartIndex) {
-      // stream start is out of bounds
-      return false;
+      throw new Error("Stream start is out of the data bounds");
     }   
     
     const dictBounds = parser.getDictBoundsAt(start);
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
-      // no required props found
-      return false;
+      throw new Error("Dict is empty (has no properties)");
     }    
 
     let name: string;
@@ -139,7 +136,7 @@ export abstract class PdfStream extends PdfObject {
             if (type) {
               if (this.Type && this.Type !== type.value) {
                 // wrong object type
-                return false;
+                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
               }
               i = type.end + 1;
             } else {
@@ -161,9 +158,7 @@ export abstract class PdfStream extends PdfObject {
                 i = filter.end + 1;
                 break;
               } else {  
-                // throw new Error(`Unsupported /Filter property value: ${filter.value}`);
-                console.log(`Unsupported /Filter property value: ${filter.value}`);
-                return false;            
+                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
               }
             } else if (entryType === valueTypes.ARRAY) {              
               const filterNames = parser.parseNameArrayAt(i);
@@ -175,9 +170,7 @@ export abstract class PdfStream extends PdfObject {
                   i = filterNames.end + 1;
                   break;
                 } else {  
-                  // throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
-                  console.log(`Unsupported /Filter property value: ${filterArray.toString()}`);
-                  return false;                  
+                  throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
                 }
               }
             }
@@ -227,9 +220,7 @@ export abstract class PdfStream extends PdfObject {
     const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
       ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
       : streamBytes;
-    this._streamData = encodedData;   
-    
-    return true;
+    this._streamData = encodedData;
   }
 
   protected setStreamData(data: Uint8Array) {

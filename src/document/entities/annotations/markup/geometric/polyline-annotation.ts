@@ -19,13 +19,18 @@ export class PolylineAnnotation extends PolyAnnotation {
     super(annotationTypes.POLYLINE);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<PolylineAnnotation> {    
-    const text = new PolylineAnnotation();
-    const parseResult = text.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<PolylineAnnotation> { 
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new PolylineAnnotation();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }  
   
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -49,21 +54,13 @@ export class PolylineAnnotation extends PolyAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
     let i = parser.skipToNextName(start, end - 1);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -96,7 +93,5 @@ export class PolylineAnnotation extends PolyAnnotation {
         break;
       }
     };
-
-    return true;
   }
 }

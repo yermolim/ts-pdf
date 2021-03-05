@@ -165,13 +165,18 @@ export class ImageStream extends PdfStream {
     super(streamTypes.FORM_XOBJECT);
   }  
 
-  static parse(parseInfo: ParseInfo): ParseResult<ImageStream> {    
-    const xForm = new ImageStream();
-    const parseResult = xForm.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+  static parse(parseInfo: ParseInfo): ParseResult<ImageStream> { 
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new ImageStream();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -326,25 +331,13 @@ export class ImageStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
-    if (this.Type !== streamTypes.FORM_XOBJECT) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -358,7 +351,7 @@ export class ImageStream extends PdfStream {
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                return false;
+                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -515,8 +508,7 @@ export class ImageStream extends PdfStream {
     };
 
     if (!this.Width && !this.Height) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }
 
     if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
@@ -524,7 +516,7 @@ export class ImageStream extends PdfStream {
       If ImageMask is true, the value of BitsPerComponent must be 1 
       and Mask and ColorSpace should not be specified
       */
-      return false;
+      throw new Error("Mutually exclusive properties found");
     }
 
     // If the image uses the JPXDecode filter and ImageMask is false, Decode is ignored
@@ -602,8 +594,6 @@ export class ImageStream extends PdfStream {
       }
       this._sMask = sMask.value;
     }
-    
-    return true;
   }
   
   protected getColor(index: number): [r: number, g: number, b: number] {

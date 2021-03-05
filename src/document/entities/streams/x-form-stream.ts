@@ -127,12 +127,17 @@ export class XFormStream extends PdfStream {
   }  
 
   static parse(parseInfo: ParseInfo): ParseResult<XFormStream> {    
-    const xForm = new XFormStream();
-    const parseResult = xForm.parseProps(parseInfo);
-
-    return parseResult
-      ? {value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
-      : null;
+    if (!parseInfo) {
+      throw new Error("Parsing information not passed");
+    }
+    try {
+      const pdfObject = new XFormStream();
+      pdfObject.parseProps(parseInfo);
+      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+    } catch (e) {
+      console.log(e.message);
+      return null;
+    }
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
@@ -200,25 +205,13 @@ export class XFormStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.parseProps(parseInfo);
-    if (!superIsParsed) {
-      return false;
-    }
-
-    if (this.Type !== streamTypes.FORM_XOBJECT) {
-      return false;
-    }
-
+  protected parseProps(parseInfo: ParseInfo) {
+    super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-    if (i === -1) {
-      // no required props found
-      return false;
-    }
     let name: string;
     let parseResult: ParseResult<string>;
     while (true) {
@@ -232,7 +225,7 @@ export class XFormStream extends PdfStream {
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                return false;
+                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -244,11 +237,11 @@ export class XFormStream extends PdfStream {
             if (formType) {
               if (formType.value !== 1) {
                 // wrong form type
-                return false;
+                throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
               }
               i = formType.end + 1;
             } else {
-              throw new Error("Can't parse /Subtype property value");
+              throw new Error("Can't parse /FormType property value");
             }
             break; 
 
@@ -382,15 +375,12 @@ export class XFormStream extends PdfStream {
     };
 
     if (!this.BBox) {
-      // not all required properties parsed
-      return false;
+      throw new Error("Not all required properties parsed");
     }    
 
     // DEBUG
     // const chars: string[] = [];
     // this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
     // console.log(chars.join(""));
-
-    return true;
   }
 }
