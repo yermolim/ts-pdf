@@ -2907,6 +2907,20 @@ class DateString {
 
 class PdfObject {
     constructor() {
+        this._deleted = false;
+        this._edited = false;
+        this._added = false;
+        this.onChange = {
+            set: (target, prop, value) => {
+                if (!this._edited && prop[0] !== "_") {
+                    this._edited = true;
+                    console.log("EDITED");
+                    console.log(this);
+                }
+                target[prop] = value;
+                return true;
+            },
+        };
     }
     get ref() {
         return this._ref;
@@ -2921,6 +2935,15 @@ class PdfObject {
     get generation() {
         var _a;
         return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.generation;
+    }
+    get deleted() {
+        return this._deleted;
+    }
+    get edited() {
+        return this._edited;
+    }
+    get added() {
+        return this._added;
     }
     parseRefProp(propName, parser, index) {
         const parsed = ObjectId.parseRef(parser, index);
@@ -3869,6 +3892,7 @@ class PdfStream extends PdfObject {
     }
     set streamData(data) {
         this.setStreamData(data);
+        this._edited = true;
     }
     get decodedStreamData() {
         if (!this._decodedStreamData) {
@@ -5150,15 +5174,6 @@ class ImageStream extends PdfStream {
     }
     get sMask() {
         return this._sMask;
-    }
-    set streamData(data) {
-        this.setStreamData(data);
-    }
-    get decodedStreamData() {
-        if (!this._decodedStreamData) {
-            this.decodeStreamData();
-        }
-        return this._decodedStreamData;
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -6509,7 +6524,9 @@ class XFormStream extends PdfStream {
         try {
             const pdfObject = new XFormStream();
             pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
         }
         catch (e) {
             console.log(e.message);
@@ -7648,13 +7665,6 @@ class AnnotationDict extends PdfDict {
         this._boxX = new Vec2();
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
-        this.onAnnotationDictChange = {
-            set: (target, prop, value) => {
-                console.log(prop);
-                target[prop] = value;
-                return true;
-            },
-        };
         this.onRectPointerDown = (e) => {
             document.addEventListener("pointerup", this.onRectPointerUp);
             document.addEventListener("pointerout", this.onRectPointerUp);
@@ -7811,6 +7821,7 @@ class AnnotationDict extends PdfDict {
     }
     set apStream(value) {
         this._apStream = value;
+        this._edited = true;
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -9029,7 +9040,7 @@ class StampAnnotation extends MarkupAnnotation {
         try {
             const pdfObject = new StampAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onAnnotationDictChange);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
             pdfObject._proxy = proxy;
             return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
         }

@@ -83,8 +83,6 @@ export abstract class AnnotationDict extends PdfDict {
   // OC: OcMembershipDict | OcGroupDict;
 
   //#endregion
-  
-  protected _proxy: AnnotationDict;
 
   protected _apStream: XFormStream;
   get apStream(): XFormStream {
@@ -95,6 +93,7 @@ export abstract class AnnotationDict extends PdfDict {
   }
   set apStream(value: XFormStream)  {
     this._apStream = value;
+    this._edited = true;
   }
 
   //#region edit-related properties
@@ -119,15 +118,7 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svgContentCopyUse: SVGUseElement;
   protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
-  //#endregion  
-  
-  protected onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
-    set: (target: AnnotationDict, prop: string, value: any) => {
-      console.log(prop);
-      target[prop] = value;
-      return true;
-    },
-  };
+  //#endregion
 
   protected constructor(subType: AnnotationType) {
     super(dictTypes.ANNOTATION);
@@ -426,7 +417,7 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region annotation edit methods
   protected applyRectTransform(matrix: Mat3) {
-    const dict = this._proxy || this;
+    const dict = <AnnotationDict>this._proxy || this;
 
     // transform current bounding box (not axis-aligned)
     const bBox =  dict.getLocalBB();

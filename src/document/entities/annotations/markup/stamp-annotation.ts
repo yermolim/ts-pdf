@@ -39,7 +39,7 @@ export class StampAnnotation extends MarkupAnnotation {
     try {
       const pdfObject = new StampAnnotation();
       pdfObject.parseProps(parseInfo); 
-      const proxy = new Proxy<StampAnnotation>(pdfObject, pdfObject.onAnnotationDictChange);
+      const proxy = new Proxy<StampAnnotation>(pdfObject, pdfObject.onChange);
       pdfObject._proxy = proxy;
       return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {

@@ -43,6 +43,7 @@ export abstract class PdfStream extends PdfObject {
   }
   set streamData(data: Uint8Array) { 
     this.setStreamData(data);
+    this._edited = true;
   }
   get decodedStreamData(): Uint8Array {
     if (!this._decodedStreamData) {

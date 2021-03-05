@@ -2,8 +2,6 @@ import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { streamTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { OcMembershipDict } from "../optional-content/oc-membership-dict";
-import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { DateString } from "../strings/date-string";
 import { ResourceDict } from "../appearance/resource-dict";
 import { codes } from "../../codes";
@@ -73,9 +71,9 @@ export class XFormStream extends PdfStream {
    */
   Group: TransparencyGroupDict;
 
-  /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
-   *  specifying the optional content properties for the annotation */
-  OC: OcMembershipDict | OcGroupDict;
+  // /** (Optional; PDF 1.5+) An optional content group or optional content membership dictionary
+  //  *  specifying the optional content properties for the annotation */
+  // OC: OcMembershipDict | OcGroupDict;
 
   //TODO: add remaining properties
   //OPI
@@ -133,7 +131,9 @@ export class XFormStream extends PdfStream {
     try {
       const pdfObject = new XFormStream();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<XFormStream>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;

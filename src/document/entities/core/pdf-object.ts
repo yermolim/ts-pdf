@@ -5,6 +5,7 @@ import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "./object-id";
 
 export abstract class PdfObject implements IEncodable {
+  //#region reference
   protected _ref: Reference;
   get ref(): Reference {
     return this._ref;
@@ -17,7 +18,41 @@ export abstract class PdfObject implements IEncodable {
   }
   get generation(): number {
     return this._ref?.generation;
+  } 
+  //#endregion 
+  
+  //#region detecting changes
+  protected _proxy: PdfObject;
+  
+  protected _deleted = false;
+  get deleted(): boolean {
+    return this._deleted;
   }
+  protected _edited = false;
+  get edited(): boolean {
+    return this._edited;
+  }  
+  protected _added = false;
+  get added(): boolean {
+    return this._added;
+  }
+
+  protected onChange: ProxyHandler<PdfObject> = {
+    set: (target: PdfObject, prop: string, value: any) => {
+      if (!this._edited && prop[0] !== "_") {
+        // if any public property changed, then set 'edited' flag to 'true'
+        this._edited = true;
+
+        // DEBUG
+        console.log("EDITED");
+        console.log(this);
+      }
+      // proceed assignment as usual
+      target[prop] = value;
+      return true;
+    },
+  };
+  //#endregion
 
   protected constructor() {
     

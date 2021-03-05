@@ -2,8 +2,6 @@ import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../const";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
-import { OcMembershipDict } from "../optional-content/oc-membership-dict";
-import { OcGroupDict } from "../optional-content/oc-group-dict";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
@@ -125,14 +123,14 @@ export class ImageStream extends PdfStream {
    */
   Metadata: ObjectId;
 
-  /** 
-   * (Optional; PDF1.5+) An optional content group or optional content membership dictionary, 
-   * specifying the optional content properties for this image XObject. 
-   * Before the image is processed, its visibility is determined based on this entry. 
-   * If it is deter-mined to be invisible, the entire image is skipped,
-   * as if there were no Do operator to invoke it
-   * */
-  OC: OcMembershipDict | OcGroupDict;
+  // /** 
+  //  * (Optional; PDF1.5+) An optional content group or optional content membership dictionary, 
+  //  * specifying the optional content properties for this image XObject. 
+  //  * Before the image is processed, its visibility is determined based on this entry. 
+  //  * If it is deter-mined to be invisible, the entire image is skipped,
+  //  * as if there were no Do operator to invoke it
+  //  * */
+  // OC: OcMembershipDict | OcGroupDict;
 
   //TODO: add remaining properties
   //Intent
@@ -145,16 +143,6 @@ export class ImageStream extends PdfStream {
   protected _sMask: ImageStream;
   get sMask(): ImageStream {
     return this._sMask;
-  }
-
-  set streamData(data: Uint8Array) { 
-    this.setStreamData(data);
-  }
-  get decodedStreamData(): Uint8Array {
-    if (!this._decodedStreamData) {
-      this.decodeStreamData();
-    }
-    return this._decodedStreamData;
   }
 
   protected _indexedColorSpace: IndexedColorSpaceArray;
