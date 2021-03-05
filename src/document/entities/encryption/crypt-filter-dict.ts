@@ -88,7 +88,7 @@ export class CryptFilterDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<CryptFilterDict> {    
     const cryptFilter = new CryptFilterDict();
-    const parseResult = cryptFilter.tryParseProps(parseInfo);
+    const parseResult = cryptFilter.parseProps(parseInfo);
 
     return parseResult
       ? {value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -132,8 +132,8 @@ export class CryptFilterDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

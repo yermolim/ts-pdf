@@ -87,7 +87,7 @@ export abstract class PdfStream extends PdfObject {
   /**
    * try parse and fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
+  protected parseProps(parseInfo: ParseInfo): boolean {
     if (!parseInfo) {
       return false;
     }

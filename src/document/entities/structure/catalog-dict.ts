@@ -40,7 +40,7 @@ export class CatalogDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<CatalogDict> {    
     const catalog = new CatalogDict();
-    const parseResult = catalog.tryParseProps(parseInfo);
+    const parseResult = catalog.parseProps(parseInfo);
 
     return parseResult
       ? {value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -74,8 +74,8 @@ export class CatalogDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

@@ -21,7 +21,7 @@ export class PolylineAnnotation extends PolyAnnotation {
   
   static parse(parseInfo: ParseInfo): ParseResult<PolylineAnnotation> {    
     const text = new PolylineAnnotation();
-    const parseResult = text.tryParseProps(parseInfo);
+    const parseResult = text.parseProps(parseInfo);
 
     return parseResult
       ? {value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -49,8 +49,8 @@ export class PolylineAnnotation extends PolyAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

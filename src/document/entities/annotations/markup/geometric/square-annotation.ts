@@ -20,7 +20,7 @@ export class SquareAnnotation extends GeometricAnnotation {
   
   static parse(parseInfo: ParseInfo): ParseResult<SquareAnnotation> {    
     const freeText = new SquareAnnotation();
-    const parseResult = freeText.tryParseProps(parseInfo);
+    const parseResult = freeText.parseProps(parseInfo);
 
     return parseResult
       ? {value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -52,8 +52,8 @@ export class SquareAnnotation extends GeometricAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

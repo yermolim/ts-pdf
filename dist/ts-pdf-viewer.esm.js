@@ -2983,7 +2983,7 @@ class PdfDict extends PdfObject {
         bytes.push(...keywordCodes.DICT_END);
         return new Uint8Array(bytes);
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a;
         if (!parseInfo) {
             return false;
@@ -3037,7 +3037,7 @@ class DecodeParamsDict extends PdfDict {
     }
     static parse(parseInfo) {
         const dict = new DecodeParamsDict();
-        const parseResult = dict.tryParseProps(parseInfo);
+        const parseResult = dict.parseProps(parseInfo);
         return parseResult
             ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -3100,8 +3100,8 @@ class DecodeParamsDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -3895,7 +3895,7 @@ class PdfStream extends PdfObject {
         bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE);
         return new Uint8Array(bytes);
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a, _b;
         if (!parseInfo) {
             return false;
@@ -4067,7 +4067,7 @@ class TextStream extends PdfStream {
     }
     static parse(parseInfo) {
         const stream = new TextStream();
-        const parseResult = stream.tryParseProps(parseInfo);
+        const parseResult = stream.parseProps(parseInfo);
         return parseResult
             ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -4079,8 +4079,8 @@ class TextStream extends PdfStream {
         const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -4104,7 +4104,7 @@ class BorderStyleDict extends PdfDict {
     }
     static parse(parseInfo) {
         const borderStyle = new BorderStyleDict();
-        const parseResult = borderStyle.tryParseProps(parseInfo);
+        const parseResult = borderStyle.parseProps(parseInfo);
         return parseResult
             ? { value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -4129,9 +4129,9 @@ class BorderStyleDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a, _b;
-        const superIsParsed = super.tryParseProps(parseInfo);
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -4841,7 +4841,7 @@ class ObjectMapDict extends PdfDict {
     }
     static parse(parseInfo) {
         const objectMap = new ObjectMapDict();
-        const parseResult = objectMap.tryParseProps(parseInfo);
+        const parseResult = objectMap.parseProps(parseInfo);
         return parseResult
             ? { value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -4878,8 +4878,8 @@ class ObjectMapDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -5162,7 +5162,7 @@ class ImageStream extends PdfStream {
     }
     static parse(parseInfo) {
         const xForm = new ImageStream();
-        const parseResult = xForm.tryParseProps(parseInfo);
+        const parseResult = xForm.parseProps(parseInfo);
         return parseResult
             ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -5280,8 +5280,8 @@ class ImageStream extends PdfStream {
             throw new Error(`Unsupported image filter type: ${this.Filter}`);
         });
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -5552,7 +5552,7 @@ class FontDict extends PdfDict {
     }
     static parse(parseInfo) {
         const dict = new FontDict();
-        const parseResult = dict.tryParseProps(parseInfo);
+        const parseResult = dict.parseProps(parseInfo);
         return parseResult
             ? { value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -5580,8 +5580,8 @@ class FontDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -5638,7 +5638,7 @@ class SoftMaskDict extends PdfDict {
     }
     static parse(parseInfo) {
         const graphicsState = new SoftMaskDict();
-        const parseResult = graphicsState.tryParseProps(parseInfo);
+        const parseResult = graphicsState.parseProps(parseInfo);
         return parseResult
             ? { value: graphicsState, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -5668,8 +5668,8 @@ class SoftMaskDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -5725,7 +5725,7 @@ class GraphicsStateDict extends PdfDict {
     }
     static parse(parseInfo) {
         const graphicsState = new GraphicsStateDict();
-        const parseResult = graphicsState.tryParseProps(parseInfo);
+        const parseResult = graphicsState.parseProps(parseInfo);
         return parseResult
             ? { value: graphicsState, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -5855,8 +5855,8 @@ class GraphicsStateDict extends PdfDict {
         if (this.AIS) ;
         return params;
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6030,7 +6030,7 @@ class ResourceDict extends PdfDict {
     }
     static parse(parseInfo) {
         const resourceDict = new ResourceDict();
-        const parseResult = resourceDict.tryParseProps(parseInfo);
+        const parseResult = resourceDict.parseProps(parseInfo);
         return parseResult
             ? { value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -6173,8 +6173,8 @@ class ResourceDict extends PdfDict {
             }
         }
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6236,7 +6236,7 @@ class MeasureDict extends PdfDict {
     }
     static parse(parseInfo) {
         const stamp = new MeasureDict();
-        const parseResult = stamp.tryParseProps(parseInfo);
+        const parseResult = stamp.parseProps(parseInfo);
         return parseResult
             ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -6255,8 +6255,8 @@ class MeasureDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6319,8 +6319,8 @@ class GroupDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6375,7 +6375,7 @@ class TransparencyGroupDict extends GroupDict {
     }
     static parse(parseInfo) {
         const group = new TransparencyGroupDict();
-        const parseResult = group.tryParseProps(parseInfo);
+        const parseResult = group.parseProps(parseInfo);
         return parseResult
             ? { value: group, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -6400,8 +6400,8 @@ class TransparencyGroupDict extends GroupDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6508,7 +6508,7 @@ class XFormStream extends PdfStream {
     }
     static parse(parseInfo) {
         const xForm = new XFormStream();
-        const parseResult = xForm.tryParseProps(parseInfo);
+        const parseResult = xForm.parseProps(parseInfo);
         return parseResult
             ? { value: xForm, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -6557,8 +6557,8 @@ class XFormStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6744,7 +6744,7 @@ class AppearanceDict extends PdfDict {
     }
     static parse(parseInfo) {
         const appearance = new AppearanceDict();
-        const parseResult = appearance.tryParseProps(parseInfo);
+        const parseResult = appearance.parseProps(parseInfo);
         return parseResult
             ? { value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -6834,8 +6834,8 @@ class AppearanceDict extends PdfDict {
             }
         }
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -6960,7 +6960,7 @@ class BorderEffectDict extends PdfDict {
     }
     static parse(parseInfo) {
         const borderEffect = new BorderEffectDict();
-        const parseResult = borderEffect.tryParseProps(parseInfo);
+        const parseResult = borderEffect.parseProps(parseInfo);
         return parseResult
             ? { value: borderEffect, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -6982,8 +6982,8 @@ class BorderEffectDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -7898,9 +7898,9 @@ class AnnotationDict extends PdfDict {
             clipPaths: this._svgClipPaths,
         };
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.tryParseProps(parseInfo);
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8347,8 +8347,8 @@ class MarkupAnnotation extends AnnotationDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8467,7 +8467,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
     static parse(parseInfo) {
         const freeText = new FreeTextAnnotation();
-        const parseResult = freeText.tryParseProps(parseInfo);
+        const parseResult = freeText.parseProps(parseInfo);
         return parseResult
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -8506,8 +8506,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8607,8 +8607,8 @@ class GeometricAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8649,7 +8649,7 @@ class CircleAnnotation extends GeometricAnnotation {
     }
     static parse(parseInfo) {
         const freeText = new CircleAnnotation();
-        const parseResult = freeText.tryParseProps(parseInfo);
+        const parseResult = freeText.parseProps(parseInfo);
         return parseResult
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -8668,8 +8668,8 @@ class CircleAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8725,7 +8725,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
     static parse(parseInfo) {
         const text = new LineAnnotation();
-        const parseResult = text.tryParseProps(parseInfo);
+        const parseResult = text.parseProps(parseInfo);
         return parseResult
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -8773,8 +8773,8 @@ class LineAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8890,7 +8890,7 @@ class SquareAnnotation extends GeometricAnnotation {
     }
     static parse(parseInfo) {
         const freeText = new SquareAnnotation();
-        const parseResult = freeText.tryParseProps(parseInfo);
+        const parseResult = freeText.parseProps(parseInfo);
         return parseResult
             ? { value: freeText, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -8909,8 +8909,8 @@ class SquareAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -8951,7 +8951,7 @@ class InkAnnotation extends MarkupAnnotation {
     }
     static parse(parseInfo) {
         const ink = new InkAnnotation();
-        const parseResult = ink.tryParseProps(parseInfo);
+        const parseResult = ink.parseProps(parseInfo);
         return parseResult
             ? { value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -8976,9 +8976,9 @@ class InkAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.tryParseProps(parseInfo);
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9054,7 +9054,7 @@ class StampAnnotation extends MarkupAnnotation {
     }
     static parse(parseInfo) {
         const stamp = new StampAnnotation();
-        const parseResult = stamp.tryParseProps(parseInfo);
+        const parseResult = stamp.parseProps(parseInfo);
         return parseResult
             ? { value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9073,8 +9073,8 @@ class StampAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9120,7 +9120,7 @@ class TextAnnotation extends MarkupAnnotation {
     }
     static parse(parseInfo) {
         const text = new TextAnnotation();
-        const parseResult = text.tryParseProps(parseInfo);
+        const parseResult = text.parseProps(parseInfo);
         return parseResult
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9148,8 +9148,8 @@ class TextAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9228,7 +9228,7 @@ class CryptFilterDict extends PdfDict {
     }
     static parse(parseInfo) {
         const cryptFilter = new CryptFilterDict();
-        const parseResult = cryptFilter.tryParseProps(parseInfo);
+        const parseResult = cryptFilter.parseProps(parseInfo);
         return parseResult
             ? { value: cryptFilter, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9266,8 +9266,8 @@ class CryptFilterDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9359,7 +9359,7 @@ class CryptMapDict extends PdfDict {
     }
     static parse(parseInfo) {
         const cryptMap = new CryptMapDict();
-        const parseResult = cryptMap.tryParseProps(parseInfo);
+        const parseResult = cryptMap.parseProps(parseInfo);
         return parseResult
             ? { value: cryptMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9381,8 +9381,8 @@ class CryptMapDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9437,7 +9437,7 @@ class EncryptionDict extends PdfDict {
     }
     static parse(parseInfo) {
         const encryption = new EncryptionDict();
-        const parseResult = encryption.tryParseProps(parseInfo);
+        const parseResult = encryption.parseProps(parseInfo);
         return parseResult
             ? { value: encryption, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9537,9 +9537,9 @@ class EncryptionDict extends PdfDict {
             perms: (_j = this.Perms) === null || _j === void 0 ? void 0 : _j.bytes,
         };
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a, _b;
-        const superIsParsed = super.tryParseProps(parseInfo);
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9679,7 +9679,7 @@ class ObjectStream extends PdfStream {
     }
     static parse(parseInfo) {
         const stream = new ObjectStream();
-        const parseResult = stream.tryParseProps(parseInfo);
+        const parseResult = stream.parseProps(parseInfo);
         return parseResult
             ? { value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9787,8 +9787,8 @@ class ObjectStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9836,7 +9836,7 @@ class CatalogDict extends PdfDict {
     }
     static parse(parseInfo) {
         const catalog = new CatalogDict();
-        const parseResult = catalog.tryParseProps(parseInfo);
+        const parseResult = catalog.parseProps(parseInfo);
         return parseResult
             ? { value: catalog, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -9861,8 +9861,8 @@ class CatalogDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -9913,7 +9913,7 @@ class PageDict extends PdfDict {
     }
     static parse(parseInfo) {
         const page = new PageDict();
-        const parseResult = page.tryParseProps(parseInfo);
+        const parseResult = page.parseProps(parseInfo);
         return parseResult
             ? { value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -10013,8 +10013,8 @@ class PageDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -10170,7 +10170,7 @@ class PageTreeDict extends PdfDict {
     }
     static parse(parseInfo) {
         const pageTree = new PageTreeDict();
-        const parseResult = pageTree.tryParseProps(parseInfo);
+        const parseResult = pageTree.parseProps(parseInfo);
         return parseResult
             ? { value: pageTree, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -10203,8 +10203,8 @@ class PageTreeDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -10258,7 +10258,7 @@ class TrailerStream extends PdfStream {
     }
     static parse(parseInfo) {
         const trailer = new TrailerStream();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const parseResult = trailer.parseProps(parseInfo);
         return parseResult
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -10300,9 +10300,9 @@ class TrailerStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
+    parseProps(parseInfo) {
         var _a;
-        const superIsParsed = super.tryParseProps(parseInfo);
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -10760,7 +10760,7 @@ class TrailerDict extends PdfDict {
     }
     static parse(parseInfo) {
         const trailer = new TrailerDict();
-        const parseResult = trailer.tryParseProps(parseInfo);
+        const parseResult = trailer.parseProps(parseInfo);
         return parseResult
             ? { value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -10794,8 +10794,8 @@ class TrailerDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -11271,8 +11271,8 @@ class PolyAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -11356,7 +11356,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
     static parse(parseInfo) {
         const text = new PolygonAnnotation();
-        const parseResult = text.tryParseProps(parseInfo);
+        const parseResult = text.parseProps(parseInfo);
         return parseResult
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -11365,8 +11365,8 @@ class PolygonAnnotation extends PolyAnnotation {
         const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -11381,7 +11381,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
     static parse(parseInfo) {
         const text = new PolylineAnnotation();
-        const parseResult = text.tryParseProps(parseInfo);
+        const parseResult = text.parseProps(parseInfo);
         return parseResult
             ? { value: text, start: parseInfo.bounds.start, end: parseInfo.bounds.end }
             : null;
@@ -11402,8 +11402,8 @@ class PolylineAnnotation extends PolyAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    tryParseProps(parseInfo) {
-        const superIsParsed = super.tryParseProps(parseInfo);
+    parseProps(parseInfo) {
+        const superIsParsed = super.parseProps(parseInfo);
         if (!superIsParsed) {
             return false;
         }
@@ -11753,7 +11753,6 @@ class AnnotationData {
     constructor(pdfData) {
         this.onAnnotationDictChange = {
             set: (target, prop, value) => {
-                console.log(prop);
                 target[prop] = value;
                 return true;
             },

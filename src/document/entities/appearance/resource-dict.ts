@@ -57,7 +57,7 @@ export class ResourceDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<ResourceDict> {    
     const resourceDict = new ResourceDict();
-    const parseResult = resourceDict.tryParseProps(parseInfo);
+    const parseResult = resourceDict.parseProps(parseInfo);
 
     return parseResult
       ? {value: resourceDict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -226,8 +226,8 @@ export class ResourceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

@@ -28,7 +28,7 @@ export class AppearanceDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<AppearanceDict> {    
     const appearance = new AppearanceDict();
-    const parseResult = appearance.tryParseProps(parseInfo);
+    const parseResult = appearance.parseProps(parseInfo);
 
     return parseResult
       ? {value: appearance, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -127,8 +127,8 @@ export class AppearanceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

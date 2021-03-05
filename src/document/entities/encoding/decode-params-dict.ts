@@ -16,7 +16,7 @@ export class DecodeParamsDict extends PdfDict {
 
   static parse(parseInfo: ParseInfo): ParseResult<DecodeParamsDict> {    
     const dict = new DecodeParamsDict();
-    const parseResult = dict.tryParseProps(parseInfo);
+    const parseResult = dict.parseProps(parseInfo);
 
     return parseResult
       ? {value: dict, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -102,8 +102,8 @@ export class DecodeParamsDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

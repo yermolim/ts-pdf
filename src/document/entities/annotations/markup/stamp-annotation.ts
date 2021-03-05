@@ -34,7 +34,7 @@ export class StampAnnotation extends MarkupAnnotation {
 
   static parse(parseInfo: ParseInfo): ParseResult<StampAnnotation> {    
     const stamp = new StampAnnotation();
-    const parseResult = stamp.tryParseProps(parseInfo);
+    const parseResult = stamp.parseProps(parseInfo);
 
     return parseResult
       ? {value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -60,8 +60,8 @@ export class StampAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

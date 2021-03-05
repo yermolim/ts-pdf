@@ -23,7 +23,7 @@ export class PopupAnnotation extends AnnotationDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<PopupAnnotation> {    
     const page = new PopupAnnotation();
-    const parseResult = page.tryParseProps(parseInfo);
+    const parseResult = page.parseProps(parseInfo);
 
     return parseResult
       ? {value: page, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -54,8 +54,8 @@ export class PopupAnnotation extends AnnotationDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

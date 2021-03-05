@@ -15,7 +15,7 @@ export class MetadataStream extends TextStream {
 
   static parse(parseInfo: ParseInfo): ParseResult<MetadataStream> {    
     const stream = new MetadataStream();
-    const parseResult = stream.tryParseProps(parseInfo);
+    const parseResult = stream.parseProps(parseInfo);
 
     return parseResult
       ? {value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -41,8 +41,8 @@ export class MetadataStream extends TextStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

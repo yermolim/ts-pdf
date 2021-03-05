@@ -15,7 +15,7 @@ export class ObjectMapDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<ObjectMapDict> {    
     const objectMap = new ObjectMapDict();
-    const parseResult = objectMap.tryParseProps(parseInfo);
+    const parseResult = objectMap.parseProps(parseInfo);
 
     return parseResult
       ? {value: objectMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -63,8 +63,8 @@ export class ObjectMapDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

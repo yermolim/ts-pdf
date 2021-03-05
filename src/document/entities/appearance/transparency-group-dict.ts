@@ -56,7 +56,7 @@ export class TransparencyGroupDict extends GroupDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<TransparencyGroupDict> {    
     const group = new TransparencyGroupDict();
-    const parseResult = group.tryParseProps(parseInfo);
+    const parseResult = group.parseProps(parseInfo);
 
     return parseResult
       ? {value: group, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -88,8 +88,8 @@ export class TransparencyGroupDict extends GroupDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

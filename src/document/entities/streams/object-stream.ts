@@ -28,7 +28,7 @@ export class ObjectStream extends PdfStream {
   
   static parse(parseInfo: ParseInfo): ParseResult<ObjectStream> {    
     const stream = new ObjectStream();
-    const parseResult = stream.tryParseProps(parseInfo);
+    const parseResult = stream.parseProps(parseInfo);
 
     return parseResult
       ? {value: stream, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -159,8 +159,8 @@ export class ObjectStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

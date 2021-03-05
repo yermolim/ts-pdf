@@ -21,7 +21,7 @@ export class InkAnnotation extends MarkupAnnotation {
   
   static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {    
     const ink = new InkAnnotation();
-    const parseResult = ink.tryParseProps(parseInfo);
+    const parseResult = ink.parseProps(parseInfo);
 
     return parseResult
       ? {value: ink, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -53,8 +53,8 @@ export class InkAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

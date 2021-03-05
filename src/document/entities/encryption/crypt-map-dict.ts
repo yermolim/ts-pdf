@@ -13,7 +13,7 @@ export class CryptMapDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<CryptMapDict> {    
     const cryptMap = new CryptMapDict();
-    const parseResult = cryptMap.tryParseProps(parseInfo);
+    const parseResult = cryptMap.parseProps(parseInfo);
 
     return parseResult
       ? {value: cryptMap, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -45,8 +45,8 @@ export class CryptMapDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

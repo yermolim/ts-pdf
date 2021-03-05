@@ -15,7 +15,7 @@ export class MeasureDict extends PdfDict {
 
   static parse(parseInfo: ParseInfo): ParseResult<MeasureDict> {    
     const stamp = new MeasureDict();
-    const parseResult = stamp.tryParseProps(parseInfo);
+    const parseResult = stamp.parseProps(parseInfo);
 
     return parseResult
       ? {value: stamp, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -44,8 +44,8 @@ export class MeasureDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

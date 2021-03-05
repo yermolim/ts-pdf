@@ -32,7 +32,7 @@ export class BorderStyleDict extends PdfDict {
   
   static parse(parseInfo: ParseInfo): ParseResult<BorderStyleDict> {    
     const borderStyle = new BorderStyleDict();
-    const parseResult = borderStyle.tryParseProps(parseInfo);
+    const parseResult = borderStyle.parseProps(parseInfo);
 
     return parseResult
       ? {value: borderStyle, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -68,8 +68,8 @@ export class BorderStyleDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }

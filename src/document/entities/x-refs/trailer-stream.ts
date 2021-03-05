@@ -67,7 +67,7 @@ export class TrailerStream extends PdfStream {
   
   static parse(parseInfo: ParseInfo): ParseResult<TrailerStream> {    
     const trailer = new TrailerStream();
-    const parseResult = trailer.tryParseProps(parseInfo);
+    const parseResult = trailer.parseProps(parseInfo);
 
     return parseResult
       ? {value: trailer, start: parseInfo.bounds.start, end: parseInfo.bounds.end}
@@ -127,8 +127,8 @@ export class TrailerStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected tryParseProps(parseInfo: ParseInfo): boolean {
-    const superIsParsed = super.tryParseProps(parseInfo);
+  protected parseProps(parseInfo: ParseInfo): boolean {
+    const superIsParsed = super.parseProps(parseInfo);
     if (!superIsParsed) {
       return false;
     }
