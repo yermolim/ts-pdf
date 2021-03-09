@@ -120,6 +120,10 @@ export class XFormStream extends PdfStream {
     };
   }
   
+  get edited(): boolean {
+    return this._edited || this.Resources.edited;
+  }  
+  
   constructor() {
     super(streamTypes.FORM_XOBJECT);
   }  

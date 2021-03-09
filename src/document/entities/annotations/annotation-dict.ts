@@ -12,11 +12,10 @@ import { codes } from "../../codes";
 import { CryptInfo, Rect } from "../../common-interfaces";
 import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
 import { BBox, getRandomUuid, RenderToSvgResult } from "../../../common";
-import { Mat3, mat3From4Vec2, Vec2, Vec3, vecMinMax } from "../../../math";
+import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
 
 export abstract class AnnotationDict extends PdfDict {
-  isDeleted: boolean;
   name: string;
   pageRect: Rect;
 
@@ -190,7 +189,7 @@ export abstract class AnnotationDict extends PdfDict {
       if (!apStreamRef) {
         throw new Error("Appearance stream has no reference");
       }
-      this.AP.N = new ObjectId(apStreamRef.id, apStreamRef.generation);
+      this.AP.N = ObjectId.fromRef(apStreamRef);
       this.AP.R = null;
       this.AP.D = null;
       this.AP.clearStreams();

@@ -33,7 +33,9 @@ export class AppearanceDict extends PdfDict {
     try {
       const pdfObject = new AppearanceDict();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<AppearanceDict>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;
@@ -52,19 +54,25 @@ export class AppearanceDict extends PdfDict {
   }
   
   setStream(key: string, stream: XFormStream) {
-    return this._streamsMap.set(key, stream);
+    this._streamsMap.set(key, stream);
+    this._edited = true;
   }
   
   clearStreams() {
     this._streamsMap.clear();
+    this._edited = true;
   }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
-    const bytes: number[] = [];  
+    const bytes: number[] = [];
 
-    if (this.N) {
+    const nStream = this._streamsMap.get("/N");
+    if (nStream) {   
+      bytes.push(...encoder.encode("/N "));  
+      bytes.push(...ObjectId.fromRef(nStream.ref).toArray(cryptInfo));
+    } else if (this.N) {
       bytes.push(...encoder.encode("/N "));
       if (this.N instanceof ObjectMapDict) {        
         bytes.push(...this.N.toArray(cryptInfo));
@@ -72,7 +80,12 @@ export class AppearanceDict extends PdfDict {
         bytes.push(...this.N.toArray(cryptInfo));
       }
     }
-    if (this.R) {
+
+    const rStream = this._streamsMap.get("/R");
+    if (rStream) {   
+      bytes.push(...encoder.encode("/R "));  
+      bytes.push(...ObjectId.fromRef(rStream.ref).toArray(cryptInfo));
+    } else if (this.R) {
       bytes.push(...encoder.encode("/R "));
       if (this.R instanceof ObjectMapDict) {        
         bytes.push(...this.R.toArray(cryptInfo));
@@ -80,7 +93,12 @@ export class AppearanceDict extends PdfDict {
         bytes.push(...this.R.toArray(cryptInfo));
       }
     }
-    if (this.D) {
+    
+    const dStream = this._streamsMap.get("/D");
+    if (dStream) {   
+      bytes.push(...encoder.encode("/D "));  
+      bytes.push(...ObjectId.fromRef(dStream.ref).toArray(cryptInfo));
+    } else if (this.D) {
       bytes.push(...encoder.encode("/D "));
       if (this.D instanceof ObjectMapDict) {        
         bytes.push(...this.D.toArray(cryptInfo));

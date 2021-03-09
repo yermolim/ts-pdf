@@ -20,17 +20,18 @@ import { XRefStream } from "./entities/x-refs/x-ref-stream";
 import { XRefTable } from "./entities/x-refs/x-ref-table";
 import { DataParser, ParseInfo, ParseResult } from "./data-parser";
 import { DataWriter } from "./data-writer";
-import { ReferenceData, ReferenceDataChange } from "./reference-data";
-import { AuthenticationResult } from "./common-interfaces";
+import { ReferenceData, ReferenceDataChange, UsedReference } from "./reference-data";
+import { AuthenticationResult, CryptInfo } from "./common-interfaces";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
 import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
+import { ImageStream } from "./entities/streams/image-stream";
+import { PdfObject } from "./entities/core/pdf-object";
+import { XFormStream } from "./entities/streams/x-form-stream";
 
 export interface PageUpdateAnnotsInfo {
   pageId: number;
-  deleted: AnnotationDict[];
-  edited: AnnotationDict[];
-  added: AnnotationDict[];
+  annotations: AnnotationDict[];
 }
 
 export class DocumentData {
@@ -45,8 +46,9 @@ export class DocumentData {
   private _authResult: AuthenticationResult;
 
   private _catalog: CatalogDict;
-  private _pageRoot: PageTreeDict;
   private _pages: PageDict[];
+  private _pageById = new Map<number, PageDict>();
+  private _annotIdsByPageId = new Map<number, ObjectId[]>();
 
   get size(): number {
     if (this._xrefs?.length) {
@@ -164,22 +166,17 @@ export class DocumentData {
     if (!this._catalog) {      
       this.parsePageTree(); 
       // DEBUG
-      // console.log(this._catalog);    
-      // console.log(this._pageRoot); 
+      // console.log(this._catalog);
       console.log(this._pages);
     }
 
     const annotationMap = new Map<number, AnnotationDict[]>();
     
-    for (const page of this._pages) {
-      if (!page.Annots) {
-        break;
-      }
-
+    for (const page of this._pages) {      
       const annotationIds: ObjectId[] = [];
       if (Array.isArray(page.Annots)) {
         annotationIds.push(...page.Annots);
-      } else {
+      } else if (page.Annots instanceof ObjectId) {
         const parseInfo = this.getObjectParseInfo(page.Annots.id);
         if (parseInfo) {
           const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
@@ -189,6 +186,7 @@ export class DocumentData {
           }
         }        
       }
+      this._annotIdsByPageId.set(page.ref.id, annotationIds);
 
       const annotations: AnnotationDict[] = [];
       for (const objectId of annotationIds) {
@@ -242,55 +240,181 @@ export class DocumentData {
   }  
 
   getUpdatedData(infos: PageUpdateAnnotsInfo[]): Uint8Array {
-    this.checkAuthentication();    
+    this.checkAuthentication();   
+
     const changeData = new ReferenceDataChange(this._referenceData);       
     const writer = new DataWriter(this._data);
-
+    const refData = this._referenceData; 
     const stringCryptor = this._authResult?.stringCryptor;
     const streamCryptor = this._authResult?.streamCryptor;
+    
+    const writeIndirectObject = (obj: PdfObject): UsedReference => {
+      const newRef = changeData.takeFreeRef(writer.offset, true);
+      const newObjCryptInfo: CryptInfo = {
+        ref: newRef,
+        streamCryptor,
+        stringCryptor,
+      };
+      writer.writeIndirectObject(newObjCryptInfo, obj);
+      obj.ref = newRef;
+      return newRef;
+    };
+
+    const writeUpdatedIndirectObject = (obj: PdfObject): UsedReference => {
+      const objRef: UsedReference = {
+        id: obj.id, 
+        generation: obj.generation, 
+        byteOffset: writer.offset
+      };
+      const objCryptInfo: CryptInfo = {
+        ref: objRef,
+        streamCryptor,
+        stringCryptor,
+      };
+      changeData.updateUsedRef(objRef);
+      writer.writeIndirectObject(objCryptInfo, obj);
+      return objRef;
+    };
+
+    const writeImageXObject = (obj: ImageStream): UsedReference => {      
+      const sMask = obj.sMask;
+      if (!sMask.ref) {
+        // a new image mask is added. get a new ref and write the mask 
+        const newMaskRef = writeIndirectObject(sMask);
+        obj.SMask = ObjectId.fromRef(newMaskRef);
+      } else if (sMask.edited) {
+        // the image mask was changed. update the ref and write the mask
+        writeUpdatedIndirectObject(sMask);
+      }
+
+      if (!obj.ref) {                
+        // the xObject has been added. get a new ref and write the xObject 
+        return writeIndirectObject(obj);
+      } else if (obj.edited) {
+        // the xObject has been edited. update the ref and write the xObject 
+        return writeUpdatedIndirectObject(obj);
+      } else {
+        // return reference to the unchanged source object
+        return {
+          id: obj.id, 
+          generation: obj.generation, 
+          byteOffset: refData.getOffset(obj.id)
+        };
+      }
+    };
+
+    const writeFormXObject = (obj: XFormStream): UsedReference => { 
+      const resources = obj.Resources;
+      if (resources && resources.edited) {
+        [...resources.getXObjects()].forEach(([name, xObj]) => {
+          // check if the xObject is an image and if it has a mask
+          if (xObj instanceof ImageStream) {
+            writeImageXObject(xObj);
+          } else {
+            writeFormXObject(xObj);
+          }
+        });
+      }
+
+      if (!obj.ref) {                
+        // the xObject has been added. get a new ref and write the xObject 
+        return writeIndirectObject(obj);
+      } else if (obj.edited) {
+        // the xObject has been edited. update the ref and write the xObject 
+        return writeUpdatedIndirectObject(obj);
+      } else {
+        // return reference to the unchanged source object
+        return {
+          id: obj.id, 
+          generation: obj.generation, 
+          byteOffset: refData.getOffset(obj.id)
+        };
+      }      
+    };
 
     for (const info of infos) {
-      for (const annotation of info.deleted) {
-        if (!annotation.id) {
-          continue; 
-        }
-        changeData.setRefFree(annotation.id);
-        // if the annotation has an id than it is parsed from the file
-        if (annotation instanceof MarkupAnnotation && annotation.Popup) {
-          // also, delete the associated popup if present
-          changeData.setRefFree(annotation.Popup.id);
-        }      
+      if (!info.annotations?.length) {
+        // no changes made
+        continue;
       }
+
+      const page = this._pageById.get(info.pageId);
+      if (!page) {
+        throw new Error(`Page with id '${info.pageId}' not found`);
+      }
+      const refArray = this._annotIdsByPageId.get(info.pageId);
+
+      for (const annotation of info.annotations || []) {
+        if (annotation.deleted) {
+          if (!annotation.ref) {
+            // annotation is absent in the PDF document, so just ignore it
+            continue;
+          }
+          const refIndex = refArray.findIndex(x => x.id === annotation.id);
+          refArray.splice(refIndex, 1);
+          changeData.setRefFree(annotation.id);
+          // also, delete the associated popup if present
+          if (annotation instanceof MarkupAnnotation && annotation.Popup) {
+            changeData.setRefFree(annotation.Popup.id);
+          }
+        } else if (annotation.added || annotation.edited) {     
+          const apStream = annotation.apStream;
+          if (apStream) {
+            writeFormXObject(apStream);
+          }
+          if (annotation.added) {
+            // the annotation has no id so it's a new annotation
+            // write the annotation and add the annotation to the ref array
+            const newAnnotRef = writeIndirectObject(annotation);
+            refArray.push(ObjectId.fromRef(newAnnotRef));
+          } else {            
+            // the annotation has been edited. rewrite the annotation
+            writeUpdatedIndirectObject(annotation);
+          }
+        }
+      }
+   
+      // update the page annotation reference array
+      if (page.Annots instanceof ObjectId) {
+        // page annotation refs are written to the indirect ref array 
+        // write the updated annotation array and update the reference offset   
+        const annotsRef: UsedReference = {
+          id: page.Annots.id, 
+          generation: page.Annots.generation, 
+          byteOffset: writer.offset
+        };
+        const annotsCryptInfo: CryptInfo = {
+          ref: annotsRef,
+          streamCryptor,
+          stringCryptor,
+        };
+        changeData.updateUsedRef(annotsRef);
+        writer.writeIndirectArray(annotsCryptInfo, refArray);
+      } else {
+        // the page has no annotation refs yet or they are written directly to the page as the ref array
+        // write a new annotation array and add or replace the reference to the page dict       
+        const newAnnotsRef = changeData.takeFreeRef(writer.offset, true);
+        const annotsCryptInfo: CryptInfo = {
+          ref: newAnnotsRef,
+          streamCryptor,
+          stringCryptor,
+        };
+        writer.writeIndirectArray(annotsCryptInfo, refArray);
+        // set ref to the annotation ref array
+        page.Annots = ObjectId.fromRef(newAnnotsRef);
+      }
+
+      // write the updated page dict
+      writeUpdatedIndirectObject(page);
     }
-
-    // for (const annotation of annotations) {
-
-    //   // TODO: add handling of changed or added resources 
-    //   // (xObjects and external graphics states)
-
-    //   // write appearance stream
-    //   const apStream = annotation.apStream;
-    //   if (apStream.ref) {
-    //     changeData.updateUsedRef(this._referenceData.usedMap.get(apStream.ref.id));
-    //   } else {
-    //     apStream.ref = changeData.takeFreeRef(writer.offset);
-    //   }
-    //   writer.writeIndirectObject({ref: apStream.ref, stringCryptor, streamCryptor}, apStream);
-      
-    //   // write annotation dict
-    //   if (annotation.ref) {
-    //     changeData.updateUsedRef(this._referenceData.usedMap.get(annotation.ref.id));
-    //   } else {
-    //     annotation.ref = changeData.takeFreeRef(writer.offset);
-    //   }
-    //   writer.writeIndirectObject({ref: annotation.ref, stringCryptor, streamCryptor}, annotation);
-
-    //   // TODO: implement /Annots array change
-      
-    // }
 
     this.writeXref(changeData, writer);
     const bytes = writer.getCurrentData();
+
+    // DEBUG
+    const parser = new DataParser(bytes);
+    console.log(parser.sliceChars(parser.maxIndex - 1000, parser.maxIndex));
+
     return bytes;
   }
 
@@ -329,11 +453,13 @@ export class DocumentData {
     if (!pageRootTree) {
       throw new Error("Document root page tree not found");
     }
-    this._pageRoot = pageRootTree.value;    
 
     const pages: PageDict[] = [];
     this.parsePages(pages, pageRootTree.value);
     this._pages = pages;
+
+    this._pageById.clear();
+    pages.forEach(x => this._pageById.set(x.ref.id, x));
   }
 
   private parsePages(output: PageDict[], tree: PageTreeDict) {

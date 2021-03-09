@@ -62,7 +62,9 @@ export class ResourceDict extends PdfDict {
     try {
       const pdfObject = new ResourceDict();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<ResourceDict>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;
@@ -80,7 +82,7 @@ export class ResourceDict extends PdfDict {
       for (const [name, gsDict] of this._gsMap) {
         bytes.push(...encoder.encode(name.slice(10)), codes.WHITESPACE); // remove '/ExtGState' prefix
         if (gsDict.ref) {          
-          bytes.push(...new ObjectId(gsDict.ref.id, gsDict.ref.generation).toArray(cryptInfo));
+          bytes.push(...ObjectId.fromRef(gsDict.ref).toArray(cryptInfo));
         } else {
           bytes.push(...gsDict.toArray(cryptInfo));
         }
@@ -95,17 +97,10 @@ export class ResourceDict extends PdfDict {
           throw new Error("XObject has no reference");
         }
         bytes.push(...encoder.encode(name.slice(8)), codes.WHITESPACE); // remove '/XObject' prefix
-        bytes.push(...new ObjectId(ref.id, ref.generation) .toArray(cryptInfo));
+        bytes.push(...ObjectId.fromRef(ref).toArray(cryptInfo));
       }
       bytes.push(...keywordCodes.DICT_END);
     }
-
-    // if (this.ExtGState) {
-    //   bytes.push(...encoder.encode("/ExtGState "), ...this.ExtGState.toArray(cryptInfo));
-    // }
-    // if (this.XObject) {
-    //   bytes.push(...encoder.encode("/XObject "), ...this.XObject.toArray(cryptInfo));
-    // }
 
     if (this.ColorSpace) {
       bytes.push(...encoder.encode("/ColorSpace "), ...this.ColorSpace.toArray(cryptInfo));
@@ -148,6 +143,7 @@ export class ResourceDict extends PdfDict {
 
   setGraphicsState(name: string, state: GraphicsStateDict) {
     this._gsMap.set(`/ExtGState${name}`, state);
+    this._edited = true;
   }
   
   getFont(name: string): FontDict {
@@ -174,6 +170,7 @@ export class ResourceDict extends PdfDict {
   
   setXObject(name: string, xObject: XFormStream | ImageStream) {
     this._xObjectsMap.set(`/XObject${name}`, xObject);
+    this._edited = true;
   }
   
   protected fillMaps(parseInfoGetter: (id: number) => ParseInfo, cryptInfo?: CryptInfo) {

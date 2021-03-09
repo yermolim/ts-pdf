@@ -22,29 +22,33 @@ export abstract class PdfObject implements IEncodable {
   //#endregion 
   
   //#region detecting changes
-  protected _proxy: PdfObject;
-  
+  protected _proxy: PdfObject; 
+
+  protected _edited = false;
+  get edited(): boolean {
+    return this._edited;
+  }   
+
   protected _deleted = false;
   get deleted(): boolean {
     return this._deleted;
   }
-  protected _edited = false;
-  get edited(): boolean {
-    return this._edited;
-  }  
-  protected _added = false;
+
+  /**
+   * returns 'true' if an object has no reference to the PDF document
+   */
   get added(): boolean {
-    return this._added;
+    return !!this._ref;
   }
 
   protected onChange: ProxyHandler<PdfObject> = {
     set: (target: PdfObject, prop: string, value: any) => {
       if (!this._edited && prop[0] !== "_") {
-        // if any public property changed, then set 'edited' flag to 'true'
+        // if any public property except "deleted" changed, then set 'edited' flag to 'true'
         this._edited = true;
 
         // DEBUG
-        console.log("EDITED");
+        console.log(`EDITED prop ${prop}`);
         console.log(this);
       }
       // proceed assignment as usual
@@ -56,6 +60,10 @@ export abstract class PdfObject implements IEncodable {
 
   protected constructor() {
     
+  }
+  
+  markAsDeleted(value = true) {
+    this._deleted = value;
   }
 
   //#region parse simple properties 

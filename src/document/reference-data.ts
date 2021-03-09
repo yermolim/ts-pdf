@@ -4,7 +4,7 @@ import { Reference } from "./common-interfaces";
 import { XRef } from "./entities/x-refs/x-ref";
 import { XRefEntry } from "./entities/x-refs/x-ref-entry";
 
-interface UsedReference extends Reference {
+export interface UsedReference extends Reference {
   byteOffset: number;
   compressed?: boolean;
   streamId?: number;

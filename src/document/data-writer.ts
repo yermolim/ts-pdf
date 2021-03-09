@@ -50,6 +50,33 @@ export class DataWriter {
     this.writeBytes(objBytes);
   }
 
+  writeIndirectArray(cryptInfo: CryptInfo, objs: IEncodable[]) {
+    if (!cryptInfo?.ref || !objs) {
+      return;
+    }
+    
+    const objBytes = [
+      ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `), 
+      ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+      codes.L_BRACKET, 
+    ];
+
+    for (const obj of objs) {
+      objBytes.push(
+        codes.WHITESPACE,
+        ...obj.toArray(cryptInfo),
+      );
+    }
+
+    objBytes.push(
+      codes.R_BRACKET,
+      ...keywordCodes.OBJ_END, 
+      ...keywordCodes.END_OF_LINE,
+    );
+
+    this.writeBytes(objBytes);
+  }
+
   writeEof(xrefOffset: number) {
     const eof = [
       ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,

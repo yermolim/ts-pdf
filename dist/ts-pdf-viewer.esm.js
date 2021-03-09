@@ -2827,6 +2827,9 @@ class ObjectId {
         }
         return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
     }
+    static fromRef(ref) {
+        return new ObjectId(ref.id, ref.generation);
+    }
     equals(other) {
         return this.id === other.id
             && this.generation === other.generation;
@@ -2907,14 +2910,13 @@ class DateString {
 
 class PdfObject {
     constructor() {
-        this._deleted = false;
         this._edited = false;
-        this._added = false;
+        this._deleted = false;
         this.onChange = {
             set: (target, prop, value) => {
                 if (!this._edited && prop[0] !== "_") {
                     this._edited = true;
-                    console.log("EDITED");
+                    console.log(`EDITED prop ${prop}`);
                     console.log(this);
                 }
                 target[prop] = value;
@@ -2936,14 +2938,17 @@ class PdfObject {
         var _a;
         return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.generation;
     }
-    get deleted() {
-        return this._deleted;
-    }
     get edited() {
         return this._edited;
     }
+    get deleted() {
+        return this._deleted;
+    }
     get added() {
-        return this._added;
+        return !!this._ref;
+    }
+    markAsDeleted(value = true) {
+        this._deleted = value;
     }
     parseRefProp(propName, parser, index) {
         const parsed = ObjectId.parseRef(parser, index);
@@ -5742,7 +5747,9 @@ class GraphicsStateDict extends PdfDict {
         try {
             const pdfObject = new GraphicsStateDict();
             pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
         }
         catch (e) {
             console.log(e.message);
@@ -6047,7 +6054,9 @@ class ResourceDict extends PdfDict {
         try {
             const pdfObject = new ResourceDict();
             pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
         }
         catch (e) {
             console.log(e.message);
@@ -6064,7 +6073,7 @@ class ResourceDict extends PdfDict {
             for (const [name, gsDict] of this._gsMap) {
                 bytes.push(...encoder.encode(name.slice(10)), codes.WHITESPACE);
                 if (gsDict.ref) {
-                    bytes.push(...new ObjectId(gsDict.ref.id, gsDict.ref.generation).toArray(cryptInfo));
+                    bytes.push(...ObjectId.fromRef(gsDict.ref).toArray(cryptInfo));
                 }
                 else {
                     bytes.push(...gsDict.toArray(cryptInfo));
@@ -6080,7 +6089,7 @@ class ResourceDict extends PdfDict {
                     throw new Error("XObject has no reference");
                 }
                 bytes.push(...encoder.encode(name.slice(8)), codes.WHITESPACE);
-                bytes.push(...new ObjectId(ref.id, ref.generation).toArray(cryptInfo));
+                bytes.push(...ObjectId.fromRef(ref).toArray(cryptInfo));
             }
             bytes.push(...keywordCodes.DICT_END);
         }
@@ -6122,6 +6131,7 @@ class ResourceDict extends PdfDict {
     }
     setGraphicsState(name, state) {
         this._gsMap.set(`/ExtGState${name}`, state);
+        this._edited = true;
     }
     getFont(name) {
         return this._fontsMap.get(name);
@@ -6143,6 +6153,7 @@ class ResourceDict extends PdfDict {
     }
     setXObject(name, xObject) {
         this._xObjectsMap.set(`/XObject${name}`, xObject);
+        this._edited = true;
     }
     fillMaps(parseInfoGetter, cryptInfo) {
         this._gsMap.clear();
@@ -6517,6 +6528,9 @@ class XFormStream extends PdfStream {
             ul: Vec2.applyMat3(bBoxUL, matrix),
         };
     }
+    get edited() {
+        return this._edited || this.Resources.edited;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -6759,7 +6773,9 @@ class AppearanceDict extends PdfDict {
         try {
             const pdfObject = new AppearanceDict();
             pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
         }
         catch (e) {
             console.log(e.message);
@@ -6776,16 +6792,23 @@ class AppearanceDict extends PdfDict {
         return;
     }
     setStream(key, stream) {
-        return this._streamsMap.set(key, stream);
+        this._streamsMap.set(key, stream);
+        this._edited = true;
     }
     clearStreams() {
         this._streamsMap.clear();
+        this._edited = true;
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
         const encoder = new TextEncoder();
         const bytes = [];
-        if (this.N) {
+        const nStream = this._streamsMap.get("/N");
+        if (nStream) {
+            bytes.push(...encoder.encode("/N "));
+            bytes.push(...ObjectId.fromRef(nStream.ref).toArray(cryptInfo));
+        }
+        else if (this.N) {
             bytes.push(...encoder.encode("/N "));
             if (this.N instanceof ObjectMapDict) {
                 bytes.push(...this.N.toArray(cryptInfo));
@@ -6794,7 +6817,12 @@ class AppearanceDict extends PdfDict {
                 bytes.push(...this.N.toArray(cryptInfo));
             }
         }
-        if (this.R) {
+        const rStream = this._streamsMap.get("/R");
+        if (rStream) {
+            bytes.push(...encoder.encode("/R "));
+            bytes.push(...ObjectId.fromRef(rStream.ref).toArray(cryptInfo));
+        }
+        else if (this.R) {
             bytes.push(...encoder.encode("/R "));
             if (this.R instanceof ObjectMapDict) {
                 bytes.push(...this.R.toArray(cryptInfo));
@@ -6803,7 +6831,12 @@ class AppearanceDict extends PdfDict {
                 bytes.push(...this.R.toArray(cryptInfo));
             }
         }
-        if (this.D) {
+        const dStream = this._streamsMap.get("/D");
+        if (dStream) {
+            bytes.push(...encoder.encode("/D "));
+            bytes.push(...ObjectId.fromRef(dStream.ref).toArray(cryptInfo));
+        }
+        else if (this.D) {
             bytes.push(...encoder.encode("/D "));
             if (this.D instanceof ObjectMapDict) {
                 bytes.push(...this.D.toArray(cryptInfo));
@@ -7876,7 +7909,7 @@ class AnnotationDict extends PdfDict {
             if (!apStreamRef) {
                 throw new Error("Appearance stream has no reference");
             }
-            this.AP.N = new ObjectId(apStreamRef.id, apStreamRef.generation);
+            this.AP.N = ObjectId.fromRef(apStreamRef);
             this.AP.R = null;
             this.AP.D = null;
             this.AP.clearStreams();
@@ -10974,6 +11007,21 @@ class DataWriter {
         ];
         this.writeBytes(objBytes);
     }
+    writeIndirectArray(cryptInfo, objs) {
+        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !objs) {
+            return;
+        }
+        const objBytes = [
+            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
+            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+            codes.L_BRACKET,
+        ];
+        for (const obj of objs) {
+            objBytes.push(codes.WHITESPACE, ...obj.toArray(cryptInfo));
+        }
+        objBytes.push(codes.R_BRACKET, ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE);
+        this.writeBytes(objBytes);
+    }
     writeEof(xrefOffset) {
         const eof = [
             ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
@@ -11425,6 +11473,8 @@ class PolylineAnnotation extends PolyAnnotation {
 
 class DocumentData {
     constructor(data) {
+        this._pageById = new Map();
+        this._annotIdsByPageId = new Map();
         this.getObjectParseInfo = (id) => {
             var _a, _b, _c;
             if (!id) {
@@ -11568,14 +11618,11 @@ class DocumentData {
         }
         const annotationMap = new Map();
         for (const page of this._pages) {
-            if (!page.Annots) {
-                break;
-            }
             const annotationIds = [];
             if (Array.isArray(page.Annots)) {
                 annotationIds.push(...page.Annots);
             }
-            else {
+            else if (page.Annots instanceof ObjectId) {
                 const parseInfo = this.getObjectParseInfo(page.Annots.id);
                 if (parseInfo) {
                     const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
@@ -11584,6 +11631,7 @@ class DocumentData {
                     }
                 }
             }
+            this._annotIdsByPageId.set(page.ref.id, annotationIds);
             const annotations = [];
             for (const objectId of annotationIds) {
                 const info = this.getObjectParseInfo(objectId.id);
@@ -11629,25 +11677,153 @@ class DocumentData {
         return annotationMap;
     }
     getUpdatedData(infos) {
-        var _a, _b;
+        var _a, _b, _c;
         this.checkAuthentication();
         const changeData = new ReferenceDataChange(this._referenceData);
         const writer = new DataWriter(this._data);
-        (_a = this._authResult) === null || _a === void 0 ? void 0 : _a.stringCryptor;
-        (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.streamCryptor;
+        const refData = this._referenceData;
+        const stringCryptor = (_a = this._authResult) === null || _a === void 0 ? void 0 : _a.stringCryptor;
+        const streamCryptor = (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.streamCryptor;
+        const writeIndirectObject = (obj) => {
+            const newRef = changeData.takeFreeRef(writer.offset, true);
+            const newObjCryptInfo = {
+                ref: newRef,
+                streamCryptor,
+                stringCryptor,
+            };
+            writer.writeIndirectObject(newObjCryptInfo, obj);
+            obj.ref = newRef;
+            return newRef;
+        };
+        const writeUpdatedIndirectObject = (obj) => {
+            const objRef = {
+                id: obj.id,
+                generation: obj.generation,
+                byteOffset: writer.offset
+            };
+            const objCryptInfo = {
+                ref: objRef,
+                streamCryptor,
+                stringCryptor,
+            };
+            changeData.updateUsedRef(objRef);
+            writer.writeIndirectObject(objCryptInfo, obj);
+            return objRef;
+        };
+        const writeImageXObject = (obj) => {
+            const sMask = obj.sMask;
+            if (!sMask.ref) {
+                const newMaskRef = writeIndirectObject(sMask);
+                obj.SMask = ObjectId.fromRef(newMaskRef);
+            }
+            else if (sMask.edited) {
+                writeUpdatedIndirectObject(sMask);
+            }
+            if (!obj.ref) {
+                return writeIndirectObject(obj);
+            }
+            else if (obj.edited) {
+                return writeUpdatedIndirectObject(obj);
+            }
+            else {
+                return {
+                    id: obj.id,
+                    generation: obj.generation,
+                    byteOffset: refData.getOffset(obj.id)
+                };
+            }
+        };
+        const writeFormXObject = (obj) => {
+            const resources = obj.Resources;
+            if (resources && resources.edited) {
+                [...resources.getXObjects()].forEach(([name, xObj]) => {
+                    if (xObj instanceof ImageStream) {
+                        writeImageXObject(xObj);
+                    }
+                    else {
+                        writeFormXObject(xObj);
+                    }
+                });
+            }
+            if (!obj.ref) {
+                return writeIndirectObject(obj);
+            }
+            else if (obj.edited) {
+                return writeUpdatedIndirectObject(obj);
+            }
+            else {
+                return {
+                    id: obj.id,
+                    generation: obj.generation,
+                    byteOffset: refData.getOffset(obj.id)
+                };
+            }
+        };
         for (const info of infos) {
-            for (const annotation of info.deleted) {
-                if (!annotation.id) {
-                    continue;
+            if (!((_c = info.annotations) === null || _c === void 0 ? void 0 : _c.length)) {
+                continue;
+            }
+            const page = this._pageById.get(info.pageId);
+            if (!page) {
+                throw new Error(`Page with id '${info.pageId}' not found`);
+            }
+            const refArray = this._annotIdsByPageId.get(info.pageId);
+            for (const annotation of info.annotations || []) {
+                if (annotation.deleted) {
+                    if (!annotation.ref) {
+                        continue;
+                    }
+                    const refIndex = refArray.findIndex(x => x.id === annotation.id);
+                    refArray.splice(refIndex, 1);
+                    changeData.setRefFree(annotation.id);
+                    if (annotation instanceof MarkupAnnotation && annotation.Popup) {
+                        changeData.setRefFree(annotation.Popup.id);
+                    }
                 }
-                changeData.setRefFree(annotation.id);
-                if (annotation instanceof MarkupAnnotation && annotation.Popup) {
-                    changeData.setRefFree(annotation.Popup.id);
+                else if (annotation.added || annotation.edited) {
+                    const apStream = annotation.apStream;
+                    if (apStream) {
+                        writeFormXObject(apStream);
+                    }
+                    if (annotation.added) {
+                        const newAnnotRef = writeIndirectObject(annotation);
+                        refArray.push(ObjectId.fromRef(newAnnotRef));
+                    }
+                    else {
+                        writeUpdatedIndirectObject(annotation);
+                    }
                 }
             }
+            if (page.Annots instanceof ObjectId) {
+                const annotsRef = {
+                    id: page.Annots.id,
+                    generation: page.Annots.generation,
+                    byteOffset: writer.offset
+                };
+                const annotsCryptInfo = {
+                    ref: annotsRef,
+                    streamCryptor,
+                    stringCryptor,
+                };
+                changeData.updateUsedRef(annotsRef);
+                writer.writeIndirectArray(annotsCryptInfo, refArray);
+            }
+            else {
+                const newAnnotsRef = changeData.takeFreeRef(writer.offset, true);
+                const annotsCryptInfo = {
+                    ref: newAnnotsRef,
+                    streamCryptor,
+                    stringCryptor,
+                };
+                writer.writeIndirectArray(annotsCryptInfo, refArray);
+                page.Annots = ObjectId.fromRef(newAnnotsRef);
+            }
+            writeUpdatedIndirectObject(page);
         }
         this.writeXref(changeData, writer);
         const bytes = writer.getCurrentData();
+        const parser = new DataParser(bytes);
+        console.log(parser.sliceChars(parser.maxIndex - 1000, parser.maxIndex));
         return bytes;
     }
     checkAuthentication() {
@@ -11681,10 +11857,11 @@ class DocumentData {
         if (!pageRootTree) {
             throw new Error("Document root page tree not found");
         }
-        this._pageRoot = pageRootTree.value;
         const pages = [];
         this.parsePages(pages, pageRootTree.value);
         this._pages = pages;
+        this._pageById.clear();
+        pages.forEach(x => this._pageById.set(x.ref.id, x));
     }
     parsePages(output, tree) {
         if (!tree.Kids.length) {
@@ -11724,12 +11901,6 @@ class DocumentData {
 
 class AnnotationData {
     constructor(pdfData) {
-        this.onAnnotationDictChange = {
-            set: (target, prop, value) => {
-                target[prop] = value;
-                return true;
-            },
-        };
         if (!(pdfData === null || pdfData === void 0 ? void 0 : pdfData.length)) {
             throw new Error("Data is empty");
         }
@@ -11743,20 +11914,28 @@ class AnnotationData {
         return true;
     }
     getRefinedData() {
-        const annotations = this.getAnnotationMap();
+        const annotationMap = this.getAnnotationMap();
         const updateInfos = [];
-        if (annotations === null || annotations === void 0 ? void 0 : annotations.size) {
+        const annotationMarkedToDelete = [];
+        if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
             this.getAnnotationMap().forEach((v, k) => {
+                const annotations = v.slice();
+                annotations.forEach(x => {
+                    if (!x.deleted) {
+                        x.markAsDeleted(true);
+                        annotationMarkedToDelete.push(x);
+                    }
+                });
                 const updateInfo = {
                     pageId: k,
-                    deleted: v.slice(),
-                    edited: [],
-                    added: [],
+                    annotations: annotations,
                 };
                 updateInfos.push(updateInfo);
             });
         }
-        return this._documentData.getUpdatedData(updateInfos);
+        const refined = this._documentData.getUpdatedData(updateInfos);
+        annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
+        return refined;
     }
     getExportedData() {
         return null;
@@ -11775,7 +11954,7 @@ class AnnotationData {
         }
     }
     removeAnnotation(annotation) {
-        annotation.isDeleted = true;
+        annotation.markAsDeleted(true);
     }
     getAnnotationMap() {
         if (this._annotationsByPageId) {

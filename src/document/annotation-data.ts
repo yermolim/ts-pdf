@@ -6,13 +6,6 @@ export class AnnotationData {
   private _documentData: DocumentData;
   private _annotationsByPageId: Map<number, AnnotationDict[]>;
 
-  private onAnnotationDictChange: ProxyHandler<AnnotationDict> = {
-    set: (target: AnnotationDict, prop: string, value: any) => {
-      target[prop] = value;
-      return true;
-    },
-  };
-
   constructor(pdfData: Uint8Array) {
     if (!pdfData?.length) {
       throw new Error("Data is empty");
@@ -35,22 +28,33 @@ export class AnnotationData {
    * returned data is used to render the remaining file content in PDF.js
    */
   getRefinedData(): Uint8Array {
-    const annotations = this.getAnnotationMap();
+    const annotationMap = this.getAnnotationMap();
     const updateInfos: PageUpdateAnnotsInfo[] = [];
 
-    if (annotations?.size) {
+    const annotationMarkedToDelete: AnnotationDict[] = [];
+    if (annotationMap?.size) {
       this.getAnnotationMap().forEach((v, k) => {
+        const annotations = v.slice();
+        // mark all parsed annotations as deleted
+        annotations.forEach(x => {
+          if (!x.deleted) {
+            x.markAsDeleted(true);
+            annotationMarkedToDelete.push(x);
+          }
+        });
         const updateInfo: PageUpdateAnnotsInfo = {
           pageId: k,
-          deleted: v.slice(),
-          edited: [],
-          added: [],
+          annotations: annotations,
         };
         updateInfos.push(updateInfo);
       });
     }
 
-    return this._documentData.getUpdatedData(updateInfos);
+    const refined = this._documentData.getUpdatedData(updateInfos);
+    // remove redundant "isDeleted" flags
+    annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
+
+    return refined;
   }
 
   /**
@@ -63,11 +67,6 @@ export class AnnotationData {
   getPageAnnotations(pageId: number): AnnotationDict[] {     
     const annotations = this.getAnnotationMap().get(pageId);
     return annotations || [];
-    // if (!annotations) {
-    //   return [];
-    // }
-    // return annotations.map(x => 
-    //   new Proxy<AnnotationDict>(x, this.onAnnotationDictChange));
   }
 
   addAnnotation(pageId: number, annotation: AnnotationDict) {
@@ -80,7 +79,7 @@ export class AnnotationData {
   }
 
   removeAnnotation(annotation: AnnotationDict) {
-    annotation.isDeleted = true;
+    annotation.markAsDeleted(true);
   }
 
   private getAnnotationMap(): Map<number, AnnotationDict[]> {

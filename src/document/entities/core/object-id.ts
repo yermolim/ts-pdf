@@ -90,6 +90,10 @@ export class ObjectId implements Reference, IEncodable {
     return {value: ids, start: arrayBounds.start, end: arrayBounds.end};
   }
 
+  static fromRef(ref: Reference): ObjectId {
+    return new ObjectId(ref.id, ref.generation);
+  }
+
   equals(other: ObjectId) {
     return this.id === other.id 
       && this.generation === other.generation;
