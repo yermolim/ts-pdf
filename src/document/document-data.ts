@@ -1,38 +1,34 @@
 import { keywordCodes } from "./codes";
-import { DataCryptHandler } from "./encryption/data-crypt-handler";
 import { annotationTypes, dictTypes } from "./const";
+import { AuthenticationResult } from "./common-interfaces";
+
+import { DataCryptHandler } from "./encryption/data-crypt-handler";
+import { DataParser, ParseInfo, ParseResult } from "./data-parser";
+import { ReferenceData } from "./reference-data";
+import { DocumentDataUpdater, PageWithAnnotations } from "./document-data-updater";
+
+import { XRef } from "./entities/x-refs/x-ref";
+import { XRefStream } from "./entities/x-refs/x-ref-stream";
+import { XRefTable } from "./entities/x-refs/x-ref-table";
+
+import { CatalogDict } from "./entities/structure/catalog-dict";
+import { PageDict } from "./entities/structure/page-dict";
+import { PageTreeDict } from "./entities/structure/page-tree-dict";
+
+import { ObjectId } from "./entities/core/object-id";
+import { EncryptionDict } from "./entities/encryption/encryption-dict";
+import { ObjectStream } from "./entities/streams/object-stream";
+
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
+import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
 import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
 import { CircleAnnotation } from "./entities/annotations/markup/geometric/circle-annotation";
 import { LineAnnotation } from "./entities/annotations/markup/geometric/line-annotation";
 import { SquareAnnotation } from "./entities/annotations/markup/geometric/square-annotation";
 import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
-import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
 import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
-import { ObjectId } from "./entities/core/object-id";
-import { EncryptionDict } from "./entities/encryption/encryption-dict";
-import { ObjectStream } from "./entities/streams/object-stream";
-import { CatalogDict } from "./entities/structure/catalog-dict";
-import { PageDict } from "./entities/structure/page-dict";
-import { PageTreeDict } from "./entities/structure/page-tree-dict";
-import { XRef } from "./entities/x-refs/x-ref";
-import { XRefStream } from "./entities/x-refs/x-ref-stream";
-import { XRefTable } from "./entities/x-refs/x-ref-table";
-import { DataParser, ParseInfo, ParseResult } from "./data-parser";
-import { DataWriter } from "./data-writer";
-import { ReferenceData, ReferenceDataChange, UsedReference } from "./reference-data";
-import { AuthenticationResult, CryptInfo } from "./common-interfaces";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
-import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
-import { ImageStream } from "./entities/streams/image-stream";
-import { PdfObject } from "./entities/core/pdf-object";
-import { XFormStream } from "./entities/streams/x-form-stream";
-
-export interface PageUpdateAnnotsInfo {
-  pageId: number;
-  annotations: AnnotationDict[];
-}
 
 export class DocumentData {
   private readonly _data: Uint8Array; 
@@ -48,7 +44,9 @@ export class DocumentData {
   private _catalog: CatalogDict;
   private _pages: PageDict[];
   private _pageById = new Map<number, PageDict>();
+  
   private _annotIdsByPageId = new Map<number, ObjectId[]>();
+  private _supportedAnnotsByPageId: Map<number, AnnotationDict[]>;
 
   get size(): number {
     if (this._xrefs?.length) {
@@ -91,6 +89,7 @@ export class DocumentData {
     // console.log(this._encryption);
   }    
 
+  //#region parsing xrefs
   private static parseXref(parser: DataParser, start: number, max: number): XRef {
     if (!parser || !start) {
       return null;
@@ -115,10 +114,8 @@ export class DocumentData {
         const xrefTable = XRefTable.parse(parser, start, offset);
         return xrefTable?.value;
       }
-    } else {
-      // STREAM
     }
-
+    // STREAM
     const id = ObjectId.parse(parser, start, false);
     if (!id) {
       return null;
@@ -147,347 +144,85 @@ export class DocumentData {
     }
     return xrefs;
   }
-
-  authenticate(password: string): boolean {
-    if (this.authenticated) {
-      return true;
+  //#endregion
+  
+  tryAuthenticate(password = ""): boolean {
+    if (!this.authenticated) {
+      return this.authenticate(password);
     }
-
-    const cryptOptions = this._encryption.toCryptOptions();
-    const fileId = this._xrefs[0].id[0].hex;
-    const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
-    this._authResult = cryptorSource.authenticate(password);
-    return this.authenticated;
+    return true;
   }
 
-  getSupportedAnnotations(): Map<number, AnnotationDict[]> {
-    this.checkAuthentication();
+  getPlainData(): Uint8Array {
+    return this._data.slice();
+  }
 
-    if (!this._catalog) {      
-      this.parsePageTree(); 
-      // DEBUG
-      // console.log(this._catalog);
-      console.log(this._pages);
-    }
-
-    const annotationMap = new Map<number, AnnotationDict[]>();
-    
-    for (const page of this._pages) {      
-      const annotationIds: ObjectId[] = [];
-      if (Array.isArray(page.Annots)) {
-        annotationIds.push(...page.Annots);
-      } else if (page.Annots instanceof ObjectId) {
-        const parseInfo = this.getObjectParseInfo(page.Annots.id);
-        if (parseInfo) {
-          const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
-            parseInfo.bounds.contentStart);
-          if (annotationRefs?.value?.length) {
-            annotationIds.push(...annotationRefs.value);
-          }
-        }        
-      }
-      this._annotIdsByPageId.set(page.ref.id, annotationIds);
-
-      const annotations: AnnotationDict[] = [];
-      for (const objectId of annotationIds) {
-        const info = this.getObjectParseInfo(objectId.id);  
-        info.rect = page.MediaBox;
-        const annotationType = info.parser.parseDictSubtype(info.bounds);
-        let annot: ParseResult<AnnotationDict>;
-        switch (annotationType) {
-          case annotationTypes.STAMP:
-            annot = StampAnnotation.parse(info);
-            break;
-          case annotationTypes.TEXT:
-            annot = TextAnnotation.parse(info);
-            break;
-          case annotationTypes.FREE_TEXT:
-            annot = FreeTextAnnotation.parse(info);
-            break;
-          case annotationTypes.CIRCLE:
-            annot = CircleAnnotation.parse(info);
-            break;
-          case annotationTypes.SQUARE:
-            annot = SquareAnnotation.parse(info);
-            break;
-          case annotationTypes.POLYGON:
-            annot = PolygonAnnotation.parse(info);
-            break;
-          case annotationTypes.POLYLINE:
-            annot = PolylineAnnotation.parse(info);
-            break;
-          case annotationTypes.LINE:
-            annot = LineAnnotation.parse(info);
-            break;
-          case annotationTypes.INK:
-            annot = InkAnnotation.parse(info);
-            break;
-          default:
-            break;
-        }
-        if (annot) {
-          annotations.push(annot.value);
-
-          // DEBUG
-          console.log(annot.value);
-        }
-      }
-      
-      annotationMap.set(page.id, annotations);
-    }
-
-    return annotationMap;
-  }  
-
-  getUpdatedData(infos: PageUpdateAnnotsInfo[]): Uint8Array {
-    this.checkAuthentication();   
-
-    const changeData = new ReferenceDataChange(this._referenceData);       
-    const writer = new DataWriter(this._data);
-    const refData = this._referenceData; 
-    const stringCryptor = this._authResult?.stringCryptor;
-    const streamCryptor = this._authResult?.streamCryptor;
-    
-    const writeIndirectObject = (obj: PdfObject): UsedReference => {
-      const newRef = changeData.takeFreeRef(writer.offset, true);
-      const newObjCryptInfo: CryptInfo = {
-        ref: newRef,
-        streamCryptor,
-        stringCryptor,
-      };
-      writer.writeIndirectObject(newObjCryptInfo, obj);
-      obj.ref = newRef;
-      return newRef;
-    };
-
-    const writeUpdatedIndirectObject = (obj: PdfObject): UsedReference => {
-      const objRef: UsedReference = {
-        id: obj.id, 
-        generation: obj.generation, 
-        byteOffset: writer.offset
-      };
-      const objCryptInfo: CryptInfo = {
-        ref: objRef,
-        streamCryptor,
-        stringCryptor,
-      };
-      changeData.updateUsedRef(objRef);
-      writer.writeIndirectObject(objCryptInfo, obj);
-      return objRef;
-    };
-
-    const writeImageXObject = (obj: ImageStream): UsedReference => {      
-      const sMask = obj.sMask;
-      if (!sMask.ref) {
-        // a new image mask is added. get a new ref and write the mask 
-        const newMaskRef = writeIndirectObject(sMask);
-        obj.SMask = ObjectId.fromRef(newMaskRef);
-      } else if (sMask.edited) {
-        // the image mask was changed. update the ref and write the mask
-        writeUpdatedIndirectObject(sMask);
-      }
-
-      if (!obj.ref) {                
-        // the xObject has been added. get a new ref and write the xObject 
-        return writeIndirectObject(obj);
-      } else if (obj.edited) {
-        // the xObject has been edited. update the ref and write the xObject 
-        return writeUpdatedIndirectObject(obj);
-      } else {
-        // return reference to the unchanged source object
-        return {
-          id: obj.id, 
-          generation: obj.generation, 
-          byteOffset: refData.getOffset(obj.id)
-        };
-      }
-    };
-
-    const writeFormXObject = (obj: XFormStream): UsedReference => { 
-      const resources = obj.Resources;
-      if (resources && resources.edited) {
-        [...resources.getXObjects()].forEach(([name, xObj]) => {
-          // check if the xObject is an image and if it has a mask
-          if (xObj instanceof ImageStream) {
-            writeImageXObject(xObj);
-          } else {
-            writeFormXObject(xObj);
+  //#region public annotations
+  getDataWithoutSupportedAnnotations(): Uint8Array {
+    const annotationMap = this.getSupportedAnnotationMap();
+    const annotationMarkedToDelete: AnnotationDict[] = [];
+    if (annotationMap?.size) {
+      annotationMap.forEach((v, k) => {
+        const annotations = v.slice();
+        // mark all parsed annotations as deleted
+        annotations.forEach(x => {
+          if (!x.deleted) {
+            x.markAsDeleted(true);
+            annotationMarkedToDelete.push(x);
           }
         });
-      }
+      });
+    }
 
-      if (!obj.ref) {                
-        // the xObject has been added. get a new ref and write the xObject 
-        return writeIndirectObject(obj);
-      } else if (obj.edited) {
-        // the xObject has been edited. update the ref and write the xObject 
-        return writeUpdatedIndirectObject(obj);
-      } else {
-        // return reference to the unchanged source object
-        return {
-          id: obj.id, 
-          generation: obj.generation, 
-          byteOffset: refData.getOffset(obj.id)
-        };
-      }      
-    };
+    const refined = this.getDataWithUpdatedAnnotations();
 
-    for (const info of infos) {
-      if (!info.annotations?.length) {
-        // no changes made
-        continue;
-      }
+    // remove redundant "isDeleted" flags
+    annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
 
-      const page = this._pageById.get(info.pageId);
+    return refined;
+  }
+
+  getDataWithUpdatedAnnotations(): Uint8Array {    
+    const annotationMap = this.getSupportedAnnotationMap();
+    const updaterData: PageWithAnnotations[] = [];
+    annotationMap.forEach((pageAnnotations, pageId) => {
+      const page = this._pageById.get(pageId);
       if (!page) {
-        throw new Error(`Page with id '${info.pageId}' not found`);
+        throw new Error(`Page with id '${pageId}' not found`);
       }
-      const refArray = this._annotIdsByPageId.get(info.pageId);
+      const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
+      updaterData.push({
+        page,
+        allAnnotationIds,
+        supportedAnnotations: pageAnnotations || [],
+      });
+    });
 
-      for (const annotation of info.annotations || []) {
-        if (annotation.deleted) {
-          if (!annotation.ref) {
-            // annotation is absent in the PDF document, so just ignore it
-            continue;
-          }
-          const refIndex = refArray.findIndex(x => x.id === annotation.id);
-          refArray.splice(refIndex, 1);
-          changeData.setRefFree(annotation.id);
-          // also, delete the associated popup if present
-          if (annotation instanceof MarkupAnnotation && annotation.Popup) {
-            changeData.setRefFree(annotation.Popup.id);
-          }
-        } else if (annotation.added || annotation.edited) {     
-          const apStream = annotation.apStream;
-          if (apStream) {
-            writeFormXObject(apStream);
-          }
-          if (annotation.added) {
-            // the annotation has no id so it's a new annotation
-            // write the annotation and add the annotation to the ref array
-            const newAnnotRef = writeIndirectObject(annotation);
-            refArray.push(ObjectId.fromRef(newAnnotRef));
-          } else {            
-            // the annotation has been edited. rewrite the annotation
-            writeUpdatedIndirectObject(annotation);
-          }
-        }
-      }
-   
-      // update the page annotation reference array
-      if (page.Annots instanceof ObjectId) {
-        // page annotation refs are written to the indirect ref array 
-        // write the updated annotation array and update the reference offset   
-        const annotsRef: UsedReference = {
-          id: page.Annots.id, 
-          generation: page.Annots.generation, 
-          byteOffset: writer.offset
-        };
-        const annotsCryptInfo: CryptInfo = {
-          ref: annotsRef,
-          streamCryptor,
-          stringCryptor,
-        };
-        changeData.updateUsedRef(annotsRef);
-        writer.writeIndirectArray(annotsCryptInfo, refArray);
-      } else {
-        // the page has no annotation refs yet or they are written directly to the page as the ref array
-        // write a new annotation array and add or replace the reference to the page dict       
-        const newAnnotsRef = changeData.takeFreeRef(writer.offset, true);
-        const annotsCryptInfo: CryptInfo = {
-          ref: newAnnotsRef,
-          streamCryptor,
-          stringCryptor,
-        };
-        writer.writeIndirectArray(annotsCryptInfo, refArray);
-        // set ref to the annotation ref array
-        page.Annots = ObjectId.fromRef(newAnnotsRef);
-      }
+    const updater = new DocumentDataUpdater(this._data, this._xrefs[0],
+      this._referenceData, this._authResult);
+    const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
+    return updatedBytes;
+  }  
 
-      // write the updated page dict
-      writeUpdatedIndirectObject(page);
-    }
-
-    this.writeXref(changeData, writer);
-    const bytes = writer.getCurrentData();
-
-    // DEBUG
-    const parser = new DataParser(bytes);
-    console.log(parser.sliceChars(parser.maxIndex - 1000, parser.maxIndex));
-
-    return bytes;
+  getPageAnnotations(pageId: number): AnnotationDict[] {     
+    const annotations = this.getSupportedAnnotationMap().get(pageId);
+    return annotations || [];
   }
 
-  private checkAuthentication() {    
-    if (!this.authenticated) {      
-      throw new Error("Unauthorized access to file data");
+  addAnnotation(pageId: number, annotation: AnnotationDict) {
+    const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
+    if (pageAnnotations) {
+      pageAnnotations.push(annotation);
+    } else {
+      this.getSupportedAnnotationMap().set(pageId, [annotation]);
     }
   }
 
-  private parseEncryption() {    
-    const encryptionId = this._xrefs[0].encrypt;
-    if (!encryptionId) {
-      return;
-    }
-
-    const encryptionParseInfo = this.getObjectParseInfo(encryptionId.id);
-    const encryption = EncryptionDict.parse(encryptionParseInfo);
-    if (!encryption) {
-      throw new Error("Encryption dict can't be parsed");
-    }
-    this._encryption = encryption.value;
+  removeAnnotation(annotation: AnnotationDict) {
+    annotation.markAsDeleted(true);
   }
-
-  private parsePageTree() {  
-    const catalogId = this._xrefs[0].root;
-    const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
-    const catalog = CatalogDict.parse(catalogParseInfo);
-    if (!catalog) {
-      throw new Error("Document root catalog not found");
-    }
-    this._catalog = catalog.value;
-
-    const pageRootId = catalog.value.Pages;
-    const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
-    const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
-    if (!pageRootTree) {
-      throw new Error("Document root page tree not found");
-    }
-
-    const pages: PageDict[] = [];
-    this.parsePages(pages, pageRootTree.value);
-    this._pages = pages;
-
-    this._pageById.clear();
-    pages.forEach(x => this._pageById.set(x.ref.id, x));
-  }
-
-  private parsePages(output: PageDict[], tree: PageTreeDict) {
-    if (!tree.Kids.length) {
-      return;
-    }
-
-    for (const kid of tree.Kids) {
-      const parseInfo = this.getObjectParseInfo(kid.id);
-      if (!parseInfo) {
-        continue;
-      }
-
-      const type = parseInfo.parser.parseDictType(parseInfo.bounds);
-      if (type === dictTypes.PAGE_TREE) {          
-        const kidTree = PageTreeDict.parse(parseInfo);
-        if (kidTree) {
-          this.parsePages(output, kidTree.value);
-        }
-      } else if (type === dictTypes.PAGE) {        
-        const kidPage = PageDict.parse(parseInfo);
-        if (kidPage) {
-          output.push(kidPage.value);
-        }
-      }
-    }
-  };  
- 
+  //#endregion
+  
   /**
    * returns a proper parser instance and byte bounds for the object by its id.
    * returns null if an object with the specified id not found.
@@ -543,14 +278,183 @@ export class DocumentData {
 
     return null;
   };
+  
+  //#region authentication and encryption
+  private authenticate(password: string): boolean {
+    if (this.authenticated) {
+      return true;
+    }
 
-  private writeXref(changeData: ReferenceDataChange, writer: DataWriter) {
-    const lastXref = this._xrefs[0];
-    const newXrefOffset = writer.offset;
-    const newXrefRef = changeData.takeFreeRef(newXrefOffset, true);
-    const newXrefEntries = changeData.exportEntries();
-    const newXref = lastXref.createUpdate(newXrefEntries, newXrefOffset);
-    writer.writeIndirectObject({ref: newXrefRef}, newXref);
-    writer.writeEof(newXrefOffset);  
+    const cryptOptions = this._encryption.toCryptOptions();
+    const fileId = this._xrefs[0].id[0].hex;
+    const cryptorSource = new DataCryptHandler(cryptOptions, fileId);
+    this._authResult = cryptorSource.authenticate(password);
+    return this.authenticated;
   }
+
+  private checkAuthentication() {    
+    if (!this.authenticated) {      
+      throw new Error("Unauthorized access to file data");
+    }
+  }
+
+  private parseEncryption() {    
+    const encryptionId = this._xrefs[0].encrypt;
+    if (!encryptionId) {
+      return;
+    }
+
+    const encryptionParseInfo = this.getObjectParseInfo(encryptionId.id);
+    const encryption = EncryptionDict.parse(encryptionParseInfo);
+    if (!encryption) {
+      throw new Error("Encryption dict can't be parsed");
+    }
+    this._encryption = encryption.value;
+  }
+  //#endregion
+
+  //#region parsing annotations
+  private parsePages(output: PageDict[], tree: PageTreeDict) {
+    if (!tree.Kids.length) {
+      return;
+    }
+
+    for (const kid of tree.Kids) {
+      const parseInfo = this.getObjectParseInfo(kid.id);
+      if (!parseInfo) {
+        continue;
+      }
+
+      const type = parseInfo.parser.parseDictType(parseInfo.bounds);
+      if (type === dictTypes.PAGE_TREE) {          
+        const kidTree = PageTreeDict.parse(parseInfo);
+        if (kidTree) {
+          this.parsePages(output, kidTree.value);
+        }
+      } else if (type === dictTypes.PAGE) {        
+        const kidPage = PageDict.parse(parseInfo);
+        if (kidPage) {
+          output.push(kidPage.value);
+        }
+      }
+    }
+  }; 
+
+  private parsePageTree() {  
+    const catalogId = this._xrefs[0].root;
+    const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
+    const catalog = CatalogDict.parse(catalogParseInfo);
+    if (!catalog) {
+      throw new Error("Document root catalog not found");
+    }
+    this._catalog = catalog.value;
+
+    const pageRootId = catalog.value.Pages;
+    const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
+    const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
+    if (!pageRootTree) {
+      throw new Error("Document root page tree not found");
+    }
+
+    const pages: PageDict[] = [];
+    this.parsePages(pages, pageRootTree.value);
+    this._pages = pages;
+
+    this._pageById.clear();
+    pages.forEach(x => this._pageById.set(x.ref.id, x));
+  }   
+
+  private getSupportedAnnotations(): Map<number, AnnotationDict[]> {
+    this.checkAuthentication();
+
+    if (!this._catalog) {      
+      this.parsePageTree(); 
+      // DEBUG
+      // console.log(this._catalog);
+      // console.log(this._pages);
+    }
+
+    const annotIdsByPageId = new Map<number, ObjectId[]>();
+    const annotationMap = new Map<number, AnnotationDict[]>();
+    
+    for (const page of this._pages) {      
+      const annotationIds: ObjectId[] = [];
+      if (Array.isArray(page.Annots)) {
+        annotationIds.push(...page.Annots);
+      } else if (page.Annots instanceof ObjectId) {
+        const parseInfo = this.getObjectParseInfo(page.Annots.id);
+        if (parseInfo) {
+          const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
+            parseInfo.bounds.contentStart);
+          if (annotationRefs?.value?.length) {
+            annotationIds.push(...annotationRefs.value);
+          }
+        }        
+      }
+      annotIdsByPageId.set(page.ref.id, annotationIds);
+
+      const annotations: AnnotationDict[] = [];
+      for (const objectId of annotationIds) {
+        const info = this.getObjectParseInfo(objectId.id);  
+        info.rect = page.MediaBox;
+        const annotationType = info.parser.parseDictSubtype(info.bounds);
+        let annot: ParseResult<AnnotationDict>;
+        switch (annotationType) {
+          case annotationTypes.STAMP:
+            annot = StampAnnotation.parse(info);
+            break;
+          // case annotationTypes.INK:
+          //   annot = InkAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.TEXT:
+          //   annot = TextAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.FREE_TEXT:
+          //   annot = FreeTextAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.CIRCLE:
+          //   annot = CircleAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.SQUARE:
+          //   annot = SquareAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.POLYGON:
+          //   annot = PolygonAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.POLYLINE:
+          //   annot = PolylineAnnotation.parse(info);
+          //   break;
+          // case annotationTypes.LINE:
+          //   annot = LineAnnotation.parse(info);
+          //   break;
+          default:
+            break;
+        }
+        if (annot) {
+          annotations.push(annot.value);
+
+          // DEBUG
+          console.log(annot.value);
+        }
+      }
+      
+      annotationMap.set(page.id, annotations);
+    }
+
+    this._annotIdsByPageId = annotIdsByPageId;
+    this._supportedAnnotsByPageId = annotationMap;
+
+    return this._supportedAnnotsByPageId;
+  }   
+  
+  private getSupportedAnnotationMap(): Map<number, AnnotationDict[]> {
+    this.checkAuthentication();
+
+    if (this._supportedAnnotsByPageId) {
+      return this._supportedAnnotsByPageId;
+    } 
+    this._supportedAnnotsByPageId = this.getSupportedAnnotations();
+    return this._supportedAnnotsByPageId;
+  } 
+  //#endregion
 }

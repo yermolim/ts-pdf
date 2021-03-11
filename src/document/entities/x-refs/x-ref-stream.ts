@@ -69,14 +69,15 @@ export class XRefStream extends XRef {
     trailer.ID = id;
 
     const w: [number, number, number] = [1, 4, 2];
-    const data = XRefEntry.toStreamBytes(entries, w);
+    const wSum = w[0] + w[1] + w[2];
 
     const params = new DecodeParamsDict();
     params.setIntProp("/Predictor", flatePredictors.PNG_UP);
-    params.setIntProp("/Columns", 5);
+    params.setIntProp("/Columns", wSum);
     params.setIntProp("/Colors", 1);
     params.setIntProp("/BitsPerComponent", 8);
-
+    
+    const data = XRefEntry.toStreamBytes(entries, w);
     const stream = new XRefStream(trailer, offset);
     stream._trailerStream.Filter = streamFilters.FLATE;
     stream._trailerStream.DecodeParms = params;

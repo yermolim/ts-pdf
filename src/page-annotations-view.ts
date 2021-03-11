@@ -1,12 +1,12 @@
-import { AnnotationData } from "./document/annotation-data";
+import { Vec2 } from "./math";
+import { DocumentData } from "./document/document-data";
 import { AnnotationDict } from "./document/entities/annotations/annotation-dict";
-import { Mat3, Vec2 } from "./math";
 
 export class PageAnnotationView {  
   private readonly _pageId: number;
   private readonly _pageDimensions: Vec2;
 
-  private _annotationData: AnnotationData;
+  private _docData: DocumentData;
   private _annotations: AnnotationDict[];
   private _svgByAnnotation = new Map<AnnotationDict, SVGGraphicsElement>();
   private _selectedAnnotation: AnnotationDict;
@@ -16,8 +16,8 @@ export class PageAnnotationView {
   private _defs: SVGDefsElement;
   private _rendered: boolean;
 
-  constructor(annotationData: AnnotationData, pageId: number, pageDimensions: Vec2) {
-    if (!annotationData || isNaN(pageId) || !pageDimensions) {
+  constructor(docData: DocumentData, pageId: number, pageDimensions: Vec2) {
+    if (!docData || isNaN(pageId) || !pageDimensions) {
       throw new Error("Required argument not found");
     }
     this._pageId = pageId;
@@ -42,7 +42,7 @@ export class PageAnnotationView {
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
 
-    this._annotations = annotationData.getPageAnnotations(pageId);
+    this._annotations = docData.getPageAnnotations(pageId);
   } 
 
   destroy() {

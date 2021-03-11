@@ -1,11 +1,11 @@
 import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 import { PageViewport } from "pdfjs-dist/types/display/display_utils";
-import { AnnotationData } from "./document/annotation-data";
-import { Vec2 } from "./math";
-import { PageAnnotationView as PageAnnotationsView } from "./page-annotations-view";
 
+import { Vec2 } from "./math";
+import { DocumentData } from "./document/document-data";
 import { PageTextView } from "./page-text-view";
+import { PageAnnotationView as PageAnnotationsView } from "./page-annotations-view";
 
 export class PageView { 
   readonly number: number;
@@ -15,7 +15,7 @@ export class PageView {
   private readonly _pageProxy: PDFPageProxy; 
   private readonly _viewport: PageViewport; 
   private readonly _maxScale: number;
-  private readonly _annotationData: AnnotationData;
+  private readonly _annotationData: DocumentData;
 
   private _dimensions: {
     width: number; 
@@ -83,17 +83,18 @@ export class PageView {
     return this._scaleIsValid && this._viewRendered;
   }
 
-  constructor(pageProxy: PDFPageProxy, annotationData: AnnotationData, maxScale: number, previewWidth: number) {
+  constructor(pageProxy: PDFPageProxy, docData: DocumentData, 
+    maxScale: number, previewWidth: number) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
-    if (!annotationData) {
+    if (!docData) {
       throw new Error("Annotation data is not defined");
     }
     this._pageProxy = pageProxy;
     this._viewport = pageProxy.getViewport({scale: 1});
     this._maxScale = Math.max(maxScale, 1);
-    this._annotationData = annotationData;
+    this._annotationData = docData;
 
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];

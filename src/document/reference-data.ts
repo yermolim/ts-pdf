@@ -199,7 +199,7 @@ export class ReferenceDataChange {
 
     const freeLinkedList = new LinkedList<FreeReference>();
     for (const freeRef of refData.freeLinkedList) {
-      freeLinkedList.push(freeRef);
+      freeLinkedList.push(Object.assign({}, freeRef));
     }
     this._freeLinkedList = freeLinkedList;
 
@@ -258,37 +258,31 @@ export class ReferenceDataChange {
     }
   }
 
-  updateUsedRef(ref: UsedReference): boolean { 
+  updateUsedRef(ref: UsedReference) { 
     if (ref.compressed && ref.generation) {
-      // compressed ref generation can't be greater than zero
-      return false;
+      throw new Error(`Compressed ref generation can't be greater than zero: '${ref.id} ${ref.generation} R'`);
     }
 
     if (this.isFreed(ref)) {      
-      // the reference is freed
-      return false;
+      throw new Error(`The reference is freed: '${ref.id} ${ref.generation} R'`);
     }
 
     const current = this._usedMap.get(ref.id);
     if (current) {
-      // the ref is already taken within the current change, 
-      // replace it if the generation is not less than the current one
-      if (ref.generation >= current.generation) {
-        this._usedMap.set(ref.id, ref);
-        return true;
-      }
+      // the ref is already taken within the current change
+      throw new Error(`Same reference has been issued twice: '${current.id} ${current.generation} R'`);
     } 
 
     if (this._refData.isUsed(ref.id)) { 
-      const gen = this._refData.getGeneration(ref.generation);
+      const gen = this._refData.getGeneration(ref.id);
       if (ref.generation >= gen) {
         this._usedMap.set(ref.id, ref);
         return true;
       }
-    } 
+      throw new Error(`The reference has an old generation: '${current.id} ${current.generation} R'`);
+    }
 
-    // the ref is not used or has an old generation so there is nothing to change
-    return false;
+    throw new Error(`The reference is not used: '${current.id} ${current.generation} R'`);
   }
 
   exportEntries(): XRefEntry[] {
@@ -315,7 +309,7 @@ export class ReferenceDataChange {
       a.id === b.id && a.generation < b.generation);
   }
 
-  isUsed(id: number): boolean {    
-    return this._usedMap.has(id) || this._refData.isUsed(id);
+  isUsedInSource(id: number): boolean {    
+    return this._refData.isUsed(id);
   }
 }

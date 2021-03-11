@@ -436,6 +436,8 @@ export abstract class AnnotationDict extends PdfDict {
       const newApMatrix = stream.matrix.multiply(matrix);
       dict.apStream.matrix = newApMatrix;
     }
+
+    dict.M = DateString.fromDate(new Date());
   }
   //#endregion
 

@@ -7,6 +7,9 @@ export class DataWriter {
 
   private _encoder: TextEncoder;
 
+  /**
+   * return the next byte position (the current last byte position + 1)
+   */
   public get offset(): number {
     return this._pointer;
   }
@@ -16,7 +19,7 @@ export class DataWriter {
       throw new Error("Data is empty");
     }
     this._data = [...data];
-    this._pointer = data.length - 1;
+    this._pointer = data.length;
 
     this._encoder = new TextEncoder();
 
@@ -43,7 +46,7 @@ export class DataWriter {
     const objBytes = [
       ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `), 
       ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-      ...obj.toArray(cryptInfo), 
+      ...obj.toArray(cryptInfo), ...keywordCodes.END_OF_LINE,
       ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
     ];
 
@@ -69,9 +72,8 @@ export class DataWriter {
     }
 
     objBytes.push(
-      codes.R_BRACKET,
-      ...keywordCodes.OBJ_END, 
-      ...keywordCodes.END_OF_LINE,
+      codes.R_BRACKET, ...keywordCodes.END_OF_LINE,
+      ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
     );
 
     this.writeBytes(objBytes);
@@ -91,8 +93,8 @@ export class DataWriter {
    * append \r\n to the end of data if absent
    */
   private fixEof() {
-    if (this._data[this._pointer] !== codes.LINE_FEED) {
-      if (this._data[this._pointer - 1] !== codes.CARRIAGE_RETURN) {
+    if (this._data[this._pointer - 1] !== codes.LINE_FEED) {
+      if (this._data[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
         this._data.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
         this._pointer += 2;
       } else {        

@@ -79,7 +79,7 @@ export abstract class PdfStream extends PdfObject {
       ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,
       ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE,
       ...streamData, ...keywordCodes.END_OF_LINE,
-      ...keywordCodes.STREAM_END, ...keywordCodes.END_OF_LINE
+      ...keywordCodes.STREAM_END, // ...keywordCodes.END_OF_LINE
     );
 
     return new Uint8Array(bytes);

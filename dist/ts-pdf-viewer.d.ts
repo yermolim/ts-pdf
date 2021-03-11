@@ -12,7 +12,7 @@ export declare class TsPdfViewer {
 	private _mainContainerResizeObserver;
 	private _pdfLoadingTask;
 	private _pdfDocument;
-	private _annotationData;
+	private _docData;
 	private _previewer;
 	private _viewer;
 	private _panelsHidden;
@@ -24,6 +24,7 @@ export declare class TsPdfViewer {
 	private _timers;
 	private _pinchInfo;
 	constructor(containerSelector: string, workerSrc: string);
+	private static downloadFile;
 	destroy(): void;
 	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
 	closePdfAsync(): Promise<void>;
@@ -43,6 +44,7 @@ export declare class TsPdfViewer {
 	private getViewerCenterPosition;
 	private toggleMode;
 	private onMainContainerResize;
+	private onDownloadFileButtonClick;
 	private onTextModeButtonClick;
 	private onHandModeButtonClick;
 	private onAnnotationModeButtonClick;

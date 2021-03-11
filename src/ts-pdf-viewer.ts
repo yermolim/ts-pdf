@@ -2,10 +2,12 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
 import { html, passwordDialogHtml, styles } from "./assets/index.html";
+
 import { getDistance } from "./common";
-import { PageView } from "./page-view";
-import { AnnotationData } from "./document/annotation-data";
 import { clamp, Vec2 } from "./math";
+
+import { DocumentData } from "./document/document-data";
+import { PageView } from "./page-view";
 
 type ViewerMode = "text" | "hand" | "annotation";
 
@@ -25,7 +27,7 @@ export class TsPdfViewer {
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;  
 
-  private _annotationData: AnnotationData;
+  private _docData: DocumentData;
 
   private _previewer: HTMLDivElement;
   private _viewer: HTMLDivElement;
@@ -70,6 +72,23 @@ export class TsPdfViewer {
     GlobalWorkerOptions.workerSrc = workerSrc;
 
     this.initViewerGUI();
+  }  
+
+  private static downloadFile(data: Uint8Array, name: string, 
+    mime = "application/pdf") { 
+    const blob = new Blob([data], {
+      type: mime,
+    });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.setAttribute("download", name);
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
   destroy() {
@@ -107,10 +126,10 @@ export class TsPdfViewer {
       throw new Error(`Cannot load file data: ${e.message}`);
     }
 
-    const annotationData = new AnnotationData(data);
+    const docData = new DocumentData(data);
     let password: string;
     while (true) {      
-      const authenticated = annotationData.tryAuthenticate(password);
+      const authenticated = docData.tryAuthenticate(password);
       if (!authenticated) {        
         password = await this.showPasswordDialogAsync();
         if (password === null) {          
@@ -122,7 +141,7 @@ export class TsPdfViewer {
     }
 
     // data without supported annotations
-    data = annotationData.getRefinedData();
+    data = docData.getDataWithoutSupportedAnnotations();
 
     try {
       if (this._pdfLoadingTask) {
@@ -138,7 +157,7 @@ export class TsPdfViewer {
       throw new Error(`Cannot open PDF: ${e.message}`);
     }
 
-    await this.onPdfLoadedAsync(doc, annotationData);
+    await this.onPdfLoadedAsync(doc, docData);
   }
 
   async closePdfAsync(): Promise<void> {
@@ -173,6 +192,9 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#zoom-fit-page")
       .addEventListener("click", this.onZoomFitPageClick);
 
+    this._shadowRoot.querySelector("#toggle-previewer")
+      .addEventListener("click", this.onPreviewerToggleClick);
+
     this._previewer = this._shadowRoot.querySelector("#previewer");
     this._previewer.addEventListener("scroll", this.onPreviewerScroll);
     this._viewer = this._shadowRoot.querySelector("#viewer");
@@ -182,29 +204,30 @@ export class TsPdfViewer {
     this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);    
     this._viewer.addEventListener("touchstart", this.onViewerTouchStart);
 
-    this._mainContainer = this._shadowRoot.querySelector("div#main-container");
-    const resizeObserver = new ResizeObserver(this.onMainContainerResize);
-    resizeObserver.observe(this._mainContainer);
-    this._mainContainerResizeObserver = resizeObserver;    
-
-    this._shadowRoot.querySelector("#toggle-previewer")
-      .addEventListener("click", this.onPreviewerToggleClick);
     this._shadowRoot.querySelector("#button-mode-text")
       .addEventListener("click", this.onTextModeButtonClick);
     this._shadowRoot.querySelector("#button-mode-hand")
       .addEventListener("click", this.onHandModeButtonClick);
     this._shadowRoot.querySelector("#button-mode-annotation")
       .addEventListener("click", this.onAnnotationModeButtonClick);
-    this.toggleMode("text");
+    this.toggleMode("text");    
+    
+    this._shadowRoot.querySelector("#button-download-file")
+      .addEventListener("click", this.onDownloadFileButtonClick);       
+
+    this._mainContainer = this._shadowRoot.querySelector("div#main-container");
+    const resizeObserver = new ResizeObserver(this.onMainContainerResize);
+    resizeObserver.observe(this._mainContainer);
+    this._mainContainerResizeObserver = resizeObserver;  
   }
 
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     // TODO: implement progress display
   };
 
-  private onPdfLoadedAsync = async (doc: PDFDocumentProxy, annotationData: AnnotationData) => {
+  private onPdfLoadedAsync = async (doc: PDFDocumentProxy, docData: DocumentData) => {
     this._pdfDocument = doc;
-    this._annotationData = annotationData;
+    this._docData = docData;
 
     await this.refreshPagesAsync();
     this.renderVisiblePreviews();
@@ -218,6 +241,7 @@ export class TsPdfViewer {
 
     if (this._pdfDocument) {
       this._pdfDocument = null;
+      this._docData = null;
     }
     await this.refreshPagesAsync();
   };
@@ -238,7 +262,7 @@ export class TsPdfViewer {
     for (let i = 0; i < docPagesNumber; i++) {    
       const pageProxy = await this._pdfDocument.getPage(i + 1); 
 
-      const page = new PageView(pageProxy, this._annotationData, this._maxScale, this._previewWidth);
+      const page = new PageView(pageProxy, this._docData, this._maxScale, this._previewWidth);
       page.scale = this._scale;
       page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
       this._previewer.append(page.previewContainer);
@@ -458,7 +482,19 @@ export class TsPdfViewer {
       this._mainContainer.classList.remove("mobile");
     }
   };
+  
+  private onDownloadFileButtonClick = () => {
+    const data = this._docData?.getDataWithUpdatedAnnotations();
 
+    // DEBUG
+    // this.openPdfAsync(data);
+
+    if (data?.length) {
+      TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
+    }    
+  };
+
+  //#region mode events
   private onTextModeButtonClick = () => {
     this.toggleMode("text");
   };
@@ -470,6 +506,7 @@ export class TsPdfViewer {
   private onAnnotationModeButtonClick = () => {
     this.toggleMode("annotation");
   };
+  //#endregion
 
   //#region previewer events
   private onPreviewerToggleClick = () => {
@@ -561,6 +598,7 @@ export class TsPdfViewer {
   };
   //#endregion
 
+  //#region user input events
   private onViewerScroll = (e: Event) => {
     this.renderVisiblePages();
   };
@@ -681,6 +719,7 @@ export class TsPdfViewer {
       this.zoomIn(this._pointerInfo.lastPos);
     }
   };
+  //#endregion
 
   //#endregion
   

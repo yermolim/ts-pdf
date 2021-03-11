@@ -10,6 +10,7 @@ import icon_sidebar from "./icons/sidebar.png";
 import icon_caret from "./icons/caret.png";
 import icon_hand from "./icons/hand.png";
 import icon_popup from "./icons/popup.png";
+import icon_download from "./icons/download.png";
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
 
@@ -54,6 +55,10 @@ export const styles = /*html*/`
     .stretch {
       width: 100%;
       height: 100%;
+    }
+    
+    .margin-s-5 {
+      margin: 0 5px;
     }
 
     #main-container {
@@ -450,6 +455,10 @@ export const html = /*html*/`
         </div> 
         <div id="button-mode-annotation" class="panel-button panel-item">
           <img src="${icon_popup}"/>
+        </div> 
+        <div class="panel-v-separator margin-s-5 panel-item"></div>
+        <div id="button-download-file" class="panel-button panel-item">
+          <img src="${icon_download}"/>
         </div> 
       </div>
     </div>

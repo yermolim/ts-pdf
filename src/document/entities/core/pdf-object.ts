@@ -34,13 +34,6 @@ export abstract class PdfObject implements IEncodable {
     return this._deleted;
   }
 
-  /**
-   * returns 'true' if an object has no reference to the PDF document
-   */
-  get added(): boolean {
-    return !!this._ref;
-  }
-
   protected onChange: ProxyHandler<PdfObject> = {
     set: (target: PdfObject, prop: string, value: any) => {
       if (!this._edited && prop[0] !== "_") {

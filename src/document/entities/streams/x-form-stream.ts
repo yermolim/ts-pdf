@@ -166,7 +166,7 @@ export class XFormStream extends PdfStream {
     }
     if (this.Matrix) {
       bytes.push(
-        ...encoder.encode("/BBox "), codes.L_BRACKET, 
+        ...encoder.encode("/Matrix "), codes.L_BRACKET, 
         ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE,
         ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE,
         ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, 
