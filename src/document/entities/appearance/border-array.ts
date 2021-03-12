@@ -23,9 +23,9 @@ export class BorderArray {
   }
 
   static parse(parser: DataParser, start: number, 
-    skipEmpty = true): ParseResult<BorderArray> {  
+    skipEmpty = true): ParseResult<BorderArray> {
     if (skipEmpty) {
-      start = parser.findRegularIndex("straight", start);
+      start = parser.findNonSpaceIndex("straight", start);
     }
     if (start < 0 || start > parser.maxIndex 
       || parser.getCharCode(start) !== codes.L_BRACKET) {

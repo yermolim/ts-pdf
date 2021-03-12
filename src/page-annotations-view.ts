@@ -74,6 +74,7 @@ export class PageAnnotationView {
 
     const newSelectedSvg = this._svgByAnnotation.get(annotation);
     if (!newSelectedSvg) {
+      this._selectedAnnotation = null;
       return;
     }
     newSelectedSvg.classList.add("selected");

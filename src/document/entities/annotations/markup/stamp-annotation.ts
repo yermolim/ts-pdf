@@ -2,7 +2,6 @@ import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
-import { RenderToSvgResult } from "../../../../common";
 
 export const stampTypes = {
   DRAFT: "/Draft",

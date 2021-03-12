@@ -7185,7 +7185,7 @@ class BorderArray {
     }
     static parse(parser, start, skipEmpty = true) {
         if (skipEmpty) {
-            start = parser.findRegularIndex("straight", start);
+            start = parser.findNonSpaceIndex("straight", start);
         }
         if (start < 0 || start > parser.maxIndex
             || parser.getCharCode(start) !== codes.L_BRACKET) {
@@ -8735,7 +8735,6 @@ class DocumentDataUpdater {
         const newXrefOffset = this._writer.offset;
         const newXrefRef = this._changeData.takeFreeRef(newXrefOffset, true);
         const newXrefEntries = this._changeData.exportEntries();
-        console.log(newXrefEntries);
         const newXref = this._lastXref.createUpdate(newXrefEntries, newXrefOffset);
         this._writer.writeIndirectObject({ ref: newXrefRef }, newXref);
         this._writer.writeEof(newXrefOffset);
@@ -10761,6 +10760,7 @@ class PageAnnotationView {
         }
         const newSelectedSvg = this._svgByAnnotation.get(annotation);
         if (!newSelectedSvg) {
+            this._selectedAnnotation = null;
             return;
         }
         newSelectedSvg.classList.add("selected");
@@ -11100,9 +11100,7 @@ class TsPdfViewer {
         this.onDownloadFileButtonClick = () => {
             var _a;
             const data = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
-            if (data === null || data === void 0 ? void 0 : data.length) {
-                TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
-            }
+            this.openPdfAsync(data);
         };
         this.onTextModeButtonClick = () => {
             this.toggleMode("text");
