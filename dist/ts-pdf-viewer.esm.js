@@ -69,6 +69,14 @@ var img$b = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeA
 
 var img$c = "data:image/png;base64,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";
 
+var img$d = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIW/JIpioim0ELHYIgaLCKIglhJBG7WIEYzabDabRNjEZTdBgq1gYyFYiDa+Cv+BtoKtgiAogoiNf8BXI2G9Y4SImFlm78eZOZeZM+CfsoyC2zQIhWLJSUzGtfnUgtbyTIAQHQSJ6oZrT89OJGk4Pm7xqXozoHo13vfvCGZM1wBfq/CIYTsl4THhqdWSrXhTuMvI6xnhA+GYIwcUvlR6usZPinM1flPsJBPj4Fc9tdwvTv9iI+8UhPuFIwWrbPycR90kZBbnZqX2yOzFJcEkcTTSlFnGosSA1KJk9r9v8Ns3w4p4DPnbVHDEkSMv3pioZelqSs2KbspnUVG5/83TzQ4P1bqH4tD86HmvfdCyDdUtz/s89LzqEQQe4LxY969ITqPvom/Vtcg+hNfh9KKupXfgbAO6723d0b+lgEx/NgsvJ9Cegs5raFusZfWzzvEdJNfkia5gdw+isj+89AXPlWf0rTeiAwAAAAlwSFlzAAALEwAACxMBAJqcGAAAA0dJREFUeNrlWwmO5CAMjBEv2On/v7BnnjDeZhUkixgfQELIIkXqzgG4XD64YKuU1+vF3v9F3Dzl5/vbVX9PewGg+uz9frP3wduxskMVAdHSlgeImgB/vr5MANTqid6OGAoK92GbXLKcGYgwuH7sfH55iZr2a9TrBAmkdjxsrPkYrZ70LLUZBwpes3vUQCjbSv+5zpf05YSkz/JvCYjAPRykdZCcX6vtWjTrqTOeZPtgZMIQQDTFSUwIrdpPlY2IHFqnRxauzrDNKzhKwz2hPFxA/22UL7AI6AVhJgOGULrXVOJoRK8UvhY2c4zXwuQ/BqTcnl53FHB09KCgTDeBGsPOYl5pNuHJmr7ECVobKqnXo+GRoIWRdmUNU/m9VhBGmkeYaecjtcy9Lw2oLgWgFq8/93BPpNjrrDR5ehRwJDBIQDqFlXGG8C3ffDqMwrfQCkLs7fBVmaLSD2wF4w5jAahcbpB306qaDAfi5SZAhfl0SJoqB6pdmt9bTWYTpt1cANxlQLSDAJY5hV1g1TSWHg5z5qL4iQNgkU4rJ9oI2gZrsjEJiEx70VSSj/i8BwcG5I8lBBWAblO0PlJHGYzCl0B0aarQWjVR2jUJLSGucKTDw2BTZrYLBVR4ia4EHI+tm/xEdpKB0z7pJAidw22tYosCOcxkzaT/QrzGM+21IW3WzAVcY4Fi4hFmaN0DAuMzDiXtJ6D7CMIIGq1W6ORvaNDGY0BIV2ik5CNAYBlgsfMngRA4D+9IdJYHIQqJDmSvSUseO5Clp+Fr/5ebQCcLlmZEVHJ+0NYLqT9IbKkx5vYA1BKdJMCoFZ0losCIQc+yJsCxgNuadsMJEbvGSRpsTYQew4LDstgHjOpo8H8p1lQYH6L9w4auYI3nT/P+2a8FxxgcFwcBe0zgUc6Psjw401q8sINn2r5+YOIpcV9TbqD7e5hNhfAAX4CScmNHpbCA3auHt1QnuGJiJAhfPzVGP7ZMRe9bVuCsjY5nCM+xNnidxgIOsSo8e2DCsuQtTILinTQvTOiCeHLUujzV0oCVOT2m5KU9bRM0OjNH1NiGZm21V84LgybX0itDmvCu4bB19+YKiyKS8KWcoNmpkhLjTPpzLCiF1+T4C+eX+V1keq0EAAAAAElFTkSuQmCC";
+
+var img$e = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIW/JIpioim0ELHYIgaLCKIglhJBG7WIEYzabDabRNjEZTdBgq1gYyFYiDa+Cv+BtoKtgiAogoiNf8BXI2G9Y4SImFlm78eZOZeZM+CfsoyC2zQIhWLJSUzGtfnUgtbyTIAQHQSJ6oZrT89OJGk4Pm7xqXozoHo13vfvCGZM1wBfq/CIYTsl4THhqdWSrXhTuMvI6xnhA+GYIwcUvlR6usZPinM1flPsJBPj4Fc9tdwvTv9iI+8UhPuFIwWrbPycR90kZBbnZqX2yOzFJcEkcTTSlFnGosSA1KJk9r9v8Ns3w4p4DPnbVHDEkSMv3pioZelqSs2KbspnUVG5/83TzQ4P1bqH4tD86HmvfdCyDdUtz/s89LzqEQQe4LxY969ITqPvom/Vtcg+hNfh9KKupXfgbAO6723d0b+lgEx/NgsvJ9Cegs5raFusZfWzzvEdJNfkia5gdw+isj+89AXPlWf0rTeiAwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAZBJREFUeNrtmlGOwyAMRDOoJ9jm/idM9wjrzVZaKWpDoBI2YzBSf6oqeB5jjGmWZfKBDnMKU0wgEd0tPpAKN4sTDsSrxgqyPDffH2AoHp2eYwqgddDqEEAs3gQCyMWrPz85KbHUZVA6VxewOsDFSOTWV392UrAkW3Nl6gCL5grMKSDsK94aAAhSIKpAACADIF7yvxUAeM3/SAFFAOIltRKLFXvNqZkCwr76sQc0BgBv9rdwgDDbP1Ig2uFwQAAIAI46QZU5wgEOdmzEHuAEgOV/BMJk0VxAFu8eQA3Auq6nlH/k/evvx+Ptu6/7van6mjkS8jy2bUMVgJzwKwCvAbYWXzvHFYAcCNQKLwGg2NBQnxH/IKavAiitfi53vIySttuowo86dgjZ0okzQqOIP7ggW0qn2AP2BX1+sifB4w9GW/2Ss3FiC4zshteUjzK4n6jk7Jg5w/g7TWLheNNr2AsRfgBajYunFOh1qdG9BYgUCAABIADcPuymnsPLrVCuAQoHXABAafWd3gNM0+x9PH4BvDJ3ZJJMpIIAAAAASUVORK5CYII=";
+
+var img$f = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIW/JIpioim0ELHYIgaLCKIglhJBG7WIEYzabDabRNjEZTdBgq1gYyFYiDa+Cv+BtoKtgiAogoiNf8BXI2G9Y4SImFlm78eZOZeZM+CfsoyC2zQIhWLJSUzGtfnUgtbyTIAQHQSJ6oZrT89OJGk4Pm7xqXozoHo13vfvCGZM1wBfq/CIYTsl4THhqdWSrXhTuMvI6xnhA+GYIwcUvlR6usZPinM1flPsJBPj4Fc9tdwvTv9iI+8UhPuFIwWrbPycR90kZBbnZqX2yOzFJcEkcTTSlFnGosSA1KJk9r9v8Ns3w4p4DPnbVHDEkSMv3pioZelqSs2KbspnUVG5/83TzQ4P1bqH4tD86HmvfdCyDdUtz/s89LzqEQQe4LxY969ITqPvom/Vtcg+hNfh9KKupXfgbAO6723d0b+lgEx/NgsvJ9Cegs5raFusZfWzzvEdJNfkia5gdw+isj+89AXPlWf0rTeiAwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAaNJREFUeNrlm0sOgzAMRHHEEbj/CbmDq7Ko2opWxBk79pBNuwCTN/4lCshSc+jbfxkxJMXhhzmEAH6IRUjgzTxCBG9iaoXhBSBW+gi4Aq8jbELiebMIQhL2ZhGEBN58rxDBm2wIGXy3LSGE77LZSOEv399I4S8viORm8GlqQDR8qjaYBn5GDZie8zMjIEXOzxIgJXyUAGnhIwRIDe8tQHp4TwFKwHsJUAbeQ4BS8GgBysEjBSgJf2pk27bjd993evjnWL/B7+J5xGaoPPxLAIP3KeCtEUADfxg+8/6fAkgF3xsBdPCnAvzwPiX8Rxsk8Tz8bDAzPOStkdUw8dnwipxf73l7NnjxqgG6+AwFpSKsQDYQQEl49EqwHPw/g8iXEhHwbmsCj91gGfgeAQSYDqneS2oArym4jWqkWM2hZmgV+F8PUcM1iLDXGWnSgMKhcj60RvTsBTwLni6ThjhOxgIf3iHWIFFTwp89VIPAU8BbIqDiV2bDAngfoU8VVYInqdkiKmpTolnTCXEuUBbeskTtTZ30RTRqpZa2eyA/R6FvmZTjAXQIhaMv+ge0AAAAAElFTkSuQmCC";
+
+var img$g = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIW/JIpioim0ELHYIgaLCKIglhJBG7WIEYzabDabRNjEZTdBgq1gYyFYiDa+Cv+BtoKtgiAogoiNf8BXI2G9Y4SImFlm78eZOZeZM+CfsoyC2zQIhWLJSUzGtfnUgtbyTIAQHQSJ6oZrT89OJGk4Pm7xqXozoHo13vfvCGZM1wBfq/CIYTsl4THhqdWSrXhTuMvI6xnhA+GYIwcUvlR6usZPinM1flPsJBPj4Fc9tdwvTv9iI+8UhPuFIwWrbPycR90kZBbnZqX2yOzFJcEkcTTSlFnGosSA1KJk9r9v8Ns3w4p4DPnbVHDEkSMv3pioZelqSs2KbspnUVG5/83TzQ4P1bqH4tD86HmvfdCyDdUtz/s89LzqEQQe4LxY969ITqPvom/Vtcg+hNfh9KKupXfgbAO6723d0b+lgEx/NgsvJ9Cegs5raFusZfWzzvEdJNfkia5gdw+isj+89AXPlWf0rTeiAwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAeNJREFUeNrlm2uOwjAMhDsWJ4De/4bsEfD+WGm3QqTNw54460hIBbWNP2ec2G3Alq/p4RhIDP/jgczwmRyghd9NQ0AbzkUEeAtD1MBAzIIf6VwdjAUbvqdTJUgWLPjWztQAQAlO0JZ7wgAeTnMIvOFrOlFSzFr0oz3Xw/qGrNi1shWB4Hv7HrJVAiYvICjm9EQNkjJf2WGiUgSFv7LHLERlW6+Zzk8IPPotyVO3nRKkYhuBG7JTiDl+yLpBssV8rQMQHN5UQp6TX/TQgqw8ehY2SmD5U5psydst0JJVM9urgVo1ogKmld+SGT6CA6bCz3bAdPiSAzQL/CwFWD/4HHYAFpU9VlPACLyyQ4CVx09Pu+XEEA0MD28FRBp5ZSiAqYJReDDmgH+zzrc6wEIFVvCUx/S1D0SUHK+0dxRiMLIMeHoq3PoqWo3A6XPHaP6NzX/vkOvuMa809JNj0OFc9xXq1jByq+wSc00pV9knWM0g+77/fjkeTzAOMxKlCApgQzfPAbUZngaGLucB98fDKr3F26ck8VD1AIzga64L+cpdnOCXaZIZ/swBKeBLDkgD/8kBqeDfHZAO/uiAlPBX9TxKNcJL/y75ej5nFk5uq0CajVKXD0UrKsTlQ+AoV9afF8PwfwNGBXNgWGrhCQAAAABJRU5ErkJggg==";
+
 const styles = `
   <style>
     :host {
@@ -98,9 +106,9 @@ const styles = `
     .abs-stretch {
       position: absolute;
       left: 0;
-      right: 0;
       top: 0;
-      bottom: 0;
+      width: 100%;
+      height: 100%;
     }
     .abs-topleft {
       position: absolute;
@@ -112,6 +120,12 @@ const styles = `
       height: 100%;
     }
     
+    .no-margin {
+      margin: 0;
+    }
+    .no-padding {
+      padding: 0;
+    }
     .margin-s-5 {
       margin: 0 5px;
     }
@@ -128,7 +142,7 @@ const styles = `
       background: var(--color-bg-final);
     }
   
-    #panel-top {
+    #top-panel {
       position: relative;
       display: flex;
       flex-direction: row;
@@ -142,12 +156,12 @@ const styles = `
       z-index: 1;
       transition: height 0.25s ease-out 0.1s;
     }
-    .hide-panels #panel-top {
+    .hide-panels #top-panel {
       height: 0;
       transition: height 0.25s ease-in 0.2s;
     }
   
-    #panel-bottom {
+    #bottom-panel {
       position: absolute;
       display: flex;
       flex-direction: row;
@@ -164,10 +178,30 @@ const styles = `
       z-index: 1;
       transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
     }
-    .hide-panels #panel-bottom {
+    .hide-panels #bottom-panel {
       bottom: 0;
       height: 0;
       transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
+    }
+    
+    #annotation-panel {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex-grow: 0;
+      flex-shrink: 0;
+      top: 80px;
+      right: 0;
+      width: 0;
+      z-index: 1;
+      transition: right 0.1s linear 0.1s, width 0.25s ease-in 0.2s;
+    }
+    .mode-annotation #annotation-panel {
+      right: 20px;
+      width: 50px;
+      transition: width 0.25s ease-out, right 0.1s linear 0.25s;
     }
 
     .panel-v-separator {
@@ -218,6 +252,22 @@ const styles = `
       opacity: 0;
       transform: scale(0);
       transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    }
+
+    .annotation-panel-item {
+      margin: 3px;
+      cursor: default;      
+      opacity: 0;
+      background: var(--color-primary-tr-final);
+      box-shadow: 0 0 10px var(--color-shadow-final);
+      transform: scale(0);
+      transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    }    
+    .mode-annotation .annotation-panel-item { 
+      cursor: pointer;
+      opacity: 100;
+      transform: scale(1);    
+      transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
   
     #paginator {  
@@ -296,10 +346,10 @@ const styles = `
       right: 0;
       top: 50px;
       bottom: 0;
-      padding-top: 0px;
+      padding-top: 0;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
-    #viewer.mode-hand {
+    .mode-hand #viewer {
       cursor: grab !important;
       user-select: none !important;
     }
@@ -321,7 +371,7 @@ const styles = `
       padding-top: 0px;
       left: 0;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
-    } 
+    }
   
     .page {    
       position: relative;
@@ -494,7 +544,7 @@ const html = `
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
-    <div id="panel-top"> 
+    <div id="top-panel"> 
       <div class="subpanel panel-item">
         <div id="toggle-previewer" class="panel-button panel-item">
           <img src="${img$6}"/>
@@ -516,7 +566,7 @@ const html = `
         </div> 
       </div>
     </div>
-    <div id="panel-bottom" class="disabled">
+    <div id="bottom-panel" class="disabled">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${img}"/>
@@ -543,6 +593,24 @@ const html = `
           <img src="${img$5}"/>
         </div>
       </div>
+    </div>
+    <div id="annotation-panel">
+      <div id="button-annotation-mode-select" 
+        class="panel-button annotation-panel-item">
+        <img src="${img$d}"/>
+      </div> 
+      <div id="button-annotation-mode-stamp" 
+        class="panel-button annotation-panel-item">
+        <img src="${img$e}"/>
+      </div> 
+      <div id="button-annotation-mode-pen" 
+        class="panel-button annotation-panel-item">
+        <img src="${img$f}"/>
+      </div> 
+      <div id="button-annotation-mode-geometric" 
+        class="panel-button annotation-panel-item">
+        <img src="${img$g}"/>
+      </div> 
     </div>
   </div>
 `;
@@ -1461,6 +1529,9 @@ const DIGIT_CHARS = new Set([
     codes.D_9,
 ]);
 function isRegularChar(code) {
+    if (isNaN(code)) {
+        return false;
+    }
     return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
 function isDigit(code) {
@@ -2790,16 +2861,13 @@ class DataParser {
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
-    getValidStartIndex(direction, start) {
-        return !isNaN(start)
-            ? Math.max(Math.min(start, this._maxIndex), 0)
-            : direction === "straight"
-                ? 0
-                : this._maxIndex;
-    }
     findSingleCharIndex(filter, direction = "straight", start) {
         const arr = this._data;
-        let i = this.getValidStartIndex(direction, start);
+        let i = isNaN(start)
+            ? direction === "straight"
+                ? 0
+                : this._maxIndex
+            : start;
         if (direction === "straight") {
             for (i; i <= this._maxIndex; i++) {
                 if (filter(arr[i])) {
@@ -4653,6 +4721,10 @@ class PdfStream extends PdfObject {
         }
         return this._decodedStreamData;
     }
+    get decodedStreamDataChars() {
+        const decoder = new TextDecoder();
+        return decoder.decode(this._decodedStreamData);
+    }
     toArray(cryptInfo) {
         const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
             ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
@@ -4671,6 +4743,11 @@ class PdfStream extends PdfObject {
         }
         bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END);
         return new Uint8Array(bytes);
+    }
+    setTextStreamData(text) {
+        const encoder = new TextEncoder();
+        const bytes = encoder.encode(text);
+        this.streamData = bytes;
     }
     parseProps(parseInfo) {
         var _a, _b;
@@ -4802,14 +4879,29 @@ class PdfStream extends PdfObject {
         this._streamData = encodedData;
     }
     setStreamData(data) {
-        let encodedData;
+        if (!(data === null || data === void 0 ? void 0 : data.length)) {
+            throw new Error("Can't set emprty stream data");
+        }
+        let params;
         if (this.DecodeParms) {
-            const params = this.DecodeParms;
-            encodedData = FlateDecoder.Encode(data, params.getIntProp("/Predictor") || flatePredictors.NONE, params.getIntProp("/Columns") || 1, params.getIntProp("/Colors") || 1, params.getIntProp("/BitsPerComponent") || 8);
+            params = this.DecodeParms;
         }
         else {
-            encodedData = FlateDecoder.Encode(data);
+            let columns;
+            let i = 10;
+            while (true) {
+                if (data.length % i === 0) {
+                    columns = i;
+                    break;
+                }
+                i--;
+            }
+            params = new DecodeParamsDict();
+            params.setIntProp("/Predictor", flatePredictors.PNG_UP);
+            params.setIntProp("/Columns", columns);
+            this.DecodeParms = params;
         }
+        const encodedData = FlateDecoder.Encode(data, (params === null || params === void 0 ? void 0 : params.getIntProp("/Predictor")) || flatePredictors.NONE, (params === null || params === void 0 ? void 0 : params.getIntProp("/Columns")) || 1, (params === null || params === void 0 ? void 0 : params.getIntProp("/Colors")) || 1, (params === null || params === void 0 ? void 0 : params.getIntProp("/BitsPerComponent")) || 8);
         this._streamData = encodedData;
         this.Length = encodedData.length;
         this.DL = data.length;
@@ -8027,15 +8119,49 @@ class AnnotationDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    render() {
-        if (!this._svg) {
-            this._svg = this.renderMainElement();
+    renderAsync() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (!this._svg) {
+                this._svg = this.renderMainElement();
+            }
+            yield this.updateRenderAsync();
+            return {
+                svg: this._svg,
+                clipPaths: this._svgClipPaths,
+                tempCopy: this._svgContentCopy,
+                tempCopyUse: this._svgContentCopyUse,
+            };
+        });
+    }
+    applyRectTransform(matrix) {
+        const dict = this._proxy || this;
+        const bBox = dict.getLocalBB();
+        bBox.ll.applyMat3(matrix);
+        bBox.lr.applyMat3(matrix);
+        bBox.ur.applyMat3(matrix);
+        bBox.ul.applyMat3(matrix);
+        const { min: newRectMin, max: newRectMax } = vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
+        dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = stream.matrix.multiply(matrix);
+            dict.apStream.matrix = newApMatrix;
         }
-        this.updateRenderAsync();
-        return {
-            svg: this._svg,
-            clipPaths: this._svgClipPaths,
-        };
+        dict.M = DateString.fromDate(new Date());
+    }
+    moveTo(pageX, pageY) {
+        const width = this.Rect[2] - this.Rect[0];
+        const height = this.Rect[3] - this.Rect[1];
+        const x = pageX - width / 2;
+        const y = pageY - height / 2;
+        const mat = Mat3.buildTranslate(x, y);
+        this.applyRectTransform(mat);
+        console.log(pageX);
+        console.log(pageY);
+        console.log(width);
+        console.log(height);
+        console.log(x);
+        console.log(y);
     }
     parseProps(parseInfo) {
         var _a;
@@ -8220,22 +8346,6 @@ class AnnotationDict extends PdfDict {
         this.name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
         this.pageRect = parseInfo.rect;
     }
-    applyRectTransform(matrix) {
-        const dict = this._proxy || this;
-        const bBox = dict.getLocalBB();
-        bBox.ll.applyMat3(matrix);
-        bBox.lr.applyMat3(matrix);
-        bBox.ur.applyMat3(matrix);
-        bBox.ul.applyMat3(matrix);
-        const { min: newRectMin, max: newRectMax } = vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-        dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-        const stream = dict.apStream;
-        if (stream) {
-            const newApMatrix = stream.matrix.multiply(matrix);
-            dict.apStream.matrix = newApMatrix;
-        }
-        dict.M = DateString.fromDate(new Date());
-    }
     getCurrentRotation() {
         var _a;
         const matrix = (_a = this.apStream) === null || _a === void 0 ? void 0 : _a.matrix;
@@ -8349,7 +8459,9 @@ class AnnotationDict extends PdfDict {
         copySymbol.id = this._svgId + "_symbol";
         const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
         copySymbolUse.setAttribute("href", `#${this._svgId}`);
-        copySymbolUse.setAttribute("viewBox", `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+        if (this.pageRect) {
+            copySymbolUse.setAttribute("viewBox", `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+        }
         copySymbol.append(copySymbolUse);
         copyDefs.append(copySymbol);
         const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
@@ -8672,8 +8784,6 @@ class DocumentDataUpdater {
         }
         this.writeXref();
         const bytes = this._writer.getCurrentData();
-        const parser = new DataParser(bytes);
-        console.log(parser.sliceChars(parser.maxIndex - 3000, parser.maxIndex));
         return bytes;
     }
     isNew(obj) {
@@ -10228,10 +10338,142 @@ const stampTypes = {
     CONFIDENTIAL: "/Confidential",
     SECRET: "/TopSecret",
 };
+const stampBBox = [0, 0, 440, 120];
+const halfStampBBox = [0, 0, 220, 60];
+const draftStampForm = `33.5 13.4 m
+404.5 6.92 l
+419.6 6.657 431.9 18.52 432.1 33.62 c
+432.89 78.92 l
+433.153 94.02 421.29 106.32 406.19 106.52 c
+35.19 113 l
+20.09 113.263 7.79 101.4 7.59 86.3 c
+6.8 41 l
+6.537 25.9 18.4 13.6 33.5 13.4 c
+s
+150 61 m
+150.047 65.947 149.114 70.413 147.2 74.4 c
+145.287 78.333 142.853 81.373 139.9 83.52 c
+137.68 85.127 135.24 86.263 132.58 86.93 c
+129.92 87.593 126.763 87.957 123.11 88.02 c
+106.91 88.29 l
+106.401 35.19 l
+123.001 34.912 l
+126.734 34.85 129.961 35.165 132.681 35.857 c
+135.394 36.524 137.681 37.507 139.541 38.807 c
+142.721 40.994 145.234 43.974 147.081 47.747 c
+148.941 51.5 149.898 55.934 149.951 61.047 c
+h
+137.8 61.097 m
+137.767 57.597 137.183 54.621 136.05 52.167 c
+134.937 49.687 133.183 47.764 130.79 46.397 c
+129.57 45.731 128.323 45.287 127.05 45.067 c
+125.797 44.827 123.897 44.728 121.35 44.77 c
+118.36 44.82 l
+118.678 78.12 l
+121.668 78.07 l
+124.481 78.023 126.541 77.846 127.848 77.538 c
+129.161 77.207 130.438 76.637 131.678 75.828 c
+133.818 74.362 135.381 72.432 136.368 70.038 c
+137.348 67.618 137.821 64.648 137.788 61.128 c
+f
+185 50 m
+184.987 48.667 184.74 47.53 184.259 46.59 c
+183.778 45.643 182.961 44.907 181.809 44.38 c
+181.002 44.013 180.066 43.802 178.999 43.749 c
+177.932 43.672 176.689 43.645 175.269 43.669 c
+170.989 43.74 l
+171.126 58.04 l
+174.756 57.979 l
+176.643 57.948 178.223 57.814 179.496 57.579 c
+180.769 57.344 181.833 56.837 182.686 56.059 c
+183.499 55.306 184.086 54.486 184.446 53.599 c
+184.827 52.686 185.011 51.483 184.996 49.989 c
+h
+203.8 86.6 m
+189.4 86.841 l
+176.7 67.541 l
+171.25 67.632 l
+171.437 87.132 l
+159.637 87.329 l
+159.128 34.229 l
+178.928 33.897 l
+181.635 33.852 183.965 33.991 185.918 34.315 c
+187.871 34.639 189.705 35.382 191.418 36.545 c
+193.151 37.705 194.531 39.228 195.558 41.115 c
+196.605 42.975 197.141 45.335 197.168 48.195 c
+197.206 52.122 196.446 55.335 194.888 57.835 c
+193.355 60.335 191.138 62.432 188.238 64.125 c
+f
+251 85.8 m
+238.8 86.004 l
+235.53 75.304 l
+218.53 75.588 l
+215.46 86.388 l
+203.56 86.587 l
+219.96 33.187 l
+233.56 32.959 l
+h
+232.6 65.6 m
+226.78 46.6 l
+221.33 65.8 l
+f
+290 42.3 m
+268.9 42.653 l
+268.995 52.543 l
+288.495 52.216 l
+288.593 62.516 l
+269.093 62.843 l
+269.31 85.543 l
+257.51 85.74 l
+257.001 32.64 l
+289.801 32.091 l
+f
+334 41.5 m
+319.7 41.739 l
+320.11 84.639 l
+308.31 84.837 l
+307.9 41.937 l
+293.6 42.176 l
+293.502 31.876 l
+333.902 31.199 l
+f
+`;
 class StampAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.STAMP);
         this.Name = stampTypes.DRAFT;
+    }
+    static createStandard(type) {
+        const now = DateString.fromDate(new Date());
+        const stampForm = new XFormStream();
+        stampForm.LastModified = now;
+        stampForm.BBox = stampBBox;
+        stampForm.Filter = "/FlateDecode";
+        switch (type) {
+            case "/Draft":
+                stampForm.setTextStreamData(draftStampForm);
+                break;
+            default:
+                throw new Error(`Stamp type '${type}' is not supported`);
+        }
+        const stampApStream = new XFormStream();
+        stampApStream.LastModified = now;
+        stampApStream.BBox = stampBBox;
+        stampApStream.Resources = new ResourceDict();
+        stampApStream.Resources.setXObject("/Fm", stampForm);
+        stampApStream.Filter = "/FlateDecode";
+        stampApStream.setTextStreamData(`q 1 0 0 -1 0 ${stampBBox[3]} cm .804 0 0 rg .804 0 0 RG 1 j 8.58 w /Fm Do Q`);
+        const stampUuid = getRandomUuid();
+        const stampAnnotation = new StampAnnotation();
+        stampAnnotation.Name = type;
+        stampAnnotation.Rect = halfStampBBox;
+        stampAnnotation.Contents = LiteralString.fromString(type.slice(1));
+        stampAnnotation.Subj = LiteralString.fromString(type.slice(1));
+        stampAnnotation.CreationDate = now;
+        stampAnnotation.NM = LiteralString.fromString(stampUuid);
+        stampAnnotation.name = stampUuid;
+        stampAnnotation.apStream = stampApStream;
+        return stampAnnotation;
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -10474,7 +10716,15 @@ class DocumentData {
         const annotations = this.getSupportedAnnotationMap().get(pageId);
         return annotations || [];
     }
-    addAnnotation(pageId, annotation) {
+    createStampAnnotation(type) {
+        switch (type) {
+            case "draft":
+                return StampAnnotation.createStandard("/Draft");
+            default:
+                throw new Error("Unsupported stamp type");
+        }
+    }
+    appendAnnotationToPage(pageId, annotation) {
         const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
         if (pageAnnotations) {
             pageAnnotations.push(annotation);
@@ -10711,12 +10961,13 @@ var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class PageAnnotationView {
     constructor(docData, pageId, pageDimensions) {
-        this._svgByAnnotation = new Map();
+        this._rendered = new Map();
         if (!docData || isNaN(pageId) || !pageDimensions) {
             throw new Error("Required argument not found");
         }
         this._pageId = pageId;
         this._pageDimensions = pageDimensions;
+        this._docData = docData;
         this._container = document.createElement("div");
         this._container.classList.add("page-annotations");
         this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -10731,7 +10982,6 @@ class PageAnnotationView {
         });
         this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
         this._container.append(this._svg);
-        this._annotations = docData.getPageAnnotations(pageId);
     }
     destroy() {
         this.remove();
@@ -10743,22 +10993,20 @@ class PageAnnotationView {
     }
     appendAsync(parent) {
         return __awaiter$4(this, void 0, void 0, function* () {
-            if (!this._rendered) {
-                yield this.renderAnnotationsAsync();
-                this._rendered = true;
-            }
+            yield this.renderAnnotationsAsync();
             parent.append(this._container);
         });
     }
     switchSelectedAnnotation(annotation) {
+        var _a, _b;
         if (annotation === this._selectedAnnotation) {
             return;
         }
         if (this._selectedAnnotation) {
-            const oldSelectedSvg = this._svgByAnnotation.get(this._selectedAnnotation);
+            const oldSelectedSvg = (_a = this._rendered.get(this._selectedAnnotation)) === null || _a === void 0 ? void 0 : _a.svg;
             oldSelectedSvg === null || oldSelectedSvg === void 0 ? void 0 : oldSelectedSvg.classList.remove("selected");
         }
-        const newSelectedSvg = this._svgByAnnotation.get(annotation);
+        const newSelectedSvg = (_b = this._rendered.get(annotation)) === null || _b === void 0 ? void 0 : _b.svg;
         if (!newSelectedSvg) {
             this._selectedAnnotation = null;
             return;
@@ -10767,38 +11015,39 @@ class PageAnnotationView {
         this._svg.append(newSelectedSvg);
         this._selectedAnnotation = annotation;
     }
-    renderAnnotation(annotation) {
-        const svgWithBox = annotation.render();
-        if (!svgWithBox) {
-            return;
-        }
-        const { svg, clipPaths } = svgWithBox;
-        this._svgByAnnotation.set(annotation, svg);
-        svg.addEventListener("pointerdown", () => this.switchSelectedAnnotation(annotation));
-        this._svg.append(svg);
-        clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
-    }
     renderAnnotationsAsync() {
-        var _a;
         return __awaiter$4(this, void 0, void 0, function* () {
             this.clear();
-            const promises = [];
-            for (let i = 0; i < ((_a = this._annotations) === null || _a === void 0 ? void 0 : _a.length) || 0; i++) {
-                promises.push(new Promise(resolve => {
-                    setTimeout(() => {
-                        this.renderAnnotation(this._annotations[i]);
-                        resolve();
-                    }, 0);
-                }));
+            const annotations = this._docData.getPageAnnotations(this._pageId) || [];
+            for (let i = 0; i < annotations.length || 0; i++) {
+                const annotation = annotations[i];
+                let renderResult;
+                if (!this._rendered.has(annotation)) {
+                    yield new Promise(resolve => {
+                        setTimeout(() => __awaiter$4(this, void 0, void 0, function* () {
+                            renderResult = yield annotation.renderAsync();
+                            resolve();
+                        }), 0);
+                    });
+                }
+                else {
+                    renderResult = this._rendered.get(annotation);
+                }
+                if (!renderResult) {
+                    continue;
+                }
+                this._rendered.set(annotation, renderResult);
+                const { svg, clipPaths } = renderResult;
+                this._svg.append(svg);
+                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
+                svg.addEventListener("pointerdown", () => this.switchSelectedAnnotation(annotation));
             }
-            yield Promise.all(promises);
             this._svg.append(this._defs);
             return true;
         });
     }
     clear() {
         this._svg.innerHTML = "";
-        this._svgByAnnotation.clear();
     }
 }
 
@@ -10822,7 +11071,7 @@ class PageView {
         this._pageProxy = pageProxy;
         this._viewport = pageProxy.getViewport({ scale: 1 });
         this._maxScale = Math.max(maxScale, 1);
-        this._annotationData = docData;
+        this._docData = docData;
         this.number = pageProxy.pageNumber;
         this.id = pageProxy.ref["num"];
         this.generation = pageProxy.ref["gen"];
@@ -10925,6 +11174,10 @@ class PageView {
         (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
         this._viewRendered = false;
     }
+    clearAnnotationSelection() {
+        var _a;
+        (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.switchSelectedAnnotation(null);
+    }
     cancelRenderTask() {
         if (this._renderTask) {
             this._renderTask.cancel();
@@ -11026,7 +11279,7 @@ class PageView {
             this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._annotationData, this.id, new Vec2(x, y));
+                this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
             }
             yield this._annotations.appendAsync(this.viewContainer);
             if (scale === this._scale) {
@@ -11054,6 +11307,7 @@ class TsPdfViewer {
         this._scale = 1;
         this._previewerHidden = true;
         this._pages = [];
+        this._renderedPages = [];
         this._currentPage = 0;
         this._pointerInfo = {
             lastPos: null,
@@ -11078,39 +11332,17 @@ class TsPdfViewer {
             yield this.refreshPagesAsync();
             this.renderVisiblePreviews();
             this.renderVisiblePages();
-            this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
+            this._shadowRoot.querySelector("#bottom-panel").classList.remove("disabled");
         });
         this.onPdfClosedAsync = () => __awaiter$6(this, void 0, void 0, function* () {
-            this._shadowRoot.querySelector("#panel-bottom").classList.add("disabled");
+            this._shadowRoot.querySelector("#bottom-panel").classList.add("disabled");
+            this.setViewerMode("text");
             if (this._pdfDocument) {
                 this._pdfDocument = null;
                 this._docData = null;
             }
             yield this.refreshPagesAsync();
         });
-        this.onMainContainerResize = (entries, observer) => {
-            const { width } = this._mainContainer.getBoundingClientRect();
-            if (width < 721) {
-                this._mainContainer.classList.add("mobile");
-            }
-            else {
-                this._mainContainer.classList.remove("mobile");
-            }
-        };
-        this.onDownloadFileButtonClick = () => {
-            var _a;
-            const data = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
-            this.openPdfAsync(data);
-        };
-        this.onTextModeButtonClick = () => {
-            this.toggleMode("text");
-        };
-        this.onHandModeButtonClick = () => {
-            this.toggleMode("hand");
-        };
-        this.onAnnotationModeButtonClick = () => {
-            this.toggleMode("annotation");
-        };
         this.onPreviewerToggleClick = () => {
             if (this._previewerHidden) {
                 this._mainContainer.classList.remove("hide-previewer");
@@ -11143,52 +11375,6 @@ class TsPdfViewer {
         this.onPreviewerScroll = (e) => {
             this.renderVisiblePreviews();
         };
-        this.onPaginatorInput = (event) => {
-            if (event.target instanceof HTMLInputElement) {
-                event.target.value = event.target.value.replace(/[^\d]+/g, "");
-            }
-        };
-        this.onPaginatorChange = (event) => {
-            if (event.target instanceof HTMLInputElement) {
-                const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
-                if (pageNumber + "" !== event.target.value) {
-                    event.target.value = pageNumber + "";
-                }
-                this.scrollToPage(pageNumber - 1);
-            }
-        };
-        this.onPaginatorPrevClick = () => {
-            const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
-            this.scrollToPage(pageNumber);
-        };
-        this.onPaginatorNextClick = () => {
-            const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
-            this.scrollToPage(pageNumber);
-        };
-        this.onZoomOutClick = () => {
-            this.zoomOut();
-        };
-        this.onZoomInClick = () => {
-            this.zoomIn();
-        };
-        this.onZoomFitViewerClick = () => {
-            const cWidth = this._viewer.getBoundingClientRect().width;
-            const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
-            const scale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-            this.setScale(scale);
-            this.scrollToPage(this._currentPage);
-        };
-        this.onZoomFitPageClick = () => {
-            const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
-            const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
-            const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-            const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
-            this.setScale(Math.min(hScale, vScale));
-            this.scrollToPage(this._currentPage);
-        };
-        this.onViewerScroll = (e) => {
-            this.renderVisiblePages();
-        };
         this.onViewerPointerMove = (event) => {
             const { clientX, clientY } = event;
             const { x: rectX, y: rectY, width, height } = this._viewer.getBoundingClientRect();
@@ -11217,8 +11403,20 @@ class TsPdfViewer {
             }
             this._pointerInfo.lastPos = new Vec2(clientX, clientY);
         };
-        this.onViewerPointerDown = (event) => {
-            if (this._mode !== "hand") {
+        this.onTextModeButtonClick = () => {
+            this.setViewerMode("text");
+        };
+        this.onHandModeButtonClick = () => {
+            this.setViewerMode("hand");
+        };
+        this.onAnnotationModeButtonClick = () => {
+            this.setViewerMode("annotation");
+        };
+        this.onViewerScroll = (e) => {
+            this.renderVisiblePages();
+        };
+        this.onViewerPointerDownScroll = (event) => {
+            if (this._viewerMode !== "hand") {
                 return;
             }
             const { clientX, clientY } = event;
@@ -11242,7 +11440,19 @@ class TsPdfViewer {
             window.addEventListener("pointerup", onPointerUp);
             window.addEventListener("pointerout", onPointerUp);
         };
-        this.onViewerTouchStart = (event) => {
+        this.onViewerWheelZoom = (event) => {
+            if (!event.ctrlKey) {
+                return;
+            }
+            event.preventDefault();
+            if (event.deltaY > 0) {
+                this.zoomOut(this._pointerInfo.lastPos);
+            }
+            else {
+                this.zoomIn(this._pointerInfo.lastPos);
+            }
+        };
+        this.onViewerTouchZoom = (event) => {
             if (event.touches.length !== 2) {
                 return;
             }
@@ -11276,16 +11486,90 @@ class TsPdfViewer {
             event.target.addEventListener("touchend", onTouchEnd);
             event.target.addEventListener("touchcancel", onTouchEnd);
         };
-        this.onViewerWheel = (event) => {
-            if (!event.ctrlKey) {
+        this.onZoomOutClick = () => {
+            this.zoomOut();
+        };
+        this.onZoomInClick = () => {
+            this.zoomIn();
+        };
+        this.onZoomFitViewerClick = () => {
+            const cWidth = this._viewer.getBoundingClientRect().width;
+            const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
+            const scale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+            this.setScale(scale);
+            this.scrollToPage(this._currentPage);
+        };
+        this.onZoomFitPageClick = () => {
+            const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
+            const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
+            const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+            const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
+            this.setScale(Math.min(hScale, vScale));
+            this.scrollToPage(this._currentPage);
+        };
+        this.onPaginatorInput = (event) => {
+            if (event.target instanceof HTMLInputElement) {
+                event.target.value = event.target.value.replace(/[^\d]+/g, "");
+            }
+        };
+        this.onPaginatorChange = (event) => {
+            if (event.target instanceof HTMLInputElement) {
+                const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
+                if (pageNumber + "" !== event.target.value) {
+                    event.target.value = pageNumber + "";
+                }
+                this.scrollToPage(pageNumber - 1);
+            }
+        };
+        this.onPaginatorPrevClick = () => {
+            const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
+            this.scrollToPage(pageNumber);
+        };
+        this.onPaginatorNextClick = () => {
+            const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
+            this.scrollToPage(pageNumber);
+        };
+        this.onAnnotationSelectModeButtonClick = () => {
+            this.setAnnotationMode("select");
+        };
+        this.onAnnotationStampModeButtonClick = () => {
+            this.setAnnotationMode("stamp");
+        };
+        this.onAnnotationPenModeButtonClick = () => {
+            this.setAnnotationMode("pen");
+        };
+        this.onAnnotationGeometricModeButtonClick = () => {
+            this.setAnnotationMode("geometric");
+        };
+        this.onStampAnnotationOverlayPointerMove = (e) => {
+            const { clientX: cx, clientY: cy } = e;
+            const { height: oh, top, left: ox } = this._annotationOverlay.getBoundingClientRect();
+            const oy = this._mainContainer.classList.contains("hide-panels")
+                ? top + oh - 25
+                : top + oh;
+            const offsetX = (cx - ox) / this._scale;
+            const offsetY = (oy - cy) / this._scale;
+            const { width: gw, height: gh } = this._annotationOverlaySvg.getBBox();
+            this._annotationOverlaySvg.setAttribute("transform", `translate(${offsetX - gw / 2} ${offsetY - gh / 2})`);
+            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+            this._annotationOverlayPageCoords = pageCoords;
+        };
+        this.onStampAnnotationOverlayPointerUp = (e) => {
+            var _a;
+            if (!this._annotationOverlayPageCoords || !this._annotationToAdd) {
                 return;
             }
-            event.preventDefault();
-            if (event.deltaY > 0) {
-                this.zoomOut(this._pointerInfo.lastPos);
-            }
-            else {
-                this.zoomIn(this._pointerInfo.lastPos);
+            const { pageId, pageX, pageY } = this._annotationOverlayPageCoords;
+            this._annotationToAdd.moveTo(pageX, pageY);
+            this._docData.appendAnnotationToPage(pageId, this._annotationToAdd);
+            (_a = this._renderedPages.find(x => x.id === pageId)) === null || _a === void 0 ? void 0 : _a.renderViewAsync(true);
+            this.createTempStampAnnotationAsync();
+        };
+        this.onDownloadFileButtonClick = () => {
+            var _a;
+            const data = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
+            if (data === null || data === void 0 ? void 0 : data.length) {
+                TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
             }
         };
         const container = document.querySelector(containerSelector);
@@ -11318,14 +11602,16 @@ class TsPdfViewer {
         setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
     destroy() {
-        var _a, _b;
+        var _a, _b, _c, _d;
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
         this._pages.forEach(x => x.destroy());
         if (this._pdfDocument) {
             this._pdfDocument.cleanup();
             this._pdfDocument.destroy();
         }
-        (_b = this._mainContainerResizeObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
+        (_b = this._mainContainerRObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
+        (_c = this._annotationOverlayMObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
+        (_d = this._annotationOverlayRObserver) === null || _d === void 0 ? void 0 : _d.disconnect();
         this._shadowRoot.innerHTML = "";
     }
     openPdfAsync(src) {
@@ -11396,6 +11682,29 @@ class TsPdfViewer {
     initViewerGUI() {
         this._shadowRoot = this._outerContainer.attachShadow({ mode: "open" });
         this._shadowRoot.innerHTML = styles + html;
+        this.initMainDivs();
+        this.initViewControls();
+        this.initModeSwitches();
+        this.initAnnotationOverlay();
+    }
+    initMainDivs() {
+        const mainContainer = this._shadowRoot.querySelector("div#main-container");
+        const mcResizeObserver = new ResizeObserver((entries) => {
+            const { width } = this._mainContainer.getBoundingClientRect();
+            if (width < 721) {
+                this._mainContainer.classList.add("mobile");
+            }
+            else {
+                this._mainContainer.classList.remove("mobile");
+            }
+        });
+        mcResizeObserver.observe(mainContainer);
+        this._mainContainer = mainContainer;
+        this._mainContainerRObserver = mcResizeObserver;
+        this._previewer = this._shadowRoot.querySelector("#previewer");
+        this._viewer = this._shadowRoot.querySelector("#viewer");
+    }
+    initViewControls() {
         const paginatorInput = this._shadowRoot.getElementById("paginator-input");
         paginatorInput.addEventListener("input", this.onPaginatorInput);
         paginatorInput.addEventListener("change", this.onPaginatorChange);
@@ -11413,27 +11722,92 @@ class TsPdfViewer {
             .addEventListener("click", this.onZoomFitPageClick);
         this._shadowRoot.querySelector("#toggle-previewer")
             .addEventListener("click", this.onPreviewerToggleClick);
-        this._previewer = this._shadowRoot.querySelector("#previewer");
         this._previewer.addEventListener("scroll", this.onPreviewerScroll);
-        this._viewer = this._shadowRoot.querySelector("#viewer");
         this._viewer.addEventListener("scroll", this.onViewerScroll);
-        this._viewer.addEventListener("wheel", this.onViewerWheel);
+        this._viewer.addEventListener("wheel", this.onViewerWheelZoom);
         this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
-        this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);
-        this._viewer.addEventListener("touchstart", this.onViewerTouchStart);
+        this._viewer.addEventListener("pointerdown", this.onViewerPointerDownScroll);
+        this._viewer.addEventListener("touchstart", this.onViewerTouchZoom);
+        this._shadowRoot.querySelector("#button-download-file")
+            .addEventListener("click", this.onDownloadFileButtonClick);
+    }
+    initModeSwitches() {
         this._shadowRoot.querySelector("#button-mode-text")
             .addEventListener("click", this.onTextModeButtonClick);
         this._shadowRoot.querySelector("#button-mode-hand")
             .addEventListener("click", this.onHandModeButtonClick);
         this._shadowRoot.querySelector("#button-mode-annotation")
             .addEventListener("click", this.onAnnotationModeButtonClick);
-        this.toggleMode("text");
-        this._shadowRoot.querySelector("#button-download-file")
-            .addEventListener("click", this.onDownloadFileButtonClick);
-        this._mainContainer = this._shadowRoot.querySelector("div#main-container");
-        const resizeObserver = new ResizeObserver(this.onMainContainerResize);
-        resizeObserver.observe(this._mainContainer);
-        this._mainContainerResizeObserver = resizeObserver;
+        this.setViewerMode("text");
+        this._shadowRoot.querySelector("#button-annotation-mode-select")
+            .addEventListener("click", this.onAnnotationSelectModeButtonClick);
+        this._shadowRoot.querySelector("#button-annotation-mode-stamp")
+            .addEventListener("click", this.onAnnotationStampModeButtonClick);
+        this._shadowRoot.querySelector("#button-annotation-mode-pen")
+            .addEventListener("click", this.onAnnotationPenModeButtonClick);
+        this._shadowRoot.querySelector("#button-annotation-mode-geometric")
+            .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
+        this.setAnnotationMode("select");
+    }
+    initAnnotationOverlay() {
+        const annotationOverlay = document.createElement("div");
+        annotationOverlay.classList.add("absolute", "stretch", "no-margin", "no-padding");
+        annotationOverlay.id = "annotation-overlay";
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("abs-stretch", "no-margin", "no-padding");
+        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+        svg.setAttribute("opacity", "0.5");
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        svg.append(g);
+        annotationOverlay.append(svg);
+        this._viewer.addEventListener("scroll", () => {
+            annotationOverlay.style.left = this._viewer.scrollLeft + "px";
+            annotationOverlay.style.top = this._viewer.scrollTop + "px";
+        });
+        let lastScale;
+        const updateSvgViewBox = () => {
+            const { width: w, height: h } = annotationOverlay.getBoundingClientRect();
+            if (!w || !h) {
+                return;
+            }
+            const viewBoxWidth = w / this._scale;
+            const viewBoxHeight = h / this._scale;
+            svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+            lastScale = this._scale;
+        };
+        updateSvgViewBox();
+        const onPossibleViewerSizeChanged = () => {
+            if (this._scale === lastScale) {
+                return;
+            }
+            updateSvgViewBox();
+        };
+        const viewerRObserver = new ResizeObserver((entries) => {
+            onPossibleViewerSizeChanged();
+        });
+        const viewerMObserver = new MutationObserver((mutations) => {
+            const record = mutations[0];
+            if (!record) {
+                return;
+            }
+            record.addedNodes.forEach(x => {
+                const element = x;
+                if (element.classList.contains("page")) {
+                    viewerRObserver.observe(x);
+                }
+            });
+            record.removedNodes.forEach(x => viewerRObserver.unobserve(x));
+            onPossibleViewerSizeChanged();
+        });
+        viewerMObserver.observe(this._viewer, {
+            attributes: false,
+            childList: true,
+            subtree: false,
+        });
+        this._annotationOverlayMObserver = viewerMObserver;
+        this._annotationOverlayRObserver = viewerRObserver;
+        this._annotationOverlay = annotationOverlay;
+        this._annotationOverlaySvg = g;
     }
     refreshPagesAsync() {
         var _a;
@@ -11459,49 +11833,6 @@ class TsPdfViewer {
             }
         });
     }
-    renderVisiblePreviews() {
-        if (this._previewerHidden) {
-            return;
-        }
-        const pages = this._pages;
-        const visiblePreviewNumbers = this.getVisiblePages(this._previewer, pages, true);
-        const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPages, 0);
-        const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPages, pages.length - 1);
-        for (let i = 0; i < pages.length; i++) {
-            const page = pages[i];
-            if (i >= minPageNumber && i <= maxPageNumber) {
-                page.renderPreviewAsync();
-            }
-        }
-    }
-    renderVisiblePages() {
-        var _a, _b;
-        const pages = this._pages;
-        const visiblePageNumbers = this.getVisiblePages(this._viewer, pages);
-        const prevCurrent = this._currentPage;
-        const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
-        if (!prevCurrent || prevCurrent !== current) {
-            (_a = pages[prevCurrent]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
-            (_b = pages[current]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
-            this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
-            this.scrollToPreview(current);
-            this._currentPage = current;
-        }
-        if (current === -1) {
-            return;
-        }
-        const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
-        const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
-        for (let i = 0; i < pages.length; i++) {
-            const page = pages[i];
-            if (i >= minPageNumber && i <= maxPageNumber) {
-                page.renderViewAsync();
-            }
-            else {
-                page.clearView();
-            }
-        }
-    }
     scrollToPreview(pageNumber) {
         const { top: cTop, height: cHeight } = this._previewer.getBoundingClientRect();
         const { top: pTop, height: pHeight } = this._pages[pageNumber].previewContainer.getBoundingClientRect();
@@ -11509,6 +11840,46 @@ class TsPdfViewer {
         const pCenter = pTop + pHeight / 2;
         const scroll = pCenter - cCenter + this._previewer.scrollTop;
         this._previewer.scrollTo(0, scroll);
+    }
+    setViewerMode(mode) {
+        if (!mode || mode === this._viewerMode) {
+            return;
+        }
+        this.disableCurrentViewerMode();
+        switch (mode) {
+            case "text":
+                this._mainContainer.classList.add("mode-text");
+                this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
+                break;
+            case "hand":
+                this._mainContainer.classList.add("mode-hand");
+                this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
+                break;
+            case "annotation":
+                this._mainContainer.classList.add("mode-annotation");
+                this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
+                break;
+            default:
+                throw new Error(`Invalid viewer mode: ${mode}`);
+        }
+        this._viewerMode = mode;
+    }
+    disableCurrentViewerMode() {
+        switch (this._viewerMode) {
+            case "text":
+                this._mainContainer.classList.remove("mode-text");
+                this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
+                break;
+            case "hand":
+                this._mainContainer.classList.remove("mode-hand");
+                this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
+                break;
+            case "annotation":
+                this._mainContainer.classList.remove("mode-annotation");
+                this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
+                this.setAnnotationMode("select");
+                break;
+        }
     }
     scrollToPage(pageNumber) {
         const { top: cTop } = this._viewer.getBoundingClientRect();
@@ -11578,42 +11949,6 @@ class TsPdfViewer {
         const { x, y, width, height } = this._viewer.getBoundingClientRect();
         return new Vec2(x + width / 2, y + height / 2);
     }
-    toggleMode(mode) {
-        if (!mode || mode === this._mode) {
-            return;
-        }
-        switch (this._mode) {
-            case "text":
-                this._viewer.classList.remove("mode-text");
-                this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
-                break;
-            case "hand":
-                this._viewer.classList.remove("mode-hand");
-                this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
-                break;
-            case "annotation":
-                this._viewer.classList.remove("mode-annotation");
-                this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
-                break;
-        }
-        switch (mode) {
-            case "text":
-                this._viewer.classList.add("mode-text");
-                this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
-                break;
-            case "hand":
-                this._viewer.classList.add("mode-hand");
-                this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
-                break;
-            case "annotation":
-                this._viewer.classList.add("mode-annotation");
-                this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
-                break;
-            default:
-                throw new Error(`Invalid viewer mode: ${mode}`);
-        }
-        this._mode = mode;
-    }
     getVisiblePages(container, pages, preview = false) {
         const pagesVisible = new Set();
         if (!pages.length) {
@@ -11662,6 +11997,136 @@ class TsPdfViewer {
             }
         }
         throw new Error("Incorrect argument");
+    }
+    getPageCoordsUnderPointer(clientX, clientY) {
+        for (const page of this._renderedPages) {
+            const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
+            const pxMax = pxMin + pw;
+            const pyMax = pyMin + ph;
+            if (clientX < pxMin || clientX > pxMax) {
+                continue;
+            }
+            if (clientY < pyMin || clientY > pyMax) {
+                continue;
+            }
+            const x = (clientX - pxMin) / this._scale;
+            const y = (pyMax - clientY) / this._scale;
+            return {
+                pageId: page.id,
+                pageX: x,
+                pageY: y,
+            };
+        }
+        return null;
+    }
+    renderVisiblePreviews() {
+        if (this._previewerHidden) {
+            return;
+        }
+        const pages = this._pages;
+        const visiblePreviewNumbers = this.getVisiblePages(this._previewer, pages, true);
+        const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPages, 0);
+        const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPages, pages.length - 1);
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            if (i >= minPageNumber && i <= maxPageNumber) {
+                page.renderPreviewAsync();
+            }
+        }
+    }
+    renderVisiblePages() {
+        var _a, _b;
+        const pages = this._pages;
+        const visiblePageNumbers = this.getVisiblePages(this._viewer, pages);
+        const prevCurrent = this._currentPage;
+        const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
+        if (!prevCurrent || prevCurrent !== current) {
+            (_a = pages[prevCurrent]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
+            (_b = pages[current]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
+            this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
+            this.scrollToPreview(current);
+            this._currentPage = current;
+        }
+        if (current === -1) {
+            return;
+        }
+        const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
+        const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
+        const renderedPages = [];
+        for (let i = 0; i < pages.length; i++) {
+            const page = pages[i];
+            renderedPages.push(page);
+            if (i >= minPageNumber && i <= maxPageNumber) {
+                page.renderViewAsync();
+            }
+            else {
+                page.clearView();
+            }
+        }
+        this._renderedPages = renderedPages;
+    }
+    setAnnotationMode(mode) {
+        if (!mode || mode === this._annotationMode) {
+            return;
+        }
+        this.disableCurrentAnnotationMode();
+        switch (mode) {
+            case "select":
+                this._shadowRoot.querySelector("#button-annotation-mode-select").classList.add("on");
+                break;
+            case "stamp":
+                this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
+                this._viewer.append(this._annotationOverlay);
+                this._viewer.addEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
+                this._viewer.addEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+                this.createTempStampAnnotationAsync();
+                break;
+            case "pen":
+                this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
+                this._viewer.append(this._annotationOverlay);
+                break;
+            case "geometric":
+                this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
+                this._viewer.append(this._annotationOverlay);
+                break;
+            default:
+                throw new Error(`Invalid annotation mode: ${mode}`);
+        }
+        this._annotationMode = mode;
+    }
+    disableCurrentAnnotationMode() {
+        if (this._annotationMode) {
+            this._annotationToAdd = null;
+            this._annotationOverlay.remove();
+            this._annotationOverlaySvg.innerHTML = "";
+            switch (this._annotationMode) {
+                case "select":
+                    this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
+                    this._pages.forEach(x => x.clearAnnotationSelection());
+                    break;
+                case "stamp":
+                    this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
+                    this._viewer.removeEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
+                    this._viewer.removeEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+                    break;
+                case "pen":
+                    this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
+                    break;
+                case "geometric":
+                    this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
+                    break;
+            }
+        }
+    }
+    createTempStampAnnotationAsync() {
+        return __awaiter$6(this, void 0, void 0, function* () {
+            const stamp = this._docData.createStampAnnotation("draft");
+            const renderResult = yield stamp.renderAsync();
+            this._annotationOverlaySvg.innerHTML = "";
+            this._annotationOverlaySvg.append(...renderResult.clipPaths || []);
+            this._annotationOverlaySvg.append(renderResult.svg);
+            this._annotationToAdd = stamp;
+        });
     }
     showPasswordDialogAsync() {
         return __awaiter$6(this, void 0, void 0, function* () {

@@ -139,7 +139,6 @@ export class AppearanceStreamRenderer {
           throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
       }
     }
-
     return {endIndex: i, parameters, operator};
   }
 
@@ -213,7 +212,6 @@ export class AppearanceStreamRenderer {
 
   protected drawTextGroup(parser: DataParser): SVGGElement {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-
     let i = 0;
     while (i !== -1) {
       const {endIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
@@ -245,7 +243,6 @@ export class AppearanceStreamRenderer {
           // throw new Error(`Unsupported appearance stream text operator: ${operator}`);
       }
     }
-
     return g;
   }
 
@@ -549,10 +546,8 @@ export class AppearanceStreamRenderer {
         default:
           throw new Error(`Unsupported appearance stream operator: ${operator}`);
       }
-
       lastOperator = operator;
     }
-
     return g;
   }
 }

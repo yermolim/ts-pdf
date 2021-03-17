@@ -15,7 +15,7 @@ export class PageView {
   private readonly _pageProxy: PDFPageProxy; 
   private readonly _viewport: PageViewport; 
   private readonly _maxScale: number;
-  private readonly _annotationData: DocumentData;
+  private readonly _docData: DocumentData;
 
   private _dimensions: {
     width: number; 
@@ -94,7 +94,7 @@ export class PageView {
     this._pageProxy = pageProxy;
     this._viewport = pageProxy.getViewport({scale: 1});
     this._maxScale = Math.max(maxScale, 1);
-    this._annotationData = docData;
+    this._docData = docData;
 
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
@@ -172,6 +172,10 @@ export class PageView {
     
     this._viewCanvas?.remove();
     this._viewRendered = false;
+  }
+
+  clearAnnotationSelection() {
+    this._annotations?.switchSelectedAnnotation(null);
   }
  
   private cancelRenderTask() {    
@@ -287,7 +291,7 @@ export class PageView {
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationsView(this._annotationData, this.id, new Vec2(x, y));
+      this._annotations = new PageAnnotationsView(this._docData, this.id, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this.viewContainer);
 

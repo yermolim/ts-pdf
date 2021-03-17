@@ -45,11 +45,20 @@ export abstract class PdfStream extends PdfObject {
     this.setStreamData(data);
     this._edited = true;
   }
+
   get decodedStreamData(): Uint8Array {
     if (!this._decodedStreamData) {
       this.decodeStreamData();
     }
     return this._decodedStreamData;
+  }
+
+  /**
+   * return decoded stream data as ansi text (for debug purposes)
+   */
+  get decodedStreamDataChars(): string {
+    const decoder = new TextDecoder();
+    return decoder.decode(this._decodedStreamData);
   }
   
   protected constructor(type: StreamType) {
@@ -83,6 +92,16 @@ export abstract class PdfStream extends PdfObject {
     );
 
     return new Uint8Array(bytes);
+  }
+
+  /**
+   * encode provided text and set it as the stream data
+   * @param data ansi string
+   */
+  setTextStreamData(text: string) {    
+    const encoder = new TextEncoder();    
+    const bytes = encoder.encode(text);
+    this.streamData = bytes;
   }
 
   /**
@@ -224,18 +243,37 @@ export abstract class PdfStream extends PdfObject {
     this._streamData = encodedData;
   }
 
-  protected setStreamData(data: Uint8Array) {
-    let encodedData: Uint8Array;   
-    if (this.DecodeParms) {
-      const params = this.DecodeParms;
-      encodedData = FlateDecoder.Encode(data,
-        <FlatePredictor>params.getIntProp("/Predictor") || flatePredictors.NONE,
-        params.getIntProp("/Columns") || 1,
-        params.getIntProp("/Colors") || 1,
-        params.getIntProp("/BitsPerComponent") || 8); 
-    } else {      
-      encodedData = FlateDecoder.Encode(data);
+  protected setStreamData(data: Uint8Array) {   
+    if (!data?.length) {
+      throw new Error("Can't set emprty stream data");
     }
+    
+    let params: DecodeParamsDict;
+    if (this.DecodeParms) {
+      params = this.DecodeParms;
+    } else { 
+      let columns: number;
+      let i = 10;
+      while (true) {
+        if (data.length % i === 0) {
+          columns = i;
+          break;
+        }
+        i--;
+      }
+
+      params = new DecodeParamsDict();
+      params.setIntProp("/Predictor", flatePredictors.PNG_UP);
+      params.setIntProp("/Columns", columns);
+      this.DecodeParms = params;
+    }
+
+    const encodedData = FlateDecoder.Encode(data,
+      <FlatePredictor>params?.getIntProp("/Predictor") || flatePredictors.NONE,
+      params?.getIntProp("/Columns") || 1,
+      params?.getIntProp("/Colors") || 1,
+      params?.getIntProp("/BitsPerComponent") || 8); 
+
     this._streamData = encodedData;
     this.Length = encodedData.length;
     this.DL = data.length;

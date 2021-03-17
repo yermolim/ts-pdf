@@ -51,7 +51,7 @@ export class DocumentDataUpdater {
       for (const annotation of annotations) {
         if (annotation.deleted) {
           if (!annotation.ref) {
-          // annotation is absent in the PDF document, so just ignore it
+            // annotation is absent in the PDF document, so just ignore it
             continue;
           }
           const refIndex = refArray.findIndex(x => x.id === annotation.id);
@@ -61,7 +61,7 @@ export class DocumentDataUpdater {
           if (annotation instanceof MarkupAnnotation && annotation.Popup) {
             this._changeData.setRefFree(annotation.Popup.id);
           }
-        } else if (!annotation.ref || annotation.edited) {     
+        } else if (!annotation.ref || annotation.edited) {
           const apStream = annotation.apStream;
           if (apStream) {
             this.writeFormXObject(apStream);

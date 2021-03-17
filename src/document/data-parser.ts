@@ -859,20 +859,24 @@ export class DataParser {
   }
 
   //#region private search methods
-  private getValidStartIndex(direction: "straight" | "reverse", 
-    start: number): number {
-    return !isNaN(start) 
-      ? Math.max(Math.min(start, this._maxIndex), 0)
-      : direction === "straight"
-        ? 0
-        : this._maxIndex;
-  }
+  // private getValidStartIndex(direction: "straight" | "reverse", 
+  //   start: number): number {
+  //   return !isNaN(start) 
+  //     ? Math.max(Math.min(start, this._maxIndex), 0)
+  //     : direction === "straight"
+  //       ? 0
+  //       : this._maxIndex;
+  // }
   
   private findSingleCharIndex(filter: (value: number) => boolean, 
     direction: "straight" | "reverse" = "straight", start?: number): number {
 
     const arr = this._data;
-    let i = this.getValidStartIndex(direction, start); 
+    let i = isNaN(start)
+      ? direction === "straight"
+        ? 0
+        : this._maxIndex
+      : start; 
       
     if (direction === "straight") {        
       for (i; i <= this._maxIndex; i++) {

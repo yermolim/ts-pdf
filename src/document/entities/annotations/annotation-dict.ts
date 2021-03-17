@@ -206,18 +206,61 @@ export abstract class AnnotationDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }  
 
-  render(): RenderToSvgResult {
+  async renderAsync(): Promise<RenderToSvgResult> {
     if (!this._svg) {
       this._svg = this.renderMainElement();
     }
 
-    this.updateRenderAsync();    
+    await this.updateRenderAsync(); 
 
     return {
       svg: this._svg,
-      clipPaths: this._svgClipPaths,
+      clipPaths: this._svgClipPaths,      
+      tempCopy: this._svgContentCopy,
+      tempCopyUse: this._svgContentCopyUse,
     };
   }  
+  
+  applyRectTransform(matrix: Mat3) {
+    const dict = <AnnotationDict>this._proxy || this;
+
+    // transform current bounding box (not axis-aligned)
+    const bBox =  dict.getLocalBB();
+    bBox.ll.applyMat3(matrix);
+    bBox.lr.applyMat3(matrix);
+    bBox.ur.applyMat3(matrix);
+    bBox.ul.applyMat3(matrix);
+
+    // get an axis-aligned bounding box and assign it to the Rect property
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
+    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+    
+    // if the annotation has a content stream, update its matrix
+    const stream = dict.apStream;
+    if (stream) {
+      const newApMatrix = stream.matrix.multiply(matrix);
+      dict.apStream.matrix = newApMatrix;
+    }
+
+    dict.M = DateString.fromDate(new Date());
+  }
+
+  moveTo(pageX: number, pageY: number) {
+    const width = this.Rect[2] - this.Rect[0];
+    const height = this.Rect[3] - this.Rect[1];
+    const x = pageX - width / 2;
+    const y = pageY - height / 2;
+    const mat = Mat3.buildTranslate(x, y);
+    this.applyRectTransform(mat);
+    
+    console.log(pageX);
+    console.log(pageY);
+    console.log(width);
+    console.log(height);
+    console.log(x);
+    console.log(y);
+  }
   
   /**
    * fill public properties from data using info/parser if available
@@ -412,34 +455,7 @@ export abstract class AnnotationDict extends PdfDict {
 
     this.name = this.NM?.literal || getRandomUuid();
     this.pageRect = parseInfo.rect;
-  }  
-
-  //#region annotation edit methods
-  protected applyRectTransform(matrix: Mat3) {
-    const dict = <AnnotationDict>this._proxy || this;
-
-    // transform current bounding box (not axis-aligned)
-    const bBox =  dict.getLocalBB();
-    bBox.ll.applyMat3(matrix);
-    bBox.lr.applyMat3(matrix);
-    bBox.ur.applyMat3(matrix);
-    bBox.ul.applyMat3(matrix);
-
-    // get an axis-aligned bounding box and assign it to the Rect property
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-    
-    // if the annotation has a content stream, update its matrix
-    const stream = dict.apStream;
-    if (stream) {
-      const newApMatrix = stream.matrix.multiply(matrix);
-      dict.apStream.matrix = newApMatrix;
-    }
-
-    dict.M = DateString.fromDate(new Date());
   }
-  //#endregion
 
   //#region protected render methods
 
@@ -607,8 +623,10 @@ export abstract class AnnotationDict extends PdfDict {
     copySymbol.id = this._svgId + "_symbol";
     const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
     copySymbolUse.setAttribute("href", `#${this._svgId}`);
-    copySymbolUse.setAttribute("viewBox", 
-      `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+    if (this.pageRect) {
+      copySymbolUse.setAttribute("viewBox", 
+        `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+    }
     copySymbol.append(copySymbolUse);
     copyDefs.append(copySymbol);
 

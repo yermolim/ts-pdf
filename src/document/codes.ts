@@ -201,6 +201,9 @@ export const EOL = [
 ] as const;
 
 export function isRegularChar(code: number): boolean {
+  if (isNaN(code)) {
+    return false;
+  }
   return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
 

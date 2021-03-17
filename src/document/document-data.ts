@@ -209,7 +209,16 @@ export class DocumentData {
     return annotations || [];
   }
 
-  addAnnotation(pageId: number, annotation: AnnotationDict) {
+  createStampAnnotation(type: "draft"): StampAnnotation {
+    switch (type) {
+      case "draft":
+        return StampAnnotation.createStandard("/Draft");
+      default:
+        throw new Error("Unsupported stamp type");
+    }
+  }
+
+  appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);

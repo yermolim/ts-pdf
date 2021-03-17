@@ -4,14 +4,23 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, passwordDialogHtml, styles } from "./assets/index.html";
 
 import { getDistance } from "./common";
-import { clamp, Vec2 } from "./math";
+import { clamp, Mat3, Vec2 } from "./math";
 
 import { DocumentData } from "./document/document-data";
 import { PageView } from "./page-view";
+import { AnnotationDict } from "./document/entities/annotations/annotation-dict";
 
 type ViewerMode = "text" | "hand" | "annotation";
+type AnnotationMode = "select" | "stamp" | "pen" | "geometric";
+
+interface PageCoords {
+  pageId: number;
+  pageX: number;
+  pageY: number;
+}
 
 export class TsPdfViewer {
+  //#region fields
   private readonly _visibleAdjPages = 0;
   private readonly _previewWidth = 100;
   private readonly _minScale = 0.25;
@@ -22,23 +31,31 @@ export class TsPdfViewer {
   private _shadowRoot: ShadowRoot;
 
   private _mainContainer: HTMLDivElement;
-  private _mainContainerResizeObserver: ResizeObserver;
+  private _mainContainerRObserver: ResizeObserver;
+  private _panelsHidden: boolean;
+
+  private _previewer: HTMLDivElement;
+  private _previewerHidden = true;
+
+  private _viewer: HTMLDivElement;
+  private _viewerMode: ViewerMode;
+
+  private _annotationMode: AnnotationMode;
+  private _annotationOverlay: HTMLDivElement;
+  private _annotationOverlaySvg: SVGGraphicsElement;
+  private _annotationOverlayMObserver: MutationObserver;
+  private _annotationOverlayRObserver: ResizeObserver;
+  private _annotationOverlayPageCoords: PageCoords;  
+  private _annotationToAdd: AnnotationDict; 
+
+  private _pages: PageView[] = [];
+  private _renderedPages: PageView[] = [];
+  private _currentPage = 0;
 
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;  
 
   private _docData: DocumentData;
-
-  private _previewer: HTMLDivElement;
-  private _viewer: HTMLDivElement;
-  
-  private _panelsHidden: boolean;
-  private _previewerHidden = true;
-
-  private _pages: PageView[] = [];
-  private _currentPage = 0;
-
-  private _mode: ViewerMode;
   
   private _pointerInfo = {
     lastPos: <Vec2>null,
@@ -55,6 +72,7 @@ export class TsPdfViewer {
     sensitivity: 0.025,
     target: <HTMLElement>null,
   };
+  //#endregion
 
   constructor(containerSelector: string, workerSrc: string) {
     const container = document.querySelector(containerSelector);
@@ -99,11 +117,13 @@ export class TsPdfViewer {
       this._pdfDocument.destroy();
     }
 
-    this._mainContainerResizeObserver?.disconnect();
-    this._shadowRoot.innerHTML = "";
-  }
+    this._mainContainerRObserver?.disconnect();
+    this._annotationOverlayMObserver?.disconnect();
+    this._annotationOverlayRObserver?.disconnect();
 
-  //#region open/close
+    this._shadowRoot.innerHTML = "";
+  }  
+  
   async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
     let data: Uint8Array;
     let doc: PDFDocumentProxy;
@@ -171,10 +191,39 @@ export class TsPdfViewer {
     await this.onPdfClosedAsync();
   }
 
+
+  //#region GUI initialization
   private initViewerGUI() {
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = styles + html;
+    this._shadowRoot.innerHTML = styles + html;         
 
+    this.initMainDivs();
+    this.initViewControls();
+    this.initModeSwitches();
+    this.initAnnotationOverlay();
+  }
+
+  private initMainDivs() {
+    const mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
+
+    const mcResizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {    
+      const {width} = this._mainContainer.getBoundingClientRect();
+      if (width < 721) {      
+        this._mainContainer.classList.add("mobile");
+      } else {      
+        this._mainContainer.classList.remove("mobile");
+      }
+    });
+    mcResizeObserver.observe(mainContainer);
+
+    this._mainContainer = mainContainer;
+    this._mainContainerRObserver = mcResizeObserver;  
+
+    this._previewer = this._shadowRoot.querySelector("#previewer");
+    this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;
+  }
+  
+  private initViewControls() {
     const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
     paginatorInput.addEventListener("input", this.onPaginatorInput);
     paginatorInput.addEventListener("change", this.onPaginatorChange);    
@@ -195,32 +244,112 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#toggle-previewer")
       .addEventListener("click", this.onPreviewerToggleClick);
 
-    this._previewer = this._shadowRoot.querySelector("#previewer");
     this._previewer.addEventListener("scroll", this.onPreviewerScroll);
-    this._viewer = this._shadowRoot.querySelector("#viewer");
     this._viewer.addEventListener("scroll", this.onViewerScroll);
-    this._viewer.addEventListener("wheel", this.onViewerWheel);
+    this._viewer.addEventListener("wheel", this.onViewerWheelZoom);
     this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
-    this._viewer.addEventListener("pointerdown", this.onViewerPointerDown);    
-    this._viewer.addEventListener("touchstart", this.onViewerTouchStart);
+    this._viewer.addEventListener("pointerdown", this.onViewerPointerDownScroll);    
+    this._viewer.addEventListener("touchstart", this.onViewerTouchZoom); 
+    
+    this._shadowRoot.querySelector("#button-download-file")
+      .addEventListener("click", this.onDownloadFileButtonClick);
+  }
 
+  private initModeSwitches() {
     this._shadowRoot.querySelector("#button-mode-text")
       .addEventListener("click", this.onTextModeButtonClick);
     this._shadowRoot.querySelector("#button-mode-hand")
       .addEventListener("click", this.onHandModeButtonClick);
     this._shadowRoot.querySelector("#button-mode-annotation")
       .addEventListener("click", this.onAnnotationModeButtonClick);
-    this.toggleMode("text");    
+    this.setViewerMode("text");    
     
-    this._shadowRoot.querySelector("#button-download-file")
-      .addEventListener("click", this.onDownloadFileButtonClick);       
-
-    this._mainContainer = this._shadowRoot.querySelector("div#main-container");
-    const resizeObserver = new ResizeObserver(this.onMainContainerResize);
-    resizeObserver.observe(this._mainContainer);
-    this._mainContainerResizeObserver = resizeObserver;  
+    this._shadowRoot.querySelector("#button-annotation-mode-select")
+      .addEventListener("click", this.onAnnotationSelectModeButtonClick);
+    this._shadowRoot.querySelector("#button-annotation-mode-stamp")
+      .addEventListener("click", this.onAnnotationStampModeButtonClick);
+    this._shadowRoot.querySelector("#button-annotation-mode-pen")
+      .addEventListener("click", this.onAnnotationPenModeButtonClick);
+    this._shadowRoot.querySelector("#button-annotation-mode-geometric")
+      .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
+    this.setAnnotationMode("select");   
   }
 
+  private initAnnotationOverlay() {      
+    const annotationOverlay = document.createElement("div");
+    annotationOverlay.classList.add("absolute", "stretch", "no-margin", "no-padding");
+    annotationOverlay.id = "annotation-overlay";
+    
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.classList.add("abs-stretch", "no-margin", "no-padding");
+    svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+    svg.setAttribute("opacity", "0.5");
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    svg.append(g);
+
+    annotationOverlay.append(svg);
+
+    // keep overlay properly positioned depending on the viewer scroll
+    this._viewer.addEventListener("scroll", () => {
+      annotationOverlay.style.left = this._viewer.scrollLeft + "px";
+      annotationOverlay.style.top = this._viewer.scrollTop + "px";
+    });
+    
+    let lastScale: number;
+    const updateSvgViewBox = () => {
+      const {width: w, height: h} = annotationOverlay.getBoundingClientRect();
+      if (!w || !h) {
+        return;
+      }
+
+      const viewBoxWidth = w / this._scale;
+      const viewBoxHeight = h / this._scale;
+      svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+      lastScale = this._scale;
+    };
+    updateSvgViewBox();
+
+    // add observers to keep the svg scale actual
+    const onPossibleViewerSizeChanged = () => {
+      if (this._scale === lastScale) {
+        return;
+      }
+      updateSvgViewBox();
+    };
+    const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+      onPossibleViewerSizeChanged();
+    });
+    const viewerMObserver = new MutationObserver((mutations: MutationRecord[]) => {
+      const record = mutations[0];
+      if (!record) {
+        return;
+      }
+      record.addedNodes.forEach(x => {
+        const element = x as HTMLElement;
+        if (element.classList.contains("page")) {
+          viewerRObserver.observe(x as HTMLElement);
+        }
+      });
+      record.removedNodes.forEach(x => viewerRObserver.unobserve(x as HTMLElement));
+      onPossibleViewerSizeChanged();
+    });
+    viewerMObserver.observe(this._viewer, {
+      attributes: false,
+      childList: true,
+      subtree: false,
+    });
+
+    this._annotationOverlayMObserver = viewerMObserver;
+    this._annotationOverlayRObserver = viewerRObserver;
+    
+    this._annotationOverlay = annotationOverlay;
+    this._annotationOverlaySvg = g;
+  }
+  //#endregion
+
+
+  //#region open/close private
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     // TODO: implement progress display
   };
@@ -233,11 +362,12 @@ export class TsPdfViewer {
     this.renderVisiblePreviews();
     this.renderVisiblePages(); 
 
-    this._shadowRoot.querySelector("#panel-bottom").classList.remove("disabled");
+    this._shadowRoot.querySelector("#bottom-panel").classList.remove("disabled");
   };
 
   private onPdfClosedAsync = async () => {
-    this._shadowRoot.querySelector("#panel-bottom").classList.add("disabled");
+    this._shadowRoot.querySelector("#bottom-panel").classList.add("disabled");
+    this.setViewerMode("text");
 
     if (this._pdfDocument) {
       this._pdfDocument = null;
@@ -273,58 +403,8 @@ export class TsPdfViewer {
   }
   //#endregion
   
-  //#region render
-  private renderVisiblePreviews() {
-    if (this._previewerHidden) {
-      return;
-    }
-
-    const pages = this._pages;
-    const visiblePreviewNumbers = this.getVisiblePages(this._previewer, pages, true);
-    
-    const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPages, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPages, pages.length - 1);
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      if (i >= minPageNumber && i <= maxPageNumber) {
-        page.renderPreviewAsync();
-      }
-    }
-  }  
-
-  private renderVisiblePages() {
-    const pages = this._pages;
-    const visiblePageNumbers = this.getVisiblePages(this._viewer, pages); 
-    
-    const prevCurrent = this._currentPage;
-    const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
-    if (!prevCurrent || prevCurrent !== current) {
-      pages[prevCurrent]?.previewContainer.classList.remove("current");
-      pages[current]?.previewContainer.classList.add("current");
-      (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = current + 1 + "";
-      this.scrollToPreview(current);
-      this._currentPage = current;
-    }
-    if (current === -1) {
-      return;
-    }
-    
-    const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      if (i >= minPageNumber && i <= maxPageNumber) {
-        page.renderViewAsync();
-      } else {
-        page.clearView();
-      }
-    }
-  } 
-  //#endregion
-
-  //#region scroll
+  
+  //#region previewer
   private scrollToPreview(pageNumber: number) { 
     const {top: cTop, height: cHeight} = this._previewer.getBoundingClientRect();
     const {top: pTop, height: pHeight} = this._pages[pageNumber].previewContainer.getBoundingClientRect();
@@ -334,10 +414,136 @@ export class TsPdfViewer {
 
     const scroll = pCenter - cCenter + this._previewer.scrollTop;
     this._previewer.scrollTo(0, scroll);
-    
-    // this._pages[pageNumber].previewContainer.scrollIntoView(false);
+  }
+  
+  private onPreviewerToggleClick = () => {
+    if (this._previewerHidden) {
+      this._mainContainer.classList.remove("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+      this._previewerHidden = false;
+      setTimeout(() => this.renderVisiblePreviews(), 1000);
+    } else {      
+      this._mainContainer.classList.add("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+      this._previewerHidden = true;
+    }
+  };
+
+  private onPreviewerPageClick = (e: Event) => {
+    let target = <HTMLElement>e.target;
+    let pageNumber: number;
+    while (target && !pageNumber) {
+      const data = target.dataset["pageNumber"];
+      if (data) {
+        pageNumber = +data;
+      } else {
+        target = target.parentElement;
+      }
+    }    
+    if (pageNumber) {
+      this.scrollToPage(pageNumber - 1);
+    }
+  };
+  
+  private onPreviewerScroll = (e: Event) => {
+    this.renderVisiblePreviews();
+  };
+  //#endregion
+ 
+
+  //#region viewer  
+  private onViewerPointerMove = (event: PointerEvent) => {
+    const {clientX, clientY} = event;
+    const {x: rectX, y: rectY, width, height} = this._viewer.getBoundingClientRect();
+
+    const l = clientX - rectX;
+    const t = clientY - rectY;
+    const r = width - l;
+    const b = height - t;
+
+    if (Math.min(l, r, t, b) > 100) {
+      if (!this._panelsHidden && !this._timers.hidePanels) {
+        this._timers.hidePanels = setTimeout(() => {
+          this._mainContainer.classList.add("hide-panels");
+          this._panelsHidden = true;
+          this._timers.hidePanels = null;
+        }, 5000);
+      }      
+    } else {
+      if (this._timers.hidePanels) {
+        clearTimeout(this._timers.hidePanels);
+        this._timers.hidePanels = null;
+      }
+      if (this._panelsHidden) {        
+        this._mainContainer.classList.remove("hide-panels");
+        this._panelsHidden = false;
+      }
+    }
+
+    this._pointerInfo.lastPos = new Vec2(clientX, clientY);
+  };
+
+  //#region viewer modes
+  private setViewerMode(mode: ViewerMode) {
+    if (!mode || mode === this._viewerMode) {
+      return;
+    }
+    this.disableCurrentViewerMode();
+    switch (mode) {
+      case "text":
+        this._mainContainer.classList.add("mode-text");
+        this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
+        break;
+      case "hand":
+        this._mainContainer.classList.add("mode-hand");
+        this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
+        break;
+      case "annotation":
+        this._mainContainer.classList.add("mode-annotation");
+        this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
+        break;
+      default:
+        // Execution should not come here
+        throw new Error(`Invalid viewer mode: ${mode}`);
+    }
+    this._viewerMode = mode;
   }
 
+  private disableCurrentViewerMode() {    
+    switch (this._viewerMode) {
+      case "text":
+        this._mainContainer.classList.remove("mode-text");
+        this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
+        break;
+      case "hand":
+        this._mainContainer.classList.remove("mode-hand");
+        this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
+        break;
+      case "annotation":
+        this._mainContainer.classList.remove("mode-annotation");
+        this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
+        this.setAnnotationMode("select");
+        break;
+      default:
+        // mode hasn't been set yet. do nothing
+        break;
+    }
+  }  
+  
+  private onTextModeButtonClick = () => {
+    this.setViewerMode("text");
+  };
+
+  private onHandModeButtonClick = () => {
+    this.setViewerMode("hand");
+  };
+  
+  private onAnnotationModeButtonClick = () => {
+    this.setViewerMode("annotation");
+  };
+  //#endregion
+
+  //#region viewer scroll
   private scrollToPage(pageNumber: number) { 
     const {top: cTop} = this._viewer.getBoundingClientRect();
     const {top: pTop} = this._pages[pageNumber].viewContainer.getBoundingClientRect();
@@ -345,9 +551,44 @@ export class TsPdfViewer {
     const scroll = pTop - (cTop - this._viewer.scrollTop);
     this._viewer.scrollTo(this._viewer.scrollLeft, scroll);
   }
+  
+  private onViewerScroll = (e: Event) => {
+    this.renderVisiblePages();
+  };  
+
+  private onViewerPointerDownScroll = (event: PointerEvent) => { 
+    if (this._viewerMode !== "hand") {
+      return;
+    }
+    
+    const {clientX, clientY} = event;
+    this._pointerInfo.downPos = new Vec2(clientX, clientY);
+    this._pointerInfo.downScroll = new Vec2(this._viewer.scrollLeft,this._viewer.scrollTop);    
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const {x, y} = this._pointerInfo.downPos;
+      const {x: left, y: top} = this._pointerInfo.downScroll;
+      const dX = moveEvent.clientX - x;
+      const dY = moveEvent.clientY - y;
+      this._viewer.scrollTo(left - dX, top - dY);
+    };
+    
+    const onPointerUp = (upEvent: PointerEvent) => {
+      this._pointerInfo.downPos = null;
+      this._pointerInfo.downScroll = null;
+
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointerout", onPointerUp);
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointerout", onPointerUp);
+  };
   //#endregion
 
-  //#region zoom
+  //#region viewer zoom
   private setScale(scale: number, cursorPosition: Vec2 = null) {
     if (!scale || scale === this._scale) {
       return;
@@ -428,244 +669,21 @@ export class TsPdfViewer {
     const {x, y, width, height} = this._viewer.getBoundingClientRect();
     return new Vec2(x + width / 2, y + height / 2);
   }
-  //#endregion
   
-  //#region mode
-  private toggleMode(mode: ViewerMode) {
-    if (!mode || mode === this._mode) {
+  private onViewerWheelZoom = (event: WheelEvent) => {
+    if (!event.ctrlKey) {
       return;
     }
-    switch (this._mode) {
-      case "text":
-        this._viewer.classList.remove("mode-text");
-        this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
-        break;
-      case "hand":
-        this._viewer.classList.remove("mode-hand");
-        this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
-        break;
-      case "annotation":
-        this._viewer.classList.remove("mode-annotation");
-        this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
-        break;
-      default:
-        // mode hasn't been set yet. do nothing
-        break;
-    }
-    switch (mode) {
-      case "text":
-        this._viewer.classList.add("mode-text");
-        this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
-        break;
-      case "hand":
-        this._viewer.classList.add("mode-hand");
-        this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
-        break;
-      case "annotation":
-        this._viewer.classList.add("mode-annotation");
-        this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
-        break;
-      default:
-        // Execution should not come here
-        throw new Error(`Invalid viewer mode: ${mode}`);
-    }
-    this._mode = mode;
-  }
-  //#endregion
 
-  //#region event handlers
-  private onMainContainerResize = (entries: ResizeObserverEntry[], observer: ResizeObserver) => {    
-    const {width} = this._mainContainer.getBoundingClientRect();
-    if (width < 721) {      
-      this._mainContainer.classList.add("mobile");
-    } else {      
-      this._mainContainer.classList.remove("mobile");
-    }
-  };
-  
-  private onDownloadFileButtonClick = () => {
-    const data = this._docData?.getDataWithUpdatedAnnotations();
-
-    // DEBUG
-    // this.openPdfAsync(data);
-
-    if (data?.length) {
-      TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
-    }    
-  };
-
-  //#region mode events
-  private onTextModeButtonClick = () => {
-    this.toggleMode("text");
-  };
-
-  private onHandModeButtonClick = () => {
-    this.toggleMode("hand");
-  };
-  
-  private onAnnotationModeButtonClick = () => {
-    this.toggleMode("annotation");
-  };
-  //#endregion
-
-  //#region previewer events
-  private onPreviewerToggleClick = () => {
-    if (this._previewerHidden) {
-      this._mainContainer.classList.remove("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-      this._previewerHidden = false;
-      setTimeout(() => this.renderVisiblePreviews(), 1000);
-    } else {      
-      this._mainContainer.classList.add("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-      this._previewerHidden = true;
-    }
-  };
-
-  private onPreviewerPageClick = (e: Event) => {
-    let target = <HTMLElement>e.target;
-    let pageNumber: number;
-    while (target && !pageNumber) {
-      const data = target.dataset["pageNumber"];
-      if (data) {
-        pageNumber = +data;
-      } else {
-        target = target.parentElement;
-      }
-    }    
-    if (pageNumber) {
-      this.scrollToPage(pageNumber - 1);
-    }
-  };
-  
-  private onPreviewerScroll = (e: Event) => {
-    this.renderVisiblePreviews();
-  };
-  //#endregion
-  
-  //#region paginator events
-  private onPaginatorInput = (event: Event) => {
-    if (event.target instanceof HTMLInputElement) {
-      event.target.value = event.target.value.replace(/[^\d]+/g, "");
-    }
-  };
-  
-  private onPaginatorChange = (event: Event) => {
-    if (event.target instanceof HTMLInputElement) {
-      const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
-      if (pageNumber + "" !== event.target.value) {        
-        event.target.value = pageNumber + "";
-      }
-      this.scrollToPage(pageNumber - 1);
-    }
-  };
-  
-  private onPaginatorPrevClick = () => {
-    const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
-    this.scrollToPage(pageNumber);
-  };
-
-  private onPaginatorNextClick = () => {
-    const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
-    this.scrollToPage(pageNumber);
-  };
-  //#endregion
-
-  //#region zoomer events
-  private onZoomOutClick = () => {
-    this.zoomOut();
-  };
-
-  private onZoomInClick = () => {
-    this.zoomIn();
-  };
-  
-  private onZoomFitViewerClick = () => {
-    const cWidth = this._viewer.getBoundingClientRect().width;
-    const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
-    const scale = clamp((cWidth  - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-    this.setScale(scale);
-    this.scrollToPage(this._currentPage);
-  };
-  
-  private onZoomFitPageClick = () => {
-    const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
-    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
-    const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-    const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
-    this.setScale(Math.min(hScale, vScale));
-    this.scrollToPage(this._currentPage);
-  };
-  //#endregion
-
-  //#region user input events
-  private onViewerScroll = (e: Event) => {
-    this.renderVisiblePages();
-  };
-  
-  private onViewerPointerMove = (event: PointerEvent) => {
-    const {clientX, clientY} = event;
-    const {x: rectX, y: rectY, width, height} = this._viewer.getBoundingClientRect();
-
-    const l = clientX - rectX;
-    const t = clientY - rectY;
-    const r = width - l;
-    const b = height - t;
-
-    if (Math.min(l, r, t, b) > 100) {
-      if (!this._panelsHidden && !this._timers.hidePanels) {
-        this._timers.hidePanels = setTimeout(() => {
-          this._mainContainer.classList.add("hide-panels");
-          this._panelsHidden = true;
-          this._timers.hidePanels = null;
-        }, 5000);
-      }      
+    event.preventDefault();
+    if (event.deltaY > 0) {
+      this.zoomOut(this._pointerInfo.lastPos);
     } else {
-      if (this._timers.hidePanels) {
-        clearTimeout(this._timers.hidePanels);
-        this._timers.hidePanels = null;
-      }
-      if (this._panelsHidden) {        
-        this._mainContainer.classList.remove("hide-panels");
-        this._panelsHidden = false;
-      }
+      this.zoomIn(this._pointerInfo.lastPos);
     }
+  };  
 
-    this._pointerInfo.lastPos = new Vec2(clientX, clientY);
-  };
-
-  private onViewerPointerDown = (event: PointerEvent) => { 
-    if (this._mode !== "hand") {
-      return;
-    }
-    
-    const {clientX, clientY} = event;
-    this._pointerInfo.downPos = new Vec2(clientX, clientY);
-    this._pointerInfo.downScroll = new Vec2(this._viewer.scrollLeft,this._viewer.scrollTop);    
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      const {x, y} = this._pointerInfo.downPos;
-      const {x: left, y: top} = this._pointerInfo.downScroll;
-      const dX = moveEvent.clientX - x;
-      const dY = moveEvent.clientY - y;
-      this._viewer.scrollTo(left - dX, top - dY);
-    };
-    
-    const onPointerUp = (upEvent: PointerEvent) => {
-      this._pointerInfo.downPos = null;
-      this._pointerInfo.downScroll = null;
-
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointerout", onPointerUp);
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointerout", onPointerUp);
-  };
-
-  private onViewerTouchStart = (event: TouchEvent) => { 
+  private onViewerTouchZoom = (event: TouchEvent) => { 
     if (event.touches.length !== 2) {
       return;
     }    
@@ -706,24 +724,37 @@ export class TsPdfViewer {
     (<HTMLElement>event.target).addEventListener("touchend", onTouchEnd);
     (<HTMLElement>event.target).addEventListener("touchcancel", onTouchEnd);
   };
-  
-  private onViewerWheel = (event: WheelEvent) => {
-    if (!event.ctrlKey) {
-      return;
-    }
 
-    event.preventDefault();
-    if (event.deltaY > 0) {
-      this.zoomOut(this._pointerInfo.lastPos);
-    } else {
-      this.zoomIn(this._pointerInfo.lastPos);
-    }
+  private onZoomOutClick = () => {
+    this.zoomOut();
+  };
+
+  private onZoomInClick = () => {
+    this.zoomIn();
+  };
+  
+  private onZoomFitViewerClick = () => {
+    const cWidth = this._viewer.getBoundingClientRect().width;
+    const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
+    const scale = clamp((cWidth  - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+    this.setScale(scale);
+    this.scrollToPage(this._currentPage);
+  };
+  
+  private onZoomFitPageClick = () => {
+    const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
+    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
+    const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+    const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
+    this.setScale(Math.min(hScale, vScale));
+    this.scrollToPage(this._currentPage);
   };
   //#endregion
 
   //#endregion
+    
   
-  //#region page numbers methods
+  //#region pages and paginator
   private getVisiblePages(container: HTMLDivElement, pages: PageView[], preview = false): Set<number> {
     const pagesVisible = new Set<number>();
     if (!pages.length) {
@@ -778,8 +809,259 @@ export class TsPdfViewer {
 
     // function should not reach this point with correct arguments
     throw new Error("Incorrect argument");
+  }   
+   
+  private getPageCoordsUnderPointer(clientX: number, clientY: number): PageCoords {
+    for (const page of this._renderedPages) {
+      const {left: pxMin, top: pyMin, width: pw, height: ph} = page.viewContainer.getBoundingClientRect();
+      const pxMax = pxMin + pw;
+      const pyMax = pyMin + ph;
+
+      if (clientX < pxMin || clientX > pxMax) {
+        continue;
+      }
+      if (clientY < pyMin || clientY > pyMax) {
+        continue;
+      }
+
+      // point is inside the page
+      const x = (clientX - pxMin) / this._scale;
+      const y = (pyMax - clientY) / this._scale;
+
+      return {
+        pageId: page.id,
+        pageX: x,
+        pageY: y,
+      };
+    }
+    // point is not inside a page
+    return null;
   }
+  
+  private renderVisiblePreviews() {
+    if (this._previewerHidden) {
+      return;
+    }
+
+    const pages = this._pages;
+    const visiblePreviewNumbers = this.getVisiblePages(this._previewer, pages, true);
+    
+    const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPages, 0);
+    const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPages, pages.length - 1);
+
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      if (i >= minPageNumber && i <= maxPageNumber) {
+        page.renderPreviewAsync();
+      }
+    }
+  }  
+
+  private renderVisiblePages() {
+    const pages = this._pages;
+    const visiblePageNumbers = this.getVisiblePages(this._viewer, pages); 
+    
+    const prevCurrent = this._currentPage;
+    const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
+    if (!prevCurrent || prevCurrent !== current) {
+      pages[prevCurrent]?.previewContainer.classList.remove("current");
+      pages[current]?.previewContainer.classList.add("current");
+      (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = current + 1 + "";
+      this.scrollToPreview(current);
+      this._currentPage = current;
+    }
+    if (current === -1) {
+      return;
+    }
+    
+    const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
+    const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
+
+    const renderedPages: PageView[] = [];
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      renderedPages.push(page);
+      if (i >= minPageNumber && i <= maxPageNumber) {
+        page.renderViewAsync();
+      } else {
+        page.clearView();
+      }
+    }
+
+    this._renderedPages = renderedPages;
+  } 
+
+  private onPaginatorInput = (event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.value = event.target.value.replace(/[^\d]+/g, "");
+    }
+  };
+  
+  private onPaginatorChange = (event: Event) => {
+    if (event.target instanceof HTMLInputElement) {
+      const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
+      if (pageNumber + "" !== event.target.value) {        
+        event.target.value = pageNumber + "";
+      }
+      this.scrollToPage(pageNumber - 1);
+    }
+  };
+  
+  private onPaginatorPrevClick = () => {
+    const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
+    this.scrollToPage(pageNumber);
+  };
+
+  private onPaginatorNextClick = () => {
+    const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
+    this.scrollToPage(pageNumber);
+  };
   //#endregion
+  
+
+  //#region annotations
+
+  //#region annotation modes
+  private setAnnotationMode(mode: AnnotationMode) {
+    if (!mode || mode === this._annotationMode) {
+      return;
+    }
+    // disable previous mode
+    this.disableCurrentAnnotationMode();
+    switch (mode) {
+      case "select":
+        this._shadowRoot.querySelector("#button-annotation-mode-select").classList.add("on");
+        break;
+      case "stamp":
+        this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
+        this._viewer.append(this._annotationOverlay);
+        this._viewer.addEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
+        this._viewer.addEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+        this.createTempStampAnnotationAsync();
+        break;
+      case "pen":
+        this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
+        this._viewer.append(this._annotationOverlay);
+        break;
+      case "geometric":
+        this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
+        this._viewer.append(this._annotationOverlay);
+        break;
+      default:
+        // Execution should not come here
+        throw new Error(`Invalid annotation mode: ${mode}`);
+    }
+    this._annotationMode = mode;
+  }
+
+  private disableCurrentAnnotationMode() {    
+    if (this._annotationMode) {  
+      this._annotationToAdd = null;    
+      this._annotationOverlay.remove();
+      this._annotationOverlaySvg.innerHTML = "";
+      switch (this._annotationMode) {
+        case "select":
+          this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
+          this._pages.forEach(x => x.clearAnnotationSelection());
+          break;
+        case "stamp":
+          this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
+          this._viewer.removeEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
+          this._viewer.removeEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+          break;
+        case "pen":
+          this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
+          break;
+        case "geometric":
+          this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
+          break;
+      }
+    }
+  }
+  
+  private onAnnotationSelectModeButtonClick = () => {
+    this.setAnnotationMode("select");
+  };
+
+  private onAnnotationStampModeButtonClick = () => {
+    this.setAnnotationMode("stamp");
+  };
+
+  private onAnnotationPenModeButtonClick = () => {
+    this.setAnnotationMode("pen");
+  };
+  
+  private onAnnotationGeometricModeButtonClick = () => {
+    this.setAnnotationMode("geometric");
+  };
+  //#endregion
+
+  //#region stamp annotations
+  private async createTempStampAnnotationAsync() {
+    const stamp = this._docData.createStampAnnotation("draft");
+    const renderResult = await stamp.renderAsync();  
+
+    this._annotationOverlaySvg.innerHTML = "";  
+    this._annotationOverlaySvg.append(...renderResult.clipPaths || []);
+    this._annotationOverlaySvg.append(renderResult.svg);
+
+    this._annotationToAdd = stamp;
+  }
+
+  private onStampAnnotationOverlayPointerMove = (e: PointerEvent) => {
+    const {clientX: cx, clientY: cy} = e;
+
+    // bottom-left overlay coords
+    const {height: oh, top, left: ox} = this._annotationOverlay.getBoundingClientRect();
+    const oy = this._mainContainer.classList.contains("hide-panels")
+      ? top + oh - 25 // half of top-offset
+      : top + oh;
+
+    const offsetX = (cx - ox) / this._scale;
+    const offsetY = (oy - cy) / this._scale;
+
+    const {width: gw, height: gh} = this._annotationOverlaySvg.getBBox();
+
+    this._annotationOverlaySvg.setAttribute("transform",
+      `translate(${offsetX - gw / 2} ${offsetY - gh / 2})`);
+
+    // get coords under the pointer relatively to the page under it 
+    const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+    this._annotationOverlayPageCoords = pageCoords;
+  };
+
+  private onStampAnnotationOverlayPointerUp = (e: PointerEvent) => {
+    if (!this._annotationOverlayPageCoords || !this._annotationToAdd) {
+      return;
+    }
+
+    // translate the stamp to the pointer position
+    const {pageId, pageX, pageY} = this._annotationOverlayPageCoords;
+    this._annotationToAdd.moveTo(pageX, pageY);
+    this._docData.appendAnnotationToPage(pageId, this._annotationToAdd);
+
+    // rerender the page
+    this._renderedPages.find(x => x.id === pageId)?.renderViewAsync(true);
+
+    // create new temp annotation
+    this.createTempStampAnnotationAsync();
+  };
+  //#endregion
+
+  //#endregion
+
+
+  //#region misc 
+  private onDownloadFileButtonClick = () => {
+    const data = this._docData?.getDataWithUpdatedAnnotations();
+
+    // DEBUG
+    // this.openPdfAsync(data);
+
+    if (data?.length) {
+      TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
+    }    
+  };
 
   private async showPasswordDialogAsync(): Promise<string> {
 
@@ -816,4 +1098,5 @@ export class TsPdfViewer {
 
     return passwordPromise;
   }
+  //#endregion
 }

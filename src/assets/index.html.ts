@@ -13,6 +13,10 @@ import icon_popup from "./icons/popup.png";
 import icon_download from "./icons/download.png";
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
+import icon_pointer from "./icons/pointer.png";
+import icon_stamp from "./icons/stamp.png";
+import icon_pen from "./icons/pen.png";
+import icon_geometric from "./icons/geometric.png";
 
 export const styles = /*html*/`
   <style>
@@ -43,9 +47,9 @@ export const styles = /*html*/`
     .abs-stretch {
       position: absolute;
       left: 0;
-      right: 0;
       top: 0;
-      bottom: 0;
+      width: 100%;
+      height: 100%;
     }
     .abs-topleft {
       position: absolute;
@@ -57,6 +61,12 @@ export const styles = /*html*/`
       height: 100%;
     }
     
+    .no-margin {
+      margin: 0;
+    }
+    .no-padding {
+      padding: 0;
+    }
     .margin-s-5 {
       margin: 0 5px;
     }
@@ -73,7 +83,7 @@ export const styles = /*html*/`
       background: var(--color-bg-final);
     }
   
-    #panel-top {
+    #top-panel {
       position: relative;
       display: flex;
       flex-direction: row;
@@ -87,12 +97,12 @@ export const styles = /*html*/`
       z-index: 1;
       transition: height 0.25s ease-out 0.1s;
     }
-    .hide-panels #panel-top {
+    .hide-panels #top-panel {
       height: 0;
       transition: height 0.25s ease-in 0.2s;
     }
   
-    #panel-bottom {
+    #bottom-panel {
       position: absolute;
       display: flex;
       flex-direction: row;
@@ -109,10 +119,30 @@ export const styles = /*html*/`
       z-index: 1;
       transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
     }
-    .hide-panels #panel-bottom {
+    .hide-panels #bottom-panel {
       bottom: 0;
       height: 0;
       transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
+    }
+    
+    #annotation-panel {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex-grow: 0;
+      flex-shrink: 0;
+      top: 80px;
+      right: 0;
+      width: 0;
+      z-index: 1;
+      transition: right 0.1s linear 0.1s, width 0.25s ease-in 0.2s;
+    }
+    .mode-annotation #annotation-panel {
+      right: 20px;
+      width: 50px;
+      transition: width 0.25s ease-out, right 0.1s linear 0.25s;
     }
 
     .panel-v-separator {
@@ -163,6 +193,22 @@ export const styles = /*html*/`
       opacity: 0;
       transform: scale(0);
       transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    }
+
+    .annotation-panel-item {
+      margin: 3px;
+      cursor: default;      
+      opacity: 0;
+      background: var(--color-primary-tr-final);
+      box-shadow: 0 0 10px var(--color-shadow-final);
+      transform: scale(0);
+      transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    }    
+    .mode-annotation .annotation-panel-item { 
+      cursor: pointer;
+      opacity: 100;
+      transform: scale(1);    
+      transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
     }
   
     #paginator {  
@@ -241,10 +287,10 @@ export const styles = /*html*/`
       right: 0;
       top: 50px;
       bottom: 0;
-      padding-top: 0px;
+      padding-top: 0;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
-    #viewer.mode-hand {
+    .mode-hand #viewer {
       cursor: grab !important;
       user-select: none !important;
     }
@@ -266,7 +312,7 @@ export const styles = /*html*/`
       padding-top: 0px;
       left: 0;
       transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
-    } 
+    }
   
     .page {    
       position: relative;
@@ -440,7 +486,7 @@ export const html = /*html*/`
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
-    <div id="panel-top"> 
+    <div id="top-panel"> 
       <div class="subpanel panel-item">
         <div id="toggle-previewer" class="panel-button panel-item">
           <img src="${icon_sidebar}"/>
@@ -462,7 +508,7 @@ export const html = /*html*/`
         </div> 
       </div>
     </div>
-    <div id="panel-bottom" class="disabled">
+    <div id="bottom-panel" class="disabled">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${icon_arrow_up}"/>
@@ -489,6 +535,24 @@ export const html = /*html*/`
           <img src="${icon_fit_page}"/>
         </div>
       </div>
+    </div>
+    <div id="annotation-panel">
+      <div id="button-annotation-mode-select" 
+        class="panel-button annotation-panel-item">
+        <img src="${icon_pointer}"/>
+      </div> 
+      <div id="button-annotation-mode-stamp" 
+        class="panel-button annotation-panel-item">
+        <img src="${icon_stamp}"/>
+      </div> 
+      <div id="button-annotation-mode-pen" 
+        class="panel-button annotation-panel-item">
+        <img src="${icon_pen}"/>
+      </div> 
+      <div id="button-annotation-mode-geometric" 
+        class="panel-button annotation-panel-item">
+        <img src="${icon_geometric}"/>
+      </div> 
     </div>
   </div>
 `;

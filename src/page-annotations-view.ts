@@ -1,3 +1,4 @@
+import { RenderToSvgResult } from "./common";
 import { Vec2 } from "./math";
 import { DocumentData } from "./document/document-data";
 import { AnnotationDict } from "./document/entities/annotations/annotation-dict";
@@ -7,14 +8,12 @@ export class PageAnnotationView {
   private readonly _pageDimensions: Vec2;
 
   private _docData: DocumentData;
-  private _annotations: AnnotationDict[];
-  private _svgByAnnotation = new Map<AnnotationDict, SVGGraphicsElement>();
+  private _rendered = new Map<AnnotationDict, RenderToSvgResult>();
   private _selectedAnnotation: AnnotationDict;
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
   private _defs: SVGDefsElement;
-  private _rendered: boolean;
 
   constructor(docData: DocumentData, pageId: number, pageDimensions: Vec2) {
     if (!docData || isNaN(pageId) || !pageDimensions) {
@@ -23,10 +22,10 @@ export class PageAnnotationView {
     this._pageId = pageId;
     this._pageDimensions = pageDimensions;
 
+    this._docData = docData;
+
     this._container = document.createElement("div");
     this._container.classList.add("page-annotations");
-    // this._container.addEventListener("mousedown", this.onMouseDown);
-    // this._container.addEventListener("mouseup", this.onMouseUp);
 
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this._svg.classList.add("stretch");
@@ -41,8 +40,6 @@ export class PageAnnotationView {
     
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
-
-    this._annotations = docData.getPageAnnotations(pageId);
   } 
 
   destroy() {
@@ -55,24 +52,21 @@ export class PageAnnotationView {
   }  
 
   async appendAsync(parent: HTMLElement) {
-    if (!this._rendered) {
-      await this.renderAnnotationsAsync();
-      this._rendered = true;
-    }
+    await this.renderAnnotationsAsync();
     parent.append(this._container);
   }
 
-  private switchSelectedAnnotation(annotation: AnnotationDict) {
+  switchSelectedAnnotation(annotation: AnnotationDict) {
     if (annotation === this._selectedAnnotation) {
       return;
     }
 
     if (this._selectedAnnotation) {
-      const oldSelectedSvg = this._svgByAnnotation.get(this._selectedAnnotation);
+      const oldSelectedSvg = this._rendered.get(this._selectedAnnotation)?.svg;
       oldSelectedSvg?.classList.remove("selected");
     }
 
-    const newSelectedSvg = this._svgByAnnotation.get(annotation);
+    const newSelectedSvg = this._rendered.get(annotation)?.svg;
     if (!newSelectedSvg) {
       this._selectedAnnotation = null;
       return;
@@ -82,33 +76,37 @@ export class PageAnnotationView {
     this._selectedAnnotation = annotation;
   }
 
-  private renderAnnotation(annotation: AnnotationDict) {
-    const svgWithBox = annotation.render();
-    if (!svgWithBox) {
-      return;
-    }
-    const {svg, clipPaths} = svgWithBox;
-    this._svgByAnnotation.set(annotation, svg);
-    svg.addEventListener("pointerdown", 
-      () => this.switchSelectedAnnotation(annotation));
-    this._svg.append(svg);
-    clipPaths?.forEach(x => this._defs.append(x));
-  }
-
   private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
-    const promises: Promise<void>[] = [];
-    for (let i = 0; i < this._annotations?.length || 0; i++) {
-      promises.push(new Promise<void>(resolve => {
-        setTimeout(() => { 
-          this.renderAnnotation(this._annotations[i]);
-          resolve();
-        }, 0);
-      }));
+    const annotations = this._docData.getPageAnnotations(this._pageId) || [];
+
+    for (let i = 0; i < annotations.length || 0; i++) {
+      const annotation = annotations[i];
+      let renderResult: RenderToSvgResult;
+
+      if (!this._rendered.has(annotation)) {
+        await new Promise<void>(resolve => {
+          setTimeout(async () => { 
+            renderResult = await annotation.renderAsync();
+            resolve();
+          }, 0);
+        });
+      } else {
+        renderResult = this._rendered.get(annotation);
+      }   
+
+      if (!renderResult) {
+        continue;
+      }      
+      this._rendered.set(annotation, renderResult);
+      const {svg, clipPaths} = renderResult;
+      this._svg.append(svg);
+      clipPaths?.forEach(x => this._defs.append(x));
+      svg.addEventListener("pointerdown", 
+        () => this.switchSelectedAnnotation(annotation));
     }
 
-    await Promise.all(promises);
     this._svg.append(this._defs);
 
     return true;
@@ -116,6 +114,6 @@ export class PageAnnotationView {
 
   private clear() {
     this._svg.innerHTML = "";
-    this._svgByAnnotation.clear();
+    // this._rendered.clear();
   }
 }

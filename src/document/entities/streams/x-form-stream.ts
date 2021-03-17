@@ -380,11 +380,6 @@ export class XFormStream extends PdfStream {
 
     if (!this.BBox) {
       throw new Error("Not all required properties parsed");
-    }    
-
-    // DEBUG
-    // const chars: string[] = [];
-    // this.decodedStreamData.forEach(x => chars.push(String.fromCharCode(x)));
-    // console.log(chars.join(""));
+    }
   }
 }

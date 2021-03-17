@@ -14,6 +14,9 @@ export function getDistance(x1: number, y1: number, x2: number, y2: number): num
 export interface RenderToSvgResult {
   svg: SVGGraphicsElement;
   clipPaths?: SVGClipPathElement[];
+  
+  tempCopy?: SVGGraphicsElement;
+  tempCopyUse?: SVGUseElement;
 }
 
 export interface BBox {
