@@ -13,6 +13,7 @@ import icon_popup from "./icons/popup.png";
 import icon_download from "./icons/download.png";
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
+import icon_delete from "./icons/delete.png";
 import icon_pointer from "./icons/pointer.png";
 import icon_stamp from "./icons/stamp.png";
 import icon_pen from "./icons/pen.png";

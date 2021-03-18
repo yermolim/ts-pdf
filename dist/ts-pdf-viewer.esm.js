@@ -7898,7 +7898,7 @@ class AnnotationDict extends PdfDict {
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
-            if (!e.isPrimary) {
+            if (!this.translationEnabled || !e.isPrimary) {
                 return;
             }
             document.addEventListener("pointerup", this.onRectPointerUp);
@@ -11027,6 +11027,7 @@ class PageAnnotationView {
             return;
         }
         if (this._selectedAnnotation) {
+            this._selectedAnnotation.translationEnabled = false;
             const oldSelectedSvg = (_a = this._rendered.get(this._selectedAnnotation)) === null || _a === void 0 ? void 0 : _a.svg;
             oldSelectedSvg === null || oldSelectedSvg === void 0 ? void 0 : oldSelectedSvg.classList.remove("selected");
         }
@@ -11036,6 +11037,7 @@ class PageAnnotationView {
             this._selectedAnnotation = null;
             return;
         }
+        annotation.translationEnabled = true;
         this._container.style.touchAction = "none";
         newSelectedSvg.classList.add("selected");
         this._svg.append(newSelectedSvg);
@@ -12116,9 +12118,9 @@ class TsPdfViewer {
                 break;
             case "stamp":
                 this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
+                this._annotationOverlay.addEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
+                this._annotationOverlay.addEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
                 this._viewer.append(this._annotationOverlay);
-                this._viewer.addEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
-                this._viewer.addEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
                 this.createTempStampAnnotationAsync();
                 break;
             case "pen":
@@ -12146,8 +12148,8 @@ class TsPdfViewer {
                     break;
                 case "stamp":
                     this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
-                    this._viewer.removeEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
-                    this._viewer.removeEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+                    this._annotationOverlay.removeEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
+                    this._annotationOverlay.removeEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
                     break;
                 case "pen":
                     this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");

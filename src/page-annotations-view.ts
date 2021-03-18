@@ -62,6 +62,7 @@ export class PageAnnotationView {
     }
 
     if (this._selectedAnnotation) {
+      this._selectedAnnotation.translationEnabled = false;
       const oldSelectedSvg = this._rendered.get(this._selectedAnnotation)?.svg;
       oldSelectedSvg?.classList.remove("selected");
     }
@@ -72,6 +73,8 @@ export class PageAnnotationView {
       this._selectedAnnotation = null;
       return;
     }
+    
+    annotation.translationEnabled = true;
     // add 'touch-action: "none"' to prevent 'pointercancel' event on touch devices
     // when trying to interact with an annotation
     this._container.style.touchAction = "none";

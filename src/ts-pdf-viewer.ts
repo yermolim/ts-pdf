@@ -935,9 +935,11 @@ export class TsPdfViewer {
         break;
       case "stamp":
         this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
+        this._annotationOverlay.addEventListener("pointermove", 
+          this.onStampAnnotationOverlayPointerMove);
+        this._annotationOverlay.addEventListener("pointerup", 
+          this.onStampAnnotationOverlayPointerUp);
         this._viewer.append(this._annotationOverlay);
-        this._viewer.addEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
-        this._viewer.addEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
         this.createTempStampAnnotationAsync();
         break;
       case "pen":
@@ -968,8 +970,10 @@ export class TsPdfViewer {
           break;
         case "stamp":
           this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
-          this._viewer.removeEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
-          this._viewer.removeEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+          this._annotationOverlay.removeEventListener("pointermove", 
+            this.onStampAnnotationOverlayPointerMove);
+          this._annotationOverlay.removeEventListener("pointerup", 
+            this.onStampAnnotationOverlayPointerUp);
           break;
         case "pen":
           this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
@@ -1014,7 +1018,7 @@ export class TsPdfViewer {
     if (!e.isPrimary) {
       return;
     }
-    
+
     const {clientX: cx, clientY: cy} = e;
 
     // bottom-left overlay coords
@@ -1038,7 +1042,7 @@ export class TsPdfViewer {
 
     this._annotationOverlayPageCoords = pageCoords;
   };
-
+  
   private onStampAnnotationOverlayPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       return;

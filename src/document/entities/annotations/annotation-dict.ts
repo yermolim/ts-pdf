@@ -18,6 +18,7 @@ import { XFormStream } from "../streams/x-form-stream";
 export abstract class AnnotationDict extends PdfDict {
   name: string;
   pageRect: Rect;
+  translationEnabled: boolean;
 
   //#region PDF properties
 
@@ -733,7 +734,7 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region translation handlers
   protected onRectPointerDown = (e: PointerEvent) => { 
-    if (!e.isPrimary) {
+    if (!this.translationEnabled || !e.isPrimary) {
       return;
     }
 
