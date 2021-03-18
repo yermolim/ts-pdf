@@ -97,12 +97,14 @@ export const html = /*html*/`
           <img src="${icon_pen}"/>
         </div> 
       </div>
+      <!--
       <div class="annotation-panel-row">
         <div id="button-annotation-mode-geometric" 
           class="panel-button annotation-panel-item">
           <img src="${icon_geometric}"/>
         </div> 
       </div>
+      -->
     </div>
   </div>
 `;

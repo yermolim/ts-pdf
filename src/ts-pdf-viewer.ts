@@ -285,8 +285,8 @@ export class TsPdfViewer {
       .addEventListener("click", this.onAnnotationStampModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-pen")
       .addEventListener("click", this.onAnnotationPenModeButtonClick);
-    this._shadowRoot.querySelector("#button-annotation-mode-geometric")
-      .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
+    // this._shadowRoot.querySelector("#button-annotation-mode-geometric")
+    //   .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
     this.setAnnotationMode("select");   
     
     this._shadowRoot.querySelector("#button-annotation-delete")

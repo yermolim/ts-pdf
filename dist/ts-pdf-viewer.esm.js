@@ -157,12 +157,14 @@ const html = `
           <img src="${img$g}"/>
         </div> 
       </div>
+      <!--
       <div class="annotation-panel-row">
         <div id="button-annotation-mode-geometric" 
           class="panel-button annotation-panel-item">
           <img src="${img$h}"/>
         </div> 
       </div>
+      -->
     </div>
   </div>
 `;
@@ -11872,8 +11874,6 @@ class TsPdfViewer {
             .addEventListener("click", this.onAnnotationStampModeButtonClick);
         this._shadowRoot.querySelector("#button-annotation-mode-pen")
             .addEventListener("click", this.onAnnotationPenModeButtonClick);
-        this._shadowRoot.querySelector("#button-annotation-mode-geometric")
-            .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
         this.setAnnotationMode("select");
         this._shadowRoot.querySelector("#button-annotation-delete")
             .addEventListener("click", this.onAnnotationDeleteButtonClick);
