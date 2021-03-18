@@ -72,8 +72,11 @@ export class PageAnnotationView {
 
     for (let i = 0; i < annotations.length || 0; i++) {
       const annotation = annotations[i];
-      let renderResult: RenderToSvgResult;
+      if (annotation.deleted) {
+        continue;
+      }
 
+      let renderResult: RenderToSvgResult;
       if (!this._rendered.has(annotation)) {
         await new Promise<void>(resolve => {
           setTimeout(async () => { 

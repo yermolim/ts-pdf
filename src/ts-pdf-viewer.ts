@@ -201,7 +201,8 @@ export class TsPdfViewer {
 
     this.initMainDivs();
     this.initViewControls();
-    this.initModeSwitches();
+    this.initModeSwitchButtons();
+    this.initAnnotationButtons();
     this.initAnnotationOverlay();
   }
 
@@ -267,7 +268,7 @@ export class TsPdfViewer {
       .addEventListener("click", this.onDownloadFileButtonClick);
   }
 
-  private initModeSwitches() {
+  private initModeSwitchButtons() {
     this._shadowRoot.querySelector("#button-mode-text")
       .addEventListener("click", this.onTextModeButtonClick);
     this._shadowRoot.querySelector("#button-mode-hand")
@@ -275,7 +276,9 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#button-mode-annotation")
       .addEventListener("click", this.onAnnotationModeButtonClick);
     this.setViewerMode("text");    
-    
+  }
+
+  private initAnnotationButtons() {
     this._shadowRoot.querySelector("#button-annotation-mode-select")
       .addEventListener("click", this.onAnnotationSelectModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-stamp")
@@ -285,9 +288,12 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#button-annotation-mode-geometric")
       .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
     this.setAnnotationMode("select");   
+    
+    this._shadowRoot.querySelector("#button-annotation-delete")
+      .addEventListener("click", this.onAnnotationDeleteButtonClick);
   }
 
-  private initAnnotationOverlay() {    
+  private initAnnotationOverlay() {
     const annotationOverlayContainer = document.createElement("div");
     annotationOverlayContainer.id = "annotation-overlay-container";
     
@@ -907,6 +913,10 @@ export class TsPdfViewer {
     this._renderedPages = renderedPages;
   } 
 
+  private forceRenderPageById(pageId: number) {
+    this._renderedPages.find(x => x.id === pageId)?.renderViewAsync(true);
+  }
+
   private onPaginatorInput = (event: Event) => {
     if (event.target instanceof HTMLInputElement) {
       event.target.value = event.target.value.replace(/[^\d]+/g, "");
@@ -936,6 +946,14 @@ export class TsPdfViewer {
   
 
   //#region annotations
+  private onAnnotationDeleteButtonClick = () => {
+    const annotation = this._docData.selectedAnnotation;
+    if (annotation) {
+      this._docData.removeAnnotation(annotation);
+      // rerender the page
+      this.forceRenderPageById(annotation.pageId);
+    }
+  };
 
   //#region annotation modes
   private setAnnotationMode(mode: AnnotationMode) {
@@ -1076,7 +1094,7 @@ export class TsPdfViewer {
     this._docData.appendAnnotationToPage(pageId, this._annotationToAdd);
 
     // rerender the page
-    this._renderedPages.find(x => x.id === pageId)?.renderViewAsync(true);
+    this.forceRenderPageById(pageId);
 
     // create new temp annotation
     this.createTempStampAnnotationAsync();

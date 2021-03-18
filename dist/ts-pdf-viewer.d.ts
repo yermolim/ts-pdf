@@ -40,7 +40,8 @@ export declare class TsPdfViewer {
 	private initViewerGUI;
 	private initMainDivs;
 	private initViewControls;
-	private initModeSwitches;
+	private initModeSwitchButtons;
+	private initAnnotationButtons;
 	private initAnnotationOverlay;
 	private onPdfLoadingProgress;
 	private onPdfLoadedAsync;
@@ -75,10 +76,12 @@ export declare class TsPdfViewer {
 	private getPageCoordsUnderPointer;
 	private renderVisiblePreviews;
 	private renderVisiblePages;
+	private forceRenderPageById;
 	private onPaginatorInput;
 	private onPaginatorChange;
 	private onPaginatorPrevClick;
 	private onPaginatorNextClick;
+	private onAnnotationDeleteButtonClick;
 	private setAnnotationMode;
 	private disableCurrentAnnotationMode;
 	private onAnnotationSelectModeButtonClick;

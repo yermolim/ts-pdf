@@ -17,7 +17,10 @@ import { XFormStream } from "../streams/x-form-stream";
 
 export abstract class AnnotationDict extends PdfDict {
   name: string;
+
+  pageId: number;
   pageRect: Rect;
+
   translationEnabled: boolean;
 
   //#region PDF properties

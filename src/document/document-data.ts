@@ -48,6 +48,9 @@ export class DocumentData {
   private _annotIdsByPageId = new Map<number, ObjectId[]>();
   private _supportedAnnotsByPageId: Map<number, AnnotationDict[]>;
   private _selectedAnnotation: AnnotationDict;
+  get selectedAnnotation(): AnnotationDict {
+    return this._selectedAnnotation;
+  }
 
   get size(): number {
     if (this._xrefs?.length) {
@@ -220,6 +223,7 @@ export class DocumentData {
   }
 
   appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
+    annotation.pageId = pageId;
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);
@@ -230,6 +234,7 @@ export class DocumentData {
 
   removeAnnotation(annotation: AnnotationDict) {
     annotation.markAsDeleted(true);
+    this.setSelectedAnnotation(null);
   }
   
   setSelectedAnnotation(annotation: AnnotationDict): AnnotationDict {
@@ -239,7 +244,7 @@ export class DocumentData {
 
     if (this._selectedAnnotation) {
       this._selectedAnnotation.translationEnabled = false;
-      const oldSelectedSvg = this._selectedAnnotation?.lastRenderResult.svg;
+      const oldSelectedSvg = this._selectedAnnotation?.lastRenderResult?.svg;
       oldSelectedSvg?.classList.remove("selected");
     }
 
@@ -472,9 +477,10 @@ export class DocumentData {
         }
         if (annot) {
           annotations.push(annot.value);
+          annot.value.pageId = page.id;
 
           // DEBUG
-          console.log(annot.value);
+          // console.log(annot.value);
         }
       }
       
