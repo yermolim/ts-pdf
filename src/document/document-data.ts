@@ -47,6 +47,7 @@ export class DocumentData {
   
   private _annotIdsByPageId = new Map<number, ObjectId[]>();
   private _supportedAnnotsByPageId: Map<number, AnnotationDict[]>;
+  private _selectedAnnotation: AnnotationDict;
 
   get size(): number {
     if (this._xrefs?.length) {
@@ -229,6 +230,36 @@ export class DocumentData {
 
   removeAnnotation(annotation: AnnotationDict) {
     annotation.markAsDeleted(true);
+  }
+  
+  setSelectedAnnotation(annotation: AnnotationDict): AnnotationDict {
+    if (annotation === this._selectedAnnotation) {
+      return;
+    }
+
+    if (this._selectedAnnotation) {
+      this._selectedAnnotation.translationEnabled = false;
+      const oldSelectedSvg = this._selectedAnnotation?.lastRenderResult.svg;
+      oldSelectedSvg?.classList.remove("selected");
+    }
+
+    const newSelectedSvg = annotation?.lastRenderResult.svg;
+    if (!newSelectedSvg) {
+      this._selectedAnnotation = null;
+    } else {
+      annotation.translationEnabled = true;    
+      newSelectedSvg.classList.add("selected");
+      this._selectedAnnotation = annotation;
+    }
+
+    // dispatch corresponding event
+    document.dispatchEvent(new CustomEvent("annotationselectionchange", {
+      detail: {
+        annotation: this._selectedAnnotation,
+      }
+    }));
+
+    return this._selectedAnnotation;
   }
   //#endregion
   

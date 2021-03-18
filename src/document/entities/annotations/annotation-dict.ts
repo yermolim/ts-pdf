@@ -118,6 +118,10 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svgContentCopyUse: SVGUseElement;
   protected _svgContent: SVGGraphicsElement;
   protected _svgClipPaths: SVGClipPathElement[];
+  protected _lastRenderResult: RenderToSvgResult;
+  get lastRenderResult(): RenderToSvgResult {
+    return this._lastRenderResult;
+  }
   //#endregion
 
   protected constructor(subType: AnnotationType) {
@@ -214,12 +218,14 @@ export abstract class AnnotationDict extends PdfDict {
 
     await this.updateRenderAsync(); 
 
-    return {
+    const renderResult: RenderToSvgResult = {
       svg: this._svg,
       clipPaths: this._svgClipPaths,      
       tempCopy: this._svgContentCopy,
       tempCopyUse: this._svgContentCopyUse,
     };
+    this._lastRenderResult = renderResult;
+    return renderResult;
   }  
   
   applyRectTransform(matrix: Mat3) {

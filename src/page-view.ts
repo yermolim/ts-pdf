@@ -173,10 +173,6 @@ export class PageView {
     this._viewCanvas?.remove();
     this._viewRendered = false;
   }
-
-  clearAnnotationSelection() {
-    this._annotations?.switchSelectedAnnotation(null);
-  }
  
   private cancelRenderTask() {    
     if (this._renderTask) {

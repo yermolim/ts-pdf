@@ -16,6 +16,7 @@ export declare class TsPdfViewer {
 	private _viewer;
 	private _viewerMode;
 	private _annotationMode;
+	private _annotationOverlayContainer;
 	private _annotationOverlay;
 	private _annotationOverlaySvg;
 	private _annotationOverlayMObserver;

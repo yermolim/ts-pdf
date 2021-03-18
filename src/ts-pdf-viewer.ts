@@ -1,7 +1,8 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-import { html, passwordDialogHtml, styles } from "./assets/index.html";
+import { html, passwordDialogHtml } from "./assets/index.html";
+import { styles } from "./assets/styles.html";
 
 import { getDistance } from "./common";
 import { clamp, Mat3, Vec2 } from "./math";
@@ -41,6 +42,7 @@ export class TsPdfViewer {
   private _viewerMode: ViewerMode;
 
   private _annotationMode: AnnotationMode;
+  private _annotationOverlayContainer: HTMLDivElement;
   private _annotationOverlay: HTMLDivElement;
   private _annotationOverlaySvg: SVGGraphicsElement;
   private _annotationOverlayMObserver: MutationObserver;
@@ -221,6 +223,16 @@ export class TsPdfViewer {
 
     this._previewer = this._shadowRoot.querySelector("#previewer");
     this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;
+    
+    // handle annotation selection
+    document.addEventListener("annotationselectionchange", (e: Event) => {
+      const annotation: AnnotationDict = e["detail"].annotation;
+      if (annotation) {
+        this._mainContainer.classList.add("annotation-selected");
+      } else {
+        this._mainContainer.classList.remove("annotation-selected");
+      }
+    });
   }
   
   private initViewControls() {
@@ -275,11 +287,12 @@ export class TsPdfViewer {
     this.setAnnotationMode("select");   
   }
 
-  private initAnnotationOverlay() {      
+  private initAnnotationOverlay() {    
+    const annotationOverlayContainer = document.createElement("div");
+    annotationOverlayContainer.id = "annotation-overlay-container";
+    
     const annotationOverlay = document.createElement("div");
-    annotationOverlay.classList.add("absolute", "stretch", "no-margin", "no-padding");
     annotationOverlay.id = "annotation-overlay";
-    annotationOverlay.style.touchAction = "none";
     
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.classList.add("abs-stretch", "no-margin", "no-padding");
@@ -290,6 +303,7 @@ export class TsPdfViewer {
     svg.append(g);
 
     annotationOverlay.append(svg);
+    annotationOverlayContainer.append(annotationOverlay);
 
     // keep overlay properly positioned depending on the viewer scroll
     this._viewer.addEventListener("scroll", () => {
@@ -344,6 +358,7 @@ export class TsPdfViewer {
     this._annotationOverlayMObserver = viewerMObserver;
     this._annotationOverlayRObserver = viewerRObserver;
     
+    this._annotationOverlayContainer = annotationOverlayContainer;
     this._annotationOverlay = annotationOverlay;
     this._annotationOverlaySvg = g;
   }
@@ -939,16 +954,16 @@ export class TsPdfViewer {
           this.onStampAnnotationOverlayPointerMove);
         this._annotationOverlay.addEventListener("pointerup", 
           this.onStampAnnotationOverlayPointerUp);
-        this._viewer.append(this._annotationOverlay);
+        this._viewer.append(this._annotationOverlayContainer);
         this.createTempStampAnnotationAsync();
         break;
       case "pen":
         this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
-        this._viewer.append(this._annotationOverlay);
+        this._viewer.append(this._annotationOverlayContainer);
         break;
       case "geometric":
         this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
-        this._viewer.append(this._annotationOverlay);
+        this._viewer.append(this._annotationOverlayContainer);
         break;
       default:
         // Execution should not come here
@@ -960,13 +975,12 @@ export class TsPdfViewer {
   private disableCurrentAnnotationMode() {    
     if (this._annotationMode) {  
       this._annotationToAdd = null;    
-      this._annotationOverlay.remove();
+      this._annotationOverlayContainer.remove();
       this._annotationOverlaySvg.innerHTML = "";
       switch (this._annotationMode) {
         case "select":
           this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
-          // disable selection
-          this._pages.forEach(x => x.clearAnnotationSelection());
+          this._docData.setSelectedAnnotation(null);
           break;
         case "stamp":
           this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
@@ -1042,7 +1056,7 @@ export class TsPdfViewer {
 
     this._annotationOverlayPageCoords = pageCoords;
   };
-  
+
   private onStampAnnotationOverlayPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       return;

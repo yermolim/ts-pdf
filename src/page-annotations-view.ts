@@ -9,7 +9,6 @@ export class PageAnnotationView {
 
   private _docData: DocumentData;
   private _rendered = new Map<AnnotationDict, RenderToSvgResult>();
-  private _selectedAnnotation: AnnotationDict;
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
@@ -32,9 +31,19 @@ export class PageAnnotationView {
     this._svg.setAttribute("data-page-id", pageId + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
+    
+    // handle annotation selection
     this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
       if (e.target === this._svg) {
-        this.switchSelectedAnnotation(null);
+        docData.setSelectedAnnotation(null);
+      }
+    });
+    document.addEventListener("annotationselectionchange", (e: Event) => {
+      const annotation: AnnotationDict = e["detail"].annotation;
+      if (annotation) {
+        this._container.style.touchAction = "none";
+      } else {
+        this._container.style.touchAction = "";
       }
     });
     
@@ -54,33 +63,6 @@ export class PageAnnotationView {
   async appendAsync(parent: HTMLElement) {
     await this.renderAnnotationsAsync();
     parent.append(this._container);
-  }
-
-  switchSelectedAnnotation(annotation: AnnotationDict) {
-    if (annotation === this._selectedAnnotation) {
-      return;
-    }
-
-    if (this._selectedAnnotation) {
-      this._selectedAnnotation.translationEnabled = false;
-      const oldSelectedSvg = this._rendered.get(this._selectedAnnotation)?.svg;
-      oldSelectedSvg?.classList.remove("selected");
-    }
-
-    const newSelectedSvg = this._rendered.get(annotation)?.svg;
-    if (!newSelectedSvg) {
-      this._container.style.touchAction = "";
-      this._selectedAnnotation = null;
-      return;
-    }
-    
-    annotation.translationEnabled = true;
-    // add 'touch-action: "none"' to prevent 'pointercancel' event on touch devices
-    // when trying to interact with an annotation
-    this._container.style.touchAction = "none";
-    newSelectedSvg.classList.add("selected");
-    this._svg.append(newSelectedSvg); // reappend selected svg to move it to the top
-    this._selectedAnnotation = annotation;
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
@@ -111,7 +93,7 @@ export class PageAnnotationView {
       this._svg.append(svg);
       clipPaths?.forEach(x => this._defs.append(x));
       svg.addEventListener("pointerdown", 
-        () => this.switchSelectedAnnotation(annotation));
+        () => this._docData.setSelectedAnnotation(annotation));
     }
 
     this._svg.append(this._defs);
