@@ -253,13 +253,6 @@ export abstract class AnnotationDict extends PdfDict {
     const y = pageY - height / 2;
     const mat = Mat3.buildTranslate(x, y);
     this.applyRectTransform(mat);
-    
-    console.log(pageX);
-    console.log(pageY);
-    console.log(width);
-    console.log(height);
-    console.log(x);
-    console.log(y);
   }
   
   /**

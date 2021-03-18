@@ -346,8 +346,8 @@ const styles = `
       right: 0;
       top: 50px;
       bottom: 0;
-      padding-top: 0;
-      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
+      margin-top: 0;
+      transition: margin-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
     .mode-hand #viewer {
       cursor: grab !important;
@@ -355,22 +355,22 @@ const styles = `
     }
     .hide-panels #viewer {
       top: 0;
-      padding-top: 50px;
-      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
+      margin-top: 50px;
+      transition: margin-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
     }      
     .hide-panels.mobile #viewer,
     .hide-panels.hide-previewer #viewer {
       top: 0;
-      padding-top: 50px;
+      margin-top: 50px;
       left: 0;
-      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s, left 0.25s ease-in;
+      transition: margin-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s, left 0.25s ease-in;
     }   
     .mobile #viewer,
     .hide-previewer #viewer {
       top: 50px;
-      padding-top: 0px;
+      margin-top: 0px;
       left: 0;
-      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
+      transition: margin-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
     }
   
     .page {    
@@ -507,7 +507,10 @@ const styles = `
 
     .svg-annotation {
       cursor: pointer;
-    } 
+    }     
+    .out .svg-annotation {
+      cursor: not-allowed;
+    }
     .svg-annot-rect,
     .svg-annot-box {
       fill: transparent;
@@ -522,7 +525,7 @@ const styles = `
     } 
     .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
     .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
-      r: 5;
+      r: 8;
       fill: var(--color-primary-final);
       cursor: pointer;
     }
@@ -8156,12 +8159,6 @@ class AnnotationDict extends PdfDict {
         const y = pageY - height / 2;
         const mat = Mat3.buildTranslate(x, y);
         this.applyRectTransform(mat);
-        console.log(pageX);
-        console.log(pageY);
-        console.log(width);
-        console.log(height);
-        console.log(x);
-        console.log(y);
     }
     parseProps(parseInfo) {
         var _a;
@@ -11543,20 +11540,27 @@ class TsPdfViewer {
         };
         this.onStampAnnotationOverlayPointerMove = (e) => {
             const { clientX: cx, clientY: cy } = e;
-            const { height: oh, top, left: ox } = this._annotationOverlay.getBoundingClientRect();
-            const oy = this._mainContainer.classList.contains("hide-panels")
-                ? top + oh - 25
-                : top + oh;
+            const { height: oh, top, left: ox } = this._viewer.getBoundingClientRect();
+            const oy = top + oh;
             const offsetX = (cx - ox) / this._scale;
             const offsetY = (oy - cy) / this._scale;
-            const { width: gw, height: gh } = this._annotationOverlaySvg.getBBox();
-            this._annotationOverlaySvg.setAttribute("transform", `translate(${offsetX - gw / 2} ${offsetY - gh / 2})`);
+            const [x1, y1, x2, y2] = this._annotationToAdd.Rect;
+            this._annotationOverlaySvg.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
             const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+            if (!pageCoords) {
+                this._annotationOverlaySvg.classList.add("out");
+            }
+            else {
+                this._annotationOverlaySvg.classList.remove("out");
+            }
             this._annotationOverlayPageCoords = pageCoords;
         };
         this.onStampAnnotationOverlayPointerUp = (e) => {
             var _a;
-            if (!this._annotationOverlayPageCoords || !this._annotationToAdd) {
+            const { clientX: cx, clientY: cy } = e;
+            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+            this._annotationOverlayPageCoords = pageCoords;
+            if (!pageCoords || !this._annotationToAdd) {
                 return;
             }
             const { pageId, pageX, pageY } = this._annotationOverlayPageCoords;

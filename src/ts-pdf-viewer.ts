@@ -962,6 +962,7 @@ export class TsPdfViewer {
       switch (this._annotationMode) {
         case "select":
           this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
+          // disable selection
           this._pages.forEach(x => x.clearAnnotationSelection());
           break;
         case "stamp":
@@ -1012,26 +1013,33 @@ export class TsPdfViewer {
     const {clientX: cx, clientY: cy} = e;
 
     // bottom-left overlay coords
-    const {height: oh, top, left: ox} = this._annotationOverlay.getBoundingClientRect();
-    const oy = this._mainContainer.classList.contains("hide-panels")
-      ? top + oh - 25 // half of top-offset
-      : top + oh;
+    const {height: oh, top, left: ox} = this._viewer.getBoundingClientRect();
+    const oy = top + oh;
 
     const offsetX = (cx - ox) / this._scale;
     const offsetY = (oy - cy) / this._scale;
 
-    const {width: gw, height: gh} = this._annotationOverlaySvg.getBBox();
-
+    const [x1, y1, x2, y2] = this._annotationToAdd.Rect;
     this._annotationOverlaySvg.setAttribute("transform",
-      `translate(${offsetX - gw / 2} ${offsetY - gh / 2})`);
+      `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
 
     // get coords under the pointer relatively to the page under it 
     const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+    if (!pageCoords) {
+      this._annotationOverlaySvg.classList.add("out");
+    } else {      
+      this._annotationOverlaySvg.classList.remove("out");
+    }
+
     this._annotationOverlayPageCoords = pageCoords;
   };
 
   private onStampAnnotationOverlayPointerUp = (e: PointerEvent) => {
-    if (!this._annotationOverlayPageCoords || !this._annotationToAdd) {
+    const {clientX: cx, clientY: cy} = e;
+    const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+    this._annotationOverlayPageCoords = pageCoords;
+
+    if (!pageCoords || !this._annotationToAdd) {
       return;
     }
 

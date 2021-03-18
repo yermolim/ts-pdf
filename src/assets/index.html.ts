@@ -287,8 +287,8 @@ export const styles = /*html*/`
       right: 0;
       top: 50px;
       bottom: 0;
-      padding-top: 0;
-      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
+      margin-top: 0;
+      transition: margin-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
     }
     .mode-hand #viewer {
       cursor: grab !important;
@@ -296,22 +296,22 @@ export const styles = /*html*/`
     }
     .hide-panels #viewer {
       top: 0;
-      padding-top: 50px;
-      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
+      margin-top: 50px;
+      transition: margin-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
     }      
     .hide-panels.mobile #viewer,
     .hide-panels.hide-previewer #viewer {
       top: 0;
-      padding-top: 50px;
+      margin-top: 50px;
       left: 0;
-      transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s, left 0.25s ease-in;
+      transition: margin-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s, left 0.25s ease-in;
     }   
     .mobile #viewer,
     .hide-previewer #viewer {
       top: 50px;
-      padding-top: 0px;
+      margin-top: 0px;
       left: 0;
-      transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
+      transition: margin-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-in;
     }
   
     .page {    
@@ -448,7 +448,10 @@ export const styles = /*html*/`
 
     .svg-annotation {
       cursor: pointer;
-    } 
+    }     
+    .out .svg-annotation {
+      cursor: not-allowed;
+    }
     .svg-annot-rect,
     .svg-annot-box {
       fill: transparent;
@@ -463,7 +466,7 @@ export const styles = /*html*/`
     } 
     .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
     .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
-      r: 5;
+      r: 8;
       fill: var(--color-primary-final);
       cursor: pointer;
     }
