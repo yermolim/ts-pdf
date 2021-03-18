@@ -279,6 +279,7 @@ export class TsPdfViewer {
     const annotationOverlay = document.createElement("div");
     annotationOverlay.classList.add("absolute", "stretch", "no-margin", "no-padding");
     annotationOverlay.id = "annotation-overlay";
+    annotationOverlay.style.touchAction = "none";
     
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.classList.add("abs-stretch", "no-margin", "no-padding");
@@ -1010,6 +1011,10 @@ export class TsPdfViewer {
   }
 
   private onStampAnnotationOverlayPointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+    
     const {clientX: cx, clientY: cy} = e;
 
     // bottom-left overlay coords
@@ -1035,6 +1040,10 @@ export class TsPdfViewer {
   };
 
   private onStampAnnotationOverlayPointerUp = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     const {clientX: cx, clientY: cy} = e;
     const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
     this._annotationOverlayPageCoords = pageCoords;

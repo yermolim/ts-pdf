@@ -7898,6 +7898,9 @@ class AnnotationDict extends PdfDict {
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             document.addEventListener("pointerup", this.onRectPointerUp);
             document.addEventListener("pointerout", this.onRectPointerUp);
             this._transformationTimer = setTimeout(() => {
@@ -7908,12 +7911,18 @@ class AnnotationDict extends PdfDict {
             }, 200);
         };
         this.onRectPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             const current = this.convertClientCoordsToPage(e.clientX, e.clientY);
             this._transformationMatrix.reset()
                 .applyTranslation(current.x - this._transformationPoint.x, current.y - this._transformationPoint.y);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onRectPointerUp = () => {
+        this.onRectPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             document.removeEventListener("pointermove", this.onRectPointerMove);
             document.removeEventListener("pointerup", this.onRectPointerUp);
             document.removeEventListener("pointerout", this.onRectPointerUp);
@@ -7929,6 +7938,9 @@ class AnnotationDict extends PdfDict {
             this.updateRenderAsync();
         };
         this.onRotationHandlePointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             document.addEventListener("pointerup", this.onRotationHandlePointerUp);
             document.addEventListener("pointerout", this.onRotationHandlePointerUp);
             this._transformationTimer = setTimeout(() => {
@@ -7939,6 +7951,9 @@ class AnnotationDict extends PdfDict {
             e.stopPropagation();
         };
         this.onRotationHandlePointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
             const clientCenter = this.convertPageCoordsToClient(centerX, centerY);
@@ -7952,6 +7967,9 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRotationHandlePointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
             document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
             document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
@@ -7967,6 +7985,9 @@ class AnnotationDict extends PdfDict {
             this.updateRenderAsync();
         };
         this.onScaleHandlePointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             document.addEventListener("pointerup", this.onScaleHandlePointerUp);
             document.addEventListener("pointerout", this.onScaleHandlePointerUp);
             const target = e.target;
@@ -8006,6 +8027,9 @@ class AnnotationDict extends PdfDict {
             e.stopPropagation();
         };
         this.onScaleHandlePointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             const current = this.convertClientCoordsToPage(e.clientX, e.clientY)
                 .substract(this._transformationPoint);
             const currentLength = current.getMagnitude();
@@ -8028,6 +8052,9 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onScaleHandlePointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
             document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
             document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
@@ -11005,9 +11032,11 @@ class PageAnnotationView {
         }
         const newSelectedSvg = (_b = this._rendered.get(annotation)) === null || _b === void 0 ? void 0 : _b.svg;
         if (!newSelectedSvg) {
+            this._container.style.touchAction = "";
             this._selectedAnnotation = null;
             return;
         }
+        this._container.style.touchAction = "none";
         newSelectedSvg.classList.add("selected");
         this._svg.append(newSelectedSvg);
         this._selectedAnnotation = annotation;
@@ -11539,6 +11568,9 @@ class TsPdfViewer {
             this.setAnnotationMode("geometric");
         };
         this.onStampAnnotationOverlayPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
             const { clientX: cx, clientY: cy } = e;
             const { height: oh, top, left: ox } = this._viewer.getBoundingClientRect();
             const oy = top + oh;
@@ -11557,6 +11589,9 @@ class TsPdfViewer {
         };
         this.onStampAnnotationOverlayPointerUp = (e) => {
             var _a;
+            if (!e.isPrimary) {
+                return;
+            }
             const { clientX: cx, clientY: cy } = e;
             const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
             this._annotationOverlayPageCoords = pageCoords;
@@ -11757,6 +11792,7 @@ class TsPdfViewer {
         const annotationOverlay = document.createElement("div");
         annotationOverlay.classList.add("absolute", "stretch", "no-margin", "no-padding");
         annotationOverlay.id = "annotation-overlay";
+        annotationOverlay.style.touchAction = "none";
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.classList.add("abs-stretch", "no-margin", "no-padding");
         svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");

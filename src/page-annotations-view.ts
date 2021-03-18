@@ -68,9 +68,13 @@ export class PageAnnotationView {
 
     const newSelectedSvg = this._rendered.get(annotation)?.svg;
     if (!newSelectedSvg) {
+      this._container.style.touchAction = "";
       this._selectedAnnotation = null;
       return;
     }
+    // add 'touch-action: "none"' to prevent 'pointercancel' event on touch devices
+    // when trying to interact with an annotation
+    this._container.style.touchAction = "none";
     newSelectedSvg.classList.add("selected");
     this._svg.append(newSelectedSvg); // reappend selected svg to move it to the top
     this._selectedAnnotation = annotation;

@@ -732,9 +732,13 @@ export abstract class AnnotationDict extends PdfDict {
   //#region event handlers 
 
   //#region translation handlers
-  protected onRectPointerDown = (e: PointerEvent) => {    
+  protected onRectPointerDown = (e: PointerEvent) => { 
+    if (!e.isPrimary) {
+      return;
+    }
+
     document.addEventListener("pointerup", this.onRectPointerUp);
-    document.addEventListener("pointerout", this.onRectPointerUp);   
+    document.addEventListener("pointerout", this.onRectPointerUp);  
 
     // set timeout to prevent an accidental annotation translation
     this._transformationTimer = setTimeout(() => {
@@ -746,6 +750,10 @@ export abstract class AnnotationDict extends PdfDict {
   };
 
   protected onRectPointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     const current = this.convertClientCoordsToPage(e.clientX, e.clientY);
     this._transformationMatrix.reset()
       .applyTranslation(current.x - this._transformationPoint.x, 
@@ -754,7 +762,11 @@ export abstract class AnnotationDict extends PdfDict {
       `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onRectPointerUp = () => {
+  protected onRectPointerUp = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     document.removeEventListener("pointermove", this.onRectPointerMove);
     document.removeEventListener("pointerup", this.onRectPointerUp);
     document.removeEventListener("pointerout", this.onRectPointerUp);
@@ -777,6 +789,10 @@ export abstract class AnnotationDict extends PdfDict {
   
   //#region rotation handlers
   protected onRotationHandlePointerDown = (e: PointerEvent) => {    
+    if (!e.isPrimary) {
+      return;
+    }
+
     document.addEventListener("pointerup", this.onRotationHandlePointerUp);
     document.addEventListener("pointerout", this.onRotationHandlePointerUp);    
 
@@ -791,6 +807,10 @@ export abstract class AnnotationDict extends PdfDict {
   };
 
   protected onRotationHandlePointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     const centerX = (this.Rect[0] + this.Rect[2]) / 2;
     const centerY = (this.Rect[1] + this.Rect[3]) / 2;
     const clientCenter = this.convertPageCoordsToClient(centerX, centerY);
@@ -809,6 +829,10 @@ export abstract class AnnotationDict extends PdfDict {
   };
   
   protected onRotationHandlePointerUp = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
     document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
     document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
@@ -831,6 +855,10 @@ export abstract class AnnotationDict extends PdfDict {
   
   //#region scale handlers
   protected onScaleHandlePointerDown = (e: PointerEvent) => { 
+    if (!e.isPrimary) {
+      return;
+    }
+
     document.addEventListener("pointerup", this.onScaleHandlePointerUp);
     document.addEventListener("pointerout", this.onScaleHandlePointerUp); 
 
@@ -877,6 +905,10 @@ export abstract class AnnotationDict extends PdfDict {
   };
 
   protected onScaleHandlePointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     const current = this.convertClientCoordsToPage(e.clientX, e.clientY)
       .substract(this._transformationPoint);
     const currentLength = current.getMagnitude();
@@ -907,6 +939,10 @@ export abstract class AnnotationDict extends PdfDict {
   };
   
   protected onScaleHandlePointerUp = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
     document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
     document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
     document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
