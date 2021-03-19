@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
@@ -5,10 +6,12 @@ import { html, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
 import { getDistance } from "./common";
-import { clamp, Mat3, Vec2 } from "./math";
+import { clamp, Vec2 } from "./math";
+
+import { PageView } from "./page/page-view";
+import { PenTempData } from "./helpers/pen-temp-data";
 
 import { DocumentData } from "./document/document-data";
-import { PageView } from "./page-view";
 import { AnnotationDict } from "./document/entities/annotations/annotation-dict";
 
 type ViewerMode = "text" | "hand" | "annotation";
@@ -48,7 +51,8 @@ export class TsPdfViewer {
   private _annotationOverlayMObserver: MutationObserver;
   private _annotationOverlayRObserver: ResizeObserver;
   private _annotationOverlayPageCoords: PageCoords;  
-  private _annotationToAdd: AnnotationDict; 
+  private _annotationToAdd: AnnotationDict;
+  private _annotationPenData: PenTempData;
 
   private _pages: PageView[] = [];
   private _renderedPages: PageView[] = [];
@@ -904,6 +908,7 @@ export class TsPdfViewer {
       const page = pages[i];
       renderedPages.push(page);
       if (i >= minPageNumber && i <= maxPageNumber) {
+        // render page view and dispatch corresponding event
         page.renderViewAsync();
       } else {
         page.clearView();
@@ -911,6 +916,7 @@ export class TsPdfViewer {
     }
 
     this._renderedPages = renderedPages;
+    document.dispatchEvent(new CustomEvent("visiblepagesrender"));
   } 
 
   private forceRenderPageById(pageId: number) {
@@ -969,14 +975,16 @@ export class TsPdfViewer {
       case "stamp":
         this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
         this._annotationOverlay.addEventListener("pointermove", 
-          this.onStampAnnotationOverlayPointerMove);
+          this.onStampPointerMove);
         this._annotationOverlay.addEventListener("pointerup", 
-          this.onStampAnnotationOverlayPointerUp);
+          this.onStampPointerUp);
         this._viewer.append(this._annotationOverlayContainer);
         this.createTempStampAnnotationAsync();
         break;
       case "pen":
         this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
+        this._annotationOverlay.addEventListener("pointerdown", 
+          this.onPenPointerDown);      
         this._viewer.append(this._annotationOverlayContainer);
         break;
       case "geometric":
@@ -995,6 +1003,7 @@ export class TsPdfViewer {
       this._annotationToAdd = null;    
       this._annotationOverlayContainer.remove();
       this._annotationOverlaySvg.innerHTML = "";
+      this._annotationOverlaySvg.removeAttribute("transform");
       switch (this._annotationMode) {
         case "select":
           this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
@@ -1003,12 +1012,15 @@ export class TsPdfViewer {
         case "stamp":
           this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
           this._annotationOverlay.removeEventListener("pointermove", 
-            this.onStampAnnotationOverlayPointerMove);
+            this.onStampPointerMove);
           this._annotationOverlay.removeEventListener("pointerup", 
-            this.onStampAnnotationOverlayPointerUp);
+            this.onStampPointerUp);
           break;
         case "pen":
           this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
+          this._annotationOverlay.removeEventListener("pointerdown", 
+            this.onPenPointerDown);
+          this.removeTempPenData();
           break;
         case "geometric":
           this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
@@ -1046,7 +1058,7 @@ export class TsPdfViewer {
     this._annotationToAdd = stamp;
   }
 
-  private onStampAnnotationOverlayPointerMove = (e: PointerEvent) => {
+  private onStampPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
       return;
     }
@@ -1065,17 +1077,10 @@ export class TsPdfViewer {
       `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
 
     // get coords under the pointer relatively to the page under it 
-    const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
-    if (!pageCoords) {
-      this._annotationOverlaySvg.classList.add("out");
-    } else {      
-      this._annotationOverlaySvg.classList.remove("out");
-    }
-
-    this._annotationOverlayPageCoords = pageCoords;
+    this.updatePageCoords(cx, cy);
   };
 
-  private onStampAnnotationOverlayPointerUp = (e: PointerEvent) => {
+  private onStampPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       return;
     }
@@ -1099,6 +1104,118 @@ export class TsPdfViewer {
     // create new temp annotation
     this.createTempStampAnnotationAsync();
   };
+  //#endregion
+
+  //#region ink annotations
+  private removeTempPenData() {
+    if (this._annotationPenData) {
+      this._annotationPenData.group.remove();
+      document.removeEventListener("visiblepagesrender", this.updatePenGroupPosition);
+      this._annotationPenData = null;
+    }    
+  }
+
+  private resetTempPenData(pageId: number) {    
+    this.removeTempPenData();    
+    this._annotationPenData = new PenTempData({id: pageId});
+    this._annotationOverlaySvg.append(this._annotationPenData.group);
+
+    // update pen group matrix to position the group properly
+    document.addEventListener("visiblepagesrender", this.updatePenGroupPosition);
+    this.updatePenGroupPosition();
+  }
+  
+  private onPenPointerDown = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
+    const {clientX: cx, clientY: cy} = e;
+    this.updatePageCoords(cx, cy);
+    const pageCoords = this._annotationOverlayPageCoords;
+    if (!pageCoords) {
+      // return if the pointer is outside page
+      return;
+    }
+
+    const {pageX: px, pageY: py, pageId} = pageCoords;
+    if (!this._annotationPenData || pageId !== this._annotationPenData.id) {
+      this.resetTempPenData(pageId);
+    }
+    this._annotationPenData.newPath(new Vec2(px, py));
+
+    const target = e.target as HTMLElement;
+    target.addEventListener("pointermove", this.onPenPointerMove);
+    target.addEventListener("pointerup", this.onPenPointerUp);    
+    target.addEventListener("pointerout", this.onPenPointerUp);    
+
+    // capture pointer to make pointer events fire on same target
+    target.setPointerCapture(e.pointerId);
+  };
+
+  private onPenPointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary || !this._annotationPenData) {
+      return;
+    }
+
+    const {clientX: cx, clientY: cy} = e;
+    this.updatePageCoords(cx, cy);
+
+    const pageCoords = this._annotationOverlayPageCoords;
+    if (!pageCoords || pageCoords.pageId !== this._annotationPenData.id) {
+      // skip move if the pointer is outside of the starting page
+      return;
+    }
+    
+    this._annotationPenData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
+  };
+
+  private onPenPointerUp = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onPenPointerMove);
+    target.removeEventListener("pointerup", this.onPenPointerUp);    
+    target.removeEventListener("pointerout", this.onPenPointerUp);   
+
+    this._annotationPenData?.endPath();
+  };
+
+  private updatePenGroupPosition = () => {
+    if (!this._annotationPenData) {
+      return;
+    }
+    const page = this._renderedPages.find(x => x.id === this._annotationPenData.id);
+    if (!page) {
+      // set scale to 0 to hide pen group if it's page is not rendered
+      this._annotationPenData.setGroupMatrix(
+        [0, 0, 0, 0, 0, 0]);
+    }
+    const {height: ph, top: ptop, left: px} = page.viewContainer.getBoundingClientRect();
+    const py = ptop + ph;
+    const {height: vh, top: vtop, left: vx} = this._viewer.getBoundingClientRect();
+    const vy = vtop + vh;
+    const offsetX = (px - vx) / this._scale;
+    const offsetY = (vy - py) / this._scale;
+
+    this._annotationPenData.setGroupMatrix(
+      [1, 0, 0, 1, offsetX, offsetY]);
+  };
+  //#endregion
+
+  //#region misc
+  private updatePageCoords(clientX: number, clientY: number) {
+    const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
+    if (!pageCoords) {
+      this._annotationOverlaySvg.classList.add("out");
+    } else {      
+      this._annotationOverlaySvg.classList.remove("out");
+    }
+
+    this._annotationOverlayPageCoords = pageCoords;
+  }
   //#endregion
 
   //#endregion

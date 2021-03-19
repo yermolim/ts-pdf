@@ -1412,6 +1412,525 @@ function vecMinMax(...values) {
     return { min, max };
 }
 
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class PageTextView {
+    constructor(pageProxy) {
+        this.onMouseDown = (e) => {
+            var _a;
+            if (this._divModeTimer) {
+                clearTimeout(this._divModeTimer);
+                this._divModeTimer = null;
+            }
+            (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
+        };
+        this.onMouseUp = (e) => {
+            this._divModeTimer = setTimeout(() => {
+                var _a;
+                (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
+                this._divModeTimer = null;
+            }, 300);
+        };
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
+        this._pageProxy = pageProxy;
+        this._container = document.createElement("div");
+        this._container.classList.add("page-text");
+        this._container.addEventListener("mousedown", this.onMouseDown);
+        this._container.addEventListener("mouseup", this.onMouseUp);
+    }
+    static appendPageTextAsync(pageProxy, parent, scale) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const textObj = new PageTextView(pageProxy);
+            yield textObj.renderTextLayerAsync(scale);
+            parent.append(textObj._container);
+            return textObj;
+        });
+    }
+    destroy() {
+        this.destroyRenderTask();
+        if (this._container) {
+            this._container.remove();
+            this._container = null;
+        }
+    }
+    renderTextLayerAsync(scale) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.clear();
+            this.destroyRenderTask();
+            const viewport = this._pageProxy.getViewport({ scale });
+            const textContentStream = this._pageProxy.streamTextContent();
+            this._renderTask = renderTextLayer({
+                container: this._container,
+                textContentStream,
+                viewport,
+                enhanceTextSelection: true,
+            });
+            try {
+                yield this._renderTask.promise;
+            }
+            catch (error) {
+                if (error.message === "TextLayer task cancelled.") {
+                    return false;
+                }
+                else {
+                    throw error;
+                }
+            }
+            return true;
+        });
+    }
+    clear() {
+        this._container.innerHTML = "";
+    }
+    destroyRenderTask() {
+        if (this._renderTask) {
+            this._renderTask.cancel();
+            this._renderTask = null;
+        }
+    }
+}
+
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class PageAnnotationView {
+    constructor(docData, pageId, pageDimensions) {
+        this._rendered = new Map();
+        if (!docData || isNaN(pageId) || !pageDimensions) {
+            throw new Error("Required argument not found");
+        }
+        this._pageId = pageId;
+        this._pageDimensions = pageDimensions;
+        this._docData = docData;
+        this._container = document.createElement("div");
+        this._container.classList.add("page-annotations");
+        this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this._svg.classList.add("stretch");
+        this._svg.setAttribute("data-page-id", pageId + "");
+        this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
+        this._svg.setAttribute("transform", "scale(1, -1)");
+        this._svg.addEventListener("pointerdown", (e) => {
+            if (e.target === this._svg) {
+                docData.setSelectedAnnotation(null);
+            }
+        });
+        document.addEventListener("annotationselectionchange", (e) => {
+            const annotation = e["detail"].annotation;
+            if (annotation) {
+                this._container.style.touchAction = "none";
+            }
+            else {
+                this._container.style.touchAction = "";
+            }
+        });
+        this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        this._container.append(this._svg);
+    }
+    destroy() {
+        this.remove();
+        this._container = null;
+    }
+    remove() {
+        var _a;
+        (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
+    }
+    appendAsync(parent) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            yield this.renderAnnotationsAsync();
+            parent.append(this._container);
+        });
+    }
+    renderAnnotationsAsync() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            this.clear();
+            const annotations = this._docData.getPageAnnotations(this._pageId) || [];
+            for (let i = 0; i < annotations.length || 0; i++) {
+                const annotation = annotations[i];
+                if (annotation.deleted) {
+                    continue;
+                }
+                let renderResult;
+                if (!this._rendered.has(annotation)) {
+                    yield new Promise(resolve => {
+                        setTimeout(() => __awaiter$1(this, void 0, void 0, function* () {
+                            renderResult = yield annotation.renderAsync();
+                            resolve();
+                        }), 0);
+                    });
+                }
+                else {
+                    renderResult = this._rendered.get(annotation);
+                }
+                if (!renderResult) {
+                    continue;
+                }
+                this._rendered.set(annotation, renderResult);
+                const { svg, clipPaths } = renderResult;
+                this._svg.append(svg);
+                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
+                svg.addEventListener("pointerdown", () => this._docData.setSelectedAnnotation(annotation));
+            }
+            this._svg.append(this._defs);
+            return true;
+        });
+    }
+    clear() {
+        this._svg.innerHTML = "";
+    }
+}
+
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class PageView {
+    constructor(pageProxy, docData, maxScale, previewWidth) {
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
+        if (!docData) {
+            throw new Error("Annotation data is not defined");
+        }
+        this._pageProxy = pageProxy;
+        this._viewport = pageProxy.getViewport({ scale: 1 });
+        this._maxScale = Math.max(maxScale, 1);
+        this._docData = docData;
+        this.number = pageProxy.pageNumber;
+        this.id = pageProxy.ref["num"];
+        this.generation = pageProxy.ref["gen"];
+        const { width, height } = this._viewport;
+        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
+        const previewHeight = previewWidth * (height / width);
+        this._dimensions = { width, height, previewWidth, previewHeight };
+        this._previewContainer = document.createElement("div");
+        this._previewContainer.classList.add("page-preview");
+        this._previewContainer.setAttribute("data-page-number", this.number + "");
+        this._previewContainer.setAttribute("data-page-id", this.id + "");
+        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
+        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
+        this._viewContainer = document.createElement("div");
+        this._viewContainer.classList.add("page");
+        this._viewContainer.setAttribute("data-page-number", this.number + "");
+        this._viewContainer.setAttribute("data-page-id", this.id + "");
+        this._viewContainer.setAttribute("data-page-gen", this.generation + "");
+        this.scale = 1;
+    }
+    get previewContainer() {
+        return this._previewContainer;
+    }
+    get viewContainer() {
+        return this._viewContainer;
+    }
+    set _viewRendered(value) {
+        this.$viewRendered = value;
+        this._viewContainer.setAttribute("data-loaded", value + "");
+    }
+    get _viewRendered() {
+        return this.$viewRendered;
+    }
+    set scale(value) {
+        if (value <= 0 || this._scale === value) {
+            return;
+        }
+        this._scale = value;
+        const dpr = window.devicePixelRatio;
+        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
+        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
+        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+        if (this._viewCanvas) {
+            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
+            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+        }
+        this._scaleIsValid = false;
+    }
+    get viewValid() {
+        return this._scaleIsValid && this._viewRendered;
+    }
+    destroy() {
+        this._previewContainer.remove();
+        this._viewContainer.remove();
+        this._pageProxy.cleanup();
+    }
+    renderPreviewAsync(force = false) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
+            }
+            if (!force && this._previewRendered) {
+                return;
+            }
+            this._renderPromise = this.runPreviewRenderAsync();
+            return this._renderPromise;
+        });
+    }
+    renderViewAsync(force = false) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
+            }
+            if (!force && this.viewValid) {
+                return;
+            }
+            this._renderPromise = this.runViewRenderAsync();
+            return this._renderPromise;
+        });
+    }
+    clearPreview() {
+        this._previewContainer.innerHTML = "";
+    }
+    clearView() {
+        var _a, _b, _c;
+        (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._annotations = null;
+        (_b = this._text) === null || _b === void 0 ? void 0 : _b.destroy();
+        this._text = null;
+        (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
+        this._viewRendered = false;
+    }
+    cancelRenderTask() {
+        if (this._renderTask) {
+            this._renderTask.cancel();
+            this._renderTask = null;
+        }
+    }
+    runRenderTaskAsync(renderParams) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            this.cancelRenderTask();
+            this._renderTask = this._pageProxy.render(renderParams);
+            try {
+                yield this._renderTask.promise;
+            }
+            catch (error) {
+                if (error instanceof RenderingCancelledException) {
+                    return false;
+                }
+                else {
+                    throw error;
+                }
+            }
+            finally {
+                this._renderTask = null;
+            }
+            return true;
+        });
+    }
+    createPreviewCanvas() {
+        const canvas = document.createElement("canvas");
+        canvas.classList.add("page-canvas");
+        const dpr = window.devicePixelRatio;
+        const { previewWidth: width, previewHeight: height } = this._dimensions;
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        return canvas;
+    }
+    createViewCanvas() {
+        const canvas = document.createElement("canvas");
+        canvas.classList.add("page-canvas");
+        canvas.style.width = this._dimensions.scaledWidth + "px";
+        canvas.style.height = this._dimensions.scaledHeight + "px";
+        canvas.width = this._dimensions.scaledDprWidth;
+        canvas.height = this._dimensions.scaledDprHeight;
+        return canvas;
+    }
+    scaleCanvasImage(sourceCanvas, targetCanvas) {
+        let ratio = this._scale / this._maxScale;
+        let tempSource = sourceCanvas;
+        let tempTarget;
+        while (ratio < 0.5) {
+            tempTarget = document.createElement("canvas");
+            tempTarget.width = tempSource.width * 0.5;
+            tempTarget.height = tempSource.height * 0.5;
+            tempTarget.getContext("2d").drawImage(tempSource, 0, 0, tempTarget.width, tempTarget.height);
+            tempSource = tempTarget;
+            ratio *= 2;
+        }
+        targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
+    }
+    runPreviewRenderAsync() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            const canvas = this.createPreviewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result) {
+                this._previewRendered = false;
+                return;
+            }
+            this._previewContainer.innerHTML = "";
+            this._previewContainer.append(canvas);
+            this._previewRendered = true;
+        });
+    }
+    runViewRenderAsync() {
+        var _a, _b;
+        return __awaiter$2(this, void 0, void 0, function* () {
+            const scale = this._scale;
+            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._text = null;
+            const canvas = this.createViewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
+                enableWebGL: true,
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result || scale !== this._scale) {
+                return;
+            }
+            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+            this._viewContainer.append(canvas);
+            this._viewCanvas = canvas;
+            this._viewRendered = true;
+            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            if (!this._annotations) {
+                const { width: x, height: y } = this._dimensions;
+                this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
+            }
+            yield this._annotations.appendAsync(this.viewContainer);
+            if (scale === this._scale) {
+                this._scaleIsValid = true;
+            }
+        });
+    }
+}
+
+class PenTempData {
+    constructor(options) {
+        this._paths = [];
+        this._positionBuffer = [];
+        this._options = Object.assign({}, PenTempData.defaultOptions, options);
+        this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    }
+    get id() {
+        return this._options.id;
+    }
+    get bufferSize() {
+        return this._options.bufferSize;
+    }
+    get strokeWidth() {
+        return this._options.strokeWidth;
+    }
+    get color() {
+        return this._options.color.slice();
+    }
+    get group() {
+        return this._group;
+    }
+    get paths() {
+        return this.paths.slice();
+    }
+    newPath(startPosition) {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${this._options.color.join(",")})`);
+        path.setAttribute("stroke-width", this._options.strokeWidth + "");
+        const pathString = "M" + startPosition.x + " " + startPosition.y;
+        path.setAttribute("d", pathString);
+        this._positionBuffer = [startPosition];
+        this._currentPath = path;
+        this._currentPathString = pathString;
+        this._group.append(path);
+    }
+    endPath() {
+        if (this._currentPath) {
+            this._paths.push(this._currentPath);
+        }
+        this._positionBuffer = null;
+        this._currentPath = null;
+        this._currentPathString = null;
+    }
+    removePath(path) {
+        if (!path) {
+            return;
+        }
+        path.remove();
+        this._paths = this._paths.filter(x => x !== path);
+    }
+    addPosition(pos) {
+        this.appendPositionToBuffer(pos);
+        this.updateCurrentPath();
+    }
+    setGroupMatrix(matrix) {
+        this._group.setAttribute("transform", `matrix(${matrix.join(" ")})`);
+    }
+    appendPositionToBuffer(pos) {
+        const buffer = this._positionBuffer;
+        buffer.push(pos);
+        this._positionBuffer = buffer
+            .slice(Math.max(0, buffer.length - this._options.bufferSize), buffer.length);
+    }
+    getAveragePosition(offset) {
+        const len = this._positionBuffer.length;
+        if (len % 2 === 1 || len >= this._options.bufferSize) {
+            let totalX = 0;
+            let totalY = 0;
+            let pos;
+            let i;
+            let count = 0;
+            for (i = offset; i < len; i++) {
+                count++;
+                pos = this._positionBuffer[i];
+                totalX += pos.x;
+                totalY += pos.y;
+            }
+            return new Vec2(totalX / count, totalY / count);
+        }
+        return null;
+    }
+    updateCurrentPath() {
+        let pos = this.getAveragePosition(0);
+        if (pos) {
+            this._currentPathString += " L" + pos.x + " " + pos.y;
+            let tmpPath = "";
+            for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
+                pos = this.getAveragePosition(offset);
+                tmpPath += " L" + pos.x + " " + pos.y;
+            }
+            this._currentPath.setAttribute("d", this._currentPathString + tmpPath);
+        }
+    }
+    ;
+}
+PenTempData.defaultOptions = {
+    bufferSize: 8,
+    strokeWidth: 2,
+    color: [0, 0, 0, 1],
+};
+
 const codes = {
     NULL: 0,
     BACKSPACE: 8,
@@ -5201,7 +5720,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5296,7 +5815,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -7481,7 +8000,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7580,7 +8099,7 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             const g = yield this.drawGroupAsync(this._parser);
             return {
                 svg: g,
@@ -7648,7 +8167,7 @@ class AppearanceStreamRenderer {
         return g;
     }
     drawGroupAsync(parser) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
             const lastCoord = new Vec2();
             let lastOperator;
@@ -7925,7 +8444,7 @@ class AppearanceStreamRenderer {
     }
 }
 
-var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8201,7 +8720,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             if (!this._svg) {
                 this._svg = this.renderMainElement();
             }
@@ -8512,7 +9031,7 @@ class AnnotationDict extends PdfDict {
         return rect;
     }
     renderApAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -8596,7 +9115,7 @@ class AnnotationDict extends PdfDict {
         return [...this.renderScaleHandles(), this.renderRotationHandle()];
     }
     updateRenderAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             this._svg.innerHTML = "";
             const contentResult = this.renderContent() || (yield this.renderApAsync());
             if (!contentResult) {
@@ -10971,422 +11490,6 @@ class DocumentData {
     }
 }
 
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PageTextView {
-    constructor(pageProxy) {
-        this.onMouseDown = (e) => {
-            var _a;
-            if (this._divModeTimer) {
-                clearTimeout(this._divModeTimer);
-                this._divModeTimer = null;
-            }
-            (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
-        };
-        this.onMouseUp = (e) => {
-            this._divModeTimer = setTimeout(() => {
-                var _a;
-                (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
-                this._divModeTimer = null;
-            }, 300);
-        };
-        if (!pageProxy) {
-            throw new Error("Page proxy is not defined");
-        }
-        this._pageProxy = pageProxy;
-        this._container = document.createElement("div");
-        this._container.classList.add("page-text");
-        this._container.addEventListener("mousedown", this.onMouseDown);
-        this._container.addEventListener("mouseup", this.onMouseUp);
-    }
-    static appendPageTextAsync(pageProxy, parent, scale) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            const textObj = new PageTextView(pageProxy);
-            yield textObj.renderTextLayerAsync(scale);
-            parent.append(textObj._container);
-            return textObj;
-        });
-    }
-    destroy() {
-        this.destroyRenderTask();
-        if (this._container) {
-            this._container.remove();
-            this._container = null;
-        }
-    }
-    renderTextLayerAsync(scale) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            this.clear();
-            this.destroyRenderTask();
-            const viewport = this._pageProxy.getViewport({ scale });
-            const textContentStream = this._pageProxy.streamTextContent();
-            this._renderTask = renderTextLayer({
-                container: this._container,
-                textContentStream,
-                viewport,
-                enhanceTextSelection: true,
-            });
-            try {
-                yield this._renderTask.promise;
-            }
-            catch (error) {
-                if (error.message === "TextLayer task cancelled.") {
-                    return false;
-                }
-                else {
-                    throw error;
-                }
-            }
-            return true;
-        });
-    }
-    clear() {
-        this._container.innerHTML = "";
-    }
-    destroyRenderTask() {
-        if (this._renderTask) {
-            this._renderTask.cancel();
-            this._renderTask = null;
-        }
-    }
-}
-
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PageAnnotationView {
-    constructor(docData, pageId, pageDimensions) {
-        this._rendered = new Map();
-        if (!docData || isNaN(pageId) || !pageDimensions) {
-            throw new Error("Required argument not found");
-        }
-        this._pageId = pageId;
-        this._pageDimensions = pageDimensions;
-        this._docData = docData;
-        this._container = document.createElement("div");
-        this._container.classList.add("page-annotations");
-        this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        this._svg.classList.add("stretch");
-        this._svg.setAttribute("data-page-id", pageId + "");
-        this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-        this._svg.setAttribute("transform", "scale(1, -1)");
-        this._svg.addEventListener("pointerdown", (e) => {
-            if (e.target === this._svg) {
-                docData.setSelectedAnnotation(null);
-            }
-        });
-        document.addEventListener("annotationselectionchange", (e) => {
-            const annotation = e["detail"].annotation;
-            if (annotation) {
-                this._container.style.touchAction = "none";
-            }
-            else {
-                this._container.style.touchAction = "";
-            }
-        });
-        this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        this._container.append(this._svg);
-    }
-    destroy() {
-        this.remove();
-        this._container = null;
-    }
-    remove() {
-        var _a;
-        (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
-    }
-    appendAsync(parent) {
-        return __awaiter$4(this, void 0, void 0, function* () {
-            yield this.renderAnnotationsAsync();
-            parent.append(this._container);
-        });
-    }
-    renderAnnotationsAsync() {
-        return __awaiter$4(this, void 0, void 0, function* () {
-            this.clear();
-            const annotations = this._docData.getPageAnnotations(this._pageId) || [];
-            for (let i = 0; i < annotations.length || 0; i++) {
-                const annotation = annotations[i];
-                if (annotation.deleted) {
-                    continue;
-                }
-                let renderResult;
-                if (!this._rendered.has(annotation)) {
-                    yield new Promise(resolve => {
-                        setTimeout(() => __awaiter$4(this, void 0, void 0, function* () {
-                            renderResult = yield annotation.renderAsync();
-                            resolve();
-                        }), 0);
-                    });
-                }
-                else {
-                    renderResult = this._rendered.get(annotation);
-                }
-                if (!renderResult) {
-                    continue;
-                }
-                this._rendered.set(annotation, renderResult);
-                const { svg, clipPaths } = renderResult;
-                this._svg.append(svg);
-                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
-                svg.addEventListener("pointerdown", () => this._docData.setSelectedAnnotation(annotation));
-            }
-            this._svg.append(this._defs);
-            return true;
-        });
-    }
-    clear() {
-        this._svg.innerHTML = "";
-    }
-}
-
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PageView {
-    constructor(pageProxy, docData, maxScale, previewWidth) {
-        if (!pageProxy) {
-            throw new Error("Page proxy is not defined");
-        }
-        if (!docData) {
-            throw new Error("Annotation data is not defined");
-        }
-        this._pageProxy = pageProxy;
-        this._viewport = pageProxy.getViewport({ scale: 1 });
-        this._maxScale = Math.max(maxScale, 1);
-        this._docData = docData;
-        this.number = pageProxy.pageNumber;
-        this.id = pageProxy.ref["num"];
-        this.generation = pageProxy.ref["gen"];
-        const { width, height } = this._viewport;
-        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
-        const previewHeight = previewWidth * (height / width);
-        this._dimensions = { width, height, previewWidth, previewHeight };
-        this._previewContainer = document.createElement("div");
-        this._previewContainer.classList.add("page-preview");
-        this._previewContainer.setAttribute("data-page-number", this.number + "");
-        this._previewContainer.setAttribute("data-page-id", this.id + "");
-        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
-        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
-        this._viewContainer = document.createElement("div");
-        this._viewContainer.classList.add("page");
-        this._viewContainer.setAttribute("data-page-number", this.number + "");
-        this._viewContainer.setAttribute("data-page-id", this.id + "");
-        this._viewContainer.setAttribute("data-page-gen", this.generation + "");
-        this.scale = 1;
-    }
-    get previewContainer() {
-        return this._previewContainer;
-    }
-    get viewContainer() {
-        return this._viewContainer;
-    }
-    set _viewRendered(value) {
-        this.$viewRendered = value;
-        this._viewContainer.setAttribute("data-loaded", value + "");
-    }
-    get _viewRendered() {
-        return this.$viewRendered;
-    }
-    set scale(value) {
-        if (value <= 0 || this._scale === value) {
-            return;
-        }
-        this._scale = value;
-        const dpr = window.devicePixelRatio;
-        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
-        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
-        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
-        if (this._viewCanvas) {
-            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
-        }
-        this._scaleIsValid = false;
-    }
-    get viewValid() {
-        return this._scaleIsValid && this._viewRendered;
-    }
-    destroy() {
-        this._previewContainer.remove();
-        this._viewContainer.remove();
-        this._pageProxy.cleanup();
-    }
-    renderPreviewAsync(force = false) {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            if (this._renderPromise) {
-                if (force) {
-                    this.cancelRenderTask();
-                }
-                yield this._renderPromise;
-            }
-            if (!force && this._previewRendered) {
-                return;
-            }
-            this._renderPromise = this.runPreviewRenderAsync();
-            return this._renderPromise;
-        });
-    }
-    renderViewAsync(force = false) {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            if (this._renderPromise) {
-                if (force) {
-                    this.cancelRenderTask();
-                }
-                yield this._renderPromise;
-            }
-            if (!force && this.viewValid) {
-                return;
-            }
-            this._renderPromise = this.runViewRenderAsync();
-            return this._renderPromise;
-        });
-    }
-    clearPreview() {
-        this._previewContainer.innerHTML = "";
-    }
-    clearView() {
-        var _a, _b, _c;
-        (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._annotations = null;
-        (_b = this._text) === null || _b === void 0 ? void 0 : _b.destroy();
-        this._text = null;
-        (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
-        this._viewRendered = false;
-    }
-    cancelRenderTask() {
-        if (this._renderTask) {
-            this._renderTask.cancel();
-            this._renderTask = null;
-        }
-    }
-    runRenderTaskAsync(renderParams) {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            this.cancelRenderTask();
-            this._renderTask = this._pageProxy.render(renderParams);
-            try {
-                yield this._renderTask.promise;
-            }
-            catch (error) {
-                if (error instanceof RenderingCancelledException) {
-                    return false;
-                }
-                else {
-                    throw error;
-                }
-            }
-            finally {
-                this._renderTask = null;
-            }
-            return true;
-        });
-    }
-    createPreviewCanvas() {
-        const canvas = document.createElement("canvas");
-        canvas.classList.add("page-canvas");
-        const dpr = window.devicePixelRatio;
-        const { previewWidth: width, previewHeight: height } = this._dimensions;
-        canvas.style.width = width + "px";
-        canvas.style.height = height + "px";
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        return canvas;
-    }
-    createViewCanvas() {
-        const canvas = document.createElement("canvas");
-        canvas.classList.add("page-canvas");
-        canvas.style.width = this._dimensions.scaledWidth + "px";
-        canvas.style.height = this._dimensions.scaledHeight + "px";
-        canvas.width = this._dimensions.scaledDprWidth;
-        canvas.height = this._dimensions.scaledDprHeight;
-        return canvas;
-    }
-    scaleCanvasImage(sourceCanvas, targetCanvas) {
-        let ratio = this._scale / this._maxScale;
-        let tempSource = sourceCanvas;
-        let tempTarget;
-        while (ratio < 0.5) {
-            tempTarget = document.createElement("canvas");
-            tempTarget.width = tempSource.width * 0.5;
-            tempTarget.height = tempSource.height * 0.5;
-            tempTarget.getContext("2d").drawImage(tempSource, 0, 0, tempTarget.width, tempTarget.height);
-            tempSource = tempTarget;
-            ratio *= 2;
-        }
-        targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
-    }
-    runPreviewRenderAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            const canvas = this.createPreviewCanvas();
-            const params = {
-                canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (!result) {
-                this._previewRendered = false;
-                return;
-            }
-            this._previewContainer.innerHTML = "";
-            this._previewContainer.append(canvas);
-            this._previewRendered = true;
-        });
-    }
-    runViewRenderAsync() {
-        var _a, _b;
-        return __awaiter$5(this, void 0, void 0, function* () {
-            const scale = this._scale;
-            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._text = null;
-            const canvas = this.createViewCanvas();
-            const params = {
-                canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
-                enableWebGL: true,
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (!result || scale !== this._scale) {
-                return;
-            }
-            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
-            this._viewContainer.append(canvas);
-            this._viewCanvas = canvas;
-            this._viewRendered = true;
-            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
-            if (!this._annotations) {
-                const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
-            }
-            yield this._annotations.appendAsync(this.viewContainer);
-            if (scale === this._scale) {
-                this._scaleIsValid = true;
-            }
-        });
-    }
-}
-
 var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -11646,7 +11749,7 @@ class TsPdfViewer {
         this.onAnnotationGeometricModeButtonClick = () => {
             this.setAnnotationMode("geometric");
         };
-        this.onStampAnnotationOverlayPointerMove = (e) => {
+        this.onStampPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -11657,16 +11760,9 @@ class TsPdfViewer {
             const offsetY = (oy - cy) / this._scale;
             const [x1, y1, x2, y2] = this._annotationToAdd.Rect;
             this._annotationOverlaySvg.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
-            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
-            if (!pageCoords) {
-                this._annotationOverlaySvg.classList.add("out");
-            }
-            else {
-                this._annotationOverlaySvg.classList.remove("out");
-            }
-            this._annotationOverlayPageCoords = pageCoords;
+            this.updatePageCoords(cx, cy);
         };
-        this.onStampAnnotationOverlayPointerUp = (e) => {
+        this.onStampPointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -11681,6 +11777,66 @@ class TsPdfViewer {
             this._docData.appendAnnotationToPage(pageId, this._annotationToAdd);
             this.forceRenderPageById(pageId);
             this.createTempStampAnnotationAsync();
+        };
+        this.onPenPointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePageCoords(cx, cy);
+            const pageCoords = this._annotationOverlayPageCoords;
+            if (!pageCoords) {
+                return;
+            }
+            const { pageX: px, pageY: py, pageId } = pageCoords;
+            if (!this._annotationPenData || pageId !== this._annotationPenData.id) {
+                this.resetTempPenData(pageId);
+            }
+            this._annotationPenData.newPath(new Vec2(px, py));
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPenPointerMove);
+            target.addEventListener("pointerup", this.onPenPointerUp);
+            target.addEventListener("pointerout", this.onPenPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPenPointerMove = (e) => {
+            if (!e.isPrimary || !this._annotationPenData) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePageCoords(cx, cy);
+            const pageCoords = this._annotationOverlayPageCoords;
+            if (!pageCoords || pageCoords.pageId !== this._annotationPenData.id) {
+                return;
+            }
+            this._annotationPenData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
+        };
+        this.onPenPointerUp = (e) => {
+            var _a;
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPenPointerMove);
+            target.removeEventListener("pointerup", this.onPenPointerUp);
+            target.removeEventListener("pointerout", this.onPenPointerUp);
+            (_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.endPath();
+        };
+        this.updatePenGroupPosition = () => {
+            if (!this._annotationPenData) {
+                return;
+            }
+            const page = this._renderedPages.find(x => x.id === this._annotationPenData.id);
+            if (!page) {
+                this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
+            }
+            const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
+            const py = ptop + ph;
+            const { height: vh, top: vtop, left: vx } = this._viewer.getBoundingClientRect();
+            const vy = vtop + vh;
+            const offsetX = (px - vx) / this._scale;
+            const offsetY = (vy - py) / this._scale;
+            this._annotationPenData.setGroupMatrix([1, 0, 0, 1, offsetX, offsetY]);
         };
         this.onDownloadFileButtonClick = () => {
             var _a;
@@ -12196,6 +12352,7 @@ class TsPdfViewer {
             }
         }
         this._renderedPages = renderedPages;
+        document.dispatchEvent(new CustomEvent("visiblepagesrender"));
     }
     forceRenderPageById(pageId) {
         var _a;
@@ -12212,13 +12369,14 @@ class TsPdfViewer {
                 break;
             case "stamp":
                 this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
-                this._annotationOverlay.addEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
-                this._annotationOverlay.addEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+                this._annotationOverlay.addEventListener("pointermove", this.onStampPointerMove);
+                this._annotationOverlay.addEventListener("pointerup", this.onStampPointerUp);
                 this._viewer.append(this._annotationOverlayContainer);
                 this.createTempStampAnnotationAsync();
                 break;
             case "pen":
                 this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
+                this._annotationOverlay.addEventListener("pointerdown", this.onPenPointerDown);
                 this._viewer.append(this._annotationOverlayContainer);
                 break;
             case "geometric":
@@ -12235,6 +12393,7 @@ class TsPdfViewer {
             this._annotationToAdd = null;
             this._annotationOverlayContainer.remove();
             this._annotationOverlaySvg.innerHTML = "";
+            this._annotationOverlaySvg.removeAttribute("transform");
             switch (this._annotationMode) {
                 case "select":
                     this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
@@ -12242,11 +12401,13 @@ class TsPdfViewer {
                     break;
                 case "stamp":
                     this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
-                    this._annotationOverlay.removeEventListener("pointermove", this.onStampAnnotationOverlayPointerMove);
-                    this._annotationOverlay.removeEventListener("pointerup", this.onStampAnnotationOverlayPointerUp);
+                    this._annotationOverlay.removeEventListener("pointermove", this.onStampPointerMove);
+                    this._annotationOverlay.removeEventListener("pointerup", this.onStampPointerUp);
                     break;
                 case "pen":
                     this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
+                    this._annotationOverlay.removeEventListener("pointerdown", this.onPenPointerDown);
+                    this.removeTempPenData();
                     break;
                 case "geometric":
                     this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
@@ -12263,6 +12424,30 @@ class TsPdfViewer {
             this._annotationOverlaySvg.append(renderResult.svg);
             this._annotationToAdd = stamp;
         });
+    }
+    removeTempPenData() {
+        if (this._annotationPenData) {
+            this._annotationPenData.group.remove();
+            document.removeEventListener("visiblepagesrender", this.updatePenGroupPosition);
+            this._annotationPenData = null;
+        }
+    }
+    resetTempPenData(pageId) {
+        this.removeTempPenData();
+        this._annotationPenData = new PenTempData({ id: pageId });
+        this._annotationOverlaySvg.append(this._annotationPenData.group);
+        document.addEventListener("visiblepagesrender", this.updatePenGroupPosition);
+        this.updatePenGroupPosition();
+    }
+    updatePageCoords(clientX, clientY) {
+        const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
+        if (!pageCoords) {
+            this._annotationOverlaySvg.classList.add("out");
+        }
+        else {
+            this._annotationOverlaySvg.classList.remove("out");
+        }
+        this._annotationOverlayPageCoords = pageCoords;
     }
     showPasswordDialogAsync() {
         return __awaiter$6(this, void 0, void 0, function* () {

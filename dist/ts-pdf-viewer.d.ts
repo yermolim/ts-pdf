@@ -23,6 +23,7 @@ export declare class TsPdfViewer {
 	private _annotationOverlayRObserver;
 	private _annotationOverlayPageCoords;
 	private _annotationToAdd;
+	private _annotationPenData;
 	private _pages;
 	private _renderedPages;
 	private _currentPage;
@@ -89,8 +90,15 @@ export declare class TsPdfViewer {
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
 	private createTempStampAnnotationAsync;
-	private onStampAnnotationOverlayPointerMove;
-	private onStampAnnotationOverlayPointerUp;
+	private onStampPointerMove;
+	private onStampPointerUp;
+	private removeTempPenData;
+	private resetTempPenData;
+	private onPenPointerDown;
+	private onPenPointerMove;
+	private onPenPointerUp;
+	private updatePenGroupPosition;
+	private updatePageCoords;
 	private onDownloadFileButtonClick;
 	private showPasswordDialogAsync;
 }
