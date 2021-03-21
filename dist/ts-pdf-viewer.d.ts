@@ -16,10 +16,12 @@ export declare class TsPdfViewer {
 	private _viewer;
 	private _viewerMode;
 	private _pages;
+	private _renderedPages;
 	private _currentPage;
 	private _pdfLoadingTask;
 	private _pdfDocument;
 	private _docData;
+	private _annotatorMode;
 	private _annotator;
 	private _pointerInfo;
 	private _timers;
@@ -77,6 +79,8 @@ export declare class TsPdfViewer {
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
 	private onAnnotationSelectionChange;
+	private updateAnnotatorPageData;
+	private updateAnnotatorScale;
 	private onDownloadFileButtonClick;
 	private showPasswordDialogAsync;
 }

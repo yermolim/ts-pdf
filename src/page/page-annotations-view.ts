@@ -14,6 +14,8 @@ export class PageAnnotationView {
   private _svg: SVGSVGElement;
   private _defs: SVGDefsElement;
 
+  private _destroyed: boolean;
+
   constructor(docData: DocumentData, pageId: number, pageDimensions: Vec2) {
     if (!docData || isNaN(pageId) || !pageDimensions) {
       throw new Error("Required argument not found");
@@ -46,6 +48,7 @@ export class PageAnnotationView {
   destroy() {
     this.remove();
     this._container = null;
+    this._destroyed = true;
   }
 
   remove() {    
@@ -54,6 +57,10 @@ export class PageAnnotationView {
   }  
 
   async appendAsync(parent: HTMLElement) {
+    if (this._destroyed) {
+      return;
+    }
+    
     await this.renderAnnotationsAsync();
     parent.append(this._container);
     document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);

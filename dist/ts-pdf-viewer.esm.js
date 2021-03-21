@@ -11103,6 +11103,7 @@ class PageAnnotationView {
     destroy() {
         this.remove();
         this._container = null;
+        this._destroyed = true;
     }
     remove() {
         var _a;
@@ -11111,6 +11112,9 @@ class PageAnnotationView {
     }
     appendAsync(parent) {
         return __awaiter$4(this, void 0, void 0, function* () {
+            if (this._destroyed) {
+                return;
+            }
             yield this.renderAnnotationsAsync();
             parent.append(this._container);
             document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
@@ -11389,6 +11393,220 @@ class PageView {
     }
 }
 
+class Annotator {
+    constructor(docData, parent) {
+        this._scale = 1;
+        this._renderedPages = [];
+        this.onParentScroll = () => {
+            this._overlay.style.left = this._parent.scrollLeft + "px";
+            this._overlay.style.top = this._parent.scrollTop + "px";
+        };
+        if (!docData) {
+            throw new Error("Document data not found");
+        }
+        if (!parent) {
+            throw new Error("Parent container not found");
+        }
+        this._docData = docData;
+        this._parent = parent;
+    }
+    get scale() {
+        return this._scale;
+    }
+    set scale(value) {
+        this._scale = value;
+    }
+    get renderedPages() {
+        return this._renderedPages.slice();
+    }
+    set renderedPages(value) {
+        this._renderedPages = (value === null || value === void 0 ? void 0 : value.length) ? value.slice()
+            : [];
+        this.refreshViewBox();
+    }
+    get overlayContainer() {
+        return this._overlayContainer;
+    }
+    destroy() {
+        var _a, _b, _c;
+        this._overlayContainer.remove();
+        (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onParentScroll);
+        (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
+        (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
+    }
+    deleteSelectedAnnotation() {
+        const annotation = this._docData.selectedAnnotation;
+        if (annotation) {
+            this._docData.removeAnnotation(annotation);
+        }
+        this.forceRenderPageById(annotation.pageId);
+    }
+    refreshViewBox() {
+        const { width: w, height: h } = this._overlay.getBoundingClientRect();
+        if (!w || !h) {
+            return;
+        }
+        const viewBoxWidth = w / this._scale;
+        const viewBoxHeight = h / this._scale;
+        this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+        this._lastScale = this._scale;
+    }
+    initObservers() {
+        const onPossibleViewerSizeChanged = () => {
+            if (this._scale === this._lastScale) {
+                return;
+            }
+            this.refreshViewBox();
+        };
+        const viewerRObserver = new ResizeObserver((entries) => {
+            onPossibleViewerSizeChanged();
+        });
+        const viewerMObserver = new MutationObserver((mutations) => {
+            const record = mutations[0];
+            if (!record) {
+                return;
+            }
+            record.addedNodes.forEach(x => {
+                const element = x;
+                if (element.classList.contains("page")) {
+                    viewerRObserver.observe(x);
+                }
+            });
+            record.removedNodes.forEach(x => viewerRObserver.unobserve(x));
+            onPossibleViewerSizeChanged();
+        });
+        viewerMObserver.observe(this._parent, {
+            attributes: false,
+            childList: true,
+            subtree: false,
+        });
+        this._parentMutationObserver = viewerMObserver;
+        this._parentResizeObserver = viewerRObserver;
+    }
+    init() {
+        const annotationOverlayContainer = document.createElement("div");
+        annotationOverlayContainer.id = "annotation-overlay-container";
+        const annotationOverlay = document.createElement("div");
+        annotationOverlay.id = "annotation-overlay";
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("abs-stretch", "no-margin", "no-padding");
+        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+        svg.setAttribute("opacity", "0.5");
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        svg.append(g);
+        annotationOverlay.append(svg);
+        annotationOverlayContainer.append(annotationOverlay);
+        this._overlayContainer = annotationOverlayContainer;
+        this._overlay = annotationOverlay;
+        this._svgWrapper = svg;
+        this._svgGroup = g;
+        this._parent.append(this._overlayContainer);
+        this._parent.addEventListener("scroll", this.onParentScroll);
+        this.refreshViewBox();
+        this.initObservers();
+    }
+    updatePageCoords(clientX, clientY) {
+        const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
+        if (!pageCoords) {
+            this._svgGroup.classList.add("out");
+        }
+        else {
+            this._svgGroup.classList.remove("out");
+        }
+        this._pageCoords = pageCoords;
+    }
+    getPageCoordsUnderPointer(clientX, clientY) {
+        for (const page of this._renderedPages) {
+            const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
+            const pxMax = pxMin + pw;
+            const pyMax = pyMin + ph;
+            if (clientX < pxMin || clientX > pxMax) {
+                continue;
+            }
+            if (clientY < pyMin || clientY > pyMax) {
+                continue;
+            }
+            const x = (clientX - pxMin) / this._scale;
+            const y = (pyMax - clientY) / this._scale;
+            return {
+                pageId: page.id,
+                pageX: x,
+                pageY: y,
+            };
+        }
+        return null;
+    }
+    forceRenderPageById(pageId) {
+        var _a;
+        (_a = this._renderedPages.find(x => x.id === pageId)) === null || _a === void 0 ? void 0 : _a.renderViewAsync(true);
+    }
+}
+
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class StampAnnotator extends Annotator {
+    constructor(docData, parent) {
+        super(docData, parent);
+        this.onStampPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            const { height: oh, top, left: ox } = this._parent.getBoundingClientRect();
+            const oy = top + oh;
+            const offsetX = (cx - ox) / this._scale;
+            const offsetY = (oy - cy) / this._scale;
+            const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
+            this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
+            this.updatePageCoords(cx, cy);
+        };
+        this.onStampPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+            this._pageCoords = pageCoords;
+            if (!pageCoords || !this._tempAnnotation) {
+                return;
+            }
+            const { pageId, pageX, pageY } = this._pageCoords;
+            this._tempAnnotation.moveTo(pageX, pageY);
+            this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
+            this.forceRenderPageById(pageId);
+            this.createTempStampAnnotationAsync();
+        };
+        this.init();
+    }
+    destroy() {
+        this._tempAnnotation = null;
+        super.destroy();
+    }
+    init() {
+        super.init();
+        this._overlay.addEventListener("pointermove", this.onStampPointerMove);
+        this._overlay.addEventListener("pointerup", this.onStampPointerUp);
+        this.createTempStampAnnotationAsync();
+    }
+    createTempStampAnnotationAsync() {
+        return __awaiter$6(this, void 0, void 0, function* () {
+            const stamp = this._docData.createStampAnnotation("draft");
+            const renderResult = yield stamp.renderAsync();
+            this._svgGroup.innerHTML = "";
+            this._svgGroup.append(...renderResult.clipPaths || []);
+            this._svgGroup.append(renderResult.svg);
+            this._tempAnnotation = stamp;
+        });
+    }
+}
+
 class PenTempData {
     constructor(options) {
         this._paths = [];
@@ -11492,52 +11710,9 @@ PenTempData.defaultOptions = {
     color: [0, 0, 0, 1],
 };
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class Annotator {
+class PenAnnotator extends Annotator {
     constructor(docData, parent) {
-        this._scale = 1;
-        this._renderedPages = [];
-        this.onParentScroll = () => {
-            this._overlay.style.left = this._parent.scrollLeft + "px";
-            this._overlay.style.top = this._parent.scrollTop + "px";
-        };
-        this.onStampPointerMove = (e) => {
-            if (!e.isPrimary) {
-                return;
-            }
-            const { clientX: cx, clientY: cy } = e;
-            const { height: oh, top, left: ox } = this._parent.getBoundingClientRect();
-            const oy = top + oh;
-            const offsetX = (cx - ox) / this._scale;
-            const offsetY = (oy - cy) / this._scale;
-            const [x1, y1, x2, y2] = this._annotationToAdd.Rect;
-            this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
-            this.updatePageCoords(cx, cy);
-        };
-        this.onStampPointerUp = (e) => {
-            if (!e.isPrimary) {
-                return;
-            }
-            const { clientX: cx, clientY: cy } = e;
-            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
-            this._pageCoords = pageCoords;
-            if (!pageCoords || !this._annotationToAdd) {
-                return;
-            }
-            const { pageId, pageX, pageY } = this._pageCoords;
-            this._annotationToAdd.moveTo(pageX, pageY);
-            this._docData.appendAnnotationToPage(pageId, this._annotationToAdd);
-            this.forceRenderPageById(pageId);
-            this.createTempStampAnnotationAsync();
-        };
+        super(docData, parent);
         this.onPenPointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -11582,185 +11757,35 @@ class Annotator {
             target.removeEventListener("pointerout", this.onPenPointerUp);
             (_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.endPath();
         };
-        this.updatePenGroupPosition = () => {
-            if (!this._annotationPenData) {
-                return;
-            }
-            const page = this._renderedPages.find(x => x.id === this._annotationPenData.id);
-            if (!page) {
-                this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
-            }
-            const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
-            const py = ptop + ph;
-            const { height: vh, top: vtop, left: vx } = this._parent.getBoundingClientRect();
-            const vy = vtop + vh;
-            const offsetX = (px - vx) / this._scale;
-            const offsetY = (vy - py) / this._scale;
-            this._annotationPenData.setGroupMatrix([1, 0, 0, 1, offsetX, offsetY]);
-        };
-        if (!docData) {
-            throw new Error("Document data not found");
-        }
-        if (!parent) {
-            throw new Error("Parent container not found");
-        }
-        this._docData = docData;
-        this._parent = parent;
         this.init();
     }
-    get mode() {
-        return this._mode;
-    }
-    set mode(value) {
-        this.setAnnotationMode(value);
-    }
-    get scale() {
-        return this._scale;
-    }
-    set scale(value) {
-        this._scale = value;
-    }
-    get renderedPages() {
-        return this._renderedPages.slice();
-    }
-    set renderedPages(value) {
-        this._renderedPages = (value === null || value === void 0 ? void 0 : value.length) ? value.slice()
-            : [];
-        this.updatePenGroupPosition();
-    }
-    get overlayContainer() {
-        return this._overlayContainer;
-    }
     destroy() {
-        var _a, _b, _c;
-        (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onParentScroll);
-        (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
-        (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
-    }
-    deleteSelectedAnnotation() {
-        const annotation = this._docData.selectedAnnotation;
-        if (annotation) {
-            this._docData.removeAnnotation(annotation);
-        }
-        this.forceRenderPageById(annotation.pageId);
+        this.removeTempPenData();
+        super.destroy();
     }
     refreshViewBox() {
-        const { width: w, height: h } = this._overlay.getBoundingClientRect();
-        if (!w || !h) {
-            return;
-        }
-        const viewBoxWidth = w / this._scale;
-        const viewBoxHeight = h / this._scale;
-        this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-        this._lastScale = this._scale;
+        super.refreshViewBox();
         this.updatePenGroupPosition();
     }
-    initObservers() {
-        const onPossibleViewerSizeChanged = () => {
-            if (this._scale === this._lastScale) {
-                return;
-            }
-            this.refreshViewBox();
-        };
-        const viewerRObserver = new ResizeObserver((entries) => {
-            onPossibleViewerSizeChanged();
-        });
-        const viewerMObserver = new MutationObserver((mutations) => {
-            const record = mutations[0];
-            if (!record) {
-                return;
-            }
-            record.addedNodes.forEach(x => {
-                const element = x;
-                if (element.classList.contains("page")) {
-                    viewerRObserver.observe(x);
-                }
-            });
-            record.removedNodes.forEach(x => viewerRObserver.unobserve(x));
-            onPossibleViewerSizeChanged();
-        });
-        viewerMObserver.observe(this._parent, {
-            attributes: false,
-            childList: true,
-            subtree: false,
-        });
-        this._parentMutationObserver = viewerMObserver;
-        this._parentResizeObserver = viewerRObserver;
-    }
     init() {
-        const annotationOverlayContainer = document.createElement("div");
-        annotationOverlayContainer.id = "annotation-overlay-container";
-        const annotationOverlay = document.createElement("div");
-        annotationOverlay.id = "annotation-overlay";
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.classList.add("abs-stretch", "no-margin", "no-padding");
-        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
-        svg.setAttribute("opacity", "0.5");
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        svg.append(g);
-        annotationOverlay.append(svg);
-        annotationOverlayContainer.append(annotationOverlay);
-        this._overlayContainer = annotationOverlayContainer;
-        this._overlay = annotationOverlay;
-        this._svgWrapper = svg;
-        this._svgGroup = g;
-        this._parent.addEventListener("scroll", this.onParentScroll);
-        this.refreshViewBox();
-        this.initObservers();
+        super.init();
+        this._overlay.addEventListener("pointerdown", this.onPenPointerDown);
     }
-    setAnnotationMode(mode) {
-        if (!mode || mode === this._mode) {
+    updatePenGroupPosition() {
+        if (!this._annotationPenData) {
             return;
         }
-        this.disableCurrentAnnotationMode();
-        switch (mode) {
-            case "select":
-                break;
-            case "stamp":
-                this._overlay.addEventListener("pointermove", this.onStampPointerMove);
-                this._overlay.addEventListener("pointerup", this.onStampPointerUp);
-                this.createTempStampAnnotationAsync();
-                break;
-            case "pen":
-                this._overlay.addEventListener("pointerdown", this.onPenPointerDown);
-                break;
-            case "geometric":
-                break;
-            default:
-                throw new Error(`Invalid annotation mode: ${mode}`);
+        const page = this._renderedPages.find(x => x.id === this._annotationPenData.id);
+        if (!page) {
+            this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
         }
-        this._mode = mode;
-    }
-    disableCurrentAnnotationMode() {
-        if (this._mode) {
-            this._annotationToAdd = null;
-            this._overlayContainer.remove();
-            this._svgGroup.innerHTML = "";
-            this._svgGroup.removeAttribute("transform");
-            switch (this._mode) {
-                case "select":
-                    this._docData.setSelectedAnnotation(null);
-                    break;
-                case "stamp":
-                    this._overlay.removeEventListener("pointermove", this.onStampPointerMove);
-                    this._overlay.removeEventListener("pointerup", this.onStampPointerUp);
-                    break;
-                case "pen":
-                    this._overlay.removeEventListener("pointerdown", this.onPenPointerDown);
-                    this.removeTempPenData();
-                    break;
-            }
-        }
-    }
-    createTempStampAnnotationAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
-            const stamp = this._docData.createStampAnnotation("draft");
-            const renderResult = yield stamp.renderAsync();
-            this._svgGroup.innerHTML = "";
-            this._svgGroup.append(...renderResult.clipPaths || []);
-            this._svgGroup.append(renderResult.svg);
-            this._annotationToAdd = stamp;
-        });
+        const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
+        const py = ptop + ph;
+        const { height: vh, top: vtop, left: vx } = this._parent.getBoundingClientRect();
+        const vy = vtop + vh;
+        const offsetX = (px - vx) / this._scale;
+        const offsetY = (vy - py) / this._scale;
+        this._annotationPenData.setGroupMatrix([1, 0, 0, 1, offsetX, offsetY]);
     }
     removeTempPenData() {
         if (this._annotationPenData) {
@@ -11773,41 +11798,6 @@ class Annotator {
         this._annotationPenData = new PenTempData({ id: pageId });
         this._svgGroup.append(this._annotationPenData.group);
         this.updatePenGroupPosition();
-    }
-    updatePageCoords(clientX, clientY) {
-        const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
-        if (!pageCoords) {
-            this._svgGroup.classList.add("out");
-        }
-        else {
-            this._svgGroup.classList.remove("out");
-        }
-        this._pageCoords = pageCoords;
-    }
-    getPageCoordsUnderPointer(clientX, clientY) {
-        for (const page of this._renderedPages) {
-            const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
-            const pxMax = pxMin + pw;
-            const pyMax = pyMin + ph;
-            if (clientX < pxMin || clientX > pxMax) {
-                continue;
-            }
-            if (clientY < pyMin || clientY > pyMax) {
-                continue;
-            }
-            const x = (clientX - pxMin) / this._scale;
-            const y = (pyMax - clientY) / this._scale;
-            return {
-                pageId: page.id,
-                pageX: x,
-                pageY: y,
-            };
-        }
-        return null;
-    }
-    forceRenderPageById(pageId) {
-        var _a;
-        (_a = this._renderedPages.find(x => x.id === pageId)) === null || _a === void 0 ? void 0 : _a.renderViewAsync(true);
     }
 }
 
@@ -11829,6 +11819,7 @@ class TsPdfViewer {
         this._scale = 1;
         this._previewerHidden = true;
         this._pages = [];
+        this._renderedPages = [];
         this._currentPage = 0;
         this._pointerInfo = {
             lastPos: null,
@@ -11850,7 +11841,6 @@ class TsPdfViewer {
         this.onPdfLoadedAsync = (doc, docData) => __awaiter$7(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
             this._docData = docData;
-            this._annotator = new Annotator(docData, this._viewer);
             this.setAnnotationMode("select");
             yield this.refreshPagesAsync();
             this.renderVisiblePreviews();
@@ -12367,9 +12357,7 @@ class TsPdfViewer {
             }
         }
         this._scale = scale;
-        if (this._annotator) {
-            this._annotator.scale = scale;
-        }
+        this.updateAnnotatorScale();
         this._pages.forEach(x => x.scale = this._scale);
         if (pageContainerUnderPivot
             &&
@@ -12479,15 +12467,15 @@ class TsPdfViewer {
         const visiblePageNumbers = this.getVisiblePages(this._viewer, pages);
         const prevCurrent = this._currentPage;
         const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
+        if (current === -1) {
+            return;
+        }
         if (!prevCurrent || prevCurrent !== current) {
             (_a = pages[prevCurrent]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
             (_b = pages[current]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
             this._shadowRoot.getElementById("paginator-input").value = current + 1 + "";
             this.scrollToPreview(current);
             this._currentPage = current;
-        }
-        if (current === -1) {
-            return;
         }
         const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
         const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
@@ -12502,15 +12490,16 @@ class TsPdfViewer {
                 page.clearView();
             }
         }
-        if (this._annotator) {
-            this._annotator.renderedPages = renderedPages;
-        }
+        this._renderedPages = renderedPages;
+        this.updateAnnotatorPageData();
     }
     setAnnotationMode(mode) {
-        if (!mode || mode === this._annotator.mode) {
+        var _a;
+        if (!mode || mode === this._annotatorMode) {
             return;
         }
-        switch (this._annotator.mode) {
+        (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+        switch (this._annotatorMode) {
             case "select":
                 this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
                 this._docData.setSelectedAnnotation(null);
@@ -12525,25 +12514,36 @@ class TsPdfViewer {
                 this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
                 break;
         }
-        this._annotator.mode = mode;
+        this._annotatorMode = mode;
         switch (mode) {
             case "select":
                 this._shadowRoot.querySelector("#button-annotation-mode-select").classList.add("on");
                 break;
             case "stamp":
                 this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
-                this._viewer.append(this._annotator.overlayContainer);
+                this._annotator = new StampAnnotator(this._docData, this._viewer);
                 break;
             case "pen":
                 this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
-                this._viewer.append(this._annotator.overlayContainer);
+                this._annotator = new PenAnnotator(this._docData, this._viewer);
                 break;
             case "geometric":
                 this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
-                this._viewer.append(this._annotator.overlayContainer);
                 break;
             default:
                 throw new Error(`Invalid annotation mode: ${mode}`);
+        }
+        this.updateAnnotatorPageData();
+        this.updateAnnotatorScale();
+    }
+    updateAnnotatorPageData() {
+        if (this._annotator) {
+            this._annotator.renderedPages = this._renderedPages;
+        }
+    }
+    updateAnnotatorScale() {
+        if (this._annotator) {
+            this._annotator.scale = this._scale;
         }
     }
     showPasswordDialogAsync() {

@@ -10,9 +10,12 @@ import { clamp, Vec2 } from "./math";
 
 import { DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
-import { AnnotatorMode, Annotator } from "./helpers/annotator";
+import { Annotator } from "./helpers/annotator";
+import { StampAnnotator } from "./helpers/stamp-annotator";
+import { PenAnnotator } from "./helpers/pen-annotator";
 
 type ViewerMode = "text" | "hand" | "annotation";
+type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
 export class TsPdfViewer {
   //#region fields
@@ -36,12 +39,14 @@ export class TsPdfViewer {
   private _viewerMode: ViewerMode;
 
   private _pages: PageView[] = [];
+  private _renderedPages: PageView[] = [];
   private _currentPage = 0;
 
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;  
 
   private _docData: DocumentData;
+  private _annotatorMode: AnnotatorMode;
   private _annotator: Annotator;
   
   private _pointerInfo = {
@@ -280,8 +285,6 @@ export class TsPdfViewer {
   private onPdfLoadedAsync = async (doc: PDFDocumentProxy, docData: DocumentData) => {
     this._pdfDocument = doc;
     this._docData = docData;
-
-    this._annotator = new Annotator(docData, this._viewer);
     this.setAnnotationMode("select");  
 
     await this.refreshPagesAsync();
@@ -548,9 +551,7 @@ export class TsPdfViewer {
     }
 
     this._scale = scale;
-    if (this._annotator) {
-      this._annotator.scale = scale;
-    }
+    this.updateAnnotatorScale();
     this._pages.forEach(x => x.scale = this._scale);  
     
     if (pageContainerUnderPivot 
@@ -770,15 +771,15 @@ export class TsPdfViewer {
     
     const prevCurrent = this._currentPage;
     const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
+    if (current === -1) {
+      return;
+    }
     if (!prevCurrent || prevCurrent !== current) {
       pages[prevCurrent]?.previewContainer.classList.remove("current");
       pages[current]?.previewContainer.classList.add("current");
       (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = current + 1 + "";
       this.scrollToPreview(current);
       this._currentPage = current;
-    }
-    if (current === -1) {
-      return;
     }
     
     const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
@@ -796,9 +797,8 @@ export class TsPdfViewer {
       }
     }
 
-    if (this._annotator) {
-      this._annotator.renderedPages = renderedPages;
-    }
+    this._renderedPages = renderedPages;
+    this.updateAnnotatorPageData();
   } 
 
   private onPaginatorInput = (event: Event) => {
@@ -834,12 +834,13 @@ export class TsPdfViewer {
     this._annotator.deleteSelectedAnnotation();
 
   private setAnnotationMode(mode: AnnotatorMode) {
-    if (!mode || mode === this._annotator.mode) {
+    if (!mode || mode === this._annotatorMode) {
       return;
     }
 
     // disable previous mode
-    switch (this._annotator.mode) {
+    this._annotator?.destroy();
+    switch (this._annotatorMode) {
       case "select":
         this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
         this._docData.setSelectedAnnotation(null);
@@ -858,27 +859,28 @@ export class TsPdfViewer {
         break;
     }
 
-    this._annotator.mode = mode;
+    this._annotatorMode = mode;
     switch (mode) {
       case "select":
         this._shadowRoot.querySelector("#button-annotation-mode-select").classList.add("on");
         break;
       case "stamp":
         this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
-        this._viewer.append(this._annotator.overlayContainer);
+        this._annotator = new StampAnnotator(this._docData, this._viewer);
         break;
       case "pen":
-        this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");     
-        this._viewer.append(this._annotator.overlayContainer);
+        this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
+        this._annotator = new PenAnnotator(this._docData, this._viewer);
         break;
       case "geometric":
         this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
-        this._viewer.append(this._annotator.overlayContainer);
         break;
       default:
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
+    this.updateAnnotatorPageData();
+    this.updateAnnotatorScale();
   }
   
   private onAnnotationSelectModeButtonClick = () => {
@@ -905,6 +907,18 @@ export class TsPdfViewer {
       this._mainContainer.classList.remove("annotation-selected");
     }
   };
+
+  private updateAnnotatorPageData() {    
+    if (this._annotator) {
+      this._annotator.renderedPages = this._renderedPages;
+    }
+  }
+
+  private updateAnnotatorScale() {    
+    if (this._annotator) {
+      this._annotator.scale = this._scale;
+    }
+  }
   //#endregion
 
 
