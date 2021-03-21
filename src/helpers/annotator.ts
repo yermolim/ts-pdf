@@ -42,6 +42,7 @@ export class Annotator {
     this._renderedPages = value?.length
       ? value.slice()
       : [];
+    this.updatePenGroupPosition();
   }
   
   private _overlayContainer: HTMLDivElement;
@@ -287,7 +288,6 @@ export class Annotator {
   private removeTempPenData() {
     if (this._annotationPenData) {
       this._annotationPenData.group.remove();
-      document.removeEventListener("visiblepagesrender", this.updatePenGroupPosition);
       this._annotationPenData = null;
     }    
   }
@@ -298,7 +298,6 @@ export class Annotator {
     this._svg.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly
-    document.addEventListener("visiblepagesrender", this.updatePenGroupPosition);
     this.updatePenGroupPosition();
   }
   

@@ -76,6 +76,7 @@ export declare class TsPdfViewer {
 	private onAnnotationStampModeButtonClick;
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
+	private onAnnotationSelectionChange;
 	private onDownloadFileButtonClick;
 	private showPasswordDialogAsync;
 }

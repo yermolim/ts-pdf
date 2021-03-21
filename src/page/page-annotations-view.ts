@@ -38,14 +38,6 @@ export class PageAnnotationView {
         docData.setSelectedAnnotation(null);
       }
     });
-    document.addEventListener("annotationselectionchange", (e: Event) => {
-      const annotation: AnnotationDict = e["detail"].annotation;
-      if (annotation) {
-        this._container.style.touchAction = "none";
-      } else {
-        this._container.style.touchAction = "";
-      }
-    });
     
     this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     this._container.append(this._svg);
@@ -58,11 +50,13 @@ export class PageAnnotationView {
 
   remove() {    
     this._container?.remove();
+    document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
   }  
 
   async appendAsync(parent: HTMLElement) {
     await this.renderAnnotationsAsync();
     parent.append(this._container);
+    document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
@@ -108,4 +102,13 @@ export class PageAnnotationView {
     this._svg.innerHTML = "";
     // this._rendered.clear();
   }
+
+  private onAnnotationSelectionChange = (e: Event) => {
+    const annotation: AnnotationDict = e["detail"].annotation;
+    if (annotation) {
+      this._container.style.touchAction = "none";
+    } else {
+      this._container.style.touchAction = "";
+    }
+  };
 }

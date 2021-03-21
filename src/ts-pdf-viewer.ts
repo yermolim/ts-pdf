@@ -97,6 +97,8 @@ export class TsPdfViewer {
   }
 
   destroy() {
+    document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+
     this._pdfLoadingTask?.destroy();
     this._pages.forEach(x => x.destroy());
     if (this._pdfDocument) {
@@ -186,6 +188,9 @@ export class TsPdfViewer {
     this.initViewControls();
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
+    
+    // handle annotation selection
+    document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
   }
 
   private initMainDivs() {
@@ -205,17 +210,7 @@ export class TsPdfViewer {
     this._mainContainerRObserver = mcResizeObserver;  
 
     this._previewer = this._shadowRoot.querySelector("#previewer");
-    this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;
-    
-    // handle annotation selection
-    document.addEventListener("annotationselectionchange", (e: Event) => {
-      const annotation: any = e["detail"].annotation;
-      if (annotation) {
-        this._mainContainer.classList.add("annotation-selected");
-      } else {
-        this._mainContainer.classList.remove("annotation-selected");
-      }
-    });
+    this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;    
   }
   
   private initViewControls() {
@@ -803,7 +798,6 @@ export class TsPdfViewer {
     if (this._annotator) {
       this._annotator.renderedPages = renderedPages;
     }
-    document.dispatchEvent(new CustomEvent("visiblepagesrender"));
   } 
 
   private onPaginatorInput = (event: Event) => {
@@ -900,6 +894,15 @@ export class TsPdfViewer {
   
   private onAnnotationGeometricModeButtonClick = () => {
     this.setAnnotationMode("geometric");
+  };
+
+  private onAnnotationSelectionChange = (e: Event) => {
+    const annotation: any = e["detail"].annotation;
+    if (annotation) {
+      this._mainContainer.classList.add("annotation-selected");
+    } else {
+      this._mainContainer.classList.remove("annotation-selected");
+    }
   };
   //#endregion
 
