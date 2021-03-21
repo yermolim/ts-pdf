@@ -1,5 +1,7 @@
-import { DocumentData } from "../document/document-data";
 import { Vec2 } from "../math";
+
+import { DocumentData } from "../document/document-data";
+import { InkAnnotation } from "../document/entities/annotations/markup/ink-annotation";
 
 import { Annotator } from "./annotator";
 import { PenTempData } from "./pen-temp-data";
@@ -20,6 +22,22 @@ export class PenAnnotator extends Annotator {
   refreshViewBox() {
     super.refreshViewBox();
     this.updatePenGroupPosition();
+  }
+
+  undoPath() {
+    this._annotationPenData?.removeLastPath();
+    this.emitPathCount();
+  }
+
+  clearPaths() {
+    this.removeTempPenData();
+  }
+
+  savePathsAsInkAnnotation() {
+    // TODO: implement
+    console.log("save as ink");
+    this.removeTempPenData();
+    // this.forceRenderPageById(pageId);
   }
   
   protected init() {
@@ -53,6 +71,7 @@ export class PenAnnotator extends Annotator {
     if (this._annotationPenData) {
       this._annotationPenData.group.remove();
       this._annotationPenData = null;
+      this.emitPathCount();
     }    
   }
 
@@ -121,5 +140,14 @@ export class PenAnnotator extends Annotator {
     target.removeEventListener("pointerout", this.onPenPointerUp);   
 
     this._annotationPenData?.endPath();
+    this.emitPathCount();
   };
+
+  protected emitPathCount() {
+    this._parent.dispatchEvent(new CustomEvent("penpathchange", {
+      detail: {
+        pathCount: this._annotationPenData?.pathCount || 0,
+      }
+    }));
+  }
 }

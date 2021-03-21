@@ -262,6 +262,7 @@ export class TsPdfViewer {
   }
 
   private initAnnotationButtons() {
+    // mode buttons
     this._shadowRoot.querySelector("#button-annotation-mode-select")
       .addEventListener("click", this.onAnnotationSelectModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-stamp")
@@ -270,9 +271,37 @@ export class TsPdfViewer {
       .addEventListener("click", this.onAnnotationPenModeButtonClick);
     // this._shadowRoot.querySelector("#button-annotation-mode-geometric")
     //   .addEventListener("click", this.onAnnotationGeometricModeButtonClick); 
-    
+
+    // select buttons
     this._shadowRoot.querySelector("#button-annotation-delete")
-      .addEventListener("click", this.onAnnotationDeleteButtonClick);
+      .addEventListener("click", this.onAnnotationDeleteButtonClick);     
+
+    // pen buttons
+    this._viewer.addEventListener("penpathchange", (e: Event) => {
+      if (e["detail"].pathCount) {
+        this._mainContainer.classList.add("pen-path-present");
+      } else {
+        this._mainContainer.classList.remove("pen-path-present");
+      }
+    });
+    this._shadowRoot.querySelector("#button-annotation-pen-undo")
+      .addEventListener("click", () => {
+        if (this._annotator instanceof PenAnnotator) {
+          this._annotator.undoPath();
+        }
+      });
+    this._shadowRoot.querySelector("#button-annotation-pen-clear")
+      .addEventListener("click", () => {
+        if (this._annotator instanceof PenAnnotator) {
+          this._annotator.clearPaths();
+        }
+      });
+    this._shadowRoot.querySelector("#button-annotation-pen-save")
+      .addEventListener("click", () => () => {
+        if (this._annotator instanceof PenAnnotator) {
+          this._annotator.savePathsAsInkAnnotation();
+        }
+      });
   }
   //#endregion
 

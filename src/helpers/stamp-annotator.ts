@@ -27,7 +27,8 @@ export class StampAnnotator extends Annotator {
   }
 
   protected async createTempStampAnnotationAsync() {
-    const stamp = this._docData.createStampAnnotation("draft");
+    // TODO: add other types of stamps
+    const stamp = StampAnnotation.createStandard("/Draft");
     const renderResult = await stamp.renderAsync();  
 
     this._svgGroup.innerHTML = "";  

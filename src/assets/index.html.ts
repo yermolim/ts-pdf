@@ -13,6 +13,7 @@ import icon_popup from "./icons/popup.png";
 import icon_download from "./icons/download.png";
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
+import icon_back from "./icons/back.png";
 import icon_delete from "./icons/delete.png";
 import icon_pointer from "./icons/pointer.png";
 import icon_stamp from "./icons/stamp.png";
@@ -77,8 +78,8 @@ export const html = /*html*/`
     <div id="annotation-panel">
       <div class="annotation-panel-row">
         <div id="button-annotation-delete" 
-          class="panel-button annotation-panel-item">
-          <img src="${icon_delete}"/>
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_close}"/>
         </div> 
         <div id="button-annotation-mode-select" 
           class="panel-button annotation-panel-item">
@@ -92,6 +93,18 @@ export const html = /*html*/`
         </div> 
       </div>
       <div class="annotation-panel-row">
+        <div id="button-annotation-pen-undo" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_back}"/>
+        </div> 
+        <div id="button-annotation-pen-clear" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_close}"/>
+        </div> 
+        <div id="button-annotation-pen-save" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_ok}"/>
+        </div> 
         <div id="button-annotation-mode-pen" 
           class="panel-button annotation-panel-item">
           <img src="${icon_pen}"/>

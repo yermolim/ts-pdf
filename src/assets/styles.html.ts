@@ -133,8 +133,7 @@ export const styles = /*html*/`
       flex-shrink: 1;
     }
 
-  .annotation-panel-item,
-  :not(.annotation-selected) #button-annotation-delete {
+  .annotation-panel-item {
     margin: 3px;
     cursor: default;      
     opacity: 0;
@@ -143,8 +142,31 @@ export const styles = /*html*/`
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }    
-  .mode-annotation .annotation-panel-item,
-  .annotation-selected #button-annotation-delete { 
+  .mode-annotation .annotation-panel-item { 
+    cursor: pointer;
+    opacity: 100;
+    transform: scale(1);    
+    transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
+  }
+
+  .annotation-panel-subitem {
+    margin: 3px;    
+    background: var(--color-secondary-tr-final);
+    box-shadow: 0 0 10px var(--color-shadow-final);
+  }  
+  :not(.annotation-selected) #button-annotation-delete,
+  :not(.pen-path-present) #button-annotation-pen-undo,
+  :not(.pen-path-present) #button-annotation-pen-clear,
+  :not(.pen-path-present) #button-annotation-pen-save {
+    cursor: default;      
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+  }
+  .annotation-selected #button-annotation-delete,
+  .pen-path-present #button-annotation-pen-undo,
+  .pen-path-present #button-annotation-pen-clear,
+  .pen-path-present #button-annotation-pen-save { 
     cursor: pointer;
     opacity: 100;
     transform: scale(1);    

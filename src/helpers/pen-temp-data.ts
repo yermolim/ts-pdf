@@ -40,7 +40,10 @@ export class PenTempData {
 
   private _paths: PathData[] = []; 
   get paths(): PathData[] {
-    return this.paths.slice();
+    return this._paths.slice();
+  }
+  get pathCount(): number {
+    return this._paths.length;
   }
  
   private _positionBuffer: Vec2[] = [];
@@ -68,7 +71,7 @@ export class PenTempData {
   }
 
   endPath() {    
-    if (this._currentPath) {
+    if (this._currentPath && this._currentPath.positions.length > 1) {      
       this._paths.push(this._currentPath);
     }
     this._positionBuffer = null;
@@ -82,6 +85,11 @@ export class PenTempData {
     }
     path.remove();
     this._paths = this._paths.filter(x => x.path !== path);
+  }
+
+  removeLastPath() {
+    const pathData = this._paths.pop();
+    pathData?.path.remove();
   }
 
   addPosition(pos: Vec2) {
