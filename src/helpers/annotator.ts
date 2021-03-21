@@ -33,6 +33,7 @@ export class Annotator {
   set scale(value: number) {
     this._scale = value;
   }
+  private _lastScale: number;
 
   private _renderedPages: PageView[] = [];
   get renderedPages(): PageView[] {
@@ -51,7 +52,8 @@ export class Annotator {
   }
 
   private _overlay: HTMLDivElement;
-  private _svg: SVGGraphicsElement;
+  private _svgWrapper: SVGGraphicsElement;
+  private _svgGroup: SVGGraphicsElement;
 
   private _parentMutationObserver: MutationObserver;
   private _parentResizeObserver: ResizeObserver;
@@ -75,7 +77,7 @@ export class Annotator {
   }
 
   destroy() {    
-    this._parent?.removeEventListener("scroll", this.onScroll);
+    this._parent?.removeEventListener("scroll", this.onParentScroll);
     this._parentMutationObserver?.disconnect();
     this._parentResizeObserver?.disconnect();
   }  
@@ -88,52 +90,31 @@ export class Annotator {
     this.forceRenderPageById(annotation.pageId);
   }
 
-  private onScroll = () => {
+  refreshViewBox() {
+    const {width: w, height: h} = this._overlay.getBoundingClientRect();
+    if (!w || !h) {
+      return;
+    }
+
+    const viewBoxWidth = w / this._scale;
+    const viewBoxHeight = h / this._scale;
+    this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+    this._lastScale = this._scale;
+
+    this.updatePenGroupPosition();
+  }
+
+  private onParentScroll = () => {
     this._overlay.style.left = this._parent.scrollLeft + "px";
     this._overlay.style.top = this._parent.scrollTop + "px";
   };
-  
-  private init() {
-    const annotationOverlayContainer = document.createElement("div");
-    annotationOverlayContainer.id = "annotation-overlay-container";
-    
-    const annotationOverlay = document.createElement("div");
-    annotationOverlay.id = "annotation-overlay";
-    
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.classList.add("abs-stretch", "no-margin", "no-padding");
-    svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
-    svg.setAttribute("opacity", "0.5");
 
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    svg.append(g);
-
-    annotationOverlay.append(svg);
-    annotationOverlayContainer.append(annotationOverlay);
-
-    // keep overlay properly positioned depending on the viewer scroll
-    this._parent.addEventListener("scroll", this.onScroll);
-    
-    let lastScale: number;
-    const updateSvgViewBox = () => {
-      const {width: w, height: h} = annotationOverlay.getBoundingClientRect();
-      if (!w || !h) {
-        return;
-      }
-
-      const viewBoxWidth = w / this._scale;
-      const viewBoxHeight = h / this._scale;
-      svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-      lastScale = this._scale;
-    };
-    updateSvgViewBox();
-
-    // add observers to keep the svg scale actual
+  private initObservers() {
     const onPossibleViewerSizeChanged = () => {
-      if (this._scale === lastScale) {
+      if (this._scale === this._lastScale) {
         return;
       }
-      updateSvgViewBox();
+      this.refreshViewBox();
     };
     const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
       onPossibleViewerSizeChanged();
@@ -160,10 +141,37 @@ export class Annotator {
 
     this._parentMutationObserver = viewerMObserver;
     this._parentResizeObserver = viewerRObserver;
+  }
+  
+  private init() {
+    const annotationOverlayContainer = document.createElement("div");
+    annotationOverlayContainer.id = "annotation-overlay-container";
+    
+    const annotationOverlay = document.createElement("div");
+    annotationOverlay.id = "annotation-overlay";
+    
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.classList.add("abs-stretch", "no-margin", "no-padding");
+    svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+    svg.setAttribute("opacity", "0.5");
+
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    svg.append(g);
+
+    annotationOverlay.append(svg);
+    annotationOverlayContainer.append(annotationOverlay);    
     
     this._overlayContainer = annotationOverlayContainer;
     this._overlay = annotationOverlay;
-    this._svg = g;
+    this._svgWrapper = svg;
+    this._svgGroup = g;
+
+    // keep overlay properly positioned depending on the viewer scroll
+    this._parent.addEventListener("scroll", this.onParentScroll);
+    this.refreshViewBox();    
+
+    // add observers to keep the svg scale actual
+    this.initObservers();
   }
 
   //#region annotation modes
@@ -200,8 +208,8 @@ export class Annotator {
     if (this._mode) {  
       this._annotationToAdd = null;    
       this._overlayContainer.remove();
-      this._svg.innerHTML = "";
-      this._svg.removeAttribute("transform");
+      this._svgGroup.innerHTML = "";
+      this._svgGroup.removeAttribute("transform");
       switch (this._mode) {
         case "select":
           this._docData.setSelectedAnnotation(null);
@@ -229,9 +237,9 @@ export class Annotator {
     const stamp = this._docData.createStampAnnotation("draft");
     const renderResult = await stamp.renderAsync();  
 
-    this._svg.innerHTML = "";  
-    this._svg.append(...renderResult.clipPaths || []);
-    this._svg.append(renderResult.svg);
+    this._svgGroup.innerHTML = "";  
+    this._svgGroup.append(...renderResult.clipPaths || []);
+    this._svgGroup.append(renderResult.svg);
 
     this._annotationToAdd = stamp;
   }
@@ -251,7 +259,7 @@ export class Annotator {
     const offsetY = (oy - cy) / this._scale;
 
     const [x1, y1, x2, y2] = this._annotationToAdd.Rect;
-    this._svg.setAttribute("transform",
+    this._svgGroup.setAttribute("transform",
       `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
 
     // get coords under the pointer relatively to the page under it 
@@ -295,7 +303,7 @@ export class Annotator {
   private resetTempPenData(pageId: number) {    
     this.removeTempPenData();    
     this._annotationPenData = new PenTempData({id: pageId});
-    this._svg.append(this._annotationPenData.group);
+    this._svgGroup.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly
     this.updatePenGroupPosition();
@@ -385,9 +393,9 @@ export class Annotator {
   private updatePageCoords(clientX: number, clientY: number) {
     const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
     if (!pageCoords) {
-      this._svg.classList.add("out");
+      this._svgGroup.classList.add("out");
     } else {      
-      this._svg.classList.remove("out");
+      this._svgGroup.classList.remove("out");
     }
 
     this._pageCoords = pageCoords;

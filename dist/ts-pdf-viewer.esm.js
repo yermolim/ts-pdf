@@ -11505,7 +11505,7 @@ class Annotator {
     constructor(docData, parent) {
         this._scale = 1;
         this._renderedPages = [];
-        this.onScroll = () => {
+        this.onParentScroll = () => {
             this._overlay.style.left = this._parent.scrollLeft + "px";
             this._overlay.style.top = this._parent.scrollTop + "px";
         };
@@ -11519,7 +11519,7 @@ class Annotator {
             const offsetX = (cx - ox) / this._scale;
             const offsetY = (oy - cy) / this._scale;
             const [x1, y1, x2, y2] = this._annotationToAdd.Rect;
-            this._svg.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
+            this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
             this.updatePageCoords(cx, cy);
         };
         this.onStampPointerUp = (e) => {
@@ -11633,7 +11633,7 @@ class Annotator {
     }
     destroy() {
         var _a, _b, _c;
-        (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onScroll);
+        (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onParentScroll);
         (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
         (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
     }
@@ -11644,37 +11644,23 @@ class Annotator {
         }
         this.forceRenderPageById(annotation.pageId);
     }
-    init() {
-        const annotationOverlayContainer = document.createElement("div");
-        annotationOverlayContainer.id = "annotation-overlay-container";
-        const annotationOverlay = document.createElement("div");
-        annotationOverlay.id = "annotation-overlay";
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.classList.add("abs-stretch", "no-margin", "no-padding");
-        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
-        svg.setAttribute("opacity", "0.5");
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        svg.append(g);
-        annotationOverlay.append(svg);
-        annotationOverlayContainer.append(annotationOverlay);
-        this._parent.addEventListener("scroll", this.onScroll);
-        let lastScale;
-        const updateSvgViewBox = () => {
-            const { width: w, height: h } = annotationOverlay.getBoundingClientRect();
-            if (!w || !h) {
-                return;
-            }
-            const viewBoxWidth = w / this._scale;
-            const viewBoxHeight = h / this._scale;
-            svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-            lastScale = this._scale;
-        };
-        updateSvgViewBox();
+    refreshViewBox() {
+        const { width: w, height: h } = this._overlay.getBoundingClientRect();
+        if (!w || !h) {
+            return;
+        }
+        const viewBoxWidth = w / this._scale;
+        const viewBoxHeight = h / this._scale;
+        this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+        this._lastScale = this._scale;
+        this.updatePenGroupPosition();
+    }
+    initObservers() {
         const onPossibleViewerSizeChanged = () => {
-            if (this._scale === lastScale) {
+            if (this._scale === this._lastScale) {
                 return;
             }
-            updateSvgViewBox();
+            this.refreshViewBox();
         };
         const viewerRObserver = new ResizeObserver((entries) => {
             onPossibleViewerSizeChanged();
@@ -11700,9 +11686,27 @@ class Annotator {
         });
         this._parentMutationObserver = viewerMObserver;
         this._parentResizeObserver = viewerRObserver;
+    }
+    init() {
+        const annotationOverlayContainer = document.createElement("div");
+        annotationOverlayContainer.id = "annotation-overlay-container";
+        const annotationOverlay = document.createElement("div");
+        annotationOverlay.id = "annotation-overlay";
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("abs-stretch", "no-margin", "no-padding");
+        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+        svg.setAttribute("opacity", "0.5");
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        svg.append(g);
+        annotationOverlay.append(svg);
+        annotationOverlayContainer.append(annotationOverlay);
         this._overlayContainer = annotationOverlayContainer;
         this._overlay = annotationOverlay;
-        this._svg = g;
+        this._svgWrapper = svg;
+        this._svgGroup = g;
+        this._parent.addEventListener("scroll", this.onParentScroll);
+        this.refreshViewBox();
+        this.initObservers();
     }
     setAnnotationMode(mode) {
         if (!mode || mode === this._mode) {
@@ -11731,8 +11735,8 @@ class Annotator {
         if (this._mode) {
             this._annotationToAdd = null;
             this._overlayContainer.remove();
-            this._svg.innerHTML = "";
-            this._svg.removeAttribute("transform");
+            this._svgGroup.innerHTML = "";
+            this._svgGroup.removeAttribute("transform");
             switch (this._mode) {
                 case "select":
                     this._docData.setSelectedAnnotation(null);
@@ -11752,9 +11756,9 @@ class Annotator {
         return __awaiter$6(this, void 0, void 0, function* () {
             const stamp = this._docData.createStampAnnotation("draft");
             const renderResult = yield stamp.renderAsync();
-            this._svg.innerHTML = "";
-            this._svg.append(...renderResult.clipPaths || []);
-            this._svg.append(renderResult.svg);
+            this._svgGroup.innerHTML = "";
+            this._svgGroup.append(...renderResult.clipPaths || []);
+            this._svgGroup.append(renderResult.svg);
             this._annotationToAdd = stamp;
         });
     }
@@ -11767,16 +11771,16 @@ class Annotator {
     resetTempPenData(pageId) {
         this.removeTempPenData();
         this._annotationPenData = new PenTempData({ id: pageId });
-        this._svg.append(this._annotationPenData.group);
+        this._svgGroup.append(this._annotationPenData.group);
         this.updatePenGroupPosition();
     }
     updatePageCoords(clientX, clientY) {
         const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
         if (!pageCoords) {
-            this._svg.classList.add("out");
+            this._svgGroup.classList.add("out");
         }
         else {
-            this._svg.classList.remove("out");
+            this._svgGroup.classList.remove("out");
         }
         this._pageCoords = pageCoords;
     }
@@ -12200,6 +12204,7 @@ class TsPdfViewer {
     initMainDivs() {
         const mainContainer = this._shadowRoot.querySelector("div#main-container");
         const mcResizeObserver = new ResizeObserver((entries) => {
+            var _a;
             const { width } = this._mainContainer.getBoundingClientRect();
             if (width < 721) {
                 this._mainContainer.classList.add("mobile");
@@ -12207,6 +12212,7 @@ class TsPdfViewer {
             else {
                 this._mainContainer.classList.remove("mobile");
             }
+            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.refreshViewBox();
         });
         mcResizeObserver.observe(mainContainer);
         this._mainContainer = mainContainer;

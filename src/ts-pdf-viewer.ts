@@ -203,6 +203,7 @@ export class TsPdfViewer {
       } else {      
         this._mainContainer.classList.remove("mobile");
       }
+      this._annotator?.refreshViewBox();
     });
     mcResizeObserver.observe(mainContainer);
 
