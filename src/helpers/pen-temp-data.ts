@@ -1,6 +1,11 @@
 import { Vec2 } from "../math";
 import { Matrix, Rect } from "../document/common-interfaces";
 
+interface PathData {
+  path: SVGPathElement;
+  positions: Vec2[];
+}
+
 export interface PenDataOptions {
   bufferSize?: number; 
   strokeWidth?: number;  
@@ -33,13 +38,13 @@ export class PenTempData {
     return this._group;
   }
 
-  private _paths: SVGPathElement[] = []; 
-  get paths(): SVGPathElement[] {
+  private _paths: PathData[] = []; 
+  get paths(): PathData[] {
     return this.paths.slice();
   }
  
   private _positionBuffer: Vec2[] = [];
-  private _currentPath: SVGPathElement;
+  private _currentPath: PathData;
   private _currentPathString: string;
 
   constructor(options?: PenDataOptions) {
@@ -57,7 +62,7 @@ export class PenTempData {
     path.setAttribute("d", pathString);
 
     this._positionBuffer = [startPosition];
-    this._currentPath = path;
+    this._currentPath = {path, positions: [new Vec2(startPosition.x, startPosition.y)]};
     this._currentPathString = pathString;
     this._group.append(path);
   }
@@ -76,7 +81,7 @@ export class PenTempData {
       return;
     }
     path.remove();
-    this._paths = this._paths.filter(x => x !== path);
+    this._paths = this._paths.filter(x => x.path !== path);
   }
 
   addPosition(pos: Vec2) {
@@ -118,8 +123,11 @@ export class PenTempData {
     let pos = this.getAveragePosition(0);
 
     if (pos) {
+      const positions: Vec2[] = [];  
+
       // Get the smoothed part of the path that will not change
-      this._currentPathString += " L" + pos.x + " " + pos.y;
+      this._currentPathString += " L" + pos.x + " " + pos.y;    
+      positions.push(pos);
 
       // Get the last part of the path (close to the current mouse position)
       // This part will change if the mouse moves again
@@ -127,10 +135,12 @@ export class PenTempData {
       for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
         pos = this.getAveragePosition(offset);
         tmpPath += " L" + pos.x + " " + pos.y;
+        positions.push(pos);
       }
 
       // Set the complete current path coordinates
-      this._currentPath.setAttribute("d", this._currentPathString + tmpPath);
+      this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+      this._currentPath.positions.push(...positions);
     }
   };
 }

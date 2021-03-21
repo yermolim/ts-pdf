@@ -21,11 +21,11 @@ import { ObjectStream } from "./entities/streams/object-stream";
 
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
+import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
 import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
 import { CircleAnnotation } from "./entities/annotations/markup/geometric/circle-annotation";
 import { LineAnnotation } from "./entities/annotations/markup/geometric/line-annotation";
 import { SquareAnnotation } from "./entities/annotations/markup/geometric/square-annotation";
-import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
 import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
@@ -448,9 +448,9 @@ export class DocumentData {
           case annotationTypes.STAMP:
             annot = StampAnnotation.parse(info);
             break;
-          // case annotationTypes.INK:
-          //   annot = InkAnnotation.parse(info);
-          //   break;
+          case annotationTypes.INK:
+            annot = InkAnnotation.parse(info);
+            break;
           // case annotationTypes.TEXT:
           //   annot = TextAnnotation.parse(info);
           //   break;
@@ -480,7 +480,7 @@ export class DocumentData {
           annot.value.pageId = page.id;
 
           // DEBUG
-          // console.log(annot.value);
+          console.log(annot.value);
         }
       }
       

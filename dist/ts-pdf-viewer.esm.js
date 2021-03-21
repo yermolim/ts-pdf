@@ -5100,7 +5100,6 @@ class IndexedColorSpaceArray {
         }
         this.highestValue = highestValue;
         this.lookupArray = lookupArray;
-        console.log(this);
     }
     static parse(parseInfo, skipEmpty = true) {
         const { parser, bounds, cryptInfo } = parseInfo;
@@ -10615,6 +10614,109 @@ class StampAnnotation extends MarkupAnnotation {
     }
 }
 
+class InkAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.INK);
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new InkAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.InkList) {
+            bytes.push(...encoder.encode("/InkList "), codes.L_BRACKET);
+            this.InkList.forEach(x => {
+                bytes.push(codes.L_BRACKET);
+                x.forEach(y => bytes.push(...encoder.encode(" " + y)));
+                bytes.push(codes.R_BRACKET);
+            });
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    applyRectTransform(matrix) {
+        const dict = this._proxy || this;
+        let x;
+        let y;
+        const vec = new Vec2();
+        dict.InkList.forEach(list => {
+            for (let i = 0; i < list.length; i = i + 2) {
+                x = list[i];
+                y = list[i + 1];
+                vec.set(x, y).applyMat3(matrix);
+                list[i] = vec.x;
+                list[i + 1] = vec.y;
+            }
+        });
+        super.applyRectTransform(matrix);
+    }
+    parseProps(parseInfo) {
+        var _a;
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/InkList":
+                        const inkType = parser.getValueTypeAt(i);
+                        if (inkType === valueTypes.ARRAY) {
+                            const inkList = [];
+                            let inkArrayPos = ++i;
+                            while (true) {
+                                const sublist = parser.parseNumberArrayAt(inkArrayPos);
+                                if (!sublist) {
+                                    break;
+                                }
+                                inkList.push(sublist.value);
+                                inkArrayPos = sublist.end + 1;
+                            }
+                            this.InkList = inkList;
+                            break;
+                        }
+                        throw new Error("Can't parse /InkList property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
+            throw new Error("Not all required properties parsed");
+        }
+    }
+}
+
 class DocumentData {
     constructor(data) {
         this._pageById = new Map();
@@ -10949,10 +11051,14 @@ class DocumentData {
                     case annotationTypes.STAMP:
                         annot = StampAnnotation.parse(info);
                         break;
+                    case annotationTypes.INK:
+                        annot = InkAnnotation.parse(info);
+                        break;
                 }
                 if (annot) {
                     annotations.push(annot.value);
                     annot.value.pageId = page.id;
+                    console.log(annot.value);
                 }
             }
             annotationMap.set(page.id, annotations);
@@ -11640,7 +11746,7 @@ class PenTempData {
         const pathString = "M" + startPosition.x + " " + startPosition.y;
         path.setAttribute("d", pathString);
         this._positionBuffer = [startPosition];
-        this._currentPath = path;
+        this._currentPath = { path, positions: [new Vec2(startPosition.x, startPosition.y)] };
         this._currentPathString = pathString;
         this._group.append(path);
     }
@@ -11657,7 +11763,7 @@ class PenTempData {
             return;
         }
         path.remove();
-        this._paths = this._paths.filter(x => x !== path);
+        this._paths = this._paths.filter(x => x.path !== path);
     }
     addPosition(pos) {
         this.appendPositionToBuffer(pos);
@@ -11693,13 +11799,17 @@ class PenTempData {
     updateCurrentPath() {
         let pos = this.getAveragePosition(0);
         if (pos) {
+            const positions = [];
             this._currentPathString += " L" + pos.x + " " + pos.y;
+            positions.push(pos);
             let tmpPath = "";
             for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
                 pos = this.getAveragePosition(offset);
                 tmpPath += " L" + pos.x + " " + pos.y;
+                positions.push(pos);
             }
-            this._currentPath.setAttribute("d", this._currentPathString + tmpPath);
+            this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+            this._currentPath.positions.push(...positions);
         }
     }
     ;

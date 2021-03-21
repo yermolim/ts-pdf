@@ -931,7 +931,7 @@ export class TsPdfViewer {
 
     if (data?.length) {
       TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
-    }    
+    }
   };
 
   private async showPasswordDialogAsync(): Promise<string> {

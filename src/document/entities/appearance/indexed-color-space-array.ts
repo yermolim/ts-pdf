@@ -38,7 +38,8 @@ export class IndexedColorSpaceArray implements IEncodable {
     this.highestValue = highestValue;
     this.lookupArray = lookupArray;
 
-    console.log(this);
+    // DEBUG
+    // console.log(this);
   }
 
   static parse(parseInfo: ParseInfo, skipEmpty = true): ParseResult<IndexedColorSpaceArray> {  

@@ -1,9 +1,11 @@
 import { codes } from "../../../codes";
+import { Mat3, Vec2, vecMinMax } from "../../../../math";
 import { annotationTypes, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
+
 import { ParseInfo, ParseResult } from "../../../data-parser";
+import { DateString } from "../../strings/date-string";
 import { MarkupAnnotation } from "./markup-annotation";
-import { RenderToSvgResult } from "../../../../common";
 
 export class InkAnnotation extends MarkupAnnotation {
   /**
@@ -26,7 +28,9 @@ export class InkAnnotation extends MarkupAnnotation {
     try {
       const pdfObject = new InkAnnotation();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<InkAnnotation>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;
@@ -55,6 +59,26 @@ export class InkAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
   
+  applyRectTransform(matrix: Mat3) {
+    const dict = <InkAnnotation>this._proxy || this;
+
+    // transform current InkList and Rect
+    let x: number;
+    let y: number;
+    const vec = new Vec2();
+    dict.InkList.forEach(list => {
+      for (let i = 0; i < list.length; i = i + 2) {
+        x = list[i];
+        y = list[i + 1];
+        vec.set(x, y).applyMat3(matrix);
+        list[i] = vec.x;
+        list[i + 1] = vec.y;
+      }
+    });
+
+    super.applyRectTransform(matrix);
+  }
+  
   /**
    * fill public properties from data using info/parser if available
    */
@@ -77,15 +101,14 @@ export class InkAnnotation extends MarkupAnnotation {
             const inkType = parser.getValueTypeAt(i);
             if (inkType === valueTypes.ARRAY) {
               const inkList: number[][] = [];
-              let inkSubList: ParseResult<number[]>;
               let inkArrayPos = ++i;
               while (true) {
-                inkSubList = parser.parseNumberArrayAt(inkArrayPos);
-                if (!inkSubList) {
+                const sublist = parser.parseNumberArrayAt(inkArrayPos);
+                if (!sublist) {
                   break;
                 }
-                inkList.push(inkSubList.value);
-                inkArrayPos = inkSubList.end + 1;
+                inkList.push(sublist.value);
+                inkArrayPos = sublist.end + 1;
               }
               this.InkList = inkList;
               break;
