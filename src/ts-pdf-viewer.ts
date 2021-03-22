@@ -8,11 +8,13 @@ import { styles } from "./assets/styles.html";
 import { getDistance } from "./common";
 import { clamp, Vec2 } from "./math";
 
+import { Rect } from "./document/common-interfaces";
 import { DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
-import { Annotator } from "./helpers/annotator";
-import { StampAnnotator } from "./helpers/stamp-annotator";
-import { PenAnnotator } from "./helpers/pen-annotator";
+import { Annotator } from "./annotator/annotator";
+import { StampAnnotator } from "./annotator/stamp-annotator";
+import { PenAnnotator } from "./annotator/pen-annotator";
+import { ContextMenu } from "./helpers/context-menu";
 
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
@@ -48,6 +50,9 @@ export class TsPdfViewer {
   private _docData: DocumentData;
   private _annotatorMode: AnnotatorMode;
   private _annotator: Annotator;
+
+  private _contextMenu: ContextMenu;
+  private _contextMenuEnabled: boolean;
   
   private _pointerInfo = {
     lastPos: <Vec2>null,
@@ -208,6 +213,7 @@ export class TsPdfViewer {
       } else {      
         this._mainContainer.classList.remove("mobile");
       }
+      this._contextMenu.hide();
       this._annotator?.refreshViewBox();
     });
     mcResizeObserver.observe(mainContainer);
@@ -216,7 +222,14 @@ export class TsPdfViewer {
     this._mainContainerRObserver = mcResizeObserver;  
 
     this._previewer = this._shadowRoot.querySelector("#previewer");
-    this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;    
+    this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;
+    this._contextMenu = new ContextMenu();
+    this._viewer.addEventListener("contextmenu", (e: MouseEvent) => {
+      if (this._contextMenuEnabled) {
+        e.preventDefault();
+        this._contextMenu.show(new Vec2(e.clientX, e.clientY), this._mainContainer);
+      }
+    });
   }
   
   private initViewControls() {
@@ -472,7 +485,10 @@ export class TsPdfViewer {
     this._viewerMode = mode;
   }
 
-  private disableCurrentViewerMode() {    
+  private disableCurrentViewerMode() { 
+    this._contextMenu.clear();
+    this._contextMenuEnabled = false;
+    
     switch (this._viewerMode) {
       case "text":
         this._mainContainer.classList.remove("mode-text");
@@ -516,6 +532,7 @@ export class TsPdfViewer {
   }
   
   private onViewerScroll = (e: Event) => {
+    this._contextMenu.hide();
     this.renderVisiblePages();
   };  
 
@@ -579,8 +596,8 @@ export class TsPdfViewer {
       }
     }
 
+    this._contextMenu.hide();
     this._scale = scale;
-    this.updateAnnotatorScale();
     this._pages.forEach(x => x.scale = this._scale);  
     
     if (pageContainerUnderPivot 
@@ -868,6 +885,8 @@ export class TsPdfViewer {
     }
 
     // disable previous mode
+    this._contextMenu.clear();
+    this._contextMenuEnabled = false;
     this._annotator?.destroy();
     switch (this._annotatorMode) {
       case "select":
@@ -900,6 +919,7 @@ export class TsPdfViewer {
       case "pen":
         this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
         this._annotator = new PenAnnotator(this._docData, this._viewer);
+        this.initContextPenColorSwitcher();
         break;
       case "geometric":
         this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
@@ -908,8 +928,8 @@ export class TsPdfViewer {
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
-    this.updateAnnotatorPageData();
-    this.updateAnnotatorScale();
+    // trigger page redraw to update page dimensions
+    this._viewer.scrollTop += 1;
   }
   
   private onAnnotationSelectModeButtonClick = () => {
@@ -937,15 +957,39 @@ export class TsPdfViewer {
     }
   };
 
+  private initContextPenColorSwitcher = () => {
+    const colors: Rect[] = [
+      [0, 0, 0, 0.5], // black
+      [0.804, 0, 0, 0.5], // red
+      [0, 0.804, 0, 0.5], // green
+      [0, 0, 0.804, 0.5], // blue
+    ];
+    const contextMenuContent = document.createElement("div");
+    contextMenuContent.classList.add("context-menu-content");
+    colors.forEach(x => {          
+      const item = document.createElement("div");
+      item.classList.add("panel-button");
+      item.addEventListener("click", () => {
+        this._contextMenu.hide();
+        this._annotator?.destroy();
+        this._annotator = new PenAnnotator(this._docData, this._viewer, x);
+        // trigger page redraw to update page dimensions
+        this._viewer.scrollTop += 1;
+      });
+      const colorIcon = document.createElement("div");
+      colorIcon.classList.add("context-menu-color-icon");
+      colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
+      item.append(colorIcon);
+      contextMenuContent.append(item);
+    });
+    this._contextMenu.content = contextMenuContent;
+    this._contextMenuEnabled = true;
+  };
+
   private updateAnnotatorPageData() {    
     if (this._annotator) {
-      this._annotator.renderedPages = this._renderedPages;
-    }
-  }
-
-  private updateAnnotatorScale() {    
-    if (this._annotator) {
       this._annotator.scale = this._scale;
+      this._annotator.renderedPages = this._renderedPages;
     }
   }
   //#endregion

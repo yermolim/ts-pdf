@@ -1,5 +1,6 @@
 import { Vec2 } from "../math";
 
+import { Rect } from "../document/common-interfaces";
 import { DocumentData } from "../document/document-data";
 import { InkAnnotation } from "../document/entities/annotations/markup/ink-annotation";
 
@@ -7,11 +8,17 @@ import { Annotator } from "./annotator";
 import { PenData } from "./pen-data";
 
 export class PenAnnotator extends Annotator {
-  protected _annotationPenData: PenData;
+  protected static lastColor: Rect;
 
-  constructor(docData: DocumentData, parent: HTMLDivElement) {
+  protected _annotationPenData: PenData;  
+  protected _color: Rect;
+
+  constructor(docData: DocumentData, parent: HTMLDivElement, color?: Rect) {
     super(docData, parent);
     this.init();
+
+    this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.5];
+    PenAnnotator.lastColor = this._color;
   }
 
   destroy() {   
@@ -86,7 +93,7 @@ export class PenAnnotator extends Annotator {
 
   protected resetTempPenData(pageId: number) {    
     this.removeTempPenData();    
-    this._annotationPenData = new PenData({id: pageId});
+    this._annotationPenData = new PenData({id: pageId, color: this._color});
     this._svgGroup.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly
@@ -94,9 +101,9 @@ export class PenAnnotator extends Annotator {
   }
   
   protected onPenPointerDown = (e: PointerEvent) => {
-    if (!e.isPrimary) {
+    if (!e.isPrimary || e.button === 2) {
       return;
-    }
+    }    
 
     const {clientX: cx, clientY: cy} = e;
     this.updatePageCoords(cx, cy);
@@ -115,8 +122,7 @@ export class PenAnnotator extends Annotator {
     const target = e.target as HTMLElement;
     target.addEventListener("pointermove", this.onPenPointerMove);
     target.addEventListener("pointerup", this.onPenPointerUp);    
-    target.addEventListener("pointerout", this.onPenPointerUp);    
-
+    target.addEventListener("pointerout", this.onPenPointerUp);  
     // capture pointer to make pointer events fire on same target
     target.setPointerCapture(e.pointerId);
   };
@@ -146,7 +152,8 @@ export class PenAnnotator extends Annotator {
     const target = e.target as HTMLElement;
     target.removeEventListener("pointermove", this.onPenPointerMove);
     target.removeEventListener("pointerup", this.onPenPointerUp);    
-    target.removeEventListener("pointerout", this.onPenPointerUp);   
+    target.removeEventListener("pointerout", this.onPenPointerUp);
+    target.releasePointerCapture(e.pointerId);   
 
     this._annotationPenData?.endPath();
     this.emitPathCount();

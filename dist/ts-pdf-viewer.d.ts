@@ -23,6 +23,8 @@ export declare class TsPdfViewer {
 	private _docData;
 	private _annotatorMode;
 	private _annotator;
+	private _contextMenu;
+	private _contextMenuEnabled;
 	private _pointerInfo;
 	private _timers;
 	private _pinchInfo;
@@ -79,8 +81,8 @@ export declare class TsPdfViewer {
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
 	private onAnnotationSelectionChange;
+	private initContextPenColorSwitcher;
 	private updateAnnotatorPageData;
-	private updateAnnotatorScale;
 	private onDownloadFileButtonClick;
 	private showPasswordDialogAsync;
 }

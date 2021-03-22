@@ -143,7 +143,7 @@ export abstract class Annotator {
     this._overlayContainer = annotationOverlayContainer;
     this._overlay = annotationOverlay;
     this._svgWrapper = svg;
-    this._svgGroup = g;
+    this._svgGroup = g;    
 
     this._parent.append(this._overlayContainer);
 

@@ -3,7 +3,7 @@ import { Mat3, Vec2, vecMinMax } from "../../../../math";
 import { getRandomUuid } from "../../../../common";
 import { annotationTypes, valueTypes } from "../../../const";
 import { CryptInfo, Rect } from "../../../common-interfaces";
-import { PenData } from "../../../../helpers/pen-data";
+import { PenData } from "../../../../annotator/pen-data";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";

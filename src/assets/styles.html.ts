@@ -516,5 +516,33 @@ export const styles = /*html*/`
     stroke: var(--color-secondary-tr-final);
     stroke-dasharray: 3 3;
   }
+
+  #context-menu {
+    box-sizing: border-box;
+    position: absolute;
+    z-index: 2;
+    min-width: 50px;
+    min-height: 50px;
+    padding: 5px;
+    background: var(--color-secondary-tr-final);
+    box-shadow: 0 0 10px var(--color-shadow-final);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+  .context-menu-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 0;
+  }
+  .context-menu-color-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+  }
 </style>
 `;
