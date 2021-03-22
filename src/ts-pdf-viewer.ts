@@ -915,11 +915,12 @@ export class TsPdfViewer {
       case "stamp":
         this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
         this._annotator = new StampAnnotator(this._docData, this._viewer);
+        this.initContextStampPicker();
         break;
       case "pen":
         this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
         this._annotator = new PenAnnotator(this._docData, this._viewer);
-        this.initContextPenColorSwitcher();
+        this.initContextPenColorPicker();
         break;
       case "geometric":
         this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
@@ -957,7 +958,35 @@ export class TsPdfViewer {
     }
   };
 
-  private initContextPenColorSwitcher = () => {
+  private initContextStampPicker() {
+    const stampTypes: {type: string; name: string}[] = [
+      {type:"/Draft", name: "Draft"},
+      {type:"/Approved", name: "Approved"},
+      {type:"/NotApproved", name: "Not Approved"},
+      {type:"/Departmental", name: "Departmental"},
+    ];
+    const contextMenuContent = document.createElement("div");
+    contextMenuContent.classList.add("context-menu-content", "column");
+    stampTypes.forEach(x => {          
+      const item = document.createElement("div");
+      item.classList.add("context-menu-stamp-select-button");
+      item.addEventListener("click", () => {
+        this._contextMenu.hide();
+        this._annotator?.destroy();
+        this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
+        // trigger page redraw to update page dimensions
+        this._viewer.scrollTop += 1;
+      });
+      const stampName = document.createElement("div");
+      stampName.innerHTML = x.name;
+      item.append(stampName);
+      contextMenuContent.append(item);
+    });
+    this._contextMenu.content = contextMenuContent;
+    this._contextMenuEnabled = true;
+  }
+
+  private initContextPenColorPicker() {
     const colors: Rect[] = [
       [0, 0, 0, 0.5], // black
       [0.804, 0, 0, 0.5], // red
@@ -965,7 +994,7 @@ export class TsPdfViewer {
       [0, 0, 0.804, 0.5], // blue
     ];
     const contextMenuContent = document.createElement("div");
-    contextMenuContent.classList.add("context-menu-content");
+    contextMenuContent.classList.add("context-menu-content", "row");
     colors.forEach(x => {          
       const item = document.createElement("div");
       item.classList.add("panel-button");
@@ -984,7 +1013,7 @@ export class TsPdfViewer {
     });
     this._contextMenu.content = contextMenuContent;
     this._contextMenuEnabled = true;
-  };
+  }
 
   private updateAnnotatorPageData() {    
     if (this._annotator) {

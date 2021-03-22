@@ -81,7 +81,8 @@ export declare class TsPdfViewer {
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
 	private onAnnotationSelectionChange;
-	private initContextPenColorSwitcher;
+	private initContextStampPicker;
+	private initContextPenColorPicker;
 	private updateAnnotatorPageData;
 	private onDownloadFileButtonClick;
 	private showPasswordDialogAsync;

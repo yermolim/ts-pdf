@@ -1,13 +1,28 @@
 import { DocumentData } from "../document/document-data";
-import { StampAnnotation } from "../document/entities/annotations/markup/stamp-annotation";
+import { StampAnnotation, StampType, stampTypes } 
+  from "../document/entities/annotations/markup/stamp-annotation";
 
 import { Annotator } from "./annotator";
 
 export class StampAnnotator extends Annotator {
+  protected static lastType: StampType = "/Draft";
+
+  protected _type: StampType;
   protected _tempAnnotation: StampAnnotation;
 
-  constructor(docData: DocumentData, parent: HTMLDivElement) {
+  constructor(docData: DocumentData, parent: HTMLDivElement, type?: string) {
     super(docData, parent);
+    
+    if (type) {
+      if (!(<string[]>Object.values(stampTypes)).includes(type)) {
+        throw new Error(`Unsupported stamp type: '${type}'`);
+      }
+      this._type = <StampType>type;
+      StampAnnotator.lastType = this._type;
+    } else {
+      this._type = StampAnnotator.lastType;
+    }
+
     this.init();
   }
 
@@ -28,7 +43,7 @@ export class StampAnnotator extends Annotator {
 
   protected async createTempStampAnnotationAsync() {
     // TODO: add other types of stamps
-    const stamp = StampAnnotation.createStandard("/Draft");
+    const stamp = StampAnnotation.createStandard(this._type);
     const renderResult = await stamp.renderAsync();  
 
     this._svgGroup.innerHTML = "";  
@@ -61,9 +76,9 @@ export class StampAnnotator extends Annotator {
   };
 
   protected onStampPointerUp = (e: PointerEvent) => {
-    if (!e.isPrimary) {
+    if (!e.isPrimary || e.button === 2) {
       return;
-    }
+    }    
 
     const {clientX: cx, clientY: cy} = e;
     const pageCoords = this.getPageCoordsUnderPointer(cx, cy);

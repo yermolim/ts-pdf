@@ -774,7 +774,7 @@ export class StampAnnotation extends MarkupAnnotation {
         break;
       case "/NotApproved":        
         stampForm.setTextStreamData(notApprovedStampForm);
-        colorString = greenColorString;
+        colorString = redColorString;
         break;
       case "/Departmental":        
         stampForm.setTextStreamData(departmentalStampForm);

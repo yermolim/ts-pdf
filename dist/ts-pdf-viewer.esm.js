@@ -727,16 +727,39 @@ const styles = `
   }
   .context-menu-content {
     display: flex;
-    flex-direction: row;
     justify-content: center;
     align-items: center;
     flex-grow: 1;
     flex-shrink: 0;
   }
+  .context-menu-content.row {
+    flex-direction: row;
+  }
+  .context-menu-content.column {
+    flex-direction: column;
+  }
   .context-menu-color-icon {
     width: 20px;
     height: 20px;
     border-radius: 3px;
+  }
+  .context-menu-stamp-select-button {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    height: 36px;
+    padding: 0 9px;
+    border-radius: 18px;
+    font-family: sans-serif;
+    font-size: 16px;
+    color: var(--color-fg-primary-final); 
+  }
+  .context-menu-stamp-select-button:hover {
+    background-color: var(--color-accent-final);
   }
 </style>
 `;
@@ -11209,7 +11232,7 @@ class StampAnnotation extends MarkupAnnotation {
                 break;
             case "/NotApproved":
                 stampForm.setTextStreamData(notApprovedStampForm);
-                colorString = greenColorString;
+                colorString = redColorString;
                 break;
             case "/Departmental":
                 stampForm.setTextStreamData(departmentalStampForm);
@@ -12424,7 +12447,7 @@ var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class StampAnnotator extends Annotator {
-    constructor(docData, parent) {
+    constructor(docData, parent, type) {
         super(docData, parent);
         this.onStampPointerMove = (e) => {
             if (!e.isPrimary) {
@@ -12440,7 +12463,7 @@ class StampAnnotator extends Annotator {
             this.updatePageCoords(cx, cy);
         };
         this.onStampPointerUp = (e) => {
-            if (!e.isPrimary) {
+            if (!e.isPrimary || e.button === 2) {
                 return;
             }
             const { clientX: cx, clientY: cy } = e;
@@ -12455,6 +12478,16 @@ class StampAnnotator extends Annotator {
             this.forceRenderPageById(pageId);
             this.createTempStampAnnotationAsync();
         };
+        if (type) {
+            if (!Object.values(stampTypes).includes(type)) {
+                throw new Error(`Unsupported stamp type: '${type}'`);
+            }
+            this._type = type;
+            StampAnnotator.lastType = this._type;
+        }
+        else {
+            this._type = StampAnnotator.lastType;
+        }
         this.init();
     }
     destroy() {
@@ -12469,7 +12502,7 @@ class StampAnnotator extends Annotator {
     }
     createTempStampAnnotationAsync() {
         return __awaiter$6(this, void 0, void 0, function* () {
-            const stamp = StampAnnotation.createStandard("/Draft");
+            const stamp = StampAnnotation.createStandard(this._type);
             const renderResult = yield stamp.renderAsync();
             this._svgGroup.innerHTML = "";
             this._svgGroup.append(...renderResult.clipPaths || []);
@@ -12478,6 +12511,7 @@ class StampAnnotator extends Annotator {
         });
     }
 }
+StampAnnotator.lastType = "/Draft";
 
 class PenData {
     constructor(options) {
@@ -13047,34 +13081,6 @@ class TsPdfViewer {
                 this._mainContainer.classList.remove("annotation-selected");
             }
         };
-        this.initContextPenColorSwitcher = () => {
-            const colors = [
-                [0, 0, 0, 0.5],
-                [0.804, 0, 0, 0.5],
-                [0, 0.804, 0, 0.5],
-                [0, 0, 0.804, 0.5],
-            ];
-            const contextMenuContent = document.createElement("div");
-            contextMenuContent.classList.add("context-menu-content");
-            colors.forEach(x => {
-                const item = document.createElement("div");
-                item.classList.add("panel-button");
-                item.addEventListener("click", () => {
-                    var _a;
-                    this._contextMenu.hide();
-                    (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                    this._annotator = new PenAnnotator(this._docData, this._viewer, x);
-                    this._viewer.scrollTop += 1;
-                });
-                const colorIcon = document.createElement("div");
-                colorIcon.classList.add("context-menu-color-icon");
-                colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
-                item.append(colorIcon);
-                contextMenuContent.append(item);
-            });
-            this._contextMenu.content = contextMenuContent;
-            this._contextMenuEnabled = true;
-        };
         this.onDownloadFileButtonClick = () => {
             var _a;
             const data = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
@@ -13567,11 +13573,12 @@ class TsPdfViewer {
             case "stamp":
                 this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
                 this._annotator = new StampAnnotator(this._docData, this._viewer);
+                this.initContextStampPicker();
                 break;
             case "pen":
                 this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
                 this._annotator = new PenAnnotator(this._docData, this._viewer);
-                this.initContextPenColorSwitcher();
+                this.initContextPenColorPicker();
                 break;
             case "geometric":
                 this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
@@ -13580,6 +13587,61 @@ class TsPdfViewer {
                 throw new Error(`Invalid annotation mode: ${mode}`);
         }
         this._viewer.scrollTop += 1;
+    }
+    initContextStampPicker() {
+        const stampTypes = [
+            { type: "/Draft", name: "Draft" },
+            { type: "/Approved", name: "Approved" },
+            { type: "/NotApproved", name: "Not Approved" },
+            { type: "/Departmental", name: "Departmental" },
+        ];
+        const contextMenuContent = document.createElement("div");
+        contextMenuContent.classList.add("context-menu-content", "column");
+        stampTypes.forEach(x => {
+            const item = document.createElement("div");
+            item.classList.add("context-menu-stamp-select-button");
+            item.addEventListener("click", () => {
+                var _a;
+                this._contextMenu.hide();
+                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+                this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
+                this._viewer.scrollTop += 1;
+            });
+            const stampName = document.createElement("div");
+            stampName.innerHTML = x.name;
+            item.append(stampName);
+            contextMenuContent.append(item);
+        });
+        this._contextMenu.content = contextMenuContent;
+        this._contextMenuEnabled = true;
+    }
+    initContextPenColorPicker() {
+        const colors = [
+            [0, 0, 0, 0.5],
+            [0.804, 0, 0, 0.5],
+            [0, 0.804, 0, 0.5],
+            [0, 0, 0.804, 0.5],
+        ];
+        const contextMenuContent = document.createElement("div");
+        contextMenuContent.classList.add("context-menu-content", "row");
+        colors.forEach(x => {
+            const item = document.createElement("div");
+            item.classList.add("panel-button");
+            item.addEventListener("click", () => {
+                var _a;
+                this._contextMenu.hide();
+                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+                this._annotator = new PenAnnotator(this._docData, this._viewer, x);
+                this._viewer.scrollTop += 1;
+            });
+            const colorIcon = document.createElement("div");
+            colorIcon.classList.add("context-menu-color-icon");
+            colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
+            item.append(colorIcon);
+            contextMenuContent.append(item);
+        });
+        this._contextMenu.content = contextMenuContent;
+        this._contextMenuEnabled = true;
     }
     updateAnnotatorPageData() {
         if (this._annotator) {

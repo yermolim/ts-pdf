@@ -533,16 +533,39 @@ export const styles = /*html*/`
   }
   .context-menu-content {
     display: flex;
-    flex-direction: row;
     justify-content: center;
     align-items: center;
     flex-grow: 1;
     flex-shrink: 0;
   }
+  .context-menu-content.row {
+    flex-direction: row;
+  }
+  .context-menu-content.column {
+    flex-direction: column;
+  }
   .context-menu-color-icon {
     width: 20px;
     height: 20px;
     border-radius: 3px;
+  }
+  .context-menu-stamp-select-button {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    width: 100%;
+    height: 36px;
+    padding: 0 9px;
+    border-radius: 18px;
+    font-family: sans-serif;
+    font-size: 16px;
+    color: var(--color-fg-primary-final); 
+  }
+  .context-menu-stamp-select-button:hover {
+    background-color: var(--color-accent-final);
   }
 </style>
 `;
