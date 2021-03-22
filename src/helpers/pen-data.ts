@@ -13,11 +13,11 @@ export interface PenDataOptions {
   id?: number;
 }
 
-export class PenTempData {
+export class PenData {
   static readonly defaultOptions: PenDataOptions = {
     bufferSize: 8, 
     strokeWidth: 2,
-    color: [0, 0, 0, 1],
+    color: [0, 0, 0, 0.5],
   };  
   private _options: PenDataOptions;
   get id(): number {
@@ -51,7 +51,7 @@ export class PenTempData {
   private _currentPathString: string;
 
   constructor(options?: PenDataOptions) {
-    this._options = Object.assign({}, PenTempData.defaultOptions, options);
+    this._options = Object.assign({}, PenData.defaultOptions, options);
     this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   }
 
@@ -131,11 +131,9 @@ export class PenTempData {
     let pos = this.getAveragePosition(0);
 
     if (pos) {
-      const positions: Vec2[] = [];  
-
       // Get the smoothed part of the path that will not change
       this._currentPathString += " L" + pos.x + " " + pos.y;    
-      positions.push(pos);
+      this._currentPath.positions.push(pos);
 
       // Get the last part of the path (close to the current mouse position)
       // This part will change if the mouse moves again
@@ -143,12 +141,10 @@ export class PenTempData {
       for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
         pos = this.getAveragePosition(offset);
         tmpPath += " L" + pos.x + " " + pos.y;
-        positions.push(pos);
       }
 
       // Set the complete current path coordinates
       this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
-      this._currentPath.positions.push(...positions);
     }
   };
 }

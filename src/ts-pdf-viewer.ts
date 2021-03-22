@@ -297,7 +297,7 @@ export class TsPdfViewer {
         }
       });
     this._shadowRoot.querySelector("#button-annotation-pen-save")
-      .addEventListener("click", () => () => {
+      .addEventListener("click", () => {
         if (this._annotator instanceof PenAnnotator) {
           this._annotator.savePathsAsInkAnnotation();
         }

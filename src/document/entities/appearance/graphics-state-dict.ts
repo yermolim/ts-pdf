@@ -265,7 +265,8 @@ export class GraphicsStateDict extends PdfDict {
       // TODO: implement
     }
     if (this.BM) {
-      params.strokeMiterLimit = this.ML;
+      // TODO: implement
+      params.mixBlendMode = "normal";
     }
     if (this.SMask) {
       // TODO: implement

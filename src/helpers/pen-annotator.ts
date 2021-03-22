@@ -4,10 +4,10 @@ import { DocumentData } from "../document/document-data";
 import { InkAnnotation } from "../document/entities/annotations/markup/ink-annotation";
 
 import { Annotator } from "./annotator";
-import { PenTempData } from "./pen-temp-data";
+import { PenData } from "./pen-data";
 
 export class PenAnnotator extends Annotator {
-  protected _annotationPenData: PenTempData;
+  protected _annotationPenData: PenData;
 
   constructor(docData: DocumentData, parent: HTMLDivElement) {
     super(docData, parent);
@@ -34,10 +34,19 @@ export class PenAnnotator extends Annotator {
   }
 
   savePathsAsInkAnnotation() {
-    // TODO: implement
-    console.log("save as ink");
+    if (!this._annotationPenData) {
+      return;
+    }
+
+    const pageId = this._annotationPenData.id;
+    const inkAnnotation = InkAnnotation.createFromPenData(this._annotationPenData);
+
+    console.log(inkAnnotation);
+
+    this._docData.appendAnnotationToPage(pageId, inkAnnotation);
+    this.forceRenderPageById(pageId);
+    
     this.removeTempPenData();
-    // this.forceRenderPageById(pageId);
   }
   
   protected init() {
@@ -77,7 +86,7 @@ export class PenAnnotator extends Annotator {
 
   protected resetTempPenData(pageId: number) {    
     this.removeTempPenData();    
-    this._annotationPenData = new PenTempData({id: pageId});
+    this._annotationPenData = new PenData({id: pageId});
     this._svgGroup.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly

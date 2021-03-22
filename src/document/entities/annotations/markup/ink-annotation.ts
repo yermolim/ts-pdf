@@ -1,11 +1,18 @@
 import { codes } from "../../../codes";
 import { Mat3, Vec2, vecMinMax } from "../../../../math";
+import { getRandomUuid } from "../../../../common";
 import { annotationTypes, valueTypes } from "../../../const";
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo, Rect } from "../../../common-interfaces";
+import { PenData } from "../../../../helpers/pen-data";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";
+import { LiteralString } from "../../strings/literal-string";
 import { DateString } from "../../strings/date-string";
+import { XFormStream } from "../../streams/x-form-stream";
 import { MarkupAnnotation } from "./markup-annotation";
+import { BorderStyleDict } from "../../appearance/border-style-dict";
+import { ResourceDict } from "../../appearance/resource-dict";
+import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
 export class InkAnnotation extends MarkupAnnotation {
   /**
@@ -17,8 +24,50 @@ export class InkAnnotation extends MarkupAnnotation {
    */
   InkList: number[][];
   
-  constructor() {
+  protected constructor() {
     super(annotationTypes.INK);
+  }
+
+  static createFromPenData(data: PenData): InkAnnotation {
+    const now = DateString.fromDate(new Date());    
+    const stampUuid = getRandomUuid(); 
+    
+    const w = data.strokeWidth;
+    const bs = new BorderStyleDict();
+    bs.W = w;
+
+    const positions: Vec2[] = [];
+    const inkList: number[][] = [];
+    data.paths.forEach(path => {
+      const ink: number[] = [];
+      path.positions.forEach(pos => {
+        positions.push(pos);
+        ink.push(pos.x, pos.y);
+      });
+      inkList.push(ink);
+    });
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(...positions);   
+    const rect: Rect = [
+      newRectMin.x - w / 2, 
+      newRectMin.y - w / 2, 
+      newRectMax.x + w / 2, 
+      newRectMax.y + w / 2,
+    ];
+
+    const stampAnnotation = new InkAnnotation();
+    stampAnnotation.name = stampUuid;
+    stampAnnotation.NM = LiteralString.fromString(stampUuid);
+    stampAnnotation.InkList = inkList;
+    stampAnnotation.Rect = rect;
+    stampAnnotation.CreationDate = now;
+    stampAnnotation.C = data.color.slice(0, 3);
+    stampAnnotation.CA = data.color[3];
+    stampAnnotation.BS = bs;
+
+    stampAnnotation.createApStream();
+
+    return stampAnnotation;
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {
@@ -128,5 +177,59 @@ export class InkAnnotation extends MarkupAnnotation {
     if (!this.InkList?.length) {
       throw new Error("Not all required properties parsed");
     }
+  }
+
+  protected createApStream() {    
+    const stampApStream = new XFormStream();
+    stampApStream.Filter = "/FlateDecode";
+    stampApStream.LastModified = DateString.fromDate(new Date());
+    stampApStream.BBox = this.Rect;
+
+    let colorString: string;
+    if (!this.C?.length) {
+      colorString = "0 G 0 g";
+    } else if (this.C.length < 3) {
+      const g = this.C[0];
+      colorString = `${g} G ${g} g`;
+    } else if (this.C.length === 3) {
+      const [r, g, b] = this.C;      
+      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+    } else {      
+      const [c, m, y, k] = this.C;      
+      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+    }
+
+    const ca = this.CA || 1;
+    const width = this.BS?.W ?? this.Border?.width ?? 1;
+    const dash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const gap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    const gs = new GraphicsStateDict();
+    gs.AIS = true;
+    gs.BM = "/Normal";
+    gs.CA = ca;
+    gs.ca = ca;
+    gs.LW = width;
+    gs.D = [[dash, gap], 0];
+    stampApStream.Resources = new ResourceDict();
+    stampApStream.Resources.setGraphicsState("/GS0", gs);
+
+    let streamTextData = `q ${colorString} /GS0 gs`;
+    let px: number;
+    let py: number;
+    this.InkList.forEach(list => {      
+      px = list[0];
+      py = list[1];
+      streamTextData += `\n${px} ${py} m`;
+      for (let i = 2; i < list.length; i = i + 2) {
+        px = list[i];
+        py = list[i + 1];
+        streamTextData += `\n${px} ${py} l`;
+      }
+      streamTextData += "\nS";
+    });    
+    streamTextData += "\nQ";
+
+    stampApStream.setTextStreamData(streamTextData);    
+    this.apStream = stampApStream;
   }
 }

@@ -6149,7 +6149,7 @@ class GraphicsStateDict extends PdfDict {
         }
         if (this.Font) ;
         if (this.BM) {
-            params.strokeMiterLimit = this.ML;
+            params.mixBlendMode = "normal";
         }
         if (this.SMask) ;
         if (this.CA) {
@@ -10652,6 +10652,41 @@ class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
     }
+    static createFromPenData(data) {
+        const now = DateString.fromDate(new Date());
+        const stampUuid = getRandomUuid();
+        const w = data.strokeWidth;
+        const bs = new BorderStyleDict();
+        bs.W = w;
+        const positions = [];
+        const inkList = [];
+        data.paths.forEach(path => {
+            const ink = [];
+            path.positions.forEach(pos => {
+                positions.push(pos);
+                ink.push(pos.x, pos.y);
+            });
+            inkList.push(ink);
+        });
+        const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
+        const rect = [
+            newRectMin.x - w / 2,
+            newRectMin.y - w / 2,
+            newRectMax.x + w / 2,
+            newRectMax.y + w / 2,
+        ];
+        const stampAnnotation = new InkAnnotation();
+        stampAnnotation.name = stampUuid;
+        stampAnnotation.NM = LiteralString.fromString(stampUuid);
+        stampAnnotation.InkList = inkList;
+        stampAnnotation.Rect = rect;
+        stampAnnotation.CreationDate = now;
+        stampAnnotation.C = data.color.slice(0, 3);
+        stampAnnotation.CA = data.color[3];
+        stampAnnotation.BS = bs;
+        stampAnnotation.createApStream();
+        return stampAnnotation;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -10748,6 +10783,59 @@ class InkAnnotation extends MarkupAnnotation {
         if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
             throw new Error("Not all required properties parsed");
         }
+    }
+    createApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        const stampApStream = new XFormStream();
+        stampApStream.Filter = "/FlateDecode";
+        stampApStream.LastModified = DateString.fromDate(new Date());
+        stampApStream.BBox = this.Rect;
+        let colorString;
+        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const ca = this.CA || 1;
+        const width = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const dash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const gap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = ca;
+        gs.ca = ca;
+        gs.LW = width;
+        gs.D = [[dash, gap], 0];
+        stampApStream.Resources = new ResourceDict();
+        stampApStream.Resources.setGraphicsState("/GS0", gs);
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        let px;
+        let py;
+        this.InkList.forEach(list => {
+            px = list[0];
+            py = list[1];
+            streamTextData += `\n${px} ${py} m`;
+            for (let i = 2; i < list.length; i = i + 2) {
+                px = list[i];
+                py = list[i + 1];
+                streamTextData += `\n${px} ${py} l`;
+            }
+            streamTextData += "\nS";
+        });
+        streamTextData += "\nQ";
+        stampApStream.setTextStreamData(streamTextData);
+        this.apStream = stampApStream;
     }
 }
 
@@ -11739,11 +11827,11 @@ class StampAnnotator extends Annotator {
     }
 }
 
-class PenTempData {
+class PenData {
     constructor(options) {
         this._paths = [];
         this._positionBuffer = [];
-        this._options = Object.assign({}, PenTempData.defaultOptions, options);
+        this._options = Object.assign({}, PenData.defaultOptions, options);
         this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     }
     get id() {
@@ -11832,25 +11920,22 @@ class PenTempData {
     updateCurrentPath() {
         let pos = this.getAveragePosition(0);
         if (pos) {
-            const positions = [];
             this._currentPathString += " L" + pos.x + " " + pos.y;
-            positions.push(pos);
+            this._currentPath.positions.push(pos);
             let tmpPath = "";
             for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
                 pos = this.getAveragePosition(offset);
                 tmpPath += " L" + pos.x + " " + pos.y;
-                positions.push(pos);
             }
             this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
-            this._currentPath.positions.push(...positions);
         }
     }
     ;
 }
-PenTempData.defaultOptions = {
+PenData.defaultOptions = {
     bufferSize: 8,
     strokeWidth: 2,
-    color: [0, 0, 0, 1],
+    color: [0, 0, 0, 0.5],
 };
 
 class PenAnnotator extends Annotator {
@@ -11920,7 +12005,14 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
     }
     savePathsAsInkAnnotation() {
-        console.log("save as ink");
+        if (!this._annotationPenData) {
+            return;
+        }
+        const pageId = this._annotationPenData.id;
+        const inkAnnotation = InkAnnotation.createFromPenData(this._annotationPenData);
+        console.log(inkAnnotation);
+        this._docData.appendAnnotationToPage(pageId, inkAnnotation);
+        this.forceRenderPageById(pageId);
         this.removeTempPenData();
     }
     init() {
@@ -11952,7 +12044,7 @@ class PenAnnotator extends Annotator {
     }
     resetTempPenData(pageId) {
         this.removeTempPenData();
-        this._annotationPenData = new PenTempData({ id: pageId });
+        this._annotationPenData = new PenData({ id: pageId });
         this._svgGroup.append(this._annotationPenData.group);
         this.updatePenGroupPosition();
     }
@@ -12441,7 +12533,7 @@ class TsPdfViewer {
             }
         });
         this._shadowRoot.querySelector("#button-annotation-pen-save")
-            .addEventListener("click", () => () => {
+            .addEventListener("click", () => {
             if (this._annotator instanceof PenAnnotator) {
                 this._annotator.savePathsAsInkAnnotation();
             }
