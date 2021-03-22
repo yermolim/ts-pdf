@@ -16,10 +16,9 @@ import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
 
 export abstract class AnnotationDict extends PdfDict {
-  name: string;
-
-  pageId: number;
-  pageRect: Rect;
+  $name: string;
+  $pageId: number;
+  $pageRect: Rect;
 
   translationEnabled: boolean;
 
@@ -456,8 +455,8 @@ export abstract class AnnotationDict extends PdfDict {
       throw new Error("Not all required properties parsed");
     }
 
-    this.name = this.NM?.literal || getRandomUuid();
-    this.pageRect = parseInfo.rect;
+    this.$name = this.NM?.literal || getRandomUuid();
+    this.$pageRect = parseInfo.rect;
   }
 
   //#region protected render methods
@@ -564,7 +563,7 @@ export abstract class AnnotationDict extends PdfDict {
   protected renderRect(): SVGGraphicsElement {
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.classList.add("svg-annot-rect");
-    rect.setAttribute("data-annotation-name", this.name);
+    rect.setAttribute("data-annotation-name", this.$name);
     rect.setAttribute("x", this.Rect[0] + "");
     rect.setAttribute("y", this.Rect[1] + "");
     rect.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
@@ -577,7 +576,7 @@ export abstract class AnnotationDict extends PdfDict {
     const {ll, lr, ur, ul} = this.getLocalBB();
     const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
     boxPath.classList.add("svg-annot-box");
-    boxPath.setAttribute("data-annotation-name", this.name);
+    boxPath.setAttribute("data-annotation-name", this.$name);
     boxPath.setAttribute("d", `M ${ll.x} ${ll.y} L ${lr.x} ${lr.y} L ${ur.x} ${ur.y} L ${ul.x} ${ul.y} Z`);
 
     return boxPath;
@@ -586,7 +585,7 @@ export abstract class AnnotationDict extends PdfDict {
   protected renderMainElement(): SVGGraphicsElement {    
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
     rect.classList.add("svg-annotation");
-    rect.setAttribute("data-annotation-name", this.name);    
+    rect.setAttribute("data-annotation-name", this.$name);    
     rect.addEventListener("pointerdown", this.onRectPointerDown);
 
     return rect;
@@ -601,7 +600,7 @@ export abstract class AnnotationDict extends PdfDict {
     const stream = this.apStream;
     if (stream) {
       try {
-        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
         return await renderer.renderAsync();
       }
       catch (e) {
@@ -626,9 +625,9 @@ export abstract class AnnotationDict extends PdfDict {
     copySymbol.id = this._svgId + "_symbol";
     const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
     copySymbolUse.setAttribute("href", `#${this._svgId}`);
-    if (this.pageRect) {
+    if (this.$pageRect) {
       copySymbolUse.setAttribute("viewBox", 
-        `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+        `${this.$pageRect[0]} ${this.$pageRect[1]} ${this.$pageRect[2]} ${this.$pageRect[3]}`);
     }
     copySymbol.append(copySymbolUse);
     copyDefs.append(copySymbol);
@@ -722,7 +721,7 @@ export abstract class AnnotationDict extends PdfDict {
     const content = contentResult.svg;
     content.id = this._svgId;
     content.classList.add("svg-annotation-content");
-    content.setAttribute("data-annotation-name", this.name); 
+    content.setAttribute("data-annotation-name", this.$name); 
     const {copy, use} = this.renderContentCopy(); 
     
     const rect = this.renderRect();

@@ -115,6 +115,7 @@ export class TsPdfViewer {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
     }    
+    this._contextMenu?.destroy();
     this._annotator?.destroy();
 
     this._mainContainerRObserver?.disconnect();
@@ -929,8 +930,7 @@ export class TsPdfViewer {
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
-    // trigger page redraw to update page dimensions
-    this._viewer.scrollTop += 1;
+    this.updateAnnotatorPageData();
   }
   
   private onAnnotationSelectModeButtonClick = () => {
@@ -974,8 +974,7 @@ export class TsPdfViewer {
         this._contextMenu.hide();
         this._annotator?.destroy();
         this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
-        // trigger page redraw to update page dimensions
-        this._viewer.scrollTop += 1;
+        this.updateAnnotatorPageData();
       });
       const stampName = document.createElement("div");
       stampName.innerHTML = x.name;
@@ -1002,8 +1001,7 @@ export class TsPdfViewer {
         this._contextMenu.hide();
         this._annotator?.destroy();
         this._annotator = new PenAnnotator(this._docData, this._viewer, x);
-        // trigger page redraw to update page dimensions
-        this._viewer.scrollTop += 1;
+        this.updateAnnotatorPageData();
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -1019,6 +1017,7 @@ export class TsPdfViewer {
     if (this._annotator) {
       this._annotator.scale = this._scale;
       this._annotator.renderedPages = this._renderedPages;
+      this._annotator.refreshViewBox();
     }
   }
   //#endregion

@@ -56,7 +56,7 @@ export class InkAnnotation extends MarkupAnnotation {
     ];
 
     const stampAnnotation = new InkAnnotation();
-    stampAnnotation.name = stampUuid;
+    stampAnnotation.$name = stampUuid;
     stampAnnotation.NM = LiteralString.fromString(stampUuid);
     stampAnnotation.InkList = inkList;
     stampAnnotation.Rect = rect;

@@ -214,7 +214,7 @@ export class DocumentData {
   }
 
   appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
-    annotation.pageId = pageId;
+    annotation.$pageId = pageId;
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);
@@ -468,7 +468,7 @@ export class DocumentData {
         }
         if (annot) {
           annotations.push(annot.value);
-          annot.value.pageId = page.id;
+          annot.value.$pageId = page.id;
 
           // DEBUG
           console.log(annot.value);

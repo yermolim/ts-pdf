@@ -36,8 +36,9 @@ export abstract class PdfObject implements IEncodable {
 
   protected onChange: ProxyHandler<PdfObject> = {
     set: (target: PdfObject, prop: string, value: any) => {
-      if (!this._edited && prop[0] !== "_") {
-        // if any public property except "deleted" changed, then set 'edited' flag to 'true'
+      if (!this._edited && prop[0] !== "_" && prop[0] !== "$") {
+        // if any public property except those starting with '$' changed, 
+        // then set the 'edited' flag to 'true'
         this._edited = true;
 
         // DEBUG

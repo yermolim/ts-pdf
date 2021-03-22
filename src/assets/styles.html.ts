@@ -550,6 +550,7 @@ export const styles = /*html*/`
     border-radius: 3px;
   }
   .context-menu-stamp-select-button {
+    box-sizing: border-box;
     cursor: pointer;
     user-select: none;
     display: flex;
@@ -558,8 +559,8 @@ export const styles = /*html*/`
     align-items: flex-start;
     width: 100%;
     height: 36px;
-    padding: 0 9px;
-    border-radius: 18px;
+    padding: 0 5px;
+    border-radius: 5px;
     font-family: sans-serif;
     font-size: 16px;
     color: var(--color-fg-primary-final); 

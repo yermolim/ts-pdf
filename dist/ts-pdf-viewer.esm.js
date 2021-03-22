@@ -744,6 +744,7 @@ const styles = `
     border-radius: 3px;
   }
   .context-menu-stamp-select-button {
+    box-sizing: border-box;
     cursor: pointer;
     user-select: none;
     display: flex;
@@ -752,8 +753,8 @@ const styles = `
     align-items: flex-start;
     width: 100%;
     height: 36px;
-    padding: 0 9px;
-    border-radius: 18px;
+    padding: 0 5px;
+    border-radius: 5px;
     font-family: sans-serif;
     font-size: 16px;
     color: var(--color-fg-primary-final); 
@@ -3869,7 +3870,7 @@ class PdfObject {
         this._deleted = false;
         this.onChange = {
             set: (target, prop, value) => {
-                if (!this._edited && prop[0] !== "_") {
+                if (!this._edited && prop[0] !== "_" && prop[0] !== "$") {
                     this._edited = true;
                     console.log(`EDITED prop ${prop}`);
                     console.log(this);
@@ -8504,8 +8505,8 @@ class AnnotationDict extends PdfDict {
         if (!this.Subtype || !this.Rect) {
             throw new Error("Not all required properties parsed");
         }
-        this.name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
-        this.pageRect = parseInfo.rect;
+        this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
+        this.$pageRect = parseInfo.rect;
     }
     getCurrentRotation() {
         var _a;
@@ -8573,7 +8574,7 @@ class AnnotationDict extends PdfDict {
     renderRect() {
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
         rect.classList.add("svg-annot-rect");
-        rect.setAttribute("data-annotation-name", this.name);
+        rect.setAttribute("data-annotation-name", this.$name);
         rect.setAttribute("x", this.Rect[0] + "");
         rect.setAttribute("y", this.Rect[1] + "");
         rect.setAttribute("width", this.Rect[2] - this.Rect[0] + "");
@@ -8584,14 +8585,14 @@ class AnnotationDict extends PdfDict {
         const { ll, lr, ur, ul } = this.getLocalBB();
         const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
         boxPath.classList.add("svg-annot-box");
-        boxPath.setAttribute("data-annotation-name", this.name);
+        boxPath.setAttribute("data-annotation-name", this.$name);
         boxPath.setAttribute("d", `M ${ll.x} ${ll.y} L ${lr.x} ${lr.y} L ${ur.x} ${ur.y} L ${ul.x} ${ul.y} Z`);
         return boxPath;
     }
     renderMainElement() {
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
         rect.classList.add("svg-annotation");
-        rect.setAttribute("data-annotation-name", this.name);
+        rect.setAttribute("data-annotation-name", this.$name);
         rect.addEventListener("pointerdown", this.onRectPointerDown);
         return rect;
     }
@@ -8600,7 +8601,7 @@ class AnnotationDict extends PdfDict {
             const stream = this.apStream;
             if (stream) {
                 try {
-                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.name);
+                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
                     return yield renderer.renderAsync();
                 }
                 catch (e) {
@@ -8620,8 +8621,8 @@ class AnnotationDict extends PdfDict {
         copySymbol.id = this._svgId + "_symbol";
         const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
         copySymbolUse.setAttribute("href", `#${this._svgId}`);
-        if (this.pageRect) {
-            copySymbolUse.setAttribute("viewBox", `${this.pageRect[0]} ${this.pageRect[1]} ${this.pageRect[2]} ${this.pageRect[3]}`);
+        if (this.$pageRect) {
+            copySymbolUse.setAttribute("viewBox", `${this.$pageRect[0]} ${this.$pageRect[1]} ${this.$pageRect[2]} ${this.$pageRect[3]}`);
         }
         copySymbol.append(copySymbolUse);
         copyDefs.append(copySymbol);
@@ -8694,7 +8695,7 @@ class AnnotationDict extends PdfDict {
             const content = contentResult.svg;
             content.id = this._svgId;
             content.classList.add("svg-annotation-content");
-            content.setAttribute("data-annotation-name", this.name);
+            content.setAttribute("data-annotation-name", this.$name);
             const { copy, use } = this.renderContentCopy();
             const rect = this.renderRect();
             const box = this.renderBox();
@@ -10501,9 +10502,9 @@ const stampTypes = {
 };
 const stampBBox = [0, 0, 440, 120];
 const halfStampBBox = [0, 0, 220, 60];
-const redColorString = ".804 0 0 rg .804 0 0 RG";
-const greenColorString = "0 .804 0 rg 0 .804 0 RG";
-const blueColorString = "0 0 .804 rg 0 0 .804 RG";
+const redColor = [0.804, 0, 0];
+const greenColor = [0, 0.804, 0];
+const blueColor = [0, 0, 0.804];
 const draftStampForm = `33.5 13.4 m
 404.5 6.92 l
 419.6 6.657 431.9 18.52 432.1 33.62 c
@@ -11220,27 +11221,36 @@ class StampAnnotation extends MarkupAnnotation {
         stampForm.LastModified = now;
         stampForm.BBox = stampBBox;
         stampForm.Filter = "/FlateDecode";
-        let colorString;
+        let color;
+        let subject;
         switch (type) {
             case "/Draft":
                 stampForm.setTextStreamData(draftStampForm);
-                colorString = redColorString;
+                color = redColor;
+                subject = "Draft";
                 break;
             case "/Approved":
                 stampForm.setTextStreamData(approvedStampForm);
-                colorString = greenColorString;
+                color = greenColor;
+                subject = "Approved";
                 break;
             case "/NotApproved":
                 stampForm.setTextStreamData(notApprovedStampForm);
-                colorString = redColorString;
+                color = redColor;
+                subject = "Not Approved";
                 break;
             case "/Departmental":
                 stampForm.setTextStreamData(departmentalStampForm);
-                colorString = blueColorString;
+                color = blueColor;
+                subject = "Departmental";
                 break;
             default:
                 throw new Error(`Stamp type '${type}' is not supported`);
         }
+        const r = color[0].toFixed(3);
+        const g = color[1].toFixed(3);
+        const b = color[2].toFixed(3);
+        const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
         const stampApStream = new XFormStream();
         stampApStream.LastModified = now;
         stampApStream.BBox = stampBBox;
@@ -11252,12 +11262,14 @@ class StampAnnotation extends MarkupAnnotation {
         const stampAnnotation = new StampAnnotation();
         stampAnnotation.Name = type;
         stampAnnotation.Rect = halfStampBBox;
-        stampAnnotation.Contents = LiteralString.fromString(type.slice(1));
-        stampAnnotation.Subj = LiteralString.fromString(type.slice(1));
+        stampAnnotation.Contents = LiteralString.fromString(subject);
+        stampAnnotation.Subj = LiteralString.fromString(subject);
         stampAnnotation.CreationDate = now;
         stampAnnotation.NM = LiteralString.fromString(stampUuid);
-        stampAnnotation.name = stampUuid;
+        stampAnnotation.$name = stampUuid;
         stampAnnotation.apStream = stampApStream;
+        stampAnnotation.C = color;
+        stampAnnotation.CA = 1;
         return stampAnnotation;
     }
     static parse(parseInfo) {
@@ -11351,7 +11363,7 @@ class InkAnnotation extends MarkupAnnotation {
             newRectMax.y + w / 2,
         ];
         const stampAnnotation = new InkAnnotation();
-        stampAnnotation.name = stampUuid;
+        stampAnnotation.$name = stampUuid;
         stampAnnotation.NM = LiteralString.fromString(stampUuid);
         stampAnnotation.InkList = inkList;
         stampAnnotation.Rect = rect;
@@ -11696,7 +11708,7 @@ class DocumentData {
         return annotations || [];
     }
     appendAnnotationToPage(pageId, annotation) {
-        annotation.pageId = pageId;
+        annotation.$pageId = pageId;
         const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
         if (pageAnnotations) {
             pageAnnotations.push(annotation);
@@ -11846,7 +11858,7 @@ class DocumentData {
                 }
                 if (annot) {
                     annotations.push(annot.value);
-                    annot.value.pageId = page.id;
+                    annot.value.$pageId = page.id;
                     console.log(annot.value);
                 }
             }
@@ -12293,8 +12305,7 @@ class Annotator {
         this._scale = 1;
         this._renderedPages = [];
         this.onParentScroll = () => {
-            this._overlay.style.left = this._parent.scrollLeft + "px";
-            this._overlay.style.top = this._parent.scrollTop + "px";
+            this.refreshViewBox();
         };
         if (!docData) {
             throw new Error("Document data not found");
@@ -12317,7 +12328,6 @@ class Annotator {
     set renderedPages(value) {
         this._renderedPages = (value === null || value === void 0 ? void 0 : value.length) ? value.slice()
             : [];
-        this.refreshViewBox();
     }
     get overlayContainer() {
         return this._overlayContainer;
@@ -12334,19 +12344,22 @@ class Annotator {
         if (annotation) {
             this._docData.removeAnnotation(annotation);
         }
-        this.forceRenderPageById(annotation.pageId);
+        this.forceRenderPageById(annotation.$pageId);
     }
     refreshViewBox() {
         const { width: w, height: h } = this._overlay.getBoundingClientRect();
         if (!w || !h) {
             return;
         }
+        this._overlay.style.left = this._parent.scrollLeft + "px";
+        this._overlay.style.top = this._parent.scrollTop + "px";
         const viewBoxWidth = w / this._scale;
         const viewBoxHeight = h / this._scale;
         this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
         this._lastScale = this._scale;
     }
     initObservers() {
+        this._parent.addEventListener("scroll", this.onParentScroll);
         const onPossibleViewerSizeChanged = () => {
             if (this._scale === this._lastScale) {
                 return;
@@ -12396,7 +12409,6 @@ class Annotator {
         this._svgWrapper = svg;
         this._svgGroup = g;
         this._parent.append(this._overlayContainer);
-        this._parent.addEventListener("scroll", this.onParentScroll);
         this.refreshViewBox();
         this.initObservers();
     }
@@ -13118,7 +13130,7 @@ class TsPdfViewer {
         setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
     destroy() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
         this._pages.forEach(x => x.destroy());
@@ -13126,8 +13138,9 @@ class TsPdfViewer {
             this._pdfDocument.cleanup();
             this._pdfDocument.destroy();
         }
-        (_b = this._annotator) === null || _b === void 0 ? void 0 : _b.destroy();
-        (_c = this._mainContainerRObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
+        (_b = this._contextMenu) === null || _b === void 0 ? void 0 : _b.destroy();
+        (_c = this._annotator) === null || _c === void 0 ? void 0 : _c.destroy();
+        (_d = this._mainContainerRObserver) === null || _d === void 0 ? void 0 : _d.disconnect();
         this._shadowRoot.innerHTML = "";
     }
     openPdfAsync(src) {
@@ -13586,7 +13599,7 @@ class TsPdfViewer {
             default:
                 throw new Error(`Invalid annotation mode: ${mode}`);
         }
-        this._viewer.scrollTop += 1;
+        this.updateAnnotatorPageData();
     }
     initContextStampPicker() {
         const stampTypes = [
@@ -13605,7 +13618,7 @@ class TsPdfViewer {
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
                 this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
-                this._viewer.scrollTop += 1;
+                this.updateAnnotatorPageData();
             });
             const stampName = document.createElement("div");
             stampName.innerHTML = x.name;
@@ -13632,7 +13645,7 @@ class TsPdfViewer {
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
                 this._annotator = new PenAnnotator(this._docData, this._viewer, x);
-                this._viewer.scrollTop += 1;
+                this.updateAnnotatorPageData();
             });
             const colorIcon = document.createElement("div");
             colorIcon.classList.add("context-menu-color-icon");
@@ -13647,6 +13660,7 @@ class TsPdfViewer {
         if (this._annotator) {
             this._annotator.scale = this._scale;
             this._annotator.renderedPages = this._renderedPages;
+            this._annotator.refreshViewBox();
         }
     }
     showPasswordDialogAsync() {

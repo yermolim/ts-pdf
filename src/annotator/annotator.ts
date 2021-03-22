@@ -28,7 +28,6 @@ export abstract class Annotator {
     this._renderedPages = value?.length
       ? value.slice()
       : [];
-    this.refreshViewBox();
   }
   
   protected _overlayContainer: HTMLDivElement;
@@ -58,6 +57,7 @@ export abstract class Annotator {
 
   destroy() {    
     this._overlayContainer.remove();
+
     this._parent?.removeEventListener("scroll", this.onParentScroll);
     this._parentMutationObserver?.disconnect();
     this._parentResizeObserver?.disconnect();
@@ -68,7 +68,7 @@ export abstract class Annotator {
     if (annotation) {
       this._docData.removeAnnotation(annotation);
     }
-    this.forceRenderPageById(annotation.pageId);
+    this.forceRenderPageById(annotation.$pageId);
   }
 
   refreshViewBox() {
@@ -77,6 +77,8 @@ export abstract class Annotator {
       return;
     }
 
+    this._overlay.style.left = this._parent.scrollLeft + "px";
+    this._overlay.style.top = this._parent.scrollTop + "px";   
     const viewBoxWidth = w / this._scale;
     const viewBoxHeight = h / this._scale;
     this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
@@ -84,11 +86,11 @@ export abstract class Annotator {
   }
 
   protected onParentScroll = () => {
-    this._overlay.style.left = this._parent.scrollLeft + "px";
-    this._overlay.style.top = this._parent.scrollTop + "px";
+    this.refreshViewBox();
   };
 
   protected initObservers() {
+    this._parent.addEventListener("scroll", this.onParentScroll);
     const onPossibleViewerSizeChanged = () => {
       if (this._scale === this._lastScale) {
         return;
@@ -117,7 +119,6 @@ export abstract class Annotator {
       childList: true,
       subtree: false,
     });
-
     this._parentMutationObserver = viewerMObserver;
     this._parentResizeObserver = viewerRObserver;
   }
@@ -147,11 +148,8 @@ export abstract class Annotator {
 
     this._parent.append(this._overlayContainer);
 
-    // keep overlay properly positioned depending on the viewer scroll
-    this._parent.addEventListener("scroll", this.onParentScroll);
     this.refreshViewBox();    
-
-    // add observers to keep the svg scale actual
+    // add handlers and observers to keep the svg scale actual
     this.initObservers();
   }
   

@@ -31,9 +31,9 @@ export type StampType = typeof stampTypes[keyof typeof stampTypes];
 const stampBBox: Rect = [0, 0, 440, 120];
 const halfStampBBox: Rect = [0, 0, 220, 60];
 
-const redColorString = ".804 0 0 rg .804 0 0 RG";
-const greenColorString = "0 .804 0 rg 0 .804 0 RG";
-const blueColorString = "0 0 .804 rg 0 0 .804 RG";
+const redColor = [0.804, 0, 0];
+const greenColor = [0, 0.804, 0];
+const blueColor = [0, 0, 0.804];
 
 const draftStampForm = 
 `33.5 13.4 m
@@ -762,29 +762,39 @@ export class StampAnnotation extends MarkupAnnotation {
     stampForm.LastModified = now;
     stampForm.BBox = stampBBox;
     stampForm.Filter = "/FlateDecode";
-    let colorString: string;
+
+    let color: number[];
+    let subject: string;
     switch (type) {
       case "/Draft":        
         stampForm.setTextStreamData(draftStampForm);
-        colorString = redColorString;
+        color = redColor;
+        subject = "Draft";
         break;
       case "/Approved":        
         stampForm.setTextStreamData(approvedStampForm);
-        colorString = greenColorString;
+        color = greenColor;
+        subject = "Approved";
         break;
       case "/NotApproved":        
         stampForm.setTextStreamData(notApprovedStampForm);
-        colorString = redColorString;
+        color = redColor;
+        subject = "Not Approved";
         break;
       case "/Departmental":        
         stampForm.setTextStreamData(departmentalStampForm);
-        colorString = blueColorString;
+        color = blueColor;
+        subject = "Departmental";
         break;
       // TODO: add rest of types
       default:
         throw new Error(`Stamp type '${type}' is not supported`);
     }
-
+    const r = color[0].toFixed(3);
+    const g = color[1].toFixed(3);
+    const b = color[2].toFixed(3);
+    const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
+    
     const stampApStream = new XFormStream();
     stampApStream.LastModified = now;
     stampApStream.BBox = stampBBox;
@@ -797,12 +807,14 @@ export class StampAnnotation extends MarkupAnnotation {
     const stampAnnotation = new StampAnnotation();
     stampAnnotation.Name = type;
     stampAnnotation.Rect = halfStampBBox;
-    stampAnnotation.Contents = LiteralString.fromString(type.slice(1));
-    stampAnnotation.Subj = LiteralString.fromString(type.slice(1));
+    stampAnnotation.Contents = LiteralString.fromString(subject);
+    stampAnnotation.Subj = LiteralString.fromString(subject);
     stampAnnotation.CreationDate = now;
     stampAnnotation.NM = LiteralString.fromString(stampUuid);
-    stampAnnotation.name = stampUuid;
+    stampAnnotation.$name = stampUuid;
     stampAnnotation.apStream = stampApStream;
+    stampAnnotation.C = color;
+    stampAnnotation.CA = 1;
 
     return stampAnnotation;
   }
