@@ -1,6 +1,6 @@
 import { codes } from "../../../codes";
 import { AnnotationType, valueTypes } from "../../../const";
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo, Rect } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { DateString } from "../../strings/date-string";
 import { LiteralString } from "../../strings/literal-string";
@@ -224,5 +224,30 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     if (!this.Subtype || !this.Rect) {
       throw new Error("Not all required properties parsed");
     }
+  }
+
+  protected getColorRect(): Rect {    
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    let a = 1;
+    if (this.C) {
+      if (this.C.length === 1) {
+        const gray = this.C[0];
+        r = g = b = gray;
+      } else if (this.C.length === 3) {
+        [r, g, b] = this.C;
+      } else if (this.C.length === 4) {      
+        const [c, m, y, k] = this.C;
+        r = (1 - c) * (1 - k);
+        g = (1 - m) * (1 - k);
+        b = (1 - y) * (1 - k);
+      }
+    }
+    if (!isNaN(this.CA)) {
+      a = this.CA;
+    }
+    const color: Rect = [r, g, b, a];
+    return color;
   }
 }

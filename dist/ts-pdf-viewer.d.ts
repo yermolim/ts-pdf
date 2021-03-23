@@ -33,6 +33,8 @@ export declare class TsPdfViewer {
 	destroy(): void;
 	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
 	closePdfAsync(): Promise<void>;
+	importAnnotations(json: string): void;
+	exportAnnotations(): string;
 	private initViewerGUI;
 	private initMainDivs;
 	private initViewControls;

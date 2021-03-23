@@ -23,6 +23,11 @@ export abstract class PdfObject implements IEncodable {
   
   //#region detecting changes
   protected _proxy: PdfObject; 
+  
+  protected _added = false;
+  get added(): boolean {
+    return this._added;
+  }   
 
   protected _edited = false;
   get edited(): boolean {

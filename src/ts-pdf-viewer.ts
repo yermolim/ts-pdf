@@ -11,10 +11,11 @@ import { clamp, Vec2 } from "./math";
 import { Rect } from "./document/common-interfaces";
 import { DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
+import { ContextMenu } from "./helpers/context-menu";
 import { Annotator } from "./annotator/annotator";
 import { StampAnnotator } from "./annotator/stamp-annotator";
 import { PenAnnotator } from "./annotator/pen-annotator";
-import { ContextMenu } from "./helpers/context-menu";
+import { AnnotationDto } from "./annotator/serialization";
 
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
@@ -188,7 +189,26 @@ export class TsPdfViewer {
 
     await this.onPdfClosedAsync();
   }
-
+  
+  importAnnotations(json: string) {
+    try {
+      const dtos: AnnotationDto[] = JSON.parse(json);
+      this._docData?.appendSerializedAnnotations(dtos);
+      const pageIdSet = new Set<number>(dtos.map((x: AnnotationDto) => x.pageId));
+      this._renderedPages.forEach(x => {
+        if (pageIdSet.has(x.id)) {
+          x.renderViewAsync(true);
+        }
+      });
+    } catch (e) {
+      console.log(`Error while importing annotations: ${e.message}`);      
+    }
+  }
+  
+  exportAnnotations(): string {
+    const dtos = this._docData?.serializeAnnotations(true);
+    return JSON.stringify(dtos);
+  }
 
   //#region GUI initialization
   private initViewerGUI() {
@@ -1029,6 +1049,7 @@ export class TsPdfViewer {
 
     // DEBUG
     // this.openPdfAsync(data);
+    // console.log(JSON.stringify(this.getAddedAnnotations()));
 
     if (data?.length) {
       TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);

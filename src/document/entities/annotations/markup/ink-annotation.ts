@@ -3,7 +3,9 @@ import { Mat3, Vec2, vecMinMax } from "../../../../math";
 import { getRandomUuid } from "../../../../common";
 import { annotationTypes, valueTypes } from "../../../const";
 import { CryptInfo, Rect } from "../../../common-interfaces";
+
 import { PenData } from "../../../../annotator/pen-data";
+import { InkAnnotationDto } from "../../../../annotator/serialization";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
@@ -29,13 +31,6 @@ export class InkAnnotation extends MarkupAnnotation {
   }
 
   static createFromPenData(data: PenData): InkAnnotation {
-    const now = DateString.fromDate(new Date());    
-    const stampUuid = getRandomUuid(); 
-    
-    const w = data.strokeWidth;
-    const bs = new BorderStyleDict();
-    bs.W = w;
-
     const positions: Vec2[] = [];
     const inkList: number[][] = [];
     data.paths.forEach(path => {
@@ -47,7 +42,8 @@ export class InkAnnotation extends MarkupAnnotation {
       inkList.push(ink);
     });
     const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(...positions);   
+      vecMinMax(...positions);  
+    const w = data.strokeWidth; 
     const rect: Rect = [
       newRectMin.x - w / 2, 
       newRectMin.y - w / 2, 
@@ -55,19 +51,55 @@ export class InkAnnotation extends MarkupAnnotation {
       newRectMax.y + w / 2,
     ];
 
-    const stampAnnotation = new InkAnnotation();
-    stampAnnotation.$name = stampUuid;
-    stampAnnotation.NM = LiteralString.fromString(stampUuid);
-    stampAnnotation.InkList = inkList;
-    stampAnnotation.Rect = rect;
-    stampAnnotation.CreationDate = now;
-    stampAnnotation.C = data.color.slice(0, 3);
-    stampAnnotation.CA = data.color[3];
-    stampAnnotation.BS = bs;
+    const nowString = new Date().toISOString();
+    const dto: InkAnnotationDto = {
+      uuid: getRandomUuid(),
+      annotationType: "/Ink",
+      pageId: null,
 
-    stampAnnotation.createApStream();
+      dateCreated: nowString,
+      dateModified: nowString,
+      author: "unknown", // TODO: replace with real author name
 
-    return stampAnnotation;
+      rect,
+      matrix: [1, 0, 0, 1, 0, 0],
+
+      inkList,
+      color: data.color,
+      strokeWidth: data.strokeWidth,
+      strokeDashGap: null,
+    };
+
+    return this.createFromDto(dto);
+  }
+
+  static createFromDto(dto: InkAnnotationDto): InkAnnotation {
+    if (dto.annotationType !== "/Ink") {
+      throw new Error("Invalid annotation type");
+    }
+    
+    const bs = new BorderStyleDict();
+    bs.W = dto.strokeWidth;
+    if (dto.strokeDashGap) {
+      bs.D = dto.strokeDashGap;
+    }
+
+    const inkAnnotation = new InkAnnotation();
+    inkAnnotation.$name = dto.uuid;
+    inkAnnotation.NM = LiteralString.fromString(dto.uuid);
+    inkAnnotation.T = LiteralString.fromString(dto.author);
+    inkAnnotation.M = DateString.fromDate(new Date(dto.dateModified));
+    inkAnnotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    inkAnnotation.InkList = dto.inkList;
+    inkAnnotation.Rect = dto.rect;
+    inkAnnotation.C = dto.color.slice(0, 3);
+    inkAnnotation.CA = dto.color[3];
+    inkAnnotation.BS = bs;
+
+    inkAnnotation.createApStream();
+
+    inkAnnotation._added = true;
+    return inkAnnotation;
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {
@@ -106,6 +138,31 @@ export class InkAnnotation extends MarkupAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+
+  toDto(): InkAnnotationDto {
+    const color = this.getColorRect();
+
+    return {
+      annotationType: "/Ink",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this.T?.literal,
+
+      rect: this.Rect,
+      matrix: this.apStream?.Matrix,
+
+      inkList: this.InkList,
+      color,
+      strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
+    };
   }
   
   applyCommonTransform(matrix: Mat3) {

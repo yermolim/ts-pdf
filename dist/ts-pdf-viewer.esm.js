@@ -3866,6 +3866,7 @@ class LiteralString {
 
 class PdfObject {
     constructor() {
+        this._added = false;
         this._edited = false;
         this._deleted = false;
         this.onChange = {
@@ -3893,6 +3894,9 @@ class PdfObject {
     get generation() {
         var _a;
         return (_a = this._ref) === null || _a === void 0 ? void 0 : _a.generation;
+    }
+    get added() {
+        return this._added;
     }
     get edited() {
         return this._edited;
@@ -8319,6 +8323,23 @@ class AnnotationDict extends PdfDict {
         const mat = Mat3.buildTranslate(x, y);
         this.applyCommonTransform(mat);
     }
+    toDto() {
+        var _a, _b;
+        return {
+            annotationType: "/Ink",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: this["CreationDate"].date.toISOString() || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_a = this["T"]) === null || _a === void 0 ? void 0 : _a.literal,
+            rect: this.Rect,
+            matrix: (_b = this.apStream) === null || _b === void 0 ? void 0 : _b.Matrix,
+        };
+    }
     parseProps(parseInfo) {
         var _a;
         super.parseProps(parseInfo);
@@ -8855,6 +8876,32 @@ class MarkupAnnotation extends AnnotationDict {
         if (!this.Subtype || !this.Rect) {
             throw new Error("Not all required properties parsed");
         }
+    }
+    getColorRect() {
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let a = 1;
+        if (this.C) {
+            if (this.C.length === 1) {
+                const gray = this.C[0];
+                r = g = b = gray;
+            }
+            else if (this.C.length === 3) {
+                [r, g, b] = this.C;
+            }
+            else if (this.C.length === 4) {
+                const [c, m, y, k] = this.C;
+                r = (1 - c) * (1 - k);
+                g = (1 - m) * (1 - k);
+                b = (1 - y) * (1 - k);
+            }
+        }
+        if (!isNaN(this.CA)) {
+            a = this.CA;
+        }
+        const color = [r, g, b, a];
+        return color;
     }
 }
 
@@ -11221,14 +11268,34 @@ class StampAnnotation extends MarkupAnnotation {
         this.IT = "/Stamp";
     }
     static createStandard(type) {
-        const now = DateString.fromDate(new Date());
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Stamp",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: "unknown",
+            rect: halfStampBBox,
+            matrix: [1, 0, 0, 1, 0, 0],
+            stampType: type,
+            stampImageData: null,
+        };
+        return this.createFromDto(dto);
+    }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Stamp") {
+            throw new Error("Invalid annotation type");
+        }
+        const created = DateString.fromDate(new Date(dto.dateCreated));
+        const modified = DateString.fromDate(new Date(dto.dateModified));
         const stampForm = new XFormStream();
-        stampForm.LastModified = now;
+        stampForm.LastModified = modified;
         stampForm.BBox = stampBBox;
         stampForm.Filter = "/FlateDecode";
         let color;
         let subject;
-        switch (type) {
+        switch (dto.stampType) {
             case "/Draft":
                 stampForm.setTextStreamData(draftStampForm);
                 color = redColor;
@@ -11250,31 +11317,34 @@ class StampAnnotation extends MarkupAnnotation {
                 subject = "Departmental";
                 break;
             default:
-                throw new Error(`Stamp type '${type}' is not supported`);
+                throw new Error(`Stamp type '${dto.stampType}' is not supported`);
         }
         const r = color[0].toFixed(3);
         const g = color[1].toFixed(3);
         const b = color[2].toFixed(3);
         const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
         const stampApStream = new XFormStream();
-        stampApStream.LastModified = now;
+        stampApStream.LastModified = modified;
         stampApStream.BBox = stampBBox;
         stampApStream.Resources = new ResourceDict();
         stampApStream.Resources.setXObject("/Fm", stampForm);
         stampApStream.Filter = "/FlateDecode";
         stampApStream.setTextStreamData(`q 1 0 0 -1 0 ${stampBBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
-        const stampUuid = getRandomUuid();
         const stampAnnotation = new StampAnnotation();
-        stampAnnotation.Name = type;
-        stampAnnotation.Rect = halfStampBBox;
         stampAnnotation.Contents = LiteralString.fromString(subject);
         stampAnnotation.Subj = LiteralString.fromString(subject);
-        stampAnnotation.CreationDate = now;
-        stampAnnotation.NM = LiteralString.fromString(stampUuid);
-        stampAnnotation.$name = stampUuid;
-        stampAnnotation.apStream = stampApStream;
         stampAnnotation.C = color;
         stampAnnotation.CA = 1;
+        stampAnnotation.apStream = stampApStream;
+        stampAnnotation.$name = dto.uuid;
+        stampAnnotation.CreationDate = created;
+        stampAnnotation.M = modified;
+        stampAnnotation.NM = LiteralString.fromString(dto.uuid);
+        stampAnnotation.T = LiteralString.fromString(dto.author || "unknown");
+        stampAnnotation.Name = dto.stampType;
+        stampAnnotation.Rect = dto.rect;
+        stampApStream.Matrix = dto.matrix;
+        stampAnnotation._added = true;
         return stampAnnotation;
     }
     static parse(parseInfo) {
@@ -11309,6 +11379,25 @@ class StampAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    toDto() {
+        var _a, _b, _c;
+        return {
+            annotationType: "/Stamp",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            rect: this.Rect,
+            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            stampType: this.Name,
+            stampImageData: null,
+        };
     }
     parseProps(parseInfo) {
         super.parseProps(parseInfo);
@@ -11347,11 +11436,6 @@ class InkAnnotation extends MarkupAnnotation {
         super(annotationTypes.INK);
     }
     static createFromPenData(data) {
-        const now = DateString.fromDate(new Date());
-        const stampUuid = getRandomUuid();
-        const w = data.strokeWidth;
-        const bs = new BorderStyleDict();
-        bs.W = w;
         const positions = [];
         const inkList = [];
         data.paths.forEach(path => {
@@ -11363,23 +11447,53 @@ class InkAnnotation extends MarkupAnnotation {
             inkList.push(ink);
         });
         const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
+        const w = data.strokeWidth;
         const rect = [
             newRectMin.x - w / 2,
             newRectMin.y - w / 2,
             newRectMax.x + w / 2,
             newRectMax.y + w / 2,
         ];
-        const stampAnnotation = new InkAnnotation();
-        stampAnnotation.$name = stampUuid;
-        stampAnnotation.NM = LiteralString.fromString(stampUuid);
-        stampAnnotation.InkList = inkList;
-        stampAnnotation.Rect = rect;
-        stampAnnotation.CreationDate = now;
-        stampAnnotation.C = data.color.slice(0, 3);
-        stampAnnotation.CA = data.color[3];
-        stampAnnotation.BS = bs;
-        stampAnnotation.createApStream();
-        return stampAnnotation;
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Ink",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: "unknown",
+            rect,
+            matrix: [1, 0, 0, 1, 0, 0],
+            inkList,
+            color: data.color,
+            strokeWidth: data.strokeWidth,
+            strokeDashGap: null,
+        };
+        return this.createFromDto(dto);
+    }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Ink") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const inkAnnotation = new InkAnnotation();
+        inkAnnotation.$name = dto.uuid;
+        inkAnnotation.NM = LiteralString.fromString(dto.uuid);
+        inkAnnotation.T = LiteralString.fromString(dto.author);
+        inkAnnotation.M = DateString.fromDate(new Date(dto.dateModified));
+        inkAnnotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        inkAnnotation.InkList = dto.inkList;
+        inkAnnotation.Rect = dto.rect;
+        inkAnnotation.C = dto.color.slice(0, 3);
+        inkAnnotation.CA = dto.color[3];
+        inkAnnotation.BS = bs;
+        inkAnnotation.createApStream();
+        inkAnnotation._added = true;
+        return inkAnnotation;
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -11416,6 +11530,27 @@ class InkAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Ink",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            rect: this.Rect,
+            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            inkList: this.InkList,
+            color,
+            strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
+        };
     }
     applyCommonTransform(matrix) {
         const dict = this._proxy || this;
@@ -11779,6 +11914,33 @@ class DocumentData {
             }
         }));
         return this._selectedAnnotation;
+    }
+    appendSerializedAnnotations(dtos) {
+        let annotation;
+        for (const dto of dtos) {
+            switch (dto.annotationType) {
+                case "/Stamp":
+                    annotation = StampAnnotation.createFromDto(dto);
+                    break;
+                case "/Ink":
+                    annotation = InkAnnotation.createFromDto(dto);
+                    break;
+                default:
+                    throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
+            }
+            this.appendAnnotationToPage(dto.pageId, annotation);
+        }
+    }
+    serializeAnnotations(addedOnly = false) {
+        const result = [];
+        this.getSupportedAnnotationMap().forEach((v, k) => {
+            v.forEach(x => {
+                if (!addedOnly || x.added) {
+                    result.push(x.toDto());
+                }
+            });
+        });
+        return result;
     }
     authenticate(password) {
         if (this.authenticated) {
@@ -12333,6 +12495,71 @@ class PageView {
     }
 }
 
+class ContextMenu {
+    constructor() {
+        this.onPointerDownOutside = (e) => {
+            if (!this._shown) {
+                return;
+            }
+            const target = e.composedPath()[0];
+            if (!target.closest("#context-menu")) {
+                this.hide();
+            }
+        };
+        this._container = document.createElement("div");
+        this._container.id = "context-menu";
+        document.addEventListener("pointerdown", this.onPointerDownOutside);
+    }
+    set content(value) {
+        var _a;
+        (_a = this._content) === null || _a === void 0 ? void 0 : _a.remove();
+        if (value) {
+            this._container.append(value);
+            this._content = value;
+        }
+        else {
+            this._content = null;
+        }
+    }
+    destroy() {
+        this.clear();
+        document.removeEventListener("pointerdown", this.onPointerDownOutside);
+    }
+    show(pointerPosition, parent) {
+        this.setContextMenuPosition(pointerPosition, parent);
+        parent.append(this._container);
+        this._shown = true;
+    }
+    hide() {
+        this._container.remove();
+        this._shown = false;
+    }
+    clear() {
+        this._container.remove();
+        this.content = null;
+    }
+    setContextMenuPosition(pointerPosition, parent) {
+        const menuDimension = new Vec2(this._container.offsetWidth, this._container.offsetHeight);
+        const menuPosition = new Vec2();
+        const parentRect = parent.getBoundingClientRect();
+        const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, pointerPosition.y - parentRect.y);
+        if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
+            menuPosition.x = relPointerPosition.x - menuDimension.x;
+        }
+        else {
+            menuPosition.x = relPointerPosition.x;
+        }
+        if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
+            menuPosition.y = relPointerPosition.y - menuDimension.y;
+        }
+        else {
+            menuPosition.y = relPointerPosition.y;
+        }
+        this._container.style.left = menuPosition.x + "px";
+        this._container.style.top = menuPosition.y + "px";
+    }
+}
+
 class Annotator {
     constructor(docData, parent) {
         this._scale = 1;
@@ -12793,71 +13020,6 @@ class PenAnnotator extends Annotator {
     }
 }
 
-class ContextMenu {
-    constructor() {
-        this.onPointerDownOutside = (e) => {
-            if (!this._shown) {
-                return;
-            }
-            const target = e.composedPath()[0];
-            if (!target.closest("#context-menu")) {
-                this.hide();
-            }
-        };
-        this._container = document.createElement("div");
-        this._container.id = "context-menu";
-        document.addEventListener("pointerdown", this.onPointerDownOutside);
-    }
-    set content(value) {
-        var _a;
-        (_a = this._content) === null || _a === void 0 ? void 0 : _a.remove();
-        if (value) {
-            this._container.append(value);
-            this._content = value;
-        }
-        else {
-            this._content = null;
-        }
-    }
-    destroy() {
-        this.clear();
-        document.removeEventListener("pointerdown", this.onPointerDownOutside);
-    }
-    show(pointerPosition, parent) {
-        this.setContextMenuPosition(pointerPosition, parent);
-        parent.append(this._container);
-        this._shown = true;
-    }
-    hide() {
-        this._container.remove();
-        this._shown = false;
-    }
-    clear() {
-        this._container.remove();
-        this.content = null;
-    }
-    setContextMenuPosition(pointerPosition, parent) {
-        const menuDimension = new Vec2(this._container.offsetWidth, this._container.offsetHeight);
-        const menuPosition = new Vec2();
-        const parentRect = parent.getBoundingClientRect();
-        const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, pointerPosition.y - parentRect.y);
-        if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
-            menuPosition.x = relPointerPosition.x - menuDimension.x;
-        }
-        else {
-            menuPosition.x = relPointerPosition.x;
-        }
-        if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
-            menuPosition.y = relPointerPosition.y - menuDimension.y;
-        }
-        else {
-            menuPosition.y = relPointerPosition.y;
-        }
-        this._container.style.left = menuPosition.x + "px";
-        this._container.style.top = menuPosition.y + "px";
-    }
-}
-
 var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13240,6 +13402,27 @@ class TsPdfViewer {
             }
             yield this.onPdfClosedAsync();
         });
+    }
+    importAnnotations(json) {
+        var _a;
+        try {
+            const dtos = JSON.parse(json);
+            (_a = this._docData) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotations(dtos);
+            const pageIdSet = new Set(dtos.map((x) => x.pageId));
+            this._renderedPages.forEach(x => {
+                if (pageIdSet.has(x.id)) {
+                    x.renderViewAsync(true);
+                }
+            });
+        }
+        catch (e) {
+            console.log(`Error while importing annotations: ${e.message}`);
+        }
+    }
+    exportAnnotations() {
+        var _a;
+        const dtos = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
+        return JSON.stringify(dtos);
     }
     initViewerGUI() {
         this._shadowRoot = this._outerContainer.attachShadow({ mode: "open" });

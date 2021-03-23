@@ -19,6 +19,8 @@ import { ObjectId } from "./entities/core/object-id";
 import { EncryptionDict } from "./entities/encryption/encryption-dict";
 import { ObjectStream } from "./entities/streams/object-stream";
 
+import { AnnotationDto, InkAnnotationDto, StampAnnotationDto } from "../annotator/serialization";
+
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
 import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
@@ -256,6 +258,35 @@ export class DocumentData {
     }));
 
     return this._selectedAnnotation;
+  }
+
+  appendSerializedAnnotations(dtos: AnnotationDto[]) {
+    let annotation: AnnotationDict;
+    for (const dto of dtos) {
+      switch (dto.annotationType) {
+        case "/Stamp":
+          annotation = StampAnnotation.createFromDto(dto as StampAnnotationDto);
+          break;
+        case "/Ink":
+          annotation = InkAnnotation.createFromDto(dto as InkAnnotationDto);
+          break;
+        default:
+          throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
+      }
+      this.appendAnnotationToPage(dto.pageId, annotation);
+    }
+  }
+
+  serializeAnnotations(addedOnly = false): AnnotationDto[] {
+    const result: AnnotationDto[] = [];
+    this.getSupportedAnnotationMap().forEach((v, k) => {
+      v.forEach(x => {
+        if (!addedOnly || x.added) {
+          result.push(x.toDto());
+        }
+      });
+    });
+    return result;
   }
   //#endregion
   

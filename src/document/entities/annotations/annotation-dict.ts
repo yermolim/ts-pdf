@@ -14,6 +14,7 @@ import { AppearanceStreamRenderer } from "../../render/appearance-stream-rendere
 import { BBox, getRandomUuid, RenderToSvgResult } from "../../../common";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
+import { AnnotationDto } from "../../../annotator/serialization";
 
 export abstract class AnnotationDict extends PdfDict {
   $name: string;
@@ -251,6 +252,25 @@ export abstract class AnnotationDict extends PdfDict {
     const y = pageY - height / 2;
     const mat = Mat3.buildTranslate(x, y);
     this.applyCommonTransform(mat);
+  }
+
+  toDto(): AnnotationDto {
+    return {
+      annotationType: "/Ink",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this["CreationDate"].date.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this["T"]?.literal,
+
+      rect: this.Rect,
+      matrix: this.apStream?.Matrix,
+    };
   }
   
   /**

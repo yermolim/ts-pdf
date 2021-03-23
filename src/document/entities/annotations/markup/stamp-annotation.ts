@@ -3,6 +3,8 @@ import { getRandomUuid } from "../../../../common";
 import { CryptInfo, Rect } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
+import { StampAnnotationDto } from "../../../../annotator/serialization";
+
 import { DateString } from "../../strings/date-string";
 import { LiteralString } from "../../strings/literal-string";
 
@@ -760,16 +762,42 @@ export class StampAnnotation extends MarkupAnnotation {
   }
 
   static createStandard(type: StampType): StampAnnotation {
-    const now = DateString.fromDate(new Date());
+    const nowString = new Date().toISOString();
+    const dto: StampAnnotationDto = {
+      uuid: getRandomUuid(),
+      annotationType: "/Stamp",
+      pageId: null,
+
+      dateCreated: nowString,
+      dateModified: nowString,
+      author: "unknown", // TODO: replace with real author name
+
+      rect: halfStampBBox,
+      matrix: [1, 0, 0, 1, 0, 0],
+
+      stampType: type,
+      stampImageData: null,
+    };
+
+    return this.createFromDto(dto);
+  }
+  
+  static createFromDto(dto: StampAnnotationDto): StampAnnotation {
+    if (dto.annotationType !== "/Stamp") {
+      throw new Error("Invalid annotation type");
+    }
+
+    const created = DateString.fromDate(new Date(dto.dateCreated));
+    const modified = DateString.fromDate(new Date(dto.dateModified));
 
     const stampForm = new XFormStream();
-    stampForm.LastModified = now;
+    stampForm.LastModified = modified;
     stampForm.BBox = stampBBox;
     stampForm.Filter = "/FlateDecode";
 
     let color: number[];
     let subject: string;
-    switch (type) {
+    switch (dto.stampType) {
       case "/Draft":        
         stampForm.setTextStreamData(draftStampForm);
         color = redColor;
@@ -792,7 +820,7 @@ export class StampAnnotation extends MarkupAnnotation {
         break;
       // TODO: add rest of types
       default:
-        throw new Error(`Stamp type '${type}' is not supported`);
+        throw new Error(`Stamp type '${dto.stampType}' is not supported`);
     }
     const r = color[0].toFixed(3);
     const g = color[1].toFixed(3);
@@ -800,26 +828,32 @@ export class StampAnnotation extends MarkupAnnotation {
     const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
     
     const stampApStream = new XFormStream();
-    stampApStream.LastModified = now;
+    stampApStream.LastModified = modified;
     stampApStream.BBox = stampBBox;
     stampApStream.Resources = new ResourceDict();
     stampApStream.Resources.setXObject("/Fm", stampForm);
     stampApStream.Filter = "/FlateDecode";
     stampApStream.setTextStreamData(`q 1 0 0 -1 0 ${stampBBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
 
-    const stampUuid = getRandomUuid();
     const stampAnnotation = new StampAnnotation();
-    stampAnnotation.Name = type;
-    stampAnnotation.Rect = halfStampBBox;
     stampAnnotation.Contents = LiteralString.fromString(subject);
     stampAnnotation.Subj = LiteralString.fromString(subject);
-    stampAnnotation.CreationDate = now;
-    stampAnnotation.NM = LiteralString.fromString(stampUuid);
-    stampAnnotation.$name = stampUuid;
-    stampAnnotation.apStream = stampApStream;
     stampAnnotation.C = color;
     stampAnnotation.CA = 1;
+    stampAnnotation.apStream = stampApStream;
+  
+    stampAnnotation.$name = dto.uuid;
+    stampAnnotation.CreationDate = created;
+    stampAnnotation.M = modified;
+    stampAnnotation.NM = LiteralString.fromString(dto.uuid);
+    stampAnnotation.T = LiteralString.fromString(dto.author || "unknown");
+    stampAnnotation.Name = dto.stampType;
+    stampAnnotation.Rect = dto.rect;
+    stampApStream.Matrix = dto.matrix;    
 
+    // TODO: add reading custom image data
+
+    stampAnnotation._added = true;
     return stampAnnotation;
   }
 
@@ -856,6 +890,28 @@ export class StampAnnotation extends MarkupAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+  
+  toDto(): StampAnnotationDto {
+    return {
+      annotationType: "/Stamp",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this.T?.literal,
+
+      rect: this.Rect,
+      matrix: this.apStream?.Matrix,
+
+      stampType: this.Name,
+      stampImageData: null, // TODO: add export custom image data
+    };
   }
   
   /**

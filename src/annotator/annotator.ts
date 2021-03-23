@@ -1,7 +1,7 @@
 import { DocumentData } from "../document/document-data";
 import { PageView } from "../page/page-view";
 
-export interface PageCoords {
+interface PageCoords {
   pageId: number;
   pageX: number;
   pageY: number;
