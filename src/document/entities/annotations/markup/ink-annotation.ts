@@ -108,12 +108,16 @@ export class InkAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
   
-  applyRectTransform(matrix: Mat3) {
+  applyCommonTransform(matrix: Mat3) {
     const dict = <InkAnnotation>this._proxy || this;
 
     // transform current InkList and Rect
     let x: number;
     let y: number;
+    let xMin: number;
+    let yMin: number;
+    let xMax: number;
+    let yMax: number;
     const vec = new Vec2();
     dict.InkList.forEach(list => {
       for (let i = 0; i < list.length; i = i + 2) {
@@ -122,10 +126,34 @@ export class InkAnnotation extends MarkupAnnotation {
         vec.set(x, y).applyMat3(matrix);
         list[i] = vec.x;
         list[i + 1] = vec.y;
+
+        if (!xMin || vec.x < xMin) {
+          xMin = vec.x;
+        }
+        if (!yMin || vec.y < yMin) {
+          yMin = vec.y;
+        }
+        if (!xMax || vec.x > xMax) {
+          xMax = vec.x;
+        }
+        if (!yMax || vec.y > yMax) {
+          yMax = vec.y;
+        }
       }
     });
+    this.Rect = [xMin, yMin, xMax, yMax];
+    // update calculated bBox if present
+    if (this._bBox) {
+      const bBox =  dict.getLocalBB();
+      bBox.ll.set(xMin, yMin);
+      bBox.lr.set(xMax, yMin);
+      bBox.ur.set(xMax, yMax);
+      bBox.ul.set(xMin, yMax);
+    }
 
-    super.applyRectTransform(matrix);
+    this.createApStream();
+
+    dict.M = DateString.fromDate(new Date());
   }
   
   /**
@@ -136,7 +164,7 @@ export class InkAnnotation extends MarkupAnnotation {
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
-    
+
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
     let parseResult: ParseResult<string>;
@@ -147,6 +175,7 @@ export class InkAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {          
           case "/InkList":
+            i = parser.skipEmpty(i);
             const inkType = parser.getValueTypeAt(i);
             if (inkType === valueTypes.ARRAY) {
               const inkList: number[][] = [];
@@ -179,7 +208,7 @@ export class InkAnnotation extends MarkupAnnotation {
     }
   }
 
-  protected createApStream() {    
+  protected createApStream() {
     const stampApStream = new XFormStream();
     stampApStream.Filter = "/FlateDecode";
     stampApStream.LastModified = DateString.fromDate(new Date());

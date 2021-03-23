@@ -230,22 +230,11 @@ export abstract class AnnotationDict extends PdfDict {
     return renderResult;
   }  
   
-  applyRectTransform(matrix: Mat3) {
-    const dict = <AnnotationDict>this._proxy || this;
-
-    // transform current bounding box (not axis-aligned)
-    const bBox =  dict.getLocalBB();
-    bBox.ll.applyMat3(matrix);
-    bBox.lr.applyMat3(matrix);
-    bBox.ur.applyMat3(matrix);
-    bBox.ul.applyMat3(matrix);
-
-    // get an axis-aligned bounding box and assign it to the Rect property
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+  applyCommonTransform(matrix: Mat3) {
+    this.applyRectTransform(matrix);
     
     // if the annotation has a content stream, update its matrix
+    const dict = <AnnotationDict>this._proxy || this;
     const stream = dict.apStream;
     if (stream) {
       const newApMatrix = stream.matrix.multiply(matrix);
@@ -261,7 +250,7 @@ export abstract class AnnotationDict extends PdfDict {
     const x = pageX - width / 2;
     const y = pageY - height / 2;
     const mat = Mat3.buildTranslate(x, y);
-    this.applyRectTransform(mat);
+    this.applyCommonTransform(mat);
   }
   
   /**
@@ -516,6 +505,22 @@ export abstract class AnnotationDict extends PdfDict {
     }; 
 
     return this._bBox;
+  }  
+
+  protected applyRectTransform(matrix: Mat3) {
+    const dict = <AnnotationDict>this._proxy || this;
+
+    // transform current bounding box (not axis-aligned)
+    const bBox =  dict.getLocalBB();
+    bBox.ll.applyMat3(matrix);
+    bBox.lr.applyMat3(matrix);
+    bBox.ur.applyMat3(matrix);
+    bBox.ul.applyMat3(matrix);
+
+    // get an axis-aligned bounding box and assign it to the Rect property
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
+    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
   }
 
   /**
@@ -789,7 +794,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._svgContentCopy.remove();
     this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
-    this.applyRectTransform(this._transformationMatrix);
+    this.applyCommonTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
 
     this.updateRenderAsync();
@@ -855,7 +860,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._svgContentCopy.remove();
     this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
-    this.applyRectTransform(this._transformationMatrix);
+    this.applyCommonTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
 
     this.updateRenderAsync();
@@ -965,7 +970,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._svgContentCopy.remove();
     this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
-    this.applyRectTransform(this._transformationMatrix);
+    this.applyCommonTransform(this._transformationMatrix);
     this._transformationMatrix.reset();
 
     this.updateRenderAsync();
