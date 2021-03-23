@@ -761,7 +761,7 @@ export class StampAnnotation extends MarkupAnnotation {
     super(annotationTypes.STAMP);
   }
 
-  static createStandard(type: StampType): StampAnnotation {
+  static createStandard(type: StampType, userName: string): StampAnnotation {
     const nowString = new Date().toISOString();
     const dto: StampAnnotationDto = {
       uuid: getRandomUuid(),
@@ -770,7 +770,7 @@ export class StampAnnotation extends MarkupAnnotation {
 
       dateCreated: nowString,
       dateModified: nowString,
-      author: "unknown", // TODO: replace with real author name
+      author: userName || "unknown",
 
       rect: halfStampBBox,
       matrix: [1, 0, 0, 1, 0, 0],

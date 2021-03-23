@@ -30,7 +30,7 @@ export class InkAnnotation extends MarkupAnnotation {
     super(annotationTypes.INK);
   }
 
-  static createFromPenData(data: PenData): InkAnnotation {
+  static createFromPenData(data: PenData, userName: string): InkAnnotation {
     const positions: Vec2[] = [];
     const inkList: number[][] = [];
     data.paths.forEach(path => {
@@ -59,7 +59,7 @@ export class InkAnnotation extends MarkupAnnotation {
 
       dateCreated: nowString,
       dateModified: nowString,
-      author: "unknown", // TODO: replace with real author name
+      author: userName || "unknown",
 
       rect,
       matrix: [1, 0, 0, 1, 0, 0],

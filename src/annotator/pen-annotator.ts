@@ -46,7 +46,8 @@ export class PenAnnotator extends Annotator {
     }
 
     const pageId = this._annotationPenData.id;
-    const inkAnnotation = InkAnnotation.createFromPenData(this._annotationPenData);
+    const inkAnnotation = InkAnnotation.createFromPenData(
+      this._annotationPenData, this._docData.userName);
 
     console.log(inkAnnotation);
 

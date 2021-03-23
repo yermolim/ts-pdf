@@ -22,6 +22,8 @@ type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
 export class TsPdfViewer {
   //#region fields
+  private readonly _userName: string;
+
   private readonly _visibleAdjPages = 0;
   private readonly _previewWidth = 100;
   private readonly _minScale = 0.25;
@@ -72,7 +74,7 @@ export class TsPdfViewer {
   };
   //#endregion
 
-  constructor(containerSelector: string, workerSrc: string) {
+  constructor(containerSelector: string, workerSrc: string, userName = "Guest") {
     const container = document.querySelector(containerSelector);
     if (!container) {
       throw new Error("Container not found");
@@ -86,6 +88,8 @@ export class TsPdfViewer {
       throw new Error("Worker source path not defined");
     }
     GlobalWorkerOptions.workerSrc = workerSrc;
+
+    this._userName = userName;
 
     this.initViewerGUI();
   }  
@@ -145,7 +149,7 @@ export class TsPdfViewer {
       throw new Error(`Cannot load file data: ${e.message}`);
     }
 
-    const docData = new DocumentData(data);
+    const docData = new DocumentData(data, this._userName);
     let password: string;
     while (true) {      
       const authenticated = docData.tryAuthenticate(password);

@@ -1,7 +1,7 @@
 import { TsPdfViewer } from "./ts-pdf-viewer";
 
 async function run(): Promise<void> {  
-  const viewer = new TsPdfViewer("#pdf-main-container", "assets/pdf.worker.min.js");
+  const viewer = new TsPdfViewer("#pdf-main-container", "assets/pdf.worker.min.js", "viva");
   await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
   // await viewer.openPdfAsync("demo-annots2.pdf");

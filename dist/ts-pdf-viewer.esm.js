@@ -11267,7 +11267,7 @@ class StampAnnotation extends MarkupAnnotation {
         this.Name = stampTypes.DRAFT;
         this.IT = "/Stamp";
     }
-    static createStandard(type) {
+    static createStandard(type, userName) {
         const nowString = new Date().toISOString();
         const dto = {
             uuid: getRandomUuid(),
@@ -11275,7 +11275,7 @@ class StampAnnotation extends MarkupAnnotation {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: "unknown",
+            author: userName || "unknown",
             rect: halfStampBBox,
             matrix: [1, 0, 0, 1, 0, 0],
             stampType: type,
@@ -11435,7 +11435,7 @@ class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
     }
-    static createFromPenData(data) {
+    static createFromPenData(data, userName) {
         const positions = [];
         const inkList = [];
         data.paths.forEach(path => {
@@ -11461,7 +11461,7 @@ class InkAnnotation extends MarkupAnnotation {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: "unknown",
+            author: userName || "unknown",
             rect,
             matrix: [1, 0, 0, 1, 0, 0],
             inkList,
@@ -11695,7 +11695,7 @@ class InkAnnotation extends MarkupAnnotation {
 }
 
 class DocumentData {
-    constructor(data) {
+    constructor(data, userName) {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
         this.getObjectParseInfo = (id) => {
@@ -11758,6 +11758,10 @@ class DocumentData {
         this._xrefs = xrefs;
         this._referenceData = new ReferenceData(xrefs);
         this.parseEncryption();
+        this._userName = userName;
+    }
+    get userName() {
+        return this._userName;
     }
     get selectedAnnotation() {
         return this._selectedAnnotation;
@@ -12774,7 +12778,7 @@ class StampAnnotator extends Annotator {
     }
     createTempStampAnnotationAsync() {
         return __awaiter$6(this, void 0, void 0, function* () {
-            const stamp = StampAnnotation.createStandard(this._type);
+            const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
             const renderResult = yield stamp.renderAsync();
             this._svgGroup.innerHTML = "";
             this._svgGroup.append(...renderResult.clipPaths || []);
@@ -12971,7 +12975,7 @@ class PenAnnotator extends Annotator {
             return;
         }
         const pageId = this._annotationPenData.id;
-        const inkAnnotation = InkAnnotation.createFromPenData(this._annotationPenData);
+        const inkAnnotation = InkAnnotation.createFromPenData(this._annotationPenData, this._docData.userName);
         console.log(inkAnnotation);
         this._docData.appendAnnotationToPage(pageId, inkAnnotation);
         this.forceRenderPageById(pageId);
@@ -13030,7 +13034,7 @@ var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class TsPdfViewer {
-    constructor(containerSelector, workerSrc) {
+    constructor(containerSelector, workerSrc, userName = "Guest") {
         this._visibleAdjPages = 0;
         this._previewWidth = 100;
         this._minScale = 0.25;
@@ -13309,6 +13313,7 @@ class TsPdfViewer {
             throw new Error("Worker source path not defined");
         }
         GlobalWorkerOptions.workerSrc = workerSrc;
+        this._userName = userName;
         this.initViewerGUI();
     }
     static downloadFile(data, name, mime = "application/pdf") {
@@ -13362,7 +13367,7 @@ class TsPdfViewer {
             catch (e) {
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
-            const docData = new DocumentData(data);
+            const docData = new DocumentData(data, this._userName);
             let password;
             while (true) {
                 const authenticated = docData.tryAuthenticate(password);

@@ -33,6 +33,11 @@ import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polyg
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
 
 export class DocumentData {
+  private readonly _userName: string; 
+  get userName(): string {
+    return this._userName;
+  }
+
   private readonly _data: Uint8Array; 
   private readonly _docParser: DataParser;
   private readonly _version: string; 
@@ -70,7 +75,7 @@ export class DocumentData {
     return !this._encryption || !!this._authResult;
   }
 
-  constructor(data: Uint8Array) {
+  constructor(data: Uint8Array, userName: string) {
     this._data = data;
     this._docParser = new DataParser(data);
     this._version = this._docParser.getPdfVersion();
@@ -93,6 +98,8 @@ export class DocumentData {
     this.parseEncryption();
     // DEBUG
     // console.log(this._encryption);
+
+    this._userName = userName;
   }    
 
   //#region parsing xrefs
