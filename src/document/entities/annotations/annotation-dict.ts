@@ -47,7 +47,7 @@ export abstract class AnnotationDict extends PdfDict {
    * specifying various characteristics of the annotation. 
    * Bit positions within the flag word shall be numbered from low-order to high-order, 
    * with the lowest-order bit numbered 1 */
-  F = 0;
+  F = 4;
   
   /** (Optional; PDF1.2+) An appearance dictionary 
    * specifying how the annotation is presented visually on the page */

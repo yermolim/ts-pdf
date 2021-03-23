@@ -749,7 +749,11 @@ export class StampAnnotation extends MarkupAnnotation {
   /**
    * (Optional) The name of an icon that shall be used in displaying the annotation
    */
-  Name: StampType | string = stampTypes.DRAFT;
+  Name: StampType | string = stampTypes.DRAFT;  
+  /**
+   * (Optional; PDF 1.6+) A name describing the intent of the annotation
+   */
+  IT = "/Stamp";
   
   protected constructor() {
     super(annotationTypes.STAMP);
@@ -843,6 +847,9 @@ export class StampAnnotation extends MarkupAnnotation {
     if (this.Name) {
       bytes.push(...encoder.encode("/Name "), ...encoder.encode(this.Name));
     }
+    if (this.IT) {
+      bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
+    }
 
     const totalBytes: number[] = [
       ...superBytes.subarray(0, 2), // <<
@@ -858,9 +865,7 @@ export class StampAnnotation extends MarkupAnnotation {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentEnd || bounds.end; 
-
-    parser.sliceChars(start, end);
+    const end = bounds.contentEnd || bounds.end;
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;

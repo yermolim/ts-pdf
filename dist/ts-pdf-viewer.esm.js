@@ -8022,7 +8022,7 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 class AnnotationDict extends PdfDict {
     constructor(subType) {
         super(dictTypes.ANNOTATION);
-        this.F = 0;
+        this.F = 4;
         this.Border = new BorderArray(0, 0, 1);
         this._transformationMatrix = new Mat3();
         this._transformationPoint = new Vec2();
@@ -11214,6 +11214,7 @@ class StampAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.STAMP);
         this.Name = stampTypes.DRAFT;
+        this.IT = "/Stamp";
     }
     static createStandard(type) {
         const now = DateString.fromDate(new Date());
@@ -11295,6 +11296,9 @@ class StampAnnotation extends MarkupAnnotation {
         if (this.Name) {
             bytes.push(...encoder.encode("/Name "), ...encoder.encode(this.Name));
         }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
+        }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
             ...bytes,
@@ -11307,7 +11311,6 @@ class StampAnnotation extends MarkupAnnotation {
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
         const end = bounds.contentEnd || bounds.end;
-        parser.sliceChars(start, end);
         let i = parser.skipToNextName(start, end - 1);
         let name;
         let parseResult;
