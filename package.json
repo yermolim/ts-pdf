@@ -72,9 +72,12 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "crypto-es": "^1.2.7",
+    "crypto-js": "^3.1.9-1",
     "pako": "^2.0.3",
     "pdfjs-dist": "^2.6.347",
     "uuid": "^8.3.2"
+  },
+  "browser": {
+    "crypto": false
   }
 }
