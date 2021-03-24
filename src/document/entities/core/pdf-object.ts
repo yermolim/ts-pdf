@@ -5,6 +5,8 @@ import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "./object-id";
 
 export abstract class PdfObject implements IEncodable {
+  $onEditedAction: () => void;
+
   //#region reference
   protected _ref: Reference;
   get ref(): Reference {
@@ -40,15 +42,22 @@ export abstract class PdfObject implements IEncodable {
   }
 
   protected onChange: ProxyHandler<PdfObject> = {
-    set: (target: PdfObject, prop: string, value: any) => {
-      if (!this._edited && prop[0] !== "_" && prop[0] !== "$") {
+    set: (target: PdfObject, prop: string, value: any) => {  
+      // DEBUG
+      // console.log(this._edited);
+      
+      if (prop[0] !== "_" && prop[0] !== "$") {
         // if any public property except those starting with '$' changed, 
-        // then set the 'edited' flag to 'true'
-        this._edited = true;
+        // then set the 'edited' flag to 'true'        
+        this._edited ||= true;
 
         // DEBUG
-        console.log(`EDITED prop ${prop}`);
-        console.log(this);
+        // console.log(`EDITED prop ${prop}`);
+        // console.log(this);
+  
+        if (this.$onEditedAction) {     
+          this.$onEditedAction();
+        }
       }
       // proceed assignment as usual
       target[prop] = value;

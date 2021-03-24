@@ -853,8 +853,10 @@ export class StampAnnotation extends MarkupAnnotation {
 
     // TODO: add reading custom image data
 
+    const proxy = new Proxy<StampAnnotation>(stampAnnotation, stampAnnotation.onChange);
+    stampAnnotation._proxy = proxy;
     stampAnnotation._added = true;
-    return stampAnnotation;
+    return proxy;
   }
 
   static parse(parseInfo: ParseInfo): ParseResult<StampAnnotation> {

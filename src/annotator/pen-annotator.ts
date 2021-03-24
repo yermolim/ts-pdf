@@ -7,6 +7,23 @@ import { InkAnnotation } from "../document/entities/annotations/markup/ink-annot
 import { Annotator } from "./annotator";
 import { PenData } from "./pen-data";
 
+//#region custom events
+export const pathChangeEvent = "tspdf-penpathchange" as const;
+export interface PathChangeEventDetail {
+  pathCount: number;
+}
+export class PathChangeEvent extends CustomEvent<PathChangeEventDetail> {
+  constructor(detail: PathChangeEventDetail) {
+    super(pathChangeEvent, {detail});
+  }
+}
+declare global {
+  interface HTMLElementEventMap {
+    [pathChangeEvent]: PathChangeEvent;
+  }
+}
+//#endregion
+
 export class PenAnnotator extends Annotator {
   protected static lastColor: Rect;
 
@@ -49,10 +66,10 @@ export class PenAnnotator extends Annotator {
     const inkAnnotation = InkAnnotation.createFromPenData(
       this._annotationPenData, this._docData.userName);
 
-    console.log(inkAnnotation);
+    // DEBUG
+    // console.log(inkAnnotation);
 
     this._docData.appendAnnotationToPage(pageId, inkAnnotation);
-    this.forceRenderPageById(pageId);
     
     this.removeTempPenData();
   }
@@ -161,10 +178,8 @@ export class PenAnnotator extends Annotator {
   };
 
   protected emitPathCount() {
-    this._parent.dispatchEvent(new CustomEvent("penpathchange", {
-      detail: {
-        pathCount: this._annotationPenData?.pathCount || 0,
-      }
+    this._parent.dispatchEvent(new PathChangeEvent({
+      pathCount: this._annotationPenData?.pathCount || 0,
     }));
   }
 }

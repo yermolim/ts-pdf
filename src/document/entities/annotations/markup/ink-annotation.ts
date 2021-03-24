@@ -11,10 +11,12 @@ import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
 import { DateString } from "../../strings/date-string";
 import { XFormStream } from "../../streams/x-form-stream";
-import { MarkupAnnotation } from "./markup-annotation";
 import { BorderStyleDict } from "../../appearance/border-style-dict";
 import { ResourceDict } from "../../appearance/resource-dict";
 import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
+
+import { AnnotationDict } from "../annotation-dict";
+import { MarkupAnnotation } from "./markup-annotation";
 
 export class InkAnnotation extends MarkupAnnotation {
   /**
@@ -98,8 +100,10 @@ export class InkAnnotation extends MarkupAnnotation {
 
     inkAnnotation.createApStream();
 
+    const proxy = new Proxy<InkAnnotation>(inkAnnotation, inkAnnotation.onChange);
+    inkAnnotation._proxy = proxy;
     inkAnnotation._added = true;
-    return inkAnnotation;
+    return proxy;
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {

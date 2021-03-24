@@ -32,6 +32,24 @@ import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
 
+//#region custom events
+export const annotChangeEvent = "tspdf-annotchange" as const;
+export interface AnnotEventDetail {
+  type: "select" | "add" | "edit" | "delete";
+  annotations: AnnotationDict[];
+}
+export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
+  constructor(detail: AnnotEventDetail) {
+    super(annotChangeEvent, {detail});
+  }
+}
+declare global {
+  interface DocumentEventMap {
+    [annotChangeEvent]: AnnotEvent;
+  }
+}
+//#endregion
+
 export class DocumentData {
   private readonly _userName: string; 
   get userName(): string {
@@ -100,7 +118,7 @@ export class DocumentData {
     // console.log(this._encryption);
 
     this._userName = userName;
-  }    
+  }
 
   //#region parsing xrefs
   private static parseXref(parser: DataParser, start: number, max: number): XRef {
@@ -158,7 +176,12 @@ export class DocumentData {
     return xrefs;
   }
   //#endregion
-  
+    
+  destroy() {
+    // clear onEditedAction to prevent memory leak
+    this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
+  }
+
   tryAuthenticate(password = ""): boolean {
     if (!this.authenticated) {
       return this.authenticate(password);
@@ -223,18 +246,37 @@ export class DocumentData {
   }
 
   appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
+    if (isNaN(pageId) || !annotation) {
+      throw new Error("Undefined argument exception");
+    }
+
     annotation.$pageId = pageId;
+    annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);
     } else {
       this.getSupportedAnnotationMap().set(pageId, [annotation]);
     }
+
+    document.dispatchEvent(new AnnotEvent({   
+      type: "add",   
+      annotations: [annotation],
+    }));
   }
 
   removeAnnotation(annotation: AnnotationDict) {
+    if (!annotation) {
+      return;
+    }
+
     annotation.markAsDeleted(true);
     this.setSelectedAnnotation(null);
+    
+    document.dispatchEvent(new AnnotEvent({  
+      type: "delete",
+      annotations: [annotation],
+    }));
   }
   
   setSelectedAnnotation(annotation: AnnotationDict): AnnotationDict {
@@ -243,7 +285,7 @@ export class DocumentData {
     }
 
     if (this._selectedAnnotation) {
-      this._selectedAnnotation.translationEnabled = false;
+      this._selectedAnnotation.$translationEnabled = false;
       const oldSelectedSvg = this._selectedAnnotation?.lastRenderResult?.svg;
       oldSelectedSvg?.classList.remove("selected");
     }
@@ -252,16 +294,17 @@ export class DocumentData {
     if (!newSelectedSvg) {
       this._selectedAnnotation = null;
     } else {
-      annotation.translationEnabled = true;    
+      annotation.$translationEnabled = true;    
       newSelectedSvg.classList.add("selected");
       this._selectedAnnotation = annotation;
     }
 
     // dispatch corresponding event
-    document.dispatchEvent(new CustomEvent("annotationselectionchange", {
-      detail: {
-        annotation: this._selectedAnnotation,
-      }
+    document.dispatchEvent(new AnnotEvent({      
+      type: "select",
+      annotations: this._selectedAnnotation
+        ? [this._selectedAnnotation]
+        : [],
     }));
 
     return this._selectedAnnotation;
@@ -296,6 +339,17 @@ export class DocumentData {
     return result;
   }
   //#endregion
+
+  private getOnAnnotationEditAction(annot: AnnotationDict): () => void {
+    if (!annot) {
+      return null;
+    }
+
+    return () => document.dispatchEvent(new AnnotEvent({
+      type: "edit",
+      annotations: [annot],
+    }));
+  }
   
   /**
    * returns a proper parser instance and byte bounds for the object by its id.
@@ -438,7 +492,7 @@ export class DocumentData {
     pages.forEach(x => this._pageById.set(x.ref.id, x));
   }   
 
-  private getSupportedAnnotations(): Map<number, AnnotationDict[]> {
+  private parseSupportedAnnotations(): Map<number, AnnotationDict[]> {
     this.checkAuthentication();
 
     if (!this._catalog) {      
@@ -507,6 +561,7 @@ export class DocumentData {
         if (annot) {
           annotations.push(annot.value);
           annot.value.$pageId = page.id;
+          annot.value.$onEditedAction = this.getOnAnnotationEditAction(annot.value);
 
           // DEBUG
           console.log(annot.value);
@@ -528,8 +583,16 @@ export class DocumentData {
     if (this._supportedAnnotsByPageId) {
       return this._supportedAnnotsByPageId;
     } 
-    this._supportedAnnotsByPageId = this.getSupportedAnnotations();
+    this._supportedAnnotsByPageId = this.parseSupportedAnnotations();
     return this._supportedAnnotsByPageId;
   } 
+
+  private getAllSupportedAnnotations(): AnnotationDict[] {
+    const result: AnnotationDict[] = [];
+    this.getSupportedAnnotationMap().forEach((v, k) => {
+      result.push(...v);
+    });
+    return result;
+  }
   //#endregion
 }

@@ -93,9 +93,6 @@ export class StampAnnotator extends Annotator {
     this._tempAnnotation.moveTo(pageX, pageY);
     this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
 
-    // rerender the page
-    this.forceRenderPageById(pageId);
-
     // create new temp annotation
     this.createTempStampAnnotationAsync();
   };

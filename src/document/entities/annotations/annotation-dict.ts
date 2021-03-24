@@ -20,8 +20,7 @@ export abstract class AnnotationDict extends PdfDict {
   $name: string;
   $pageId: number;
   $pageRect: Rect;
-
-  translationEnabled: boolean;
+  $translationEnabled: boolean;
 
   //#region PDF properties
 
@@ -767,7 +766,7 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region translation handlers
   protected onRectPointerDown = (e: PointerEvent) => { 
-    if (!this.translationEnabled || !e.isPrimary) {
+    if (!this.$translationEnabled || !e.isPrimary) {
       return;
     }
 

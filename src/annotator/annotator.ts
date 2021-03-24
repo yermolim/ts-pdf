@@ -68,7 +68,6 @@ export abstract class Annotator {
     if (annotation) {
       this._docData.removeAnnotation(annotation);
     }
-    this.forceRenderPageById(annotation.$pageId);
   }
 
   refreshViewBox() {
@@ -189,9 +188,5 @@ export abstract class Annotator {
     }
     // point is not inside a page
     return null;
-  }  
-
-  protected forceRenderPageById(pageId: number) {
-    this._renderedPages.find(x => x.id === pageId)?.renderViewAsync(true);
   }
 }

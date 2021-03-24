@@ -83,7 +83,7 @@ export declare class TsPdfViewer {
 	private onAnnotationStampModeButtonClick;
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
-	private onAnnotationSelectionChange;
+	private onAnnotationChange;
 	private initContextStampPicker;
 	private initContextPenColorPicker;
 	private updateAnnotatorPageData;

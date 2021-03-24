@@ -9,12 +9,12 @@ import { getDistance } from "./common";
 import { clamp, Vec2 } from "./math";
 
 import { Rect } from "./document/common-interfaces";
-import { DocumentData } from "./document/document-data";
+import { AnnotEvent, DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
 import { ContextMenu } from "./helpers/context-menu";
 import { Annotator } from "./annotator/annotator";
 import { StampAnnotator } from "./annotator/stamp-annotator";
-import { PenAnnotator } from "./annotator/pen-annotator";
+import { PathChangeEvent, PenAnnotator } from "./annotator/pen-annotator";
 import { AnnotationDto } from "./annotator/serialization";
 
 type ViewerMode = "text" | "hand" | "annotation";
@@ -112,17 +112,18 @@ export class TsPdfViewer {
   }
 
   destroy() {
-    document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    document.removeEventListener("tspdf-annotchange", this.onAnnotationChange);
 
     this._pdfLoadingTask?.destroy();
     this._pages.forEach(x => x.destroy());
     if (this._pdfDocument) {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
-    }    
-    this._contextMenu?.destroy();
+    }  
     this._annotator?.destroy();
+    this._docData?.destroy();  
 
+    this._contextMenu?.destroy();
     this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
   }  
@@ -198,12 +199,6 @@ export class TsPdfViewer {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
       this._docData?.appendSerializedAnnotations(dtos);
-      const pageIdSet = new Set<number>(dtos.map((x: AnnotationDto) => x.pageId));
-      this._renderedPages.forEach(x => {
-        if (pageIdSet.has(x.id)) {
-          x.renderViewAsync(true);
-        }
-      });
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }
@@ -225,7 +220,7 @@ export class TsPdfViewer {
     this.initAnnotationButtons();
     
     // handle annotation selection
-    document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    document.addEventListener("tspdf-annotchange", this.onAnnotationChange);
   }
 
   private initMainDivs() {
@@ -315,8 +310,8 @@ export class TsPdfViewer {
       .addEventListener("click", this.onAnnotationDeleteButtonClick);     
 
     // pen buttons
-    this._viewer.addEventListener("penpathchange", (e: Event) => {
-      if (e["detail"].pathCount) {
+    this._viewer.addEventListener("tspdf-penpathchange", (e: PathChangeEvent) => {
+      if (e.detail.pathCount) {
         this._mainContainer.classList.add("pen-path-present");
       } else {
         this._mainContainer.classList.remove("pen-path-present");
@@ -372,6 +367,7 @@ export class TsPdfViewer {
       this._annotator?.destroy();
       this._annotator = null;
       
+      this._docData?.destroy();
       this._docData = null;
     }
     await this.refreshPagesAsync();
@@ -973,12 +969,40 @@ export class TsPdfViewer {
     this.setAnnotationMode("geometric");
   };
 
-  private onAnnotationSelectionChange = (e: Event) => {
-    const annotation: any = e["detail"].annotation;
-    if (annotation) {
-      this._mainContainer.classList.add("annotation-selected");
-    } else {
-      this._mainContainer.classList.remove("annotation-selected");
+  private onAnnotationChange = (e: AnnotEvent) => {
+    if (!e.detail) {
+      return;
+    }
+
+    const annotations = e.detail.annotations;
+    switch(e.detail.type) {
+      case "select":
+        console.log("select");        
+        if (annotations?.length) {
+          this._mainContainer.classList.add("annotation-selected");
+        } else {
+          this._mainContainer.classList.remove("annotation-selected");
+        }
+        break;
+      case "add":
+        console.log("add");
+        break;
+      case "edit":
+        console.log("edit");
+        break;
+      case "delete":
+        console.log("delete");
+        break;
+    }
+
+    // rerender changed pages
+    if (annotations?.length) {
+      const pageIdSet = new Set<number>(annotations.map(x => x.$pageId));
+      this._renderedPages.forEach(x => {
+        if (pageIdSet.has(x.id)) {
+          x.renderViewAsync(true);
+        }
+      });
     }
   };
 
@@ -1053,6 +1077,8 @@ export class TsPdfViewer {
 
     // DEBUG
     // this.openPdfAsync(data);
+
+    // DEBUG
     // console.log(JSON.stringify(this.getAddedAnnotations()));
 
     if (data?.length) {
