@@ -1,9 +1,9 @@
-import { terser } from "rollup-plugin-terser";
 import license from "rollup-plugin-license";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import image from "@rollup/plugin-image";
 import commonjs from "@rollup/plugin-commonjs";
 import externals from "rollup-plugin-node-externals";
+// import { terser } from "rollup-plugin-terser";
 // import css from "rollup-plugin-css-porter";
 
 export default [
@@ -12,7 +12,7 @@ export default [
     input: "tsc/src/ts-pdf-viewer.js",
     output: [
       { file: "dist/ts-pdf-viewer.esm.js", format: "esm" },
-      { file: "dist/ts-pdf-viewer.esm.min.js", format: "esm", plugins: [terser()] },
+      // { file: "dist/ts-pdf-viewer.esm.min.js", format: "esm", plugins: [terser()] },
     ],
     plugins: [
       license({
