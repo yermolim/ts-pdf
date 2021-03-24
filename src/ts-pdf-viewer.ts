@@ -136,6 +136,7 @@ export class TsPdfViewer {
 
   destroy() {
     document.removeEventListener("tspdf-annotchange", this.onAnnotationChange);
+    this._annotChangeCallbacks = null;
 
     this._pdfLoadingTask?.destroy();
     this._pages.forEach(x => x.destroy());
