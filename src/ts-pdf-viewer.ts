@@ -219,7 +219,20 @@ export class TsPdfViewer {
     await this.onPdfClosedAsync();
   }
   
-  importAnnotations(json: string) {
+  importAnnotations(dtos: AnnotationDto[]) {
+    try {
+      this._docData?.appendSerializedAnnotations(dtos);
+    } catch (e) {
+      console.log(`Error while importing annotations: ${e.message}`);      
+    }
+  }
+  
+  exportAnnotations(): AnnotationDto[] {
+    const dtos = this._docData?.serializeAnnotations(true);
+    return dtos;
+  }
+  
+  importAnnotationsFromJson(json: string) {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
       this._docData?.appendSerializedAnnotations(dtos);
@@ -228,7 +241,7 @@ export class TsPdfViewer {
     }
   }
   
-  exportAnnotations(): string {
+  exportAnnotationsToJson(): string {
     const dtos = this._docData?.serializeAnnotations(true);
     return JSON.stringify(dtos);
   }

@@ -13498,7 +13498,21 @@ class TsPdfViewer {
             yield this.onPdfClosedAsync();
         });
     }
-    importAnnotations(json) {
+    importAnnotations(dtos) {
+        var _a;
+        try {
+            (_a = this._docData) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotations(dtos);
+        }
+        catch (e) {
+            console.log(`Error while importing annotations: ${e.message}`);
+        }
+    }
+    exportAnnotations() {
+        var _a;
+        const dtos = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
+        return dtos;
+    }
+    importAnnotationsFromJson(json) {
         var _a;
         try {
             const dtos = JSON.parse(json);
@@ -13508,7 +13522,7 @@ class TsPdfViewer {
             console.log(`Error while importing annotations: ${e.message}`);
         }
     }
-    exportAnnotations() {
+    exportAnnotationsToJson() {
         var _a;
         const dtos = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
         return JSON.stringify(dtos);
