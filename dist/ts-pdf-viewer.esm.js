@@ -13077,7 +13077,7 @@ var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class TsPdfViewer {
-    constructor(containerSelector, workerSrc, userName = "Guest") {
+    constructor(options) {
         this._visibleAdjPages = 0;
         this._previewWidth = 100;
         this._minScale = 0.25;
@@ -13328,28 +13328,45 @@ class TsPdfViewer {
             this.setAnnotationMode("geometric");
         };
         this.onAnnotationChange = (e) => {
+            var _a, _b, _c, _d;
             if (!e.detail) {
                 return;
             }
             const annotations = e.detail.annotations;
             switch (e.detail.type) {
                 case "select":
-                    console.log("select");
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                         this._mainContainer.classList.add("annotation-selected");
                     }
                     else {
                         this._mainContainer.classList.remove("annotation-selected");
                     }
+                    if ((_a = this._annotChangeCallbacks) === null || _a === void 0 ? void 0 : _a.select) {
+                        this._annotChangeCallbacks.select(annotations
+                            ? annotations.map(x => x.toDto())
+                            : []);
+                    }
                     break;
                 case "add":
-                    console.log("add");
+                    if ((_b = this._annotChangeCallbacks) === null || _b === void 0 ? void 0 : _b.add) {
+                        this._annotChangeCallbacks.add(annotations
+                            ? annotations.map(x => x.toDto())
+                            : []);
+                    }
                     break;
                 case "edit":
-                    console.log("edit");
+                    if ((_c = this._annotChangeCallbacks) === null || _c === void 0 ? void 0 : _c.edit) {
+                        this._annotChangeCallbacks.edit(annotations
+                            ? annotations.map(x => x.toDto())
+                            : []);
+                    }
                     break;
                 case "delete":
-                    console.log("delete");
+                    if ((_d = this._annotChangeCallbacks) === null || _d === void 0 ? void 0 : _d.delete) {
+                        this._annotChangeCallbacks.delete(annotations
+                            ? annotations.map(x => x.toDto())
+                            : []);
+                    }
                     break;
             }
             if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
@@ -13368,7 +13385,10 @@ class TsPdfViewer {
                 TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
             }
         };
-        const container = document.querySelector(containerSelector);
+        if (!options) {
+            throw new Error("No options provided");
+        }
+        const container = document.querySelector(options.containerSelector);
         if (!container) {
             throw new Error("Container not found");
         }
@@ -13378,11 +13398,12 @@ class TsPdfViewer {
         else {
             this._outerContainer = container;
         }
-        if (!workerSrc) {
+        if (!options.workerSource) {
             throw new Error("Worker source path not defined");
         }
-        GlobalWorkerOptions.workerSrc = workerSrc;
-        this._userName = userName;
+        GlobalWorkerOptions.workerSrc = options.workerSource;
+        this._userName = options.userName || "Guest";
+        this._annotChangeCallbacks = options.annotChangeCallbacks;
         this.initViewerGUI();
     }
     static downloadFile(data, name, mime = "application/pdf") {
@@ -13980,4 +14001,4 @@ class TsPdfViewer {
     }
 }
 
-export { TsPdfViewer };
+export { AnnotEvent, TsPdfViewer };

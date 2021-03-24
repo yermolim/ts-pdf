@@ -1,7 +1,17 @@
-import { TsPdfViewer } from "./ts-pdf-viewer";
+import { AnnotationDto, TsPdfViewer } from "./ts-pdf-viewer";
 
 async function run(): Promise<void> {  
-  const viewer = new TsPdfViewer("#pdf-main-container", "assets/pdf.worker.min.js", "viva");
+  const viewer = new TsPdfViewer({
+    containerSelector: "#pdf-main-container", 
+    workerSource: "assets/pdf.worker.min.js",
+    userName: "viva",
+    annotChangeCallbacks: {
+      select: (annots: AnnotationDto[]) => console.log("select"),
+      add: (annots: AnnotationDto[]) => console.log("add"),
+      edit: (annots: AnnotationDto[]) => console.log("edit"),
+      delete: (annots: AnnotationDto[]) => console.log("delete"),
+    }
+  });
   await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
   // await viewer.openPdfAsync("demo-annots2.pdf");

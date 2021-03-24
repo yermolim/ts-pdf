@@ -9,7 +9,7 @@ import { getDistance } from "./common";
 import { clamp, Vec2 } from "./math";
 
 import { Rect } from "./document/common-interfaces";
-import { AnnotEvent, DocumentData } from "./document/document-data";
+import { AnnotEvent, AnnotEventDetail, DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
 import { ContextMenu } from "./helpers/context-menu";
 import { Annotator } from "./annotator/annotator";
@@ -20,8 +20,24 @@ import { AnnotationDto } from "./annotator/serialization";
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
+export interface AnnotChangeCallBacks {
+  select: (annots: AnnotationDto[]) => void;
+  add: (annots: AnnotationDto[]) => void;
+  edit: (annots: AnnotationDto[]) => void;
+  delete: (annots: AnnotationDto[]) => void;
+}
+
+export interface TsPdfViewerOptions {
+  containerSelector: string;
+  workerSource: string;
+  userName?: string;
+  annotChangeCallbacks?: AnnotChangeCallBacks;
+}
+
+export {AnnotationDto, AnnotEvent, AnnotEventDetail};
+
 export class TsPdfViewer {
-  //#region fields
+  //#region private fields
   private readonly _userName: string;
 
   private readonly _visibleAdjPages = 0;
@@ -29,6 +45,8 @@ export class TsPdfViewer {
   private readonly _minScale = 0.25;
   private readonly _maxScale = 4;
   private _scale = 1;
+
+  private _annotChangeCallbacks: AnnotChangeCallBacks;
 
   private _outerContainer: HTMLDivElement;
   private _shadowRoot: ShadowRoot;
@@ -74,8 +92,12 @@ export class TsPdfViewer {
   };
   //#endregion
 
-  constructor(containerSelector: string, workerSrc: string, userName = "Guest") {
-    const container = document.querySelector(containerSelector);
+  constructor(options: TsPdfViewerOptions) {
+    if (!options) {
+      throw new Error("No options provided");
+    }
+
+    const container = document.querySelector(options.containerSelector);
     if (!container) {
       throw new Error("Container not found");
     } else if (!(container instanceof HTMLDivElement)) {
@@ -84,12 +106,13 @@ export class TsPdfViewer {
       this._outerContainer = container;
     }
     
-    if (!workerSrc) {
+    if (!options.workerSource) {
       throw new Error("Worker source path not defined");
     }
-    GlobalWorkerOptions.workerSrc = workerSrc;
+    GlobalWorkerOptions.workerSrc = options.workerSource;
 
-    this._userName = userName;
+    this._userName = options.userName || "Guest";
+    this._annotChangeCallbacks = options.annotChangeCallbacks;
 
     this.initViewerGUI();
   }  
@@ -976,22 +999,38 @@ export class TsPdfViewer {
 
     const annotations = e.detail.annotations;
     switch(e.detail.type) {
-      case "select":
-        console.log("select");        
+      case "select":      
         if (annotations?.length) {
           this._mainContainer.classList.add("annotation-selected");
         } else {
           this._mainContainer.classList.remove("annotation-selected");
         }
+        if (this._annotChangeCallbacks?.select) {
+          this._annotChangeCallbacks.select(annotations 
+            ? annotations.map(x => x.toDto())
+            : []);
+        }
         break;
       case "add":
-        console.log("add");
+        if (this._annotChangeCallbacks?.add) {
+          this._annotChangeCallbacks.add(annotations 
+            ? annotations.map(x => x.toDto())
+            : []);
+        }
         break;
       case "edit":
-        console.log("edit");
+        if (this._annotChangeCallbacks?.edit) {
+          this._annotChangeCallbacks.edit(annotations 
+            ? annotations.map(x => x.toDto())
+            : []);
+        }
         break;
       case "delete":
-        console.log("delete");
+        if (this._annotChangeCallbacks?.delete) {
+          this._annotChangeCallbacks.delete(annotations 
+            ? annotations.map(x => x.toDto())
+            : []);
+        }
         break;
     }
 
