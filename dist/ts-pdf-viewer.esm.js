@@ -80,7 +80,7 @@ var img$g = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeA
 var img$h = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIW/JIpioim0ELHYIgaLCKIglhJBG7WIEYzabDabRNjEZTdBgq1gYyFYiDa+Cv+BtoKtgiAogoiNf8BXI2G9Y4SImFlm78eZOZeZM+CfsoyC2zQIhWLJSUzGtfnUgtbyTIAQHQSJ6oZrT89OJGk4Pm7xqXozoHo13vfvCGZM1wBfq/CIYTsl4THhqdWSrXhTuMvI6xnhA+GYIwcUvlR6usZPinM1flPsJBPj4Fc9tdwvTv9iI+8UhPuFIwWrbPycR90kZBbnZqX2yOzFJcEkcTTSlFnGosSA1KJk9r9v8Ns3w4p4DPnbVHDEkSMv3pioZelqSs2KbspnUVG5/83TzQ4P1bqH4tD86HmvfdCyDdUtz/s89LzqEQQe4LxY969ITqPvom/Vtcg+hNfh9KKupXfgbAO6723d0b+lgEx/NgsvJ9Cegs5raFusZfWzzvEdJNfkia5gdw+isj+89AXPlWf0rTeiAwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAeNJREFUeNrlm2uOwjAMhDsWJ4De/4bsEfD+WGm3QqTNw54460hIBbWNP2ec2G3Alq/p4RhIDP/jgczwmRyghd9NQ0AbzkUEeAtD1MBAzIIf6VwdjAUbvqdTJUgWLPjWztQAQAlO0JZ7wgAeTnMIvOFrOlFSzFr0oz3Xw/qGrNi1shWB4Hv7HrJVAiYvICjm9EQNkjJf2WGiUgSFv7LHLERlW6+Zzk8IPPotyVO3nRKkYhuBG7JTiDl+yLpBssV8rQMQHN5UQp6TX/TQgqw8ehY2SmD5U5psydst0JJVM9urgVo1ogKmld+SGT6CA6bCz3bAdPiSAzQL/CwFWD/4HHYAFpU9VlPACLyyQ4CVx09Pu+XEEA0MD28FRBp5ZSiAqYJReDDmgH+zzrc6wEIFVvCUx/S1D0SUHK+0dxRiMLIMeHoq3PoqWo3A6XPHaP6NzX/vkOvuMa809JNj0OFc9xXq1jByq+wSc00pV9knWM0g+77/fjkeTzAOMxKlCApgQzfPAbUZngaGLucB98fDKr3F26ck8VD1AIzga64L+cpdnOCXaZIZ/swBKeBLDkgD/8kBqeDfHZAO/uiAlPBX9TxKNcJL/y75ej5nFk5uq0CajVKXD0UrKsTlQ+AoV9afF8PwfwNGBXNgWGrhCQAAAABJRU5ErkJggg==";
 
 const html = `
-  <div id="main-container" class="hide-previewer" 
+  <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
@@ -106,7 +106,7 @@ const html = `
         </div> 
       </div>
     </div>
-    <div id="bottom-panel" class="disabled">
+    <div id="bottom-panel">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${img}"/>
@@ -13106,11 +13106,11 @@ class TsPdfViewer {
             yield this.refreshPagesAsync();
             this.renderVisiblePreviews();
             this.renderVisiblePages();
-            this._shadowRoot.querySelector("#bottom-panel").classList.remove("disabled");
+            this._mainContainer.classList.remove("disabled");
         });
         this.onPdfClosedAsync = () => __awaiter$7(this, void 0, void 0, function* () {
             var _a, _b;
-            this._shadowRoot.querySelector("#bottom-panel").classList.add("disabled");
+            this._mainContainer.classList.add("disabled");
             this.setViewerMode("text");
             if (this._pdfDocument) {
                 this._pdfDocument.destroy();

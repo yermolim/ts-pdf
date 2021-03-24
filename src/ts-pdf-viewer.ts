@@ -377,11 +377,11 @@ export class TsPdfViewer {
     this.renderVisiblePreviews();
     this.renderVisiblePages(); 
 
-    this._shadowRoot.querySelector("#bottom-panel").classList.remove("disabled");
+    this._mainContainer.classList.remove("disabled");
   };
 
   private onPdfClosedAsync = async () => {
-    this._shadowRoot.querySelector("#bottom-panel").classList.add("disabled");
+    this._mainContainer.classList.add("disabled");
     this.setViewerMode("text");
 
     if (this._pdfDocument) {

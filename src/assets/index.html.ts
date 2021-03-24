@@ -21,7 +21,7 @@ import icon_pen from "./icons/pen.png";
 import icon_geometric from "./icons/geometric.png";
 
 export const html = /*html*/`
-  <div id="main-container" class="hide-previewer" 
+  <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
@@ -47,7 +47,7 @@ export const html = /*html*/`
         </div> 
       </div>
     </div>
-    <div id="bottom-panel" class="disabled">
+    <div id="bottom-panel">
       <div id="paginator" class="subpanel panel-item">
         <div id="paginator-prev" class="panel-button">
           <img src="${icon_arrow_up}"/>
