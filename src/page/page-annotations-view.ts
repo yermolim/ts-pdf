@@ -79,12 +79,7 @@ export class PageAnnotationView {
 
       let renderResult: RenderToSvgResult;
       if (!this._rendered.has(annotation)) {
-        await new Promise<void>(resolve => {
-          setTimeout(async () => { 
-            renderResult = await annotation.renderAsync();
-            resolve();
-          }, 0);
-        });
+        renderResult = await annotation.renderAsync();
       } else {
         renderResult = this._rendered.get(annotation);
       }   

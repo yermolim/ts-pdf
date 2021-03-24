@@ -12284,12 +12284,7 @@ class PageAnnotationView {
                 }
                 let renderResult;
                 if (!this._rendered.has(annotation)) {
-                    yield new Promise(resolve => {
-                        setTimeout(() => __awaiter$4(this, void 0, void 0, function* () {
-                            renderResult = yield annotation.renderAsync();
-                            resolve();
-                        }), 0);
-                    });
+                    renderResult = yield annotation.renderAsync();
                 }
                 else {
                     renderResult = this._rendered.get(annotation);
