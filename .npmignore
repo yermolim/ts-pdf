@@ -1,5 +1,6 @@
 .*
 **/tsconfig.json
+**/tsconfig.eslint.json
 **/rollup.config.js
 **/karma.conf.js
 **/ls-config.json
