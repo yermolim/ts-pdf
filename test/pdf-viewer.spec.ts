@@ -1,6 +1,6 @@
-import { TsPdfViewer } from "../src/ts-pdf-viewer";
-import "jasmine-spec-reporter";
+// import { TsPdfViewer } from "../src/ts-pdf-viewer";
+// import "jasmine-spec-reporter";
 
-describe("TsPdfViewer", () => {
+// describe("TsPdfViewer", () => {
 
-});
+// });

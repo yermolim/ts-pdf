@@ -189,7 +189,7 @@ export class DocumentDataUpdater {
         // check if the xObject is an image and if it has a mask
         if (xObj instanceof ImageStream) {
           this.writeImageXObject(xObj);
-        } else {
+        } else if (xObj instanceof XFormStream) {
           this.writeFormXObject(xObj);
         }
       });

@@ -1,11 +1,14 @@
 import { codes, keywordCodes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
+
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { ObjectMapDict } from "../misc/object-map-dict";
+import { PdfStream } from "../core/pdf-stream";
 import { ImageStream } from "../streams/image-stream";
 import { XFormStream } from "../streams/x-form-stream";
+import { ObjectMapDict } from "../misc/object-map-dict";
+
 import { FontDict } from "./font-dict";
 import { GraphicsStateDict } from "./graphics-state-dict";
 
@@ -49,7 +52,7 @@ export class ResourceDict extends PdfDict {
   
   protected _gsMap = new Map<string, GraphicsStateDict>();
   protected _fontsMap = new Map<string, FontDict>();
-  protected _xObjectsMap = new Map<string, XFormStream | ImageStream>();
+  protected _xObjectsMap = new Map<string, PdfStream>();
   
   constructor() {
     super(null);
@@ -157,18 +160,18 @@ export class ResourceDict extends PdfDict {
     return;
   }
   
-  getXObject(name: string): XFormStream | ImageStream {
+  getXObject(name: string): PdfStream {
     return this._xObjectsMap.get(name);
   }
 
-  *getXObjects(): Iterable<[string, XFormStream | ImageStream]> {
+  *getXObjects(): Iterable<[string, PdfStream]> {
     for (const pair of this._xObjectsMap) {
       yield pair;
     }
     return;
   }
   
-  setXObject(name: string, xObject: XFormStream | ImageStream) {
+  setXObject(name: string, xObject: PdfStream) {
     this._xObjectsMap.set(`/XObject${name}`, xObject);
     this._edited = true;
   }
@@ -209,7 +212,7 @@ export class ResourceDict extends PdfDict {
             minIndex: streamParseInfo.bounds.start,
             maxIndex: streamParseInfo.bounds.end,
           })
-          ? XFormStream.parse(streamParseInfo) 
+          ? XFormStream.parse(streamParseInfo) // TODO: fix circular dependency
           : ImageStream.parse(streamParseInfo);
         if (stream) {
           this._xObjectsMap.set(`/XObject${name}`, stream.value);

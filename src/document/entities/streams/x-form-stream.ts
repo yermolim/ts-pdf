@@ -1,15 +1,17 @@
-import { ObjectId } from "../core/object-id";
-import { PdfStream } from "../core/pdf-stream";
-import { streamTypes, valueTypes } from "../../const";
-import { ParseInfo, ParseResult } from "../../data-parser";
-import { DateString } from "../strings/date-string";
-import { ResourceDict } from "../appearance/resource-dict";
-import { codes } from "../../codes";
-import { MeasureDict } from "../appearance/measure-dict";
-import { CryptInfo, Matrix, Rect } from "../../common-interfaces";
-import { TransparencyGroupDict } from "../appearance/transparency-group-dict";
 import { Mat3, Vec2 } from "../../../math";
 import { BBox } from "../../../common";
+
+import { codes } from "../../codes";
+import { CryptInfo, Matrix, Rect } from "../../common-interfaces";
+import { streamTypes, valueTypes } from "../../const";
+import { ParseInfo, ParseResult } from "../../data-parser";
+
+import { ObjectId } from "../core/object-id";
+import { PdfStream } from "../core/pdf-stream";
+import { DateString } from "../strings/date-string";
+import { ResourceDict } from "../appearance/resource-dict";
+import { MeasureDict } from "../appearance/measure-dict";
+import { TransparencyGroupDict } from "../appearance/transparency-group-dict";
 
 export class XFormStream extends PdfStream {
   /**

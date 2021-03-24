@@ -921,8 +921,9 @@ export class TsPdfViewer {
   
 
   //#region annotations
-  private onAnnotationDeleteButtonClick = () => 
+  private onAnnotationDeleteButtonClick = () => {
     this._annotator.deleteSelectedAnnotation();
+  };
 
   private setAnnotationMode(mode: AnnotatorMode) {
     if (!mode || mode === this._annotatorMode) {
