@@ -854,17 +854,11 @@ export interface AnnotEventDetail {
 export declare class AnnotEvent extends CustomEvent<AnnotEventDetail> {
 	constructor(detail: AnnotEventDetail);
 }
-export interface AnnotChangeCallBacks {
-	select: (annots: AnnotationDto[]) => void;
-	add: (annots: AnnotationDto[]) => void;
-	edit: (annots: AnnotationDto[]) => void;
-	delete: (annots: AnnotationDto[]) => void;
-}
 export interface TsPdfViewerOptions {
 	containerSelector: string;
 	workerSource: string;
 	userName?: string;
-	annotChangeCallbacks?: AnnotChangeCallBacks;
+	annotChangeCallback?: (detail: AnnotEventDetail) => void;
 }
 export declare class TsPdfViewer {
 	private readonly _userName;
@@ -873,7 +867,7 @@ export declare class TsPdfViewer {
 	private readonly _minScale;
 	private readonly _maxScale;
 	private _scale;
-	private _annotChangeCallbacks;
+	private _annotChangeCallback;
 	private _outerContainer;
 	private _shadowRoot;
 	private _mainContainer;

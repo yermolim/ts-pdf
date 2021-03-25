@@ -12,6 +12,7 @@ export default [
     input: "tsc/src/ts-pdf-viewer.js",
     output: [
       { file: "dist/ts-pdf-viewer.esm.js", format: "esm" },
+      // TODO: configure terser to prevent imports from shadowing variables
       // { file: "dist/ts-pdf-viewer.esm.min.js", format: "esm", plugins: [terser()] },
     ],
     plugins: [

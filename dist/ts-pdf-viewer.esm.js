@@ -13326,7 +13326,6 @@ class TsPdfViewer {
             this.setAnnotationMode("geometric");
         };
         this.onAnnotationChange = (e) => {
-            var _a, _b, _c, _d;
             if (!e.detail) {
                 return;
             }
@@ -13339,33 +13338,10 @@ class TsPdfViewer {
                     else {
                         this._mainContainer.classList.remove("annotation-selected");
                     }
-                    if ((_a = this._annotChangeCallbacks) === null || _a === void 0 ? void 0 : _a.select) {
-                        this._annotChangeCallbacks.select(annotations
-                            ? annotations.map(x => x.toDto())
-                            : []);
-                    }
                     break;
-                case "add":
-                    if ((_b = this._annotChangeCallbacks) === null || _b === void 0 ? void 0 : _b.add) {
-                        this._annotChangeCallbacks.add(annotations
-                            ? annotations.map(x => x.toDto())
-                            : []);
-                    }
-                    break;
-                case "edit":
-                    if ((_c = this._annotChangeCallbacks) === null || _c === void 0 ? void 0 : _c.edit) {
-                        this._annotChangeCallbacks.edit(annotations
-                            ? annotations.map(x => x.toDto())
-                            : []);
-                    }
-                    break;
-                case "delete":
-                    if ((_d = this._annotChangeCallbacks) === null || _d === void 0 ? void 0 : _d.delete) {
-                        this._annotChangeCallbacks.delete(annotations
-                            ? annotations.map(x => x.toDto())
-                            : []);
-                    }
-                    break;
+            }
+            if (this._annotChangeCallback) {
+                this._annotChangeCallback(e.detail);
             }
             if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                 const pageIdSet = new Set(annotations.map(x => x.$pageId));
@@ -13401,7 +13377,7 @@ class TsPdfViewer {
         }
         GlobalWorkerOptions.workerSrc = options.workerSource;
         this._userName = options.userName || "Guest";
-        this._annotChangeCallbacks = options.annotChangeCallbacks;
+        this._annotChangeCallback = options.annotChangeCallback;
         this.initViewerGUI();
     }
     static downloadFile(data, name, mime = "application/pdf") {
@@ -13420,7 +13396,7 @@ class TsPdfViewer {
     destroy() {
         var _a, _b, _c, _d, _e;
         document.removeEventListener("tspdf-annotchange", this.onAnnotationChange);
-        this._annotChangeCallbacks = null;
+        this._annotChangeCallback = null;
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
         this._pages.forEach(x => x.destroy());
         if (this._pdfDocument) {

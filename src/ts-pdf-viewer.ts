@@ -20,18 +20,11 @@ import { AnnotationDto } from "./annotator/serialization";
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
-export interface AnnotChangeCallBacks {
-  select: (annots: AnnotationDto[]) => void;
-  add: (annots: AnnotationDto[]) => void;
-  edit: (annots: AnnotationDto[]) => void;
-  delete: (annots: AnnotationDto[]) => void;
-}
-
 export interface TsPdfViewerOptions {
   containerSelector: string;
   workerSource: string;
   userName?: string;
-  annotChangeCallbacks?: AnnotChangeCallBacks;
+  annotChangeCallback?: (detail: AnnotEventDetail) => void;
 }
 
 export {AnnotationDto, AnnotEvent, AnnotEventDetail};
@@ -46,7 +39,7 @@ export class TsPdfViewer {
   private readonly _maxScale = 4;
   private _scale = 1;
 
-  private _annotChangeCallbacks: AnnotChangeCallBacks;
+  private _annotChangeCallback: (detail: AnnotEventDetail) => void;
 
   private _outerContainer: HTMLDivElement;
   private _shadowRoot: ShadowRoot;
@@ -112,7 +105,7 @@ export class TsPdfViewer {
     GlobalWorkerOptions.workerSrc = options.workerSource;
 
     this._userName = options.userName || "Guest";
-    this._annotChangeCallbacks = options.annotChangeCallbacks;
+    this._annotChangeCallback = options.annotChangeCallback;
 
     this.initViewerGUI();
   }  
@@ -136,7 +129,7 @@ export class TsPdfViewer {
 
   destroy() {
     document.removeEventListener("tspdf-annotchange", this.onAnnotationChange);
-    this._annotChangeCallbacks = null;
+    this._annotChangeCallback = null;
 
     this._pdfLoadingTask?.destroy();
     this._pages.forEach(x => x.destroy());
@@ -1020,33 +1013,18 @@ export class TsPdfViewer {
         } else {
           this._mainContainer.classList.remove("annotation-selected");
         }
-        if (this._annotChangeCallbacks?.select) {
-          this._annotChangeCallbacks.select(annotations 
-            ? annotations.map(x => x.toDto())
-            : []);
-        }
         break;
       case "add":
-        if (this._annotChangeCallbacks?.add) {
-          this._annotChangeCallbacks.add(annotations 
-            ? annotations.map(x => x.toDto())
-            : []);
-        }
         break;
       case "edit":
-        if (this._annotChangeCallbacks?.edit) {
-          this._annotChangeCallbacks.edit(annotations 
-            ? annotations.map(x => x.toDto())
-            : []);
-        }
         break;
       case "delete":
-        if (this._annotChangeCallbacks?.delete) {
-          this._annotChangeCallbacks.delete(annotations 
-            ? annotations.map(x => x.toDto())
-            : []);
-        }
         break;
+    }
+    
+    // execute change callback if present
+    if (this._annotChangeCallback) {
+      this._annotChangeCallback(e.detail);
     }
 
     // rerender changed pages
