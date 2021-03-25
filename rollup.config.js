@@ -17,7 +17,7 @@ export default [
     ],
     plugins: [
       license({
-        banner: `Copyright 2021 yermolim
+        banner: `Copyright (c) 2021-present yermolim (Volodymyr Yermolenko)
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -73,56 +73,6 @@ export default [
       { file: "demo/demo.js", format: "esm" },
     ],
     plugins: [
-      // license({
-      //   banner: `Copyright 2021 yermolim
-
-      //   Licensed under the Apache License, Version 2.0 (the "License");
-      //   you may not use this file except in compliance with the License.
-      //   You may obtain a copy of the License at
-        
-      //   http://www.apache.org/licenses/LICENSE-2.0
-        
-      //   Unless required by applicable law or agreed to in writing, software
-      //   distributed under the License is distributed on an "AS IS" BASIS,
-      //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-      //   See the License for the specific language governing permissions and
-      //   limitations under the License.
-        
-        
-      //   FlateStream class is based on the corresponding one from PDF.js, 
-      //   so the code of that class is also subject to the next license notice:
-        
-      //   Copyright 2012 Mozilla Foundation
-
-      //   Licensed under the Apache License, Version 2.0 (the "License");
-      //   you may not use this file except in compliance with the License.
-      //   You may obtain a copy of the License at
-        
-      //   http://www.apache.org/licenses/LICENSE-2.0
-        
-      //   Unless required by applicable law or agreed to in writing, software
-      //   distributed under the License is distributed on an "AS IS" BASIS,
-      //   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-      //   See the License for the specific language governing permissions and
-      //   limitations under the License.
-
-      //   Copyright 1996-2003 Glyph & Cog, LLC
-        
-      //   The flate stream implementation contained in this file is a JavaScript port
-      //   of XPDF's implementation, made available under the Apache 2.0 open source
-      //   license.`,
-      //   thirdParty: { 
-      //     includePrivate: false,  
-      //     output: {    
-      //       file: "demo/thirdpartylicenses.txt",
-      //       encoding: "utf-8",
-      //       template(dependencies) {
-      //         return dependencies.map((dependency) => 
-      //           `${dependency.name}:${dependency.version} -- ${dependency.license}`).join("\n");
-      //       },
-      //     },
-      //   }
-      // }),
       nodeResolve({
         browser: true,
       }),
