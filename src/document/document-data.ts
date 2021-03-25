@@ -36,7 +36,7 @@ import { PolylineAnnotation } from "./entities/annotations/markup/geometric/poly
 export const annotChangeEvent = "tspdf-annotchange" as const;
 export interface AnnotEventDetail {
   type: "select" | "add" | "edit" | "delete";
-  annotations: AnnotationDict[];
+  annotations: AnnotationDto[];
 }
 export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
   constructor(detail: AnnotEventDetail) {
@@ -261,7 +261,7 @@ export class DocumentData {
 
     document.dispatchEvent(new AnnotEvent({   
       type: "add",   
-      annotations: [annotation],
+      annotations: [annotation.toDto()],
     }));
   }
 
@@ -275,7 +275,7 @@ export class DocumentData {
     
     document.dispatchEvent(new AnnotEvent({  
       type: "delete",
-      annotations: [annotation],
+      annotations: [annotation.toDto()],
     }));
   }
   
@@ -303,7 +303,7 @@ export class DocumentData {
     document.dispatchEvent(new AnnotEvent({      
       type: "select",
       annotations: this._selectedAnnotation
-        ? [this._selectedAnnotation]
+        ? [this._selectedAnnotation.toDto()]
         : [],
     }));
 
@@ -340,14 +340,14 @@ export class DocumentData {
   }
   //#endregion
 
-  private getOnAnnotationEditAction(annot: AnnotationDict): () => void {
-    if (!annot) {
+  private getOnAnnotationEditAction(annotation: AnnotationDict): () => void {
+    if (!annotation) {
       return null;
     }
 
     return () => document.dispatchEvent(new AnnotEvent({
       type: "edit",
-      annotations: [annot],
+      annotations: [annotation.toDto()],
     }));
   }
   

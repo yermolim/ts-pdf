@@ -1029,7 +1029,7 @@ export class TsPdfViewer {
 
     // rerender changed pages
     if (annotations?.length) {
-      const pageIdSet = new Set<number>(annotations.map(x => x.$pageId));
+      const pageIdSet = new Set<number>(annotations.map(x => x.pageId));
       this._renderedPages.forEach(x => {
         if (pageIdSet.has(x.id)) {
           x.renderViewAsync(true);

@@ -11908,7 +11908,7 @@ class DocumentData {
         }
         document.dispatchEvent(new AnnotEvent({
             type: "add",
-            annotations: [annotation],
+            annotations: [annotation.toDto()],
         }));
     }
     removeAnnotation(annotation) {
@@ -11919,7 +11919,7 @@ class DocumentData {
         this.setSelectedAnnotation(null);
         document.dispatchEvent(new AnnotEvent({
             type: "delete",
-            annotations: [annotation],
+            annotations: [annotation.toDto()],
         }));
     }
     setSelectedAnnotation(annotation) {
@@ -11944,7 +11944,7 @@ class DocumentData {
         document.dispatchEvent(new AnnotEvent({
             type: "select",
             annotations: this._selectedAnnotation
-                ? [this._selectedAnnotation]
+                ? [this._selectedAnnotation.toDto()]
                 : [],
         }));
         return this._selectedAnnotation;
@@ -11976,13 +11976,13 @@ class DocumentData {
         });
         return result;
     }
-    getOnAnnotationEditAction(annot) {
-        if (!annot) {
+    getOnAnnotationEditAction(annotation) {
+        if (!annotation) {
             return null;
         }
         return () => document.dispatchEvent(new AnnotEvent({
             type: "edit",
-            annotations: [annot],
+            annotations: [annotation.toDto()],
         }));
     }
     authenticate(password) {
@@ -13344,7 +13344,7 @@ class TsPdfViewer {
                 this._annotChangeCallback(e.detail);
             }
             if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
-                const pageIdSet = new Set(annotations.map(x => x.$pageId));
+                const pageIdSet = new Set(annotations.map(x => x.pageId));
                 this._renderedPages.forEach(x => {
                     if (pageIdSet.has(x.id)) {
                         x.renderViewAsync(true);
