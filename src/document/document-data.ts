@@ -308,6 +308,13 @@ export class DocumentData {
     }));
 
     return this._selectedAnnotation;
+  }  
+
+  deleteSelectedAnnotation() {
+    const annotation = this.selectedAnnotation;
+    if (annotation) {
+      this.removeAnnotation(annotation);
+    }
   }
 
   appendSerializedAnnotations(dtos: AnnotationDto[]) {

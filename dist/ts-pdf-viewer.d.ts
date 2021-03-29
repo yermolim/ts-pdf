@@ -31,10 +31,15 @@ export interface AnnotEventDetail {
 export declare class AnnotEvent extends CustomEvent<AnnotEventDetail> {
 	constructor(detail: AnnotEventDetail);
 }
+export declare type FileButtons = "open" | "save" | "close";
 export interface TsPdfViewerOptions {
 	containerSelector: string;
 	workerSource: string;
 	userName?: string;
+	fileButtons?: FileButtons[];
+	fileOpenAction?: () => void;
+	fileSaveAction?: () => void;
+	fileCloseAction?: () => void;
 	annotChangeCallback?: (detail: AnnotEventDetail) => void;
 }
 export declare class TsPdfViewer {
@@ -44,12 +49,16 @@ export declare class TsPdfViewer {
 	private readonly _minScale;
 	private readonly _maxScale;
 	private _scale;
+	private _fileOpenAction;
+	private _fileSaveAction;
+	private _fileCloseAction;
 	private _annotChangeCallback;
 	private _outerContainer;
 	private _shadowRoot;
 	private _mainContainer;
 	private _mainContainerRObserver;
 	private _panelsHidden;
+	private _fileInput;
 	private _previewer;
 	private _previewerHidden;
 	private _viewer;
@@ -76,9 +85,14 @@ export declare class TsPdfViewer {
 	exportAnnotations(): AnnotationDto[];
 	importAnnotationsFromJson(json: string): void;
 	exportAnnotationsToJson(): string;
-	private initViewerGUI;
+	getCurrentPdf(): Blob;
 	private initMainDivs;
 	private initViewControls;
+	private initFileButtons;
+	private onFileInput;
+	private onOpenFileButtonClick;
+	private onSaveFileButtonClick;
+	private onCloseFileButtonClick;
 	private initModeSwitchButtons;
 	private initAnnotationButtons;
 	private onPdfLoadingProgress;
@@ -127,7 +141,6 @@ export declare class TsPdfViewer {
 	private initContextStampPicker;
 	private initContextPenColorPicker;
 	private updateAnnotatorPageData;
-	private onDownloadFileButtonClick;
 	private showPasswordDialogAsync;
 }
 

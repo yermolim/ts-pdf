@@ -3,17 +3,17 @@
 export const styles = /*html*/`
 <style>
   :host {
-    --color-primary-final: var(--color-primary, rgba(40,40,40,1));
-    --color-primary-tr-final: var(--color-primary-tr, rgba(40,40,40,0.9));
-    --color-secondary-final: var(--color-secondary, rgba(60,60,60,1));
-    --color-secondary-tr-final: var(--color-secondary-tr, rgba(60,60,60,0.9));
-    --color-accent-final: var(--color-accent, rgba(96,96,96,1));
-    --color-shadow-final: var(--color-shadow, rgba(0,0,0,0.75));
-    --color-bg-final: var(--color-bg, rgba(128,128,128,1));
-    --color-fg-primary-final: var(--color-fg-primary, rgba(255,255,255,1));
-    --color-fg-secondary-final: var(--color-fg-secondary, rgba(187,187,187,1));
-    --color-fg-accent-final: var(--color-fg-accent, rgba(255,255,255,1));
-    --color-text-selection-final: var(--color-text-selection, rgba(104,104,128,0.3));
+    --tspdf-color-primary-final: var(--tspdf-color-primary, rgba(40,40,40,1));
+    --tspdf-color-primary-tr-final: var(--tspdf-color-primary-tr, rgba(40,40,40,0.9));
+    --tspdf-color-secondary-final: var(--tspdf-color-secondary, rgba(60,60,60,1));
+    --tspdf-color-secondary-tr-final: var(--tspdf-color-secondary-tr, rgba(60,60,60,0.9));
+    --tspdf-color-accent-final: var(--tspdf-color-accent, rgba(96,96,96,1));
+    --tspdf-color-shadow-final: var(--tspdf-color-shadow, rgba(0,0,0,0.75));
+    --tspdf-color-bg-final: var(--tspdf-color-bg, rgba(128,128,128,1));
+    --tspdf-color-fg-primary-final: var(--tspdf-color-fg-primary, rgba(255,255,255,1));
+    --tspdf-color-fg-secondary-final: var(--tspdf-color-fg-secondary, rgba(187,187,187,1));
+    --tspdf-color-fg-accent-final: var(--tspdf-color-fg-accent, rgba(255,255,255,1));
+    --tspdf-color-text-selection-final: var(--tspdf-color-text-selection, rgba(104,104,128,0.3));
   }
 
   .disabled {
@@ -62,7 +62,7 @@ export const styles = /*html*/`
     align-items: stretch;
     width: 100%;
     height: 100%;
-    background: var(--color-bg-final);
+    background: var(--tspdf-color-bg-final);
   }
 
   #top-panel {
@@ -74,8 +74,8 @@ export const styles = /*html*/`
     flex-shrink: 0;
     width: 100%;
     height: 50px;
-    background: var(--color-primary-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-primary-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     z-index: 1;
     transition: height 0.25s ease-out 0.1s;
   }
@@ -96,8 +96,8 @@ export const styles = /*html*/`
     bottom: 20px;
     width: 320px;
     height: 50px;  
-    background: var(--color-primary-tr-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-primary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     z-index: 1;
     transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
   }
@@ -137,8 +137,8 @@ export const styles = /*html*/`
     margin: 3px;
     cursor: default;      
     opacity: 0;
-    background: var(--color-primary-tr-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-primary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }    
@@ -151,8 +151,8 @@ export const styles = /*html*/`
 
   .annotation-panel-subitem {
     margin: 3px;    
-    background: var(--color-secondary-tr-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-secondary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }  
   :not(.annotation-selected) #button-annotation-delete,
   :not(.pen-path-present) #button-annotation-pen-undo,
@@ -176,7 +176,7 @@ export const styles = /*html*/`
   .panel-v-separator {
     width: 1px;
     height: 30px;
-    background-color: var(--color-fg-secondary-final);
+    background-color: var(--tspdf-color-fg-secondary-final);
   }
 
   .panel-button {
@@ -192,16 +192,16 @@ export const styles = /*html*/`
   }
   .panel-button:hover,
   .panel-button.on {
-    background-color: var(--color-accent-final);
+    background-color: var(--tspdf-color-accent-final);
   }
   .panel-button img {
     width: 20px;
     height: 20px;
-    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--color-fg-primary-final)) saturate(1000%);
+    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }  
   .panel-button:hover img,
   .panel-button.on img {
-    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--color-fg-accent-final)) saturate(1000%);
+    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
   }
   
   .subpanel {
@@ -227,7 +227,7 @@ export const styles = /*html*/`
     user-select: none;
     font-family: sans-serif;
     font-size: 16px;
-    color: var(--color-fg-primary-final);
+    color: var(--tspdf-color-fg-primary-final);
   }
   #paginator-input {
     text-align: center; 
@@ -238,8 +238,8 @@ export const styles = /*html*/`
     padding: 0;
     outline: none;
     border: none;
-    color: var(--color-fg-primary-final);
-    background-color: var(--color-primary-final);
+    color: var(--tspdf-color-fg-primary-final);
+    background-color: var(--tspdf-color-primary-final);
   }
   #paginator-total {
     margin: 4px;
@@ -261,8 +261,8 @@ export const styles = /*html*/`
     bottom: 0;
     width: 160px; 
     padding-top: 0px;
-    background: var(--color-secondary-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-secondary-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     z-index: 1;
     transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, width 0.25s ease-out;
   } 
@@ -272,7 +272,7 @@ export const styles = /*html*/`
     transition: padding-top 0.25s ease-in 0.2s, top 0.25s ease-in 0.2s;
   }   
   .mobile #previewer {
-    background: var(--color-secondary-tr-final);
+    background: var(--tspdf-color-secondary-tr-final);
   } 
   .hide-previewer #previewer {
     width: 0;
@@ -356,7 +356,7 @@ export const styles = /*html*/`
     flex-shrink: 0;
     margin: 10px auto;
     background-color: white;
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
   .page-preview {   
     cursor: pointer; 
@@ -373,7 +373,7 @@ export const styles = /*html*/`
   }
   .page-preview:hover,
   .page-preview.current {
-    border-color: var(--color-accent-final);
+    border-color: var(--tspdf-color-accent-final);
   }
   .page-preview::after {
     display: inline-block;
@@ -384,7 +384,7 @@ export const styles = /*html*/`
     font-family: sans-serif;
     font-size: 14px;
     line-height: 1;
-    color: var(--color-fg-primary-final);
+    color: var(--tspdf-color-fg-primary-final);
     content: attr(data-page-number) " ";
   }
 
@@ -411,7 +411,7 @@ export const styles = /*html*/`
     transform-origin: 0% 0%;
   }
   .page-text ::selection {
-    background: var(--color-text-selection-final);
+    background: var(--tspdf-color-text-selection-final);
   }
   .mode-hand .page-text span {
     cursor: grab;
@@ -438,7 +438,7 @@ export const styles = /*html*/`
     top: 0;
     width: 100%;
     height: 100%;
-    background: var(--color-secondary-tr-final);
+    background: var(--tspdf-color-secondary-tr-final);
     z-index: 2;
   }
   #password-dialog .form {
@@ -453,8 +453,8 @@ export const styles = /*html*/`
     top: calc(50% - 25px);
     width: 320px;
     height: 50px;  
-    background: var(--color-primary-tr-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-primary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
   #password-dialog input {
     width: 220px;
@@ -463,13 +463,13 @@ export const styles = /*html*/`
     font-size: 16px;
     outline: none;
     border: none;
-    color: var(--color-fg-primary-final);
-    background-color: var(--color-primary-final);
+    color: var(--tspdf-color-fg-primary-final);
+    background-color: var(--tspdf-color-primary-final);
   }
   #password-dialog input::placeholder {
     font-size: 14px;
     font-style: italic;
-    color: var(--color-fg-primary-final);
+    color: var(--tspdf-color-fg-primary-final);
   }
   #password-dialog .buttons {
     display: flex;
@@ -496,13 +496,13 @@ export const styles = /*html*/`
   } 
   .mode-annotation .svg-annotation.selected .svg-annot-rect,
   .mode-annotation .svg-annotation.selected .svg-annot-box {
-    stroke: var(--color-secondary-tr-final);
+    stroke: var(--tspdf-color-secondary-tr-final);
     stroke-dasharray: 3 3;
   } 
   .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
   .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
     r: 8;
-    fill: var(--color-primary-final);
+    fill: var(--tspdf-color-primary-final);
     cursor: pointer;
   }
   .mode-annotation .svg-annotation.selected .svg-annot-rotation {
@@ -513,7 +513,7 @@ export const styles = /*html*/`
     r: 25;
   }
   .mode-annotation .svg-annotation.selected .svg-annot-rotation .dashed {
-    stroke: var(--color-secondary-tr-final);
+    stroke: var(--tspdf-color-secondary-tr-final);
     stroke-dasharray: 3 3;
   }
 
@@ -524,8 +524,8 @@ export const styles = /*html*/`
     min-width: 50px;
     min-height: 50px;
     padding: 5px;
-    background: var(--color-secondary-tr-final);
-    box-shadow: 0 0 10px var(--color-shadow-final);
+    background: var(--tspdf-color-secondary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -563,10 +563,19 @@ export const styles = /*html*/`
     border-radius: 5px;
     font-family: sans-serif;
     font-size: 16px;
-    color: var(--color-fg-primary-final); 
+    color: var(--tspdf-color-fg-primary-final); 
   }
   .context-menu-stamp-select-button:hover {
-    background-color: var(--color-accent-final);
+    background-color: var(--tspdf-color-accent-final);
+  }
+  #open-file-input {
+    position: absolute;
+    opacity: 0;
+    z-index: -10;
+  }
+
+  #button-open-file {
+    pointer-events: auto !important;
   }
 </style>
 `;

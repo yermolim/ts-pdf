@@ -10,9 +10,11 @@ import icon_sidebar from "./icons/sidebar.png";
 import icon_caret from "./icons/caret.png";
 import icon_hand from "./icons/hand.png";
 import icon_popup from "./icons/popup.png";
+import icon_load from "./icons/load.png";
 import icon_download from "./icons/download.png";
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
+import icon_close2 from "./icons/close2.png";
 import icon_back from "./icons/back.png";
 import icon_delete from "./icons/delete.png";
 import icon_pointer from "./icons/pointer.png";
@@ -42,8 +44,14 @@ export const html = /*html*/`
           <img src="${icon_popup}"/>
         </div> 
         <div class="panel-v-separator margin-s-5 panel-item"></div>
-        <div id="button-download-file" class="panel-button panel-item">
+        <div id="button-open-file" class="panel-button panel-item">
+          <img src="${icon_load}"/>
+        </div> 
+        <div id="button-save-file" class="panel-button panel-item">
           <img src="${icon_download}"/>
+        </div> 
+        <div id="button-close-file" class="panel-button panel-item">
+          <img src="${icon_close2}"/>
         </div> 
       </div>
     </div>
@@ -119,6 +127,7 @@ export const html = /*html*/`
       </div>
       -->
     </div>
+    <input id="open-file-input" type="file">
   </div>
 `;
 

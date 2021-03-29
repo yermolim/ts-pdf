@@ -61,13 +61,6 @@ export abstract class Annotator {
     this._parent?.removeEventListener("scroll", this.onParentScroll);
     this._parentMutationObserver?.disconnect();
     this._parentResizeObserver?.disconnect();
-  }  
-
-  deleteSelectedAnnotation() {
-    const annotation = this._docData.selectedAnnotation;
-    if (annotation) {
-      this._docData.removeAnnotation(annotation);
-    }
   }
 
   refreshViewBox() {

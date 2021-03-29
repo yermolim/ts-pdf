@@ -291,7 +291,7 @@ export class GraphicsStateDict extends PdfDict {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentEnd || bounds.end; 
+    const end = bounds.contentEnd || bounds.end;     
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;

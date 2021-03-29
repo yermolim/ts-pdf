@@ -20,10 +20,18 @@ import { AnnotationDto } from "./annotator/serialization";
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
+type FileButtons = "open" | "save" | "close";
+
 export interface TsPdfViewerOptions {
   containerSelector: string;
   workerSource: string;
   userName?: string;
+
+  fileButtons?: FileButtons[];
+  fileOpenAction?: () => void;
+  fileSaveAction?: () => void;
+  fileCloseAction?: () => void;
+
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
 }
 
@@ -39,6 +47,9 @@ export class TsPdfViewer {
   private readonly _maxScale = 4;
   private _scale = 1;
 
+  private _fileOpenAction: () => void;
+  private _fileSaveAction: () => void;
+  private _fileCloseAction: () => void;
   private _annotChangeCallback: (detail: AnnotEventDetail) => void;
 
   private _outerContainer: HTMLDivElement;
@@ -47,6 +58,8 @@ export class TsPdfViewer {
   private _mainContainer: HTMLDivElement;
   private _mainContainerRObserver: ResizeObserver;
   private _panelsHidden: boolean;
+
+  private _fileInput: HTMLInputElement;
 
   private _previewer: HTMLDivElement;
   private _previewerHidden = true;
@@ -105,16 +118,25 @@ export class TsPdfViewer {
     GlobalWorkerOptions.workerSrc = options.workerSource;
 
     this._userName = options.userName || "Guest";
+    this._fileOpenAction = options.fileOpenAction;
+    this._fileSaveAction = options.fileSaveAction;
+    this._fileCloseAction = options.fileCloseAction;
     this._annotChangeCallback = options.annotChangeCallback;
 
-    this.initViewerGUI();
-  }  
+    this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
+    this._shadowRoot.innerHTML = styles + html;         
 
-  private static downloadFile(data: Uint8Array, name: string, 
-    mime = "application/pdf") { 
-    const blob = new Blob([data], {
-      type: mime,
-    });
+    this.initMainDivs();
+    this.initViewControls();
+    this.initFileButtons(options.fileButtons || []);
+    this.initModeSwitchButtons();
+    this.initAnnotationButtons();
+    
+    // handle annotation selection
+    document.addEventListener("tspdf-annotchange", this.onAnnotationChange);
+  }
+
+  private static downloadFile(blob: Blob, name?: string) {
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
@@ -239,20 +261,18 @@ export class TsPdfViewer {
     return JSON.stringify(dtos);
   }
 
-  //#region GUI initialization
-  private initViewerGUI() {
-    this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = styles + html;         
-
-    this.initMainDivs();
-    this.initViewControls();
-    this.initModeSwitchButtons();
-    this.initAnnotationButtons();
-    
-    // handle annotation selection
-    document.addEventListener("tspdf-annotchange", this.onAnnotationChange);
+  getCurrentPdf(): Blob {    
+    const data = this._docData?.getDataWithUpdatedAnnotations();
+    if (!data?.length) {
+      return null;
+    }
+    const blob = new Blob([data], {
+      type: "application/pdf",
+    });
+    return blob;
   }
 
+  //#region GUI initialization methods
   private initMainDivs() {
     const mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
@@ -308,11 +328,65 @@ export class TsPdfViewer {
     this._viewer.addEventListener("wheel", this.onViewerWheelZoom);
     this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
     this._viewer.addEventListener("pointerdown", this.onViewerPointerDownScroll);    
-    this._viewer.addEventListener("touchstart", this.onViewerTouchZoom); 
-    
-    this._shadowRoot.querySelector("#button-download-file")
-      .addEventListener("click", this.onDownloadFileButtonClick);
+    this._viewer.addEventListener("touchstart", this.onViewerTouchZoom);     
   }
+
+  private initFileButtons(fileButtons: FileButtons[]) {
+    const openButton = this._shadowRoot.querySelector("#button-open-file");
+    const saveButton = this._shadowRoot.querySelector("#button-save-file");
+    const closeButton = this._shadowRoot.querySelector("#button-close-file");
+
+    if (fileButtons.includes("open")) {
+      this._fileInput = this._shadowRoot.getElementById("open-file-input") as HTMLInputElement;
+      this._fileInput.addEventListener("change", this.onFileInput);
+      openButton.addEventListener("click", this._fileOpenAction || this.onOpenFileButtonClick);
+    } else {
+      openButton.remove();
+    }
+
+    if (fileButtons.includes("save")) {
+      saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClick);
+    } else {
+      saveButton.remove();
+    }
+    
+    if (fileButtons.includes("close")) {
+      closeButton.addEventListener("click", this._fileCloseAction || this.onCloseFileButtonClick);
+    } else {
+      closeButton.remove();
+    }
+  }
+
+  //#region default file buttons actions
+  private onFileInput = () => {
+    const files = this._fileInput.files;    
+    if (files.length === 0) {
+      return;
+    }
+
+    this.openPdfAsync(files[0]);
+  };
+
+  private onOpenFileButtonClick = () => {    
+    this._shadowRoot.getElementById("open-file-input").click();
+  };
+
+  private onSaveFileButtonClick = () => {
+    const blob = this.getCurrentPdf();
+    if (!blob) {
+      return;
+    }
+
+    // DEBUG
+    // this.openPdfAsync(blob);
+
+    TsPdfViewer.downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
+  };
+  
+  private onCloseFileButtonClick = () => {
+    this.closePdfAsync();
+  };
+  //#endregion
 
   private initModeSwitchButtons() {
     this._shadowRoot.querySelector("#button-mode-text")
@@ -928,7 +1002,7 @@ export class TsPdfViewer {
 
   //#region annotations
   private onAnnotationDeleteButtonClick = () => {
-    this._annotator.deleteSelectedAnnotation();
+    this._docData?.deleteSelectedAnnotation();
   };
 
   private setAnnotationMode(mode: AnnotatorMode) {
@@ -1104,20 +1178,6 @@ export class TsPdfViewer {
 
 
   //#region misc 
-  private onDownloadFileButtonClick = () => {
-    const data = this._docData?.getDataWithUpdatedAnnotations();
-
-    // DEBUG
-    // this.openPdfAsync(data);
-
-    // DEBUG
-    // console.log(JSON.stringify(this.getAddedAnnotations()));
-
-    if (data?.length) {
-      TsPdfViewer.downloadFile(data, `file_${new Date().toISOString()}.pdf`);
-    }
-  };
-
   private async showPasswordDialogAsync(): Promise<string> {
 
     const passwordPromise = new Promise<string>((resolve, reject) => {

@@ -501,15 +501,15 @@ export class DataParser {
       return null;
     }
 
-    let subArrayOpened = 0;
+    let arraysOpened = 1;
     let i = start + 1;    
     let code: number;
-    while (subArrayOpened || code !== codes.R_BRACKET) {
+    while (arraysOpened) {
       code = this._data[i++];
       if (code === codes.L_BRACKET) {
-        subArrayOpened++;
-      } else if (subArrayOpened && code === codes.R_BRACKET) {
-        subArrayOpened--;
+        arraysOpened++;
+      } else if (code === codes.R_BRACKET) {
+        arraysOpened--;
       }
     }
     const arrayEnd = i - 1;
