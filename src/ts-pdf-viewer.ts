@@ -325,7 +325,7 @@ export class TsPdfViewer {
 
     this._previewer.addEventListener("scroll", this.onPreviewerScroll);
     this._viewer.addEventListener("scroll", this.onViewerScroll);
-    this._viewer.addEventListener("wheel", this.onViewerWheelZoom);
+    this._viewer.addEventListener("wheel", this.onViewerWheelZoom, {passive: false});
     this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
     this._viewer.addEventListener("pointerdown", this.onViewerPointerDownScroll);    
     this._viewer.addEventListener("touchstart", this.onViewerTouchZoom);     
