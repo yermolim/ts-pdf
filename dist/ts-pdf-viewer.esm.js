@@ -13056,7 +13056,7 @@ class PenAnnotator extends Annotator {
         }
         const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
         const py = ptop + ph;
-        const { height: vh, top: vtop, left: vx } = this._parent.getBoundingClientRect();
+        const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
         const vy = vtop + vh;
         const offsetX = (px - vx) / this._scale;
         const offsetY = (vy - py) / this._scale;
