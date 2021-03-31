@@ -1,4 +1,4 @@
-import { Rect } from "../../../../common";
+import { Quadruple } from "../../../../common";
 import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
@@ -49,7 +49,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * Any border styles and/or border effects specified by BS and BE entries, respectively, 
    * shall be applied to the border of the inner rectangle
    */
-  RD: Rect;
+  RD: Quadruple;
   /**
    * (Optional; meaningful only if CL is present; PDF 1.6+) 
    * A name specifying the line ending style that shall be used in drawing the callout line 

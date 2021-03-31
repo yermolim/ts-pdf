@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../const";
-import { getRandomUuid, Rect } from "../../../../common";
+import { getRandomUuid, Quadruple } from "../../../../common";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
@@ -30,8 +30,8 @@ export const stampTypes = {
 } as const;
 export type StampType = typeof stampTypes[keyof typeof stampTypes];
 
-const stampBBox: Rect = [0, 0, 440, 120];
-const halfStampBBox: Rect = [0, 0, 220, 60];
+const stampBBox: Quadruple = [0, 0, 440, 120];
+const halfStampBBox: Quadruple = [0, 0, 220, 60];
 
 const redColor = [0.804, 0, 0];
 const greenColor = [0, 0.804, 0];

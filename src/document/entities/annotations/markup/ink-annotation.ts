@@ -1,6 +1,6 @@
 import { codes } from "../../../codes";
 import { Mat3, Vec2, vecMinMax } from "../../../../math";
-import { getRandomUuid, Rect } from "../../../../common";
+import { getRandomUuid, Quadruple } from "../../../../common";
 import { annotationTypes, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 
@@ -45,7 +45,7 @@ export class InkAnnotation extends MarkupAnnotation {
     const {min: newRectMin, max: newRectMax} = 
       vecMinMax(...positions);  
     const w = data.strokeWidth; 
-    const rect: Rect = [
+    const rect: Quadruple = [
       newRectMin.x - w / 2, 
       newRectMin.y - w / 2, 
       newRectMax.x + w / 2, 
@@ -168,54 +168,6 @@ export class InkAnnotation extends MarkupAnnotation {
     };
   }
   
-  applyCommonTransform(matrix: Mat3) {
-    const dict = <InkAnnotation>this._proxy || this;
-
-    // transform current InkList and Rect
-    let x: number;
-    let y: number;
-    let xMin: number;
-    let yMin: number;
-    let xMax: number;
-    let yMax: number;
-    const vec = new Vec2();
-    dict.InkList.forEach(list => {
-      for (let i = 0; i < list.length; i = i + 2) {
-        x = list[i];
-        y = list[i + 1];
-        vec.set(x, y).applyMat3(matrix);
-        list[i] = vec.x;
-        list[i + 1] = vec.y;
-
-        if (!xMin || vec.x < xMin) {
-          xMin = vec.x;
-        }
-        if (!yMin || vec.y < yMin) {
-          yMin = vec.y;
-        }
-        if (!xMax || vec.x > xMax) {
-          xMax = vec.x;
-        }
-        if (!yMax || vec.y > yMax) {
-          yMax = vec.y;
-        }
-      }
-    });
-    this.Rect = [xMin, yMin, xMax, yMax];
-    // update calculated bBox if present
-    if (this._bBox) {
-      const bBox =  dict.getLocalBB();
-      bBox.ll.set(xMin, yMin);
-      bBox.lr.set(xMax, yMin);
-      bBox.ur.set(xMax, yMax);
-      bBox.ul.set(xMin, yMax);
-    }
-
-    this.createApStream();
-
-    dict.M = DateString.fromDate(new Date());
-  }
-  
   /**
    * fill public properties from data using info/parser if available
    */
@@ -320,5 +272,53 @@ export class InkAnnotation extends MarkupAnnotation {
 
     stampApStream.setTextStreamData(streamTextData);    
     this.apStream = stampApStream;
+  }  
+  
+  protected applyCommonTransform(matrix: Mat3) {
+    const dict = <InkAnnotation>this._proxy || this;
+
+    // transform current InkList and Rect
+    let x: number;
+    let y: number;
+    let xMin: number;
+    let yMin: number;
+    let xMax: number;
+    let yMax: number;
+    const vec = new Vec2();
+    dict.InkList.forEach(list => {
+      for (let i = 0; i < list.length; i = i + 2) {
+        x = list[i];
+        y = list[i + 1];
+        vec.set(x, y).applyMat3(matrix);
+        list[i] = vec.x;
+        list[i + 1] = vec.y;
+
+        if (!xMin || vec.x < xMin) {
+          xMin = vec.x;
+        }
+        if (!yMin || vec.y < yMin) {
+          yMin = vec.y;
+        }
+        if (!xMax || vec.x > xMax) {
+          xMax = vec.x;
+        }
+        if (!yMax || vec.y > yMax) {
+          yMax = vec.y;
+        }
+      }
+    });
+    this.Rect = [xMin, yMin, xMax, yMax];
+    // update calculated bBox if present
+    if (this._bBox) {
+      const bBox =  dict.getLocalBB();
+      bBox.ll.set(xMin, yMin);
+      bBox.lr.set(xMax, yMin);
+      bBox.ur.set(xMax, yMax);
+      bBox.ul.set(xMin, yMax);
+    }
+
+    this.createApStream();
+
+    dict.M = DateString.fromDate(new Date());
   }
 }

@@ -1,4 +1,4 @@
-import { Rect, Pair } from "../../../../../common";
+import { Quadruple, Double } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { LineEndingType, lineEndingTypes, annotationTypes, 
   valueTypes } from "../../../../const";
@@ -27,7 +27,7 @@ export class LineAnnotation extends GeometricAnnotation {
    * If the LL entry is present, this value shall represent the endpoints 
    * of the leader lines rather than the endpoints of the line itself
    */
-  L: Rect;
+  L: Quadruple;
   /**
    * (Optional; PDF 1.4+) An array of two names specifying the line ending styles 
    * that shall be used in drawing the line. The first and second elements 
@@ -86,7 +86,7 @@ export class LineAnnotation extends GeometricAnnotation {
    * The second value shall be the vertical offset perpendicular to the annotation line, 
    * with a positive value indicating a shift up and a negative value indicating a shift down
    */
-  CO: Pair = [0, 0];
+  CO: Double = [0, 0];
   
   constructor() {
     super(annotationTypes.LINE);

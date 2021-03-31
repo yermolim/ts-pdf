@@ -1,4 +1,4 @@
-import { Rect } from "../../../common";
+import { Quadruple } from "../../../common";
 import { codes } from "../../codes";
 import { dictTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
@@ -28,7 +28,7 @@ export class PageTreeDict extends PdfDict {
    * that shall define the boundaries of the physical medium 
    * on which the page shall be displayed or printed
    */
-  MediaBox: Rect;
+  MediaBox: Quadruple;
   /**
    * (Optional; inheritable) The number of degrees by which the page shall be rotated 
    * clockwise when displayed or printed. The value shall be a multiple of 90

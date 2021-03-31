@@ -11,7 +11,7 @@ import { BorderArray } from "../appearance/border-array";
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
 import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
-import { BBox, getRandomUuid, Rect, RenderToSvgResult } from "../../../common";
+import { BBox, getRandomUuid, Quadruple, RenderToSvgResult } from "../../../common";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
 import { AnnotationDto } from "../../../annotator/serialization";
@@ -19,7 +19,7 @@ import { AnnotationDto } from "../../../annotator/serialization";
 export abstract class AnnotationDict extends PdfDict {
   $name: string;
   $pageId: number;
-  $pageRect: Rect;
+  $pageRect: Quadruple;
   $translationEnabled: boolean;
 
   //#region PDF properties
@@ -29,7 +29,7 @@ export abstract class AnnotationDict extends PdfDict {
   
   /** (Required) The annotation rectangle, 
    * defining the location of the annotation on the page in default user space units */
-  Rect: Rect;
+  Rect: Quadruple;
 
   /** (Optional) Text to be displayed for the annotation */
   Contents: LiteralString;
@@ -228,20 +228,6 @@ export abstract class AnnotationDict extends PdfDict {
     };
     this._lastRenderResult = renderResult;
     return renderResult;
-  }  
-  
-  applyCommonTransform(matrix: Mat3) {
-    this.applyRectTransform(matrix);
-    
-    // if the annotation has a content stream, update its matrix
-    const dict = <AnnotationDict>this._proxy || this;
-    const stream = dict.apStream;
-    if (stream) {
-      const newApMatrix = stream.matrix.multiply(matrix);
-      dict.apStream.matrix = newApMatrix;
-    }
-
-    dict.M = DateString.fromDate(new Date());
   }
 
   moveTo(pageX: number, pageY: number) {
@@ -530,7 +516,7 @@ export abstract class AnnotationDict extends PdfDict {
     const dict = <AnnotationDict>this._proxy || this;
 
     // transform current bounding box (not axis-aligned)
-    const bBox =  dict.getLocalBB();
+    const bBox = dict.getLocalBB();
     bBox.ll.applyMat3(matrix);
     bBox.lr.applyMat3(matrix);
     bBox.ur.applyMat3(matrix);
@@ -540,6 +526,20 @@ export abstract class AnnotationDict extends PdfDict {
     const {min: newRectMin, max: newRectMax} = 
       vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
     dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+  }  
+  
+  protected applyCommonTransform(matrix: Mat3) {
+    this.applyRectTransform(matrix);
+    
+    // if the annotation has a content stream, update its matrix
+    const dict = <AnnotationDict>this._proxy || this;
+    const stream = dict.apStream;
+    if (stream) {
+      const newApMatrix = stream.matrix.multiply(matrix);
+      dict.apStream.matrix = newApMatrix;
+    }
+
+    dict.M = DateString.fromDate(new Date());
   }
 
   /**

@@ -8326,16 +8326,6 @@ class AnnotationDict extends PdfDict {
             return renderResult;
         });
     }
-    applyCommonTransform(matrix) {
-        this.applyRectTransform(matrix);
-        const dict = this._proxy || this;
-        const stream = dict.apStream;
-        if (stream) {
-            const newApMatrix = stream.matrix.multiply(matrix);
-            dict.apStream.matrix = newApMatrix;
-        }
-        dict.M = DateString.fromDate(new Date());
-    }
     moveTo(pageX, pageY) {
         const width = this.Rect[2] - this.Rect[0];
         const height = this.Rect[3] - this.Rect[1];
@@ -8598,6 +8588,16 @@ class AnnotationDict extends PdfDict {
         bBox.ul.applyMat3(matrix);
         const { min: newRectMin, max: newRectMax } = vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
         dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+    }
+    applyCommonTransform(matrix) {
+        this.applyRectTransform(matrix);
+        const dict = this._proxy || this;
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = stream.matrix.multiply(matrix);
+            dict.apStream.matrix = newApMatrix;
+        }
+        dict.M = DateString.fromDate(new Date());
     }
     convertClientCoordsToPage(clientX, clientY) {
         const { x, y, width, height } = this._svgBox.getBoundingClientRect();
@@ -11584,47 +11584,6 @@ class InkAnnotation extends MarkupAnnotation {
             strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
         };
     }
-    applyCommonTransform(matrix) {
-        const dict = this._proxy || this;
-        let x;
-        let y;
-        let xMin;
-        let yMin;
-        let xMax;
-        let yMax;
-        const vec = new Vec2();
-        dict.InkList.forEach(list => {
-            for (let i = 0; i < list.length; i = i + 2) {
-                x = list[i];
-                y = list[i + 1];
-                vec.set(x, y).applyMat3(matrix);
-                list[i] = vec.x;
-                list[i + 1] = vec.y;
-                if (!xMin || vec.x < xMin) {
-                    xMin = vec.x;
-                }
-                if (!yMin || vec.y < yMin) {
-                    yMin = vec.y;
-                }
-                if (!xMax || vec.x > xMax) {
-                    xMax = vec.x;
-                }
-                if (!yMax || vec.y > yMax) {
-                    yMax = vec.y;
-                }
-            }
-        });
-        this.Rect = [xMin, yMin, xMax, yMax];
-        if (this._bBox) {
-            const bBox = dict.getLocalBB();
-            bBox.ll.set(xMin, yMin);
-            bBox.lr.set(xMax, yMin);
-            bBox.ur.set(xMax, yMax);
-            bBox.ul.set(xMin, yMax);
-        }
-        this.createApStream();
-        dict.M = DateString.fromDate(new Date());
-    }
     parseProps(parseInfo) {
         var _a;
         super.parseProps(parseInfo);
@@ -11723,6 +11682,47 @@ class InkAnnotation extends MarkupAnnotation {
         streamTextData += "\nQ";
         stampApStream.setTextStreamData(streamTextData);
         this.apStream = stampApStream;
+    }
+    applyCommonTransform(matrix) {
+        const dict = this._proxy || this;
+        let x;
+        let y;
+        let xMin;
+        let yMin;
+        let xMax;
+        let yMax;
+        const vec = new Vec2();
+        dict.InkList.forEach(list => {
+            for (let i = 0; i < list.length; i = i + 2) {
+                x = list[i];
+                y = list[i + 1];
+                vec.set(x, y).applyMat3(matrix);
+                list[i] = vec.x;
+                list[i + 1] = vec.y;
+                if (!xMin || vec.x < xMin) {
+                    xMin = vec.x;
+                }
+                if (!yMin || vec.y < yMin) {
+                    yMin = vec.y;
+                }
+                if (!xMax || vec.x > xMax) {
+                    xMax = vec.x;
+                }
+                if (!yMax || vec.y > yMax) {
+                    yMax = vec.y;
+                }
+            }
+        });
+        this.Rect = [xMin, yMin, xMax, yMax];
+        if (this._bBox) {
+            const bBox = dict.getLocalBB();
+            bBox.ll.set(xMin, yMin);
+            bBox.lr.set(xMax, yMin);
+            bBox.ur.set(xMax, yMax);
+            bBox.ul.set(xMin, yMax);
+        }
+        this.createApStream();
+        dict.M = DateString.fromDate(new Date());
     }
 }
 

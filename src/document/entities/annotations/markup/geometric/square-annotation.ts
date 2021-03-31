@@ -1,4 +1,4 @@
-import { Rect } from "../../../../../common";
+import { Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
@@ -13,7 +13,7 @@ export class SquareAnnotation extends GeometricAnnotation {
    * where a border effect (described by BE) causes the size of the Rect to increase 
    * beyond that of the square or circle
    */
-  RD: Rect;
+  RD: Quadruple;
     
   constructor() {
     super(annotationTypes.SQUARE);

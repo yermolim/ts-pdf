@@ -1,4 +1,4 @@
-import { Rect } from "../../../common";
+import { Quadruple } from "../../../common";
 import { codes } from "../../codes";
 import { dictTypes, valueTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
@@ -36,7 +36,7 @@ export class PageDict extends PdfDict {
    * that shall define the boundaries of the physical medium 
    * on which the page shall be displayed or printed
    */
-  MediaBox: Rect;
+  MediaBox: Quadruple;
   /**
    * (Optional; inheritable) A rectangle, expressed in default user space units, 
    * defining the visible region of default user space. When the page is dis-played or printed, 
@@ -44,27 +44,27 @@ export class PageDict extends PdfDict {
    * on the output medium in some implementation-defined manner. 
    * Default value: the value of MediaBox
    */
-  CropBox: Rect;
+  CropBox: Quadruple;
   /**
    * (Optional; PDF1.3+) A rectangle, expressed in default user space units, 
    * defining the region to which the contents of the page should be clipped 
    * when output in a production environment. 
    * Default value: the value of CropBox
    */
-  BleedBox: Rect;
+  BleedBox: Quadruple;
   /**
    * (Optional; PDF1.3+) A rectangle, expressed in default user space units, 
    * defining the intended dimensions of the finished page after trimming. 
    * Default value: the value of CropBox
    */
-  TrimBox: Rect;
+  TrimBox: Quadruple;
   /**
    * (Optional; PDF1.3+) A rectangle, expressed in default user space units, 
    * defining the extent of the page’s meaningful content 
    * (including potential white space) as intended by the page’s creator. 
    * Default value: the value of CropBox
    */
-  ArtBox: Rect;
+  ArtBox: Quadruple;
   /**
    * (Optional) A content stream describing the contents of this page. 
    * If this entry is absent, the page is empty. The value may be 

@@ -1,5 +1,5 @@
 import { Mat3, Vec2 } from "../../../math";
-import { BBox, Matrix, Rect } from "../../../common";
+import { BBox, Hextuple, Quadruple } from "../../../common";
 
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
@@ -28,12 +28,12 @@ export class XFormStream extends PdfStream {
    * giving the coordinates of the left, bottom, right, and top edges, respectively, 
    * of the form XObject’s bounding box
    */
-  BBox: Rect;
+  BBox: Quadruple;
   /**
    * (Optional) An array of six numbers specifying the form matrix, 
    * which maps form space into user space
    */
-  Matrix: Matrix = [1,0,0,1,0,0];
+  Matrix: Hextuple = [1,0,0,1,0,0];
   /**
    * (Optional but strongly recommended; PDF 1.2+) A dictionary specifying any resources 
    * (such as fonts and images) required by the form
@@ -93,7 +93,7 @@ export class XFormStream extends PdfStream {
     if (!matrix) {
       return;
     }  
-    this.Matrix = <Matrix><unknown>[...matrix.toFloatShortArray()];
+    this.Matrix = <Hextuple><unknown>[...matrix.toFloatShortArray()];
   }
   
   get bBox(): BBox {

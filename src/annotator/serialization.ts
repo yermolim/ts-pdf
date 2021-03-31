@@ -1,4 +1,4 @@
-import { Matrix, Pair, Rect } from "../common";
+import { Hextuple, Double, Quadruple } from "../common";
 
 export interface AnnotationDto {
   annotationType: string;
@@ -9,8 +9,8 @@ export interface AnnotationDto {
   dateModified: string;
   author: string;
 
-  rect: Rect;
-  matrix: Matrix;
+  rect: Quadruple;
+  matrix: Hextuple;
 }
 
 export interface StampAnnotationDto extends AnnotationDto {
@@ -20,9 +20,9 @@ export interface StampAnnotationDto extends AnnotationDto {
 
 export interface InkAnnotationDto extends AnnotationDto {
   inkList: number[][];
-  color: Rect;
+  color: Quadruple;
   strokeWidth: number;
-  strokeDashGap?: Pair;
+  strokeDashGap?: Double;
 }
 
 //#region custom events

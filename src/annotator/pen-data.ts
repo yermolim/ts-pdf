@@ -1,5 +1,5 @@
 import { Vec2 } from "../math";
-import { Matrix, Rect } from "../common";
+import { Hextuple, Quadruple } from "../common";
 
 interface PathData {
   path: SVGPathElement;
@@ -9,7 +9,7 @@ interface PathData {
 export interface PenDataOptions {
   bufferSize?: number; 
   strokeWidth?: number;  
-  color?: Rect;
+  color?: Quadruple;
   id?: number;
 }
 
@@ -29,8 +29,8 @@ export class PenData {
   get strokeWidth(): number {
     return this._options.strokeWidth;
   } 
-  get color(): Rect {
-    return <Rect><unknown>this._options.color.slice();
+  get color(): Quadruple {
+    return <Quadruple><unknown>this._options.color.slice();
   }
 
   private _group: SVGGraphicsElement;
@@ -98,7 +98,7 @@ export class PenData {
     this.updateCurrentPath();
   }
 
-  setGroupMatrix(matrix?: Matrix) {
+  setGroupMatrix(matrix?: Hextuple) {
     this._group.setAttribute("transform", `matrix(${matrix.join(" ")})`);
   }
   

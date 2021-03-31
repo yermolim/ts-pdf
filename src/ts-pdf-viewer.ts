@@ -5,7 +5,7 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { getDistance, Rect } from "./common";
+import { getDistance, Quadruple } from "./common";
 import { clamp, Vec2 } from "./math";
 
 import { DocumentData } from "./document/document-data";
@@ -1139,7 +1139,7 @@ export class TsPdfViewer {
   }
 
   private initContextPenColorPicker() {
-    const colors: Rect[] = [
+    const colors: Quadruple[] = [
       [0, 0, 0, 0.5], // black
       [0.804, 0, 0, 0.5], // red
       [0, 0.804, 0, 0.5], // green

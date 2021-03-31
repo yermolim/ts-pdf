@@ -1,4 +1,4 @@
-import { RenderToSvgResult, Rect } from "../../common";
+import { RenderToSvgResult, Quadruple } from "../../common";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../math";
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, valueTypes } from "../const";
@@ -18,7 +18,7 @@ interface ParsedCommand {
 export class AppearanceStreamRenderer {
   protected readonly _stream: XFormStream;
   protected readonly _parser: DataParser;
-  protected readonly _rect: Rect;
+  protected readonly _rect: Quadruple;
   protected readonly _objectName: string;
 
   // protected _cropBox: {min: Vec2; max: Vec2};
@@ -28,7 +28,7 @@ export class AppearanceStreamRenderer {
     return this._graphicsStates[this._graphicsStates.length - 1];
   }
 
-  constructor(stream: XFormStream, rect: Rect, objectName: string) {
+  constructor(stream: XFormStream, rect: Quadruple, objectName: string) {
     if (!stream) {
       throw new Error("Stream is not defined");
     }
@@ -47,7 +47,7 @@ export class AppearanceStreamRenderer {
     this._graphicsStates.push(new GraphicsState({matrix: matAA}));
   }  
 
-  protected static calcBBoxToRectMatrix(stream: XFormStream, rect: Rect): Mat3 {
+  protected static calcBBoxToRectMatrix(stream: XFormStream, rect: Quadruple): Mat3 {
     const matrix = stream.matrix;
     const {ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL} = stream.bBox;
     /*

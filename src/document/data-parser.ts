@@ -1,4 +1,4 @@
-import { Rect } from "../common";
+import { Quadruple } from "../common";
 import { codes, keywordCodes, isRegularChar,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./codes";
 import { ObjectType, ValueType, valueTypes } from "./const";
@@ -34,7 +34,7 @@ export interface ParseInfo {
   /** parsed value (only for primitive objects which are parsed in place) */
   value?: any;
   /** max object rendering bounds */
-  rect?: Rect;
+  rect?: Quadruple;
   /** a function used to get ParseInfo for indirect objects */
   parseInfoGetter?: (id: number) => ParseInfo;
 }

@@ -3,7 +3,7 @@ import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
-import { Rect } from "../../../../common";
+import { Quadruple } from "../../../../common";
 
 export const caretSymbolTypes = {
   NONE: "/None",
@@ -19,7 +19,7 @@ export class CaretAnnotation extends MarkupAnnotation {
    * of the underlying caret. Such a difference can occur. When a paragraph symbol 
    * specified by Sy is displayed along with the caret
    */
-  RD: Rect;
+  RD: Quadruple;
   /**
    * (Optional) A name specifying a symbol that shall be associated with the caret
    */

@@ -1,5 +1,5 @@
 import { Vec2 } from "../math";
-import { Rect } from "../common";
+import { Quadruple } from "../common";
 import { DocumentData } from "../document/document-data";
 import { InkAnnotation } from "../document/entities/annotations/markup/ink-annotation";
 
@@ -24,12 +24,12 @@ declare global {
 //#endregion
 
 export class PenAnnotator extends Annotator {
-  protected static lastColor: Rect;
+  protected static lastColor: Quadruple;
 
   protected _annotationPenData: PenData;  
-  protected _color: Rect;
+  protected _color: Quadruple;
 
-  constructor(docData: DocumentData, parent: HTMLDivElement, color?: Rect) {
+  constructor(docData: DocumentData, parent: HTMLDivElement, color?: Quadruple) {
     super(docData, parent);
     this.init();
 

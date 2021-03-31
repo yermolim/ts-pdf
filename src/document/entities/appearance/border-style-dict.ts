@@ -1,4 +1,4 @@
-import { Pair } from "../../../common";
+import { Double } from "../../../common";
 import { codes } from "../../codes";
 import { dictTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
@@ -25,7 +25,7 @@ export class BorderStyleDict extends PdfDict {
   S: BorderStyle = borderStyles.SOLID;
   /**(Optional) A dash array defining a pattern of dashes and gaps 
    * that shall beused in drawing a dashed border. [dash gap] */
-  D: Pair = [3, 0];
+  D: Double = [3, 0];
   
   constructor() {
     super(dictTypes.BORDER_STYLE);

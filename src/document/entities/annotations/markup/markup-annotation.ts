@@ -1,4 +1,4 @@
-import { Rect } from "../../../../common";
+import { Quadruple } from "../../../../common";
 import { codes } from "../../../codes";
 import { AnnotationType, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
@@ -227,7 +227,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     }
   }
 
-  protected getColorRect(): Rect {    
+  protected getColorRect(): Quadruple {    
     let r = 0;
     let g = 0;
     let b = 0;
@@ -248,7 +248,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     if (!isNaN(this.CA)) {
       a = this.CA;
     }
-    const color: Rect = [r, g, b, a];
+    const color: Quadruple = [r, g, b, a];
     return color;
   }
 }
