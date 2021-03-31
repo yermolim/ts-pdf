@@ -10556,6 +10556,13 @@ class ObjectStream extends PdfStream {
     }
 }
 
+const annotChangeEvent = "tspdf-annotchange";
+class AnnotEvent extends CustomEvent {
+    constructor(detail) {
+        super(annotChangeEvent, { detail });
+    }
+}
+
 const stampTypes = {
     DRAFT: "/Draft",
     NOT_APPROVED: "/NotApproved",
@@ -11719,12 +11726,6 @@ class InkAnnotation extends MarkupAnnotation {
     }
 }
 
-const annotChangeEvent = "tspdf-annotchange";
-class AnnotEvent extends CustomEvent {
-    constructor(detail) {
-        super(annotChangeEvent, { detail });
-    }
-}
 class DocumentData {
     constructor(data, userName) {
         this._pageById = new Map();

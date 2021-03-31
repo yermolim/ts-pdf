@@ -24,3 +24,21 @@ export interface InkAnnotationDto extends AnnotationDto {
   strokeWidth: number;
   strokeDashGap?: Pair;
 }
+
+//#region custom events
+export const annotChangeEvent = "tspdf-annotchange" as const;
+export interface AnnotEventDetail {
+  type: "select" | "add" | "edit" | "delete";
+  annotations: AnnotationDto[];
+}
+export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
+  constructor(detail: AnnotEventDetail) {
+    super(annotChangeEvent, {detail});
+  }
+}
+declare global {
+  interface DocumentEventMap {
+    [annotChangeEvent]: AnnotEvent;
+  }
+}
+//#endregion

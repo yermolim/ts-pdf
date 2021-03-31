@@ -8,13 +8,13 @@ import { styles } from "./assets/styles.html";
 import { getDistance, Rect } from "./common";
 import { clamp, Vec2 } from "./math";
 
-import { AnnotEvent, AnnotEventDetail, DocumentData } from "./document/document-data";
+import { DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
 import { ContextMenu } from "./helpers/context-menu";
 import { Annotator } from "./annotator/annotator";
 import { StampAnnotator } from "./annotator/stamp-annotator";
 import { PathChangeEvent, PenAnnotator } from "./annotator/pen-annotator";
-import { AnnotationDto } from "./annotator/serialization";
+import { AnnotationDto, AnnotEvent, AnnotEventDetail } from "./annotator/serialization";
 
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";

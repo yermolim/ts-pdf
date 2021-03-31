@@ -19,7 +19,7 @@ import { ObjectId } from "./entities/core/object-id";
 import { EncryptionDict } from "./entities/encryption/encryption-dict";
 import { ObjectStream } from "./entities/streams/object-stream";
 
-import { AnnotationDto, InkAnnotationDto, StampAnnotationDto } from "../annotator/serialization";
+import { AnnotationDto, AnnotEvent, InkAnnotationDto, StampAnnotationDto } from "../annotator/serialization";
 
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
@@ -31,24 +31,6 @@ import { SquareAnnotation } from "./entities/annotations/markup/geometric/square
 import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
-
-//#region custom events
-export const annotChangeEvent = "tspdf-annotchange" as const;
-export interface AnnotEventDetail {
-  type: "select" | "add" | "edit" | "delete";
-  annotations: AnnotationDto[];
-}
-export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
-  constructor(detail: AnnotEventDetail) {
-    super(annotChangeEvent, {detail});
-  }
-}
-declare global {
-  interface DocumentEventMap {
-    [annotChangeEvent]: AnnotEvent;
-  }
-}
-//#endregion
 
 export class DocumentData {
   private readonly _userName: string; 
