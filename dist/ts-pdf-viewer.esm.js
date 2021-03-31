@@ -12249,7 +12249,7 @@ var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class PageAnnotationView {
     constructor(docData, pageId, pageDimensions) {
-        this._rendered = new Map();
+        this._rendered = new Set();
         this.onAnnotationSelectionChange = (e) => {
             const annotation = e["detail"].annotation;
             if (annotation) {
@@ -12314,12 +12314,12 @@ class PageAnnotationView {
                     renderResult = yield annotation.renderAsync();
                 }
                 else {
-                    renderResult = this._rendered.get(annotation);
+                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync());
                 }
                 if (!renderResult) {
                     continue;
                 }
-                this._rendered.set(annotation, renderResult);
+                this._rendered.add(annotation);
                 const { svg, clipPaths } = renderResult;
                 this._svg.append(svg);
                 clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));

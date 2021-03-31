@@ -1,7 +1,6 @@
 import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { AnnotationDict } from "../annotation-dict";
-import { RenderToSvgResult } from "../../../../common";
 
 export class PrinterMarkAnnotation extends AnnotationDict {
   // TODO: implement

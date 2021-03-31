@@ -8,7 +8,7 @@ export class PageAnnotationView {
   private readonly _pageDimensions: Vec2;
 
   private _docData: DocumentData;
-  private _rendered = new Map<AnnotationDict, RenderToSvgResult>();
+  private _rendered = new Set<AnnotationDict>();
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
@@ -81,13 +81,13 @@ export class PageAnnotationView {
       if (!this._rendered.has(annotation)) {
         renderResult = await annotation.renderAsync();
       } else {
-        renderResult = this._rendered.get(annotation);
+        renderResult = annotation.lastRenderResult || await annotation.renderAsync();
       }   
 
       if (!renderResult) {
         continue;
       }      
-      this._rendered.set(annotation, renderResult);
+      this._rendered.add(annotation);
       const {svg, clipPaths} = renderResult;
       this._svg.append(svg);
       clipPaths?.forEach(x => this._defs.append(x));

@@ -3,7 +3,6 @@ import { annotationTypes, LineEndingType, lineEndingTypes } from "../../../../co
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { PolyAnnotation } from "./poly-annotation";
-import { RenderToSvgResult } from "../../../../../common";
 
 export class PolylineAnnotation extends PolyAnnotation {  
   /**

@@ -4,7 +4,6 @@ import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { ObjectId } from "../../core/object-id";
 import { AnnotationDict } from "../annotation-dict";
-import { RenderToSvgResult } from "../../../../common";
 
 export class PopupAnnotation extends AnnotationDict {
   /**

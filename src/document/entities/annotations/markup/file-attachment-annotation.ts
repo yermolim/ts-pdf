@@ -2,7 +2,6 @@ import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 import { MarkupAnnotation } from "./markup-annotation";
-import { RenderToSvgResult } from "../../../../common";
 
 export const attachmentIconTypes = {
   PUSH_PIN: "/GraphPushPin",

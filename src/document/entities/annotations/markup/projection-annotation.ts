@@ -1,7 +1,6 @@
 import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { MarkupAnnotation } from "./markup-annotation";
-import { RenderToSvgResult } from "../../../../common";
 
 export class ProjectionAnnotation extends MarkupAnnotation {
   // TODO: implement
