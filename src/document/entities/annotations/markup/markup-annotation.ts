@@ -1,6 +1,7 @@
+import { Rect } from "../../../../common";
 import { codes } from "../../../codes";
 import { AnnotationType, valueTypes } from "../../../const";
-import { CryptInfo, Rect } from "../../../common-interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { DateString } from "../../strings/date-string";
 import { LiteralString } from "../../strings/literal-string";

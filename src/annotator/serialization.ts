@@ -1,4 +1,4 @@
-import { Matrix, Pair, Rect } from "../document/common-interfaces";
+import { Matrix, Pair, Rect } from "../common";
 
 export interface AnnotationDto {
   annotationType: string;

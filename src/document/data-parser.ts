@@ -1,7 +1,8 @@
+import { Rect } from "../common";
 import { codes, keywordCodes, isRegularChar,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./codes";
 import { ObjectType, ValueType, valueTypes } from "./const";
-import { CryptInfo, Rect } from "./common-interfaces";
+import { CryptInfo } from "./common-interfaces";
 
 export type SearchDirection = "straight" | "reverse";
 

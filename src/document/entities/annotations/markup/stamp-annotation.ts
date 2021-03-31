@@ -1,6 +1,6 @@
 import { annotationTypes } from "../../../const";
-import { getRandomUuid } from "../../../../common";
-import { CryptInfo, Rect } from "../../../common-interfaces";
+import { getRandomUuid, Rect } from "../../../../common";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { StampAnnotationDto } from "../../../../annotator/serialization";

@@ -1,8 +1,8 @@
 import { codes } from "../../../codes";
 import { Mat3, Vec2, vecMinMax } from "../../../../math";
-import { getRandomUuid } from "../../../../common";
+import { getRandomUuid, Rect } from "../../../../common";
 import { annotationTypes, valueTypes } from "../../../const";
-import { CryptInfo, Rect } from "../../../common-interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 
 import { PenData } from "../../../../annotator/pen-data";
 import { InkAnnotationDto } from "../../../../annotator/serialization";
@@ -15,7 +15,6 @@ import { BorderStyleDict } from "../../appearance/border-style-dict";
 import { ResourceDict } from "../../appearance/resource-dict";
 import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
-import { AnnotationDict } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export class InkAnnotation extends MarkupAnnotation {

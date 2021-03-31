@@ -1,7 +1,8 @@
+import { Rect, Pair } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { LineEndingType, lineEndingTypes, annotationTypes, 
   valueTypes } from "../../../../const";
-import { CryptInfo, Rect, Pair } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../appearance/measure-dict";

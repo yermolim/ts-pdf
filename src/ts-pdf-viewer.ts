@@ -5,10 +5,9 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { getDistance } from "./common";
+import { getDistance, Rect } from "./common";
 import { clamp, Vec2 } from "./math";
 
-import { Rect } from "./document/common-interfaces";
 import { AnnotEvent, AnnotEventDetail, DocumentData } from "./document/document-data";
 import { PageView } from "./page/page-view";
 import { ContextMenu } from "./helpers/context-menu";

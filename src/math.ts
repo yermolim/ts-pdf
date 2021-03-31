@@ -411,6 +411,7 @@ export class Vec3 {
     yield this.z;
   }
 }
+
 export class Mat3 {
   readonly length = 9;
   private readonly _matrix: number[] = new Array(this.length);

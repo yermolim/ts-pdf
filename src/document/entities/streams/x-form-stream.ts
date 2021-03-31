@@ -1,8 +1,8 @@
 import { Mat3, Vec2 } from "../../../math";
-import { BBox } from "../../../common";
+import { BBox, Matrix, Rect } from "../../../common";
 
 import { codes } from "../../codes";
-import { CryptInfo, Matrix, Rect } from "../../common-interfaces";
+import { CryptInfo } from "../../common-interfaces";
 import { streamTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 

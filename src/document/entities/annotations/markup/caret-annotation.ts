@@ -1,9 +1,9 @@
 import { codes } from "../../../codes";
 import { annotationTypes } from "../../../const";
-import { CryptInfo, Rect } from "../../../common-interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
-import { RenderToSvgResult } from "../../../../common";
+import { Rect } from "../../../../common";
 
 export const caretSymbolTypes = {
   NONE: "/None",

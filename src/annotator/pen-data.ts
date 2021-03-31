@@ -1,5 +1,5 @@
 import { Vec2 } from "../math";
-import { Matrix, Rect } from "../document/common-interfaces";
+import { Matrix, Rect } from "../common";
 
 interface PathData {
   path: SVGPathElement;

@@ -1,6 +1,5 @@
 import { Vec2 } from "../math";
-
-import { Rect } from "../document/common-interfaces";
+import { Rect } from "../common";
 import { DocumentData } from "../document/document-data";
 import { InkAnnotation } from "../document/entities/annotations/markup/ink-annotation";
 

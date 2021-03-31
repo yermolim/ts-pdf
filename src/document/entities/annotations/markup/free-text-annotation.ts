@@ -1,8 +1,9 @@
+import { Rect } from "../../../../common";
 import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
   LineEndingType, lineEndingTypes } from "../../../const";
-import { CryptInfo, Rect } from "../../../common-interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
 import { MarkupAnnotation } from "./markup-annotation";
