@@ -6,7 +6,7 @@ import { Vec2 } from "../math";
 import { DocumentData } from "../document/document-data";
 
 import { PageTextView } from "./page-text-view";
-import { PageAnnotationView as PageAnnotationsView } from "./page-annotations-view";
+import { PageAnnotationView } from "./page-annotation-view";
 
 export class PageView { 
   readonly number: number;
@@ -50,7 +50,7 @@ export class PageView {
   }
 
   private _text: PageTextView;
-  private _annotations: PageAnnotationsView;
+  private _annotations: PageAnnotationView;
 
   private _renderTask: {cancel: () => void; promise: Promise<void>};
   private _renderPromise: Promise<void>;
@@ -288,7 +288,7 @@ export class PageView {
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationsView(this._docData, this.id, new Vec2(x, y));
+      this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this.viewContainer);
 
