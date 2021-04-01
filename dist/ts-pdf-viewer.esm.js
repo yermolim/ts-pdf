@@ -12344,7 +12344,7 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class PageView {
-    constructor(pageProxy, docData, maxScale, previewWidth) {
+    constructor(pageProxy, docData, previewWidth) {
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
         }
@@ -12353,7 +12353,6 @@ class PageView {
         }
         this._pageProxy = pageProxy;
         this._viewport = pageProxy.getViewport({ scale: 1 });
-        this._maxScale = Math.max(maxScale, 1);
         this._docData = docData;
         this.number = pageProxy.pageNumber;
         this.id = pageProxy.ref["num"];
@@ -12503,20 +12502,6 @@ class PageView {
         canvas.width = this._dimensions.scaledDprWidth;
         canvas.height = this._dimensions.scaledDprHeight;
         return canvas;
-    }
-    scaleCanvasImage(sourceCanvas, targetCanvas) {
-        let ratio = this._scale / this._maxScale;
-        let tempSource = sourceCanvas;
-        let tempTarget;
-        while (ratio < 0.5) {
-            tempTarget = document.createElement("canvas");
-            tempTarget.width = tempSource.width * 0.5;
-            tempTarget.height = tempSource.height * 0.5;
-            tempTarget.getContext("2d").drawImage(tempSource, 0, 0, tempTarget.width, tempTarget.height);
-            tempSource = tempTarget;
-            ratio *= 2;
-        }
-        targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
     }
     runPreviewRenderAsync() {
         return __awaiter$2(this, void 0, void 0, function* () {
@@ -13693,7 +13678,7 @@ class TsPdfViewer {
             }
             for (let i = 0; i < docPagesNumber; i++) {
                 const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                const page = new PageView(pageProxy, this._docData, this._maxScale, this._previewWidth);
+                const page = new PageView(pageProxy, this._docData, this._previewWidth);
                 page.scale = this._scale;
                 page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
                 this._previewer.append(page.previewContainer);

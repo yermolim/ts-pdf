@@ -14,8 +14,7 @@ export class PageView {
   readonly generation: number;
   
   private readonly _pageProxy: PDFPageProxy; 
-  private readonly _viewport: PageViewport; 
-  private readonly _maxScale: number;
+  private readonly _viewport: PageViewport;
   private readonly _docData: DocumentData;
 
   private _dimensions: {
@@ -84,8 +83,7 @@ export class PageView {
     return this._scaleIsValid && this._viewRendered;
   }
 
-  constructor(pageProxy: PDFPageProxy, docData: DocumentData, 
-    maxScale: number, previewWidth: number) {
+  constructor(pageProxy: PDFPageProxy, docData: DocumentData, previewWidth: number) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
@@ -94,7 +92,6 @@ export class PageView {
     }
     this._pageProxy = pageProxy;
     this._viewport = pageProxy.getViewport({scale: 1});
-    this._maxScale = Math.max(maxScale, 1);
     this._docData = docData;
 
     this.number = pageProxy.pageNumber;
@@ -220,24 +217,6 @@ export class PageView {
     canvas.width = this._dimensions.scaledDprWidth;
     canvas.height = this._dimensions.scaledDprHeight;
     return canvas;
-  }
-
-  private scaleCanvasImage(sourceCanvas: HTMLCanvasElement, targetCanvas: HTMLCanvasElement) {
-    let ratio = this._scale / this._maxScale;
-    let tempSource = sourceCanvas;
-    let tempTarget: HTMLCanvasElement;
-
-    while (ratio < 0.5) {
-      tempTarget = document.createElement("canvas");
-      tempTarget.width = tempSource.width * 0.5;
-      tempTarget.height = tempSource.height * 0.5;
-      tempTarget.getContext("2d").drawImage(tempSource, 0, 0, tempTarget.width, tempTarget.height);
-
-      tempSource = tempTarget;
-      ratio *= 2;
-    }
-    
-    targetCanvas.getContext("2d").drawImage(tempSource, 0, 0, targetCanvas.width, targetCanvas.height);
   }
   
   private async runPreviewRenderAsync(): Promise<void> { 

@@ -492,7 +492,7 @@ export class TsPdfViewer {
     for (let i = 0; i < docPagesNumber; i++) {    
       const pageProxy = await this._pdfDocument.getPage(i + 1); 
 
-      const page = new PageView(pageProxy, this._docData, this._maxScale, this._previewWidth);
+      const page = new PageView(pageProxy, this._docData, this._previewWidth);
       page.scale = this._scale;
       page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
       this._previewer.append(page.previewContainer);
