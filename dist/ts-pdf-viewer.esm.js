@@ -12566,6 +12566,7 @@ class ContextMenu {
         };
         this._container = document.createElement("div");
         this._container.id = "context-menu";
+        this.hide();
         document.addEventListener("pointerdown", this.onPointerDownOutside);
     }
     set content(value) {
@@ -12584,16 +12585,20 @@ class ContextMenu {
         document.removeEventListener("pointerdown", this.onPointerDownOutside);
     }
     show(pointerPosition, parent) {
-        this.setContextMenuPosition(pointerPosition, parent);
         parent.append(this._container);
         this._shown = true;
+        setTimeout(() => {
+            this.setContextMenuPosition(pointerPosition, parent);
+            this._container.style.opacity = "1";
+        }, 0);
     }
     hide() {
+        this._container.style.opacity = "0";
         this._container.remove();
         this._shown = false;
     }
     clear() {
-        this._container.remove();
+        this.hide();
         this.content = null;
     }
     setContextMenuPosition(pointerPosition, parent) {
