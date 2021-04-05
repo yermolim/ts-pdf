@@ -363,7 +363,9 @@ export class TsPdfViewer {
       return;
     }
 
-    this.openPdfAsync(files[0]);
+    this.openPdfAsync(files[0]);    
+
+    this._fileInput.value = null;
   };
 
   private onOpenFileButtonClick = () => {    

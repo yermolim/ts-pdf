@@ -13115,6 +13115,7 @@ class TsPdfViewer {
                 return;
             }
             this.openPdfAsync(files[0]);
+            this._fileInput.value = null;
         };
         this.onOpenFileButtonClick = () => {
             this._shadowRoot.getElementById("open-file-input").click();
