@@ -21,7 +21,7 @@ import { ObjectStream } from "./entities/streams/object-stream";
 
 import { AnnotationDto, AnnotEvent, InkAnnotationDto, StampAnnotationDto } from "../annotator/serialization";
 
-import { AnnotationDict } from "./entities/annotations/annotation-dict";
+import { AnnotationDict, annotSelectionRequestEvent, AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
 import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
 import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
 import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
@@ -100,6 +100,8 @@ export class DocumentData {
     // console.log(this._encryption);
 
     this._userName = userName;
+    
+    document.addEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
   }
 
   //#region parsing xrefs
@@ -162,6 +164,8 @@ export class DocumentData {
   destroy() {
     // clear onEditedAction to prevent memory leak
     this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
+
+    document.removeEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
   }
 
   tryAuthenticate(password = ""): boolean {
@@ -584,4 +588,12 @@ export class DocumentData {
     return result;
   }
   //#endregion
+  
+  private onSelectionRequest = (e: AnnotSelectionRequestEvent) => {
+    if (e.detail?.annotation) {
+      this.setSelectedAnnotation(e.detail.annotation);
+    } else {
+      this.setSelectedAnnotation(null);
+    }
+  };
 }

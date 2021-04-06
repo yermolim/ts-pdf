@@ -2,6 +2,7 @@ import { RenderToSvgResult } from "../common";
 import { Vec2 } from "../math";
 import { DocumentData } from "../document/document-data";
 import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
+import { annotChangeEvent, AnnotEvent } from "../annotator/serialization";
 
 export class PageAnnotationView {  
   private readonly _pageId: number;
@@ -53,7 +54,7 @@ export class PageAnnotationView {
 
   remove() {    
     this._container?.remove();
-    document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
   async appendAsync(parent: HTMLElement) {
@@ -63,7 +64,7 @@ export class PageAnnotationView {
     
     await this.renderAnnotationsAsync();
     parent.append(this._container);
-    document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+    document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
@@ -87,12 +88,11 @@ export class PageAnnotationView {
       if (!renderResult) {
         continue;
       }      
+
       this._rendered.add(annotation);
       const {svg, clipPaths} = renderResult;
       this._svg.append(svg);
       clipPaths?.forEach(x => this._defs.append(x));
-      svg.addEventListener("pointerdown", 
-        () => this._docData.setSelectedAnnotation(annotation));
     }
 
     this._svg.append(this._defs);
@@ -105,12 +105,13 @@ export class PageAnnotationView {
     // this._rendered.clear();
   }
 
-  private onAnnotationSelectionChange = (e: Event) => {
-    const annotation: AnnotationDict = e["detail"].annotation;
-    if (annotation) {
-      this._container.style.touchAction = "none";
-    } else {
-      this._container.style.touchAction = "";
+  private onAnnotationSelectionChange = (e: AnnotEvent) => {
+    if (e.detail.type === "select") {
+      if (e.detail.annotations?.length) {
+        this._container.style.touchAction = "none";
+      } else {
+        this._container.style.touchAction = "";
+      }
     }
   };
 }

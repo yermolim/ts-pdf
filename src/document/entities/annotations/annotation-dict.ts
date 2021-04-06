@@ -16,6 +16,26 @@ import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
 import { AnnotationDto } from "../../../annotator/serialization";
 
+//#region custom events
+export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;
+
+export interface AnnotSelectionRequestEventDetail {
+  annotation: AnnotationDict;
+}
+
+export class AnnotSelectionRequestEvent extends CustomEvent<AnnotSelectionRequestEventDetail> {
+  constructor(detail: AnnotSelectionRequestEventDetail) {
+    super(annotSelectionRequestEvent, {detail});
+  }
+}
+
+declare global {
+  interface DocumentEventMap {
+    [annotSelectionRequestEvent]: AnnotSelectionRequestEvent;
+  }
+}
+//#endregion
+
 export abstract class AnnotationDict extends PdfDict {
   $name: string;
   $pageId: number;
@@ -607,12 +627,12 @@ export abstract class AnnotationDict extends PdfDict {
   }
 
   protected renderMainElement(): SVGGraphicsElement {    
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    rect.classList.add("svg-annotation");
-    rect.setAttribute("data-annotation-name", this.$name);    
-    rect.addEventListener("pointerdown", this.onRectPointerDown);
+    const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    mainSvg.classList.add("svg-annotation");
+    mainSvg.setAttribute("data-annotation-name", this.$name);    
+    mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
 
-    return rect;
+    return mainSvg;
   }
   //#endregion
 
@@ -764,8 +784,10 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region event handlers 
 
-  //#region translation handlers
+  //#region main svg handlers (selection + translation)
   protected onRectPointerDown = (e: PointerEvent) => { 
+    document.dispatchEvent(new AnnotSelectionRequestEvent({annotation: this}));
+
     if (!this.$translationEnabled || !e.isPrimary) {
       return;
     }

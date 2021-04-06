@@ -8072,6 +8072,12 @@ var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
+class AnnotSelectionRequestEvent extends CustomEvent {
+    constructor(detail) {
+        super(annotSelectionRequestEvent, { detail });
+    }
+}
 class AnnotationDict extends PdfDict {
     constructor(subType) {
         super(dictTypes.ANNOTATION);
@@ -8084,6 +8090,7 @@ class AnnotationDict extends PdfDict {
         this._boxY = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
+            document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation: this }));
             if (!this.$translationEnabled || !e.isPrimary) {
                 return;
             }
@@ -8664,11 +8671,11 @@ class AnnotationDict extends PdfDict {
         return boxPath;
     }
     renderMainElement() {
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        rect.classList.add("svg-annotation");
-        rect.setAttribute("data-annotation-name", this.$name);
-        rect.addEventListener("pointerdown", this.onRectPointerDown);
-        return rect;
+        const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        mainSvg.classList.add("svg-annotation");
+        mainSvg.setAttribute("data-annotation-name", this.$name);
+        mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
+        return mainSvg;
     }
     renderApAsync() {
         return __awaiter$5(this, void 0, void 0, function* () {
@@ -11802,6 +11809,15 @@ class DocumentData {
             }
             return null;
         };
+        this.onSelectionRequest = (e) => {
+            var _a;
+            if ((_a = e.detail) === null || _a === void 0 ? void 0 : _a.annotation) {
+                this.setSelectedAnnotation(e.detail.annotation);
+            }
+            else {
+                this.setSelectedAnnotation(null);
+            }
+        };
         this._data = data;
         this._docParser = new DataParser(data);
         this._version = this._docParser.getPdfVersion();
@@ -11821,6 +11837,7 @@ class DocumentData {
         this._referenceData = new ReferenceData(xrefs);
         this.parseEncryption();
         this._userName = userName;
+        document.addEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
     }
     get userName() {
         return this._userName;
@@ -11893,6 +11910,7 @@ class DocumentData {
     }
     destroy() {
         this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
+        document.removeEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
     }
     tryAuthenticate(password = "") {
         if (!this.authenticated) {
@@ -12281,12 +12299,14 @@ class PageAnnotationView {
     constructor(docData, pageId, pageDimensions) {
         this._rendered = new Set();
         this.onAnnotationSelectionChange = (e) => {
-            const annotation = e["detail"].annotation;
-            if (annotation) {
-                this._container.style.touchAction = "none";
-            }
-            else {
-                this._container.style.touchAction = "";
+            var _a;
+            if (e.detail.type === "select") {
+                if ((_a = e.detail.annotations) === null || _a === void 0 ? void 0 : _a.length) {
+                    this._container.style.touchAction = "none";
+                }
+                else {
+                    this._container.style.touchAction = "";
+                }
             }
         };
         if (!docData || isNaN(pageId) || !pageDimensions) {
@@ -12318,7 +12338,7 @@ class PageAnnotationView {
     remove() {
         var _a;
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
-        document.removeEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+        document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
     appendAsync(parent) {
         return __awaiter$3(this, void 0, void 0, function* () {
@@ -12327,7 +12347,7 @@ class PageAnnotationView {
             }
             yield this.renderAnnotationsAsync();
             parent.append(this._container);
-            document.addEventListener("annotationselectionchange", this.onAnnotationSelectionChange);
+            document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
         });
     }
     renderAnnotationsAsync() {
@@ -12353,7 +12373,6 @@ class PageAnnotationView {
                 const { svg, clipPaths } = renderResult;
                 this._svg.append(svg);
                 clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
-                svg.addEventListener("pointerdown", () => this._docData.setSelectedAnnotation(annotation));
             }
             this._svg.append(this._defs);
             return true;
