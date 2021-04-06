@@ -527,7 +527,7 @@ export const styles = /*html*/`
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
   }
@@ -568,12 +568,40 @@ export const styles = /*html*/`
   .context-menu-stamp-select-button:hover {
     background-color: var(--tspdf-color-accent-final);
   }
+  .context-menu-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    margin: 10px;
+    height: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: var(--tspdf-color-fg-secondary-final);
+  }
+  .context-menu-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: var(--tspdf-color-accent-final);
+  }
+  .context-menu-slider::-moz-range-thumb {
+    outline: none; 
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: var(--tspdf-color-accent-final);
+  }
+
   #open-file-input {
     position: absolute;
     opacity: 0;
     z-index: -10;
   }
-
   #button-open-file {
     pointer-events: auto !important;
   }

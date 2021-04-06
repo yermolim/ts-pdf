@@ -1,7 +1,7 @@
 import { codes } from "../../../codes";
 import { Mat3, Vec2, vecMinMax } from "../../../../math";
 import { getRandomUuid, Quadruple } from "../../../../common";
-import { annotationTypes, valueTypes } from "../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 
 import { PenData } from "../../../../annotator/pen-data";
@@ -251,6 +251,8 @@ export class InkAnnotation extends MarkupAnnotation {
     gs.ca = ca;
     gs.LW = width;
     gs.D = [[dash, gap], 0];
+    gs.LC = lineCapStyles.ROUND;
+    gs.LJ = lineJoinStyles.ROUND;
     stampApStream.Resources = new ResourceDict();
     stampApStream.Resources.setGraphicsState("/GS0", gs);
 

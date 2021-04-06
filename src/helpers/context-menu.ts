@@ -4,11 +4,11 @@ export class ContextMenu {
   private _container: HTMLDivElement;
   private _shown: boolean;
 
-  private _content: HTMLElement;
-  set content(value: HTMLElement) {
-    this._content?.remove();
-    if (value) {
-      this._container.append(value);
+  private _content: HTMLElement[];
+  set content(value: HTMLElement[]) {
+    this._content?.forEach(x => x.remove());
+    if (value?.length) {
+      value.forEach(x => this._container.append(x));
       this._content = value;
     } else {
       this._content = null;

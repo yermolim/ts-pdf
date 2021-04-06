@@ -1136,7 +1136,7 @@ export class TsPdfViewer {
       item.append(stampName);
       contextMenuContent.append(item);
     });
-    this._contextMenu.content = contextMenuContent;
+    this._contextMenu.content = [contextMenuContent];
     this._contextMenuEnabled = true;
   }
 
@@ -1147,24 +1147,45 @@ export class TsPdfViewer {
       [0, 0.804, 0, 0.5], // green
       [0, 0, 0.804, 0.5], // blue
     ];
-    const contextMenuContent = document.createElement("div");
-    contextMenuContent.classList.add("context-menu-content", "row");
+    const contextMenuColorPicker = document.createElement("div");
+    contextMenuColorPicker.classList.add("context-menu-content", "row");
     colors.forEach(x => {          
       const item = document.createElement("div");
       item.classList.add("panel-button");
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer, x);
+        this._annotator = new PenAnnotator(this._docData, this._viewer, {
+          color:x,
+        });
         this.updateAnnotatorPageData();
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
       colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
       item.append(colorIcon);
-      contextMenuContent.append(item);
+      contextMenuColorPicker.append(item);
     });
-    this._contextMenu.content = contextMenuContent;
+
+    const contextMenuWidthSlider = document.createElement("div");
+    contextMenuWidthSlider.classList.add("context-menu-content", "row");
+    const slider = document.createElement("input");
+    slider.setAttribute("type", "range");
+    slider.setAttribute("min", "1");
+    slider.setAttribute("max", "32");
+    slider.setAttribute("step", "1");
+    slider.setAttribute("value", "3");
+    slider.classList.add("context-menu-slider");
+    slider.addEventListener("change", () => {      
+      this._annotator?.destroy();
+      this._annotator = new PenAnnotator(this._docData, this._viewer, {
+        strokeWidth: slider.valueAsNumber,
+      });
+      this.updateAnnotatorPageData();
+    });
+    contextMenuWidthSlider.append(slider);
+
+    this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
     this._contextMenuEnabled = true;
   }
 

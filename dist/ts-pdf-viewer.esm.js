@@ -732,7 +732,7 @@ const styles = `
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
   }
@@ -773,12 +773,40 @@ const styles = `
   .context-menu-stamp-select-button:hover {
     background-color: var(--tspdf-color-accent-final);
   }
+  .context-menu-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    margin: 10px;
+    height: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: var(--tspdf-color-fg-secondary-final);
+  }
+  .context-menu-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: var(--tspdf-color-accent-final);
+  }
+  .context-menu-slider::-moz-range-thumb {
+    outline: none; 
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    background-color: var(--tspdf-color-accent-final);
+  }
+
   #open-file-input {
     position: absolute;
     opacity: 0;
     z-index: -10;
   }
-
   #button-open-file {
     pointer-events: auto !important;
   }
@@ -11663,6 +11691,8 @@ class InkAnnotation extends MarkupAnnotation {
         gs.ca = ca;
         gs.LW = width;
         gs.D = [[dash, gap], 0];
+        gs.LC = lineCapStyles.ROUND;
+        gs.LJ = lineJoinStyles.ROUND;
         stampApStream.Resources = new ResourceDict();
         stampApStream.Resources.setGraphicsState("/GS0", gs);
         let streamTextData = `q ${colorString} /GS0 gs`;
@@ -12571,9 +12601,9 @@ class ContextMenu {
     }
     set content(value) {
         var _a;
-        (_a = this._content) === null || _a === void 0 ? void 0 : _a.remove();
-        if (value) {
-            this._container.append(value);
+        (_a = this._content) === null || _a === void 0 ? void 0 : _a.forEach(x => x.remove());
+        if (value === null || value === void 0 ? void 0 : value.length) {
+            value.forEach(x => this._container.append(x));
             this._content = value;
         }
         else {
@@ -12956,7 +12986,7 @@ class PathChangeEvent extends CustomEvent {
     }
 }
 class PenAnnotator extends Annotator {
-    constructor(docData, parent, color) {
+    constructor(docData, parent, options) {
         super(docData, parent);
         this.onPenPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
@@ -13005,8 +13035,10 @@ class PenAnnotator extends Annotator {
             this.emitPathCount();
         };
         this.init();
-        this._color = color || PenAnnotator.lastColor || [0, 0, 0, 0.5];
+        this._color = (options === null || options === void 0 ? void 0 : options.color) || PenAnnotator.lastColor || [0, 0, 0, 0.9];
         PenAnnotator.lastColor = this._color;
+        this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || PenAnnotator.lastStrokeWidth || 3;
+        PenAnnotator.lastStrokeWidth = this._strokeWidth;
     }
     destroy() {
         this.removeTempPenData();
@@ -13062,7 +13094,11 @@ class PenAnnotator extends Annotator {
     }
     resetTempPenData(pageId) {
         this.removeTempPenData();
-        this._annotationPenData = new PenData({ id: pageId, color: this._color });
+        this._annotationPenData = new PenData({
+            id: pageId,
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+        });
         this._svgGroup.append(this._annotationPenData.group);
         this.updatePenGroupPosition();
     }
@@ -13978,7 +14014,7 @@ class TsPdfViewer {
             item.append(stampName);
             contextMenuContent.append(item);
         });
-        this._contextMenu.content = contextMenuContent;
+        this._contextMenu.content = [contextMenuContent];
         this._contextMenuEnabled = true;
     }
     initContextPenColorPicker() {
@@ -13988,8 +14024,8 @@ class TsPdfViewer {
             [0, 0.804, 0, 0.5],
             [0, 0, 0.804, 0.5],
         ];
-        const contextMenuContent = document.createElement("div");
-        contextMenuContent.classList.add("context-menu-content", "row");
+        const contextMenuColorPicker = document.createElement("div");
+        contextMenuColorPicker.classList.add("context-menu-content", "row");
         colors.forEach(x => {
             const item = document.createElement("div");
             item.classList.add("panel-button");
@@ -13997,16 +14033,36 @@ class TsPdfViewer {
                 var _a;
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = new PenAnnotator(this._docData, this._viewer, x);
+                this._annotator = new PenAnnotator(this._docData, this._viewer, {
+                    color: x,
+                });
                 this.updateAnnotatorPageData();
             });
             const colorIcon = document.createElement("div");
             colorIcon.classList.add("context-menu-color-icon");
             colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
             item.append(colorIcon);
-            contextMenuContent.append(item);
+            contextMenuColorPicker.append(item);
         });
-        this._contextMenu.content = contextMenuContent;
+        const contextMenuWidthSlider = document.createElement("div");
+        contextMenuWidthSlider.classList.add("context-menu-content", "row");
+        const slider = document.createElement("input");
+        slider.setAttribute("type", "range");
+        slider.setAttribute("min", "1");
+        slider.setAttribute("max", "32");
+        slider.setAttribute("step", "1");
+        slider.setAttribute("value", "3");
+        slider.classList.add("context-menu-slider");
+        slider.addEventListener("change", () => {
+            var _a;
+            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._annotator = new PenAnnotator(this._docData, this._viewer, {
+                strokeWidth: slider.valueAsNumber,
+            });
+            this.updateAnnotatorPageData();
+        });
+        contextMenuWidthSlider.append(slider);
+        this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
         this._contextMenuEnabled = true;
     }
     updateAnnotatorPageData() {
