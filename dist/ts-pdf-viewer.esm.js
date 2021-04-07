@@ -5339,6 +5339,15 @@ class IndexedColorSpaceArray {
     }
 }
 
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ImageStream extends PdfStream {
     constructor() {
         super(streamTypes.FORM_XOBJECT);
@@ -5424,56 +5433,58 @@ class ImageStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    async getImageUrlAsync() {
-        if (this._imageUrl) {
-            URL.revokeObjectURL(this._imageUrl);
-        }
-        if (this.Filter === streamFilters.DCT
-            || this.Filter === streamFilters.JBIG2
-            || this.Filter === streamFilters.JPX) {
-            const blob = new Blob([this.decodedStreamData], {
-                type: "application/octet-binary",
-            });
-            const imageUrl = URL.createObjectURL(blob);
-            this._imageUrl = imageUrl;
-            return imageUrl;
-        }
-        if (this.Filter === streamFilters.FLATE) {
-            const length = this.Width * this.Height;
-            let alpha;
-            if (this.sMask) {
-                alpha = this.sMask.decodedStreamData;
-                if (alpha.length !== length) {
-                    throw new Error(`Invalid alpha mask data length: ${alpha.length} (must be ${length})`);
-                }
+    getImageUrlAsync() {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            if (this._imageUrl) {
+                URL.revokeObjectURL(this._imageUrl);
             }
-            else {
-                alpha = new Uint8Array(length).fill(255);
-            }
-            const data = new Uint8ClampedArray(length * 4);
-            for (let i = 0; i < length; i++) {
-                const [r, g, b] = this.getColor(i);
-                data[i * 4] = r;
-                data[i * 4 + 1] = g;
-                data[i * 4 + 2] = b;
-                data[i * 4 + 3] = alpha[i];
-            }
-            const imageData = new ImageData(data, this.Width, this.Height);
-            const urlPromise = new Promise((resolve, reject) => {
-                const canvas = document.createElement("canvas");
-                canvas.width = this.Width;
-                canvas.height = this.Height;
-                canvas.getContext("2d").putImageData(imageData, 0, 0);
-                canvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    resolve(url);
+            if (this.Filter === streamFilters.DCT
+                || this.Filter === streamFilters.JBIG2
+                || this.Filter === streamFilters.JPX) {
+                const blob = new Blob([this.decodedStreamData], {
+                    type: "application/octet-binary",
                 });
-            });
-            const imageUrl = await urlPromise;
-            this._imageUrl = imageUrl;
-            return imageUrl;
-        }
-        throw new Error(`Unsupported image filter type: ${this.Filter}`);
+                const imageUrl = URL.createObjectURL(blob);
+                this._imageUrl = imageUrl;
+                return imageUrl;
+            }
+            if (this.Filter === streamFilters.FLATE) {
+                const length = this.Width * this.Height;
+                let alpha;
+                if (this.sMask) {
+                    alpha = this.sMask.decodedStreamData;
+                    if (alpha.length !== length) {
+                        throw new Error(`Invalid alpha mask data length: ${alpha.length} (must be ${length})`);
+                    }
+                }
+                else {
+                    alpha = new Uint8Array(length).fill(255);
+                }
+                const data = new Uint8ClampedArray(length * 4);
+                for (let i = 0; i < length; i++) {
+                    const [r, g, b] = this.getColor(i);
+                    data[i * 4] = r;
+                    data[i * 4 + 1] = g;
+                    data[i * 4 + 2] = b;
+                    data[i * 4 + 3] = alpha[i];
+                }
+                const imageData = new ImageData(data, this.Width, this.Height);
+                const urlPromise = new Promise((resolve, reject) => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = this.Width;
+                    canvas.height = this.Height;
+                    canvas.getContext("2d").putImageData(imageData, 0, 0);
+                    canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        resolve(url);
+                    });
+                });
+                const imageUrl = yield urlPromise;
+                this._imageUrl = imageUrl;
+                return imageUrl;
+            }
+            throw new Error(`Unsupported image filter type: ${this.Filter}`);
+        });
     }
     parseProps(parseInfo) {
         super.parseProps(parseInfo);
@@ -7608,6 +7619,15 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class AppearanceStreamRenderer {
     constructor(stream, rect, objectName) {
         this._clipPaths = [];
@@ -7697,12 +7717,14 @@ class AppearanceStreamRenderer {
         }
         return { endIndex: i, parameters, operator };
     }
-    async renderAsync() {
-        const g = await this.drawGroupAsync(this._parser);
-        return {
-            svg: g,
-            clipPaths: this._clipPaths,
-        };
+    renderAsync() {
+        return __awaiter$6(this, void 0, void 0, function* () {
+            const g = yield this.drawGroupAsync(this._parser);
+            return {
+                svg: g,
+                clipPaths: this._clipPaths,
+            };
+        });
     }
     pushState(params) {
         const lastState = this._graphicsStates[this._graphicsStates.length - 1];
@@ -7763,282 +7785,293 @@ class AppearanceStreamRenderer {
         }
         return g;
     }
-    async drawGroupAsync(parser) {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        const lastCoord = new Vec2();
-        let lastOperator;
-        let d = "";
-        const addPath = (path) => {
-            g.append(path);
-            d = "";
-        };
-        let i = 0;
-        while (i !== -1) {
-            const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
-            i = parser.skipEmpty(endIndex + 1);
-            switch (operator) {
-                case "q":
-                    this.pushState();
-                    break;
-                case "Q":
-                    this.popState();
-                    break;
-                case "gs":
-                    const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
-                    if (!externalState) {
-                        throw new Error("External state specified in appearance stream not found");
-                    }
-                    const params = externalState.toParams();
-                    Object.assign(this.state, params);
-                    break;
-                case "cm":
-                    const [m0, m1, m3, m4, m6, m7] = parameters;
-                    const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-                    this.state.matrix = matrix.multiply(this.state.matrix);
-                    break;
-                case "w":
-                    this.state.strokeWidth = +parameters[0] || 1;
-                    break;
-                case "J":
-                    switch (parameters[0]) {
-                        case lineCapStyles.ROUND:
-                            this.state.strokeLineCap = "round";
-                            break;
-                        case lineCapStyles.SQUARE:
-                            this.state.strokeLineCap = "square";
-                            break;
-                        case lineCapStyles.BUTT:
-                        default:
-                            this.state.strokeLineCap = "butt";
-                            break;
-                    }
-                    break;
-                case "j":
-                    switch (parameters[0]) {
-                        case lineJoinStyles.BEVEL:
-                            this.state.strokeLineJoin = "bevel";
-                            break;
-                        case lineJoinStyles.ROUND:
-                            this.state.strokeLineJoin = "round";
-                            break;
-                        case lineJoinStyles.MITER:
-                        default:
-                            this.state.strokeLineJoin = "miter";
-                            break;
-                    }
-                    break;
-                case "M":
-                    this.state.strokeMiterLimit = +parameters[0] || 10;
-                    break;
-                case "d":
-                    this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
-                    this.state.strokeDashOffset = +parameters[2];
-                    break;
-                case "CS":
-                    switch (parameters[0]) {
-                        case colorSpaces.GRAYSCALE:
-                            this.state.strokeColorSpace = "grayscale";
-                            break;
-                        case colorSpaces.RGB:
-                            this.state.strokeColorSpace = "rgb";
-                            break;
-                        case colorSpaces.CMYK:
-                            this.state.strokeColorSpace = "cmyk";
-                            break;
-                        default:
-                            throw new Error("Unsupported color space in appearance stream");
-                    }
-                    break;
-                case "cs":
-                    switch (parameters[0]) {
-                        case colorSpaces.GRAYSCALE:
-                            this.state.fillColorSpace = "grayscale";
-                            break;
-                        case colorSpaces.RGB:
-                            this.state.fillColorSpace = "rgb";
-                            break;
-                        case colorSpaces.CMYK:
-                            this.state.fillColorSpace = "cmyk";
-                            break;
-                        default:
-                            throw new Error("Unsupported color space in appearance stream");
-                    }
-                    break;
-                case "G":
-                    this.state.strokeColorSpace = "grayscale";
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "g":
-                    this.state.fillColorSpace = "grayscale";
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "RG":
-                    this.state.strokeColorSpace = "rgb";
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "rg":
-                    this.state.fillColorSpace = "rgb";
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "K":
-                    this.state.strokeColorSpace = "cmyk";
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "k":
-                    this.state.fillColorSpace = "cmyk";
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "SC":
-                    this.state.setColor("stroke", ...parameters);
-                    break;
-                case "cs":
-                    this.state.setColor("fill", ...parameters);
-                    break;
-                case "ri":
-                case "i":
-                    break;
-                case "m":
-                    const move = new Vec2(+parameters[0], +parameters[1]);
-                    d += ` M ${move.x} ${move.y}`;
-                    lastCoord.setFromVec2(move);
-                    break;
-                case "l":
-                    const line = new Vec2(+parameters[0], +parameters[1]);
-                    d += ` L ${line.x} ${line.y}`;
-                    lastCoord.setFromVec2(line);
-                    break;
-                case "re":
-                    const rMin = new Vec2(+parameters[0], +parameters[1]);
-                    const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
-                    d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
-                    lastCoord.setFromVec2(rMin);
-                    break;
-                case "c":
-                    const cControl1 = new Vec2(+parameters[0], +parameters[1]);
-                    const cControl2 = new Vec2(+parameters[2], +parameters[3]);
-                    const cEnd = new Vec2(+parameters[4], +parameters[5]);
-                    d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
-                    lastCoord.setFromVec2(cEnd);
-                    break;
-                case "v":
-                    const vControl2 = new Vec2(+parameters[0], +parameters[1]);
-                    const vEnd = new Vec2(+parameters[2], +parameters[3]);
-                    d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
-                    lastCoord.setFromVec2(vEnd);
-                    break;
-                case "y":
-                    const yControl1 = new Vec2(+parameters[0], +parameters[1]);
-                    const yEnd = new Vec2(+parameters[2], +parameters[3]);
-                    d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
-                    lastCoord.setFromVec2(yEnd);
-                    break;
-                case "h":
-                    d += " Z";
-                    break;
-                case "S":
-                    addPath(this.drawPath(d, true, false));
-                    break;
-                case "s":
-                    addPath(this.drawPath(d, true, false, true));
-                    break;
-                case "F":
-                case "f":
-                    addPath(this.drawPath(d, false, true, true));
-                    break;
-                case "F*":
-                case "f*":
-                    addPath(this.drawPath(d, false, true, true, true));
-                    break;
-                case "B":
-                    addPath(this.drawPath(d, true, true, false, false));
-                    break;
-                case "B*":
-                    addPath(this.drawPath(d, true, true, false, true));
-                    break;
-                case "b":
-                    addPath(this.drawPath(d, true, true, true, false));
-                    break;
-                case "b*":
-                    addPath(this.drawPath(d, true, true, true, true));
-                    break;
-                case "n":
-                    if (lastOperator === "W" || lastOperator === "W*") {
-                        if (d[d.length - 1] !== "Z") {
-                            d += " Z";
-                        }
-                        const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                        clippingPath.setAttribute("d", d);
-                        const lastCpIndex = this._clipPaths.length - 1;
-                        const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-                        clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
-                        clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
-                        clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
-                        clipPath.append(clippingPath);
-                        this._clipPaths.push(clipPath);
-                        this.state.clipPath = clipPath;
-                    }
-                    d = "";
-                    break;
-                case "W":
-                    break;
-                case "W*":
-                    break;
-                case "BT":
-                    const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
-                        closedOnly: true,
-                        minIndex: i,
-                    });
-                    if (textObjectEnd) {
-                        const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
-                        g.append(textGroup);
-                        i = parser.skipEmpty(textObjectEnd.end + 1);
+    drawGroupAsync(parser) {
+        return __awaiter$6(this, void 0, void 0, function* () {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const lastCoord = new Vec2();
+            let lastOperator;
+            let d = "";
+            const addPath = (path) => {
+                g.append(path);
+                d = "";
+            };
+            let i = 0;
+            while (i !== -1) {
+                const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+                i = parser.skipEmpty(endIndex + 1);
+                switch (operator) {
+                    case "q":
+                        this.pushState();
                         break;
-                    }
-                    throw new Error("Can't find the appearance stream text object end");
-                case "Do":
-                    const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
-                    if (!stream) {
-                        throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
-                    }
-                    if (stream instanceof XFormStream) {
-                        const subGroup = await this.drawGroupAsync(new DataParser(stream.decodedStreamData));
-                        g.append(subGroup);
-                    }
-                    else if (stream instanceof ImageStream) {
-                        const url = await stream.getImageUrlAsync();
-                        if (!url) {
-                            throw new Error("Can't get image url from external image stream");
+                    case "Q":
+                        this.popState();
+                        break;
+                    case "gs":
+                        const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
+                        if (!externalState) {
+                            throw new Error("External state specified in appearance stream not found");
                         }
-                        const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-                        image.onerror = e => {
-                            console.log(`Loading external image stream failed: ${e}`);
-                        };
-                        image.setAttribute("href", url);
-                        image.setAttribute("width", stream.Width + "");
-                        image.setAttribute("height", stream.Height + "");
-                        const imageMatrix = new Mat3()
-                            .applyTranslation(-stream.Width / 2, -stream.Height / 2)
-                            .applyScaling(1, -1)
-                            .applyTranslation(stream.Width / 2, stream.Height / 2)
-                            .applyScaling(1 / stream.Width, 1 / stream.Height)
-                            .multiply(this.state.matrix);
-                        image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
-                        image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
-                        g.append(image);
-                    }
-                    else {
-                        throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
-                    }
-                    break;
-                default:
-                    throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                        const params = externalState.toParams();
+                        Object.assign(this.state, params);
+                        break;
+                    case "cm":
+                        const [m0, m1, m3, m4, m6, m7] = parameters;
+                        const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+                        this.state.matrix = matrix.multiply(this.state.matrix);
+                        break;
+                    case "w":
+                        this.state.strokeWidth = +parameters[0] || 1;
+                        break;
+                    case "J":
+                        switch (parameters[0]) {
+                            case lineCapStyles.ROUND:
+                                this.state.strokeLineCap = "round";
+                                break;
+                            case lineCapStyles.SQUARE:
+                                this.state.strokeLineCap = "square";
+                                break;
+                            case lineCapStyles.BUTT:
+                            default:
+                                this.state.strokeLineCap = "butt";
+                                break;
+                        }
+                        break;
+                    case "j":
+                        switch (parameters[0]) {
+                            case lineJoinStyles.BEVEL:
+                                this.state.strokeLineJoin = "bevel";
+                                break;
+                            case lineJoinStyles.ROUND:
+                                this.state.strokeLineJoin = "round";
+                                break;
+                            case lineJoinStyles.MITER:
+                            default:
+                                this.state.strokeLineJoin = "miter";
+                                break;
+                        }
+                        break;
+                    case "M":
+                        this.state.strokeMiterLimit = +parameters[0] || 10;
+                        break;
+                    case "d":
+                        this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
+                        this.state.strokeDashOffset = +parameters[2];
+                        break;
+                    case "CS":
+                        switch (parameters[0]) {
+                            case colorSpaces.GRAYSCALE:
+                                this.state.strokeColorSpace = "grayscale";
+                                break;
+                            case colorSpaces.RGB:
+                                this.state.strokeColorSpace = "rgb";
+                                break;
+                            case colorSpaces.CMYK:
+                                this.state.strokeColorSpace = "cmyk";
+                                break;
+                            default:
+                                throw new Error("Unsupported color space in appearance stream");
+                        }
+                        break;
+                    case "cs":
+                        switch (parameters[0]) {
+                            case colorSpaces.GRAYSCALE:
+                                this.state.fillColorSpace = "grayscale";
+                                break;
+                            case colorSpaces.RGB:
+                                this.state.fillColorSpace = "rgb";
+                                break;
+                            case colorSpaces.CMYK:
+                                this.state.fillColorSpace = "cmyk";
+                                break;
+                            default:
+                                throw new Error("Unsupported color space in appearance stream");
+                        }
+                        break;
+                    case "G":
+                        this.state.strokeColorSpace = "grayscale";
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "g":
+                        this.state.fillColorSpace = "grayscale";
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "RG":
+                        this.state.strokeColorSpace = "rgb";
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "rg":
+                        this.state.fillColorSpace = "rgb";
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "K":
+                        this.state.strokeColorSpace = "cmyk";
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "k":
+                        this.state.fillColorSpace = "cmyk";
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "SC":
+                        this.state.setColor("stroke", ...parameters);
+                        break;
+                    case "cs":
+                        this.state.setColor("fill", ...parameters);
+                        break;
+                    case "ri":
+                    case "i":
+                        break;
+                    case "m":
+                        const move = new Vec2(+parameters[0], +parameters[1]);
+                        d += ` M ${move.x} ${move.y}`;
+                        lastCoord.setFromVec2(move);
+                        break;
+                    case "l":
+                        const line = new Vec2(+parameters[0], +parameters[1]);
+                        d += ` L ${line.x} ${line.y}`;
+                        lastCoord.setFromVec2(line);
+                        break;
+                    case "re":
+                        const rMin = new Vec2(+parameters[0], +parameters[1]);
+                        const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
+                        d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
+                        lastCoord.setFromVec2(rMin);
+                        break;
+                    case "c":
+                        const cControl1 = new Vec2(+parameters[0], +parameters[1]);
+                        const cControl2 = new Vec2(+parameters[2], +parameters[3]);
+                        const cEnd = new Vec2(+parameters[4], +parameters[5]);
+                        d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
+                        lastCoord.setFromVec2(cEnd);
+                        break;
+                    case "v":
+                        const vControl2 = new Vec2(+parameters[0], +parameters[1]);
+                        const vEnd = new Vec2(+parameters[2], +parameters[3]);
+                        d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
+                        lastCoord.setFromVec2(vEnd);
+                        break;
+                    case "y":
+                        const yControl1 = new Vec2(+parameters[0], +parameters[1]);
+                        const yEnd = new Vec2(+parameters[2], +parameters[3]);
+                        d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
+                        lastCoord.setFromVec2(yEnd);
+                        break;
+                    case "h":
+                        d += " Z";
+                        break;
+                    case "S":
+                        addPath(this.drawPath(d, true, false));
+                        break;
+                    case "s":
+                        addPath(this.drawPath(d, true, false, true));
+                        break;
+                    case "F":
+                    case "f":
+                        addPath(this.drawPath(d, false, true, true));
+                        break;
+                    case "F*":
+                    case "f*":
+                        addPath(this.drawPath(d, false, true, true, true));
+                        break;
+                    case "B":
+                        addPath(this.drawPath(d, true, true, false, false));
+                        break;
+                    case "B*":
+                        addPath(this.drawPath(d, true, true, false, true));
+                        break;
+                    case "b":
+                        addPath(this.drawPath(d, true, true, true, false));
+                        break;
+                    case "b*":
+                        addPath(this.drawPath(d, true, true, true, true));
+                        break;
+                    case "n":
+                        if (lastOperator === "W" || lastOperator === "W*") {
+                            if (d[d.length - 1] !== "Z") {
+                                d += " Z";
+                            }
+                            const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                            clippingPath.setAttribute("d", d);
+                            const lastCpIndex = this._clipPaths.length - 1;
+                            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+                            clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
+                            clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
+                            clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
+                            clipPath.append(clippingPath);
+                            this._clipPaths.push(clipPath);
+                            this.state.clipPath = clipPath;
+                        }
+                        d = "";
+                        break;
+                    case "W":
+                        break;
+                    case "W*":
+                        break;
+                    case "BT":
+                        const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
+                            closedOnly: true,
+                            minIndex: i,
+                        });
+                        if (textObjectEnd) {
+                            const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
+                            g.append(textGroup);
+                            i = parser.skipEmpty(textObjectEnd.end + 1);
+                            break;
+                        }
+                        throw new Error("Can't find the appearance stream text object end");
+                    case "Do":
+                        const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
+                        if (!stream) {
+                            throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
+                        }
+                        if (stream instanceof XFormStream) {
+                            const subGroup = yield this.drawGroupAsync(new DataParser(stream.decodedStreamData));
+                            g.append(subGroup);
+                        }
+                        else if (stream instanceof ImageStream) {
+                            const url = yield stream.getImageUrlAsync();
+                            if (!url) {
+                                throw new Error("Can't get image url from external image stream");
+                            }
+                            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+                            image.onerror = e => {
+                                console.log(`Loading external image stream failed: ${e}`);
+                            };
+                            image.setAttribute("href", url);
+                            image.setAttribute("width", stream.Width + "");
+                            image.setAttribute("height", stream.Height + "");
+                            const imageMatrix = new Mat3()
+                                .applyTranslation(-stream.Width / 2, -stream.Height / 2)
+                                .applyScaling(1, -1)
+                                .applyTranslation(stream.Width / 2, stream.Height / 2)
+                                .applyScaling(1 / stream.Width, 1 / stream.Height)
+                                .multiply(this.state.matrix);
+                            image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
+                            image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+                            g.append(image);
+                        }
+                        else {
+                            throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
+                        }
+                        break;
+                    default:
+                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                }
+                lastOperator = operator;
             }
-            lastOperator = operator;
-        }
-        return g;
+            return g;
+        });
     }
 }
 
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
 class AnnotSelectionRequestEvent extends CustomEvent {
     constructor(detail) {
@@ -8312,19 +8345,21 @@ class AnnotationDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    async renderAsync() {
-        if (!this._svg) {
-            this._svg = this.renderMainElement();
-        }
-        await this.updateRenderAsync();
-        const renderResult = {
-            svg: this._svg,
-            clipPaths: this._svgClipPaths,
-            tempCopy: this._svgContentCopy,
-            tempCopyUse: this._svgContentCopyUse,
-        };
-        this._lastRenderResult = renderResult;
-        return renderResult;
+    renderAsync() {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            if (!this._svg) {
+                this._svg = this.renderMainElement();
+            }
+            yield this.updateRenderAsync();
+            const renderResult = {
+                svg: this._svg,
+                clipPaths: this._svgClipPaths,
+                tempCopy: this._svgContentCopy,
+                tempCopyUse: this._svgContentCopyUse,
+            };
+            this._lastRenderResult = renderResult;
+            return renderResult;
+        });
     }
     moveTo(pageX, pageY) {
         const width = this.Rect[2] - this.Rect[0];
@@ -8642,18 +8677,20 @@ class AnnotationDict extends PdfDict {
         mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
         return mainSvg;
     }
-    async renderApAsync() {
-        const stream = this.apStream;
-        if (stream) {
-            try {
-                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
-                return await renderer.renderAsync();
+    renderApAsync() {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            const stream = this.apStream;
+            if (stream) {
+                try {
+                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
+                    return yield renderer.renderAsync();
+                }
+                catch (e) {
+                    console.log(`Annotation stream render error: ${e.message}`);
+                }
             }
-            catch (e) {
-                console.log(`Annotation stream render error: ${e.message}`);
-            }
-        }
-        return null;
+            return null;
+        });
     }
     renderContent() {
         return null;
@@ -8724,31 +8761,33 @@ class AnnotationDict extends PdfDict {
     renderHandles() {
         return [...this.renderScaleHandles(), this.renderRotationHandle()];
     }
-    async updateRenderAsync() {
-        this._svg.innerHTML = "";
-        const contentResult = this.renderContent() || await this.renderApAsync();
-        if (!contentResult) {
-            this._svgBox = null;
-            this._svgContent = null;
-            this._svgContentCopy = null;
-            this._svgContentCopyUse = null;
-            this._svgClipPaths = null;
-            return;
-        }
-        const content = contentResult.svg;
-        content.id = this._svgId;
-        content.classList.add("svg-annotation-content");
-        content.setAttribute("data-annotation-name", this.$name);
-        const { copy, use } = this.renderContentCopy();
-        const rect = this.renderRect();
-        const box = this.renderBox();
-        const handles = this.renderHandles();
-        this._svg.append(rect, box, contentResult.svg, ...handles);
-        this._svgBox = box;
-        this._svgContent = content;
-        this._svgContentCopy = copy;
-        this._svgContentCopyUse = use;
-        this._svgClipPaths = contentResult.clipPaths;
+    updateRenderAsync() {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            this._svg.innerHTML = "";
+            const contentResult = this.renderContent() || (yield this.renderApAsync());
+            if (!contentResult) {
+                this._svgBox = null;
+                this._svgContent = null;
+                this._svgContentCopy = null;
+                this._svgContentCopyUse = null;
+                this._svgClipPaths = null;
+                return;
+            }
+            const content = contentResult.svg;
+            content.id = this._svgId;
+            content.classList.add("svg-annotation-content");
+            content.setAttribute("data-annotation-name", this.$name);
+            const { copy, use } = this.renderContentCopy();
+            const rect = this.renderRect();
+            const box = this.renderBox();
+            const handles = this.renderHandles();
+            this._svg.append(rect, box, contentResult.svg, ...handles);
+            this._svgBox = box;
+            this._svgContent = content;
+            this._svgContentCopy = copy;
+            this._svgContentCopyUse = use;
+            this._svgClipPaths = contentResult.clipPaths;
+        });
     }
 }
 
@@ -12160,6 +12199,15 @@ class DocumentData {
     }
 }
 
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PageTextView {
     constructor(pageProxy) {
         this.onMouseDown = (e) => {
@@ -12186,11 +12234,13 @@ class PageTextView {
         this._container.addEventListener("mousedown", this.onMouseDown);
         this._container.addEventListener("mouseup", this.onMouseUp);
     }
-    static async appendPageTextAsync(pageProxy, parent, scale) {
-        const textObj = new PageTextView(pageProxy);
-        await textObj.renderTextLayerAsync(scale);
-        parent.append(textObj._container);
-        return textObj;
+    static appendPageTextAsync(pageProxy, parent, scale) {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            const textObj = new PageTextView(pageProxy);
+            yield textObj.renderTextLayerAsync(scale);
+            parent.append(textObj._container);
+            return textObj;
+        });
     }
     destroy() {
         this.destroyRenderTask();
@@ -12199,29 +12249,31 @@ class PageTextView {
             this._container = null;
         }
     }
-    async renderTextLayerAsync(scale) {
-        this.clear();
-        this.destroyRenderTask();
-        const viewport = this._pageProxy.getViewport({ scale });
-        const textContentStream = this._pageProxy.streamTextContent();
-        this._renderTask = renderTextLayer({
-            container: this._container,
-            textContentStream,
-            viewport,
-            enhanceTextSelection: true,
+    renderTextLayerAsync(scale) {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            this.clear();
+            this.destroyRenderTask();
+            const viewport = this._pageProxy.getViewport({ scale });
+            const textContentStream = this._pageProxy.streamTextContent();
+            this._renderTask = renderTextLayer({
+                container: this._container,
+                textContentStream,
+                viewport,
+                enhanceTextSelection: true,
+            });
+            try {
+                yield this._renderTask.promise;
+            }
+            catch (error) {
+                if (error.message === "TextLayer task cancelled.") {
+                    return false;
+                }
+                else {
+                    throw error;
+                }
+            }
+            return true;
         });
-        try {
-            await this._renderTask.promise;
-        }
-        catch (error) {
-            if (error.message === "TextLayer task cancelled.") {
-                return false;
-            }
-            else {
-                throw error;
-            }
-        }
-        return true;
     }
     clear() {
         this._container.innerHTML = "";
@@ -12234,6 +12286,15 @@ class PageTextView {
     }
 }
 
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PageAnnotationView {
     constructor(docData, pageId, pageDimensions) {
         this._rendered = new Set();
@@ -12279,45 +12340,58 @@ class PageAnnotationView {
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
         document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
-    async appendAsync(parent) {
-        if (this._destroyed) {
-            return;
-        }
-        await this.renderAnnotationsAsync();
-        parent.append(this._container);
-        document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
+    appendAsync(parent) {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            if (this._destroyed) {
+                return;
+            }
+            yield this.renderAnnotationsAsync();
+            parent.append(this._container);
+            document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
+        });
     }
-    async renderAnnotationsAsync() {
-        this.clear();
-        const annotations = this._docData.getPageAnnotations(this._pageId) || [];
-        for (let i = 0; i < annotations.length || 0; i++) {
-            const annotation = annotations[i];
-            if (annotation.deleted) {
-                continue;
+    renderAnnotationsAsync() {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            this.clear();
+            const annotations = this._docData.getPageAnnotations(this._pageId) || [];
+            for (let i = 0; i < annotations.length || 0; i++) {
+                const annotation = annotations[i];
+                if (annotation.deleted) {
+                    continue;
+                }
+                let renderResult;
+                if (!this._rendered.has(annotation)) {
+                    renderResult = yield annotation.renderAsync();
+                }
+                else {
+                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync());
+                }
+                if (!renderResult) {
+                    continue;
+                }
+                this._rendered.add(annotation);
+                const { svg, clipPaths } = renderResult;
+                this._svg.append(svg);
+                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
             }
-            let renderResult;
-            if (!this._rendered.has(annotation)) {
-                renderResult = await annotation.renderAsync();
-            }
-            else {
-                renderResult = annotation.lastRenderResult || await annotation.renderAsync();
-            }
-            if (!renderResult) {
-                continue;
-            }
-            this._rendered.add(annotation);
-            const { svg, clipPaths } = renderResult;
-            this._svg.append(svg);
-            clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
-        }
-        this._svg.append(this._defs);
-        return true;
+            this._svg.append(this._defs);
+            return true;
+        });
     }
     clear() {
         this._svg.innerHTML = "";
     }
 }
 
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PageView {
     constructor(pageProxy, docData, previewWidth) {
         if (!pageProxy) {
@@ -12389,31 +12463,35 @@ class PageView {
         this._viewContainer.remove();
         this._pageProxy.cleanup();
     }
-    async renderPreviewAsync(force = false) {
-        if (this._renderPromise) {
-            if (force) {
-                this.cancelRenderTask();
+    renderPreviewAsync(force = false) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
             }
-            await this._renderPromise;
-        }
-        if (!force && this._previewRendered) {
-            return;
-        }
-        this._renderPromise = this.runPreviewRenderAsync();
-        return this._renderPromise;
+            if (!force && this._previewRendered) {
+                return;
+            }
+            this._renderPromise = this.runPreviewRenderAsync();
+            return this._renderPromise;
+        });
     }
-    async renderViewAsync(force = false) {
-        if (this._renderPromise) {
-            if (force) {
-                this.cancelRenderTask();
+    renderViewAsync(force = false) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
             }
-            await this._renderPromise;
-        }
-        if (!force && this.viewValid) {
-            return;
-        }
-        this._renderPromise = this.runViewRenderAsync();
-        return this._renderPromise;
+            if (!force && this.viewValid) {
+                return;
+            }
+            this._renderPromise = this.runViewRenderAsync();
+            return this._renderPromise;
+        });
     }
     clearPreview() {
         this._previewContainer.innerHTML = "";
@@ -12433,24 +12511,26 @@ class PageView {
             this._renderTask = null;
         }
     }
-    async runRenderTaskAsync(renderParams) {
-        this.cancelRenderTask();
-        this._renderTask = this._pageProxy.render(renderParams);
-        try {
-            await this._renderTask.promise;
-        }
-        catch (error) {
-            if (error instanceof RenderingCancelledException) {
-                return false;
+    runRenderTaskAsync(renderParams) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            this.cancelRenderTask();
+            this._renderTask = this._pageProxy.render(renderParams);
+            try {
+                yield this._renderTask.promise;
             }
-            else {
-                throw error;
+            catch (error) {
+                if (error instanceof RenderingCancelledException) {
+                    return false;
+                }
+                else {
+                    throw error;
+                }
             }
-        }
-        finally {
-            this._renderTask = null;
-        }
-        return true;
+            finally {
+                this._renderTask = null;
+            }
+            return true;
+        });
     }
     createPreviewCanvas() {
         const canvas = document.createElement("canvas");
@@ -12472,49 +12552,53 @@ class PageView {
         canvas.height = this._dimensions.scaledDprHeight;
         return canvas;
     }
-    async runPreviewRenderAsync() {
-        const canvas = this.createPreviewCanvas();
-        const params = {
-            canvasContext: canvas.getContext("2d"),
-            viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
-        };
-        const result = await this.runRenderTaskAsync(params);
-        if (!result) {
-            this._previewRendered = false;
-            return;
-        }
-        this._previewContainer.innerHTML = "";
-        this._previewContainer.append(canvas);
-        this._previewRendered = true;
+    runPreviewRenderAsync() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            const canvas = this.createPreviewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result) {
+                this._previewRendered = false;
+                return;
+            }
+            this._previewContainer.innerHTML = "";
+            this._previewContainer.append(canvas);
+            this._previewRendered = true;
+        });
     }
-    async runViewRenderAsync() {
+    runViewRenderAsync() {
         var _a, _b;
-        const scale = this._scale;
-        (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._text = null;
-        const canvas = this.createViewCanvas();
-        const params = {
-            canvasContext: canvas.getContext("2d"),
-            viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
-            enableWebGL: true,
-        };
-        const result = await this.runRenderTaskAsync(params);
-        if (!result || scale !== this._scale) {
-            return;
-        }
-        (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
-        this._viewContainer.append(canvas);
-        this._viewCanvas = canvas;
-        this._viewRendered = true;
-        this._text = await PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
-        if (!this._annotations) {
-            const { width: x, height: y } = this._dimensions;
-            this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
-        }
-        await this._annotations.appendAsync(this.viewContainer);
-        if (scale === this._scale) {
-            this._scaleIsValid = true;
-        }
+        return __awaiter$2(this, void 0, void 0, function* () {
+            const scale = this._scale;
+            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._text = null;
+            const canvas = this.createViewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
+                enableWebGL: true,
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result || scale !== this._scale) {
+                return;
+            }
+            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+            this._viewContainer.append(canvas);
+            this._viewCanvas = canvas;
+            this._viewRendered = true;
+            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            if (!this._annotations) {
+                const { width: x, height: y } = this._dimensions;
+                this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
+            }
+            yield this._annotations.appendAsync(this.viewContainer);
+            if (scale === this._scale) {
+                this._scaleIsValid = true;
+            }
+        });
     }
 }
 
@@ -12727,6 +12811,15 @@ class Annotator {
     }
 }
 
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class StampAnnotator extends Annotator {
     constructor(docData, parent, type) {
         super(docData, parent);
@@ -12780,13 +12873,15 @@ class StampAnnotator extends Annotator {
         this._overlay.addEventListener("pointerup", this.onStampPointerUp);
         this.createTempStampAnnotationAsync();
     }
-    async createTempStampAnnotationAsync() {
-        const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
-        const renderResult = await stamp.renderAsync();
-        this._svgGroup.innerHTML = "";
-        this._svgGroup.append(...renderResult.clipPaths || []);
-        this._svgGroup.append(renderResult.svg);
-        this._tempAnnotation = stamp;
+    createTempStampAnnotationAsync() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
+            const renderResult = yield stamp.renderAsync();
+            this._svgGroup.innerHTML = "";
+            this._svgGroup.append(...renderResult.clipPaths || []);
+            this._svgGroup.append(renderResult.svg);
+            this._tempAnnotation = stamp;
+        });
     }
 }
 StampAnnotator.lastType = "/Draft";
@@ -13034,6 +13129,15 @@ class PenAnnotator extends Annotator {
     }
 }
 
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TsPdfViewer {
     constructor(options) {
         this._visibleAdjPages = 0;
@@ -13083,16 +13187,16 @@ class TsPdfViewer {
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
-        this.onPdfLoadedAsync = async (doc, docData) => {
+        this.onPdfLoadedAsync = (doc, docData) => __awaiter(this, void 0, void 0, function* () {
             this._pdfDocument = doc;
             this._docData = docData;
             this.setAnnotationMode("select");
-            await this.refreshPagesAsync();
+            yield this.refreshPagesAsync();
             this.renderVisiblePreviews();
             this.renderVisiblePages();
             this._mainContainer.classList.remove("disabled");
-        };
-        this.onPdfClosedAsync = async () => {
+        });
+        this.onPdfClosedAsync = () => __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             this._mainContainer.classList.add("disabled");
             this.setViewerMode("text");
@@ -13104,8 +13208,8 @@ class TsPdfViewer {
                 (_b = this._docData) === null || _b === void 0 ? void 0 : _b.destroy();
                 this._docData = null;
             }
-            await this.refreshPagesAsync();
-        };
+            yield this.refreshPagesAsync();
+        });
         this.onPreviewerToggleClick = () => {
             if (this._previewerHidden) {
                 this._mainContainer.classList.remove("hide-previewer");
@@ -13393,66 +13497,70 @@ class TsPdfViewer {
         (_e = this._mainContainerRObserver) === null || _e === void 0 ? void 0 : _e.disconnect();
         this._shadowRoot.innerHTML = "";
     }
-    async openPdfAsync(src) {
-        let data;
-        let doc;
-        try {
-            if (src instanceof Uint8Array) {
-                data = src;
-            }
-            else {
-                let blob;
-                if (typeof src === "string") {
-                    const res = await fetch(src);
-                    blob = await res.blob();
+    openPdfAsync(src) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let data;
+            let doc;
+            try {
+                if (src instanceof Uint8Array) {
+                    data = src;
                 }
                 else {
-                    blob = src;
+                    let blob;
+                    if (typeof src === "string") {
+                        const res = yield fetch(src);
+                        blob = yield res.blob();
+                    }
+                    else {
+                        blob = src;
+                    }
+                    const buffer = yield blob.arrayBuffer();
+                    data = new Uint8Array(buffer);
                 }
-                const buffer = await blob.arrayBuffer();
-                data = new Uint8Array(buffer);
             }
-        }
-        catch (e) {
-            throw new Error(`Cannot load file data: ${e.message}`);
-        }
-        const docData = new DocumentData(data, this._userName);
-        let password;
-        while (true) {
-            const authenticated = docData.tryAuthenticate(password);
-            if (!authenticated) {
-                password = await this.showPasswordDialogAsync();
-                if (password === null) {
-                    throw new Error("File loading cancelled: authentication aborted");
+            catch (e) {
+                throw new Error(`Cannot load file data: ${e.message}`);
+            }
+            const docData = new DocumentData(data, this._userName);
+            let password;
+            while (true) {
+                const authenticated = docData.tryAuthenticate(password);
+                if (!authenticated) {
+                    password = yield this.showPasswordDialogAsync();
+                    if (password === null) {
+                        throw new Error("File loading cancelled: authentication aborted");
+                    }
+                    continue;
                 }
-                continue;
+                break;
             }
-            break;
-        }
-        data = docData.getDataWithoutSupportedAnnotations();
-        try {
-            if (this._pdfLoadingTask) {
-                await this.closePdfAsync();
-                return this.openPdfAsync(data);
+            data = docData.getDataWithoutSupportedAnnotations();
+            try {
+                if (this._pdfLoadingTask) {
+                    yield this.closePdfAsync();
+                    return this.openPdfAsync(data);
+                }
+                this._pdfLoadingTask = getDocument({ data, password });
+                this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
+                doc = yield this._pdfLoadingTask.promise;
+                this._pdfLoadingTask = null;
             }
-            this._pdfLoadingTask = getDocument({ data, password });
-            this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
-            doc = await this._pdfLoadingTask.promise;
-            this._pdfLoadingTask = null;
-        }
-        catch (e) {
-            throw new Error(`Cannot open PDF: ${e.message}`);
-        }
-        await this.onPdfLoadedAsync(doc, docData);
+            catch (e) {
+                throw new Error(`Cannot open PDF: ${e.message}`);
+            }
+            yield this.onPdfLoadedAsync(doc, docData);
+        });
     }
-    async closePdfAsync() {
-        if (this._pdfLoadingTask) {
-            if (!this._pdfLoadingTask.destroyed) {
-                await this._pdfLoadingTask.destroy();
+    closePdfAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._pdfLoadingTask) {
+                if (!this._pdfLoadingTask.destroyed) {
+                    yield this._pdfLoadingTask.destroy();
+                }
+                this._pdfLoadingTask = null;
             }
-            this._pdfLoadingTask = null;
-        }
-        await this.onPdfClosedAsync();
+            yield this.onPdfClosedAsync();
+        });
     }
     importAnnotations(dtos) {
         var _a;
@@ -13616,27 +13724,29 @@ class TsPdfViewer {
             }
         });
     }
-    async refreshPagesAsync() {
+    refreshPagesAsync() {
         var _a;
-        this._pages.forEach(x => {
-            x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
-            x.destroy();
+        return __awaiter(this, void 0, void 0, function* () {
+            this._pages.forEach(x => {
+                x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
+                x.destroy();
+            });
+            this._pages.length = 0;
+            const docPagesNumber = ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.numPages) || 0;
+            this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
+            if (!docPagesNumber) {
+                return;
+            }
+            for (let i = 0; i < docPagesNumber; i++) {
+                const pageProxy = yield this._pdfDocument.getPage(i + 1);
+                const page = new PageView(pageProxy, this._docData, this._previewWidth);
+                page.scale = this._scale;
+                page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
+                this._previewer.append(page.previewContainer);
+                this._viewer.append(page.viewContainer);
+                this._pages.push(page);
+            }
         });
-        this._pages.length = 0;
-        const docPagesNumber = ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.numPages) || 0;
-        this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-        if (!docPagesNumber) {
-            return;
-        }
-        for (let i = 0; i < docPagesNumber; i++) {
-            const pageProxy = await this._pdfDocument.getPage(i + 1);
-            const page = new PageView(pageProxy, this._docData, this._previewWidth);
-            page.scale = this._scale;
-            page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
-            this._previewer.append(page.previewContainer);
-            this._viewer.append(page.viewContainer);
-            this._pages.push(page);
-        }
     }
     scrollToPreview(pageNumber) {
         const { top: cTop, height: cHeight } = this._previewer.getBoundingClientRect();
@@ -13981,33 +14091,35 @@ class TsPdfViewer {
             this._annotator.refreshViewBox();
         }
     }
-    async showPasswordDialogAsync() {
-        const passwordPromise = new Promise((resolve, reject) => {
-            const dialogContainer = document.createElement("div");
-            dialogContainer.id = "password-dialog";
-            dialogContainer.innerHTML = passwordDialogHtml;
-            this._mainContainer.append(dialogContainer);
-            let value = "";
-            const input = this._shadowRoot.getElementById("password-input");
-            input.placeholder = "Enter password...";
-            input.addEventListener("change", () => value = input.value);
-            const ok = () => {
-                dialogContainer.remove();
-                resolve(value);
-            };
-            const cancel = () => {
-                dialogContainer.remove();
-                resolve(null);
-            };
-            dialogContainer.addEventListener("click", (e) => {
-                if (e.target === dialogContainer) {
-                    cancel();
-                }
+    showPasswordDialogAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const passwordPromise = new Promise((resolve, reject) => {
+                const dialogContainer = document.createElement("div");
+                dialogContainer.id = "password-dialog";
+                dialogContainer.innerHTML = passwordDialogHtml;
+                this._mainContainer.append(dialogContainer);
+                let value = "";
+                const input = this._shadowRoot.getElementById("password-input");
+                input.placeholder = "Enter password...";
+                input.addEventListener("change", () => value = input.value);
+                const ok = () => {
+                    dialogContainer.remove();
+                    resolve(value);
+                };
+                const cancel = () => {
+                    dialogContainer.remove();
+                    resolve(null);
+                };
+                dialogContainer.addEventListener("click", (e) => {
+                    if (e.target === dialogContainer) {
+                        cancel();
+                    }
+                });
+                this._shadowRoot.getElementById("password-ok").addEventListener("click", ok);
+                this._shadowRoot.getElementById("password-cancel").addEventListener("click", cancel);
             });
-            this._shadowRoot.getElementById("password-ok").addEventListener("click", ok);
-            this._shadowRoot.getElementById("password-cancel").addEventListener("click", cancel);
+            return passwordPromise;
         });
-        return passwordPromise;
     }
 }
 
