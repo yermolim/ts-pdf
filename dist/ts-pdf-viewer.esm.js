@@ -8083,11 +8083,11 @@ class AnnotationDict extends PdfDict {
         super(dictTypes.ANNOTATION);
         this.F = 4;
         this.Border = new BorderArray(0, 0, 1);
-        this._transformationMatrix = new Mat3();
-        this._transformationPoint = new Vec2();
         this._currentAngle = 0;
-        this._boxX = new Vec2();
-        this._boxY = new Vec2();
+        this._tempTransformationMatrix = new Mat3();
+        this._tempStartPoint = new Vec2();
+        this._tempVecX = new Vec2();
+        this._tempVecY = new Vec2();
         this._svgId = getRandomUuid();
         this.onRectPointerDown = (e) => {
             document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation: this }));
@@ -8099,7 +8099,7 @@ class AnnotationDict extends PdfDict {
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
-                this._transformationPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
+                this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
                 document.addEventListener("pointermove", this.onRectPointerMove);
             }, 200);
         };
@@ -8108,9 +8108,9 @@ class AnnotationDict extends PdfDict {
                 return;
             }
             const current = this.convertClientCoordsToPage(e.clientX, e.clientY);
-            this._transformationMatrix.reset()
-                .applyTranslation(current.x - this._transformationPoint.x, current.y - this._transformationPoint.y);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+            this._tempTransformationMatrix.reset()
+                .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRectPointerUp = (e) => {
             if (!e.isPrimary) {
@@ -8119,15 +8119,7 @@ class AnnotationDict extends PdfDict {
             document.removeEventListener("pointermove", this.onRectPointerMove);
             document.removeEventListener("pointerup", this.onRectPointerUp);
             document.removeEventListener("pointerout", this.onRectPointerUp);
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            this._svgContentCopy.remove();
-            this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-            this.applyCommonTransform(this._transformationMatrix);
-            this._transformationMatrix.reset();
+            this.applyTempTransform();
             this.updateRenderAsync();
         };
         this.onRotationHandlePointerDown = (e) => {
@@ -8153,11 +8145,11 @@ class AnnotationDict extends PdfDict {
             const currentRotation = this.getCurrentRotation();
             const angle = Math.atan2(e.clientY - clientCenter.y, e.clientX - clientCenter.x) + Math.PI / 2 - currentRotation;
             this._currentAngle = angle;
-            this._transformationMatrix.reset()
+            this._tempTransformationMatrix.reset()
                 .applyTranslation(-centerX, -centerY)
                 .applyRotation(angle)
                 .applyTranslation(centerX, centerY);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onRotationHandlePointerUp = (e) => {
             if (!e.isPrimary) {
@@ -8166,15 +8158,7 @@ class AnnotationDict extends PdfDict {
             document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
             document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
             document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            this._svgContentCopy.remove();
-            this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-            this.applyCommonTransform(this._transformationMatrix);
-            this._transformationMatrix.reset();
+            this.applyTempTransform();
             this.updateRenderAsync();
         };
         this.onScaleHandlePointerDown = (e) => {
@@ -8188,30 +8172,30 @@ class AnnotationDict extends PdfDict {
             const handleName = target.dataset["handleName"];
             switch (handleName) {
                 case "ll":
-                    this._transformationPoint.setFromVec2(ur);
-                    this._boxX.setFromVec2(ul).substract(ur);
-                    this._boxY.setFromVec2(lr).substract(ur);
+                    this._tempStartPoint.setFromVec2(ur);
+                    this._tempVecX.setFromVec2(ul).substract(ur);
+                    this._tempVecY.setFromVec2(lr).substract(ur);
                     break;
                 case "lr":
-                    this._transformationPoint.setFromVec2(ul);
-                    this._boxX.setFromVec2(ur).substract(ul);
-                    this._boxY.setFromVec2(ll).substract(ul);
+                    this._tempStartPoint.setFromVec2(ul);
+                    this._tempVecX.setFromVec2(ur).substract(ul);
+                    this._tempVecY.setFromVec2(ll).substract(ul);
                     break;
                 case "ur":
-                    this._transformationPoint.setFromVec2(ll);
-                    this._boxX.setFromVec2(lr).substract(ll);
-                    this._boxY.setFromVec2(ul).substract(ll);
+                    this._tempStartPoint.setFromVec2(ll);
+                    this._tempVecX.setFromVec2(lr).substract(ll);
+                    this._tempVecY.setFromVec2(ul).substract(ll);
                     break;
                 case "ul":
-                    this._transformationPoint.setFromVec2(lr);
-                    this._boxX.setFromVec2(ll).substract(lr);
-                    this._boxY.setFromVec2(ur).substract(lr);
+                    this._tempStartPoint.setFromVec2(lr);
+                    this._tempVecX.setFromVec2(ll).substract(lr);
+                    this._tempVecY.setFromVec2(ur).substract(lr);
                     break;
                 default:
                     throw new Error(`Invalid handle name: ${handleName}`);
             }
-            this._boxXLength = this._boxX.getMagnitude();
-            this._boxYLength = this._boxY.getMagnitude();
+            this._tempX = this._tempVecX.getMagnitude();
+            this._tempY = this._tempVecY.getMagnitude();
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
@@ -8223,26 +8207,28 @@ class AnnotationDict extends PdfDict {
             if (!e.isPrimary) {
                 return;
             }
-            const current = this.convertClientCoordsToPage(e.clientX, e.clientY)
-                .substract(this._transformationPoint);
-            const currentLength = current.getMagnitude();
-            const cos = Math.abs(current.dotProduct(this._boxX)) / currentLength / this._boxXLength;
-            const pXLength = cos * currentLength;
-            const pYLength = Math.sqrt(currentLength * currentLength - pXLength * pXLength);
-            const scaleX = pXLength / this._boxXLength;
-            const scaleY = pYLength / this._boxYLength;
-            const centerX = (this.Rect[0] + this.Rect[2]) / 2;
-            const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+            const currentBoxDiagonal = this.convertClientCoordsToPage(e.clientX, e.clientY)
+                .substract(this._tempStartPoint);
+            const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
+            const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecX))
+                / currentBoxDiagonalLength / this._tempX;
+            const currentXSideLength = cos * currentBoxDiagonalLength;
+            const currentYSideLength = Math.sqrt(currentBoxDiagonalLength * currentBoxDiagonalLength
+                - currentXSideLength * currentXSideLength);
+            const scaleX = currentXSideLength / this._tempX;
+            const scaleY = currentYSideLength / this._tempY;
+            const annotCenterX = (this.Rect[0] + this.Rect[2]) / 2;
+            const annotCenterY = (this.Rect[1] + this.Rect[3]) / 2;
             const currentRotation = this.getCurrentRotation();
-            this._transformationMatrix.reset()
-                .applyTranslation(-centerX, -centerY)
+            this._tempTransformationMatrix.reset()
+                .applyTranslation(-annotCenterX, -annotCenterY)
                 .applyRotation(-currentRotation)
                 .applyScaling(scaleX, scaleY)
                 .applyRotation(currentRotation)
-                .applyTranslation(centerX, centerY);
-            const translation = this._transformationPoint.clone().substract(this._transformationPoint.clone().applyMat3(this._transformationMatrix));
-            this._transformationMatrix.applyTranslation(translation.x, translation.y);
-            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._transformationMatrix.toFloatShortArray().join(" ")})`);
+                .applyTranslation(annotCenterX, annotCenterY);
+            const translation = this._tempStartPoint.clone().substract(this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));
+            this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onScaleHandlePointerUp = (e) => {
             if (!e.isPrimary) {
@@ -8251,15 +8237,7 @@ class AnnotationDict extends PdfDict {
             document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
             document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
             document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            this._svgContentCopy.remove();
-            this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-            this.applyCommonTransform(this._transformationMatrix);
-            this._transformationMatrix.reset();
+            this.applyTempTransform();
             this.updateRenderAsync();
         };
         this.Subtype = subType;
@@ -8629,7 +8607,7 @@ class AnnotationDict extends PdfDict {
         const dict = this._proxy || this;
         const stream = dict.apStream;
         if (stream) {
-            const newApMatrix = stream.matrix.multiply(matrix);
+            const newApMatrix = Mat3.multiply(stream.matrix, matrix);
             dict.apStream.matrix = newApMatrix;
         }
         dict.M = DateString.fromDate(new Date());
@@ -8677,24 +8655,6 @@ class AnnotationDict extends PdfDict {
         mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
         return mainSvg;
     }
-    renderApAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            const stream = this.apStream;
-            if (stream) {
-                try {
-                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
-                    return yield renderer.renderAsync();
-                }
-                catch (e) {
-                    console.log(`Annotation stream render error: ${e.message}`);
-                }
-            }
-            return null;
-        });
-    }
-    renderContent() {
-        return null;
-    }
     renderContentCopy() {
         const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
@@ -8712,6 +8672,24 @@ class AnnotationDict extends PdfDict {
         use.setAttribute("opacity", "0.2");
         copy.append(copyDefs, use);
         return { copy, use };
+    }
+    renderApAsync() {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            const stream = this.apStream;
+            if (stream) {
+                try {
+                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
+                    return yield renderer.renderAsync();
+                }
+                catch (e) {
+                    console.log(`Annotation stream render error: ${e.message}`);
+                }
+            }
+            return null;
+        });
+    }
+    renderContent() {
+        return null;
     }
     renderScaleHandles() {
         const bBox = this.getLocalBB();
@@ -8763,6 +8741,9 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         return __awaiter$5(this, void 0, void 0, function* () {
+            if (!this._svg) {
+                return;
+            }
             this._svg.innerHTML = "";
             const contentResult = this.renderContent() || (yield this.renderApAsync());
             if (!contentResult) {
@@ -8788,6 +8769,17 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse = use;
             this._svgClipPaths = contentResult.clipPaths;
         });
+    }
+    applyTempTransform() {
+        if (this._transformationTimer) {
+            clearTimeout(this._transformationTimer);
+            this._transformationTimer = null;
+            return;
+        }
+        this._svgContentCopy.remove();
+        this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+        this.applyCommonTransform(this._tempTransformationMatrix);
+        this._tempTransformationMatrix.reset();
     }
 }
 
@@ -13187,29 +13179,6 @@ class TsPdfViewer {
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
-        this.onPdfLoadedAsync = (doc, docData) => __awaiter(this, void 0, void 0, function* () {
-            this._pdfDocument = doc;
-            this._docData = docData;
-            this.setAnnotationMode("select");
-            yield this.refreshPagesAsync();
-            this.renderVisiblePreviews();
-            this.renderVisiblePages();
-            this._mainContainer.classList.remove("disabled");
-        });
-        this.onPdfClosedAsync = () => __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            this._mainContainer.classList.add("disabled");
-            this.setViewerMode("text");
-            if (this._pdfDocument) {
-                this._pdfDocument.destroy();
-                this._pdfDocument = null;
-                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = null;
-                (_b = this._docData) === null || _b === void 0 ? void 0 : _b.destroy();
-                this._docData = null;
-            }
-            yield this.refreshPagesAsync();
-        });
         this.onPreviewerToggleClick = () => {
             if (this._previewerHidden) {
                 this._mainContainer.classList.remove("hide-previewer");
@@ -13548,10 +13517,17 @@ class TsPdfViewer {
             catch (e) {
                 throw new Error(`Cannot open PDF: ${e.message}`);
             }
-            yield this.onPdfLoadedAsync(doc, docData);
+            this._pdfDocument = doc;
+            this._docData = docData;
+            this.setAnnotationMode("select");
+            yield this.refreshPagesAsync();
+            this.renderVisiblePreviews();
+            this.renderVisiblePages();
+            this._mainContainer.classList.remove("disabled");
         });
     }
     closePdfAsync() {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             if (this._pdfLoadingTask) {
                 if (!this._pdfLoadingTask.destroyed) {
@@ -13559,7 +13535,17 @@ class TsPdfViewer {
                 }
                 this._pdfLoadingTask = null;
             }
-            yield this.onPdfClosedAsync();
+            this._mainContainer.classList.add("disabled");
+            this.setViewerMode("text");
+            if (this._pdfDocument) {
+                this._pdfDocument.destroy();
+                this._pdfDocument = null;
+                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+                this._annotator = null;
+                (_b = this._docData) === null || _b === void 0 ? void 0 : _b.destroy();
+                this._docData = null;
+            }
+            yield this.refreshPagesAsync();
         });
     }
     importAnnotations(dtos) {

@@ -96,8 +96,6 @@ export declare class TsPdfViewer {
 	private initModeSwitchButtons;
 	private initAnnotationButtons;
 	private onPdfLoadingProgress;
-	private onPdfLoadedAsync;
-	private onPdfClosedAsync;
 	private refreshPagesAsync;
 	private scrollToPreview;
 	private onPreviewerToggleClick;

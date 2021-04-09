@@ -15,15 +15,18 @@ export abstract class PdfObject implements IEncodable {
   set ref(ref: Reference) {
     this._ref = ref;
   }
+  /**pdf object id */
   get id(): number {
     return this._ref?.id;
   }
+  /**pdf object generation */
   get generation(): number {
     return this._ref?.generation;
   } 
   //#endregion 
   
   //#region detecting changes
+  /**proxy object used for detecting changes to public properties */
   protected _proxy: PdfObject; 
   
   protected _added = false;
@@ -129,5 +132,10 @@ export abstract class PdfObject implements IEncodable {
   }
   //#endregion
 
+  /**
+   * serialize the object to the byte array compliant to the PDF specification
+   * @param cryptInfo 
+   * @returns 
+   */
   abstract toArray(cryptInfo?: CryptInfo): Uint8Array;
 }

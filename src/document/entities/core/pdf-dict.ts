@@ -14,6 +14,7 @@ export abstract class PdfDict extends PdfObject {
   // }
   
   protected _streamId: number;
+  /**pdf object id of the stream the object is parsed from */
   get streamId(): number {
     return this._streamId;
   }

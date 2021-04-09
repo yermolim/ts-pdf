@@ -22,15 +22,22 @@ type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 type FileButtons = "open" | "save" | "close";
 
 export interface TsPdfViewerOptions {
+  /**parent container CSS selector */
   containerSelector: string;
+  /**path to the PDF.js worker */
   workerSource: string;
+  /**current user name (used for annotations) */
   userName?: string;
 
+  /**list of the file interaction buttons shown*/
   fileButtons?: FileButtons[];
+  /**action to execute instead of the default file open action*/
   fileOpenAction?: () => void;
+  /**action to execute instead of the default file download action*/
   fileSaveAction?: () => void;
   fileCloseAction?: () => void;
 
+  /**action to execute on annotation change event */
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
 }
 
@@ -40,6 +47,8 @@ export class TsPdfViewer {
   //#region private fields
   private readonly _userName: string;
 
+  // TODO: move readonly properties to the main options
+  /**count of the prerendered pages outside of the current viewer viewport */
   private readonly _visibleAdjPages = 0;
   private readonly _previewWidth = 100;
   private readonly _minScale = 0.25;
@@ -80,14 +89,17 @@ export class TsPdfViewer {
   private _contextMenu: ContextMenu;
   private _contextMenuEnabled: boolean;
   
+  /**information about the last pointer position */
   private _pointerInfo = {
     lastPos: <Vec2>null,
     downPos: <Vec2>null,
     downScroll: <Vec2>null, 
   };
+  /**common timers */
   private _timers = {    
     hidePanels: 0,
   };
+  /**the object used for touch zoom handling */
   private _pinchInfo = {
     active: false,
     lastDist: 0,
@@ -96,6 +108,7 @@ export class TsPdfViewer {
     target: <HTMLElement>null,
   };
   //#endregion
+
 
   constructor(options: TsPdfViewerOptions) {
     if (!options) {
@@ -135,6 +148,7 @@ export class TsPdfViewer {
     document.addEventListener("tspdf-annotchange", this.onAnnotationChange);
   }
 
+  /**create a temp download link and click on it */
   private static downloadFile(blob: Blob, name?: string) {
     const url = URL.createObjectURL(blob);
 
@@ -148,6 +162,7 @@ export class TsPdfViewer {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
+  /**free resources to let GC clean them to avoid memory leak */
   destroy() {
     document.removeEventListener("tspdf-annotchange", this.onAnnotationChange);
     this._annotChangeCallback = null;
@@ -170,6 +185,7 @@ export class TsPdfViewer {
     let data: Uint8Array;
     let doc: PDFDocumentProxy;
 
+    // get the plain pdf data as a byte array
     try {
       if (src instanceof Uint8Array) {
         data = src;
@@ -188,6 +204,7 @@ export class TsPdfViewer {
       throw new Error(`Cannot load file data: ${e.message}`);
     }
 
+    // create DocumentData
     const docData = new DocumentData(data, this._userName);
     let password: string;
     while (true) {      
@@ -202,9 +219,10 @@ export class TsPdfViewer {
       break;
     }
 
-    // data without supported annotations
+    // get the pdf data with the supported annotations cut out
     data = docData.getDataWithoutSupportedAnnotations();
 
+    // try open the data with PDF.js
     try {
       if (this._pdfLoadingTask) {
         await this.closePdfAsync();
@@ -219,7 +237,16 @@ export class TsPdfViewer {
       throw new Error(`Cannot open PDF: ${e.message}`);
     }
 
-    await this.onPdfLoadedAsync(doc, docData);
+    // update viewer state
+    this._pdfDocument = doc;
+    this._docData = docData;
+    this.setAnnotationMode("select");  
+
+    await this.refreshPagesAsync();
+    this.renderVisiblePreviews();
+    this.renderVisiblePages(); 
+
+    this._mainContainer.classList.remove("disabled");
   }
 
   async closePdfAsync(): Promise<void> {
@@ -230,9 +257,26 @@ export class TsPdfViewer {
       this._pdfLoadingTask = null;
     }
 
-    await this.onPdfClosedAsync();
+    // update viewer state
+    this._mainContainer.classList.add("disabled");
+    this.setViewerMode("text");
+    if (this._pdfDocument) {
+      this._pdfDocument.destroy();
+      this._pdfDocument = null;
+
+      this._annotator?.destroy();
+      this._annotator = null;
+      
+      this._docData?.destroy();
+      this._docData = null;
+    }
+    await this.refreshPagesAsync();
   }
   
+  /**
+   * import previously exported TsPdf annotations
+   * @param dtos annotation data transfer objects
+   */
   importAnnotations(dtos: AnnotationDto[]) {
     try {
       this._docData?.appendSerializedAnnotations(dtos);
@@ -241,11 +285,19 @@ export class TsPdfViewer {
     }
   }
   
+  /**
+   * export TsPdf annotations as data transfer objects
+   * @returns 
+   */
   exportAnnotations(): AnnotationDto[] {
     const dtos = this._docData?.serializeAnnotations(true);
     return dtos;
-  }
+  }  
   
+  /**
+   * import previously exported serialized TsPdf annotations
+   * @param json serialized annotation data transfer objects
+   */
   importAnnotationsFromJson(json: string) {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
@@ -255,11 +307,19 @@ export class TsPdfViewer {
     }
   }
   
+  /**
+   * export TsPdf annotations as a serialized array of data transfer objects
+   * @returns 
+   */
   exportAnnotationsToJson(): string {
     const dtos = this._docData?.serializeAnnotations(true);
     return JSON.stringify(dtos);
   }
 
+  /**
+   * get the current pdf file with baked TsPdf annotations as Blob
+   * @returns 
+   */
   getCurrentPdf(): Blob {    
     const data = this._docData?.getDataWithUpdatedAnnotations();
     if (!data?.length) {
@@ -270,6 +330,7 @@ export class TsPdfViewer {
     });
     return blob;
   }
+
 
   //#region GUI initialization methods
   private initMainDivs() {
@@ -301,6 +362,7 @@ export class TsPdfViewer {
     });
   }
   
+  /**add event listemers to interface general buttons */
   private initViewControls() {
     const paginatorInput = this._shadowRoot.getElementById("paginator-input") as HTMLInputElement;
     paginatorInput.addEventListener("input", this.onPaginatorInput);
@@ -444,40 +506,14 @@ export class TsPdfViewer {
   //#endregion
 
 
-  //#region open/close private
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     // TODO: implement progress display
   };
 
-  private onPdfLoadedAsync = async (doc: PDFDocumentProxy, docData: DocumentData) => {
-    this._pdfDocument = doc;
-    this._docData = docData;
-    this.setAnnotationMode("select");  
-
-    await this.refreshPagesAsync();
-    this.renderVisiblePreviews();
-    this.renderVisiblePages(); 
-
-    this._mainContainer.classList.remove("disabled");
-  };
-
-  private onPdfClosedAsync = async () => {
-    this._mainContainer.classList.add("disabled");
-    this.setViewerMode("text");
-
-    if (this._pdfDocument) {
-      this._pdfDocument.destroy();
-      this._pdfDocument = null;
-
-      this._annotator?.destroy();
-      this._annotator = null;
-      
-      this._docData?.destroy();
-      this._docData = null;
-    }
-    await this.refreshPagesAsync();
-  };
-
+  /**
+   * refresh the loaded pdf file page views and previews
+   * @returns 
+   */
   private async refreshPagesAsync(): Promise<void> { 
     this._pages.forEach(x => {
       x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
@@ -503,8 +539,7 @@ export class TsPdfViewer {
       this._pages.push(page);
     } 
   }
-  //#endregion
-  
+
   
   //#region previewer
   private scrollToPreview(pageNumber: number) { 
@@ -587,10 +622,14 @@ export class TsPdfViewer {
 
   //#region viewer modes
   private setViewerMode(mode: ViewerMode) {
+    // return if mode not changed
     if (!mode || mode === this._viewerMode) {
       return;
     }
+
+    // disable previous viewer mode
     this.disableCurrentViewerMode();
+
     switch (mode) {
       case "text":
         this._mainContainer.classList.add("mode-text");
@@ -859,9 +898,16 @@ export class TsPdfViewer {
   //#endregion
 
   //#endregion
-    
-  
+
+
   //#region pages and paginator
+  /**
+   * get page views/previews that are visible in the viewer viewport at the moment
+   * @param container 
+   * @param pages
+   * @param preview true: get the previews, false: get the views
+   * @returns 
+   */
   private getVisiblePages(container: HTMLDivElement, pages: PageView[], preview = false): Set<number> {
     const pagesVisible = new Set<number>();
     if (!pages.length) {
@@ -889,11 +935,20 @@ export class TsPdfViewer {
     return pagesVisible;
   }
   
+  /**
+   * get the current page
+   * @param container 
+   * @param pages 
+   * @param visiblePageNumbers 
+   * @returns the page that takes more than a half of the available viewer space or the topmost one if multiple pages take less space
+   */
   private getCurrentPage(container: HTMLDivElement, pages: PageView[], visiblePageNumbers: Set<number>): number {
     const visiblePageNumbersArray = [...visiblePageNumbers];
     if (!visiblePageNumbersArray.length) {
+      // no visible pages = no current page
       return -1;
     } else if (visiblePageNumbersArray.length === 1) {
+      // the only visible page = the current page
       return visiblePageNumbersArray[0];
     }
 
@@ -906,9 +961,15 @@ export class TsPdfViewer {
       const pTop = pRect.top;
 
       if (pTop > cTop) {
+        // the page top is below the container top
         if (pTop > cMiddle) {
+          // the page top is below the container center - return the previous page 
+          // (as it takes more than a half of the available viewer space)
           return i - 1;
         } else {
+          // the page top is above the container center, 
+          // so no page takes the most of viewer space.
+          // return the topmost one (the current page)
           return i;
         }
       }
@@ -1007,6 +1068,7 @@ export class TsPdfViewer {
   };
 
   private setAnnotationMode(mode: AnnotatorMode) {
+    // return if mode is same
     if (!mode || mode === this._annotatorMode) {
       return;
     }
@@ -1015,6 +1077,7 @@ export class TsPdfViewer {
     this._contextMenu.clear();
     this._contextMenuEnabled = false;
     this._annotator?.destroy();
+
     switch (this._annotatorMode) {
       case "select":
         this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
@@ -1058,7 +1121,7 @@ export class TsPdfViewer {
     }
     this.updateAnnotatorPageData();
   }
-  
+
   private onAnnotationSelectModeButtonClick = () => {
     this.setAnnotationMode("select");
   };
@@ -1114,12 +1177,15 @@ export class TsPdfViewer {
   };
 
   private initContextStampPicker() {
+    // TODO: move this somewhere where it will fit better
     const stampTypes: {type: string; name: string}[] = [
       {type:"/Draft", name: "Draft"},
       {type:"/Approved", name: "Approved"},
       {type:"/NotApproved", name: "Not Approved"},
       {type:"/Departmental", name: "Departmental"},
     ];
+
+    // init a stamp type picker
     const contextMenuContent = document.createElement("div");
     contextMenuContent.classList.add("context-menu-content", "column");
     stampTypes.forEach(x => {          
@@ -1136,17 +1202,24 @@ export class TsPdfViewer {
       item.append(stampName);
       contextMenuContent.append(item);
     });
+
+    // set the stamp type picker as the context menu content
     this._contextMenu.content = [contextMenuContent];
+    // enable the context menu
     this._contextMenuEnabled = true;
   }
 
   private initContextPenColorPicker() {
+    // default pen colors
+    // TODO: move to the main options
     const colors: Quadruple[] = [
       [0, 0, 0, 0.5], // black
       [0.804, 0, 0, 0.5], // red
       [0, 0.804, 0, 0.5], // green
       [0, 0, 0.804, 0.5], // blue
     ];
+
+    // init a pen color picker
     const contextMenuColorPicker = document.createElement("div");
     contextMenuColorPicker.classList.add("context-menu-content", "row");
     colors.forEach(x => {          
@@ -1167,6 +1240,7 @@ export class TsPdfViewer {
       contextMenuColorPicker.append(item);
     });
 
+    // init a pen stroke width slider
     const contextMenuWidthSlider = document.createElement("div");
     contextMenuWidthSlider.classList.add("context-menu-content", "row");
     const slider = document.createElement("input");
@@ -1185,10 +1259,15 @@ export class TsPdfViewer {
     });
     contextMenuWidthSlider.append(slider);
 
+    // set the context menu content
     this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
+    // enable the context menu
     this._contextMenuEnabled = true;
   }
 
+  /**
+   * update the current annotator view
+   */
   private updateAnnotatorPageData() {    
     if (this._annotator) {
       this._annotator.scale = this._scale;
