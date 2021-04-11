@@ -74,7 +74,7 @@
   "dependencies": {
     "crypto-es": "^1.2.7",
     "pako": "^2.0.3",
-    "pdfjs-dist": "^2.6.347",
+    "pdfjs-dist": "^2.7.570",
     "uuid": "^8.3.2"
   }
 }

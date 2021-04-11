@@ -783,6 +783,15 @@ export class Mat3 {
   }
 }
 
+/**
+ * give the transformation matrix between two line segments (from the first one to the second one)
+ * @param aMin starting point of the first segment
+ * @param aMax end point of the first segment
+ * @param bMin starting point of the second segment
+ * @param bMax end point of the second segment
+ * @param noRotation true
+ * @returns 
+ */
 export function mat3From4Vec2(aMin: Vec2, aMax: Vec2, bMin: Vec2, bMax: Vec2, 
   noRotation = false): Mat3 {
   const mat = new Mat3();
@@ -804,15 +813,6 @@ export function mat3From4Vec2(aMin: Vec2, aMax: Vec2, bMin: Vec2, bMax: Vec2,
   mat.applyTranslation(bMin.x, bMin.y);
 
   return mat;
-}
-
-export function mat3From8Numbers(...numbers: number[]): Mat3 {
-  const [aMinX, aMinY, aMaxX, aMaxY, bMinX, bMinY, bMaxX, bMaxY] = numbers;
-  const aMin = new Vec2(aMinX ?? 0, aMinY ?? 0);
-  const aMax = new Vec2(aMaxX ?? 0, aMaxY ?? 0);
-  const bMin = new Vec2(bMinX ?? 0, bMinY ?? 0);
-  const bMax = new Vec2(bMaxX ?? 0, bMaxY ?? 0);
-  return mat3From4Vec2(aMin, aMax, bMin, bMax);
 }
 
 export function vecMinMax(...values: Vec2[]): {min: Vec2; max: Vec2} {

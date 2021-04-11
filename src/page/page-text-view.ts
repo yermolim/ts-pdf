@@ -22,6 +22,13 @@ export class PageTextView {
     this._container.addEventListener("mouseup", this.onMouseUp);
   } 
 
+  /**
+   * render the page text and append it to the specified container
+   * @param pageProxy 
+   * @param parent 
+   * @param scale 
+   * @returns 
+   */
   static async appendPageTextAsync(pageProxy: PDFPageProxy, parent: HTMLElement, scale: number): Promise<PageTextView> {
     const textObj = new PageTextView(pageProxy);
     await textObj.renderTextLayerAsync(scale);
@@ -29,6 +36,7 @@ export class PageTextView {
     return textObj;
   } 
 
+  /**free the resources that can prevent garbage to be collected */
   destroy() {
     this.destroyRenderTask();
     if (this._container) {

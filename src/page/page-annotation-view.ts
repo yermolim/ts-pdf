@@ -57,6 +57,11 @@ export class PageAnnotationView {
     document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
+  /**
+   * render the page annotations and append them to the specified parent container
+   * @param parent 
+   * @returns 
+   */
   async appendAsync(parent: HTMLElement) {
     if (this._destroyed) {
       return;
@@ -107,6 +112,7 @@ export class PageAnnotationView {
 
   private onAnnotationSelectionChange = (e: AnnotEvent) => {
     if (e.detail.type === "select") {
+      // toggle "touchAction" to prevent default gestures from interfering with the annotation edit logic
       if (e.detail.annotations?.length) {
         this._container.style.touchAction = "none";
       } else {

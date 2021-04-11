@@ -9,8 +9,11 @@ import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
 
 export class PageView { 
+  /**number of the page in the pdf file */
   readonly number: number;
+  /**pdf object id of the page */
   readonly id: number;
+  /**pdf object generation of the page */
   readonly generation: number;
   
   private readonly _pageProxy: PDFPageProxy; 
@@ -79,6 +82,7 @@ export class PageView {
   } 
 
   private _scaleIsValid: boolean;
+  /**returns 'true' if the view is rendered using the current scale */
   get viewValid(): boolean {
     return this._scaleIsValid && this._viewRendered;
   }
@@ -115,16 +119,23 @@ export class PageView {
     this._viewContainer.classList.add("page");
     this._viewContainer.setAttribute("data-page-number", this.number + ""); 
     this._viewContainer.setAttribute("data-page-id", this.id + "");
-    this._viewContainer.setAttribute("data-page-gen", this.generation + "");   
+    this._viewContainer.setAttribute("data-page-gen", this.generation + "");  
+
     this.scale = 1;  
   }
 
+  /**free the resources that can prevent garbage to be collected */
   destroy() {
     this._previewContainer.remove();
     this._viewContainer.remove();
     this._pageProxy.cleanup();
   }  
 
+  /**
+   * render the preview to the SVG element and append in to the preview container
+   * @param force rerender an already rendered preview even if it's up to date
+   * @returns 
+   */
   async renderPreviewAsync(force = false): Promise<void> { 
     if (this._renderPromise) {
       if (force) {
@@ -141,6 +152,11 @@ export class PageView {
     return this._renderPromise;
   }
   
+  /**
+   * render the view to the SVG element and append in to the view container
+   * @param force rerender an already rendered view even if it's up to date
+   * @returns 
+   */
   async renderViewAsync(force = false): Promise<void> { 
     if (this._renderPromise) {
       if (force) {
@@ -157,10 +173,12 @@ export class PageView {
     return this._renderPromise;
   }
   
+  /**clear the preview container */
   clearPreview() {
     this._previewContainer.innerHTML = "";
   }
 
+  /**clear the view container */
   clearView() {
     this._annotations?.destroy();
     this._annotations = null;
