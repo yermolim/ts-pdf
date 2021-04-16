@@ -9,6 +9,7 @@ import { HexString } from "../entities/strings/hex-string";
 import { LiteralString } from "../entities/strings/literal-string";
 import { GraphicsState, GraphicsStateParams } from "./graphics-state";
 
+/**appearance stream command */
 interface ParsedCommand {  
   endIndex: number;
   parameters: (number | string | Uint8Array)[];
@@ -28,6 +29,12 @@ export class AppearanceStreamRenderer {
     return this._graphicsStates[this._graphicsStates.length - 1];
   }
 
+  /**
+   * 
+   * @param stream appearance stream
+   * @param rect parent PDF object AABB coordinates in the page coordinate system
+   * @param objectName PDF object name (it is desirable to be unique)
+   */
   constructor(stream: XFormStream, rect: Quadruple, objectName: string) {
     if (!stream) {
       throw new Error("Stream is not defined");
@@ -47,6 +54,12 @@ export class AppearanceStreamRenderer {
     this._graphicsStates.push(new GraphicsState({matrix: matAA}));
   }  
 
+  /**
+   * calculate the transformation matrix between the stream bounding box and the specified AABB
+   * @param stream appearance stream
+   * @param rect AABB coordinates in the page coordinate system
+   * @returns transformation matrix
+   */
   protected static calcBBoxToRectMatrix(stream: XFormStream, rect: Quadruple): Mat3 {
     const matrix = stream.matrix;
     const {ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL} = stream.bBox;
@@ -81,6 +94,12 @@ export class AppearanceStreamRenderer {
     return matAA;
   }
 
+  /**
+   * 
+   * @param parser 
+   * @param i byte offset from the stream start
+   * @returns 
+   */
   protected static parseNextCommand(parser: DataParser, i: number): ParsedCommand {
     const parameters: (number | string | Uint8Array)[] = [];
     let operator: string;
@@ -141,6 +160,10 @@ export class AppearanceStreamRenderer {
     return {endIndex: i, parameters, operator};
   }
 
+  /**
+   * render appearance stream to an SVG element
+   * @returns 
+   */
   async renderAsync(): Promise<RenderToSvgResult> {
     const g = await this.drawGroupAsync(this._parser);
     return {
@@ -149,12 +172,20 @@ export class AppearanceStreamRenderer {
     };
   }
 
+  /**
+   * push graphics state to the graphics state stack
+   * @param params 
+   */
   protected pushState(params?: GraphicsStateParams) {
     const lastState = this._graphicsStates[this._graphicsStates.length - 1];
     const newState = lastState.clone(params);
     this._graphicsStates.push(newState);
   }
   
+  /**
+   * pop the last graphics state from the graphics state stack
+   * @param params 
+   */
   protected popState(): GraphicsState {
     if (this._graphicsStates.length === 1) {
       // can't pop the only state

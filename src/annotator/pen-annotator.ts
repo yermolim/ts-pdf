@@ -27,6 +27,8 @@ export interface PenAnnotatorOptions {
   strokeWidth?: number;  
   color?: Quadruple;
 }
+
+/**tool for adding ink (hand-drawn) annotations */
 export class PenAnnotator extends Annotator {
   protected static lastColor: Quadruple;
   protected static lastStrokeWidth: number;
@@ -51,20 +53,20 @@ export class PenAnnotator extends Annotator {
     super.destroy();
   }
 
-  refreshViewBox() {
-    super.refreshViewBox();
-    this.updatePenGroupPosition();
-  }
-
+  /**remove the last path from the temp path group */
   undoPath() {
     this._annotationPenData?.removeLastPath();
     this.emitPathCount();
   }
 
+  /**clear the temp path group */
   clearPaths() {
     this.removeTempPenData();
   }
 
+  /**
+   * save the current temp path as an ink annotation and append it to the page
+   */
   savePathsAsInkAnnotation() {
     if (!this._annotationPenData) {
       return;
@@ -88,7 +90,15 @@ export class PenAnnotator extends Annotator {
       this.onPenPointerDown);
   }  
 
-  protected updatePenGroupPosition() {
+  protected refreshViewBox() {
+    super.refreshViewBox();
+    this.refreshPenGroupPosition();
+  }
+
+  /**
+   * adapt the Svg group positions to the current view box dimensions
+   */
+  protected refreshPenGroupPosition() {
     if (!this._annotationPenData) {
       return;
     }
@@ -109,6 +119,7 @@ export class PenAnnotator extends Annotator {
       [1, 0, 0, 1, offsetX, offsetY]);
   }
 
+  /**clear the temp path group */
   protected removeTempPenData() {
     if (this._annotationPenData) {
       this._annotationPenData.group.remove();
@@ -117,6 +128,10 @@ export class PenAnnotator extends Annotator {
     }    
   }
 
+  /**
+   * clear the current temp path group and create a new empty one instead
+   * @param pageId 
+   */
   protected resetTempPenData(pageId: number) {    
     this.removeTempPenData();    
     this._annotationPenData = new PenData({
@@ -127,7 +142,7 @@ export class PenAnnotator extends Annotator {
     this._svgGroup.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly
-    this.updatePenGroupPosition();
+    this.refreshPenGroupPosition();
   }
   
   protected onPenPointerDown = (e: PointerEvent) => {
@@ -136,8 +151,8 @@ export class PenAnnotator extends Annotator {
     }    
 
     const {clientX: cx, clientY: cy} = e;
-    this.updatePageCoords(cx, cy);
-    const pageCoords = this._pageCoords;
+    this.updatePointerCoords(cx, cy);
+    const pageCoords = this._pointerCoordsInPageCS;
     if (!pageCoords) {
       // return if the pointer is outside page
       return;
@@ -145,8 +160,11 @@ export class PenAnnotator extends Annotator {
 
     const {pageX: px, pageY: py, pageId} = pageCoords;
     if (!this._annotationPenData || pageId !== this._annotationPenData.id) {
+      // the current page changed. reset the temp group
       this.resetTempPenData(pageId);
     }
+
+    // create a new temp path
     this._annotationPenData.newPath(new Vec2(px, py));
 
     const target = e.target as HTMLElement;
@@ -163,14 +181,15 @@ export class PenAnnotator extends Annotator {
     }
 
     const {clientX: cx, clientY: cy} = e;
-    this.updatePageCoords(cx, cy);
+    this.updatePointerCoords(cx, cy);
 
-    const pageCoords = this._pageCoords;
+    const pageCoords = this._pointerCoordsInPageCS;
     if (!pageCoords || pageCoords.pageId !== this._annotationPenData.id) {
       // skip move if the pointer is outside of the starting page
       return;
     }
     
+    // add the current pointer position to the current temp path
     this._annotationPenData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
   };
 

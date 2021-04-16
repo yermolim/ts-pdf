@@ -24,6 +24,7 @@ export interface GraphicsStateParams {
   | "color-dodge" |" color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
 }
 
+/**graphics state used in appearance streams */
 export class GraphicsState {
   static readonly defaultParams: GraphicsStateParams = {
     matrix: new Mat3(),
@@ -49,6 +50,7 @@ export class GraphicsState {
   strokeColorSpace: "grayscale" | "rgb" | "cmyk";
   strokeAlpha: number;  
   strokeColor: Vec3; 
+  /**stroke color string */
   get stroke(): string {
     const {x: r, y: g, z: b} = this.strokeColor;
     const a = this.strokeAlpha;
@@ -57,6 +59,7 @@ export class GraphicsState {
   fillColorSpace: "grayscale" | "rgb" | "cmyk"; 
   fillAlpha: number; 
   fillColor: Vec3; 
+  /**fill color string */
   get fill(): string {
     const {x: r, y: g, z: b} = this.fillColor;
     const a = this.fillAlpha;

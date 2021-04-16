@@ -138,7 +138,6 @@ export declare class TsPdfViewer {
 	private onAnnotationChange;
 	private initContextStampPicker;
 	private initContextPenColorPicker;
-	private updateAnnotatorPageData;
 	private showPasswordDialogAsync;
 }
 

@@ -1,29 +1,37 @@
 import { DocumentData } from "../document/document-data";
 import { PageView } from "../page/page-view";
 
+/**coordinates in the PDF page coordinate system */
 interface PageCoords {
   pageId: number;
   pageX: number;
   pageY: number;
 }
 
+/**
+ * base class for annotation addition tools
+ */
 export abstract class Annotator {
   protected readonly _docData: DocumentData;
   protected readonly _parent: HTMLDivElement;
 
   protected _scale = 1;
+  /**current page view scale */
   get scale(): number {
     return this._scale;
   }
+  /**current page view scale */
   set scale(value: number) {
     this._scale = value;
   }
   protected _lastScale: number;
 
   protected _renderedPages: PageView[] = [];
+  /**currently rendered PDF cocument pages */
   get renderedPages(): PageView[] {
     return this._renderedPages.slice();
   }
+  /**currently rendered PDF cocument pages */
   set renderedPages(value: PageView[]) {
     this._renderedPages = value?.length
       ? value.slice()
@@ -42,7 +50,7 @@ export abstract class Annotator {
   protected _parentMutationObserver: MutationObserver;
   protected _parentResizeObserver: ResizeObserver;
 
-  protected _pageCoords: PageCoords;
+  protected _pointerCoordsInPageCS: PageCoords;
 
   constructor(docData: DocumentData, parent: HTMLDivElement) {
     if (!docData) {
@@ -55,6 +63,7 @@ export abstract class Annotator {
     this._parent = parent;
   }
 
+  /**free resources to let GC clean them to avoid memory leak */
   destroy() {    
     this._overlayContainer.remove();
 
@@ -63,7 +72,25 @@ export abstract class Annotator {
     this._parentResizeObserver?.disconnect();
   }
 
-  refreshViewBox() {
+  /**
+   * update tha annotator dimensions
+   * @param pages rendered page views
+   * @param scale page view scale
+   */
+  updateDimensions(pages?: PageView[], scale?: number) { 
+    if (pages) {
+      this.renderedPages = pages;
+    }   
+    if (scale) {
+      this.scale = scale;
+    }
+    this.refreshViewBox();
+  }
+
+  /**
+   * refresh the inner SVG view box dimensions 
+   */
+  protected refreshViewBox() {
     const {width: w, height: h} = this._overlay.getBoundingClientRect();
     if (!w || !h) {
       return;
@@ -81,6 +108,9 @@ export abstract class Annotator {
     this.refreshViewBox();
   };
 
+  /**
+   * initialize observers for the parent mutations
+   */
   protected initObservers() {
     this._parent.addEventListener("scroll", this.onParentScroll);
     const onPossibleViewerSizeChanged = () => {
@@ -145,7 +175,12 @@ export abstract class Annotator {
     this.initObservers();
   }
   
-  protected updatePageCoords(clientX: number, clientY: number) {
+  /**
+   * update the current pointer coordinates using the page coordinate system
+   * @param clientX 
+   * @param clientY 
+   */
+  protected updatePointerCoords(clientX: number, clientY: number) {
     const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
     if (!pageCoords) {
       this._svgGroup.classList.add("out");
@@ -153,9 +188,15 @@ export abstract class Annotator {
       this._svgGroup.classList.remove("out");
     }
 
-    this._pageCoords = pageCoords;
+    this._pointerCoordsInPageCS = pageCoords;
   }  
    
+  /**
+   * convert client coordinates to the current page coordinate system
+   * @param clientX 
+   * @param clientY 
+   * @returns 
+   */
   protected getPageCoordsUnderPointer(clientX: number, clientY: number): PageCoords {
     for (const page of this._renderedPages) {
       const {left: pxMin, top: pyMin, width: pw, height: ph} = page.viewContainer.getBoundingClientRect();

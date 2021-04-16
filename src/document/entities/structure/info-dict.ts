@@ -5,6 +5,7 @@ import { DateString } from "../strings/date-string";
 import { LiteralString } from "../strings/literal-string";
 import { PdfDict } from "../core/pdf-dict";
 
+/**PDF document information dictionary */
 export class InfoDict extends PdfDict {
   /** (Optional; PDF 1.1+) */
   Title: LiteralString;

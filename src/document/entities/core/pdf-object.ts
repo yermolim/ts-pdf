@@ -5,6 +5,7 @@ import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "./object-id";
 
 export abstract class PdfObject implements IEncodable {
+  /**action to execute on change of any of the public properties of the current object using proxy */
   $onEditedAction: () => void;
 
   //#region reference
@@ -15,11 +16,11 @@ export abstract class PdfObject implements IEncodable {
   set ref(ref: Reference) {
     this._ref = ref;
   }
-  /**pdf object id */
+  /**PDF object id */
   get id(): number {
     return this._ref?.id;
   }
-  /**pdf object generation */
+  /**PDF object generation */
   get generation(): number {
     return this._ref?.generation;
   } 
@@ -35,15 +36,25 @@ export abstract class PdfObject implements IEncodable {
   }   
 
   protected _edited = false;
+  /**
+   * 'true' value means that at least one of the public properties of the current object 
+   * was changed after the object had been parsed 
+   */
   get edited(): boolean {
     return this._edited;
   }   
 
   protected _deleted = false;
+  /**
+   * 'true' value means the object marked as deleted
+   */
   get deleted(): boolean {
     return this._deleted;
   }
 
+  /**
+   * proxy change handler
+   */
   protected onChange: ProxyHandler<PdfObject> = {
     set: (target: PdfObject, prop: string, value: any) => {  
       // DEBUG

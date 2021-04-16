@@ -6,6 +6,7 @@ import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
+/**PDF document page tree object */
 export class PageTreeDict extends PdfDict {
   /**
    * (Required except in root node; prohibited in the root node; 
@@ -89,9 +90,6 @@ export class PageTreeDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  /**
-   * fill public properties from data using info/parser if available
-   */
   protected parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;

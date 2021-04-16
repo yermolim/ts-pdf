@@ -38,7 +38,7 @@ export abstract class PdfDict extends PdfObject {
   }
   
   /**
-   * try parse and fill public properties from data using info/parser if available
+   * try to parse and fill public properties from data using parse info
    */
   protected parseProps(parseInfo: ParseInfo) {
     if (!parseInfo) {

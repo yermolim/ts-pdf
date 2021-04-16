@@ -68,6 +68,11 @@ export class LiteralString implements IEncodable {
     return new LiteralString(source, new Uint8Array(bytes));
   }
 
+  /**
+   * escape characters (bytes) according to the PDF specification
+   * @param bytes 
+   * @returns 
+   */
   private static escape(bytes: Uint8Array): Uint8Array {
     const result: number[] = [];    
     for (let i = 0; i < bytes.length; i++) {
@@ -112,6 +117,11 @@ export class LiteralString implements IEncodable {
     return new Uint8Array(result);
   }
   
+  /**
+   * unescape characters (bytes) according to the PDF specification
+   * @param bytes 
+   * @returns 
+   */
   private static unescape(bytes: Uint8Array): Uint8Array {
     const result: number[] = [];   
     let escaped = false;

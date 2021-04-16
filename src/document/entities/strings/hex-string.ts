@@ -14,11 +14,17 @@ export class HexString implements IEncodable {
   }
   
   private readonly _hex: Uint8Array;
+  /**
+   * HexString byte representation (1 byte for each hexadecimal value)
+   */
   get hex(): Uint8Array {
     return this._hex.slice();
   }
 
   private readonly _bytes: Uint8Array;
+  /**
+   * HexString byte representation as it stored in the PDF document (2 bytes for each hexadecimal value)
+   */
   get bytes(): Uint8Array {
     return this._bytes.slice();
   }
@@ -68,12 +74,22 @@ export class HexString implements IEncodable {
     return {value: hexes, start: arrayBounds.start, end: arrayBounds.end};
   }
 
+  /**
+   * create HexString from a byte array (as it stored in the PDF document, 2 bytes for each hexadecimal value)
+   * @param bytes 
+   * @returns 
+   */
   static fromBytes(bytes: Uint8Array): HexString {  
     const literal = new TextDecoder().decode(bytes);  
     const hex = hexStringToBytes(literal);
     return new HexString(literal, hex, bytes);
   }
 
+  /**
+   * create HexString from a simple byte array (1 byte for each hexadecimal value)
+   * @param hex 
+   * @returns 
+   */
   static fromHexBytes(hex: Uint8Array): HexString {
     let literal = "";
     hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
@@ -81,7 +97,7 @@ export class HexString implements IEncodable {
     return new HexString(literal, hex, bytes);
   }
 
-  static fromLiteralString(literal: string): HexString {
+  static fromString(literal: string): HexString {
     const hex = hexStringToBytes(literal);
     const bytes = new TextEncoder().encode(literal);
     return new HexString(literal, hex, bytes);

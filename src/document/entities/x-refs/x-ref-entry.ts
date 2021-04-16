@@ -3,8 +3,18 @@ import { codes, DIGIT_CHARS } from "../../codes";
 import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../const";
 import { Reference } from "../../common-interfaces";
 
+/**PDF cross-reference section entry */
 export class XRefEntry implements Reference {
 
+  /**
+   * 
+   * @param type 
+   * @param id 
+   * @param generation 
+   * @param byteOffset object byte offset from the document start (parent stream offset for objects stored inside object streams)
+   * @param streamId parent stream id (for objects stored inside object streams)
+   * @param streamIndex object index inside parent stream (for objects stored inside object streams)
+   */
   constructor(readonly type: XRefEntryType,
     readonly id: number,
     readonly generation: number,
@@ -13,6 +23,11 @@ export class XRefEntry implements Reference {
     readonly streamId?: number,
     readonly streamIndex?: number) { }   
     
+  /**
+   * parse cross-reference entries from cross-reference table bytes
+   * @param bytes cross-reference table bytes
+   * @returns entries iterable object
+   */
   static *fromTableBytes(bytes: Uint8Array): Iterable<XRefEntry> {
     let i = 0;
     let j = 0;   
@@ -58,6 +73,14 @@ export class XRefEntry implements Reference {
     return;
   } 
 
+  /**
+   * parse cross-reference entries from cross-reference stream bytes
+   * @param bytes stream byte array
+   * @param w an array of integers representing the size of the fields in a single cross-reference entry
+   * @param index an array containing a pair of integers for each subsection in this section 
+   * ([the first object number in the subsection, the number of entries in the subsection...])
+   * @returns 
+   */
   static *fromStreamBytes(bytes: Uint8Array, w: [number, number, number],
     index?: number[]): Iterable<XRefEntry> {
     const [w1, w2, w3] = w;
@@ -128,6 +151,7 @@ export class XRefEntry implements Reference {
     return;
   }
 
+  /**serialize entries to cross-reference table byte array */
   static toTableBytes(entries: XRefEntry[]): Uint8Array {
     if (!entries?.length) {
       return null;
@@ -165,10 +189,15 @@ export class XRefEntry implements Reference {
       }
     }
 
-    // TODO: Implement
     return bytes;
   }
 
+  /**
+   * serialize entries to cross-reference stream byte array
+   * @param entries 
+   * @param w an array of integers representing the size of the fields in a single cross-reference entry
+   * @returns 
+   */
   static toStreamBytes(entries: XRefEntry[],
     w: [w1: number, w2: number, w3: number] = [1, 4, 2]): {bytes: Uint8Array; index: number[]} {
     if (!entries?.length) {
@@ -284,6 +313,11 @@ export class XRefEntry implements Reference {
     return {bytes, index};
   }
 
+  /**
+   * group entries to sequential subsections
+   * @param entries 
+   * @returns 
+   */
   private static groupEntries(entries: XRefEntry[]): [startId: number, entries: XRefEntry[]][] {
     entries.sort((a, b) => a.id - b.id);
     const groups: [startId: number, entries: XRefEntry[]][] = [];

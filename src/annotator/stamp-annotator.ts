@@ -4,12 +4,19 @@ import { StampAnnotation, StampType, stampTypes }
 
 import { Annotator } from "./annotator";
 
+/**tool for adding rubber stamp annotations */
 export class StampAnnotator extends Annotator {
   protected static lastType: StampType = "/Draft";
 
   protected _type: StampType;
   protected _tempAnnotation: StampAnnotation;
 
+  /**
+   * 
+   * @param docData 
+   * @param parent 
+   * @param type stamp type
+   */
   constructor(docData: DocumentData, parent: HTMLDivElement, type?: string) {
     super(docData, parent);
     
@@ -41,8 +48,10 @@ export class StampAnnotator extends Annotator {
     this.createTempStampAnnotationAsync();
   }
 
+  /**
+   * create temporary stamp annotation to render in under the pointer
+   */
   protected async createTempStampAnnotationAsync() {
-    // TODO: add other types of stamps
     const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
     const renderResult = await stamp.renderAsync();  
 
@@ -67,12 +76,13 @@ export class StampAnnotator extends Annotator {
     const offsetX = (cx - ox) / this._scale;
     const offsetY = (oy - cy) / this._scale;
 
+    // move temp stamp under the current pointer position
     const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
     this._svgGroup.setAttribute("transform",
       `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
 
     // get coords under the pointer relatively to the page under it 
-    this.updatePageCoords(cx, cy);
+    this.updatePointerCoords(cx, cy);
   };
 
   protected onStampPointerUp = (e: PointerEvent) => {
@@ -82,15 +92,16 @@ export class StampAnnotator extends Annotator {
 
     const {clientX: cx, clientY: cy} = e;
     const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
-    this._pageCoords = pageCoords;
+    this._pointerCoordsInPageCS = pageCoords;
 
     if (!pageCoords || !this._tempAnnotation) {
       return;
     }
 
     // translate the stamp to the pointer position
-    const {pageId, pageX, pageY} = this._pageCoords;
+    const {pageId, pageX, pageY} = this._pointerCoordsInPageCS;
     this._tempAnnotation.moveTo(pageX, pageY);
+    // append the current temp stamp to the page
     this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
 
     // create new temp annotation

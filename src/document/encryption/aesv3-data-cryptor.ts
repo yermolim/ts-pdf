@@ -5,12 +5,16 @@ export class AESV3DataCryptor implements IDataCryptor {
   protected _n: number;
   protected _key: Uint8Array;
 
+  /**
+   * 
+   * @param key must be 32 bytes long
+   */
   constructor(key: Uint8Array) {
     if (!key) {      
       throw new Error("Empty key");
     }
     if (key.length !== 32) {
-      throw new Error(`Invalid key length: ${key.length} (shall be 16)`);
+      throw new Error(`Invalid key length: ${key.length} (shall be 32)`);
     }
 
     this._n = key.length;

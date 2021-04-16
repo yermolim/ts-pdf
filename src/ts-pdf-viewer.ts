@@ -344,7 +344,7 @@ export class TsPdfViewer {
         this._mainContainer.classList.remove("mobile");
       }
       this._contextMenu.hide();
-      this._annotator?.refreshViewBox();
+      this._annotator?.updateDimensions(this._renderedPages, this._scale);
     });
     mcResizeObserver.observe(mainContainer);
 
@@ -1031,7 +1031,7 @@ export class TsPdfViewer {
     }
 
     this._renderedPages = renderedPages;
-    this.updateAnnotatorPageData();
+    this._annotator?.updateDimensions(this._renderedPages, this._scale);
   } 
 
   private onPaginatorInput = (event: Event) => {
@@ -1119,7 +1119,7 @@ export class TsPdfViewer {
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
-    this.updateAnnotatorPageData();
+    this._annotator?.updateDimensions(this._renderedPages, this._scale);
   }
 
   private onAnnotationSelectModeButtonClick = () => {
@@ -1195,7 +1195,7 @@ export class TsPdfViewer {
         this._contextMenu.hide();
         this._annotator?.destroy();
         this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
-        this.updateAnnotatorPageData();
+        this._annotator.updateDimensions(this._renderedPages, this._scale);
       });
       const stampName = document.createElement("div");
       stampName.innerHTML = x.name;
@@ -1231,7 +1231,7 @@ export class TsPdfViewer {
         this._annotator = new PenAnnotator(this._docData, this._viewer, {
           color:x,
         });
-        this.updateAnnotatorPageData();
+        this._annotator.updateDimensions(this._renderedPages, this._scale);
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -1255,7 +1255,7 @@ export class TsPdfViewer {
       this._annotator = new PenAnnotator(this._docData, this._viewer, {
         strokeWidth: slider.valueAsNumber,
       });
-      this.updateAnnotatorPageData();
+      this._annotator.updateDimensions(this._renderedPages, this._scale);
     });
     contextMenuWidthSlider.append(slider);
 
@@ -1263,17 +1263,6 @@ export class TsPdfViewer {
     this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
     // enable the context menu
     this._contextMenuEnabled = true;
-  }
-
-  /**
-   * update the current annotator view
-   */
-  private updateAnnotatorPageData() {    
-    if (this._annotator) {
-      this._annotator.scale = this._scale;
-      this._annotator.renderedPages = this._renderedPages;
-      this._annotator.refreshViewBox();
-    }
   }
   //#endregion
 

@@ -182,7 +182,7 @@ export const groupDictTypes = {
 } as const;
 export type GroupDictType = typeof groupDictTypes[keyof typeof groupDictTypes];
 
-
+/**value types that can be found in PDF file data */
 export const valueTypes = {
   UNKNOWN: 0,
   NULL: 1,
@@ -565,4 +565,5 @@ export const supportedFilters = new Set<string>([
   streamFilters.JPX,
 ]);
 
+/**max PDF object generation */
 export const maxGeneration = 65535;

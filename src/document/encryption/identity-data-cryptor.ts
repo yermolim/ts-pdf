@@ -1,5 +1,8 @@
 import { IDataCryptor, Reference } from "../common-interfaces";
 
+/**
+ * "null-object" encryption handler. returns plain data without actually encrypting or decrypting it
+ */
 export class IdentityDataCryptor implements IDataCryptor {
   constructor() {
     

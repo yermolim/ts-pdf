@@ -46,12 +46,14 @@ export class PageAnnotationView {
     this._container.append(this._svg);
   } 
 
+  /**free the resources that can prevent garbage to be collected */
   destroy() {
     this.remove();
     this._container = null;
     this._destroyed = true;
   }
 
+  /**remove the container from DOM */
   remove() {    
     this._container?.remove();
     document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);

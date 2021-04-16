@@ -20,6 +20,13 @@ export class ObjectId implements Reference, IEncodable {
     this.generation = generation ?? 0;
   }
 
+  /**
+   * parse plain PDF object id (like '32 0 obj')
+   * @param parser PDF document data parser
+   * @param start search start byte offset
+   * @param skipEmpty skip space chars if found at the start position
+   * @returns 
+   */
   static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId> {  
     if (skipEmpty) {
@@ -46,6 +53,13 @@ export class ObjectId implements Reference, IEncodable {
     };
   }
   
+  /**
+   * parse reference to the PDF object id (like '32 0 R')
+   * @param parser PDF document data parser
+   * @param start search start byte offset
+   * @param skipEmpty skip space chars if found at the start position
+   * @returns 
+   */
   static parseRef(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId> {    
 
@@ -68,6 +82,13 @@ export class ObjectId implements Reference, IEncodable {
     };
   }
   
+  /**
+   * parse reference to the PDF object id (like '[32 0 R, 33 0 R]')
+   * @param parser PDF document data parser
+   * @param start search start byte offset
+   * @param skipEmpty skip space chars if found at the start position
+   * @returns 
+   */
   static parseRefArray(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
@@ -90,6 +111,11 @@ export class ObjectId implements Reference, IEncodable {
     return {value: ids, start: arrayBounds.start, end: arrayBounds.end};
   }
 
+  /**
+   * create an object id instance from any object implementing Reference
+   * @param ref 
+   * @returns 
+   */
   static fromRef(ref: Reference): ObjectId {
     return new ObjectId(ref.id, ref.generation);
   }

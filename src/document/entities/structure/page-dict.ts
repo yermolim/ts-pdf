@@ -9,6 +9,7 @@ import { PdfDict } from "../core/pdf-dict";
 import { ResourceDict } from "../appearance/resource-dict";
 import { HexString } from "../strings/hex-string";
 
+/**PDF document page dictionary */
 export class PageDict extends PdfDict {
   /**
    * (Required; shall be an indirect reference) 
@@ -288,9 +289,6 @@ export class PageDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  /**
-   * fill public properties from data using info/parser if available
-   */
   protected parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;

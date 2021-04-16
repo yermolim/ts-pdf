@@ -24,13 +24,13 @@ import { AnnotationDto, AnnotEvent, InkAnnotationDto, StampAnnotationDto } from 
 import { AnnotationDict, annotSelectionRequestEvent, AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
 import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
 import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
-import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
+import { SquareAnnotation } from "./entities/annotations/markup/geometric/square-annotation";
 import { CircleAnnotation } from "./entities/annotations/markup/geometric/circle-annotation";
 import { LineAnnotation } from "./entities/annotations/markup/geometric/line-annotation";
-import { SquareAnnotation } from "./entities/annotations/markup/geometric/square-annotation";
-import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
 import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
+import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
+import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
 
 export class DocumentData {
   private readonly _userName: string; 
@@ -59,6 +59,7 @@ export class DocumentData {
     return this._selectedAnnotation;
   }
 
+  /**max PDF object id + 1 */
   get size(): number {
     if (this._xrefs?.length) {
       return this._xrefs[0].size;
@@ -67,10 +68,12 @@ export class DocumentData {
     }
   }
   
+  /**check if the document is encrypted */
   get encrypted(): boolean {
     return !!this._encryption;
   }
 
+  /**check if a document user is authenticated */
   get authenticated(): boolean {
     return !this._encryption || !!this._authResult;
   }
@@ -105,6 +108,13 @@ export class DocumentData {
   }
 
   //#region parsing xrefs
+  /**
+   * parse a cross-reference section at the specified offset
+   * @param parser PDF document parser instance
+   * @param start search start byte offset
+   * @param max search end byte offset
+   * @returns parsed cross-reference section
+   */
   private static parseXref(parser: DataParser, start: number, max: number): XRef {
     if (!parser || !start) {
       return null;
@@ -143,6 +153,12 @@ export class DocumentData {
     return xrefStream?.value; 
   }  
   
+  /**
+   * parse all cross-reference section of the document
+   * @param parser PDF document parser instance
+   * @param start search start byte offset
+   * @returns all document cross-reference sections
+   */
   private static parseAllXrefs(parser: DataParser, start: number): XRef[] {    
     const xrefs: XRef[] = [];
     let max = parser.maxIndex;
@@ -160,7 +176,8 @@ export class DocumentData {
     return xrefs;
   }
   //#endregion
-    
+      
+  /**free the resources that can prevent garbage to be collected */
   destroy() {
     // clear onEditedAction to prevent memory leak
     this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
@@ -175,11 +192,19 @@ export class DocumentData {
     return true;
   }
 
+  /**
+   * get a copy of the current document data
+   * @returns the document underlying byte array
+   */
   getPlainData(): Uint8Array {
     return this._data.slice();
   }
 
   //#region public annotations
+  /**
+   * get a PDF document byte array with all supported annotation being deleted to avoid duplication.
+   * @returns
+   */
   getDataWithoutSupportedAnnotations(): Uint8Array {
     const annotationMap = this.getSupportedAnnotationMap();
     const annotationMarkedToDelete: AnnotationDict[] = [];
@@ -204,6 +229,10 @@ export class DocumentData {
     return refined;
   }
 
+  /**
+   * apply all the changes made to the supported annotations and return the final document as a byte array
+   * @returns 
+   */
   getDataWithUpdatedAnnotations(): Uint8Array {    
     const annotationMap = this.getSupportedAnnotationMap();
     const updaterData: PageWithAnnotations[] = [];
@@ -226,11 +255,17 @@ export class DocumentData {
     return updatedBytes;
   }  
 
+  /**get all aupported annotations for the specified page */
   getPageAnnotations(pageId: number): AnnotationDict[] {     
     const annotations = this.getSupportedAnnotationMap().get(pageId);
     return annotations || [];
   }
 
+  /**
+   * append an annotation to the page.
+   * any annotation can be appended only to one page at a time.
+   * appending an annotation to another page removes it from the first one
+   */
   appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
     if (isNaN(pageId) || !annotation) {
       throw new Error("Undefined argument exception");
@@ -251,6 +286,7 @@ export class DocumentData {
     }));
   }
 
+  /**mark an annotation as deleted */
   removeAnnotation(annotation: AnnotationDict) {
     if (!annotation) {
       return;
@@ -265,6 +301,7 @@ export class DocumentData {
     }));
   }
   
+  /** set an annotation as the selected one */
   setSelectedAnnotation(annotation: AnnotationDict): AnnotationDict {
     if (annotation === this._selectedAnnotation) {
       return;
@@ -296,6 +333,7 @@ export class DocumentData {
     return this._selectedAnnotation;
   }  
 
+  /**mark the currently selected annotation as deleted */
   deleteSelectedAnnotation() {
     const annotation = this.selectedAnnotation;
     if (annotation) {
@@ -303,6 +341,10 @@ export class DocumentData {
     }
   }
 
+  /**
+   * append annotations described using the passed data-transfer objects
+   * @param dtos previously exported data-transfer objects
+   */
   appendSerializedAnnotations(dtos: AnnotationDto[]) {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
@@ -320,6 +362,11 @@ export class DocumentData {
     }
   }
 
+  /**
+   * serialize supported annotations to the data-transfer objecst
+   * @param addedOnly serialize only newly added annotations
+   * @returns 
+   */
   serializeAnnotations(addedOnly = false): AnnotationDto[] {
     const result: AnnotationDto[] = [];
     this.getSupportedAnnotationMap().forEach((v, k) => {

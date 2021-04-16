@@ -17,6 +17,10 @@ export class AESV2DataCryptor implements IDataCryptor {
   protected _key: Uint8Array;
   protected _tempKey: Uint8Array;
 
+  /**
+   * 
+   * @param key must be 16 bytes long
+   */
   constructor(key: Uint8Array) {
     if (!key) {      
       throw new Error("Empty key");

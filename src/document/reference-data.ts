@@ -15,6 +15,10 @@ interface FreeReference extends Reference {
   nextFreeId: number;
 }
 
+/**
+ * a class that encapsulates the logic related to
+ * getting/adding/updating/removing PDF object references 
+ */
 export class ReferenceData {  
   readonly size: number;
   readonly freeLinkedList: LinkedList<FreeReference>;
@@ -29,6 +33,7 @@ export class ReferenceData {
 
     let maxId = 0;
     xrefs.forEach(x => {
+      // split cross-reference section entries by type
       for (const entry of x.getEntries()) {
         switch (entry.type) {
           case xRefEntryTypes.FREE:
@@ -68,6 +73,7 @@ export class ReferenceData {
     even though these entries are not in the linked list itself
      */
 
+    // mandatory free zero reference
     const zeroFreeRef: FreeReference = {
       id: 0,
       generation: maxGeneration,
@@ -182,6 +188,7 @@ export class ReferenceData {
   }
 }
 
+/**a class that encapsulates isolated changes to the reference data */
 export class ReferenceDataChange {
   private readonly _refData: ReferenceData;
 
@@ -206,6 +213,12 @@ export class ReferenceDataChange {
     this._usedMap = new Map<number, UsedReference>();
   }
 
+  /**
+   * get a free reference and set it as used at the specified offset value
+   * @param byteOffset 
+   * @param forceNew ignore freed references
+   * @returns 
+   */
   takeFreeRef(byteOffset: number, forceNew = false): UsedReference {
     let ref: UsedReference;
     if (!forceNew && this._freeLinkedList.length > 1) {
@@ -258,6 +271,7 @@ export class ReferenceDataChange {
     }
   }
 
+  /**apply changes made to the reference */
   updateUsedRef(ref: UsedReference) { 
     if (ref.compressed && ref.generation) {
       throw new Error(`Compressed ref generation can't be greater than zero: '${ref.id} ${ref.generation} R'`);
@@ -285,6 +299,7 @@ export class ReferenceDataChange {
     throw new Error(`The reference is not used: '${current.id} ${current.generation} R'`);
   }
 
+  /**export all the references including new and updated ones as cross-reference section entries */
   exportEntries(): XRefEntry[] {
     const entries: XRefEntry[] = [];
     for (const entry of this._freeLinkedList) {
@@ -304,11 +319,13 @@ export class ReferenceDataChange {
     return entries;
   }
   
+  /**check if the reference is freed */
   isFreed(ref: Reference): boolean {
     return this._freeLinkedList.has(<FreeReference>ref, (a, b) => 
       a.id === b.id && a.generation < b.generation);
   }
 
+  /**check if PDF object id is used in the source reference data */
   isUsedInSource(id: number): boolean {    
     return this._refData.isUsed(id);
   }

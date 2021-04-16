@@ -3,7 +3,7 @@ import CryptoES from "crypto-es";
 // import * as CryptoJs from "crypto-js";
 import { bytesToInt32Array, hexStringToBytes, int32ArrayToBytes } from "./byte-functions";
 
-export function toWordArray(data: Uint8Array): CryptoES.lib.WordArray {
+export function bytesToWordArray(data: Uint8Array): CryptoES.lib.WordArray {
   // return CryptoES.lib.WordArray.create(Array.from(bytesToInt32Array(data)));
   return CryptoES.lib.WordArray.create(data);
 }
@@ -14,7 +14,7 @@ export function wordArrayToBytes(wordArray: CryptoES.lib.WordArray): Uint8Array 
 
 export function md5(data: Uint8Array | CryptoES.lib.WordArray): CryptoES.lib.WordArray {
   if (data instanceof Uint8Array) {
-    data = toWordArray(data);
+    data = bytesToWordArray(data);
   }    
   const result = CryptoES.MD5(data);
   return result;
@@ -23,10 +23,10 @@ export function md5(data: Uint8Array | CryptoES.lib.WordArray): CryptoES.lib.Wor
 export function rc4(data: Uint8Array | CryptoES.lib.WordArray, 
   key: Uint8Array | CryptoES.lib.WordArray): CryptoES.lib.WordArray {
   if (data instanceof Uint8Array) {
-    data = toWordArray(data);
+    data = bytesToWordArray(data);
   }
   if (key instanceof Uint8Array) {
-    key = toWordArray(key);
+    key = bytesToWordArray(key);
   }   
   const result = CryptoES.RC4.encrypt(data, key).ciphertext;
   return result;
@@ -35,10 +35,10 @@ export function rc4(data: Uint8Array | CryptoES.lib.WordArray,
 export function aes(data: Uint8Array | CryptoES.lib.WordArray, 
   key: Uint8Array | CryptoES.lib.WordArray, decrypt = false): CryptoES.lib.WordArray {
   if (data instanceof Uint8Array) {
-    data = toWordArray(data);
+    data = bytesToWordArray(data);
   }
   if (key instanceof Uint8Array) {
-    key = toWordArray(key);
+    key = bytesToWordArray(key);
   }    
 
   if (decrypt) {

@@ -60,6 +60,7 @@ export function bytesToInt32Array(bytes: Uint8Array, le = false): Int32Array {
   return result;
 }
 
+/**apply eXclusive OR operator with the number value to every byte in the array*/
 export function xorBytes(bytes: Uint8Array, n: number): Uint8Array {
   const result = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++){
@@ -104,6 +105,11 @@ export function findSubarrayIndex(arr: Uint8Array, sub: Uint8Array): number {
   return -1;
 }
 
+/**
+ * convert "hex" string to byte array
+ * @param hexString string like "03A8EF". the string length must be a multiple of two
+ * @returns byte array
+ */
 export function hexStringToBytes(hexString: string): Uint8Array {    
   const bytes = new Uint8Array(hexString.length / 2);
   for (let i = 0, j = 0; i < hexString.length; i += 2, j++) {

@@ -6,6 +6,7 @@ import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
+/**PDF document page structure root object */
 export class CatalogDict extends PdfDict {
   /**
    * (Optional; PDF 1.4+) The version of the PDF specification 
@@ -76,9 +77,6 @@ export class CatalogDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  /**
-   * fill public properties from data using info/parser if available
-   */
   protected parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;

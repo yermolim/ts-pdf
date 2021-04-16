@@ -27,6 +27,7 @@ export interface TextStateParams {
   textKnockOut?: boolean;
 }
 
+/**text state used in appearance streams */
 export class TextState {
   static readonly defaultParams: TextStateParams = {
     fontFamily: "helvetica, sans-serif",

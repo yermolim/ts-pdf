@@ -7,12 +7,14 @@ interface PathData {
 }
 
 export interface PenDataOptions {
+  /**smoothing filter position buffer (higher values mean smoother lines but less performance) */
   bufferSize?: number; 
   strokeWidth?: number;  
   color?: Quadruple;
   id?: number;
 }
 
+/**a class used for drawing smooth SVG paths */
 export class PenData {
   static readonly defaultOptions: PenDataOptions = {
     bufferSize: 8, 
@@ -105,13 +107,20 @@ export class PenData {
   private appendPositionToBuffer(pos: Vec2) {
     const buffer = this._positionBuffer;
     buffer.push(pos);
+    // keep the buffer from oversizing
     this._positionBuffer = buffer
       .slice(Math.max(0, buffer.length - this._options.bufferSize), buffer.length);
   }
 
-  private getAveragePosition(offset: number): Vec2 {
+  /**
+   * get an average buffer position starting from the specified offset
+   * @param offset must not exceed the buffer max index
+   * @returns average position vector
+   */
+  private getAverageBufferPosition(offset: number): Vec2 {
     const len = this._positionBuffer.length;
-    if (len % 2 === 1 || len >= this._options.bufferSize) {
+    console.log(len);
+    if (len >= this._options.bufferSize) {
       let totalX = 0;
       let totalY = 0;
       let pos: Vec2;
@@ -125,27 +134,33 @@ export class PenData {
       }
       return new Vec2(totalX / count, totalY / count);
     }
+    // the buffer is not filled
     return null;
   }  
 
+  /**
+   * apply
+   */
   private updateCurrentPath() {
-    let pos = this.getAveragePosition(0);
-
-    if (pos) {
-      // Get the smoothed part of the path that will not change
-      this._currentPathString += " L" + pos.x + " " + pos.y;    
-      this._currentPath.positions.push(pos);
-
-      // Get the last part of the path (close to the current mouse position)
-      // This part will change if the mouse moves again
-      let tmpPath = "";
-      for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
-        pos = this.getAveragePosition(offset);
-        tmpPath += " L" + pos.x + " " + pos.y;
-      }
-
-      // Set the complete current path coordinates
-      this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+    let pos = this.getAverageBufferPosition(0);
+    if (!pos) {
+      return;
     }
-  };
+
+    // append the whole buffer average position to the path 
+    // it will not change
+    this._currentPathString += " L" + pos.x + " " + pos.y;
+    this._currentPath.positions.push(pos);
+
+    // calculate the last part of the path (close to the current pointer position)
+    // this part is temporary and it will change if the pointer moves again
+    let tmpPath = "";
+    for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
+      pos = this.getAverageBufferPosition(offset);
+      tmpPath += " L" + pos.x + " " + pos.y;
+    }
+
+    // Set the complete current path coordinates
+    this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+  }
 }

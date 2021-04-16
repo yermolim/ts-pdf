@@ -1,6 +1,5 @@
 import { AuthenticationResult, CryptInfo, IDataCryptor } from "./common-interfaces";
 import { ReferenceData, ReferenceDataChange, UsedReference } from "./reference-data";
-import { DataParser } from "./data-parser";
 import { DataWriter } from "./data-writer";
 
 import { ObjectId } from "./entities/core/object-id";
@@ -20,6 +19,7 @@ export interface PageWithAnnotations {
   supportedAnnotations: AnnotationDict[];
 }
 
+/**the class that encapsulates the logic related to PDF document update */
 export class DocumentDataUpdater {
   private readonly _lastXref: XRef;
   private readonly _refData: ReferenceData;
@@ -29,6 +29,13 @@ export class DocumentDataUpdater {
   private readonly _stringCryptor: IDataCryptor;        
   private readonly _streamCryptor: IDataCryptor;     
 
+  /**
+   * 
+   * @param sourceBytes source PDF document byte array (the source data is not modified)
+   * @param lastXref last cross-reference section of the document
+   * @param referenceData source document reference data
+   * @param authResult auhentication data
+   */
   constructor(sourceBytes: Uint8Array, lastXref: XRef,
     referenceData: ReferenceData, authResult: AuthenticationResult) {
     this._lastXref = lastXref;
@@ -40,22 +47,29 @@ export class DocumentDataUpdater {
     this._streamCryptor = authResult?.streamCryptor;
   }
 
-  getDataWithUpdatedAnnotations(data: PageWithAnnotations[]) {  
-    for (const {page, supportedAnnotations: annotations, 
-      allAnnotationIds: refArray} of data) {
+  /**
+   * apply the changes made to the source document annotations and return the final document as a byte array
+   * @param data array of objects with every page and its annotations
+   * @returns updated PDF document byte array
+   */
+  getDataWithUpdatedAnnotations(data: PageWithAnnotations[]): Uint8Array {  
+    for (const {page, supportedAnnotations: annotations, allAnnotationIds: refArray} of data) {
       if (!annotations?.length) {
-        // no changes made
+        // no annotations, so no changes made
         continue;
       }
 
+      // update the page annotations
       for (const annotation of annotations) {
         if (annotation.deleted) {
           if (!annotation.ref) {
             // annotation is absent in the PDF document, so just ignore it
             continue;
           }
+          // remove the reference to the current annotation from the page annotation references
           const refIndex = refArray.findIndex(x => x.id === annotation.id);
           refArray.splice(refIndex, 1);
+          // mark the annotation reference as freed
           this._changeData.setRefFree(annotation.id);
           // also, delete the associated popup if present
           if (annotation instanceof MarkupAnnotation && annotation.Popup) {
@@ -64,15 +78,17 @@ export class DocumentDataUpdater {
         } else if (!annotation.ref || annotation.edited) {
           const apStream = annotation.apStream;
           if (apStream) {
+            // if the annotation has an appearance stream write it to the document
             this.writeFormXObject(apStream);
           }
           if (this.isNew(annotation)) {
-          // the annotation has no id so it's a new annotation
-          // write the annotation and add the annotation to the ref array
+            // the annotation has no id so it's a new annotation
+            // write the annotation to the document and add the annotation to the ref array
             const newAnnotRef = this.writeIndirectObject(annotation);
             refArray.push(ObjectId.fromRef(newAnnotRef));
           } else {            
-          // the annotation has been edited. rewrite the annotation
+            // the annotation is present in the source data, so it has been edited 
+            // simply rewrite the annotation
             this.writeUpdatedIndirectObject(annotation);
           }
         }
@@ -81,8 +97,8 @@ export class DocumentDataUpdater {
       // update the page annotation reference array
       if (page.Annots instanceof ObjectId 
         && this._changeData.isUsedInSource(page.Annots.id)) {
-      // page annotation refs are written to the indirect ref array 
-      // write the updated annotation array and update the reference offset   
+        // page annotation refs are written to the indirect ref array 
+        // write the updated annotation array and update the reference offset   
         const annotsRef: UsedReference = {
           id: page.Annots.id, 
           generation: page.Annots.generation, 
@@ -96,8 +112,8 @@ export class DocumentDataUpdater {
         this._changeData.updateUsedRef(annotsRef);
         this._writer.writeIndirectArray(annotsCryptInfo, refArray);
       } else {
-      // the page has no annotation refs yet or they are written directly to the page as the ref array
-      // write a new annotation array and add or replace the reference to the page dict       
+        // the page has no annotation refs yet or they are written directly to the page as the ref array
+        // write a new annotation array and add or replace the reference to the page dict       
         const newAnnotsRef = this._changeData.takeFreeRef(this._writer.offset, true);
         const annotsCryptInfo: CryptInfo = {
           ref: newAnnotsRef,
@@ -106,14 +122,17 @@ export class DocumentDataUpdater {
         };
         this._writer.writeIndirectArray(annotsCryptInfo, refArray);
         // set ref to the annotation ref array
-        page.Annots = ObjectId.fromRef(newAnnotsRef); // TODO: FIX!!111
+        page.Annots = ObjectId.fromRef(newAnnotsRef); // TODO: check it
       }
 
       // write the updated page dict
       this.writeUpdatedIndirectObject(page);
     }
 
+    // append a new cross-reference section
     this.writeXref();
+
+    // get the result
     const bytes = this._writer.getCurrentData();
 
     // DEBUG
@@ -123,10 +142,12 @@ export class DocumentDataUpdater {
     return bytes;
   }
 
+  /**check if the object is not present in the source data */
   private isNew(obj: PdfObject): boolean {
     return !obj.ref || !this._changeData.isUsedInSource(obj.id);
   } 
   
+  /**add a new PDF object to the document */
   private writeIndirectObject(obj: PdfObject): UsedReference {
     const newRef = this._changeData.takeFreeRef(this._writer.offset, true);
     const newObjCryptInfo: CryptInfo = {
@@ -139,6 +160,7 @@ export class DocumentDataUpdater {
     return newRef;
   }
 
+  /**add an updated PDF object to the document */
   private writeUpdatedIndirectObject(obj: PdfObject): UsedReference {
     const objRef: UsedReference = {
       id: obj.id, 
@@ -154,7 +176,8 @@ export class DocumentDataUpdater {
     this._writer.writeIndirectObject(objCryptInfo, obj);
     return objRef;
   }
-
+  
+  /**add an image external PDF object to the document */
   private writeImageXObject = (obj: ImageStream): UsedReference => {      
     const sMask = obj.sMask;
     if (this.isNew(sMask)) {
@@ -182,6 +205,7 @@ export class DocumentDataUpdater {
     }
   };
 
+  /**add an external form PDF object to the document */
   private writeFormXObject(obj: XFormStream): UsedReference { 
     const resources = obj.Resources;
     if (resources && resources.edited) {
@@ -210,7 +234,11 @@ export class DocumentDataUpdater {
       };
     }      
   }   
-
+  
+  /**
+   * add a new cross-reference section to the document using the update data 
+   * @returns the new cross-reference section 
+   */
   private writeXref(): number {
     const newXrefOffset = this._writer.offset;
     const newXrefRef = this._changeData.takeFreeRef(newXrefOffset, true);
@@ -219,6 +247,7 @@ export class DocumentDataUpdater {
     // DEBUG
     // console.log(newXrefEntries);
 
+    // create a new cross-reference section based on the previous one
     const newXref = this._lastXref.createUpdate(newXrefEntries, newXrefOffset);
     this._writer.writeIndirectObject({ref: newXrefRef}, newXref);
     this._writer.writeEof(newXrefOffset); 

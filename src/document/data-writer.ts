@@ -14,6 +14,10 @@ export class DataWriter {
     return this._pointer;
   }
 
+  /**
+   * 
+   * @param data byte array of the file to be modified (will be copied without modification)
+   */
   constructor(data: Uint8Array) {
     if (!data?.length) {
       throw new Error("Data is empty");
@@ -26,10 +30,18 @@ export class DataWriter {
     this.fixEof();
   }
 
+  /**
+   * 
+   * @returns a copy of the underlying data byte array in its current state
+   */
   getCurrentData(): Uint8Array {
     return new Uint8Array(this._data);
   }
 
+  /**
+   * append byte array to the current data
+   * @param bytes
+   */
   writeBytes(bytes: Uint8Array | number[]) {
     if (!bytes?.length) {
       return;
@@ -38,6 +50,11 @@ export class DataWriter {
     this._pointer += bytes.length;
   }
   
+  /**
+   * convert an encodable object to a byte array and append it to the underlying data
+   * @param cryptInfo 
+   * @param obj 
+   */
   writeIndirectObject(cryptInfo: CryptInfo, obj: IEncodable) {
     if (!cryptInfo?.ref || !obj) {
       return;
@@ -53,6 +70,11 @@ export class DataWriter {
     this.writeBytes(objBytes);
   }
 
+  /**
+   * convert an array of encodable objects to a byte array and append it to the underlying data
+   * @param cryptInfo 
+   * @param objs
+   */
   writeIndirectArray(cryptInfo: CryptInfo, objs: IEncodable[]) {
     if (!cryptInfo?.ref || !objs) {
       return;
@@ -79,6 +101,9 @@ export class DataWriter {
     this.writeBytes(objBytes);
   }
 
+  /**
+   * append the eod-of-file byte sequence to the current data 
+   */
   writeEof(xrefOffset: number) {
     const eof = [
       ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
@@ -90,7 +115,7 @@ export class DataWriter {
   }
 
   /**
-   * append \r\n to the end of data if absent
+   * append '\r\n' to the end of the current data if absent
    */
   private fixEof() {
     if (this._data[this._pointer - 1] !== codes.LINE_FEED) {

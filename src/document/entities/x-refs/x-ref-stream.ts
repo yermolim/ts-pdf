@@ -35,12 +35,24 @@ export class XRefStream extends XRef {
     return this._trailerStream?.ID;
   }
   
+  /**
+   * 
+   * @param trailer PDF trailer stream
+   * @param offset byte offset
+   */
   constructor(trailer: TrailerStream, offset: number) {
     super(xRefTypes.STREAM);
     this._trailerStream = trailer;
     this._offset = offset;
   }
 
+  /**
+   * create new cross-reference stream based on the specified one
+   * @param base source cross-reference stream
+   * @param entries new cross-reference stream entries
+   * @param offset new cross-reference stream byte offset
+   * @returns new cross-reference stream
+   */
   static createFrom(base: XRefStream, entries: XRefEntry[], offset: number) {
     if (!entries?.length || !base) {
       return null;
@@ -52,7 +64,19 @@ export class XRefStream extends XRef {
     return XRefStream.create(entries, size, offset, base.root, 
       base.offset, base.info, base.encrypt, base.id);
   }
-
+  
+  /**
+   * create new cross-reference stream
+   * @param entries new cross-reference stream entries
+   * @param size max PDF document object id + 1
+   * @param offset new cross-reference stream byte offset
+   * @param root PDF object id of a document root
+   * @param prev the previous cross-reference stream byte offset
+   * @param info PDF object id of an information dictionary
+   * @param encrypt PDF object id of an encryption dictionary
+   * @param id PDF document id (tuple of two hex strings)
+   * @returns new cross-reference stream
+   */
   static create(entries: XRefEntry[], size: number, offset: number, root: ObjectId, 
     prev?: number, info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString]): XRefStream {
 
@@ -88,6 +112,12 @@ export class XRefStream extends XRef {
     return stream;
   }
   
+  /**
+   * parse 
+   * @param parser PDF document data parser
+   * @param offset CRS byte offset in the PDF document
+   * @returns 
+   */
   static parse(parseInfo: ParseInfo, offset: number): ParseResult<XRefStream> {
     if (!parseInfo) {
       return null;

@@ -7,12 +7,16 @@ export class RC4DataCryptor implements IDataCryptor {
   protected _key: Uint8Array;
   protected _tempKey: Uint8Array;
 
+  /**
+   * 
+   * @param key must be a multiple of 8 in the range from 40 to 128
+   */
   constructor(key: Uint8Array) {
     if (!key) {      
       throw new Error("Empty key");
     }
     if (key.length < 5 || key.length > 16) {
-      throw new Error(`Invalid key length: ${key.length} (shall be a multiple in range from 40 to 128)`);
+      throw new Error(`Invalid key length: ${key.length} (shall be a multiple of 8 in the range from 40 to 128)`);
     }
 
     this._n = key.length;

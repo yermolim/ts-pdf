@@ -2011,7 +2011,7 @@ function hexStringToBytes(hexString) {
     return bytes;
 }
 
-function toWordArray(data) {
+function bytesToWordArray(data) {
     return CryptoES.lib.WordArray.create(data);
 }
 function wordArrayToBytes(wordArray) {
@@ -2019,27 +2019,27 @@ function wordArrayToBytes(wordArray) {
 }
 function md5(data) {
     if (data instanceof Uint8Array) {
-        data = toWordArray(data);
+        data = bytesToWordArray(data);
     }
     const result = CryptoES.MD5(data);
     return result;
 }
 function rc4(data, key) {
     if (data instanceof Uint8Array) {
-        data = toWordArray(data);
+        data = bytesToWordArray(data);
     }
     if (key instanceof Uint8Array) {
-        key = toWordArray(key);
+        key = bytesToWordArray(key);
     }
     const result = CryptoES.RC4.encrypt(data, key).ciphertext;
     return result;
 }
 function aes(data, key, decrypt = false) {
     if (data instanceof Uint8Array) {
-        data = toWordArray(data);
+        data = bytesToWordArray(data);
     }
     if (key instanceof Uint8Array) {
-        key = toWordArray(key);
+        key = bytesToWordArray(key);
     }
     if (decrypt) {
         const ivWordArray = CryptoES.lib.WordArray.create(data.words.slice(0, 4));
@@ -2107,7 +2107,7 @@ class AESV3DataCryptor {
             throw new Error("Empty key");
         }
         if (key.length !== 32) {
-            throw new Error(`Invalid key length: ${key.length} (shall be 16)`);
+            throw new Error(`Invalid key length: ${key.length} (shall be 32)`);
         }
         this._n = key.length;
         this._key = key;
@@ -2143,7 +2143,7 @@ class RC4DataCryptor {
             throw new Error("Empty key");
         }
         if (key.length < 5 || key.length > 16) {
-            throw new Error(`Invalid key length: ${key.length} (shall be a multiple in range from 40 to 128)`);
+            throw new Error(`Invalid key length: ${key.length} (shall be a multiple of 8 in the range from 40 to 128)`);
         }
         this._n = key.length;
         this._key = key;
@@ -2392,7 +2392,7 @@ class DataCryptHandler {
                 userPasswordPadded = wordArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey));
             }
             else {
-                let hash = toWordArray(this._oPasswordHash);
+                let hash = bytesToWordArray(this._oPasswordHash);
                 for (let i = 19; i >= 0; i--) {
                     hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
                 }
@@ -5203,7 +5203,7 @@ class HexString {
         const bytes = new TextEncoder().encode(literal);
         return new HexString(literal, hex, bytes);
     }
-    static fromLiteralString(literal) {
+    static fromString(literal) {
         const hex = hexStringToBytes(literal);
         const bytes = new TextEncoder().encode(literal);
         return new HexString(literal, hex, bytes);
@@ -12704,6 +12704,15 @@ class Annotator {
         (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
         (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
     }
+    updateDimensions(pages, scale) {
+        if (pages) {
+            this.renderedPages = pages;
+        }
+        if (scale) {
+            this.scale = scale;
+        }
+        this.refreshViewBox();
+    }
     refreshViewBox() {
         const { width: w, height: h } = this._overlay.getBoundingClientRect();
         if (!w || !h) {
@@ -12770,7 +12779,7 @@ class Annotator {
         this.refreshViewBox();
         this.initObservers();
     }
-    updatePageCoords(clientX, clientY) {
+    updatePointerCoords(clientX, clientY) {
         const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
         if (!pageCoords) {
             this._svgGroup.classList.add("out");
@@ -12778,7 +12787,7 @@ class Annotator {
         else {
             this._svgGroup.classList.remove("out");
         }
-        this._pageCoords = pageCoords;
+        this._pointerCoordsInPageCS = pageCoords;
     }
     getPageCoordsUnderPointer(clientX, clientY) {
         for (const page of this._renderedPages) {
@@ -12826,7 +12835,7 @@ class StampAnnotator extends Annotator {
             const offsetY = (oy - cy) / this._scale;
             const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
             this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
-            this.updatePageCoords(cx, cy);
+            this.updatePointerCoords(cx, cy);
         };
         this.onStampPointerUp = (e) => {
             if (!e.isPrimary || e.button === 2) {
@@ -12834,11 +12843,11 @@ class StampAnnotator extends Annotator {
             }
             const { clientX: cx, clientY: cy } = e;
             const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
-            this._pageCoords = pageCoords;
+            this._pointerCoordsInPageCS = pageCoords;
             if (!pageCoords || !this._tempAnnotation) {
                 return;
             }
-            const { pageId, pageX, pageY } = this._pageCoords;
+            const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
             this._tempAnnotation.moveTo(pageX, pageY);
             this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
             this.createTempStampAnnotationAsync();
@@ -12951,9 +12960,10 @@ class PenData {
         this._positionBuffer = buffer
             .slice(Math.max(0, buffer.length - this._options.bufferSize), buffer.length);
     }
-    getAveragePosition(offset) {
+    getAverageBufferPosition(offset) {
         const len = this._positionBuffer.length;
-        if (len % 2 === 1 || len >= this._options.bufferSize) {
+        console.log(len);
+        if (len >= this._options.bufferSize) {
             let totalX = 0;
             let totalY = 0;
             let pos;
@@ -12970,19 +12980,19 @@ class PenData {
         return null;
     }
     updateCurrentPath() {
-        let pos = this.getAveragePosition(0);
-        if (pos) {
-            this._currentPathString += " L" + pos.x + " " + pos.y;
-            this._currentPath.positions.push(pos);
-            let tmpPath = "";
-            for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
-                pos = this.getAveragePosition(offset);
-                tmpPath += " L" + pos.x + " " + pos.y;
-            }
-            this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+        let pos = this.getAverageBufferPosition(0);
+        if (!pos) {
+            return;
         }
+        this._currentPathString += " L" + pos.x + " " + pos.y;
+        this._currentPath.positions.push(pos);
+        let tmpPath = "";
+        for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
+            pos = this.getAverageBufferPosition(offset);
+            tmpPath += " L" + pos.x + " " + pos.y;
+        }
+        this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
     }
-    ;
 }
 PenData.defaultOptions = {
     bufferSize: 8,
@@ -13004,8 +13014,8 @@ class PenAnnotator extends Annotator {
                 return;
             }
             const { clientX: cx, clientY: cy } = e;
-            this.updatePageCoords(cx, cy);
-            const pageCoords = this._pageCoords;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
             if (!pageCoords) {
                 return;
             }
@@ -13025,8 +13035,8 @@ class PenAnnotator extends Annotator {
                 return;
             }
             const { clientX: cx, clientY: cy } = e;
-            this.updatePageCoords(cx, cy);
-            const pageCoords = this._pageCoords;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
             if (!pageCoords || pageCoords.pageId !== this._annotationPenData.id) {
                 return;
             }
@@ -13055,10 +13065,6 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
         super.destroy();
     }
-    refreshViewBox() {
-        super.refreshViewBox();
-        this.updatePenGroupPosition();
-    }
     undoPath() {
         var _a;
         (_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.removeLastPath();
@@ -13080,7 +13086,11 @@ class PenAnnotator extends Annotator {
         super.init();
         this._overlay.addEventListener("pointerdown", this.onPenPointerDown);
     }
-    updatePenGroupPosition() {
+    refreshViewBox() {
+        super.refreshViewBox();
+        this.refreshPenGroupPosition();
+    }
+    refreshPenGroupPosition() {
         if (!this._annotationPenData) {
             return;
         }
@@ -13111,7 +13121,7 @@ class PenAnnotator extends Annotator {
             strokeWidth: this._strokeWidth,
         });
         this._svgGroup.append(this._annotationPenData.group);
-        this.updatePenGroupPosition();
+        this.refreshPenGroupPosition();
     }
     emitPathCount() {
         var _a;
@@ -13600,7 +13610,7 @@ class TsPdfViewer {
                 this._mainContainer.classList.remove("mobile");
             }
             this._contextMenu.hide();
-            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.refreshViewBox();
+            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.updateDimensions(this._renderedPages, this._scale);
         });
         mcResizeObserver.observe(mainContainer);
         this._mainContainer = mainContainer;
@@ -13918,7 +13928,7 @@ class TsPdfViewer {
         }
     }
     renderVisiblePages() {
-        var _a, _b;
+        var _a, _b, _c;
         const pages = this._pages;
         const visiblePageNumbers = this.getVisiblePages(this._viewer, pages);
         const prevCurrent = this._currentPage;
@@ -13947,10 +13957,10 @@ class TsPdfViewer {
             }
         }
         this._renderedPages = renderedPages;
-        this.updateAnnotatorPageData();
+        (_c = this._annotator) === null || _c === void 0 ? void 0 : _c.updateDimensions(this._renderedPages, this._scale);
     }
     setAnnotationMode(mode) {
-        var _a;
+        var _a, _b;
         if (!mode || mode === this._annotatorMode) {
             return;
         }
@@ -13993,7 +14003,7 @@ class TsPdfViewer {
             default:
                 throw new Error(`Invalid annotation mode: ${mode}`);
         }
-        this.updateAnnotatorPageData();
+        (_b = this._annotator) === null || _b === void 0 ? void 0 : _b.updateDimensions(this._renderedPages, this._scale);
     }
     initContextStampPicker() {
         const stampTypes = [
@@ -14012,7 +14022,7 @@ class TsPdfViewer {
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
                 this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
-                this.updateAnnotatorPageData();
+                this._annotator.updateDimensions(this._renderedPages, this._scale);
             });
             const stampName = document.createElement("div");
             stampName.innerHTML = x.name;
@@ -14041,7 +14051,7 @@ class TsPdfViewer {
                 this._annotator = new PenAnnotator(this._docData, this._viewer, {
                     color: x,
                 });
-                this.updateAnnotatorPageData();
+                this._annotator.updateDimensions(this._renderedPages, this._scale);
             });
             const colorIcon = document.createElement("div");
             colorIcon.classList.add("context-menu-color-icon");
@@ -14064,18 +14074,11 @@ class TsPdfViewer {
             this._annotator = new PenAnnotator(this._docData, this._viewer, {
                 strokeWidth: slider.valueAsNumber,
             });
-            this.updateAnnotatorPageData();
+            this._annotator.updateDimensions(this._renderedPages, this._scale);
         });
         contextMenuWidthSlider.append(slider);
         this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
         this._contextMenuEnabled = true;
-    }
-    updateAnnotatorPageData() {
-        if (this._annotator) {
-            this._annotator.scale = this._scale;
-            this._annotator.renderedPages = this._renderedPages;
-            this._annotator.refreshViewBox();
-        }
     }
     showPasswordDialogAsync() {
         return __awaiter(this, void 0, void 0, function* () {

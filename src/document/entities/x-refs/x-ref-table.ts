@@ -8,6 +8,7 @@ import { TrailerDict } from "./trailer-dict";
 import { XRef } from "./x-ref";
 import { XRefEntry } from "./x-ref-entry";
 
+/**PDF cross-reference table */
 export class XRefTable extends XRef {
   private _trailerDict: TrailerDict;
   private _table: Uint8Array;
@@ -27,7 +28,7 @@ export class XRefTable extends XRef {
   get info(): ObjectId {
     return this._trailerDict?.Root;
   }
-
+  
   get encrypt(): ObjectId {
     return this._trailerDict?.Encrypt;
   }
@@ -36,6 +37,12 @@ export class XRefTable extends XRef {
     return this._trailerDict?.ID;
   }
 
+  /**
+   * 
+   * @param table CRT entries serialized to byte array
+   * @param trailer PDF trailer dictionary
+   * @param offset byte offset
+   */
   constructor(table: Uint8Array, trailer: TrailerDict, offset: number) {
     super(xRefTypes.TABLE);
 
@@ -44,7 +51,14 @@ export class XRefTable extends XRef {
     this._offset = offset;
   }
   
-  static createFrom(base: XRefTable, entries: XRefEntry[], offset: number) {
+  /**
+   * create new cross-reference table based on the specified one
+   * @param base source cross-reference table
+   * @param entries new cross-reference table entries
+   * @param offset new cross-reference table byte offset
+   * @returns new cross-reference table
+   */
+  static createFrom(base: XRefTable, entries: XRefEntry[], offset: number): XRefTable {
     if (!entries?.length || !base) {
       return null;
     }
@@ -56,8 +70,20 @@ export class XRefTable extends XRef {
       base.offset, base.info, base.encrypt, base.id);
   }
   
+  /**
+   * create new cross-reference table
+   * @param entries new cross-reference table entries
+   * @param size max PDF document object id + 1
+   * @param offset new cross-reference table byte offset
+   * @param root PDF object id of a document root
+   * @param prev the previous cross-reference table byte offset
+   * @param info PDF object id of an information dictionary
+   * @param encrypt PDF object id of an encryption dictionary
+   * @param id PDF document id (tuple of two hex strings)
+   * @returns new cross-reference table
+   */
   static create(entries: XRefEntry[], size: number, offset: number, root: ObjectId, 
-    prev?: number, info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString],) {
+    prev?: number, info?: ObjectId, encrypt?: ObjectId, id?: [HexString, HexString]): XRefTable {
 
     if (!entries?.length || !size || !offset || !root) {
       return null;
@@ -77,6 +103,13 @@ export class XRefTable extends XRef {
     return table;
   }
 
+  /**
+   * parse 
+   * @param parser PDF document data parser
+   * @param start parsing start byte offset in the parser data
+   * @param offset CRT byte offset in the PDF document
+   * @returns 
+   */
   static parse(parser: DataParser, start: number, offset: number): ParseResult<XRefTable> {
     if (!parser || isNaN(start)) {
       return null;

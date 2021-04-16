@@ -1,3 +1,4 @@
+/**the most used char codes from the ASCII set */
 export const codes = {
   NULL: 0,
   BACKSPACE: 8,
@@ -103,6 +104,7 @@ export const codes = {
   TILDE: 126,
 } as const;
 
+/**char code sequences commonly used in PDF data */
 export const keywordCodes = {
   NULL: [codes.n, codes.u, codes.l, codes.l],
 
@@ -200,6 +202,11 @@ export const EOL = [
   codes.LINE_FEED,
 ] as const;
 
+/**
+ * check if the char is not a space char or a delimiter char
+ * @param code char code
+ * @returns 
+ */
 export function isRegularChar(code: number): boolean {
   if (isNaN(code)) {
     return false;

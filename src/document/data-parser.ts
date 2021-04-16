@@ -8,11 +8,15 @@ export type SearchDirection = "straight" | "reverse";
 
 export interface SearchOptions {
   direction?: SearchDirection; 
+  /**search start index, inclusive */
   minIndex?: number;
+  /**search end index, inclusive */
   maxIndex?: number;
+  /**search only for the sequences that are followed with a PDF delimiter char */
   closedOnly?: boolean;
 }
 
+/**indices of the PDF object parsing bounds in the byte array of the corresponding DataParser */
 export interface Bounds {  
   start: number;
   end: number;
@@ -20,6 +24,7 @@ export interface Bounds {
   contentEnd?: number;
 }
 
+/**information used for parsing PDF object */
 export interface ParseInfo {
   /** parser instance used to parse the object */
   parser: DataParser;
@@ -43,14 +48,20 @@ export interface ParseResult<T> extends Bounds {
   value: T; 
 }
 
+/**PDF data parser */
 export class DataParser {
   private readonly _data: Uint8Array;  
   private readonly _maxIndex: number;
 
+  /**the last index in the underlying data byte array */
   public get maxIndex(): number {
     return this._maxIndex;
   }
 
+  /**
+   * 
+   * @param data byte array (can be the whole PDF file data, a single PDF object data, or decrypted stream data)
+   */
   constructor(data: Uint8Array) {
     if (!data?.length) {
       throw new Error("Data is empty");
@@ -59,6 +70,10 @@ export class DataParser {
     this._maxIndex = data.length - 1;
   }
 
+  /**
+   * parse the PDF version (throws if the underlying data is not a PDF file)
+   * @returns 
+   */
   getPdfVersion(): string {
     const i = this.findSubarrayIndex(keywordCodes.VERSION);
     if (!i) {
@@ -72,6 +87,10 @@ export class DataParser {
     return version.toFixed(1);
   }
   
+  /**
+   * parse the last cross-reference section byte offset
+   * @returns the last cross-reference section byte offset (null if not found)
+   */
   getLastXrefIndex(): ParseResult<number> {
     const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, 
       {maxIndex: this.maxIndex, direction: "reverse"});
@@ -261,6 +280,12 @@ export class DataParser {
   //#endregion
 
   //#region parse methods  
+  /**
+   * get the type of the byte sequence starting at the index
+   * @param start 
+   * @param skipEmpty 
+   * @returns 
+   */
   getValueTypeAt(start: number, skipEmpty = true): ValueType  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
@@ -738,6 +763,11 @@ export class DataParser {
   //#endregion
 
   //#region skip methods
+  /**
+   * get the nearest non-space char index
+   * @param start 
+   * @returns first non-space char index (-1 if not found till the end of the data)
+   */
   skipEmpty(start: number): number {
     let index = this.findNonSpaceIndex("straight", start);
     if (index === -1) {
@@ -754,6 +784,12 @@ export class DataParser {
     return index;
   }
 
+  /**
+   * get the nearest PDF name index
+   * @param start search start index
+   * @param max search end index
+   * @returns first PDF name index (-1 if not found till the end of the data)
+   */
   skipToNextName(start: number, max: number): number {
     start ||= 0;
     max = max 
@@ -855,20 +891,12 @@ export class DataParser {
   }
   //#endregion
   
-  isOutside(index: number) {
+  /**check if index is outside of the underlying data byte array bounds */
+  isOutside(index: number): boolean {
     return (index < 0 || index > this._maxIndex);
   }
 
-  //#region private search methods
-  // private getValidStartIndex(direction: "straight" | "reverse", 
-  //   start: number): number {
-  //   return !isNaN(start) 
-  //     ? Math.max(Math.min(start, this._maxIndex), 0)
-  //     : direction === "straight"
-  //       ? 0
-  //       : this._maxIndex;
-  // }
-  
+  //#region private search methods  
   private findSingleCharIndex(filter: (value: number) => boolean, 
     direction: "straight" | "reverse" = "straight", start?: number): number {
 

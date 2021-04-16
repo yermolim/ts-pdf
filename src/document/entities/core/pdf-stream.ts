@@ -38,14 +38,17 @@ export abstract class PdfStream extends PdfObject {
   
   protected _streamData: Uint8Array;
   protected _decodedStreamData: Uint8Array;
+  /**encoded stream data */
   get streamData(): Uint8Array {
     return this._streamData;
   }
+  /**encoded stream data */
   set streamData(data: Uint8Array) { 
     this.setStreamData(data);
     this._edited = true;
   }
 
+  
   get decodedStreamData(): Uint8Array {
     if (!this._decodedStreamData) {
       this.decodeStreamData();
@@ -54,7 +57,7 @@ export abstract class PdfStream extends PdfObject {
   }
 
   /**
-   * return decoded stream data as ansi text (for debug purposes)
+   * return decoded stream data as ansi text (intended for debug purposes)
    */
   get decodedStreamDataChars(): string {
     const decoder = new TextDecoder();
@@ -105,7 +108,7 @@ export abstract class PdfStream extends PdfObject {
   }
 
   /**
-   * try parse and fill public properties from data using info/parser if available
+   * try to parse and fill public properties from data using parse info
    */
   protected parseProps(parseInfo: ParseInfo) {
     if (!parseInfo) {
@@ -280,6 +283,7 @@ export abstract class PdfStream extends PdfObject {
     this._decodedStreamData = data;
   }
 
+  /**decode the stream data and assign it to the corresponding property */
   protected decodeStreamData() {    
     let decodedData: Uint8Array;
 

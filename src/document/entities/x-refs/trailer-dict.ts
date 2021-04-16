@@ -103,9 +103,6 @@ export class TrailerDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  /**
-   * fill public properties from data using info/parser if available
-   */
   protected parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;

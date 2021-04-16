@@ -72,6 +72,11 @@ export class DateString implements IEncodable {
     return new DateString(source, date);
   }
   
+  /**
+   * create DateString from a byte array
+   * @param arr 
+   * @returns 
+   */
   static fromArray(arr: Uint8Array): DateString {
     const source = new TextDecoder().decode(arr);
     return DateString.fromString(source);
