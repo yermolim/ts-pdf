@@ -1,3 +1,4 @@
+import { PointerDownInfo } from "../common";
 import { DocumentData } from "../document/document-data";
 import { PageView } from "../page/page-view";
 
@@ -50,6 +51,7 @@ export abstract class Annotator {
   protected _parentMutationObserver: MutationObserver;
   protected _parentResizeObserver: ResizeObserver;
 
+  protected _lastPointerDownInfo: PointerDownInfo;
   protected _pointerCoordsInPageCS: PageCoords;
 
   constructor(docData: DocumentData, parent: HTMLDivElement) {
@@ -106,6 +108,20 @@ export abstract class Annotator {
 
   protected onParentScroll = () => {
     this.refreshViewBox();
+  }; 
+  
+  protected onStampPointerDown = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      // the event source is the non-primary touch. ignore that
+      return;
+    }
+
+    // save the current pointer information to check the click duration and the displacement relative to the starting point
+    this._lastPointerDownInfo = {
+      timestamp: performance.now(),
+      clientX: e.clientX,
+      clientY: e.clientY,
+    };
   };
 
   /**
@@ -113,6 +129,7 @@ export abstract class Annotator {
    */
   protected initObservers() {
     this._parent.addEventListener("scroll", this.onParentScroll);
+    this._overlay.addEventListener("pointerdown", this.onStampPointerDown);
     const onPossibleViewerSizeChanged = () => {
       if (this._scale === this._lastScale) {
         return;

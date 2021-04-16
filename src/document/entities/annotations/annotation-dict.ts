@@ -850,6 +850,13 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region main svg handlers (selection + translation)
   protected onRectPointerDown = (e: PointerEvent) => { 
+    if (!this.$pageId) {
+      // the annotation is not appended to the page (a temporary one)
+      // do nothing
+      return;
+    }
+
+    // emit a selection request
     document.dispatchEvent(new AnnotSelectionRequestEvent({annotation: this}));
 
     if (!this.$translationEnabled || !e.isPrimary) {

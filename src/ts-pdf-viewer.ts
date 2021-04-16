@@ -15,6 +15,7 @@ import { Annotator } from "./annotator/annotator";
 import { StampAnnotator } from "./annotator/stamp-annotator";
 import { PathChangeEvent, PenAnnotator } from "./annotator/pen-annotator";
 import { AnnotationDto, AnnotEvent, AnnotEventDetail } from "./annotator/serialization";
+import { supportedStampTypes } from "./annotator/stamp-path-strings";
 
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
@@ -1177,13 +1178,7 @@ export class TsPdfViewer {
   };
 
   private initContextStampPicker() {
-    // TODO: move this somewhere where it will fit better
-    const stampTypes: {type: string; name: string}[] = [
-      {type:"/Draft", name: "Draft"},
-      {type:"/Approved", name: "Approved"},
-      {type:"/NotApproved", name: "Not Approved"},
-      {type:"/Departmental", name: "Departmental"},
-    ];
+    const stampTypes = supportedStampTypes;
 
     // init a stamp type picker
     const contextMenuContent = document.createElement("div");

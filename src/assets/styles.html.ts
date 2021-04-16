@@ -523,6 +523,7 @@ export const styles = /*html*/`
     z-index: 2;
     min-width: 50px;
     min-height: 50px;
+    max-height: 300px;
     padding: 5px;
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
@@ -530,6 +531,7 @@ export const styles = /*html*/`
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    overflow-y: auto;
   }
   .context-menu-content {
     display: flex;

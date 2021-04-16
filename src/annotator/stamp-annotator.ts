@@ -1,3 +1,4 @@
+import { getDistance } from "../common";
 import { DocumentData } from "../document/document-data";
 import { StampAnnotation, StampType, stampTypes } 
   from "../document/entities/annotations/markup/stamp-annotation";
@@ -64,6 +65,7 @@ export class StampAnnotator extends Annotator {
 
   protected onStampPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
+      // the event source is the non-primary touch. ignore that
       return;
     }
 
@@ -87,10 +89,29 @@ export class StampAnnotator extends Annotator {
 
   protected onStampPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary || e.button === 2) {
+      // the event source is the non-primary touch or the RMB. ignore that
       return;
-    }    
+    }
 
     const {clientX: cx, clientY: cy} = e;
+
+    if (e.pointerType === "touch") {
+      // 700ms - the default Chrome (v.89) delay for detecting a long tap
+      const longTap = performance.now() - this._lastPointerDownInfo?.timestamp > 700;
+      if (longTap) {
+        const downX = this._lastPointerDownInfo?.clientX || 0;
+        const downY = this._lastPointerDownInfo?.clientY || 0;
+        const displacement = Math.abs(getDistance(cx, cy, downX, downY));
+        // 7.5px seems to be the default Chrome (v.89) displacement limit for firing 'contextmenu' event
+        const displaced = displacement > 7.5;
+        if (!displaced) {
+          // long tap without displacement - the context menu condition
+          // do not append new annotation 
+          return;
+        }
+      }
+    }
+
     const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
     this._pointerCoordsInPageCS = pageCoords;
 

@@ -11,6 +11,12 @@ export function getDistance(x1: number, y1: number, x2: number, y2: number): num
   return Math.hypot(x2 - x1, y2 - y1);
 }
 
+export interface PointerDownInfo {
+  timestamp: number;
+  clientX: number;
+  clientY: number;
+}
+
 export interface RenderToSvgResult {
   svg: SVGGraphicsElement;
   clipPaths?: SVGClipPathElement[];

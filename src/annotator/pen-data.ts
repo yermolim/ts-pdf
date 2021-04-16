@@ -119,7 +119,6 @@ export class PenData {
    */
   private getAverageBufferPosition(offset: number): Vec2 {
     const len = this._positionBuffer.length;
-    console.log(len);
     if (len >= this._options.bufferSize) {
       let totalX = 0;
       let totalY = 0;
