@@ -1,26 +1,47 @@
+import { BBox, getRandomUuid, Hextuple, Quadruple, RenderToSvgResult } from "../../../common";
+import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
+
+import { codes } from "../../codes";
+import { CryptInfo } from "../../common-interfaces";
+import { AnnotationType, dictTypes, valueTypes } from "../../const";
+import { ParseInfo, ParseResult } from "../../data-parser";
+
+import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
+
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { DateString } from "../strings/date-string";
+import { LiteralString } from "../strings/literal-string";
 import { BorderStyleDict } from "../appearance/border-style-dict";
 import { AppearanceDict } from "../appearance/appearance-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
-import { AnnotationType, dictTypes, valueTypes } from "../../const";
-import { ParseInfo, ParseResult } from "../../data-parser";
-import { LiteralString } from "../strings/literal-string";
 import { BorderArray } from "../appearance/border-array";
-import { codes } from "../../codes";
-import { CryptInfo } from "../../common-interfaces";
-import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
-import { BBox, getRandomUuid, Quadruple, RenderToSvgResult } from "../../../common";
-import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
 import { XFormStream } from "../streams/x-form-stream";
-import { AnnotationDto } from "../../../annotator/serialization";
+
+export interface AnnotationDto {
+  annotationType: string;
+  uuid: string;
+  pageId: number;
+
+  dateCreated: string;
+  dateModified: string;
+  author: string;
+
+  rect: Quadruple;
+  matrix: Hextuple;
+}
+
 
 //#region custom events
 export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;
+export const annotChangeEvent = "tspdf-annotchange" as const;
 
 export interface AnnotSelectionRequestEventDetail {
   annotation: AnnotationDict;
+}
+export interface AnnotEventDetail {
+  type: "select" | "add" | "edit" | "delete";
+  annotations: AnnotationDto[];
 }
 
 export class AnnotSelectionRequestEvent extends CustomEvent<AnnotSelectionRequestEventDetail> {
@@ -28,10 +49,16 @@ export class AnnotSelectionRequestEvent extends CustomEvent<AnnotSelectionReques
     super(annotSelectionRequestEvent, {detail});
   }
 }
+export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
+  constructor(detail: AnnotEventDetail) {
+    super(annotChangeEvent, {detail});
+  }
+}
 
 declare global {
   interface DocumentEventMap {
     [annotSelectionRequestEvent]: AnnotSelectionRequestEvent;
+    [annotChangeEvent]: AnnotEvent;
   }
 }
 //#endregion

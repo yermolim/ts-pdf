@@ -1,11 +1,10 @@
 import { codes } from "../../../codes";
 import { Mat3, Vec2, vecMinMax } from "../../../../math";
-import { getRandomUuid, Quadruple } from "../../../../common";
+import { Double, getRandomUuid, Quadruple } from "../../../../common";
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 
-import { PenData } from "../../../../annotator/pen-data";
-import { InkAnnotationDto } from "../../../../annotator/serialization";
+import { PenData } from "../../../../annotator/pen/pen-data";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
@@ -16,7 +15,14 @@ import { ResourceDict } from "../../appearance/resource-dict";
 import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
+import { AnnotationDto } from "../annotation-dict";
 
+export interface InkAnnotationDto extends AnnotationDto {
+  inkList: number[][];
+  color: Quadruple;
+  strokeWidth: number;
+  strokeDashGap?: Double;
+}
 export class InkAnnotation extends MarkupAnnotation {
   /**
    * (Required) An array of n arrays, each representing a stroked path. 

@@ -2,8 +2,8 @@ import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 
-import { Vec2 } from "../math";
-import { DocumentData } from "../document/document-data";
+import { Vec2 } from "../../math";
+import { DocumentData } from "../../document/document-data";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";

@@ -48,7 +48,7 @@ export declare class TsPdfViewer {
 	private readonly _previewWidth;
 	private readonly _minScale;
 	private readonly _maxScale;
-	private _scale;
+	private readonly _annotationColors;
 	private _fileOpenAction;
 	private _fileSaveAction;
 	private _fileCloseAction;
@@ -63,6 +63,7 @@ export declare class TsPdfViewer {
 	private _previewerHidden;
 	private _viewer;
 	private _viewerMode;
+	private _viewerScale;
 	private _pages;
 	private _renderedPages;
 	private _currentPage;
@@ -70,6 +71,7 @@ export declare class TsPdfViewer {
 	private _pdfDocument;
 	private _docData;
 	private _annotatorMode;
+	private _annotatorGeometricMode;
 	private _annotator;
 	private _contextMenu;
 	private _contextMenuEnabled;
@@ -136,8 +138,9 @@ export declare class TsPdfViewer {
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
 	private onAnnotationChange;
-	private initContextStampPicker;
-	private initContextPenColorPicker;
+	private initStampAnnotatorContextMenu;
+	private initPenAnnotatorContextMenu;
+	private initGeometricAnnotatorContextMenu;
 	private showPasswordDialogAsync;
 }
 

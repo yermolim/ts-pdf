@@ -1,5 +1,5 @@
-import { Vec2 } from "../math";
-import { Hextuple, Quadruple } from "../common";
+import { Vec2 } from "../../math";
+import { Hextuple, Quadruple } from "../../common";
 
 interface PathData {
   path: SVGPathElement;
@@ -63,6 +63,7 @@ export class PenData {
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
     path.setAttribute("stroke-width", this._options.strokeWidth + "");
+    path.setAttribute("stroke-linecap", "round");
 
     const pathString = "M" + startPosition.x + " " + startPosition.y;
     path.setAttribute("d", pathString);
@@ -137,9 +138,6 @@ export class PenData {
     return null;
   }  
 
-  /**
-   * apply
-   */
   private updateCurrentPath() {
     let pos = this.getAverageBufferPosition(0);
     if (!pos) {

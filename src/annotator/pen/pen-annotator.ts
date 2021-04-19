@@ -1,9 +1,10 @@
-import { Vec2 } from "../math";
-import { Quadruple } from "../common";
-import { DocumentData } from "../document/document-data";
-import { InkAnnotation } from "../document/entities/annotations/markup/ink-annotation";
+import { Vec2 } from "../../math";
+import { Quadruple } from "../../common";
 
-import { Annotator } from "./annotator";
+import { DocumentData } from "../../document/document-data";
+import { InkAnnotation } from "../../document/entities/annotations/markup/ink-annotation";
+
+import { Annotator } from "../annotator";
 import { PenData } from "./pen-data";
 
 //#region custom events

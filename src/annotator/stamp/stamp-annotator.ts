@@ -1,9 +1,27 @@
-import { getDistance } from "../common";
-import { DocumentData } from "../document/document-data";
+import { getDistance } from "../../common";
+import { DocumentData } from "../../document/document-data";
 import { StampAnnotation, StampType, stampTypes } 
-  from "../document/entities/annotations/markup/stamp-annotation";
+  from "../../document/entities/annotations/markup/stamp-annotation";
 
-import { Annotator } from "./annotator";
+import { Annotator } from "../annotator";
+
+export const supportedStampTypes = [
+  {type:"/Draft", name: "Draft"},
+  {type:"/Approved", name: "Approved"},
+  {type:"/NotApproved", name: "Not Approved"},
+  {type:"/Departmental", name: "Departmental"},
+  {type:"/Confidential", name: "Confidential"},
+  {type:"/Final", name: "Final"},
+  {type:"/Expired", name: "Expired"},
+  {type:"/AsIs", name: "As Is"},
+  {type:"/Sold", name: "Sold"},
+  {type:"/Experimental", name: "Experimental"},
+  {type:"/ForComment", name: "For Comment"},
+  {type:"/TopSecret", name: "Top Secret"},
+  {type:"/ForPublicRelease", name: "For Public"},
+  {type:"/NotForPublicRelease", name: "Not For Public"},
+] as const;
+
 
 /**tool for adding rubber stamp annotations */
 export class StampAnnotator extends Annotator {

@@ -1,8 +1,7 @@
-import { RenderToSvgResult } from "../common";
-import { Vec2 } from "../math";
-import { DocumentData } from "../document/document-data";
-import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
-import { annotChangeEvent, AnnotEvent } from "../annotator/serialization";
+import { RenderToSvgResult } from "../../common";
+import { Vec2 } from "../../math";
+import { DocumentData } from "../../document/document-data";
+import { AnnotationDict, annotChangeEvent, AnnotEvent } from "../../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {  
   private readonly _pageId: number;

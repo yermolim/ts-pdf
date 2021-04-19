@@ -1,11 +1,15 @@
 import { keywordCodes } from "./codes";
-import { annotationTypes, dictTypes } from "./const";
+import { dictTypes } from "./const";
 import { AuthenticationResult } from "./common-interfaces";
 
 import { DataCryptHandler } from "./encryption/data-crypt-handler";
-import { DataParser, ParseInfo, ParseResult } from "./data-parser";
+import { DataParser, ParseInfo } from "./data-parser";
 import { ReferenceData } from "./reference-data";
 import { DocumentDataUpdater, PageWithAnnotations } from "./document-data-updater";
+
+import { ObjectId } from "./entities/core/object-id";
+import { ObjectStream } from "./entities/streams/object-stream";
+import { EncryptionDict } from "./entities/encryption/encryption-dict";
 
 import { XRef } from "./entities/x-refs/x-ref";
 import { XRefStream } from "./entities/x-refs/x-ref-stream";
@@ -15,22 +19,9 @@ import { CatalogDict } from "./entities/structure/catalog-dict";
 import { PageDict } from "./entities/structure/page-dict";
 import { PageTreeDict } from "./entities/structure/page-tree-dict";
 
-import { ObjectId } from "./entities/core/object-id";
-import { EncryptionDict } from "./entities/encryption/encryption-dict";
-import { ObjectStream } from "./entities/streams/object-stream";
-
-import { AnnotationDto, AnnotEvent, InkAnnotationDto, StampAnnotationDto } from "../annotator/serialization";
-
-import { AnnotationDict, annotSelectionRequestEvent, AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
-import { StampAnnotation } from "./entities/annotations/markup/stamp-annotation";
-import { InkAnnotation } from "./entities/annotations/markup/ink-annotation";
-import { SquareAnnotation } from "./entities/annotations/markup/geometric/square-annotation";
-import { CircleAnnotation } from "./entities/annotations/markup/geometric/circle-annotation";
-import { LineAnnotation } from "./entities/annotations/markup/geometric/line-annotation";
-import { PolygonAnnotation } from "./entities/annotations/markup/geometric/polygon-annotation";
-import { PolylineAnnotation } from "./entities/annotations/markup/geometric/polyline-annotation";
-import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
-import { TextAnnotation } from "./entities/annotations/markup/text-annotation";
+import { AnnotationDict, AnnotationDto, AnnotEvent, annotSelectionRequestEvent, 
+  AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
+import { AnnotationParseFactory } from "./annotation-parser";
 
 export class DocumentData {
   private readonly _userName: string; 
@@ -348,16 +339,7 @@ export class DocumentData {
   appendSerializedAnnotations(dtos: AnnotationDto[]) {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
-      switch (dto.annotationType) {
-        case "/Stamp":
-          annotation = StampAnnotation.createFromDto(dto as StampAnnotationDto);
-          break;
-        case "/Ink":
-          annotation = InkAnnotation.createFromDto(dto as InkAnnotationDto);
-          break;
-        default:
-          throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
-      }
+      annotation = AnnotationParseFactory.ParseAnnotationFromDto(dto);
       this.appendAnnotationToPage(dto.pageId, annotation);
     }
   }
@@ -566,45 +548,14 @@ export class DocumentData {
         const info = this.getObjectParseInfo(objectId.id);  
         info.rect = page.MediaBox;
         const annotationType = info.parser.parseDictSubtype(info.bounds);
-        let annot: ParseResult<AnnotationDict>;
-        switch (annotationType) {
-          case annotationTypes.STAMP:
-            annot = StampAnnotation.parse(info);
-            break;
-          case annotationTypes.INK:
-            annot = InkAnnotation.parse(info);
-            break;
-          // case annotationTypes.TEXT:
-          //   annot = TextAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.FREE_TEXT:
-          //   annot = FreeTextAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.CIRCLE:
-          //   annot = CircleAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.SQUARE:
-          //   annot = SquareAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.POLYGON:
-          //   annot = PolygonAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.POLYLINE:
-          //   annot = PolylineAnnotation.parse(info);
-          //   break;
-          // case annotationTypes.LINE:
-          //   annot = LineAnnotation.parse(info);
-          //   break;
-          default:
-            break;
-        }
+        const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
         if (annot) {
-          annotations.push(annot.value);
-          annot.value.$pageId = page.id;
-          annot.value.$onEditedAction = this.getOnAnnotationEditAction(annot.value);
+          annotations.push(annot);
+          annot.$pageId = page.id;
+          annot.$onEditedAction = this.getOnAnnotationEditAction(annot);
 
           // DEBUG
-          console.log(annot.value);
+          console.log(annot);
         }
       }
       

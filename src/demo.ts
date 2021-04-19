@@ -8,10 +8,10 @@ async function run(): Promise<void> {
     fileButtons: ["open", "close", "save"],
     annotChangeCallback: (detail: AnnotEventDetail) => console.log(detail.type),
   });
-  await viewer.openPdfAsync("demo.pdf");
+  // await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
   // await viewer.openPdfAsync("demo-annots2.pdf");
-  // await viewer.openPdfAsync("demo-annots3.pdf");
+  await viewer.openPdfAsync("demo-annots3.pdf");
   // await viewer.openPdfAsync("demo-acad.pdf");
   // await viewer.openPdfAsync("demo-adobe.pdf");
   // await viewer.openPdfAsync("demo-large.pdf");

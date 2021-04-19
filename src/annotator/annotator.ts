@@ -1,6 +1,6 @@
 import { PointerDownInfo } from "../common";
 import { DocumentData } from "../document/document-data";
-import { PageView } from "../page/page-view";
+import { PageView } from "../components/page/page-view";
 
 /**coordinates in the PDF page coordinate system */
 interface PageCoords {
