@@ -1,6 +1,6 @@
 import { PointerDownInfo } from "../common";
 import { DocumentData } from "../document/document-data";
-import { PageView } from "../components/page/page-view";
+import { PageView } from "../components/pages/page-view";
 
 /**coordinates in the PDF page coordinate system */
 interface PageCoords {
@@ -75,7 +75,7 @@ export abstract class Annotator {
   }
 
   /**
-   * update tha annotator dimensions
+   * update the annotator dimensions
    * @param pages rendered page views
    * @param scale page view scale
    */
@@ -110,7 +110,7 @@ export abstract class Annotator {
     this.refreshViewBox();
   }; 
   
-  protected onStampPointerDown = (e: PointerEvent) => {
+  protected onOverlayPointerDown = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // the event source is the non-primary touch. ignore that
       return;
@@ -128,18 +128,13 @@ export abstract class Annotator {
    * initialize observers for the parent mutations
    */
   protected initObservers() {
+    this._overlay.addEventListener("pointerdown", this.onOverlayPointerDown);
+
     this._parent.addEventListener("scroll", this.onParentScroll);
-    this._overlay.addEventListener("pointerdown", this.onStampPointerDown);
-    const onPossibleViewerSizeChanged = () => {
-      if (this._scale === this._lastScale) {
-        return;
-      }
+    const parentRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
       this.refreshViewBox();
-    };
-    const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
-      onPossibleViewerSizeChanged();
     });
-    const viewerMObserver = new MutationObserver((mutations: MutationRecord[]) => {
+    const parentMObserver = new MutationObserver((mutations: MutationRecord[]) => {
       const record = mutations[0];
       if (!record) {
         return;
@@ -147,19 +142,20 @@ export abstract class Annotator {
       record.addedNodes.forEach(x => {
         const element = x as HTMLElement;
         if (element.classList.contains("page")) {
-          viewerRObserver.observe(x as HTMLElement);
+          parentRObserver.observe(x as HTMLElement);
         }
       });
-      record.removedNodes.forEach(x => viewerRObserver.unobserve(x as HTMLElement));
-      onPossibleViewerSizeChanged();
+      record.removedNodes.forEach(x => parentRObserver.unobserve(x as HTMLElement));
+      this.refreshViewBox();
     });
-    viewerMObserver.observe(this._parent, {
+    parentRObserver.observe(this._parent);
+    parentMObserver.observe(this._parent, {
       attributes: false,
       childList: true,
       subtree: false,
     });
-    this._parentMutationObserver = viewerMObserver;
-    this._parentResizeObserver = viewerRObserver;
+    this._parentMutationObserver = parentMObserver;
+    this._parentResizeObserver = parentRObserver;
   }
   
   protected init() {

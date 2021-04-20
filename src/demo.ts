@@ -11,11 +11,11 @@ async function run(): Promise<void> {
   // await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
   // await viewer.openPdfAsync("demo-annots2.pdf");
-  await viewer.openPdfAsync("demo-annots3.pdf");
+  // await viewer.openPdfAsync("demo-annots3.pdf");
   // await viewer.openPdfAsync("demo-acad.pdf");
   // await viewer.openPdfAsync("demo-adobe.pdf");
   // await viewer.openPdfAsync("demo-large.pdf");
-  // await viewer.openPdfAsync("demo-wordpdf");
+  await viewer.openPdfAsync("demo-word.pdf");
   // await viewer.openPdfAsync("demo-wps.pdf");
   // await viewer.openPdfAsync("demo-v1r2.pdf");
   // await viewer.openPdfAsync("demo-v2r3.pdf");

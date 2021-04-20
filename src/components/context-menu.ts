@@ -14,6 +14,14 @@ export class ContextMenu {
       this._content = null;
     }
   }
+
+  private _enabled: boolean;
+  get enabled(): boolean {
+    return this._enabled;
+  }
+  set enabled(value: boolean) {
+    this._enabled = !!value;
+  }
   
   constructor() {
     this._container = document.createElement("div");

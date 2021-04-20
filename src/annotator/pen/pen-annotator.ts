@@ -18,7 +18,7 @@ export class PathChangeEvent extends CustomEvent<PathChangeEventDetail> {
   }
 }
 declare global {
-  interface HTMLElementEventMap {
+  interface DocumentEventMap {
     [pathChangeEvent]: PathChangeEvent;
   }
 }
@@ -210,7 +210,7 @@ export class PenAnnotator extends Annotator {
   };
 
   protected emitPathCount() {
-    this._parent.dispatchEvent(new PathChangeEvent({
+    document.dispatchEvent(new PathChangeEvent({
       pathCount: this._annotationPenData?.pathCount || 0,
     }));
   }

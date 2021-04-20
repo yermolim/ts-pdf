@@ -1,9 +1,9 @@
-import { keywordCodes } from "./codes";
 import { dictTypes } from "./const";
 import { AuthenticationResult } from "./common-interfaces";
 
 import { DataCryptHandler } from "./encryption/data-crypt-handler";
 import { DataParser, ParseInfo } from "./data-parser";
+
 import { ReferenceData } from "./reference-data";
 import { DocumentDataUpdater, PageWithAnnotations } from "./document-data-updater";
 
@@ -11,17 +11,16 @@ import { ObjectId } from "./entities/core/object-id";
 import { ObjectStream } from "./entities/streams/object-stream";
 import { EncryptionDict } from "./entities/encryption/encryption-dict";
 
+import { XrefParser } from "./xref-parser";
 import { XRef } from "./entities/x-refs/x-ref";
-import { XRefStream } from "./entities/x-refs/x-ref-stream";
-import { XRefTable } from "./entities/x-refs/x-ref-table";
 
 import { CatalogDict } from "./entities/structure/catalog-dict";
 import { PageDict } from "./entities/structure/page-dict";
 import { PageTreeDict } from "./entities/structure/page-tree-dict";
 
+import { AnnotationParseFactory } from "./annotation-parser";
 import { AnnotationDict, AnnotationDto, AnnotEvent, annotSelectionRequestEvent, 
   AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
-import { AnnotationParseFactory } from "./annotation-parser";
 
 export class DocumentData {
   private readonly _userName: string; 
@@ -78,7 +77,7 @@ export class DocumentData {
     if (!lastXrefIndex) {{
       throw new Error("File doesn't contain update section");
     }}
-    const xrefs = DocumentData.parseAllXrefs(this._docParser, lastXrefIndex.value);
+    const xrefs = new XrefParser(this._docParser).parseAllXrefs(lastXrefIndex.value);
     if (!xrefs.length) {{
       throw new Error("Failed to parse cross-reference sections");
     }}
@@ -98,76 +97,6 @@ export class DocumentData {
     document.addEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
   }
 
-  //#region parsing xrefs
-  /**
-   * parse a cross-reference section at the specified offset
-   * @param parser PDF document parser instance
-   * @param start search start byte offset
-   * @param max search end byte offset
-   * @returns parsed cross-reference section
-   */
-  private static parseXref(parser: DataParser, start: number, max: number): XRef {
-    if (!parser || !start) {
-      return null;
-    }
-
-    const offset = start;
-    
-    const xrefTableIndex = parser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
-      {minIndex: start, closedOnly: true});
-    if (xrefTableIndex && xrefTableIndex.start === start) {      
-      const xrefStmIndexProp = parser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
-        {minIndex: start, maxIndex: max, closedOnly: true});
-      if (xrefStmIndexProp) {
-        // HYBRID
-        const streamXrefIndex = parser.parseNumberAt(xrefStmIndexProp.end + 1);
-        if (!streamXrefIndex) {
-          return null;
-        }
-        start = streamXrefIndex.value;
-      } else {
-        // TABLE
-        const xrefTable = XRefTable.parse(parser, start, offset);
-        return xrefTable?.value;
-      }
-    }
-    // STREAM
-    const id = ObjectId.parse(parser, start, false);
-    if (!id) {
-      return null;
-    }
-    const xrefStreamBounds = parser.getIndirectObjectBoundsAt(id.end + 1);   
-    if (!xrefStreamBounds) {      
-      return null;
-    }       
-    const xrefStream = XRefStream.parse({parser: parser, bounds: xrefStreamBounds}, offset);
-    return xrefStream?.value; 
-  }  
-  
-  /**
-   * parse all cross-reference section of the document
-   * @param parser PDF document parser instance
-   * @param start search start byte offset
-   * @returns all document cross-reference sections
-   */
-  private static parseAllXrefs(parser: DataParser, start: number): XRef[] {    
-    const xrefs: XRef[] = [];
-    let max = parser.maxIndex;
-    let xref: XRef;
-    while (start) {
-      xref = DocumentData.parseXref(parser, start, max);
-      if (xref) {
-        xrefs.push(xref);        
-        max = start;
-        start = xref.prev;
-      } else {
-        break;
-      }
-    }
-    return xrefs;
-  }
-  //#endregion
-      
   /**free the resources that can prevent garbage to be collected */
   destroy() {
     // clear onEditedAction to prevent memory leak
@@ -229,15 +158,17 @@ export class DocumentData {
     const updaterData: PageWithAnnotations[] = [];
     annotationMap.forEach((pageAnnotations, pageId) => {
       const page = this._pageById.get(pageId);
-      if (!page) {
-        throw new Error(`Page with id '${pageId}' not found`);
+      if (page) {
+        const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
+        updaterData.push({
+          page,
+          allAnnotationIds,
+          supportedAnnotations: pageAnnotations || [],
+        });
+      } else {
+        // throw new Error(`Page with id '${pageId}' not found`);
+        console.log(`Page with id '${pageId}' not found`);
       }
-      const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
-      updaterData.push({
-        page,
-        allAnnotationIds,
-        supportedAnnotations: pageAnnotations || [],
-      });
     });
 
     const updater = new DocumentDataUpdater(this._data, this._xrefs[0],
@@ -547,7 +478,6 @@ export class DocumentData {
       for (const objectId of annotationIds) {
         const info = this.getObjectParseInfo(objectId.id);  
         info.rect = page.MediaBox;
-        const annotationType = info.parser.parseDictSubtype(info.bounds);
         const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
         if (annot) {
           annotations.push(annot);

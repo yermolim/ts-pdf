@@ -5,19 +5,23 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { getDistance, Quadruple } from "./common";
+import { Quadruple } from "./common";
 import { clamp, Vec2 } from "./math";
 
 import { DocumentData } from "./document/document-data";
-import { PageView } from "./components/page/page-view";
+import { PageView } from "./components/pages/page-view";
 import { ContextMenu } from "./components/context-menu";
 
 import { Annotator } from "./annotator/annotator";
 import { StampAnnotator, supportedStampTypes } from "./annotator/stamp/stamp-annotator";
-import { PathChangeEvent, PenAnnotator } from "./annotator/pen/pen-annotator";
+import { pathChangeEvent, PathChangeEvent, PenAnnotator } from "./annotator/pen/pen-annotator";
 import { GeometricAnnotatorFactory, geometricAnnotatorTypes, GeometricAnnotatorType } 
   from "./annotator/geometric/geometric-annotator-factory";
-import { AnnotationDto, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
+import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
+import { Viewer } from "./components/viewer";
+import { Previewer } from "./components/previewer";
+import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
+  pagesRenderedEvent, PagesRenderedEvent } from "./components/pages/page-service";
 
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
@@ -42,6 +46,13 @@ export interface TsPdfViewerOptions {
 
   /**action to execute on annotation change event */
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
+  
+  /**number of pages that should be prerendered outside view */
+  visibleAdjPages?: number;
+  /**page preview canvas width in px */
+  previewWidth?: number;
+  minScale?: number;
+  maxScale?: number;
 }
 
 export {AnnotationDto, AnnotEvent, AnnotEventDetail};
@@ -51,11 +62,6 @@ export class TsPdfViewer {
   private readonly _userName: string;
 
   // TODO: move readonly properties to the main options
-  /**count of the prerendered pages outside of the current viewer viewport */
-  private readonly _visibleAdjPages = 0;
-  private readonly _previewWidth = 100;
-  private readonly _minScale = 0.25;
-  private readonly _maxScale = 4;
   private readonly _annotationColors: readonly Quadruple[] = [
     [0, 0, 0, 0.5], // black
     [0.804, 0, 0, 0.5], // red
@@ -63,31 +69,25 @@ export class TsPdfViewer {
     [0, 0, 0.804, 0.5], // blue
   ];
 
+  private readonly _outerContainer: HTMLDivElement;
+  private readonly _shadowRoot: ShadowRoot;
+  private readonly _mainContainer: HTMLDivElement;
+
+  private readonly _contextMenu: ContextMenu;
+  private readonly _pageService: PageService;
+  private readonly _viewer: Viewer;
+  private readonly _previewer: Previewer;
+
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
   private _annotChangeCallback: (detail: AnnotEventDetail) => void;
 
-  private _outerContainer: HTMLDivElement;
-  private _shadowRoot: ShadowRoot;
-
-  private _mainContainer: HTMLDivElement;
   private _mainContainerRObserver: ResizeObserver;
   private _panelsHidden: boolean;
 
   private _fileInput: HTMLInputElement;
-
-  private _previewer: HTMLDivElement;
-  private _previewerHidden = true;
-
-  private _viewer: HTMLDivElement;
-  private _viewerMode: ViewerMode;  
-  private _viewerScale = 1;
-
-  private _pages: PageView[] = [];
-  private _renderedPages: PageView[] = [];
-  private _currentPage = 0;
-
+  
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;  
 
@@ -96,30 +96,14 @@ export class TsPdfViewer {
   private _annotatorMode: AnnotatorMode;
   private _annotatorGeometricMode: GeometricAnnotatorType;
   private _annotator: Annotator;
-
-  private _contextMenu: ContextMenu;
-  private _contextMenuEnabled: boolean;
   
   /**information about the last pointer position */
-  private _pointerInfo = {
-    lastPos: <Vec2>null,
-    downPos: <Vec2>null,
-    downScroll: <Vec2>null, 
-  };
+  private _pointerLastPos: Vec2 = null;
   /**common timers */
   private _timers = {    
     hidePanels: 0,
   };
-  /**the object used for touch zoom handling */
-  private _pinchInfo = {
-    active: false,
-    lastDist: 0,
-    minDist: 10,
-    sensitivity: 0.025,
-    target: <HTMLElement>null,
-  };
   //#endregion
-
 
   constructor(options: TsPdfViewerOptions) {
     if (!options) {
@@ -145,18 +129,35 @@ export class TsPdfViewer {
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
     this._annotChangeCallback = options.annotChangeCallback;
+    
+    const visibleAdjPages = options.visibleAdjPages || 0;
+    const previewWidth = options.previewWidth || 100;
+    const minScale = options.minScale || 0.25;
+    const maxScale = options.maxScale || 4;
 
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = styles + html;         
+    this._shadowRoot.innerHTML = styles + html;   
+    this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
+    
+    this._pageService = new PageService(
+      {visibleAdjPages: visibleAdjPages});
+    this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
+      {canvasWidth: previewWidth});
+    this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
+      {minScale: minScale, maxScale: maxScale});    
+      
+    this._contextMenu = new ContextMenu();  
 
-    this.initMainDivs();
+    this.initMainContainerEventHandlers();
     this.initViewControls();
     this.initFileButtons(options.fileButtons || []);
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
     
-    // handle annotation selection
-    document.addEventListener("tspdf-annotchange", this.onAnnotationChange);
+    document.addEventListener(annotChangeEvent, this.onAnnotationChange);
+    document.addEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
+    document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
+    document.addEventListener(pathChangeEvent, this.onPenPathsChanged);
   }
 
   /**create a temp download link and click on it */
@@ -175,11 +176,17 @@ export class TsPdfViewer {
 
   /**free resources to let GC clean them to avoid memory leak */
   destroy() {
-    document.removeEventListener("tspdf-annotchange", this.onAnnotationChange);
+    document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
+    document.removeEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
+    document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+    document.removeEventListener(pathChangeEvent, this.onPenPathsChanged);
+
     this._annotChangeCallback = null;
 
     this._pdfLoadingTask?.destroy();
-    this._pages.forEach(x => x.destroy());
+    this._viewer.destroy();
+    this._previewer.destroy();
+    this._pageService.destroy();
     if (this._pdfDocument) {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
@@ -254,8 +261,6 @@ export class TsPdfViewer {
     this.setAnnotationMode("select");  
 
     await this.refreshPagesAsync();
-    this.renderVisiblePreviews();
-    this.renderVisiblePages(); 
 
     this._mainContainer.classList.remove("disabled");
   }
@@ -344,9 +349,7 @@ export class TsPdfViewer {
 
 
   //#region GUI initialization methods
-  private initMainDivs() {
-    const mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
-
+  private initMainContainerEventHandlers() { 
     const mcResizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {    
       const {width} = this._mainContainer.getBoundingClientRect();
       if (width < 721) {      
@@ -355,22 +358,17 @@ export class TsPdfViewer {
         this._mainContainer.classList.remove("mobile");
       }
       this._contextMenu.hide();
-      this._annotator?.updateDimensions(this._renderedPages, this._viewerScale);
     });
-    mcResizeObserver.observe(mainContainer);
-
-    this._mainContainer = mainContainer;
-    this._mainContainerRObserver = mcResizeObserver;  
-
-    this._previewer = this._shadowRoot.querySelector("#previewer");
-    this._viewer = this._shadowRoot.querySelector("#viewer") as HTMLDivElement;
-    this._contextMenu = new ContextMenu();
-    this._viewer.addEventListener("contextmenu", (e: MouseEvent) => {
-      if (this._contextMenuEnabled) {
+    mcResizeObserver.observe(this._mainContainer);
+    this._mainContainerRObserver = mcResizeObserver;
+    
+    this._mainContainer.addEventListener("contextmenu", (e: MouseEvent) => {
+      if (this._contextMenu.enabled) {
         e.preventDefault();
         this._contextMenu.show(new Vec2(e.clientX, e.clientY), this._mainContainer);
       }
     });
+    this._mainContainer.addEventListener("pointermove", this.onMainContainerPointerMove);
   }
   
   /**add event listemers to interface general buttons */
@@ -393,14 +391,7 @@ export class TsPdfViewer {
       .addEventListener("click", this.onZoomFitPageClick);
 
     this._shadowRoot.querySelector("#toggle-previewer")
-      .addEventListener("click", this.onPreviewerToggleClick);
-
-    this._previewer.addEventListener("scroll", this.onPreviewerScroll);
-    this._viewer.addEventListener("scroll", this.onViewerScroll);
-    this._viewer.addEventListener("wheel", this.onViewerWheelZoom, {passive: false});
-    this._viewer.addEventListener("pointermove", this.onViewerPointerMove);
-    this._viewer.addEventListener("pointerdown", this.onViewerPointerDownScroll);    
-    this._viewer.addEventListener("touchstart", this.onViewerTouchZoom);     
+      .addEventListener("click", this.onPreviewerToggleClick);  
   }
 
   private initFileButtons(fileButtons: FileButtons[]) {
@@ -488,13 +479,6 @@ export class TsPdfViewer {
       .addEventListener("click", this.onAnnotationDeleteButtonClick);     
 
     // pen buttons
-    this._viewer.addEventListener("tspdf-penpathchange", (e: PathChangeEvent) => {
-      if (e.detail.pathCount) {
-        this._mainContainer.classList.add("pen-path-present");
-      } else {
-        this._mainContainer.classList.remove("pen-path-present");
-      }
-    });
     this._shadowRoot.querySelector("#button-annotation-pen-undo")
       .addEventListener("click", () => {
         if (this._annotator instanceof PenAnnotator) {
@@ -515,101 +499,18 @@ export class TsPdfViewer {
       });
   }
   //#endregion
-
-
-  private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
-    // TODO: implement progress display
-  };
-
-  /**
-   * refresh the loaded pdf file page views and previews
-   * @returns 
-   */
-  private async refreshPagesAsync(): Promise<void> { 
-    this._pages.forEach(x => {
-      x.previewContainer.removeEventListener("click", this.onPreviewerPageClick);
-      x.destroy();
-    });
-    this._pages.length = 0;
-
-    const docPagesNumber = this._pdfDocument?.numPages || 0;
-    this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-    if (!docPagesNumber) {
-      return;
-    }
-
-    for (let i = 0; i < docPagesNumber; i++) {    
-      const pageProxy = await this._pdfDocument.getPage(i + 1); 
-
-      const page = new PageView(pageProxy, this._docData, this._previewWidth);
-      page.scale = this._viewerScale;
-      page.previewContainer.addEventListener("click", this.onPreviewerPageClick);
-      this._previewer.append(page.previewContainer);
-      this._viewer.append(page.viewContainer);
-
-      this._pages.push(page);
-    } 
-  }
-
   
-  //#region previewer
-  private scrollToPreview(pageNumber: number) { 
-    const {top: cTop, height: cHeight} = this._previewer.getBoundingClientRect();
-    const {top: pTop, height: pHeight} = this._pages[pageNumber].previewContainer.getBoundingClientRect();
-
-    const cCenter = cTop + cHeight / 2;
-    const pCenter = pTop + pHeight / 2;
-
-    const scroll = pCenter - cCenter + this._previewer.scrollTop;
-    this._previewer.scrollTo(0, scroll);
-  }
-  
-  private onPreviewerToggleClick = () => {
-    if (this._previewerHidden) {
-      this._mainContainer.classList.remove("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-      this._previewerHidden = false;
-      setTimeout(() => this.renderVisiblePreviews(), 1000);
-    } else {      
-      this._mainContainer.classList.add("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-      this._previewerHidden = true;
-    }
-  };
-
-  private onPreviewerPageClick = (e: Event) => {
-    let target = <HTMLElement>e.target;
-    let pageNumber: number;
-    while (target && !pageNumber) {
-      const data = target.dataset["pageNumber"];
-      if (data) {
-        pageNumber = +data;
-      } else {
-        target = target.parentElement;
-      }
-    }    
-    if (pageNumber) {
-      this.scrollToPage(pageNumber - 1);
-    }
-  };
-  
-  private onPreviewerScroll = (e: Event) => {
-    this.renderVisiblePreviews();
-  };
-  //#endregion
- 
-
-  //#region viewer  
-  private onViewerPointerMove = (event: PointerEvent) => {
+  private onMainContainerPointerMove = (event: PointerEvent) => {
     const {clientX, clientY} = event;
-    const {x: rectX, y: rectY, width, height} = this._viewer.getBoundingClientRect();
+    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
 
     const l = clientX - rectX;
     const t = clientY - rectY;
     const r = width - l;
     const b = height - t;
 
-    if (Math.min(l, r, t, b) > 100) {
+    if (Math.min(l, r, t, b) > 150) {
+      // hide panels if pointer is far from the container edges
       if (!this._panelsHidden && !this._timers.hidePanels) {
         this._timers.hidePanels = setTimeout(() => {
           this._mainContainer.classList.add("hide-panels");
@@ -618,6 +519,7 @@ export class TsPdfViewer {
         }, 5000);
       }      
     } else {
+      // show panels otherwise
       if (this._timers.hidePanels) {
         clearTimeout(this._timers.hidePanels);
         this._timers.hidePanels = null;
@@ -628,13 +530,50 @@ export class TsPdfViewer {
       }
     }
 
-    this._pointerInfo.lastPos = new Vec2(clientX, clientY);
+    this._pointerLastPos = new Vec2(clientX, clientY);
+  };
+
+  private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
+    // TODO: implement progress display
+  };
+
+  /**
+   * refresh the loaded pdf file page views and previews
+   * @returns 
+   */
+  private async refreshPagesAsync(): Promise<void> {
+    const docPagesNumber = this._pdfDocument?.numPages || 0;
+    this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
+    if (!docPagesNumber) {
+      return;
+    }
+
+    const pages: PageView[] = [];
+    for (let i = 0; i < docPagesNumber; i++) {    
+      const pageProxy = await this._pdfDocument.getPage(i + 1);
+      const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
+      pages.push(page);
+    } 
+
+    this._pageService.pages = pages;
+  }
+
+  private onPreviewerToggleClick = () => {
+    if (this._previewer.hidden) {
+      this._mainContainer.classList.remove("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+      this._previewer.show();
+    } else {      
+      this._mainContainer.classList.add("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+      this._previewer.hide();
+    }
   };
 
   //#region viewer modes
   private setViewerMode(mode: ViewerMode) {
     // return if mode not changed
-    if (!mode || mode === this._viewerMode) {
+    if (!mode || mode === this._viewer.mode) {
       return;
     }
 
@@ -658,14 +597,14 @@ export class TsPdfViewer {
         // Execution should not come here
         throw new Error(`Invalid viewer mode: ${mode}`);
     }
-    this._viewerMode = mode;
+    this._viewer.mode = mode;
   }
 
   private disableCurrentViewerMode() { 
     this._contextMenu.clear();
-    this._contextMenuEnabled = false;
+    this._contextMenu.enabled = false;
     
-    switch (this._viewerMode) {
+    switch (this._viewer.mode) {
       case "text":
         this._mainContainer.classList.remove("mode-text");
         this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
@@ -698,353 +637,26 @@ export class TsPdfViewer {
   };
   //#endregion
 
-  //#region viewer scroll
-  private scrollToPage(pageNumber: number) { 
-    const {top: cTop} = this._viewer.getBoundingClientRect();
-    const {top: pTop} = this._pages[pageNumber].viewContainer.getBoundingClientRect();
-
-    const scroll = pTop - (cTop - this._viewer.scrollTop);
-    this._viewer.scrollTo(this._viewer.scrollLeft, scroll);
-  }
-  
-  private onViewerScroll = (e: Event) => {
-    this._contextMenu.hide();
-    this.renderVisiblePages();
-  };  
-
-  private onViewerPointerDownScroll = (event: PointerEvent) => { 
-    if (this._viewerMode !== "hand") {
-      return;
-    }
-    
-    const {clientX, clientY} = event;
-    this._pointerInfo.downPos = new Vec2(clientX, clientY);
-    this._pointerInfo.downScroll = new Vec2(this._viewer.scrollLeft,this._viewer.scrollTop);    
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      const {x, y} = this._pointerInfo.downPos;
-      const {x: left, y: top} = this._pointerInfo.downScroll;
-      const dX = moveEvent.clientX - x;
-      const dY = moveEvent.clientY - y;
-      this._viewer.scrollTo(left - dX, top - dY);
-    };
-    
-    const onPointerUp = (upEvent: PointerEvent) => {
-      this._pointerInfo.downPos = null;
-      this._pointerInfo.downScroll = null;
-
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointerout", onPointerUp);
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointerout", onPointerUp);
-  };
-  //#endregion
-
   //#region viewer zoom
-  private setScale(scale: number, cursorPosition: Vec2 = null) {
-    if (!scale || scale === this._viewerScale) {
-      return;
-    }
-
-    let pageContainerUnderPivot: HTMLElement;
-    let xPageRatio: number;
-    let yPageRatio: number;
-
-    if (cursorPosition) {
-      for (const page of this._pages) {
-        const {x: x, y: y} = cursorPosition;
-        const {x: pX, y: pY, width: pWidth, height: pHeight} = page.viewContainer.getBoundingClientRect();
-        // get page under cursor
-        if (pX <= x 
-          && pX + pWidth >= x
-          && pY <= y
-          && pY + pHeight >= y) {          
-          // get cursor position relative to page dimensions before scaling
-          pageContainerUnderPivot = page.viewContainer;
-          xPageRatio = (x - pX) / pWidth;
-          yPageRatio = (y - pY) / pHeight;    
-          break;
-        }
-      }
-    }
-
-    this._contextMenu.hide();
-    this._viewerScale = scale;
-    this._pages.forEach(x => x.scale = this._viewerScale);  
-    
-    if (pageContainerUnderPivot 
-      && // check if page has scrollbars
-      (this._viewer.scrollHeight > this._viewer.clientHeight
-      || this._viewer.scrollWidth > this._viewer.clientWidth)) {
-
-      // get the position of the point under cursor after scaling   
-      const {x: initialX, y: initialY} = cursorPosition;
-      const {x: pX, y: pY, width: pWidth, height: pHeight} = pageContainerUnderPivot.getBoundingClientRect();
-      const resultX = pX + (pWidth * xPageRatio);
-      const resultY = pY + (pHeight * yPageRatio);
-
-      // scroll page to move the point to its initial position in the viewport
-      let scrollLeft = this._viewer.scrollLeft + (resultX - initialX);
-      let scrollTop = this._viewer.scrollTop + (resultY - initialY);
-      scrollLeft = scrollLeft < 0 
-        ? 0 
-        : scrollLeft;
-      scrollTop = scrollTop < 0
-        ? 0
-        : scrollTop;
-
-      if (scrollTop !== this._viewer.scrollTop
-        || scrollLeft !== this._viewer.scrollLeft) {          
-        this._viewer.scrollTo(scrollLeft, scrollTop);
-        // render will be called from the scroll event handler so no need to call it from here
-        return;
-      }
-    }
-
-    // use timeout to let browser update page layout
-    setTimeout(() => this.renderVisiblePages(), 0);
-  }
-
-  private zoom(diff: number, cursorPosition: Vec2 = null) {
-    const scale = clamp(this._viewerScale + diff, this._minScale, this._maxScale);
-    this.setScale(scale, cursorPosition || this.getViewerCenterPosition());
-  }
-
-  private zoomOut(cursorPosition: Vec2 = null) {
-    this.zoom(-0.25, cursorPosition);
-  }
-  
-  private zoomIn(cursorPosition: Vec2 = null) {
-    this.zoom(0.25, cursorPosition);
-  }
-
-  private getViewerCenterPosition(): Vec2 {
-    const {x, y, width, height} = this._viewer.getBoundingClientRect();
-    return new Vec2(x + width / 2, y + height / 2);
-  }
-  
-  private onViewerWheelZoom = (event: WheelEvent) => {
-    if (!event.ctrlKey) {
-      return;
-    }
-
-    event.preventDefault();
-    if (event.deltaY > 0) {
-      this.zoomOut(this._pointerInfo.lastPos);
-    } else {
-      this.zoomIn(this._pointerInfo.lastPos);
-    }
-  };  
-
-  private onViewerTouchZoom = (event: TouchEvent) => { 
-    if (event.touches.length !== 2) {
-      return;
-    }    
-
-    const a = event.touches[0];
-    const b = event.touches[1];    
-    this._pinchInfo.active = true;
-    this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
-
-    const onTouchMove = (moveEvent: TouchEvent) => {
-      if (moveEvent.touches.length !== 2) {
-        return;
-      }
-
-      const mA = moveEvent.touches[0];
-      const mB = moveEvent.touches[1];    
-      const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
-      const delta = dist - this._pinchInfo.lastDist;
-      const factor = Math.floor(delta / this._pinchInfo.minDist);  
-
-      if (factor) {
-        const center = new Vec2((mB.clientX + mA.clientX) / 2, (mB.clientY + mA.clientY) / 2);
-        this._pinchInfo.lastDist = dist;
-        this.zoom(factor * this._pinchInfo.sensitivity, center);
-      }
-    };
-    
-    const onTouchEnd = (endEvent: TouchEvent) => {
-      this._pinchInfo.active = false;
-      this._pinchInfo.lastDist = 0;
-
-      (<HTMLElement>event.target).removeEventListener("touchmove", onTouchMove);
-      (<HTMLElement>event.target).removeEventListener("touchend", onTouchEnd);
-      (<HTMLElement>event.target).removeEventListener("touchcancel", onTouchEnd);
-    };
-
-    (<HTMLElement>event.target).addEventListener("touchmove", onTouchMove);
-    (<HTMLElement>event.target).addEventListener("touchend", onTouchEnd);
-    (<HTMLElement>event.target).addEventListener("touchcancel", onTouchEnd);
-  };
-
   private onZoomOutClick = () => {
-    this.zoomOut();
+    this._viewer.zoomOut();
   };
 
   private onZoomInClick = () => {
-    this.zoomIn();
+    this._viewer.zoomIn();
   };
   
   private onZoomFitViewerClick = () => {
-    const cWidth = this._viewer.getBoundingClientRect().width;
-    const pWidth = this._pages[this._currentPage].viewContainer.getBoundingClientRect().width;
-    const scale = clamp((cWidth  - 20) / pWidth * this._viewerScale, this._minScale, this._maxScale);
-    this.setScale(scale);
-    this.scrollToPage(this._currentPage);
+    this._viewer.zoomFitViewer();
   };
   
   private onZoomFitPageClick = () => {
-    const { width: cWidth, height: cHeight } = this._viewer.getBoundingClientRect();
-    const { width: pWidth, height: pHeight } = this._pages[this._currentPage].viewContainer.getBoundingClientRect();
-    const hScale = clamp((cWidth - 20) / pWidth * this._viewerScale, this._minScale, this._maxScale);
-    const vScale = clamp((cHeight - 20) / pHeight * this._viewerScale, this._minScale, this._maxScale);
-    this.setScale(Math.min(hScale, vScale));
-    this.scrollToPage(this._currentPage);
+    this._viewer.zoomFitPage();
   };
   //#endregion
 
-  //#endregion
 
-
-  //#region pages and paginator
-  /**
-   * get page views/previews that are visible in the viewer viewport at the moment
-   * @param container 
-   * @param pages
-   * @param preview true: get the previews, false: get the views
-   * @returns 
-   */
-  private getVisiblePages(container: HTMLDivElement, pages: PageView[], preview = false): Set<number> {
-    const pagesVisible = new Set<number>();
-    if (!pages.length) {
-      return pagesVisible;
-    }
-
-    const cRect = container.getBoundingClientRect();
-    const cTop = cRect.top;
-    const cBottom = cRect.top + cRect.height;
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      const pRect = preview
-        ? page.previewContainer.getBoundingClientRect()
-        : page.viewContainer.getBoundingClientRect();
-      const pTop = pRect.top;
-      const pBottom = pRect.top + pRect.height;
-
-      if (pTop < cBottom && pBottom > cTop) {
-        pagesVisible.add(i);
-      } else if (pagesVisible.size) {
-        break;
-      }
-    }
-    return pagesVisible;
-  }
-  
-  /**
-   * get the current page
-   * @param container 
-   * @param pages 
-   * @param visiblePageNumbers 
-   * @returns the page that takes more than a half of the available viewer space or the topmost one if multiple pages take less space
-   */
-  private getCurrentPage(container: HTMLDivElement, pages: PageView[], visiblePageNumbers: Set<number>): number {
-    const visiblePageNumbersArray = [...visiblePageNumbers];
-    if (!visiblePageNumbersArray.length) {
-      // no visible pages = no current page
-      return -1;
-    } else if (visiblePageNumbersArray.length === 1) {
-      // the only visible page = the current page
-      return visiblePageNumbersArray[0];
-    }
-
-    const cRect = container.getBoundingClientRect();
-    const cTop = cRect.top;
-    const cMiddle = cRect.top + cRect.height / 2;
-
-    for (const i of visiblePageNumbersArray) {
-      const pRect = pages[i].viewContainer.getBoundingClientRect();
-      const pTop = pRect.top;
-
-      if (pTop > cTop) {
-        // the page top is below the container top
-        if (pTop > cMiddle) {
-          // the page top is below the container center - return the previous page 
-          // (as it takes more than a half of the available viewer space)
-          return i - 1;
-        } else {
-          // the page top is above the container center, 
-          // so no page takes the most of viewer space.
-          // return the topmost one (the current page)
-          return i;
-        }
-      }
-    };
-
-    // function should not reach this point with correct arguments
-    throw new Error("Incorrect argument");
-  }   
-  
-  private renderVisiblePreviews() {
-    if (this._previewerHidden) {
-      return;
-    }
-
-    const pages = this._pages;
-    const visiblePreviewNumbers = this.getVisiblePages(this._previewer, pages, true);
-    
-    const minPageNumber = Math.max(Math.min(...visiblePreviewNumbers) - this._visibleAdjPages, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePreviewNumbers) + this._visibleAdjPages, pages.length - 1);
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      if (i >= minPageNumber && i <= maxPageNumber) {
-        page.renderPreviewAsync();
-      }
-    }
-  }  
-
-  private renderVisiblePages() {
-    const pages = this._pages;
-    const visiblePageNumbers = this.getVisiblePages(this._viewer, pages); 
-    
-    const prevCurrent = this._currentPage;
-    const current = this.getCurrentPage(this._viewer, pages, visiblePageNumbers);
-    if (current === -1) {
-      return;
-    }
-    if (!prevCurrent || prevCurrent !== current) {
-      pages[prevCurrent]?.previewContainer.classList.remove("current");
-      pages[current]?.previewContainer.classList.add("current");
-      (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = current + 1 + "";
-      this.scrollToPreview(current);
-      this._currentPage = current;
-    }
-    
-    const minPageNumber = Math.max(Math.min(...visiblePageNumbers) - this._visibleAdjPages, 0);
-    const maxPageNumber = Math.min(Math.max(...visiblePageNumbers) + this._visibleAdjPages, pages.length - 1);
-
-    const renderedPages: PageView[] = [];
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      renderedPages.push(page);
-      if (i >= minPageNumber && i <= maxPageNumber) {
-        // render page view and dispatch corresponding event
-        page.renderViewAsync();
-      } else {
-        page.clearView();
-      }
-    }
-
-    this._renderedPages = renderedPages;
-    this._annotator?.updateDimensions(this._renderedPages, this._viewerScale);
-  } 
-
+  //#region paginator
   private onPaginatorInput = (event: Event) => {
     if (event.target instanceof HTMLInputElement) {
       event.target.value = event.target.value.replace(/[^\d]+/g, "");
@@ -1057,23 +669,40 @@ export class TsPdfViewer {
       if (pageNumber + "" !== event.target.value) {        
         event.target.value = pageNumber + "";
       }
-      this.scrollToPage(pageNumber - 1);
+      this._pageService.requestSetCurrentPageIndex(pageNumber - 1);
     }
   };
   
   private onPaginatorPrevClick = () => {
-    const pageNumber = clamp(this._currentPage - 1, 0, this._pages.length - 1);
-    this.scrollToPage(pageNumber);
+    const pageIndex = clamp(this._pageService.currentPageIndex - 1, 0, this._pageService.length - 1);
+    this._pageService.requestSetCurrentPageIndex(pageIndex);
   };
 
   private onPaginatorNextClick = () => {
-    const pageNumber = clamp(this._currentPage + 1, 0, this._pages.length - 1);
-    this.scrollToPage(pageNumber);
+    const pageIndex = clamp(this._pageService.currentPageIndex + 1, 0, this._pageService.length - 1);
+    this._pageService.requestSetCurrentPageIndex(pageIndex);
+  };
+  
+  private onCurrentPagesChanged = (event: CurrentPageChangeEvent) => {
+    const {newIndex} = event.detail;
+    (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = newIndex + 1 + "";
   };
   //#endregion
   
 
-  //#region annotations
+  //#region annotations  
+  private onPagesRendered = (event: PagesRenderedEvent) => {    
+    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+  };
+  
+  private onPenPathsChanged = (event: PathChangeEvent) => {
+    if (event.detail.pathCount) {
+      this._mainContainer.classList.add("pen-path-present");
+    } else {
+      this._mainContainer.classList.remove("pen-path-present");
+    }
+  };
+
   private onAnnotationDeleteButtonClick = () => {
     this._docData?.deleteSelectedAnnotation();
   };
@@ -1086,7 +715,7 @@ export class TsPdfViewer {
 
     // disable previous mode
     this._contextMenu.clear();
-    this._contextMenuEnabled = false;
+    this._contextMenu.enabled = false;
     this._annotator?.destroy();
 
     switch (this._annotatorMode) {
@@ -1115,12 +744,12 @@ export class TsPdfViewer {
         break;
       case "stamp":
         this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
-        this._annotator = new StampAnnotator(this._docData, this._viewer);
+        this._annotator = new StampAnnotator(this._docData, this._viewer.container);
         this.initStampAnnotatorContextMenu();
         break;
       case "pen":
         this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
-        this._annotator = new PenAnnotator(this._docData, this._viewer);
+        this._annotator = new PenAnnotator(this._docData, this._viewer.container);
         this.initPenAnnotatorContextMenu();
         break;
       case "geometric":
@@ -1132,7 +761,7 @@ export class TsPdfViewer {
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
-    this._annotator?.updateDimensions(this._renderedPages, this._viewerScale);
+    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
   }
 
   private onAnnotationSelectModeButtonClick = () => {
@@ -1181,11 +810,7 @@ export class TsPdfViewer {
     // rerender changed pages
     if (annotations?.length) {
       const pageIdSet = new Set<number>(annotations.map(x => x.pageId));
-      this._renderedPages.forEach(x => {
-        if (pageIdSet.has(x.id)) {
-          x.renderViewAsync(true);
-        }
-      });
+      this._pageService.renderSpecifiedPages(pageIdSet);
     }
   };
 
@@ -1201,8 +826,8 @@ export class TsPdfViewer {
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = new StampAnnotator(this._docData, this._viewer, x.type);
-        this._annotator.updateDimensions(this._renderedPages, this._viewerScale);
+        this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
+        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
       });
       const stampName = document.createElement("div");
       stampName.innerHTML = x.name;
@@ -1213,7 +838,7 @@ export class TsPdfViewer {
     // set the stamp type picker as the context menu content
     this._contextMenu.content = [contextMenuContent];
     // enable the context menu
-    this._contextMenuEnabled = true;
+    this._contextMenu.enabled = true;
   }
 
   private initPenAnnotatorContextMenu() {
@@ -1226,10 +851,10 @@ export class TsPdfViewer {
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer, {
+        this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
           color:x,
         });
-        this._annotator.updateDimensions(this._renderedPages, this._viewerScale);
+        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -1250,17 +875,17 @@ export class TsPdfViewer {
     slider.classList.add("context-menu-slider");
     slider.addEventListener("change", () => {      
       this._annotator?.destroy();
-      this._annotator = new PenAnnotator(this._docData, this._viewer, {
+      this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
         strokeWidth: slider.valueAsNumber,
       });
-      this._annotator.updateDimensions(this._renderedPages, this._viewerScale);
+      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
     });
     contextMenuWidthSlider.append(slider);
 
     // set the context menu content
     this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
     // enable the context menu
-    this._contextMenuEnabled = true;
+    this._contextMenu.enabled = true;
   }
 
   private initGeometricAnnotatorContextMenu() {
@@ -1275,10 +900,10 @@ export class TsPdfViewer {
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer, { // FIX!
+        this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // FIX!
           color:x,
         });
-        this._annotator.updateDimensions(this._renderedPages, this._viewerScale);
+        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -1298,17 +923,17 @@ export class TsPdfViewer {
     slider.classList.add("context-menu-slider");
     slider.addEventListener("change", () => {      
       this._annotator?.destroy();
-      this._annotator = new PenAnnotator(this._docData, this._viewer, { // FIX!
+      this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // TODO: FIX!
         strokeWidth: slider.valueAsNumber,
       });
-      this._annotator.updateDimensions(this._renderedPages, this._viewerScale);
+      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
     });
     contextMenuWidthSlider.append(slider);
     
     // set the context menu content
     this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, contextMenuWidthSlider];
     // enable the context menu
-    this._contextMenuEnabled = true;
+    this._contextMenu.enabled = true;
   }
   //#endregion
 
