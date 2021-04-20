@@ -1,0 +1,257 @@
+import { Quadruple } from "../common";
+
+import { DocumentData } from "../document/document-data";
+
+import { Annotator } from "../annotator/annotator";
+import { GeometricAnnotatorType } from "../annotator/geometric/geometric-annotator-factory";
+import { PenAnnotator } from "../annotator/pen/pen-annotator";
+import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
+
+import { Viewer } from "./viewer";
+import { ContextMenu } from "./context-menu";
+import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./pages/page-service";
+import { Vec2 } from "../math";
+
+export type AnnotationBuilderMode = "select" | "stamp" | "pen" | "geometric";
+
+export class AnnotationBuilder {
+  private readonly _annotationColors: readonly Quadruple[] = [
+    [0, 0, 0, 0.5], // black
+    [0.804, 0, 0, 0.5], // red
+    [0, 0.804, 0, 0.5], // green
+    [0, 0, 0.804, 0.5], // blue
+  ];
+  
+  private readonly _docData: DocumentData;
+  private readonly _viewer: Viewer;
+  private readonly _pageService: PageService;
+  
+  private _contextMenu: ContextMenu;
+  private _viewerResizeObserver: ResizeObserver;
+  
+  private _mode: AnnotationBuilderMode;  
+  get mode(): AnnotationBuilderMode {
+    return this._mode;
+  }
+  set mode(value: AnnotationBuilderMode) {
+    this.setMode(value);
+  }
+  
+  private _geometricType: GeometricAnnotatorType;
+
+  private _annotator: Annotator;
+  get annotator(): Annotator {
+    return this._annotator;
+  }
+
+  constructor(docData: DocumentData, pageService: PageService, viewer: Viewer, ) {
+    if (!docData) {
+      throw new Error("Document data is not defined");
+    }
+    if (!pageService) {
+      throw new Error("Page service is not defined");
+    }
+    if (!viewer) {
+      throw new Error("Viewer is not defined");
+    }
+
+    this._docData = docData;
+    this._pageService = pageService;
+    this._viewer = viewer;
+
+    this.init();
+  }
+
+  destroy() {
+    document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+
+    this._viewer.container.removeEventListener("contextmenu", this.onContextMenu);
+    this._viewerResizeObserver?.disconnect();
+
+    this._contextMenu?.destroy();
+    this._annotator?.destroy();
+  }  
+
+  private init() {
+    document.addEventListener(pagesRenderedEvent, this.onPagesRendered);    
+
+    this._viewer.container.addEventListener("contextmenu", this.onContextMenu);
+    const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
+      this._contextMenu?.hide();
+    });
+    viewerRObserver.observe(this._viewer.container);
+    this._viewerResizeObserver = viewerRObserver;
+  }  
+
+  private setMode(mode: AnnotationBuilderMode) {
+    // return if mode is same
+    if (!mode || mode === this._mode) {
+      return;
+    }
+
+    // disable previous mode
+    this._contextMenu?.destroy();
+    this._annotator?.destroy();
+    this._docData.setSelectedAnnotation(null);
+
+    this._mode = mode;
+    switch (mode) {
+      case "select":
+        break;
+      case "stamp":
+        this._annotator = new StampAnnotator(this._docData, this._viewer.container);
+        this.initStampAnnotatorContextMenu();
+        break;
+      case "pen":
+        this._annotator = new PenAnnotator(this._docData, this._viewer.container);
+        this.initPenAnnotatorContextMenu();
+        break;
+      case "geometric":
+        // TODO: init one of the geometric annotators
+        this.initGeometricAnnotatorContextMenu();
+        break;
+      default:
+        // Execution should not come here
+        throw new Error(`Invalid annotation mode: ${mode}`);
+    }
+    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+  }
+  
+  //#region annotations  
+  private onContextMenu = (event: MouseEvent) => {
+    if (this._contextMenu?.enabled) {
+      event.preventDefault();
+      this._contextMenu.show(new Vec2(event.clientX, event.clientY), this._viewer.container);
+    }
+  };
+
+  private onPagesRendered = (event: PagesRenderedEvent) => {    
+    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+  };
+
+  private initStampAnnotatorContextMenu() {
+    const stampTypes = supportedStampTypes;
+
+    // init a stamp type picker
+    const contextMenuContent = document.createElement("div");
+    contextMenuContent.classList.add("context-menu-content", "column");
+    stampTypes.forEach(x => {          
+      const item = document.createElement("div");
+      item.classList.add("context-menu-stamp-select-button");
+      item.addEventListener("click", () => {
+        this._contextMenu.hide();
+        this._annotator?.destroy();
+        this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
+        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+      });
+      const stampName = document.createElement("div");
+      stampName.innerHTML = x.name;
+      item.append(stampName);
+      contextMenuContent.append(item);
+    });
+    
+    this._contextMenu = new ContextMenu();
+    // set the stamp type picker as the context menu content
+    this._contextMenu.content = [contextMenuContent];
+    // enable the context menu
+    this._contextMenu.enabled = true;
+  }
+
+  private initPenAnnotatorContextMenu() {
+    // init a pen color picker
+    const contextMenuColorPicker = document.createElement("div");
+    contextMenuColorPicker.classList.add("context-menu-content", "row");
+    this._annotationColors.forEach(x => {          
+      const item = document.createElement("div");
+      item.classList.add("panel-button");
+      item.addEventListener("click", () => {
+        this._contextMenu.hide();
+        this._annotator?.destroy();
+        this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
+          color:x,
+        });
+        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+      });
+      const colorIcon = document.createElement("div");
+      colorIcon.classList.add("context-menu-color-icon");
+      colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
+      item.append(colorIcon);
+      contextMenuColorPicker.append(item);
+    });
+
+    // init a pen stroke width slider
+    const contextMenuWidthSlider = document.createElement("div");
+    contextMenuWidthSlider.classList.add("context-menu-content", "row");
+    const slider = document.createElement("input");
+    slider.setAttribute("type", "range");
+    slider.setAttribute("min", "1");
+    slider.setAttribute("max", "32");
+    slider.setAttribute("step", "1");
+    slider.setAttribute("value", "3");
+    slider.classList.add("context-menu-slider");
+    slider.addEventListener("change", () => {      
+      this._annotator?.destroy();
+      this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
+        strokeWidth: slider.valueAsNumber,
+      });
+      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+    });
+    contextMenuWidthSlider.append(slider);
+
+    this._contextMenu = new ContextMenu();
+    // set the context menu content
+    this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
+    // enable the context menu
+    this._contextMenu.enabled = true;
+  }
+
+  private initGeometricAnnotatorContextMenu() {
+    // TODO: add submode selection
+    const contextMenuSubmodePicker = document.createElement("div");
+    // init a geometry color picker
+    const contextMenuColorPicker = document.createElement("div");
+    contextMenuColorPicker.classList.add("context-menu-content", "row");
+    this._annotationColors.forEach(x => {          
+      const item = document.createElement("div");
+      item.classList.add("panel-button");
+      item.addEventListener("click", () => {
+        this._contextMenu.hide();
+        this._annotator?.destroy();
+        this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // FIX!
+          color:x,
+        });
+        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+      });
+      const colorIcon = document.createElement("div");
+      colorIcon.classList.add("context-menu-color-icon");
+      colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
+      item.append(colorIcon);
+      contextMenuColorPicker.append(item);
+    });
+    // init a pen stroke width slider
+    const contextMenuWidthSlider = document.createElement("div");
+    contextMenuWidthSlider.classList.add("context-menu-content", "row");
+    const slider = document.createElement("input");
+    slider.setAttribute("type", "range");
+    slider.setAttribute("min", "1");
+    slider.setAttribute("max", "32");
+    slider.setAttribute("step", "1");
+    slider.setAttribute("value", "3");
+    slider.classList.add("context-menu-slider");
+    slider.addEventListener("change", () => {      
+      this._annotator?.destroy();
+      this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // TODO: FIX!
+        strokeWidth: slider.valueAsNumber,
+      });
+      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+    });
+    contextMenuWidthSlider.append(slider);
+    
+    this._contextMenu = new ContextMenu();
+    // set the context menu content
+    this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, contextMenuWidthSlider];
+    // enable the context menu
+    this._contextMenu.enabled = true;
+  }
+  //#endregion
+}

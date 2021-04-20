@@ -405,7 +405,10 @@ const styles = `
   .panel-button:hover img,
   .panel-button.on img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
-  }
+  }  
+  .disabled .panel-button img {
+    filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
+  }  
   
   .subpanel {
     display: flex;
@@ -809,6 +812,9 @@ const styles = `
   }
   #button-open-file {
     pointer-events: auto !important;
+  }
+  .disabled #button-open-file img {
+    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }
 </style>
 `;
@@ -14463,82 +14469,6 @@ class DocumentData {
     }
 }
 
-class ContextMenu {
-    constructor() {
-        this.onPointerDownOutside = (e) => {
-            if (!this._shown) {
-                return;
-            }
-            const target = e.composedPath()[0];
-            if (!target.closest("#context-menu")) {
-                this.hide();
-            }
-        };
-        this._container = document.createElement("div");
-        this._container.id = "context-menu";
-        this.hide();
-        document.addEventListener("pointerdown", this.onPointerDownOutside);
-    }
-    set content(value) {
-        var _a;
-        (_a = this._content) === null || _a === void 0 ? void 0 : _a.forEach(x => x.remove());
-        if (value === null || value === void 0 ? void 0 : value.length) {
-            value.forEach(x => this._container.append(x));
-            this._content = value;
-        }
-        else {
-            this._content = null;
-        }
-    }
-    get enabled() {
-        return this._enabled;
-    }
-    set enabled(value) {
-        this._enabled = !!value;
-    }
-    destroy() {
-        this.clear();
-        document.removeEventListener("pointerdown", this.onPointerDownOutside);
-    }
-    show(pointerPosition, parent) {
-        parent.append(this._container);
-        this._shown = true;
-        setTimeout(() => {
-            this.setContextMenuPosition(pointerPosition, parent);
-            this._container.style.opacity = "1";
-        }, 0);
-    }
-    hide() {
-        this._container.style.opacity = "0";
-        this._container.remove();
-        this._shown = false;
-    }
-    clear() {
-        this.hide();
-        this.content = null;
-    }
-    setContextMenuPosition(pointerPosition, parent) {
-        const menuDimension = new Vec2(this._container.offsetWidth, this._container.offsetHeight);
-        const menuPosition = new Vec2();
-        const parentRect = parent.getBoundingClientRect();
-        const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, pointerPosition.y - parentRect.y);
-        if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
-            menuPosition.x = relPointerPosition.x - menuDimension.x;
-        }
-        else {
-            menuPosition.x = relPointerPosition.x;
-        }
-        if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
-            menuPosition.y = relPointerPosition.y - menuDimension.y;
-        }
-        else {
-            menuPosition.y = relPointerPosition.y;
-        }
-        this._container.style.left = menuPosition.x + "px";
-        this._container.style.top = menuPosition.y + "px";
-    }
-}
-
 const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest";
 class CurrentPageChangeRequestEvent extends CustomEvent {
     constructor(detail) {
@@ -15601,110 +15531,6 @@ class Annotator {
     }
 }
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const supportedStampTypes = [
-    { type: "/Draft", name: "Draft" },
-    { type: "/Approved", name: "Approved" },
-    { type: "/NotApproved", name: "Not Approved" },
-    { type: "/Departmental", name: "Departmental" },
-    { type: "/Confidential", name: "Confidential" },
-    { type: "/Final", name: "Final" },
-    { type: "/Expired", name: "Expired" },
-    { type: "/AsIs", name: "As Is" },
-    { type: "/Sold", name: "Sold" },
-    { type: "/Experimental", name: "Experimental" },
-    { type: "/ForComment", name: "For Comment" },
-    { type: "/TopSecret", name: "Top Secret" },
-    { type: "/ForPublicRelease", name: "For Public" },
-    { type: "/NotForPublicRelease", name: "Not For Public" },
-];
-class StampAnnotator extends Annotator {
-    constructor(docData, parent, type) {
-        super(docData, parent);
-        this.onStampPointerMove = (e) => {
-            if (!e.isPrimary) {
-                return;
-            }
-            const { clientX: cx, clientY: cy } = e;
-            const { height: oh, top, left: ox } = this._parent.getBoundingClientRect();
-            const oy = top + oh;
-            const offsetX = (cx - ox) / this._scale;
-            const offsetY = (oy - cy) / this._scale;
-            const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
-            this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
-            this.updatePointerCoords(cx, cy);
-        };
-        this.onStampPointerUp = (e) => {
-            var _a, _b, _c;
-            if (!e.isPrimary || e.button === 2) {
-                return;
-            }
-            const { clientX: cx, clientY: cy } = e;
-            if (e.pointerType === "touch") {
-                const longTap = performance.now() - ((_a = this._lastPointerDownInfo) === null || _a === void 0 ? void 0 : _a.timestamp) > 700;
-                if (longTap) {
-                    const downX = ((_b = this._lastPointerDownInfo) === null || _b === void 0 ? void 0 : _b.clientX) || 0;
-                    const downY = ((_c = this._lastPointerDownInfo) === null || _c === void 0 ? void 0 : _c.clientY) || 0;
-                    const displacement = Math.abs(getDistance(cx, cy, downX, downY));
-                    const displaced = displacement > 7.5;
-                    if (!displaced) {
-                        return;
-                    }
-                }
-            }
-            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
-            this._pointerCoordsInPageCS = pageCoords;
-            if (!pageCoords || !this._tempAnnotation) {
-                return;
-            }
-            const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
-            this._tempAnnotation.moveTo(pageX, pageY);
-            this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
-            this.createTempStampAnnotationAsync();
-        };
-        if (type) {
-            if (!Object.values(stampTypes).includes(type)) {
-                throw new Error(`Unsupported stamp type: '${type}'`);
-            }
-            this._type = type;
-            StampAnnotator.lastType = this._type;
-        }
-        else {
-            this._type = StampAnnotator.lastType;
-        }
-        this.init();
-    }
-    destroy() {
-        this._tempAnnotation = null;
-        super.destroy();
-    }
-    init() {
-        super.init();
-        this._overlay.addEventListener("pointermove", this.onStampPointerMove);
-        this._overlay.addEventListener("pointerup", this.onStampPointerUp);
-        this.createTempStampAnnotationAsync();
-    }
-    createTempStampAnnotationAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
-            const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
-            const renderResult = yield stamp.renderAsync();
-            this._svgGroup.innerHTML = "";
-            this._svgGroup.append(...renderResult.clipPaths || []);
-            this._svgGroup.append(renderResult.svg);
-            this._tempAnnotation = stamp;
-        });
-    }
-}
-StampAnnotator.lastType = "/Draft";
-
 class PenData {
     constructor(options) {
         this._paths = [];
@@ -15949,6 +15775,386 @@ class PenAnnotator extends Annotator {
     }
 }
 
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const supportedStampTypes = [
+    { type: "/Draft", name: "Draft" },
+    { type: "/Approved", name: "Approved" },
+    { type: "/NotApproved", name: "Not Approved" },
+    { type: "/Departmental", name: "Departmental" },
+    { type: "/Confidential", name: "Confidential" },
+    { type: "/Final", name: "Final" },
+    { type: "/Expired", name: "Expired" },
+    { type: "/AsIs", name: "As Is" },
+    { type: "/Sold", name: "Sold" },
+    { type: "/Experimental", name: "Experimental" },
+    { type: "/ForComment", name: "For Comment" },
+    { type: "/TopSecret", name: "Top Secret" },
+    { type: "/ForPublicRelease", name: "For Public" },
+    { type: "/NotForPublicRelease", name: "Not For Public" },
+];
+class StampAnnotator extends Annotator {
+    constructor(docData, parent, type) {
+        super(docData, parent);
+        this.onStampPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            const { height: oh, top, left: ox } = this._parent.getBoundingClientRect();
+            const oy = top + oh;
+            const offsetX = (cx - ox) / this._scale;
+            const offsetY = (oy - cy) / this._scale;
+            const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
+            this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
+            this.updatePointerCoords(cx, cy);
+        };
+        this.onStampPointerUp = (e) => {
+            var _a, _b, _c;
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            if (e.pointerType === "touch") {
+                const longTap = performance.now() - ((_a = this._lastPointerDownInfo) === null || _a === void 0 ? void 0 : _a.timestamp) > 700;
+                if (longTap) {
+                    const downX = ((_b = this._lastPointerDownInfo) === null || _b === void 0 ? void 0 : _b.clientX) || 0;
+                    const downY = ((_c = this._lastPointerDownInfo) === null || _c === void 0 ? void 0 : _c.clientY) || 0;
+                    const displacement = Math.abs(getDistance(cx, cy, downX, downY));
+                    const displaced = displacement > 7.5;
+                    if (!displaced) {
+                        return;
+                    }
+                }
+            }
+            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+            this._pointerCoordsInPageCS = pageCoords;
+            if (!pageCoords || !this._tempAnnotation) {
+                return;
+            }
+            const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
+            this._tempAnnotation.moveTo(pageX, pageY);
+            this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
+            this.createTempStampAnnotationAsync();
+        };
+        if (type) {
+            if (!Object.values(stampTypes).includes(type)) {
+                throw new Error(`Unsupported stamp type: '${type}'`);
+            }
+            this._type = type;
+            StampAnnotator.lastType = this._type;
+        }
+        else {
+            this._type = StampAnnotator.lastType;
+        }
+        this.init();
+    }
+    destroy() {
+        this._tempAnnotation = null;
+        super.destroy();
+    }
+    init() {
+        super.init();
+        this._overlay.addEventListener("pointermove", this.onStampPointerMove);
+        this._overlay.addEventListener("pointerup", this.onStampPointerUp);
+        this.createTempStampAnnotationAsync();
+    }
+    createTempStampAnnotationAsync() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
+            const renderResult = yield stamp.renderAsync();
+            this._svgGroup.innerHTML = "";
+            this._svgGroup.append(...renderResult.clipPaths || []);
+            this._svgGroup.append(renderResult.svg);
+            this._tempAnnotation = stamp;
+        });
+    }
+}
+StampAnnotator.lastType = "/Draft";
+
+class ContextMenu {
+    constructor() {
+        this.onPointerDownOutside = (e) => {
+            if (!this._shown) {
+                return;
+            }
+            const target = e.composedPath()[0];
+            if (!target.closest("#context-menu")) {
+                this.hide();
+            }
+        };
+        this._container = document.createElement("div");
+        this._container.id = "context-menu";
+        this.hide();
+        document.addEventListener("pointerdown", this.onPointerDownOutside);
+    }
+    set content(value) {
+        var _a;
+        (_a = this._content) === null || _a === void 0 ? void 0 : _a.forEach(x => x.remove());
+        if (value === null || value === void 0 ? void 0 : value.length) {
+            value.forEach(x => this._container.append(x));
+            this._content = value;
+        }
+        else {
+            this._content = null;
+        }
+    }
+    get enabled() {
+        return this._enabled;
+    }
+    set enabled(value) {
+        this._enabled = !!value;
+    }
+    destroy() {
+        this.clear();
+        document.removeEventListener("pointerdown", this.onPointerDownOutside);
+    }
+    show(pointerPosition, parent) {
+        parent.append(this._container);
+        this._shown = true;
+        setTimeout(() => {
+            this.setContextMenuPosition(pointerPosition, parent);
+            this._container.style.opacity = "1";
+        }, 0);
+    }
+    hide() {
+        this._container.style.opacity = "0";
+        this._container.remove();
+        this._shown = false;
+    }
+    clear() {
+        this.hide();
+        this.content = null;
+    }
+    setContextMenuPosition(pointerPosition, parent) {
+        const menuDimension = new Vec2(this._container.offsetWidth, this._container.offsetHeight);
+        const menuPosition = new Vec2();
+        const parentRect = parent.getBoundingClientRect();
+        const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, pointerPosition.y - parentRect.y);
+        if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
+            menuPosition.x = relPointerPosition.x - menuDimension.x;
+        }
+        else {
+            menuPosition.x = relPointerPosition.x;
+        }
+        if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
+            menuPosition.y = relPointerPosition.y - menuDimension.y;
+        }
+        else {
+            menuPosition.y = relPointerPosition.y;
+        }
+        this._container.style.left = menuPosition.x + "px";
+        this._container.style.top = menuPosition.y + "px";
+    }
+}
+
+class AnnotationBuilder {
+    constructor(docData, pageService, viewer) {
+        this._annotationColors = [
+            [0, 0, 0, 0.5],
+            [0.804, 0, 0, 0.5],
+            [0, 0.804, 0, 0.5],
+            [0, 0, 0.804, 0.5],
+        ];
+        this.onContextMenu = (event) => {
+            var _a;
+            if ((_a = this._contextMenu) === null || _a === void 0 ? void 0 : _a.enabled) {
+                event.preventDefault();
+                this._contextMenu.show(new Vec2(event.clientX, event.clientY), this._viewer.container);
+            }
+        };
+        this.onPagesRendered = (event) => {
+            var _a;
+            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        };
+        if (!docData) {
+            throw new Error("Document data is not defined");
+        }
+        if (!pageService) {
+            throw new Error("Page service is not defined");
+        }
+        if (!viewer) {
+            throw new Error("Viewer is not defined");
+        }
+        this._docData = docData;
+        this._pageService = pageService;
+        this._viewer = viewer;
+        this.init();
+    }
+    get mode() {
+        return this._mode;
+    }
+    set mode(value) {
+        this.setMode(value);
+    }
+    get annotator() {
+        return this._annotator;
+    }
+    destroy() {
+        var _a, _b, _c;
+        document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+        this._viewer.container.removeEventListener("contextmenu", this.onContextMenu);
+        (_a = this._viewerResizeObserver) === null || _a === void 0 ? void 0 : _a.disconnect();
+        (_b = this._contextMenu) === null || _b === void 0 ? void 0 : _b.destroy();
+        (_c = this._annotator) === null || _c === void 0 ? void 0 : _c.destroy();
+    }
+    init() {
+        document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
+        this._viewer.container.addEventListener("contextmenu", this.onContextMenu);
+        const viewerRObserver = new ResizeObserver((entries) => {
+            var _a;
+            (_a = this._contextMenu) === null || _a === void 0 ? void 0 : _a.hide();
+        });
+        viewerRObserver.observe(this._viewer.container);
+        this._viewerResizeObserver = viewerRObserver;
+    }
+    setMode(mode) {
+        var _a, _b, _c;
+        if (!mode || mode === this._mode) {
+            return;
+        }
+        (_a = this._contextMenu) === null || _a === void 0 ? void 0 : _a.destroy();
+        (_b = this._annotator) === null || _b === void 0 ? void 0 : _b.destroy();
+        this._docData.setSelectedAnnotation(null);
+        this._mode = mode;
+        switch (mode) {
+            case "select":
+                break;
+            case "stamp":
+                this._annotator = new StampAnnotator(this._docData, this._viewer.container);
+                this.initStampAnnotatorContextMenu();
+                break;
+            case "pen":
+                this._annotator = new PenAnnotator(this._docData, this._viewer.container);
+                this.initPenAnnotatorContextMenu();
+                break;
+            case "geometric":
+                this.initGeometricAnnotatorContextMenu();
+                break;
+            default:
+                throw new Error(`Invalid annotation mode: ${mode}`);
+        }
+        (_c = this._annotator) === null || _c === void 0 ? void 0 : _c.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+    }
+    initStampAnnotatorContextMenu() {
+        const stampTypes = supportedStampTypes;
+        const contextMenuContent = document.createElement("div");
+        contextMenuContent.classList.add("context-menu-content", "column");
+        stampTypes.forEach(x => {
+            const item = document.createElement("div");
+            item.classList.add("context-menu-stamp-select-button");
+            item.addEventListener("click", () => {
+                var _a;
+                this._contextMenu.hide();
+                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+                this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
+                this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+            });
+            const stampName = document.createElement("div");
+            stampName.innerHTML = x.name;
+            item.append(stampName);
+            contextMenuContent.append(item);
+        });
+        this._contextMenu = new ContextMenu();
+        this._contextMenu.content = [contextMenuContent];
+        this._contextMenu.enabled = true;
+    }
+    initPenAnnotatorContextMenu() {
+        const contextMenuColorPicker = document.createElement("div");
+        contextMenuColorPicker.classList.add("context-menu-content", "row");
+        this._annotationColors.forEach(x => {
+            const item = document.createElement("div");
+            item.classList.add("panel-button");
+            item.addEventListener("click", () => {
+                var _a;
+                this._contextMenu.hide();
+                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+                this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
+                    color: x,
+                });
+                this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+            });
+            const colorIcon = document.createElement("div");
+            colorIcon.classList.add("context-menu-color-icon");
+            colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
+            item.append(colorIcon);
+            contextMenuColorPicker.append(item);
+        });
+        const contextMenuWidthSlider = document.createElement("div");
+        contextMenuWidthSlider.classList.add("context-menu-content", "row");
+        const slider = document.createElement("input");
+        slider.setAttribute("type", "range");
+        slider.setAttribute("min", "1");
+        slider.setAttribute("max", "32");
+        slider.setAttribute("step", "1");
+        slider.setAttribute("value", "3");
+        slider.classList.add("context-menu-slider");
+        slider.addEventListener("change", () => {
+            var _a;
+            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
+                strokeWidth: slider.valueAsNumber,
+            });
+            this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        });
+        contextMenuWidthSlider.append(slider);
+        this._contextMenu = new ContextMenu();
+        this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
+        this._contextMenu.enabled = true;
+    }
+    initGeometricAnnotatorContextMenu() {
+        const contextMenuSubmodePicker = document.createElement("div");
+        const contextMenuColorPicker = document.createElement("div");
+        contextMenuColorPicker.classList.add("context-menu-content", "row");
+        this._annotationColors.forEach(x => {
+            const item = document.createElement("div");
+            item.classList.add("panel-button");
+            item.addEventListener("click", () => {
+                var _a;
+                this._contextMenu.hide();
+                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+                this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
+                    color: x,
+                });
+                this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+            });
+            const colorIcon = document.createElement("div");
+            colorIcon.classList.add("context-menu-color-icon");
+            colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
+            item.append(colorIcon);
+            contextMenuColorPicker.append(item);
+        });
+        const contextMenuWidthSlider = document.createElement("div");
+        contextMenuWidthSlider.classList.add("context-menu-content", "row");
+        const slider = document.createElement("input");
+        slider.setAttribute("type", "range");
+        slider.setAttribute("min", "1");
+        slider.setAttribute("max", "32");
+        slider.setAttribute("step", "1");
+        slider.setAttribute("value", "3");
+        slider.classList.add("context-menu-slider");
+        slider.addEventListener("change", () => {
+            var _a;
+            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
+                strokeWidth: slider.valueAsNumber,
+            });
+            this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        });
+        contextMenuWidthSlider.append(slider);
+        this._contextMenu = new ContextMenu();
+        this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, contextMenuWidthSlider];
+        this._contextMenu.enabled = true;
+    }
+}
+
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -16037,33 +16243,9 @@ class TsPdfViewer {
             const { newIndex } = event.detail;
             this._shadowRoot.getElementById("paginator-input").value = newIndex + 1 + "";
         };
-        this.onPagesRendered = (event) => {
-            var _a;
-            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-        };
-        this.onPenPathsChanged = (event) => {
-            if (event.detail.pathCount) {
-                this._mainContainer.classList.add("pen-path-present");
-            }
-            else {
-                this._mainContainer.classList.remove("pen-path-present");
-            }
-        };
         this.onAnnotationDeleteButtonClick = () => {
             var _a;
             (_a = this._docData) === null || _a === void 0 ? void 0 : _a.deleteSelectedAnnotation();
-        };
-        this.onAnnotationSelectModeButtonClick = () => {
-            this.setAnnotationMode("select");
-        };
-        this.onAnnotationStampModeButtonClick = () => {
-            this.setAnnotationMode("stamp");
-        };
-        this.onAnnotationPenModeButtonClick = () => {
-            this.setAnnotationMode("pen");
-        };
-        this.onAnnotationGeometricModeButtonClick = () => {
-            this.setAnnotationMode("geometric");
         };
         this.onAnnotationChange = (e) => {
             if (!e.detail) {
@@ -16087,6 +16269,26 @@ class TsPdfViewer {
                 const pageIdSet = new Set(annotations.map(x => x.pageId));
                 this._pageService.renderSpecifiedPages(pageIdSet);
             }
+        };
+        this.onPenPathsChanged = (event) => {
+            if (event.detail.pathCount) {
+                this._mainContainer.classList.add("pen-path-present");
+            }
+            else {
+                this._mainContainer.classList.remove("pen-path-present");
+            }
+        };
+        this.onAnnotationSelectModeButtonClick = () => {
+            this.setAnnotationMode("select");
+        };
+        this.onAnnotationStampModeButtonClick = () => {
+            this.setAnnotationMode("stamp");
+        };
+        this.onAnnotationPenModeButtonClick = () => {
+            this.setAnnotationMode("pen");
+        };
+        this.onAnnotationGeometricModeButtonClick = () => {
+            this.setAnnotationMode("geometric");
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
@@ -16158,7 +16360,6 @@ class TsPdfViewer {
         this._shadowRoot = this._outerContainer.attachShadow({ mode: "open" });
         this._shadowRoot.innerHTML = styles + html;
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
-        this._contextMenu = new ContextMenu();
         this._pageService = new PageService({ visibleAdjPages: visibleAdjPages });
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
         this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
@@ -16169,7 +16370,6 @@ class TsPdfViewer {
         this.initAnnotationButtons();
         document.addEventListener(annotChangeEvent, this.onAnnotationChange);
         document.addEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-        document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
         document.addEventListener(pathChangeEvent, this.onPenPathsChanged);
     }
     static downloadFile(blob, name) {
@@ -16183,13 +16383,13 @@ class TsPdfViewer {
         setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
     destroy() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d;
         document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
         document.removeEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-        document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
         document.removeEventListener(pathChangeEvent, this.onPenPathsChanged);
         this._annotChangeCallback = null;
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
+        (_b = this._annotationBuilder) === null || _b === void 0 ? void 0 : _b.destroy();
         this._viewer.destroy();
         this._previewer.destroy();
         this._pageService.destroy();
@@ -16197,10 +16397,8 @@ class TsPdfViewer {
             this._pdfDocument.cleanup();
             this._pdfDocument.destroy();
         }
-        (_b = this._annotator) === null || _b === void 0 ? void 0 : _b.destroy();
         (_c = this._docData) === null || _c === void 0 ? void 0 : _c.destroy();
-        (_d = this._contextMenu) === null || _d === void 0 ? void 0 : _d.destroy();
-        (_e = this._mainContainerRObserver) === null || _e === void 0 ? void 0 : _e.disconnect();
+        (_d = this._mainContainerRObserver) === null || _d === void 0 ? void 0 : _d.disconnect();
         this._shadowRoot.innerHTML = "";
     }
     openPdfAsync(src) {
@@ -16256,8 +16454,9 @@ class TsPdfViewer {
             }
             this._pdfDocument = doc;
             this._docData = docData;
-            this.setAnnotationMode("select");
             yield this.refreshPagesAsync();
+            this._annotationBuilder = new AnnotationBuilder(docData, this._pageService, this._viewer);
+            this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
         });
     }
@@ -16275,8 +16474,7 @@ class TsPdfViewer {
             if (this._pdfDocument) {
                 this._pdfDocument.destroy();
                 this._pdfDocument = null;
-                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = null;
+                (_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.destroy();
                 (_b = this._docData) === null || _b === void 0 ? void 0 : _b.destroy();
                 this._docData = null;
             }
@@ -16332,16 +16530,9 @@ class TsPdfViewer {
             else {
                 this._mainContainer.classList.remove("mobile");
             }
-            this._contextMenu.hide();
         });
         mcResizeObserver.observe(this._mainContainer);
         this._mainContainerRObserver = mcResizeObserver;
-        this._mainContainer.addEventListener("contextmenu", (e) => {
-            if (this._contextMenu.enabled) {
-                e.preventDefault();
-                this._contextMenu.show(new Vec2(e.clientX, e.clientY), this._mainContainer);
-            }
-        });
         this._mainContainer.addEventListener("pointermove", this.onMainContainerPointerMove);
     }
     initViewControls() {
@@ -16410,20 +16601,23 @@ class TsPdfViewer {
             .addEventListener("click", this.onAnnotationDeleteButtonClick);
         this._shadowRoot.querySelector("#button-annotation-pen-undo")
             .addEventListener("click", () => {
-            if (this._annotator instanceof PenAnnotator) {
-                this._annotator.undoPath();
+            var _a;
+            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof PenAnnotator) {
+                this._annotationBuilder.annotator.undoPath();
             }
         });
         this._shadowRoot.querySelector("#button-annotation-pen-clear")
             .addEventListener("click", () => {
-            if (this._annotator instanceof PenAnnotator) {
-                this._annotator.clearPaths();
+            var _a;
+            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof PenAnnotator) {
+                this._annotationBuilder.annotator.clearPaths();
             }
         });
         this._shadowRoot.querySelector("#button-annotation-pen-save")
             .addEventListener("click", () => {
-            if (this._annotator instanceof PenAnnotator) {
-                this._annotator.savePathsAsInkAnnotation();
+            var _a;
+            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof PenAnnotator) {
+                this._annotationBuilder.annotator.savePathsAsInkAnnotation();
             }
         });
     }
@@ -16452,8 +16646,6 @@ class TsPdfViewer {
         this._viewer.mode = mode;
     }
     disableCurrentViewerMode() {
-        this._contextMenu.clear();
-        this._contextMenu.enabled = false;
         switch (this._viewer.mode) {
             case "text":
                 this._mainContainer.classList.remove("mode-text");
@@ -16472,171 +16664,26 @@ class TsPdfViewer {
     }
     setAnnotationMode(mode) {
         var _a, _b;
-        if (!mode || mode === this._annotatorMode) {
+        if (!this._annotationBuilder || !mode) {
             return;
         }
-        this._contextMenu.clear();
-        this._contextMenu.enabled = false;
-        (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-        switch (this._annotatorMode) {
-            case "select":
-                this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
-                this._docData.setSelectedAnnotation(null);
-                break;
-            case "stamp":
-                this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
-                break;
-            case "pen":
-                this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
-                break;
-            case "geometric":
-                this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
-                break;
-        }
-        this._annotatorMode = mode;
-        switch (mode) {
-            case "select":
-                this._shadowRoot.querySelector("#button-annotation-mode-select").classList.add("on");
-                break;
-            case "stamp":
-                this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
-                this._annotator = new StampAnnotator(this._docData, this._viewer.container);
-                this.initStampAnnotatorContextMenu();
-                break;
-            case "pen":
-                this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
-                this._annotator = new PenAnnotator(this._docData, this._viewer.container);
-                this.initPenAnnotatorContextMenu();
-                break;
-            case "geometric":
-                this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
-                this.initGeometricAnnotatorContextMenu();
-                break;
-            default:
-                throw new Error(`Invalid annotation mode: ${mode}`);
-        }
-        (_b = this._annotator) === null || _b === void 0 ? void 0 : _b.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-    }
-    initStampAnnotatorContextMenu() {
-        const stampTypes = supportedStampTypes;
-        const contextMenuContent = document.createElement("div");
-        contextMenuContent.classList.add("context-menu-content", "column");
-        stampTypes.forEach(x => {
-            const item = document.createElement("div");
-            item.classList.add("context-menu-stamp-select-button");
-            item.addEventListener("click", () => {
-                var _a;
-                this._contextMenu.hide();
-                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
-                this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-            });
-            const stampName = document.createElement("div");
-            stampName.innerHTML = x.name;
-            item.append(stampName);
-            contextMenuContent.append(item);
-        });
-        this._contextMenu.content = [contextMenuContent];
-        this._contextMenu.enabled = true;
-    }
-    initPenAnnotatorContextMenu() {
-        const contextMenuColorPicker = document.createElement("div");
-        contextMenuColorPicker.classList.add("context-menu-content", "row");
-        this._annotationColors.forEach(x => {
-            const item = document.createElement("div");
-            item.classList.add("panel-button");
-            item.addEventListener("click", () => {
-                var _a;
-                this._contextMenu.hide();
-                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-                    color: x,
-                });
-                this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-            });
-            const colorIcon = document.createElement("div");
-            colorIcon.classList.add("context-menu-color-icon");
-            colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
-            item.append(colorIcon);
-            contextMenuColorPicker.append(item);
-        });
-        const contextMenuWidthSlider = document.createElement("div");
-        contextMenuWidthSlider.classList.add("context-menu-content", "row");
-        const slider = document.createElement("input");
-        slider.setAttribute("type", "range");
-        slider.setAttribute("min", "1");
-        slider.setAttribute("max", "32");
-        slider.setAttribute("step", "1");
-        slider.setAttribute("value", "3");
-        slider.classList.add("context-menu-slider");
-        slider.addEventListener("change", () => {
-            var _a;
-            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-                strokeWidth: slider.valueAsNumber,
-            });
-            this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-        });
-        contextMenuWidthSlider.append(slider);
-        this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
-        this._contextMenu.enabled = true;
-    }
-    initGeometricAnnotatorContextMenu() {
-        const contextMenuSubmodePicker = document.createElement("div");
-        const contextMenuColorPicker = document.createElement("div");
-        contextMenuColorPicker.classList.add("context-menu-content", "row");
-        this._annotationColors.forEach(x => {
-            const item = document.createElement("div");
-            item.classList.add("panel-button");
-            item.addEventListener("click", () => {
-                var _a;
-                this._contextMenu.hide();
-                (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-                    color: x,
-                });
-                this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-            });
-            const colorIcon = document.createElement("div");
-            colorIcon.classList.add("context-menu-color-icon");
-            colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
-            item.append(colorIcon);
-            contextMenuColorPicker.append(item);
-        });
-        const contextMenuWidthSlider = document.createElement("div");
-        contextMenuWidthSlider.classList.add("context-menu-content", "row");
-        const slider = document.createElement("input");
-        slider.setAttribute("type", "range");
-        slider.setAttribute("min", "1");
-        slider.setAttribute("max", "32");
-        slider.setAttribute("step", "1");
-        slider.setAttribute("value", "3");
-        slider.classList.add("context-menu-slider");
-        slider.addEventListener("change", () => {
-            var _a;
-            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-                strokeWidth: slider.valueAsNumber,
-            });
-            this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-        });
-        contextMenuWidthSlider.append(slider);
-        this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, contextMenuWidthSlider];
-        this._contextMenu.enabled = true;
+        const prevMode = this._annotationBuilder.mode;
+        (_a = this._shadowRoot.querySelector(`#button-annotation-mode-${prevMode}`)) === null || _a === void 0 ? void 0 : _a.classList.remove("on");
+        (_b = this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)) === null || _b === void 0 ? void 0 : _b.classList.add("on");
+        this._annotationBuilder.mode = mode;
     }
     refreshPagesAsync() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             const docPagesNumber = ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.numPages) || 0;
             this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-            if (!docPagesNumber) {
-                return;
-            }
             const pages = [];
-            for (let i = 0; i < docPagesNumber; i++) {
-                const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
-                pages.push(page);
+            if (docPagesNumber) {
+                for (let i = 0; i < docPagesNumber; i++) {
+                    const pageProxy = yield this._pdfDocument.getPage(i + 1);
+                    const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
+                    pages.push(page);
+                }
             }
             this._pageService.pages = pages;
         });

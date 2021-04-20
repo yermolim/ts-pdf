@@ -11,7 +11,7 @@ import { clamp, Vec2 } from "./math";
 import { DocumentData } from "./document/document-data";
 
 import { ContextMenu } from "./components/context-menu";
-import { Viewer } from "./components/viewer";
+import { Viewer, ViewerMode } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
 import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
@@ -23,8 +23,8 @@ import { pathChangeEvent, PathChangeEvent, PenAnnotator } from "./annotator/pen/
 import { GeometricAnnotatorFactory, geometricAnnotatorTypes, GeometricAnnotatorType } 
   from "./annotator/geometric/geometric-annotator-factory";
 import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
+import { AnnotationBuilder } from "./components/annotation-builder";
 
-type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
 type FileButtons = "open" | "save" | "close";
@@ -74,7 +74,6 @@ export class TsPdfViewer {
   private readonly _shadowRoot: ShadowRoot;
   private readonly _mainContainer: HTMLDivElement;
 
-  private readonly _contextMenu: ContextMenu;
   private readonly _pageService: PageService;
   private readonly _viewer: Viewer;
   private readonly _previewer: Previewer;
@@ -94,9 +93,7 @@ export class TsPdfViewer {
 
   private _docData: DocumentData;
   
-  private _annotatorMode: AnnotatorMode;
-  private _annotatorGeometricMode: GeometricAnnotatorType;
-  private _annotator: Annotator;
+  private _annotationBuilder: AnnotationBuilder;
   
   /**common timers */
   private _timers = {    
@@ -136,8 +133,7 @@ export class TsPdfViewer {
 
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
     this._shadowRoot.innerHTML = styles + html;   
-    this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;    
-    this._contextMenu = new ContextMenu();  
+    this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
     this._pageService = new PageService(
       {visibleAdjPages: visibleAdjPages});
@@ -154,7 +150,6 @@ export class TsPdfViewer {
     
     document.addEventListener(annotChangeEvent, this.onAnnotationChange);
     document.addEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
     document.addEventListener(pathChangeEvent, this.onPenPathsChanged);
   }
 
@@ -177,12 +172,13 @@ export class TsPdfViewer {
   destroy() {
     document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
     document.removeEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
     document.removeEventListener(pathChangeEvent, this.onPenPathsChanged);
 
     this._annotChangeCallback = null;
 
     this._pdfLoadingTask?.destroy();
+
+    this._annotationBuilder?.destroy();
     this._viewer.destroy();
     this._previewer.destroy();
     this._pageService.destroy();
@@ -190,10 +186,8 @@ export class TsPdfViewer {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
     }  
-    this._annotator?.destroy();
     this._docData?.destroy();  
 
-    this._contextMenu?.destroy();
     this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
   }
@@ -257,8 +251,13 @@ export class TsPdfViewer {
     // update viewer state
     this._pdfDocument = doc;
     this._docData = docData;
-    this.setAnnotationMode("select");
+
+    // load pages from the document
     await this.refreshPagesAsync();
+
+    // create an annotation builder and set its mode to 'select'
+    this._annotationBuilder = new AnnotationBuilder(docData, this._pageService, this._viewer);
+    this.setAnnotationMode("select");
 
     this._mainContainer.classList.remove("disabled");
   }
@@ -281,12 +280,12 @@ export class TsPdfViewer {
       this._pdfDocument.destroy();
       this._pdfDocument = null;
 
-      this._annotator?.destroy();
-      this._annotator = null;
+      this._annotationBuilder?.destroy();
       
       this._docData?.destroy();
       this._docData = null;
     }
+
     await this.refreshPagesAsync();
   }
   
@@ -359,17 +358,9 @@ export class TsPdfViewer {
       } else {      
         this._mainContainer.classList.remove("mobile");
       }
-      this._contextMenu.hide();
     });
     mcResizeObserver.observe(this._mainContainer);
     this._mainContainerRObserver = mcResizeObserver;
-    
-    this._mainContainer.addEventListener("contextmenu", (e: MouseEvent) => {
-      if (this._contextMenu.enabled) {
-        e.preventDefault();
-        this._contextMenu.show(new Vec2(e.clientX, e.clientY), this._mainContainer);
-      }
-    });
     this._mainContainer.addEventListener("pointermove", this.onMainContainerPointerMove);
   }
   
@@ -483,20 +474,20 @@ export class TsPdfViewer {
     // pen buttons
     this._shadowRoot.querySelector("#button-annotation-pen-undo")
       .addEventListener("click", () => {
-        if (this._annotator instanceof PenAnnotator) {
-          this._annotator.undoPath();
+        if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
+          this._annotationBuilder.annotator.undoPath();
         }
       });
     this._shadowRoot.querySelector("#button-annotation-pen-clear")
       .addEventListener("click", () => {
-        if (this._annotator instanceof PenAnnotator) {
-          this._annotator.clearPaths();
+        if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
+          this._annotationBuilder.annotator.clearPaths();
         }
       });
     this._shadowRoot.querySelector("#button-annotation-pen-save")
       .addEventListener("click", () => {
-        if (this._annotator instanceof PenAnnotator) {
-          this._annotator.savePathsAsInkAnnotation();
+        if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
+          this._annotationBuilder.annotator.savePathsAsInkAnnotation();
         }
       });
   }
@@ -535,10 +526,7 @@ export class TsPdfViewer {
     this._viewer.mode = mode;
   }
 
-  private disableCurrentViewerMode() { 
-    this._contextMenu.clear();
-    this._contextMenu.enabled = false;
-    
+  private disableCurrentViewerMode() {    
     switch (this._viewer.mode) {
       case "text":
         this._mainContainer.classList.remove("mode-text");
@@ -625,94 +613,9 @@ export class TsPdfViewer {
   //#endregion
   
 
-  //#region annotations  
-  private onPagesRendered = (event: PagesRenderedEvent) => {    
-    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-  };
-  
-  private onPenPathsChanged = (event: PathChangeEvent) => {
-    if (event.detail.pathCount) {
-      this._mainContainer.classList.add("pen-path-present");
-    } else {
-      this._mainContainer.classList.remove("pen-path-present");
-    }
-  };
-
+  //#region annotations 
   private onAnnotationDeleteButtonClick = () => {
     this._docData?.deleteSelectedAnnotation();
-  };
-
-  private setAnnotationMode(mode: AnnotatorMode) {
-    // return if mode is same
-    if (!mode || mode === this._annotatorMode) {
-      return;
-    }
-
-    // disable previous mode
-    this._contextMenu.clear();
-    this._contextMenu.enabled = false;
-    this._annotator?.destroy();
-
-    switch (this._annotatorMode) {
-      case "select":
-        this._shadowRoot.querySelector("#button-annotation-mode-select").classList.remove("on");
-        this._docData.setSelectedAnnotation(null);
-        break;
-      case "stamp":
-        this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.remove("on");
-        break;
-      case "pen":
-        this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.remove("on");
-        break;
-      case "geometric":
-        this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.remove("on");
-        break;
-      default:
-        // mode hasn't been set. do nothing
-        break;
-    }
-
-    this._annotatorMode = mode;
-    switch (mode) {
-      case "select":
-        this._shadowRoot.querySelector("#button-annotation-mode-select").classList.add("on");
-        break;
-      case "stamp":
-        this._shadowRoot.querySelector("#button-annotation-mode-stamp").classList.add("on");
-        this._annotator = new StampAnnotator(this._docData, this._viewer.container);
-        this.initStampAnnotatorContextMenu();
-        break;
-      case "pen":
-        this._shadowRoot.querySelector("#button-annotation-mode-pen").classList.add("on");
-        this._annotator = new PenAnnotator(this._docData, this._viewer.container);
-        this.initPenAnnotatorContextMenu();
-        break;
-      case "geometric":
-        this._shadowRoot.querySelector("#button-annotation-mode-geometric").classList.add("on");
-        // TODO: init one of the geometric annotators
-        this.initGeometricAnnotatorContextMenu();
-        break;
-      default:
-        // Execution should not come here
-        throw new Error(`Invalid annotation mode: ${mode}`);
-    }
-    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-  }
-
-  private onAnnotationSelectModeButtonClick = () => {
-    this.setAnnotationMode("select");
-  };
-
-  private onAnnotationStampModeButtonClick = () => {
-    this.setAnnotationMode("stamp");
-  };
-
-  private onAnnotationPenModeButtonClick = () => {
-    this.setAnnotationMode("pen");
-  };
-  
-  private onAnnotationGeometricModeButtonClick = () => {
-    this.setAnnotationMode("geometric");
   };
 
   private onAnnotationChange = (e: AnnotEvent) => {
@@ -748,128 +651,42 @@ export class TsPdfViewer {
       this._pageService.renderSpecifiedPages(pageIdSet);
     }
   };
+  
+  private onPenPathsChanged = (event: PathChangeEvent) => {
+    if (event.detail.pathCount) {
+      this._mainContainer.classList.add("pen-path-present");
+    } else {
+      this._mainContainer.classList.remove("pen-path-present");
+    }
+  }; 
 
-  private initStampAnnotatorContextMenu() {
-    const stampTypes = supportedStampTypes;
+  private setAnnotationMode(mode: AnnotatorMode) {
+    if (!this._annotationBuilder || !mode) {
+      return;
+    }
 
-    // init a stamp type picker
-    const contextMenuContent = document.createElement("div");
-    contextMenuContent.classList.add("context-menu-content", "column");
-    stampTypes.forEach(x => {          
-      const item = document.createElement("div");
-      item.classList.add("context-menu-stamp-select-button");
-      item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
-        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-      });
-      const stampName = document.createElement("div");
-      stampName.innerHTML = x.name;
-      item.append(stampName);
-      contextMenuContent.append(item);
-    });
+    const prevMode = this._annotationBuilder.mode;
+    this._shadowRoot.querySelector(`#button-annotation-mode-${prevMode}`)?.classList.remove("on");
+    this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)?.classList.add("on");
 
-    // set the stamp type picker as the context menu content
-    this._contextMenu.content = [contextMenuContent];
-    // enable the context menu
-    this._contextMenu.enabled = true;
+    this._annotationBuilder.mode = mode;
   }
 
-  private initPenAnnotatorContextMenu() {
-    // init a pen color picker
-    const contextMenuColorPicker = document.createElement("div");
-    contextMenuColorPicker.classList.add("context-menu-content", "row");
-    this._annotationColors.forEach(x => {          
-      const item = document.createElement("div");
-      item.classList.add("panel-button");
-      item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-          color:x,
-        });
-        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-      });
-      const colorIcon = document.createElement("div");
-      colorIcon.classList.add("context-menu-color-icon");
-      colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
-      item.append(colorIcon);
-      contextMenuColorPicker.append(item);
-    });
+  private onAnnotationSelectModeButtonClick = () => {
+    this.setAnnotationMode("select");
+  };
 
-    // init a pen stroke width slider
-    const contextMenuWidthSlider = document.createElement("div");
-    contextMenuWidthSlider.classList.add("context-menu-content", "row");
-    const slider = document.createElement("input");
-    slider.setAttribute("type", "range");
-    slider.setAttribute("min", "1");
-    slider.setAttribute("max", "32");
-    slider.setAttribute("step", "1");
-    slider.setAttribute("value", "3");
-    slider.classList.add("context-menu-slider");
-    slider.addEventListener("change", () => {      
-      this._annotator?.destroy();
-      this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-        strokeWidth: slider.valueAsNumber,
-      });
-      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-    });
-    contextMenuWidthSlider.append(slider);
+  private onAnnotationStampModeButtonClick = () => {
+    this.setAnnotationMode("stamp");
+  };
 
-    // set the context menu content
-    this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
-    // enable the context menu
-    this._contextMenu.enabled = true;
-  }
-
-  private initGeometricAnnotatorContextMenu() {
-    // TODO: add submode selection
-    const contextMenuSubmodePicker = document.createElement("div");
-    // init a geometry color picker
-    const contextMenuColorPicker = document.createElement("div");
-    contextMenuColorPicker.classList.add("context-menu-content", "row");
-    this._annotationColors.forEach(x => {          
-      const item = document.createElement("div");
-      item.classList.add("panel-button");
-      item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // FIX!
-          color:x,
-        });
-        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-      });
-      const colorIcon = document.createElement("div");
-      colorIcon.classList.add("context-menu-color-icon");
-      colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
-      item.append(colorIcon);
-      contextMenuColorPicker.append(item);
-    });
-    // init a pen stroke width slider
-    const contextMenuWidthSlider = document.createElement("div");
-    contextMenuWidthSlider.classList.add("context-menu-content", "row");
-    const slider = document.createElement("input");
-    slider.setAttribute("type", "range");
-    slider.setAttribute("min", "1");
-    slider.setAttribute("max", "32");
-    slider.setAttribute("step", "1");
-    slider.setAttribute("value", "3");
-    slider.classList.add("context-menu-slider");
-    slider.addEventListener("change", () => {      
-      this._annotator?.destroy();
-      this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // TODO: FIX!
-        strokeWidth: slider.valueAsNumber,
-      });
-      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
-    });
-    contextMenuWidthSlider.append(slider);
-    
-    // set the context menu content
-    this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, contextMenuWidthSlider];
-    // enable the context menu
-    this._contextMenu.enabled = true;
-  }
+  private onAnnotationPenModeButtonClick = () => {
+    this.setAnnotationMode("pen");
+  };
+  
+  private onAnnotationGeometricModeButtonClick = () => {
+    this.setAnnotationMode("geometric");
+  };
   //#endregion
 
 
@@ -885,16 +702,15 @@ export class TsPdfViewer {
   private async refreshPagesAsync(): Promise<void> {
     const docPagesNumber = this._pdfDocument?.numPages || 0;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-    if (!docPagesNumber) {
-      return;
-    }
 
     const pages: PageView[] = [];
-    for (let i = 0; i < docPagesNumber; i++) {    
-      const pageProxy = await this._pdfDocument.getPage(i + 1);
-      const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
-      pages.push(page);
-    } 
+    if (docPagesNumber) {
+      for (let i = 0; i < docPagesNumber; i++) {    
+        const pageProxy = await this._pdfDocument.getPage(i + 1);
+        const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
+        pages.push(page);
+      }
+    }
 
     this._pageService.pages = pages;
   }

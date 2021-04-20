@@ -3,7 +3,7 @@ import { clamp, Vec2 } from "../math";
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "./pages/page-service";
 
-type ViewerMode = "text" | "hand" | "annotation";
+export type ViewerMode = "text" | "hand" | "annotation";
 
 export interface ViewerOptions {
   minScale?: number;

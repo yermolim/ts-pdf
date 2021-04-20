@@ -202,7 +202,10 @@ export const styles = /*html*/`
   .panel-button:hover img,
   .panel-button.on img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
-  }
+  }  
+  .disabled .panel-button img {
+    filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
+  }  
   
   .subpanel {
     display: flex;
@@ -606,6 +609,9 @@ export const styles = /*html*/`
   }
   #button-open-file {
     pointer-events: auto !important;
+  }
+  .disabled #button-open-file img {
+    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }
 </style>
 `;
