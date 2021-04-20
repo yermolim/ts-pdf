@@ -69,7 +69,6 @@ export declare class TsPdfViewer {
 	private _annotatorMode;
 	private _annotatorGeometricMode;
 	private _annotator;
-	private _pointerLastPos;
 	private _timers;
 	constructor(options: TsPdfViewerOptions);
 	private static downloadFile;
@@ -90,10 +89,6 @@ export declare class TsPdfViewer {
 	private onCloseFileButtonClick;
 	private initModeSwitchButtons;
 	private initAnnotationButtons;
-	private onMainContainerPointerMove;
-	private onPdfLoadingProgress;
-	private refreshPagesAsync;
-	private onPreviewerToggleClick;
 	private setViewerMode;
 	private disableCurrentViewerMode;
 	private onTextModeButtonClick;
@@ -120,6 +115,10 @@ export declare class TsPdfViewer {
 	private initStampAnnotatorContextMenu;
 	private initPenAnnotatorContextMenu;
 	private initGeometricAnnotatorContextMenu;
+	private onPdfLoadingProgress;
+	private refreshPagesAsync;
+	private onPreviewerToggleClick;
+	private onMainContainerPointerMove;
 	private showPasswordDialogAsync;
 }
 

@@ -1,4 +1,5 @@
-import { currentPageChangeEvent, CurrentPageChangeEvent, PageService, pagesLoadedEvent, PagesLoadedEvent } from "./pages/page-service";
+import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
+  pagesLoadedEvent, PagesLoadedEvent } from "./pages/page-service";
 
 export interface PreviewerOptions {
   canvasWidth?: number;

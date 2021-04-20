@@ -9,8 +9,13 @@ import { Quadruple } from "./common";
 import { clamp, Vec2 } from "./math";
 
 import { DocumentData } from "./document/document-data";
-import { PageView } from "./components/pages/page-view";
+
 import { ContextMenu } from "./components/context-menu";
+import { Viewer } from "./components/viewer";
+import { Previewer } from "./components/previewer";
+import { PageView } from "./components/pages/page-view";
+import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
+  pagesRenderedEvent, PagesRenderedEvent } from "./components/pages/page-service";
 
 import { Annotator } from "./annotator/annotator";
 import { StampAnnotator, supportedStampTypes } from "./annotator/stamp/stamp-annotator";
@@ -18,10 +23,6 @@ import { pathChangeEvent, PathChangeEvent, PenAnnotator } from "./annotator/pen/
 import { GeometricAnnotatorFactory, geometricAnnotatorTypes, GeometricAnnotatorType } 
   from "./annotator/geometric/geometric-annotator-factory";
 import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
-import { Viewer } from "./components/viewer";
-import { Previewer } from "./components/previewer";
-import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
-  pagesRenderedEvent, PagesRenderedEvent } from "./components/pages/page-service";
 
 type ViewerMode = "text" | "hand" | "annotation";
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
@@ -97,8 +98,6 @@ export class TsPdfViewer {
   private _annotatorGeometricMode: GeometricAnnotatorType;
   private _annotator: Annotator;
   
-  /**information about the last pointer position */
-  private _pointerLastPos: Vec2 = null;
   /**common timers */
   private _timers = {    
     hidePanels: 0,
@@ -137,16 +136,15 @@ export class TsPdfViewer {
 
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
     this._shadowRoot.innerHTML = styles + html;   
-    this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
-    
+    this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;    
+    this._contextMenu = new ContextMenu();  
+
     this._pageService = new PageService(
       {visibleAdjPages: visibleAdjPages});
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
       {canvasWidth: previewWidth});
     this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
-      {minScale: minScale, maxScale: maxScale});    
-      
-    this._contextMenu = new ContextMenu();  
+      {minScale: minScale, maxScale: maxScale}); 
 
     this.initMainContainerEventHandlers();
     this.initViewControls();
@@ -174,6 +172,7 @@ export class TsPdfViewer {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
+  //#region public API
   /**free resources to let GC clean them to avoid memory leak */
   destroy() {
     document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
@@ -197,7 +196,7 @@ export class TsPdfViewer {
     this._contextMenu?.destroy();
     this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
-  }  
+  }
   
   async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
     let data: Uint8Array;
@@ -258,14 +257,14 @@ export class TsPdfViewer {
     // update viewer state
     this._pdfDocument = doc;
     this._docData = docData;
-    this.setAnnotationMode("select");  
-
+    this.setAnnotationMode("select");
     await this.refreshPagesAsync();
 
     this._mainContainer.classList.remove("disabled");
   }
 
   async closePdfAsync(): Promise<void> {
+    // destroy a running loading task if present
     if (this._pdfLoadingTask) {
       if (!this._pdfLoadingTask.destroyed) {
         await this._pdfLoadingTask.destroy();
@@ -273,9 +272,11 @@ export class TsPdfViewer {
       this._pdfLoadingTask = null;
     }
 
-    // update viewer state
     this._mainContainer.classList.add("disabled");
-    this.setViewerMode("text");
+
+    // reset viewer state to default
+    this.setViewerMode();
+
     if (this._pdfDocument) {
       this._pdfDocument.destroy();
       this._pdfDocument = null;
@@ -346,6 +347,7 @@ export class TsPdfViewer {
     });
     return blob;
   }
+  //#endregion
 
 
   //#region GUI initialization methods
@@ -460,7 +462,7 @@ export class TsPdfViewer {
       .addEventListener("click", this.onHandModeButtonClick);
     this._shadowRoot.querySelector("#button-mode-annotation")
       .addEventListener("click", this.onAnnotationModeButtonClick);
-    this.setViewerMode("text");    
+    this.setViewerMode();    
   }
 
   private initAnnotationButtons() {
@@ -499,79 +501,12 @@ export class TsPdfViewer {
       });
   }
   //#endregion
-  
-  private onMainContainerPointerMove = (event: PointerEvent) => {
-    const {clientX, clientY} = event;
-    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
 
-    const l = clientX - rectX;
-    const t = clientY - rectY;
-    const r = width - l;
-    const b = height - t;
-
-    if (Math.min(l, r, t, b) > 150) {
-      // hide panels if pointer is far from the container edges
-      if (!this._panelsHidden && !this._timers.hidePanels) {
-        this._timers.hidePanels = setTimeout(() => {
-          this._mainContainer.classList.add("hide-panels");
-          this._panelsHidden = true;
-          this._timers.hidePanels = null;
-        }, 5000);
-      }      
-    } else {
-      // show panels otherwise
-      if (this._timers.hidePanels) {
-        clearTimeout(this._timers.hidePanels);
-        this._timers.hidePanels = null;
-      }
-      if (this._panelsHidden) {        
-        this._mainContainer.classList.remove("hide-panels");
-        this._panelsHidden = false;
-      }
-    }
-
-    this._pointerLastPos = new Vec2(clientX, clientY);
-  };
-
-  private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
-    // TODO: implement progress display
-  };
-
-  /**
-   * refresh the loaded pdf file page views and previews
-   * @returns 
-   */
-  private async refreshPagesAsync(): Promise<void> {
-    const docPagesNumber = this._pdfDocument?.numPages || 0;
-    this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-    if (!docPagesNumber) {
-      return;
-    }
-
-    const pages: PageView[] = [];
-    for (let i = 0; i < docPagesNumber; i++) {    
-      const pageProxy = await this._pdfDocument.getPage(i + 1);
-      const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
-      pages.push(page);
-    } 
-
-    this._pageService.pages = pages;
-  }
-
-  private onPreviewerToggleClick = () => {
-    if (this._previewer.hidden) {
-      this._mainContainer.classList.remove("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
-      this._previewer.show();
-    } else {      
-      this._mainContainer.classList.add("hide-previewer");
-      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
-      this._previewer.hide();
-    }
-  };
 
   //#region viewer modes
-  private setViewerMode(mode: ViewerMode) {
+  private setViewerMode(mode?: ViewerMode) {
+    mode = mode || "text"; // 'text' is the default mode
+
     // return if mode not changed
     if (!mode || mode === this._viewer.mode) {
       return;
@@ -938,7 +873,75 @@ export class TsPdfViewer {
   //#endregion
 
 
-  //#region misc 
+  //#region misc
+  private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
+    // TODO: implement progress display
+  };
+
+  /**
+   * refresh the loaded pdf file page views and previews
+   * @returns 
+   */
+  private async refreshPagesAsync(): Promise<void> {
+    const docPagesNumber = this._pdfDocument?.numPages || 0;
+    this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
+    if (!docPagesNumber) {
+      return;
+    }
+
+    const pages: PageView[] = [];
+    for (let i = 0; i < docPagesNumber; i++) {    
+      const pageProxy = await this._pdfDocument.getPage(i + 1);
+      const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
+      pages.push(page);
+    } 
+
+    this._pageService.pages = pages;
+  }
+
+  private onPreviewerToggleClick = () => {
+    if (this._previewer.hidden) {
+      this._mainContainer.classList.remove("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
+      this._previewer.show();
+    } else {      
+      this._mainContainer.classList.add("hide-previewer");
+      this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
+      this._previewer.hide();
+    }
+  };
+
+  private onMainContainerPointerMove = (event: PointerEvent) => {
+    const {clientX, clientY} = event;
+    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
+
+    const l = clientX - rectX;
+    const t = clientY - rectY;
+    const r = width - l;
+    const b = height - t;
+
+    if (Math.min(l, r, t, b) > 150) {
+      // hide panels if pointer is far from the container edges
+      if (!this._panelsHidden && !this._timers.hidePanels) {
+        this._timers.hidePanels = setTimeout(() => {
+          this._mainContainer.classList.add("hide-panels");
+          this._panelsHidden = true;
+          this._timers.hidePanels = null;
+        }, 5000);
+      }      
+    } else {
+      // show panels otherwise
+      if (this._timers.hidePanels) {
+        clearTimeout(this._timers.hidePanels);
+        this._timers.hidePanels = null;
+      }
+      if (this._panelsHidden) {        
+        this._mainContainer.classList.remove("hide-panels");
+        this._panelsHidden = false;
+      }
+    }
+  };
+
   private async showPasswordDialogAsync(): Promise<string> {
 
     const passwordPromise = new Promise<string>((resolve, reject) => {
