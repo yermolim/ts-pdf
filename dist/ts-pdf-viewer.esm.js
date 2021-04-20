@@ -6325,18 +6325,19 @@ class GraphicsStateDict extends PdfDict {
 }
 
 class ResourceDict extends PdfDict {
-    constructor() {
+    constructor(streamParsers) {
         super(null);
         this._gsMap = new Map();
         this._fontsMap = new Map();
         this._xObjectsMap = new Map();
+        this._streamParsers = streamParsers;
     }
-    static parse(parseInfo) {
+    static parse(parseInfo, streamParsers) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
         }
         try {
-            const pdfObject = new ResourceDict();
+            const pdfObject = new ResourceDict(streamParsers);
             pdfObject.parseProps(parseInfo);
             const proxy = new Proxy(pdfObject, pdfObject.onChange);
             pdfObject._proxy = proxy;
@@ -6461,7 +6462,7 @@ class ResourceDict extends PdfDict {
                 }
             }
         }
-        if (this.XObject) {
+        if (this.XObject && this._streamParsers) {
             for (const [name, objectId] of this.XObject.getObjectIds()) {
                 const streamParseInfo = parseInfoGetter(objectId.id);
                 if (!streamParseInfo) {
@@ -6473,8 +6474,8 @@ class ResourceDict extends PdfDict {
                     minIndex: streamParseInfo.bounds.start,
                     maxIndex: streamParseInfo.bounds.end,
                 })
-                    ? XFormStream.parse(streamParseInfo)
-                    : ImageStream.parse(streamParseInfo);
+                    ? this._streamParsers.xform(streamParseInfo)
+                    : this._streamParsers.image(streamParseInfo);
                 if (stream) {
                     this._xObjectsMap.set(`/XObject${name}`, stream.value);
                 }
@@ -6934,7 +6935,7 @@ class XFormStream extends PdfStream {
                             if (resDictId && parseInfo.parseInfoGetter) {
                                 const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
                                 if (resParseInfo) {
-                                    const resDict = ResourceDict.parse(resParseInfo);
+                                    const resDict = ResourceDict.parse(resParseInfo, { xform: XFormStream.parse, image: ImageStream.parse });
                                     if (resDict) {
                                         this.Resources = resDict.value;
                                         i = resDict.end + 1;
@@ -6952,7 +6953,7 @@ class XFormStream extends PdfStream {
                                         parser,
                                         bounds: resDictBounds,
                                         parseInfoGetter: parseInfo.parseInfoGetter,
-                                    });
+                                    }, { xform: XFormStream.parse, image: ImageStream.parse });
                                     if (resDict) {
                                         this.Resources = resDict.value;
                                     }
@@ -10446,7 +10447,7 @@ class PageDict extends PdfDict {
                             if (resDictId && parseInfo.parseInfoGetter) {
                                 const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
                                 if (resParseInfo) {
-                                    const resDict = ResourceDict.parse(resParseInfo);
+                                    const resDict = ResourceDict.parse(resParseInfo, { xform: XFormStream.parse, image: ImageStream.parse });
                                     if (resDict) {
                                         this.Resources = resDict.value;
                                         i = resDict.end + 1;
@@ -10464,7 +10465,7 @@ class PageDict extends PdfDict {
                                         parser,
                                         bounds: resDictBounds,
                                         parseInfoGetter: parseInfo.parseInfoGetter,
-                                    });
+                                    }, { xform: XFormStream.parse, image: ImageStream.parse });
                                     if (resDict) {
                                         this.Resources = resDict.value;
                                     }

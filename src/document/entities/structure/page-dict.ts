@@ -3,11 +3,17 @@ import { codes } from "../../codes";
 import { dictTypes, valueTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
-import { DateString } from "../strings/date-string";
+
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { ResourceDict } from "../appearance/resource-dict";
+
 import { HexString } from "../strings/hex-string";
+import { DateString } from "../strings/date-string";
+
+import { XFormStream } from "../streams/x-form-stream";
+import { ImageStream } from "../streams/image-stream";
+
+import { ResourceDict } from "../appearance/resource-dict";
 
 /**PDF document page dictionary */
 export class PageDict extends PdfDict {
@@ -321,7 +327,8 @@ export class PageDict extends PdfDict {
               if (resDictId && parseInfo.parseInfoGetter) {
                 const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
                 if (resParseInfo) {
-                  const resDict = ResourceDict.parse(resParseInfo);
+                  const resDict = ResourceDict.parse(resParseInfo, 
+                    {xform: XFormStream.parse, image: ImageStream.parse});
                   if (resDict) {
                     this.Resources = resDict.value;
                     i = resDict.end + 1;
@@ -338,7 +345,7 @@ export class PageDict extends PdfDict {
                     parser,
                     bounds: resDictBounds,
                     parseInfoGetter: parseInfo.parseInfoGetter,
-                  });
+                  }, {xform: XFormStream.parse, image: ImageStream.parse});
                   if (resDict) {
                     this.Resources = resDict.value;
                   } else {                  

@@ -12,6 +12,7 @@ import { DateString } from "../strings/date-string";
 import { ResourceDict } from "../appearance/resource-dict";
 import { MeasureDict } from "../appearance/measure-dict";
 import { TransparencyGroupDict } from "../appearance/transparency-group-dict";
+import { ImageStream } from "./image-stream";
 
 export class XFormStream extends PdfStream {
   /**
@@ -276,7 +277,8 @@ export class XFormStream extends PdfStream {
               if (resDictId && parseInfo.parseInfoGetter) {
                 const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
                 if (resParseInfo) {
-                  const resDict = ResourceDict.parse(resParseInfo);
+                  const resDict = ResourceDict.parse(resParseInfo, 
+                    {xform: XFormStream.parse, image: ImageStream.parse});
                   if (resDict) {
                     this.Resources = resDict.value;
                     i = resDict.end + 1;
@@ -293,7 +295,7 @@ export class XFormStream extends PdfStream {
                     parser,
                     bounds: resDictBounds,
                     parseInfoGetter: parseInfo.parseInfoGetter,
-                  });
+                  }, {xform: XFormStream.parse, image: ImageStream.parse});
                   if (resDict) {
                     this.Resources = resDict.value;
                   } else {                  

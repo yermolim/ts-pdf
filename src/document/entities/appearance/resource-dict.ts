@@ -5,12 +5,15 @@ import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { PdfStream } from "../core/pdf-stream";
-import { ImageStream } from "../streams/image-stream";
-import { XFormStream } from "../streams/x-form-stream";
 import { ObjectMapDict } from "../misc/object-map-dict";
 
 import { FontDict } from "./font-dict";
 import { GraphicsStateDict } from "./graphics-state-dict";
+
+interface ResourceStreamParsers {
+  xform: (info: ParseInfo) => ParseResult<PdfStream>;
+  image: (info: ParseInfo) => ParseResult<PdfStream>;
+}
 
 export class ResourceDict extends PdfDict {
   /** 
@@ -50,20 +53,23 @@ export class ResourceDict extends PdfDict {
    * */
   ProcSet: string[];
   
+  protected readonly _streamParsers: ResourceStreamParsers;
+
   protected _gsMap = new Map<string, GraphicsStateDict>();
   protected _fontsMap = new Map<string, FontDict>();
   protected _xObjectsMap = new Map<string, PdfStream>();
   
-  constructor() {
+  constructor(streamParsers?: ResourceStreamParsers) {
     super(null);
+    this._streamParsers = streamParsers;
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<ResourceDict> { 
+  static parse(parseInfo: ParseInfo, streamParsers?: ResourceStreamParsers): ParseResult<ResourceDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
     try {
-      const pdfObject = new ResourceDict();
+      const pdfObject = new ResourceDict(streamParsers);
       pdfObject.parseProps(parseInfo);
       const proxy = new Proxy<ResourceDict>(pdfObject, pdfObject.onChange);
       pdfObject._proxy = proxy;
@@ -200,7 +206,7 @@ export class ResourceDict extends PdfDict {
       }
     }
 
-    if (this.XObject) {
+    if (this.XObject && this._streamParsers) {
       for (const [name, objectId] of this.XObject.getObjectIds()) {
         const streamParseInfo = parseInfoGetter(objectId.id);
         if (!streamParseInfo) {
@@ -212,8 +218,8 @@ export class ResourceDict extends PdfDict {
             minIndex: streamParseInfo.bounds.start,
             maxIndex: streamParseInfo.bounds.end,
           })
-          ? XFormStream.parse(streamParseInfo) // TODO: fix circular dependency
-          : ImageStream.parse(streamParseInfo);
+          ? this._streamParsers.xform(streamParseInfo) // TODO: fix circular dependency
+          : this._streamParsers.image(streamParseInfo);
         if (stream) {
           this._xObjectsMap.set(`/XObject${name}`, stream.value);
         }
