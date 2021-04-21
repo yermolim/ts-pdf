@@ -48,7 +48,6 @@ export interface TsPdfViewerOptions {
 }
 export declare class TsPdfViewer {
 	private readonly _userName;
-	private readonly _annotationColors;
 	private readonly _outerContainer;
 	private readonly _shadowRoot;
 	private readonly _mainContainer;
@@ -102,7 +101,8 @@ export declare class TsPdfViewer {
 	private onCurrentPagesChanged;
 	private onAnnotationDeleteButtonClick;
 	private onAnnotationChange;
-	private onPenPathsChanged;
+	private onPenDataChanged;
+	private onGeometricDataChanged;
 	private setAnnotationMode;
 	private onAnnotationSelectModeButtonClick;
 	private onAnnotationStampModeButtonClick;

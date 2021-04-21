@@ -1,4 +1,6 @@
+import { Quadruple } from "../../common";
 import { DocumentData } from "../../document/document-data";
+
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricArrowAnnotator } from "./geometric-arrow";
 import { GeometricCircleAnnotator } from "./geometric-circle-annotator";
@@ -11,8 +13,14 @@ export const geometricAnnotatorTypes = ["square", "circle", "line", "arrow", "po
 export type GeometricAnnotatorType =  typeof geometricAnnotatorTypes[number];
 
 export class GeometricAnnotatorFactory {
-  static CreateAnnotator(type: GeometricAnnotatorType, docData: DocumentData, 
-    parent: HTMLDivElement, options?: GeometricAnnotatorOptions): GeometricAnnotator {
+  protected static lastType: GeometricAnnotatorType;
+
+  static CreateAnnotator(docData: DocumentData, 
+    parent: HTMLDivElement, options?: GeometricAnnotatorOptions, type?: GeometricAnnotatorType): GeometricAnnotator {
+    
+    type ||= GeometricAnnotatorFactory.lastType || "square";
+    GeometricAnnotatorFactory.lastType = type;
+
     switch (type) {
       case "square":
         return new GeometricSquareAnnotator(docData, parent, options);

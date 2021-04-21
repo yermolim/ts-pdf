@@ -5,5 +5,10 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
   
   constructor(docData: DocumentData, parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docData, parent, options || {});
+    this.init();
+  }
+  
+  protected init() {
+    super.init();
   }
 }

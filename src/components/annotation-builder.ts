@@ -3,7 +3,8 @@ import { Quadruple } from "../common";
 import { DocumentData } from "../document/document-data";
 
 import { Annotator } from "../annotator/annotator";
-import { GeometricAnnotatorType } from "../annotator/geometric/geometric-annotator-factory";
+import { GeometricAnnotatorFactory, GeometricAnnotatorType, 
+  geometricAnnotatorTypes } from "../annotator/geometric/geometric-annotator-factory";
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
 import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
 
@@ -11,6 +12,7 @@ import { Viewer } from "./viewer";
 import { ContextMenu } from "./context-menu";
 import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./pages/page-service";
 import { Vec2 } from "../math";
+import { geometricIcons } from "../assets/index.html";
 
 export type AnnotationBuilderMode = "select" | "stamp" | "pen" | "geometric";
 
@@ -36,8 +38,6 @@ export class AnnotationBuilder {
   set mode(value: AnnotationBuilderMode) {
     this.setMode(value);
   }
-  
-  private _geometricType: GeometricAnnotatorType;
 
   private _annotator: Annotator;
   get annotator(): Annotator {
@@ -83,6 +83,10 @@ export class AnnotationBuilder {
     this._viewerResizeObserver = viewerRObserver;
   }  
 
+  private updateAnnotatorDimensions() {
+    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+  }
+
   private setMode(mode: AnnotationBuilderMode) {
     // return if mode is same
     if (!mode || mode === this._mode) {
@@ -107,17 +111,16 @@ export class AnnotationBuilder {
         this.initPenAnnotatorContextMenu();
         break;
       case "geometric":
-        // TODO: init one of the geometric annotators
+        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container);
         this.initGeometricAnnotatorContextMenu();
         break;
       default:
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
-    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+    this.updateAnnotatorDimensions();
   }
   
-  //#region annotations  
   private onContextMenu = (event: MouseEvent) => {
     if (this._contextMenu?.enabled) {
       event.preventDefault();
@@ -126,7 +129,7 @@ export class AnnotationBuilder {
   };
 
   private onPagesRendered = (event: PagesRenderedEvent) => {    
-    this._annotator?.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+    this.initPenAnnotatorContextMenu();
   };
 
   private initStampAnnotatorContextMenu() {
@@ -142,7 +145,7 @@ export class AnnotationBuilder {
         this._contextMenu.hide();
         this._annotator?.destroy();
         this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
-        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        this.updateAnnotatorDimensions();
       });
       const stampName = document.createElement("div");
       stampName.innerHTML = x.name;
@@ -170,7 +173,7 @@ export class AnnotationBuilder {
         this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
           color:x,
         });
-        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        this.updateAnnotatorDimensions();
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -194,7 +197,7 @@ export class AnnotationBuilder {
       this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
         strokeWidth: slider.valueAsNumber,
       });
-      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+      this.updateAnnotatorDimensions();
     });
     contextMenuWidthSlider.append(slider);
 
@@ -208,6 +211,22 @@ export class AnnotationBuilder {
   private initGeometricAnnotatorContextMenu() {
     // TODO: add submode selection
     const contextMenuSubmodePicker = document.createElement("div");
+    contextMenuSubmodePicker.classList.add("context-menu-content", "row");
+    geometricAnnotatorTypes.forEach(x => {   
+      const item = document.createElement("div");
+      item.classList.add("panel-button");
+      item.addEventListener("click", () => {
+        this._contextMenu.hide();
+        this._annotator?.destroy();
+        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, {}, x);
+        this.updateAnnotatorDimensions();
+      });
+      const submodeIcon = document.createElement("div");
+      submodeIcon.classList.add("context-menu-color-icon");
+      submodeIcon.innerHTML = geometricIcons[x];
+      item.append(submodeIcon);
+      contextMenuSubmodePicker.append(item);
+    });
     // init a geometry color picker
     const contextMenuColorPicker = document.createElement("div");
     contextMenuColorPicker.classList.add("context-menu-content", "row");
@@ -217,10 +236,10 @@ export class AnnotationBuilder {
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // FIX!
+        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, {
           color:x,
         });
-        this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        this.updateAnnotatorDimensions();
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -240,10 +259,10 @@ export class AnnotationBuilder {
     slider.classList.add("context-menu-slider");
     slider.addEventListener("change", () => {      
       this._annotator?.destroy();
-      this._annotator = new PenAnnotator(this._docData, this._viewer.container, { // TODO: FIX!
+      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, {
         strokeWidth: slider.valueAsNumber,
       });
-      this._annotator.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+      this.updateAnnotatorDimensions();
     });
     contextMenuWidthSlider.append(slider);
     
@@ -253,5 +272,4 @@ export class AnnotationBuilder {
     // enable the context menu
     this._contextMenu.enabled = true;
   }
-  //#endregion
 }

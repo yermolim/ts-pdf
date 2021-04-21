@@ -8,18 +8,18 @@ import { Annotator } from "../annotator";
 import { PenData } from "./pen-data";
 
 //#region custom events
-export const pathChangeEvent = "tspdf-penpathchange" as const;
-export interface PathChangeEventDetail {
+export const penDataChangeEvent = "tspdf-pendatachange" as const;
+export interface PenDataChangeEventDetail {
   pathCount: number;
 }
-export class PathChangeEvent extends CustomEvent<PathChangeEventDetail> {
-  constructor(detail: PathChangeEventDetail) {
-    super(pathChangeEvent, {detail});
+export class PenDataChangeEvent extends CustomEvent<PenDataChangeEventDetail> {
+  constructor(detail: PenDataChangeEventDetail) {
+    super(penDataChangeEvent, {detail});
   }
 }
 declare global {
   interface DocumentEventMap {
-    [pathChangeEvent]: PathChangeEvent;
+    [penDataChangeEvent]: PenDataChangeEvent;
   }
 }
 //#endregion
@@ -55,20 +55,20 @@ export class PenAnnotator extends Annotator {
   }
 
   /**remove the last path from the temp path group */
-  undoPath() {
+  undo() {
     this._annotationPenData?.removeLastPath();
     this.emitPathCount();
   }
 
   /**clear the temp path group */
-  clearPaths() {
+  clear() {
     this.removeTempPenData();
   }
 
   /**
    * save the current temp path as an ink annotation and append it to the page
    */
-  savePathsAsInkAnnotation() {
+  saveAnnotation() {
     if (!this._annotationPenData) {
       return;
     }
@@ -210,7 +210,7 @@ export class PenAnnotator extends Annotator {
   };
 
   protected emitPathCount() {
-    document.dispatchEvent(new PathChangeEvent({
+    document.dispatchEvent(new PenDataChangeEvent({
       pathCount: this._annotationPenData?.pathCount || 0,
     }));
   }

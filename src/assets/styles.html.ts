@@ -155,18 +155,24 @@ export const styles = /*html*/`
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }  
   :not(.annotation-selected) #button-annotation-delete,
-  :not(.pen-path-present) #button-annotation-pen-undo,
-  :not(.pen-path-present) #button-annotation-pen-clear,
-  :not(.pen-path-present) #button-annotation-pen-save {
+  :not(.complex-pen-data-present) #button-annotation-pen-undo,
+  :not(.simple-pen-data-present) #button-annotation-pen-clear,
+  :not(.simple-pen-data-present) #button-annotation-pen-save,
+  :not(.complex-geometric-data-present) #button-annotation-geometric-undo,
+  :not(.simple-geometric-data-present) #button-annotation-geometric-clear,
+  :not(.simple-geometric-data-present) #button-annotation-geometric-save {
     cursor: default;      
     opacity: 0;
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }
   .annotation-selected #button-annotation-delete,
-  .pen-path-present #button-annotation-pen-undo,
-  .pen-path-present #button-annotation-pen-clear,
-  .pen-path-present #button-annotation-pen-save { 
+  .complex-pen-data-present #button-annotation-pen-undo,
+  .simple-pen-data-present #button-annotation-pen-clear,
+  .simple-pen-data-present #button-annotation-pen-save,
+  .complex-geometric-data-present #button-annotation-geometric-undo,
+  .simple-geometric-data-present #button-annotation-geometric-clear,
+  .simple-geometric-data-present #button-annotation-geometric-save { 
     cursor: pointer;
     opacity: 100;
     transform: scale(1);    

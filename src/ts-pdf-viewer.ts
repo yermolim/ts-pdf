@@ -5,25 +5,19 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { Quadruple } from "./common";
-import { clamp, Vec2 } from "./math";
+import { clamp } from "./math";
 
 import { DocumentData } from "./document/document-data";
+import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
 
-import { ContextMenu } from "./components/context-menu";
 import { Viewer, ViewerMode } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
-import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
-  pagesRenderedEvent, PagesRenderedEvent } from "./components/pages/page-service";
-
-import { Annotator } from "./annotator/annotator";
-import { StampAnnotator, supportedStampTypes } from "./annotator/stamp/stamp-annotator";
-import { pathChangeEvent, PathChangeEvent, PenAnnotator } from "./annotator/pen/pen-annotator";
-import { GeometricAnnotatorFactory, geometricAnnotatorTypes, GeometricAnnotatorType } 
-  from "./annotator/geometric/geometric-annotator-factory";
-import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
+import { PageService, currentPageChangeEvent, CurrentPageChangeEvent } from "./components/pages/page-service";
 import { AnnotationBuilder } from "./components/annotation-builder";
+
+import { penDataChangeEvent, PenDataChangeEvent, PenAnnotator } from "./annotator/pen/pen-annotator";
+import { GeometricAnnotator, geometricDataChangeEvent, GeometricDataChangeEvent } from "./annotator/geometric/geometric-annotator";
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
@@ -61,14 +55,6 @@ export {AnnotationDto, AnnotEvent, AnnotEventDetail};
 export class TsPdfViewer {
   //#region private fields
   private readonly _userName: string;
-
-  // TODO: move readonly properties to the main options
-  private readonly _annotationColors: readonly Quadruple[] = [
-    [0, 0, 0, 0.5], // black
-    [0.804, 0, 0, 0.5], // red
-    [0, 0.804, 0, 0.5], // green
-    [0, 0, 0.804, 0.5], // blue
-  ];
 
   private readonly _outerContainer: HTMLDivElement;
   private readonly _shadowRoot: ShadowRoot;
@@ -150,7 +136,8 @@ export class TsPdfViewer {
     
     document.addEventListener(annotChangeEvent, this.onAnnotationChange);
     document.addEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    document.addEventListener(pathChangeEvent, this.onPenPathsChanged);
+    document.addEventListener(penDataChangeEvent, this.onPenDataChanged);
+    document.addEventListener(geometricDataChangeEvent, this.onGeometricDataChanged);
   }
 
   /**create a temp download link and click on it */
@@ -172,7 +159,8 @@ export class TsPdfViewer {
   destroy() {
     document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
     document.removeEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    document.removeEventListener(pathChangeEvent, this.onPenPathsChanged);
+    document.removeEventListener(penDataChangeEvent, this.onPenDataChanged);
+    document.removeEventListener(geometricDataChangeEvent, this.onGeometricDataChanged);
 
     this._annotChangeCallback = null;
 
@@ -475,19 +463,39 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#button-annotation-pen-undo")
       .addEventListener("click", () => {
         if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
-          this._annotationBuilder.annotator.undoPath();
+          this._annotationBuilder.annotator.undo();
         }
       });
     this._shadowRoot.querySelector("#button-annotation-pen-clear")
       .addEventListener("click", () => {
         if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
-          this._annotationBuilder.annotator.clearPaths();
+          this._annotationBuilder.annotator.clear();
         }
       });
     this._shadowRoot.querySelector("#button-annotation-pen-save")
       .addEventListener("click", () => {
         if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
-          this._annotationBuilder.annotator.savePathsAsInkAnnotation();
+          this._annotationBuilder.annotator.saveAnnotation();
+        }
+      });
+      
+    // geometric buttons
+    this._shadowRoot.querySelector("#button-annotation-geometric-undo")
+      .addEventListener("click", () => {
+        if (this._annotationBuilder?.annotator instanceof GeometricAnnotator) {
+          this._annotationBuilder.annotator.undo();
+        }
+      });
+    this._shadowRoot.querySelector("#button-annotation-geometric-clear")
+      .addEventListener("click", () => {
+        if (this._annotationBuilder?.annotator instanceof GeometricAnnotator) {
+          this._annotationBuilder.annotator.clear();
+        }
+      });
+    this._shadowRoot.querySelector("#button-annotation-geometric-save")
+      .addEventListener("click", () => {
+        if (this._annotationBuilder?.annotator instanceof GeometricAnnotator) {
+          this._annotationBuilder.annotator.saveAnnotation();
         }
       });
   }
@@ -652,11 +660,29 @@ export class TsPdfViewer {
     }
   };
   
-  private onPenPathsChanged = (event: PathChangeEvent) => {
-    if (event.detail.pathCount) {
-      this._mainContainer.classList.add("pen-path-present");
+  private onPenDataChanged = (event: PenDataChangeEvent) => {
+    if (!event.detail.pathCount) {
+      this._mainContainer.classList.remove("simple-pen-data-present");
+      this._mainContainer.classList.remove("complex-pen-data-present");
+    } else if (event.detail.pathCount > 1) {
+      this._mainContainer.classList.add("simple-pen-data-present");
+      this._mainContainer.classList.add("complex-pen-data-present");
     } else {
-      this._mainContainer.classList.remove("pen-path-present");
+      this._mainContainer.classList.add("simple-pen-data-present");
+      this._mainContainer.classList.remove("complex-pen-data-present");
+    }
+  }; 
+  
+  private onGeometricDataChanged = (event: GeometricDataChangeEvent) => {
+    if (!event.detail.pointCount) {
+      this._mainContainer.classList.remove("simple-geometric-data-present");
+      this._mainContainer.classList.remove("complex-geometric-data-present");
+    } else if (event.detail.pointCount > 2) {
+      this._mainContainer.classList.add("simple-geometric-data-present");
+      this._mainContainer.classList.add("complex-geometric-data-present");
+    } else {
+      this._mainContainer.classList.add("simple-geometric-data-present");
+      this._mainContainer.classList.remove("complex-geometric-data-present");
     }
   }; 
 

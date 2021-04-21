@@ -1,26 +1,47 @@
 /// <reference path="./assets.d.ts" />
 
+import icon_sidebar from "./icons/sidebar.png";
+
 import icon_arrow_up from "./icons/arrow-up.png";
 import icon_arrow_down from "./icons/arrow-down.png";
+
 import icon_minus from "./icons/minus.png";
 import icon_plus from "./icons/plus.png";
 import icon_fit_viewer from "./icons/fit-viewer.png";
 import icon_fit_page from "./icons/fit-page.png";
-import icon_sidebar from "./icons/sidebar.png";
+
 import icon_caret from "./icons/caret.png";
 import icon_hand from "./icons/hand.png";
 import icon_popup from "./icons/popup.png";
 import icon_load from "./icons/load.png";
 import icon_download from "./icons/download.png";
+import icon_close2 from "./icons/close2.png";
+
 import icon_ok from "./icons/ok.png";
 import icon_close from "./icons/close.png";
-import icon_close2 from "./icons/close2.png";
 import icon_back from "./icons/back.png";
 import icon_delete from "./icons/delete.png";
+
 import icon_pointer from "./icons/pointer.png";
 import icon_stamp from "./icons/stamp.png";
 import icon_pen from "./icons/pen.png";
 import icon_geometric from "./icons/geometric.png";
+
+import icon_square from "./icons/square.png";
+import icon_circle from "./icons/circle.png";
+import icon_line from "./icons/line.png";
+import icon_arrow from "./icons/arrow.png";
+import icon_polyline from "./icons/polyline.png";
+import icon_polygon from "./icons/polygon.png";
+
+export const geometricIcons = {
+  square: `<img src="${icon_square}"/>`,
+  circle: `<img src="${icon_circle}"/>`,
+  line: `<img src="${icon_line}"/>`,
+  arrow: `<img src="${icon_arrow}"/>`,
+  polyline: `<img src="${icon_polyline}"/>`,
+  polygon: `<img src="${icon_polygon}"/>`,
+} as const;
 
 export const html = /*html*/`
   <div id="main-container" class="hide-previewer disabled" 
@@ -119,10 +140,22 @@ export const html = /*html*/`
         </div> 
       </div>
       <div class="annotation-panel-row">
+        <div id="button-annotation-geometric-undo" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_back}"/>
+        </div> 
+        <div id="button-annotation-geometric-clear" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_close}"/>
+        </div> 
+        <div id="button-annotation-geometric-save" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_ok}"/>
+        </div> 
         <div id="button-annotation-mode-geometric" 
           class="panel-button annotation-panel-item">
           <img src="${icon_geometric}"/>
-        </div> 
+        </div>
       </div>
     </div>
     <input id="open-file-input" type="file">
