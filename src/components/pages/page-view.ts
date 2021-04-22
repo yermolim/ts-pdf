@@ -58,6 +58,9 @@ export class PageView {
   private _renderPromise: Promise<void>;
   
   private _scale: number; 
+  get scale(): number {
+    return this._scale;
+  }
   set scale(value: number) {   
     if (value <= 0 || this._scale === value) {
       return;
@@ -79,7 +82,7 @@ export class PageView {
     }
 
     this._scaleIsValid = false;
-  } 
+  }
 
   private _scaleIsValid: boolean;
   /**returns 'true' if the view is rendered using the current scale */

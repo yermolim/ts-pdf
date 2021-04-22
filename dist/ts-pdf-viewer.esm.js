@@ -13547,30 +13547,30 @@ class StampAnnotation extends MarkupAnnotation {
         const g = color[1].toFixed(3);
         const b = color[2].toFixed(3);
         const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
-        const stampApStream = new XFormStream();
-        stampApStream.LastModified = modified;
-        stampApStream.BBox = bBox;
-        stampApStream.Resources = new ResourceDict();
-        stampApStream.Resources.setXObject("/Fm", stampForm);
-        stampApStream.Filter = "/FlateDecode";
-        stampApStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
-        const stampAnnotation = new StampAnnotation();
-        stampAnnotation.Contents = LiteralString.fromString(subject);
-        stampAnnotation.Subj = LiteralString.fromString(subject);
-        stampAnnotation.C = color;
-        stampAnnotation.CA = 1;
-        stampAnnotation.apStream = stampApStream;
-        stampAnnotation.$name = dto.uuid;
-        stampAnnotation.CreationDate = created;
-        stampAnnotation.M = modified;
-        stampAnnotation.NM = LiteralString.fromString(dto.uuid);
-        stampAnnotation.T = LiteralString.fromString(dto.author || "unknown");
-        stampAnnotation.Name = dto.stampType;
-        stampApStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
-        stampAnnotation.Rect = dto.rect || stampCreationInfo.rect;
-        const proxy = new Proxy(stampAnnotation, stampAnnotation.onChange);
-        stampAnnotation._proxy = proxy;
-        stampAnnotation._added = true;
+        const apStream = new XFormStream();
+        apStream.LastModified = modified;
+        apStream.BBox = bBox;
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setXObject("/Fm", stampForm);
+        apStream.Filter = "/FlateDecode";
+        apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
+        const annotation = new StampAnnotation();
+        annotation.Contents = LiteralString.fromString(subject);
+        annotation.Subj = LiteralString.fromString(subject);
+        annotation.C = color;
+        annotation.CA = 1;
+        annotation.apStream = apStream;
+        annotation.$name = dto.uuid;
+        annotation.CreationDate = created;
+        annotation.M = modified;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author || "unknown");
+        annotation.Name = dto.stampType;
+        apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
+        annotation.Rect = dto.rect || stampCreationInfo.rect;
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
         return proxy;
     }
     static parse(parseInfo) {
@@ -13661,42 +13661,6 @@ class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
     }
-    static createFromPenData(data, userName) {
-        const positions = [];
-        const inkList = [];
-        data.paths.forEach(path => {
-            const ink = [];
-            path.positions.forEach(pos => {
-                positions.push(pos);
-                ink.push(pos.x, pos.y);
-            });
-            inkList.push(ink);
-        });
-        const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
-        const w = data.strokeWidth;
-        const rect = [
-            newRectMin.x - w / 2,
-            newRectMin.y - w / 2,
-            newRectMax.x + w / 2,
-            newRectMax.y + w / 2,
-        ];
-        const nowString = new Date().toISOString();
-        const dto = {
-            uuid: getRandomUuid(),
-            annotationType: "/Ink",
-            pageId: null,
-            dateCreated: nowString,
-            dateModified: nowString,
-            author: userName || "unknown",
-            rect,
-            matrix: [1, 0, 0, 1, 0, 0],
-            inkList,
-            color: data.color,
-            strokeWidth: data.strokeWidth,
-            strokeDashGap: null,
-        };
-        return this.createFromDto(dto);
-    }
     static createFromDto(dto) {
         if (dto.annotationType !== "/Ink") {
             throw new Error("Invalid annotation type");
@@ -13706,21 +13670,21 @@ class InkAnnotation extends MarkupAnnotation {
         if (dto.strokeDashGap) {
             bs.D = dto.strokeDashGap;
         }
-        const inkAnnotation = new InkAnnotation();
-        inkAnnotation.$name = dto.uuid;
-        inkAnnotation.NM = LiteralString.fromString(dto.uuid);
-        inkAnnotation.T = LiteralString.fromString(dto.author);
-        inkAnnotation.M = DateString.fromDate(new Date(dto.dateModified));
-        inkAnnotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
-        inkAnnotation.InkList = dto.inkList;
-        inkAnnotation.Rect = dto.rect;
-        inkAnnotation.C = dto.color.slice(0, 3);
-        inkAnnotation.CA = dto.color[3];
-        inkAnnotation.BS = bs;
-        inkAnnotation.createApStream();
-        const proxy = new Proxy(inkAnnotation, inkAnnotation.onChange);
-        inkAnnotation._proxy = proxy;
-        inkAnnotation._added = true;
+        const annotation = new InkAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.InkList = dto.inkList;
+        annotation.Rect = dto.rect;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
         return proxy;
     }
     static parse(parseInfo) {
@@ -13826,12 +13790,12 @@ class InkAnnotation extends MarkupAnnotation {
             throw new Error("Not all required properties parsed");
         }
     }
-    createApStream() {
+    generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
-        const stampApStream = new XFormStream();
-        stampApStream.Filter = "/FlateDecode";
-        stampApStream.LastModified = DateString.fromDate(new Date());
-        stampApStream.BBox = this.Rect;
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = this.Rect;
         let colorString;
         if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
             colorString = "0 G 0 g";
@@ -13861,8 +13825,8 @@ class InkAnnotation extends MarkupAnnotation {
         gs.D = [[dash, gap], 0];
         gs.LC = lineCapStyles.ROUND;
         gs.LJ = lineJoinStyles.ROUND;
-        stampApStream.Resources = new ResourceDict();
-        stampApStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
         let streamTextData = `q ${colorString} /GS0 gs`;
         let px;
         let py;
@@ -13878,8 +13842,8 @@ class InkAnnotation extends MarkupAnnotation {
             streamTextData += "\nS";
         });
         streamTextData += "\nQ";
-        stampApStream.setTextStreamData(streamTextData);
-        this.apStream = stampApStream;
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
     }
     applyCommonTransform(matrix) {
         const dict = this._proxy || this;
@@ -13919,7 +13883,7 @@ class InkAnnotation extends MarkupAnnotation {
             bBox.ur.set(xMax, yMax);
             bBox.ul.set(xMin, yMax);
         }
-        this.createApStream();
+        this.generateApStream();
         dict.M = DateString.fromDate(new Date());
     }
 }
@@ -13977,6 +13941,32 @@ class SquareAnnotation extends GeometricAnnotation {
     constructor() {
         super(annotationTypes.SQUARE);
     }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Square") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new SquareAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Rect = dto.rect;
+        annotation.RD = dto.rectMargins;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.generateApStream(dto.cloud);
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -14033,6 +14023,66 @@ class SquareAnnotation extends GeometricAnnotation {
                 break;
             }
         }
+    }
+    generateApStream(cloud) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = this.Rect;
+        let colorString;
+        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const ca = this.CA || 1;
+        const width = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const dash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const gap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = ca;
+        gs.ca = ca;
+        gs.LW = width;
+        gs.D = [[dash, gap], 0];
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        const xmin = this.Rect[0] + this.RD[0];
+        const ymin = this.Rect[1] + this.RD[3];
+        const xmax = this.Rect[2] - this.RD[2];
+        const ymax = this.Rect[3] - this.RD[1];
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        if (cloud) {
+            gs.LC = lineCapStyles.ROUND;
+            gs.LJ = lineJoinStyles.ROUND;
+            throw new Error("Not implemented");
+        }
+        else {
+            gs.LC = lineCapStyles.SQUARE;
+            gs.LJ = lineJoinStyles.MITER;
+            streamTextData += `\n${xmin} ${ymin} m`;
+            streamTextData += `\n${xmax} ${ymin} l`;
+            streamTextData += `\n${xmax} ${ymax} l`;
+            streamTextData += `\n${xmin} ${ymax} l`;
+            streamTextData += "\ns";
+        }
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
     }
 }
 
@@ -14531,6 +14581,12 @@ class PagesRenderedEvent extends CustomEvent {
         super(pagesRenderedEvent, { detail });
     }
 }
+const scaleChangedEvent = "tspdf-scalechanged";
+class ScaleChangedEvent extends CustomEvent {
+    constructor(detail) {
+        super(scaleChangedEvent, { detail });
+    }
+}
 class PageService {
     constructor(options) {
         this._pages = [];
@@ -14556,7 +14612,11 @@ class PageService {
         return this._pages.length || 0;
     }
     set scale(value) {
+        if (!value || isNaN(value)) {
+            value = 1;
+        }
         this._pages.forEach(x => x.scale = value);
+        document.dispatchEvent(new ScaleChangedEvent({ scale: value }));
     }
     destroy() {
         this._pages.forEach(x => x.destroy);
@@ -15250,6 +15310,9 @@ class PageView {
     get _viewRendered() {
         return this.$viewRendered;
     }
+    get scale() {
+        return this._scale;
+    }
     set scale(value) {
         if (value <= 0 || this._scale === value) {
             return;
@@ -15416,9 +15479,11 @@ class PageView {
 }
 
 class Annotator {
-    constructor(docData, parent) {
-        this._scale = 1;
-        this._renderedPages = [];
+    constructor(docData, parent, pages) {
+        var _a;
+        this.onPagesRendered = (event) => {
+            this.pages = event.detail.pages || [];
+        };
         this.onParentScroll = () => {
             this.refreshViewBox();
         };
@@ -15440,53 +15505,56 @@ class Annotator {
         }
         this._docData = docData;
         this._parent = parent;
+        this._pages = pages || [];
+        this._scale = ((_a = this._pages[0]) === null || _a === void 0 ? void 0 : _a.scale) || 1;
     }
     get scale() {
         return this._scale;
     }
-    set scale(value) {
-        this._scale = value;
+    get pages() {
+        return this._pages.slice();
     }
-    get renderedPages() {
-        return this._renderedPages.slice();
-    }
-    set renderedPages(value) {
-        this._renderedPages = (value === null || value === void 0 ? void 0 : value.length)
+    set pages(value) {
+        var _a;
+        this._pages = (value === null || value === void 0 ? void 0 : value.length)
             ? value.slice()
             : [];
+        this._scale = ((_a = this._pages[0]) === null || _a === void 0 ? void 0 : _a.scale) || 1;
+        this.refreshViewBox();
     }
     get overlayContainer() {
         return this._overlayContainer;
     }
     destroy() {
         var _a, _b, _c;
-        this._overlayContainer.remove();
+        document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
         (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onParentScroll);
         (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
         (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
+        this._overlayContainer.remove();
     }
-    updateDimensions(pages, scale) {
-        if (pages) {
-            this.renderedPages = pages;
-        }
-        if (scale) {
-            this.scale = scale;
-        }
+    init() {
+        const annotationOverlayContainer = document.createElement("div");
+        annotationOverlayContainer.id = "annotation-overlay-container";
+        const annotationOverlay = document.createElement("div");
+        annotationOverlay.id = "annotation-overlay";
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("abs-stretch", "no-margin", "no-padding");
+        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
+        svg.setAttribute("opacity", "0.5");
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        svg.append(g);
+        annotationOverlay.append(svg);
+        annotationOverlayContainer.append(annotationOverlay);
+        this._overlayContainer = annotationOverlayContainer;
+        this._overlay = annotationOverlay;
+        this._svgWrapper = svg;
+        this._svgGroup = g;
+        this._parent.append(this._overlayContainer);
         this.refreshViewBox();
+        this.initEventHandlers();
     }
-    refreshViewBox() {
-        const { width: w, height: h } = this._overlay.getBoundingClientRect();
-        if (!w || !h) {
-            return;
-        }
-        this._overlay.style.left = this._parent.scrollLeft + "px";
-        this._overlay.style.top = this._parent.scrollTop + "px";
-        const viewBoxWidth = w / this._scale;
-        const viewBoxHeight = h / this._scale;
-        this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-        this._lastScale = this._scale;
-    }
-    initObservers() {
+    initEventHandlers() {
         this._overlay.addEventListener("pointerdown", this.onOverlayPointerDown);
         this._parent.addEventListener("scroll", this.onParentScroll);
         const parentRObserver = new ResizeObserver((entries) => {
@@ -15514,27 +15582,20 @@ class Annotator {
         });
         this._parentMutationObserver = parentMObserver;
         this._parentResizeObserver = parentRObserver;
+        document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
     }
-    init() {
-        const annotationOverlayContainer = document.createElement("div");
-        annotationOverlayContainer.id = "annotation-overlay-container";
-        const annotationOverlay = document.createElement("div");
-        annotationOverlay.id = "annotation-overlay";
-        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.classList.add("abs-stretch", "no-margin", "no-padding");
-        svg.setAttribute("transform", "matrix(1 0 0 -1 0 0)");
-        svg.setAttribute("opacity", "0.5");
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        svg.append(g);
-        annotationOverlay.append(svg);
-        annotationOverlayContainer.append(annotationOverlay);
-        this._overlayContainer = annotationOverlayContainer;
-        this._overlay = annotationOverlay;
-        this._svgWrapper = svg;
-        this._svgGroup = g;
-        this._parent.append(this._overlayContainer);
-        this.refreshViewBox();
-        this.initObservers();
+    refreshViewBox() {
+        const { width: w, height: h } = this._overlay.getBoundingClientRect();
+        if (!w || !h) {
+            return;
+        }
+        this._overlay.style.left = this._parent.scrollLeft + "px";
+        this._overlay.style.top = this._parent.scrollTop + "px";
+        const viewBoxWidth = w / this._scale;
+        const viewBoxHeight = h / this._scale;
+        this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+        this._lastScale = this._scale;
+        this.refreshGroupPosition();
     }
     updatePointerCoords(clientX, clientY) {
         const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
@@ -15547,7 +15608,7 @@ class Annotator {
         this._pointerCoordsInPageCS = pageCoords;
     }
     getPageCoordsUnderPointer(clientX, clientY) {
-        for (const page of this._renderedPages) {
+        for (const page of this._pages) {
             const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
             const pxMax = pxMin + pw;
             const pyMax = pyMin + ph;
@@ -15570,15 +15631,63 @@ class Annotator {
 }
 
 const geometricDataChangeEvent = "tspdf-geometricdatachange";
+class GeometricDataChangeEvent extends CustomEvent {
+    constructor(detail) {
+        super(geometricDataChangeEvent, { detail });
+    }
+}
 class GeometricAnnotator extends Annotator {
-    constructor(docData, parent, options) {
-        super(docData, parent);
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages);
         this._color = (options === null || options === void 0 ? void 0 : options.color) || GeometricAnnotator.lastColor || [0, 0, 0, 0.9];
         GeometricAnnotator.lastColor = this._color;
         this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || GeometricAnnotator.lastStrokeWidth || 3;
         GeometricAnnotator.lastStrokeWidth = this._strokeWidth;
         this._cloudMode = (options === null || options === void 0 ? void 0 : options.cloudMode) || GeometricAnnotator.lastCloudMode || false;
         GeometricAnnotator.lastCloudMode = this._cloudMode;
+    }
+    destroy() {
+        super.destroy();
+    }
+    init() {
+        super.init();
+    }
+    emitPointCount(count = 0) {
+        document.dispatchEvent(new GeometricDataChangeEvent({
+            pointCount: count,
+        }));
+    }
+    clearGroup() {
+        this._svgGroup.innerHTML = "";
+        this.emitPointCount(0);
+    }
+    refreshGroupPosition() {
+        if (!this._pageId && this._pageId !== 0) {
+            return;
+        }
+        const page = this._pages.find(x => x.id === this._pageId);
+        if (!page) {
+            this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
+            return;
+        }
+        const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
+        const py = ptop + ph;
+        const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
+        const vy = vtop + vh;
+        const offsetX = (px - vx) / this._scale;
+        const offsetY = (vy - py) / this._scale;
+        this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+    }
+}
+
+class GeometricArrowAnnotator extends GeometricAnnotator {
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
+        this.init();
+    }
+    destroy() {
+        super.destroy();
+        this.emitPointCount(0);
     }
     undo() {
     }
@@ -15591,20 +15700,20 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-class GeometricArrowAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, options) {
-        super(docData, parent, options || {});
-        this.init();
-    }
-    init() {
-        super.init();
-    }
-}
-
 class GeometricCircleAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, options) {
-        super(docData, parent, options || {});
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
         this.init();
+    }
+    destroy() {
+        super.destroy();
+        this.emitPointCount(0);
+    }
+    undo() {
+    }
+    clear() {
+    }
+    saveAnnotation() {
     }
     init() {
         super.init();
@@ -15612,9 +15721,19 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
 }
 
 class GeometricLineAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, options) {
-        super(docData, parent, options || {});
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
         this.init();
+    }
+    destroy() {
+        super.destroy();
+        this.emitPointCount(0);
+    }
+    undo() {
+    }
+    clear() {
+    }
+    saveAnnotation() {
     }
     init() {
         super.init();
@@ -15622,9 +15741,19 @@ class GeometricLineAnnotator extends GeometricAnnotator {
 }
 
 class GeometricPolygonAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, options) {
-        super(docData, parent, options || {});
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
         this.init();
+    }
+    destroy() {
+        super.destroy();
+        this.emitPointCount(0);
+    }
+    undo() {
+    }
+    clear() {
+    }
+    saveAnnotation() {
     }
     init() {
         super.init();
@@ -15632,9 +15761,19 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
 }
 
 class GeometricPolylineAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, options) {
-        super(docData, parent, options || {});
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
         this.init();
+    }
+    destroy() {
+        super.destroy();
+        this.emitPointCount(0);
+    }
+    undo() {
+    }
+    clear() {
+    }
+    saveAnnotation() {
     }
     init() {
         super.init();
@@ -15642,33 +15781,145 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
 }
 
 class GeometricSquareAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, options) {
-        super(docData, parent, options || {});
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords) {
+                return;
+            }
+            const { pageX: px, pageY: py, pageId } = pageCoords;
+            this._pageId = pageId;
+            this._down = new Vec2(px, py);
+            this.clearGroup();
+            this.refreshGroupPosition();
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary
+                || !this._down) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords || pageCoords.pageId !== this._pageId) {
+                return;
+            }
+            const { pageX: px, pageY: py } = pageCoords;
+            const { min, max } = vecMinMax(this._down, new Vec2(px, py));
+            this.redrawRect(min, max);
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this.emitPointCount(2);
+        };
         this.init();
+    }
+    destroy() {
+        super.destroy();
+        this.emitPointCount(0);
+    }
+    undo() {
+        this.clearGroup();
+    }
+    clear() {
+        this.clearGroup();
+    }
+    saveAnnotation() {
+        if (!this._rect) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = SquareAnnotation.createFromDto(dto);
+        this._docData.appendAnnotationToPage(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
+    }
+    redrawRect(min, max) {
+        this._svgGroup.innerHTML = "";
+        const minSize = this._strokeWidth * 2;
+        if (max.x - min.x <= minSize || max.y - min.y <= minSize) {
+            return;
+        }
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._rect = [min.x, min.y, max.x, max.y];
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("fill", "none");
+        rect.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        rect.setAttribute("stroke-width", this._strokeWidth + "");
+        rect.setAttribute("x", min.x + "");
+        rect.setAttribute("y", min.y + "");
+        rect.setAttribute("width", max.x - min.x + "");
+        rect.setAttribute("height", max.y - min.y + "");
+        this._svgGroup.append(rect);
+    }
+    buildAnnotationDto() {
+        const margin = this._strokeWidth / 2;
+        const lm = margin;
+        const tm = margin;
+        const rm = margin;
+        const bm = margin;
+        const rectMargins = [lm, tm, rm, bm];
+        const [xmin, ymin, xmax, ymax] = this._rect;
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Square",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
+            rectMargins,
+            matrix: [1, 0, 0, 1, 0, 0],
+            cloud: this._cloudMode,
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
     }
 }
 
 const geometricAnnotatorTypes = ["square", "circle", "line", "arrow", "polyline", "polygon"];
 class GeometricAnnotatorFactory {
-    static CreateAnnotator(docData, parent, options, type) {
+    static CreateAnnotator(docData, parent, pages, options, type) {
         type || (type = GeometricAnnotatorFactory.lastType || "square");
         GeometricAnnotatorFactory.lastType = type;
         switch (type) {
             case "square":
-                return new GeometricSquareAnnotator(docData, parent, options);
+                return new GeometricSquareAnnotator(docData, parent, pages, options);
             case "circle":
-                return new GeometricCircleAnnotator(docData, parent, options);
+                return new GeometricCircleAnnotator(docData, parent, pages, options);
             case "line":
-                return new GeometricLineAnnotator(docData, parent, options);
+                return new GeometricLineAnnotator(docData, parent, pages, options);
             case "arrow":
-                return new GeometricArrowAnnotator(docData, parent, options);
+                return new GeometricArrowAnnotator(docData, parent, pages, options);
             case "polyline":
-                return new GeometricPolylineAnnotator(docData, parent, options);
+                return new GeometricPolylineAnnotator(docData, parent, pages, options);
             case "polygon":
-                return new GeometricPolygonAnnotator(docData, parent, options);
+                return new GeometricPolygonAnnotator(docData, parent, pages, options);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -15795,9 +16046,9 @@ class PenDataChangeEvent extends CustomEvent {
     }
 }
 class PenAnnotator extends Annotator {
-    constructor(docData, parent, options) {
-        super(docData, parent);
-        this.onPenPointerDown = (e) => {
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages);
+        this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
                 return;
             }
@@ -15813,12 +16064,12 @@ class PenAnnotator extends Annotator {
             }
             this._annotationPenData.newPath(new Vec2(px, py));
             const target = e.target;
-            target.addEventListener("pointermove", this.onPenPointerMove);
-            target.addEventListener("pointerup", this.onPenPointerUp);
-            target.addEventListener("pointerout", this.onPenPointerUp);
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
             target.setPointerCapture(e.pointerId);
         };
-        this.onPenPointerMove = (e) => {
+        this.onPointerMove = (e) => {
             if (!e.isPrimary || !this._annotationPenData) {
                 return;
             }
@@ -15830,15 +16081,15 @@ class PenAnnotator extends Annotator {
             }
             this._annotationPenData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
         };
-        this.onPenPointerUp = (e) => {
+        this.onPointerUp = (e) => {
             var _a;
             if (!e.isPrimary) {
                 return;
             }
             const target = e.target;
-            target.removeEventListener("pointermove", this.onPenPointerMove);
-            target.removeEventListener("pointerup", this.onPenPointerUp);
-            target.removeEventListener("pointerout", this.onPenPointerUp);
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             (_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.endPath();
             this.emitPathCount();
@@ -15866,25 +16117,23 @@ class PenAnnotator extends Annotator {
             return;
         }
         const pageId = this._annotationPenData.id;
-        const inkAnnotation = InkAnnotation.createFromPenData(this._annotationPenData, this._docData.userName);
-        this._docData.appendAnnotationToPage(pageId, inkAnnotation);
+        const dto = this.buildAnnotationDto(this._annotationPenData);
+        const annotation = InkAnnotation.createFromDto(dto);
+        this._docData.appendAnnotationToPage(pageId, annotation);
         this.removeTempPenData();
     }
     init() {
         super.init();
-        this._overlay.addEventListener("pointerdown", this.onPenPointerDown);
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
     }
-    refreshViewBox() {
-        super.refreshViewBox();
-        this.refreshPenGroupPosition();
-    }
-    refreshPenGroupPosition() {
+    refreshGroupPosition() {
         if (!this._annotationPenData) {
             return;
         }
-        const page = this._renderedPages.find(x => x.id === this._annotationPenData.id);
+        const page = this._pages.find(x => x.id === this._annotationPenData.id);
         if (!page) {
             this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
+            return;
         }
         const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
         const py = ptop + ph;
@@ -15909,13 +16158,49 @@ class PenAnnotator extends Annotator {
             strokeWidth: this._strokeWidth,
         });
         this._svgGroup.append(this._annotationPenData.group);
-        this.refreshPenGroupPosition();
+        this.refreshGroupPosition();
     }
     emitPathCount() {
         var _a;
         document.dispatchEvent(new PenDataChangeEvent({
             pathCount: ((_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.pathCount) || 0,
         }));
+    }
+    buildAnnotationDto(data) {
+        const positions = [];
+        const inkList = [];
+        data.paths.forEach(path => {
+            const ink = [];
+            path.positions.forEach(pos => {
+                positions.push(pos);
+                ink.push(pos.x, pos.y);
+            });
+            inkList.push(ink);
+        });
+        const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
+        const w = data.strokeWidth;
+        const rect = [
+            newRectMin.x - w / 2,
+            newRectMin.y - w / 2,
+            newRectMax.x + w / 2,
+            newRectMax.y + w / 2,
+        ];
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Ink",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect,
+            matrix: [1, 0, 0, 1, 0, 0],
+            inkList,
+            color: data.color,
+            strokeWidth: data.strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
     }
 }
 
@@ -15945,9 +16230,9 @@ const supportedStampTypes = [
     { type: "/NotForPublicRelease", name: "Not For Public" },
 ];
 class StampAnnotator extends Annotator {
-    constructor(docData, parent, type) {
-        super(docData, parent);
-        this.onStampPointerMove = (e) => {
+    constructor(docData, parent, pages, type) {
+        super(docData, parent, pages);
+        this.onPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -15960,7 +16245,7 @@ class StampAnnotator extends Annotator {
             this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
             this.updatePointerCoords(cx, cy);
         };
-        this.onStampPointerUp = (e) => {
+        this.onPointerUp = (e) => {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -16006,8 +16291,8 @@ class StampAnnotator extends Annotator {
     }
     init() {
         super.init();
-        this._overlay.addEventListener("pointermove", this.onStampPointerMove);
-        this._overlay.addEventListener("pointerup", this.onStampPointerUp);
+        this._overlay.addEventListener("pointermove", this.onPointerMove);
+        this._overlay.addEventListener("pointerup", this.onPointerUp);
         this.createTempStampAnnotationAsync();
     }
     createTempStampAnnotationAsync() {
@@ -16019,6 +16304,8 @@ class StampAnnotator extends Annotator {
             this._svgGroup.append(renderResult.svg);
             this._tempAnnotation = stamp;
         });
+    }
+    refreshGroupPosition() {
     }
 }
 StampAnnotator.lastType = "/Draft";
@@ -16094,8 +16381,8 @@ class ContextMenu {
         else {
             menuPosition.y = relPointerPosition.y;
         }
-        this._container.style.left = menuPosition.x + "px";
-        this._container.style.top = menuPosition.y + "px";
+        this._container.style.left = menuPosition.x + parent.scrollLeft + "px";
+        this._container.style.top = menuPosition.y + parent.scrollTop + "px";
     }
 }
 
@@ -16115,7 +16402,7 @@ class AnnotationBuilder {
             }
         };
         this.onPagesRendered = (event) => {
-            this.initPenAnnotatorContextMenu();
+            this.initContextMenu();
         };
         if (!docData) {
             throw new Error("Document data is not defined");
@@ -16158,9 +16445,24 @@ class AnnotationBuilder {
         viewerRObserver.observe(this._viewer.container);
         this._viewerResizeObserver = viewerRObserver;
     }
-    updateAnnotatorDimensions() {
+    initContextMenu() {
         var _a;
-        (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.updateDimensions(this._pageService.renderedPages, this._viewer.scale);
+        (_a = this._contextMenu) === null || _a === void 0 ? void 0 : _a.destroy();
+        switch (this.mode) {
+            case "select":
+                break;
+            case "stamp":
+                this.initStampAnnotatorContextMenu();
+                break;
+            case "pen":
+                this.initPenAnnotatorContextMenu();
+                break;
+            case "geometric":
+                this.initGeometricAnnotatorContextMenu();
+                break;
+            default:
+                throw new Error(`Invalid annotation mode: ${this.mode}`);
+        }
     }
     setMode(mode) {
         var _a, _b;
@@ -16175,21 +16477,18 @@ class AnnotationBuilder {
             case "select":
                 break;
             case "stamp":
-                this._annotator = new StampAnnotator(this._docData, this._viewer.container);
-                this.initStampAnnotatorContextMenu();
+                this._annotator = new StampAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages);
                 break;
             case "pen":
-                this._annotator = new PenAnnotator(this._docData, this._viewer.container);
-                this.initPenAnnotatorContextMenu();
+                this._annotator = new PenAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages);
                 break;
             case "geometric":
-                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container);
-                this.initGeometricAnnotatorContextMenu();
+                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages);
                 break;
             default:
                 throw new Error(`Invalid annotation mode: ${mode}`);
         }
-        this.updateAnnotatorDimensions();
+        this.initContextMenu();
     }
     initStampAnnotatorContextMenu() {
         const stampTypes = supportedStampTypes;
@@ -16202,8 +16501,7 @@ class AnnotationBuilder {
                 var _a;
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = new StampAnnotator(this._docData, this._viewer.container, x.type);
-                this.updateAnnotatorDimensions();
+                this._annotator = new StampAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, x.type);
             });
             const stampName = document.createElement("div");
             stampName.innerHTML = x.name;
@@ -16224,10 +16522,7 @@ class AnnotationBuilder {
                 var _a;
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-                    color: x,
-                });
-                this.updateAnnotatorDimensions();
+                this._annotator = new PenAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, { color: x });
             });
             const colorIcon = document.createElement("div");
             colorIcon.classList.add("context-menu-color-icon");
@@ -16247,10 +16542,7 @@ class AnnotationBuilder {
         slider.addEventListener("change", () => {
             var _a;
             (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._annotator = new PenAnnotator(this._docData, this._viewer.container, {
-                strokeWidth: slider.valueAsNumber,
-            });
-            this.updateAnnotatorDimensions();
+            this._annotator = new PenAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, { strokeWidth: slider.valueAsNumber });
         });
         contextMenuWidthSlider.append(slider);
         this._contextMenu = new ContextMenu();
@@ -16267,8 +16559,7 @@ class AnnotationBuilder {
                 var _a;
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, {}, x);
-                this.updateAnnotatorDimensions();
+                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, {}, x);
             });
             const submodeIcon = document.createElement("div");
             submodeIcon.classList.add("context-menu-color-icon");
@@ -16285,10 +16576,7 @@ class AnnotationBuilder {
                 var _a;
                 this._contextMenu.hide();
                 (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, {
-                    color: x,
-                });
-                this.updateAnnotatorDimensions();
+                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, { color: x });
             });
             const colorIcon = document.createElement("div");
             colorIcon.classList.add("context-menu-color-icon");
@@ -16308,10 +16596,7 @@ class AnnotationBuilder {
         slider.addEventListener("change", () => {
             var _a;
             (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, {
-                strokeWidth: slider.valueAsNumber,
-            });
-            this.updateAnnotatorDimensions();
+            this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, { strokeWidth: slider.valueAsNumber });
         });
         contextMenuWidthSlider.append(slider);
         this._contextMenu = new ContextMenu();

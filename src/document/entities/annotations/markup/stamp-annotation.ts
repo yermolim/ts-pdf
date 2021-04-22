@@ -2931,35 +2931,35 @@ export class StampAnnotation extends MarkupAnnotation {
     const b = color[2].toFixed(3);
     const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
     
-    const stampApStream = new XFormStream();
-    stampApStream.LastModified = modified;
-    stampApStream.BBox = bBox;
-    stampApStream.Resources = new ResourceDict();
-    stampApStream.Resources.setXObject("/Fm", stampForm);
-    stampApStream.Filter = "/FlateDecode";
-    stampApStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
+    const apStream = new XFormStream();
+    apStream.LastModified = modified;
+    apStream.BBox = bBox;
+    apStream.Resources = new ResourceDict();
+    apStream.Resources.setXObject("/Fm", stampForm);
+    apStream.Filter = "/FlateDecode";
+    apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
 
-    const stampAnnotation = new StampAnnotation();
-    stampAnnotation.Contents = LiteralString.fromString(subject);
-    stampAnnotation.Subj = LiteralString.fromString(subject);
-    stampAnnotation.C = color;
-    stampAnnotation.CA = 1;
-    stampAnnotation.apStream = stampApStream;
+    const annotation = new StampAnnotation();
+    annotation.Contents = LiteralString.fromString(subject);
+    annotation.Subj = LiteralString.fromString(subject);
+    annotation.C = color;
+    annotation.CA = 1;
+    annotation.apStream = apStream;
   
-    stampAnnotation.$name = dto.uuid;
-    stampAnnotation.CreationDate = created;
-    stampAnnotation.M = modified;
-    stampAnnotation.NM = LiteralString.fromString(dto.uuid);
-    stampAnnotation.T = LiteralString.fromString(dto.author || "unknown");
-    stampAnnotation.Name = dto.stampType;
-    stampApStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];  
-    stampAnnotation.Rect = dto.rect || stampCreationInfo.rect;  
+    annotation.$name = dto.uuid;
+    annotation.CreationDate = created;
+    annotation.M = modified;
+    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.T = LiteralString.fromString(dto.author || "unknown");
+    annotation.Name = dto.stampType;
+    apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];  
+    annotation.Rect = dto.rect || stampCreationInfo.rect;  
 
     // TODO: add reading custom image data
 
-    const proxy = new Proxy<StampAnnotation>(stampAnnotation, stampAnnotation.onChange);
-    stampAnnotation._proxy = proxy;
-    stampAnnotation._added = true;
+    const proxy = new Proxy<StampAnnotation>(annotation, annotation.onChange);
+    annotation._proxy = proxy;
+    annotation._added = true;
     return proxy;
   }
 

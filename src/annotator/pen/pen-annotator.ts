@@ -1,9 +1,10 @@
-import { Vec2 } from "../../math";
-import { Quadruple } from "../../common";
+import { Vec2, vecMinMax } from "../../math";
+import { getRandomUuid, Quadruple } from "../../common";
 
 import { DocumentData } from "../../document/document-data";
-import { InkAnnotation } from "../../document/entities/annotations/markup/ink-annotation";
+import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
 
+import { PageView } from "../../components/pages/page-view";
 import { Annotator } from "../annotator";
 import { PenData } from "./pen-data";
 
@@ -38,8 +39,8 @@ export class PenAnnotator extends Annotator {
   protected _color: Quadruple;
   protected _strokeWidth: number;
 
-  constructor(docData: DocumentData, parent: HTMLDivElement, options?: PenAnnotatorOptions) {
-    super(docData, parent);
+  constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], options?: PenAnnotatorOptions) {
+    super(docData, parent, pages);
     this.init();
 
     this._color = options?.color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
@@ -74,13 +75,13 @@ export class PenAnnotator extends Annotator {
     }
 
     const pageId = this._annotationPenData.id;
-    const inkAnnotation = InkAnnotation.createFromPenData(
-      this._annotationPenData, this._docData.userName);
+    const dto = this.buildAnnotationDto(this._annotationPenData);
+    const annotation = InkAnnotation.createFromDto(dto);
 
     // DEBUG
-    // console.log(inkAnnotation);
+    // console.log(annotation);
 
-    this._docData.appendAnnotationToPage(pageId, inkAnnotation);
+    this._docData.appendAnnotationToPage(pageId, annotation);
     
     this.removeTempPenData();
   }
@@ -88,34 +89,30 @@ export class PenAnnotator extends Annotator {
   protected init() {
     super.init();    
     this._overlay.addEventListener("pointerdown", 
-      this.onPenPointerDown);
-  }  
-
-  protected refreshViewBox() {
-    super.refreshViewBox();
-    this.refreshPenGroupPosition();
+      this.onPointerDown);
   }
 
   /**
    * adapt the Svg group positions to the current view box dimensions
    */
-  protected refreshPenGroupPosition() {
+  protected refreshGroupPosition() {
     if (!this._annotationPenData) {
       return;
     }
-    const page = this._renderedPages.find(x => x.id === this._annotationPenData.id);
+    const page = this._pages.find(x => x.id === this._annotationPenData.id);
     if (!page) {
       // set scale to 0 to hide pen group if it's page is not rendered
       this._annotationPenData.setGroupMatrix(
         [0, 0, 0, 0, 0, 0]);
+      return;
     }
+
     const {height: ph, top: ptop, left: px} = page.viewContainer.getBoundingClientRect();
     const py = ptop + ph;
     const {height: vh, top: vtop, left: vx} = this._overlay.getBoundingClientRect();
     const vy = vtop + vh;
     const offsetX = (px - vx) / this._scale;
     const offsetY = (vy - py) / this._scale;
-
     this._annotationPenData.setGroupMatrix(
       [1, 0, 0, 1, offsetX, offsetY]);
   }
@@ -143,10 +140,10 @@ export class PenAnnotator extends Annotator {
     this._svgGroup.append(this._annotationPenData.group);
 
     // update pen group matrix to position the group properly
-    this.refreshPenGroupPosition();
+    this.refreshGroupPosition();
   }
   
-  protected onPenPointerDown = (e: PointerEvent) => {
+  protected onPointerDown = (e: PointerEvent) => {
     if (!e.isPrimary || e.button === 2) {
       return;
     }    
@@ -169,14 +166,14 @@ export class PenAnnotator extends Annotator {
     this._annotationPenData.newPath(new Vec2(px, py));
 
     const target = e.target as HTMLElement;
-    target.addEventListener("pointermove", this.onPenPointerMove);
-    target.addEventListener("pointerup", this.onPenPointerUp);    
-    target.addEventListener("pointerout", this.onPenPointerUp);  
+    target.addEventListener("pointermove", this.onPointerMove);
+    target.addEventListener("pointerup", this.onPointerUp);    
+    target.addEventListener("pointerout", this.onPointerUp);  
     // capture pointer to make pointer events fire on same target
     target.setPointerCapture(e.pointerId);
   };
 
-  protected onPenPointerMove = (e: PointerEvent) => {
+  protected onPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary || !this._annotationPenData) {
       return;
     }
@@ -194,15 +191,15 @@ export class PenAnnotator extends Annotator {
     this._annotationPenData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
   };
 
-  protected onPenPointerUp = (e: PointerEvent) => {
+  protected onPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       return;
     }
 
     const target = e.target as HTMLElement;
-    target.removeEventListener("pointermove", this.onPenPointerMove);
-    target.removeEventListener("pointerup", this.onPenPointerUp);    
-    target.removeEventListener("pointerout", this.onPenPointerUp);
+    target.removeEventListener("pointermove", this.onPointerMove);
+    target.removeEventListener("pointerup", this.onPointerUp);    
+    target.removeEventListener("pointerout", this.onPointerUp);
     target.releasePointerCapture(e.pointerId);   
 
     this._annotationPenData?.endPath();
@@ -213,5 +210,48 @@ export class PenAnnotator extends Annotator {
     document.dispatchEvent(new PenDataChangeEvent({
       pathCount: this._annotationPenData?.pathCount || 0,
     }));
+  }
+
+  protected buildAnnotationDto(data: PenData): InkAnnotationDto {
+    const positions: Vec2[] = [];
+    const inkList: number[][] = [];
+    data.paths.forEach(path => {
+      const ink: number[] = [];
+      path.positions.forEach(pos => {
+        positions.push(pos);
+        ink.push(pos.x, pos.y);
+      });
+      inkList.push(ink);
+    });
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(...positions);  
+    const w = data.strokeWidth; 
+    const rect: Quadruple = [
+      newRectMin.x - w / 2, 
+      newRectMin.y - w / 2, 
+      newRectMax.x + w / 2, 
+      newRectMax.y + w / 2,
+    ];
+
+    const nowString = new Date().toISOString();
+    const dto: InkAnnotationDto = {
+      uuid: getRandomUuid(),
+      annotationType: "/Ink",
+      pageId: null,
+
+      dateCreated: nowString,
+      dateModified: nowString,
+      author: this._docData.userName || "unknown",
+
+      rect,
+      matrix: [1, 0, 0, 1, 0, 0],
+
+      inkList,
+      color: data.color,
+      strokeWidth: data.strokeWidth,
+      strokeDashGap: null,
+    };
+
+    return dto;
   }
 }

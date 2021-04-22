@@ -94,7 +94,7 @@ export class ContextMenu {
       menuPosition.y = relPointerPosition.y;
     }
 
-    this._container.style.left = menuPosition.x + "px";
-    this._container.style.top = menuPosition.y + "px";
+    this._container.style.left = menuPosition.x + parent.scrollLeft + "px";
+    this._container.style.top = menuPosition.y + parent.scrollTop + "px";
   }
 }

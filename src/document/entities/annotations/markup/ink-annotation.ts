@@ -1,10 +1,8 @@
 import { codes } from "../../../codes";
-import { Mat3, Vec2, vecMinMax } from "../../../../math";
-import { Double, getRandomUuid, Quadruple } from "../../../../common";
+import { Mat3, Vec2 } from "../../../../math";
+import { Double, Quadruple } from "../../../../common";
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
-
-import { PenData } from "../../../../annotator/pen/pen-data";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { LiteralString } from "../../strings/literal-string";
@@ -37,49 +35,6 @@ export class InkAnnotation extends MarkupAnnotation {
     super(annotationTypes.INK);
   }
 
-  static createFromPenData(data: PenData, userName: string): InkAnnotation {
-    const positions: Vec2[] = [];
-    const inkList: number[][] = [];
-    data.paths.forEach(path => {
-      const ink: number[] = [];
-      path.positions.forEach(pos => {
-        positions.push(pos);
-        ink.push(pos.x, pos.y);
-      });
-      inkList.push(ink);
-    });
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(...positions);  
-    const w = data.strokeWidth; 
-    const rect: Quadruple = [
-      newRectMin.x - w / 2, 
-      newRectMin.y - w / 2, 
-      newRectMax.x + w / 2, 
-      newRectMax.y + w / 2,
-    ];
-
-    const nowString = new Date().toISOString();
-    const dto: InkAnnotationDto = {
-      uuid: getRandomUuid(),
-      annotationType: "/Ink",
-      pageId: null,
-
-      dateCreated: nowString,
-      dateModified: nowString,
-      author: userName || "unknown",
-
-      rect,
-      matrix: [1, 0, 0, 1, 0, 0],
-
-      inkList,
-      color: data.color,
-      strokeWidth: data.strokeWidth,
-      strokeDashGap: null,
-    };
-
-    return this.createFromDto(dto);
-  }
-
   static createFromDto(dto: InkAnnotationDto): InkAnnotation {
     if (dto.annotationType !== "/Ink") {
       throw new Error("Invalid annotation type");
@@ -91,23 +46,23 @@ export class InkAnnotation extends MarkupAnnotation {
       bs.D = dto.strokeDashGap;
     }
 
-    const inkAnnotation = new InkAnnotation();
-    inkAnnotation.$name = dto.uuid;
-    inkAnnotation.NM = LiteralString.fromString(dto.uuid);
-    inkAnnotation.T = LiteralString.fromString(dto.author);
-    inkAnnotation.M = DateString.fromDate(new Date(dto.dateModified));
-    inkAnnotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
-    inkAnnotation.InkList = dto.inkList;
-    inkAnnotation.Rect = dto.rect;
-    inkAnnotation.C = dto.color.slice(0, 3);
-    inkAnnotation.CA = dto.color[3];
-    inkAnnotation.BS = bs;
+    const annotation = new InkAnnotation();
+    annotation.$name = dto.uuid;
+    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.T = LiteralString.fromString(dto.author);
+    annotation.M = DateString.fromDate(new Date(dto.dateModified));
+    annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.InkList = dto.inkList;
+    annotation.Rect = dto.rect;
+    annotation.C = dto.color.slice(0, 3);
+    annotation.CA = dto.color[3];
+    annotation.BS = bs;
 
-    inkAnnotation.createApStream();
+    annotation.generateApStream();
 
-    const proxy = new Proxy<InkAnnotation>(inkAnnotation, inkAnnotation.onChange);
-    inkAnnotation._proxy = proxy;
-    inkAnnotation._added = true;
+    const proxy = new Proxy<InkAnnotation>(annotation, annotation.onChange);
+    annotation._proxy = proxy;
+    annotation._added = true;
     return proxy;
   }
   
@@ -226,11 +181,11 @@ export class InkAnnotation extends MarkupAnnotation {
     }
   }
 
-  protected createApStream() {
-    const stampApStream = new XFormStream();
-    stampApStream.Filter = "/FlateDecode";
-    stampApStream.LastModified = DateString.fromDate(new Date());
-    stampApStream.BBox = this.Rect;
+  protected generateApStream() {
+    const apStream = new XFormStream();
+    apStream.Filter = "/FlateDecode";
+    apStream.LastModified = DateString.fromDate(new Date());
+    apStream.BBox = this.Rect;
 
     let colorString: string;
     if (!this.C?.length) {
@@ -259,8 +214,8 @@ export class InkAnnotation extends MarkupAnnotation {
     gs.D = [[dash, gap], 0];
     gs.LC = lineCapStyles.ROUND;
     gs.LJ = lineJoinStyles.ROUND;
-    stampApStream.Resources = new ResourceDict();
-    stampApStream.Resources.setGraphicsState("/GS0", gs);
+    apStream.Resources = new ResourceDict();
+    apStream.Resources.setGraphicsState("/GS0", gs);
 
     let streamTextData = `q ${colorString} /GS0 gs`;
     let px: number;
@@ -278,8 +233,8 @@ export class InkAnnotation extends MarkupAnnotation {
     });    
     streamTextData += "\nQ";
 
-    stampApStream.setTextStreamData(streamTextData);    
-    this.apStream = stampApStream;
+    apStream.setTextStreamData(streamTextData);    
+    this.apStream = apStream;
   }  
   
   protected applyCommonTransform(matrix: Mat3) {
@@ -325,7 +280,7 @@ export class InkAnnotation extends MarkupAnnotation {
       bBox.ul.set(xMin, yMax);
     }
 
-    this.createApStream();
+    this.generateApStream();
 
     dict.M = DateString.fromDate(new Date());
   }

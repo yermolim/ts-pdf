@@ -1,8 +1,10 @@
 import { getDistance } from "../../common";
+
 import { DocumentData } from "../../document/document-data";
 import { StampAnnotation, StampType, stampTypes } 
   from "../../document/entities/annotations/markup/stamp-annotation";
-
+  
+import { PageView } from "../../components/pages/page-view";
 import { Annotator } from "../annotator";
 
 export const supportedStampTypes = [
@@ -36,8 +38,8 @@ export class StampAnnotator extends Annotator {
    * @param parent 
    * @param type stamp type
    */
-  constructor(docData: DocumentData, parent: HTMLDivElement, type?: string) {
-    super(docData, parent);
+  constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], type?: string) {
+    super(docData, parent, pages);
     
     if (type) {
       if (!(<string[]>Object.values(stampTypes)).includes(type)) {
@@ -61,9 +63,9 @@ export class StampAnnotator extends Annotator {
     super.init();
 
     this._overlay.addEventListener("pointermove", 
-      this.onStampPointerMove);
+      this.onPointerMove);
     this._overlay.addEventListener("pointerup", 
-      this.onStampPointerUp);
+      this.onPointerUp);
     this.createTempStampAnnotationAsync();
   }
 
@@ -81,7 +83,7 @@ export class StampAnnotator extends Annotator {
     this._tempAnnotation = stamp;
   }
 
-  protected onStampPointerMove = (e: PointerEvent) => {
+  protected onPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // the event source is the non-primary touch. ignore that
       return;
@@ -105,7 +107,7 @@ export class StampAnnotator extends Annotator {
     this.updatePointerCoords(cx, cy);
   };
 
-  protected onStampPointerUp = (e: PointerEvent) => {
+  protected onPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary || e.button === 2) {
       // the event source is the non-primary touch or the RMB. ignore that
       return;
@@ -146,4 +148,8 @@ export class StampAnnotator extends Annotator {
     // create new temp annotation
     this.createTempStampAnnotationAsync();
   };
+
+  protected refreshGroupPosition() {
+    // no implementation needed
+  }
 }

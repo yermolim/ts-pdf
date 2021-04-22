@@ -1,9 +1,25 @@
-import { Quadruple } from "../../../../../common";
+import { Double, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
-import { annotationTypes } from "../../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
+
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
+
+import { DateString } from "../../../strings/date-string";
+import { LiteralString } from "../../../strings/literal-string";
+import { XFormStream } from "../../../streams/x-form-stream";
+import { BorderStyleDict } from "../../../appearance/border-style-dict";
+import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
+import { ResourceDict } from "../../../appearance/resource-dict";
+import { AnnotationDto } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
+export interface SquareAnnotationDto extends AnnotationDto {  
+  rectMargins: Quadruple;
+  cloud: boolean;
+  color: Quadruple;
+  strokeWidth: number;
+  strokeDashGap?: Double;
+}
 
 export class SquareAnnotation extends GeometricAnnotation {
   /**
@@ -17,6 +33,37 @@ export class SquareAnnotation extends GeometricAnnotation {
     
   constructor() {
     super(annotationTypes.SQUARE);
+  }
+
+  static createFromDto(dto: SquareAnnotationDto): SquareAnnotation {
+    if (dto.annotationType !== "/Square") {
+      throw new Error("Invalid annotation type");
+    }
+
+    const bs = new BorderStyleDict();
+    bs.W = dto.strokeWidth;
+    if (dto.strokeDashGap) {
+      bs.D = dto.strokeDashGap;
+    }
+    
+    const annotation = new SquareAnnotation();
+    annotation.$name = dto.uuid;
+    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.T = LiteralString.fromString(dto.author);
+    annotation.M = DateString.fromDate(new Date(dto.dateModified));
+    annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Rect = dto.rect;
+    annotation.RD = dto.rectMargins;
+    annotation.C = dto.color.slice(0, 3);
+    annotation.CA = dto.color[3];
+    annotation.BS = bs;
+    
+    annotation.generateApStream(dto.cloud);
+
+    const proxy = new Proxy<SquareAnnotation>(annotation, annotation.onChange);
+    annotation._proxy = proxy;
+    annotation._added = true;
+    return proxy;
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<SquareAnnotation> {
@@ -88,5 +135,71 @@ export class SquareAnnotation extends GeometricAnnotation {
         break;
       }
     };
+  }
+
+  protected generateApStream(cloud?: boolean) {
+    const apStream = new XFormStream();
+    apStream.Filter = "/FlateDecode";
+    apStream.LastModified = DateString.fromDate(new Date());
+    apStream.BBox = this.Rect;
+
+    let colorString: string;
+    if (!this.C?.length) {
+      colorString = "0 G 0 g";
+    } else if (this.C.length < 3) {
+      const g = this.C[0];
+      colorString = `${g} G ${g} g`;
+    } else if (this.C.length === 3) {
+      const [r, g, b] = this.C;      
+      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+    } else {      
+      const [c, m, y, k] = this.C;      
+      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+    }
+
+    const ca = this.CA || 1;
+    const width = this.BS?.W ?? this.Border?.width ?? 1;
+    const dash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const gap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    const gs = new GraphicsStateDict();
+    gs.AIS = true;
+    gs.BM = "/Normal";
+    gs.CA = ca;
+    gs.ca = ca;
+    gs.LW = width;
+    gs.D = [[dash, gap], 0];
+
+    gs.LC = lineCapStyles.SQUARE;
+    gs.LJ = lineJoinStyles.MITER;
+
+    const xmin = this.Rect[0] + this.RD[0];
+    const ymin = this.Rect[1] + this.RD[3];
+    const xmax = this.Rect[2] - this.RD[2];
+    const ymax = this.Rect[3] - this.RD[1];
+
+    let streamTextData = `q ${colorString} /GS0 gs`;
+
+    if (cloud) {
+      gs.LC = lineCapStyles.ROUND;
+      gs.LJ = lineJoinStyles.ROUND;
+      throw new Error("Not implemented");
+    } else {
+      gs.LC = lineCapStyles.SQUARE;
+      gs.LJ = lineJoinStyles.MITER;
+
+      streamTextData += `\n${xmin} ${ymin} m`;
+      streamTextData += `\n${xmax} ${ymin} l`;
+      streamTextData += `\n${xmax} ${ymax} l`;
+      streamTextData += `\n${xmin} ${ymax} l`;
+      streamTextData += "\ns"; 
+    }
+    
+    streamTextData += "\nQ";
+
+    apStream.Resources = new ResourceDict();
+    apStream.Resources.setGraphicsState("/GS0", gs);
+    apStream.setTextStreamData(streamTextData);    
+
+    this.apStream = apStream;
   }
 }

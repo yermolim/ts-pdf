@@ -43,12 +43,23 @@ export class PagesRenderedEvent extends CustomEvent<PagesRenderedEventDetail> {
   }
 }
 
+export const scaleChangedEvent = "tspdf-scalechanged" as const;
+export interface ScaleChangedEventDetail {
+  scale: number;
+}
+export class ScaleChangedEvent extends CustomEvent<ScaleChangedEventDetail> {
+  constructor(detail: ScaleChangedEventDetail) {
+    super(scaleChangedEvent, {detail});
+  }
+}
+
 declare global {
   interface DocumentEventMap {
     [currentPageChangeEvent]: CurrentPageChangeEvent;
     [currentPageChangeRequestEvent]: CurrentPageChangeRequestEvent;
     [pagesLoadedEvent]: PagesLoadedEvent;
     [pagesRenderedEvent]: PagesRenderedEvent;
+    [scaleChangedEvent]: ScaleChangedEvent;
   }
 }
 //#endregion
@@ -96,7 +107,11 @@ export class PageService {
   }
 
   set scale(value: number) {
+    if (!value || isNaN(value)) {
+      value = 1;
+    }
     this._pages.forEach(x => x.scale = value);
+    document.dispatchEvent(new ScaleChangedEvent({scale: value}));
   }
 
   constructor(options?: PageServiceOptions) {
