@@ -27,6 +27,9 @@ import icon_stamp from "./icons/stamp.png";
 import icon_pen from "./icons/pen.png";
 import icon_geometric from "./icons/geometric.png";
 
+import icon_straight from "./icons/line-straight.png";
+import icon_cloudy from "./icons/line-cloudy.png";
+
 import icon_square from "./icons/square.png";
 import icon_circle from "./icons/circle.png";
 import icon_line from "./icons/line.png";
@@ -41,6 +44,11 @@ export const geometricIcons = {
   arrow: `<img src="${icon_arrow}"/>`,
   polyline: `<img src="${icon_polyline}"/>`,
   polygon: `<img src="${icon_polygon}"/>`,
+} as const;
+
+export const lineTypeIcons = {  
+  straight: `<img src="${icon_straight}"/>`,
+  cloudy: `<img src="${icon_cloudy}"/>`,
 } as const;
 
 export const html = /*html*/`

@@ -60,8 +60,9 @@ export class SquareAnnotation extends GeometricAnnotation {
     annotation.C = dto.color.slice(0, 3);
     annotation.CA = dto.color[3];
     annotation.BS = bs;
+    annotation._cloud = dto.cloud;
     
-    annotation.generateApStream(dto.cloud);
+    annotation.generateApStream();
 
     const proxy = new Proxy<SquareAnnotation>(annotation, annotation.onChange);
     annotation._proxy = proxy;
@@ -105,7 +106,34 @@ export class SquareAnnotation extends GeometricAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
-  }  
+  }
+  
+  toDto(): SquareAnnotationDto {
+    const color = this.getColorRect();
+
+    return {
+      annotationType: "/Square",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this.T?.literal,
+
+      rect: this.Rect,
+      rectMargins: this.RD,
+      matrix: this.apStream?.Matrix,
+
+      cloud: this._cloud,
+      color,
+      strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
+      strokeDashGap: this.BS.D ?? [3, 0],
+    };
+  }
   
   /**
    * fill public properties from data using info/parser if available
@@ -140,7 +168,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     };
   }
 
-  protected generateApStream(cloud?: boolean) {
+  protected generateApStream() {
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
     apStream.LastModified = DateString.fromDate(new Date());
@@ -182,7 +210,7 @@ export class SquareAnnotation extends GeometricAnnotation {
 
     let streamTextData = `q ${colorString} /GS0 gs`;
 
-    if (cloud) {
+    if (this._cloud) {
       gs.LC = lineCapStyles.ROUND;
       gs.LJ = lineJoinStyles.ROUND;
 

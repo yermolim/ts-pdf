@@ -1,7 +1,7 @@
 import { Quadruple } from "../common";
 import { Vec2 } from "../math";
 
-import { geometricIcons } from "../assets/index.html";
+import { geometricIcons, lineTypeIcons } from "../assets/index.html";
 
 import { DocumentData } from "../document/document-data";
 
@@ -23,6 +23,8 @@ export class AnnotationBuilder {
     [0.804, 0, 0, 0.5], // red
     [0, 0.804, 0, 0.5], // green
     [0, 0, 0.804, 0.5], // blue
+    [1, 0.5, 0, 0.5], // orange
+    [1, 0.2, 1, 0.5], // pink
   ];
   
   private readonly _docData: DocumentData;
@@ -239,7 +241,7 @@ export class AnnotationBuilder {
       item.append(submodeIcon);
       contextMenuSubmodePicker.append(item);
     });
-    // init a geometry color picker
+
     const contextMenuColorPicker = document.createElement("div");
     contextMenuColorPicker.classList.add("context-menu-content", "row");
     this._annotationColors.forEach(x => {          
@@ -257,9 +259,38 @@ export class AnnotationBuilder {
       item.append(colorIcon);
       contextMenuColorPicker.append(item);
     });
-    // init a pen stroke width slider
-    const contextMenuWidthSlider = document.createElement("div");
-    contextMenuWidthSlider.classList.add("context-menu-content", "row");
+    
+    const contextMenuCloudAndWidth = document.createElement("div");
+    contextMenuCloudAndWidth.classList.add("context-menu-content", "row");
+
+    const cloudyLineButton = document.createElement("div");
+    cloudyLineButton.classList.add("panel-button");
+    cloudyLineButton.addEventListener("click", () => {
+      this._contextMenu.hide();
+      this._annotator?.destroy();
+      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
+        this._pageService.renderedPages, {cloudMode: true});
+    });
+    const cloudyLineIcon = document.createElement("div");
+    cloudyLineIcon.classList.add("context-menu-color-icon");
+    cloudyLineIcon.innerHTML = lineTypeIcons.cloudy;
+    cloudyLineButton.append(cloudyLineIcon);
+    contextMenuCloudAndWidth.append(cloudyLineButton);
+    
+    const straightLineButton = document.createElement("div");
+    straightLineButton.classList.add("panel-button");
+    straightLineButton.addEventListener("click", () => {
+      this._contextMenu.hide();
+      this._annotator?.destroy();
+      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
+        this._pageService.renderedPages, {cloudMode: false});
+    });
+    const straightLineIcon = document.createElement("div");
+    straightLineIcon.classList.add("context-menu-color-icon");
+    straightLineIcon.innerHTML = lineTypeIcons.straight;
+    straightLineButton.append(straightLineIcon);
+    contextMenuCloudAndWidth.append(straightLineButton);
+
     const slider = document.createElement("input");
     slider.setAttribute("type", "range");
     slider.setAttribute("min", "1");
@@ -272,11 +303,12 @@ export class AnnotationBuilder {
       this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
         this._pageService.renderedPages, {strokeWidth: slider.valueAsNumber});
     });
-    contextMenuWidthSlider.append(slider);
+    contextMenuCloudAndWidth.append(slider);
     
     this._contextMenu = new ContextMenu();
     // set the context menu content    
-    this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, contextMenuWidthSlider];
+    this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, 
+      contextMenuCloudAndWidth];
     // enable the context menu
     this._contextMenu.enabled = true;
   }

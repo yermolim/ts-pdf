@@ -24,11 +24,13 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   }  
   
   undo() {
-    this.clearGroup();
+    this.clear();
   }
   
   clear() {  
+    this._rect = null;
     this.clearGroup();
+    this.emitPointCount(0);
   }
   
   saveAnnotation() {
@@ -66,6 +68,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     const minSize = this._strokeWidth * 2;
     if (max.x - min.x <= minSize || max.y - min.y <= minSize) {
       // square is too small
+      this._rect = null;
       return;
     }
 
@@ -106,7 +109,6 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
       rect.setAttribute("height", max.y - min.y + "");  
       this._svgGroup.append(rect);
     }
-
   }
   
   protected onPointerDown = (e: PointerEvent) => {
@@ -126,7 +128,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     this._pageId = pageId;
     this._down = new Vec2(px, py);
 
-    this.clearGroup();
+    this.clear();
     this.refreshGroupPosition();
 
     const target = e.target as HTMLElement;
@@ -170,11 +172,13 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     target.removeEventListener("pointerout", this.onPointerUp);
     target.releasePointerCapture(e.pointerId); 
     
-    this.emitPointCount(2);
+    if (this._rect) {
+      this.emitPointCount(2);
+    }
   };
   
   protected buildAnnotationDto(): SquareAnnotationDto {
-    const margin = this._strokeWidth / 2 + (this._cloudMode ? SquareAnnotation.cloudArcSize : 0);
+    const margin = this._strokeWidth / 2 + (this._cloudMode ? SquareAnnotation.cloudArcSize / 2 : 0);
     // separate variables to allow further changes of the margin calculation logic
     const lm = margin;
     const tm = margin;

@@ -48,7 +48,7 @@ export abstract class GeometricAnnotator extends Annotator {
     this._strokeWidth = options?.strokeWidth || GeometricAnnotator.lastStrokeWidth || 3;
     GeometricAnnotator.lastStrokeWidth = this._strokeWidth;
     
-    this._cloudMode = options?.cloudMode || GeometricAnnotator.lastCloudMode || false;
+    this._cloudMode = options?.cloudMode ?? GeometricAnnotator.lastCloudMode ?? false;
     GeometricAnnotator.lastCloudMode = this._cloudMode;
   }
   
