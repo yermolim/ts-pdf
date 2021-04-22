@@ -1,4 +1,4 @@
-import { buildCloudCurveFromPolyline, getRandomUuid, Quadruple } from "../../common";
+import { buildCloudCurveFromEllipse, getRandomUuid, Quadruple } from "../../common";
 import { Vec2, vecMinMax } from "../../math";
 
 import { DocumentData } from "../../document/document-data";
@@ -82,15 +82,14 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     path.setAttribute("stroke-width", this._strokeWidth + "");
     path.setAttribute("stroke-linecap", "round");      
     path.setAttribute("stroke-linejoin", "round");   
+
     let pathString: string;
-    if (this._cloudMode) {  
-      const curveData = buildCloudCurveFromPolyline([
-        new Vec2(min.x, min.y),
-        new Vec2(min.x, max.y),
-        new Vec2(max.x, max.y),
-        new Vec2(max.x, min.y),
-        new Vec2(min.x, min.y),
-      ], CircleAnnotation.cloudArcSize);    
+    const rx = (max.x - min.x) / 2;
+    const ry = (max.y - min.y) / 2;
+    const center = new Vec2(min.x + rx, min.y + ry);
+
+    if (this._cloudMode) {
+      const curveData = buildCloudCurveFromEllipse(rx, ry, center, CircleAnnotation.cloudArcSize);    
   
       pathString = "M" + curveData.start.x + "," + curveData.start.y;
       curveData.curves.forEach(x => {
@@ -98,18 +97,14 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
       });
     } else {      
       const c = CircleAnnotation.bezierConstant;
-      const halfw = (max.x - min.x) / 2;
-      const halfh = (max.y - min.y) / 2;
-      const xcenter = min.x + halfw;
-      const ycenter = min.y + halfh;
-      const cw = c * halfw;
-      const ch = c * halfh;
+      const cw = c * rx;
+      const ch = c * ry;
       // drawing four cubic bezier curves starting at the top tangent
-      pathString = "M" + xcenter + "," + max.y;
-      pathString += ` C${xcenter + cw},${max.y} ${max.x},${ycenter + ch} ${max.x},${ycenter}`;
-      pathString += ` C${max.x},${ycenter - ch} ${xcenter + cw},${min.y} ${xcenter},${min.y}`;
-      pathString += ` C${xcenter - cw},${min.y} ${min.x},${ycenter - ch} ${min.x},${ycenter}`;
-      pathString += ` C${min.x},${ycenter + ch} ${xcenter - cw},${max.y} ${xcenter},${max.y}`;
+      pathString = "M" + center.x + "," + max.y;
+      pathString += ` C${center.x + cw},${max.y} ${max.x},${center.y + ch} ${max.x},${center.y}`;
+      pathString += ` C${max.x},${center.y - ch} ${center.x + cw},${min.y} ${center.x},${min.y}`;
+      pathString += ` C${center.x - cw},${min.y} ${min.x},${center.y - ch} ${min.x},${center.y}`;
+      pathString += ` C${min.x},${center.y + ch} ${center.x - cw},${max.y} ${center.x},${max.y}`;
     }
     
     path.setAttribute("d", pathString);

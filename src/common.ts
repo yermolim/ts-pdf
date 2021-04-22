@@ -11,6 +11,12 @@ export function getDistance(x1: number, y1: number, x2: number, y2: number): num
   return Math.hypot(x2 - x1, y2 - y1);
 }
 
+/**
+ * calculate cubic bezier curves of the 'cloud' using the provided polyline points
+ * @param polylinePoints 
+ * @param maxArcSize maximum size of the single 'cloud' arc
+ * @returns 
+ */
 export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: number): CloudCurveData {
   if (!polylinePoints || polylinePoints.length < 2) {
     // not a polyline
@@ -69,6 +75,43 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
   };
 }
 
+/**
+ * calculate cubic bezier curves of the 'cloud' using the provided information
+ * @param rx ellipse horizontal radius
+ * @param ry ellipse vertical radius
+ * @param center ellipse center
+ * @param maxArcSize maximum size of the single 'cloud' arc
+ * @returns 
+ */
+export function buildCloudCurveFromEllipse(rx: number, ry: number, center: Vec2, maxArcSize: number): CloudCurveData {  
+  // use Srinivasa Ramanujan's approximation
+  const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+  // calculate ellipse segments rounding to the nearest multiple of 4 (for symmetry)
+  const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
+  const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
+  const points: Vec2[] = [];
+  const current = new Vec2(center.x + rx, center.y);
+  const next = new Vec2();
+  let angle = 0;
+  let distance: number;
+  // push start point
+  points.push(current.clone());
+  for (let i = 0; i < segmentsNumber; i++) {
+    distance = 0;
+    while (distance < maxSegmentLength) {
+      angle -= 0.25 / 180 * Math.PI;
+      next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
+      distance += getDistance(current.x, current.y, next.x, next.y);
+      current.setFromVec2(next);
+    }
+    points.push(current.clone());
+  }
+
+  const curveData = buildCloudCurveFromPolyline(points, maxArcSize);    
+  return curveData;
+}
+
+/**tuple representing cubic bezier curve data (two control points and the end of the curve) */
 type CurveData = [control1: Vec2, control2: Vec2, end: Vec2];
 
 export interface CloudCurveData {

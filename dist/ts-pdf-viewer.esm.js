@@ -3014,6 +3014,29 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
         curves,
     };
 }
+function buildCloudCurveFromEllipse(rx, ry, center, maxArcSize) {
+    const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+    const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
+    const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
+    const points = [];
+    const current = new Vec2(center.x + rx, center.y);
+    const next = new Vec2();
+    let angle = 0;
+    let distance;
+    points.push(current.clone());
+    for (let i = 0; i < segmentsNumber; i++) {
+        distance = 0;
+        while (distance < maxSegmentLength) {
+            angle -= 0.25 / 180 * Math.PI;
+            next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
+            distance += getDistance(current.x, current.y, next.x, next.y);
+            current.setFromVec2(next);
+        }
+        points.push(current.clone());
+    }
+    const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
+    return curveData;
+}
 class LinkedListNode {
     constructor(data) {
         this.data = data;
@@ -14329,14 +14352,12 @@ class CircleAnnotation extends GeometricAnnotation {
         const xmax = this.Rect[2] - this.RD[2];
         const ymax = this.Rect[3] - this.RD[1];
         let streamTextData = `q ${colorString} /GS0 gs`;
+        const rx = (xmax - xmin) / 2;
+        const ry = (ymax - ymin) / 2;
+        const xcenter = xmin + rx;
+        const ycenter = ymin + ry;
         if (this._cloud) {
-            const curveData = buildCloudCurveFromPolyline([
-                new Vec2(xmin, ymin),
-                new Vec2(xmin, ymax),
-                new Vec2(xmax, ymax),
-                new Vec2(xmax, ymin),
-                new Vec2(xmin, ymin),
-            ], CircleAnnotation.cloudArcSize);
+            const curveData = buildCloudCurveFromEllipse(rx, ry, new Vec2(xcenter, ycenter), CircleAnnotation.cloudArcSize);
             streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
             curveData.curves.forEach(x => {
                 streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
@@ -14345,12 +14366,8 @@ class CircleAnnotation extends GeometricAnnotation {
         }
         else {
             const c = CircleAnnotation.bezierConstant;
-            const halfw = (xmax - xmin) / 2;
-            const halfh = (ymax - ymin) / 2;
-            const xcenter = xmin + halfw;
-            const ycenter = ymin + halfh;
-            const cw = c * halfw;
-            const ch = c * halfh;
+            const cw = c * rx;
+            const ch = c * ry;
             streamTextData += `\n${xcenter} ${ymax} m`;
             streamTextData += `\n${xcenter + cw} ${ymax} ${xmax} ${ycenter + ch} ${xmax} ${ycenter} c`;
             streamTextData += `\n${xmax} ${ycenter - ch} ${xcenter + cw} ${ymin} ${xcenter} ${ymin} c`;
@@ -16016,14 +16033,11 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         path.setAttribute("stroke-linecap", "round");
         path.setAttribute("stroke-linejoin", "round");
         let pathString;
+        const rx = (max.x - min.x) / 2;
+        const ry = (max.y - min.y) / 2;
+        const center = new Vec2(min.x + rx, min.y + ry);
         if (this._cloudMode) {
-            const curveData = buildCloudCurveFromPolyline([
-                new Vec2(min.x, min.y),
-                new Vec2(min.x, max.y),
-                new Vec2(max.x, max.y),
-                new Vec2(max.x, min.y),
-                new Vec2(min.x, min.y),
-            ], CircleAnnotation.cloudArcSize);
+            const curveData = buildCloudCurveFromEllipse(rx, ry, center, CircleAnnotation.cloudArcSize);
             pathString = "M" + curveData.start.x + "," + curveData.start.y;
             curveData.curves.forEach(x => {
                 pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
@@ -16031,17 +16045,13 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         }
         else {
             const c = CircleAnnotation.bezierConstant;
-            const halfw = (max.x - min.x) / 2;
-            const halfh = (max.y - min.y) / 2;
-            const xcenter = min.x + halfw;
-            const ycenter = min.y + halfh;
-            const cw = c * halfw;
-            const ch = c * halfh;
-            pathString = "M" + xcenter + "," + max.y;
-            pathString += ` C${xcenter + cw},${max.y} ${max.x},${ycenter + ch} ${max.x},${ycenter}`;
-            pathString += ` C${max.x},${ycenter - ch} ${xcenter + cw},${min.y} ${xcenter},${min.y}`;
-            pathString += ` C${xcenter - cw},${min.y} ${min.x},${ycenter - ch} ${min.x},${ycenter}`;
-            pathString += ` C${min.x},${ycenter + ch} ${xcenter - cw},${max.y} ${xcenter},${max.y}`;
+            const cw = c * rx;
+            const ch = c * ry;
+            pathString = "M" + center.x + "," + max.y;
+            pathString += ` C${center.x + cw},${max.y} ${max.x},${center.y + ch} ${max.x},${center.y}`;
+            pathString += ` C${max.x},${center.y - ch} ${center.x + cw},${min.y} ${center.x},${min.y}`;
+            pathString += ` C${center.x - cw},${min.y} ${min.x},${center.y - ch} ${min.x},${center.y}`;
+            pathString += ` C${min.x},${center.y + ch} ${center.x - cw},${max.y} ${center.x},${max.y}`;
         }
         path.setAttribute("d", pathString);
         this._svgGroup.append(path);

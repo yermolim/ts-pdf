@@ -1,4 +1,4 @@
-import { buildCloudCurveFromPolyline, Double, Quadruple } from "../../../../../common";
+import { buildCloudCurveFromEllipse, Double, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { Vec2 } from "../../../../../math";
@@ -212,14 +212,13 @@ export class CircleAnnotation extends GeometricAnnotation {
 
     let streamTextData = `q ${colorString} /GS0 gs`;
 
+    const rx = (xmax - xmin) / 2;
+    const ry = (ymax - ymin) / 2;
+    const xcenter = xmin + rx;
+    const ycenter = ymin + ry;
+
     if (this._cloud) {
-      const curveData = buildCloudCurveFromPolyline([
-        new Vec2(xmin, ymin),
-        new Vec2(xmin, ymax),
-        new Vec2(xmax, ymax),
-        new Vec2(xmax, ymin),
-        new Vec2(xmin, ymin),
-      ], CircleAnnotation.cloudArcSize);      
+      const curveData = buildCloudCurveFromEllipse(rx, ry, new Vec2(xcenter, ycenter), CircleAnnotation.cloudArcSize); 
       streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
       curveData.curves.forEach(x => {
         streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
@@ -227,12 +226,8 @@ export class CircleAnnotation extends GeometricAnnotation {
       streamTextData += "\nS";
     } else {
       const c = CircleAnnotation.bezierConstant;
-      const halfw = (xmax - xmin) / 2;
-      const halfh = (ymax - ymin) / 2;
-      const xcenter = xmin + halfw;
-      const ycenter = ymin + halfh;
-      const cw = c * halfw;
-      const ch = c * halfh;
+      const cw = c * rx;
+      const ch = c * ry;
       // drawing four cubic bezier curves starting at the top tangent
       streamTextData += `\n${xcenter} ${ymax} m`;
       streamTextData += `\n${xcenter + cw} ${ymax} ${xmax} ${ycenter + ch} ${xmax} ${ycenter} c`;
