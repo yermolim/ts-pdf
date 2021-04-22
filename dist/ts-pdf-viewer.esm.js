@@ -15924,7 +15924,6 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
             target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             if (this._rect) {
-                console.log(this._rect);
                 this.emitPointCount(2);
             }
         };

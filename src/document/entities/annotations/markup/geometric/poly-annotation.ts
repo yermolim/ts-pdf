@@ -8,15 +8,14 @@ import { GeometricAnnotation } from "./geometric-annotation";
 
 export const polyIntents = {
   CLOUD: "/PolygonCloud",
-  POLYGON_DIMESION: "/PolygonDimension",
-  POLYLINE_DIMESION: "/PolyLineDimension",
+  POLYGON_DIMENSION: "/PolygonDimension",
+  POLYLINE_DIMENSION: "/PolyLineDimension",
 } as const;
 export type PolyIntent = typeof polyIntents[keyof typeof polyIntents];
 
 export abstract class PolyAnnotation extends GeometricAnnotation {
   /**
-   * (Required) An array of numbers specifying the width and dash pattern 
-   * that shall represent the alternating horizontal and vertical coordinates, 
+   * (Required) An array of numbers representing the alternating horizontal and vertical coordinates, 
    * respectively, of each vertex, in default user space
    */
   Vertices: number[];
