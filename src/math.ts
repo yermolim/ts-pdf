@@ -806,7 +806,7 @@ export function mat3From4Vec2(aMin: Vec2, aMax: Vec2, bMin: Vec2, bMax: Vec2,
   if (!noRotation) {
     const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
     const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
-    const rotation = bTheta - aTheta;
+    const rotation = aTheta - bTheta;
     mat.applyRotation(rotation);
   }
 

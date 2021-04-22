@@ -63,7 +63,8 @@ export class PenData {
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
     path.setAttribute("stroke-width", this._options.strokeWidth + "");
-    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linecap", "round");    
+    path.setAttribute("stroke-linejoin", "round");
 
     const pathString = "M" + startPosition.x + " " + startPosition.y;
     path.setAttribute("d", pathString);

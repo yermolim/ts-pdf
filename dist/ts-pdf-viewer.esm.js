@@ -1414,7 +1414,7 @@ function mat3From4Vec2(aMin, aMax, bMin, bMax, noRotation = false) {
     if (!noRotation) {
         const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
         const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
-        const rotation = bTheta - aTheta;
+        const rotation = aTheta - bTheta;
         mat.applyRotation(rotation);
     }
     mat.applyTranslation(bMin.x, bMin.y);
@@ -2956,6 +2956,55 @@ function getRandomUuid() {
 }
 function getDistance(x1, y1, x2, y2) {
     return Math.hypot(x2 - x1, y2 - y1);
+}
+function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
+    if (!polylinePoints || polylinePoints.length < 2) {
+        return null;
+    }
+    if (isNaN(maxArcSize) || maxArcSize <= 0) {
+        throw new Error(`Invalid maximal arc size ${maxArcSize}`);
+    }
+    const start = polylinePoints[0].clone();
+    const curves = [];
+    const zeroVec = new Vec2();
+    const lengthVec = new Vec2();
+    let i;
+    let j;
+    let lineStart;
+    let lineEnd;
+    let lineLength;
+    let arcCount;
+    let arcSize;
+    let halfArcSize;
+    let arcStart;
+    let arcEnd;
+    for (i = 0; i < polylinePoints.length - 1; i++) {
+        lineStart = polylinePoints[i];
+        lineEnd = polylinePoints[i + 1];
+        lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
+        if (!lineLength) {
+            continue;
+        }
+        lengthVec.set(lineLength, 0);
+        const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
+        arcCount = Math.ceil(lineLength / maxArcSize);
+        arcSize = lineLength / arcCount;
+        halfArcSize = arcSize / 2;
+        for (j = 0; j < arcCount; j++) {
+            arcStart = j * arcSize;
+            arcEnd = (j + 1) * arcSize;
+            const curve = [
+                new Vec2(arcStart, halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, 0).applyMat3(matrix),
+            ];
+            curves.push(curve);
+        }
+    }
+    return {
+        start,
+        curves,
+    };
 }
 class LinkedListNode {
     constructor(data) {
@@ -14067,15 +14116,26 @@ class SquareAnnotation extends GeometricAnnotation {
         if (cloud) {
             gs.LC = lineCapStyles.ROUND;
             gs.LJ = lineJoinStyles.ROUND;
-            throw new Error("Not implemented");
+            const curveData = buildCloudCurveFromPolyline([
+                new Vec2(xmin, ymin),
+                new Vec2(xmin, ymax),
+                new Vec2(xmax, ymax),
+                new Vec2(xmax, ymin),
+                new Vec2(xmin, ymin),
+            ], SquareAnnotation.cloudArcSize);
+            streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
+            curveData.curves.forEach(x => {
+                streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
+            });
+            streamTextData += "\nS";
         }
         else {
             gs.LC = lineCapStyles.SQUARE;
             gs.LJ = lineJoinStyles.MITER;
             streamTextData += `\n${xmin} ${ymin} m`;
-            streamTextData += `\n${xmax} ${ymin} l`;
-            streamTextData += `\n${xmax} ${ymax} l`;
             streamTextData += `\n${xmin} ${ymax} l`;
+            streamTextData += `\n${xmax} ${ymax} l`;
+            streamTextData += `\n${xmax} ${ymin} l`;
             streamTextData += "\ns";
         }
         streamTextData += "\nQ";
@@ -14085,6 +14145,7 @@ class SquareAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
 }
+SquareAnnotation.cloudArcSize = 20;
 
 class CircleAnnotation extends GeometricAnnotation {
     constructor() {
@@ -15643,7 +15704,7 @@ class GeometricAnnotator extends Annotator {
         GeometricAnnotator.lastColor = this._color;
         this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || GeometricAnnotator.lastStrokeWidth || 3;
         GeometricAnnotator.lastStrokeWidth = this._strokeWidth;
-        this._cloudMode = (options === null || options === void 0 ? void 0 : options.cloudMode) || GeometricAnnotator.lastCloudMode || false;
+        this._cloudMode = (options === null || options === void 0 ? void 0 : options.cloudMode) || GeometricAnnotator.lastCloudMode || true;
         GeometricAnnotator.lastCloudMode = this._cloudMode;
     }
     destroy() {
@@ -15864,18 +15925,41 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         }
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
         this._rect = [min.x, min.y, max.x, max.y];
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("fill", "none");
-        rect.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-        rect.setAttribute("stroke-width", this._strokeWidth + "");
-        rect.setAttribute("x", min.x + "");
-        rect.setAttribute("y", min.y + "");
-        rect.setAttribute("width", max.x - min.x + "");
-        rect.setAttribute("height", max.y - min.y + "");
-        this._svgGroup.append(rect);
+        if (this._cloudMode) {
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+            path.setAttribute("stroke-width", this._strokeWidth + "");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+            const curveData = buildCloudCurveFromPolyline([
+                new Vec2(min.x, min.y),
+                new Vec2(min.x, max.y),
+                new Vec2(max.x, max.y),
+                new Vec2(max.x, min.y),
+                new Vec2(min.x, min.y),
+            ], SquareAnnotation.cloudArcSize);
+            let pathString = "M" + curveData.start.x + "," + curveData.start.y;
+            curveData.curves.forEach(x => {
+                pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+            });
+            path.setAttribute("d", pathString);
+            this._svgGroup.append(path);
+        }
+        else {
+            const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            rect.setAttribute("fill", "none");
+            rect.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+            rect.setAttribute("stroke-width", this._strokeWidth + "");
+            rect.setAttribute("x", min.x + "");
+            rect.setAttribute("y", min.y + "");
+            rect.setAttribute("width", max.x - min.x + "");
+            rect.setAttribute("height", max.y - min.y + "");
+            this._svgGroup.append(rect);
+        }
     }
     buildAnnotationDto() {
-        const margin = this._strokeWidth / 2;
+        const margin = this._strokeWidth / 2 + (this._cloudMode ? SquareAnnotation.cloudArcSize : 0);
         const lm = margin;
         const tm = margin;
         const rm = margin;

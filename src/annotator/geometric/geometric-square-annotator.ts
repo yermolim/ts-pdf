@@ -1,4 +1,4 @@
-import { getRandomUuid, Quadruple } from "../../common";
+import { buildCloudCurveFromPolyline, getRandomUuid, Quadruple } from "../../common";
 import { Vec2, vecMinMax } from "../../math";
 
 import { DocumentData } from "../../document/document-data";
@@ -72,16 +72,41 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     const [r, g, b, a] = this._color || [0, 0, 0, 1];
     this._rect = [min.x, min.y, max.x, max.y];
 
-    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("fill", "none");
-    rect.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-    rect.setAttribute("stroke-width", this._strokeWidth + "");
-    rect.setAttribute("x", min.x + "");
-    rect.setAttribute("y", min.y + "");
-    rect.setAttribute("width", max.x - min.x + "");
-    rect.setAttribute("height", max.y - min.y + "");
+    if (this._cloudMode) {
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+      path.setAttribute("stroke-width", this._strokeWidth + "");
+      path.setAttribute("stroke-linecap", "round");      
+      path.setAttribute("stroke-linejoin", "round");      
 
-    this._svgGroup.append(rect);
+      const curveData = buildCloudCurveFromPolyline([
+        new Vec2(min.x, min.y),
+        new Vec2(min.x, max.y),
+        new Vec2(max.x, max.y),
+        new Vec2(max.x, min.y),
+        new Vec2(min.x, min.y),
+      ], SquareAnnotation.cloudArcSize);    
+  
+      let pathString = "M" + curveData.start.x + "," + curveData.start.y;
+      curveData.curves.forEach(x => {
+        pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+      });
+      path.setAttribute("d", pathString);
+
+      this._svgGroup.append(path);
+    } else {
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("fill", "none");
+      rect.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+      rect.setAttribute("stroke-width", this._strokeWidth + "");
+      rect.setAttribute("x", min.x + "");
+      rect.setAttribute("y", min.y + "");
+      rect.setAttribute("width", max.x - min.x + "");
+      rect.setAttribute("height", max.y - min.y + "");  
+      this._svgGroup.append(rect);
+    }
+
   }
   
   protected onPointerDown = (e: PointerEvent) => {
@@ -149,8 +174,8 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   };
   
   protected buildAnnotationDto(): SquareAnnotationDto {
-    // TODO: add advanced margin calculation logic for cloud mode
-    const margin = this._strokeWidth / 2;
+    const margin = this._strokeWidth / 2 + (this._cloudMode ? SquareAnnotation.cloudArcSize : 0);
+    // separate variables to allow further changes of the margin calculation logic
     const lm = margin;
     const tm = margin;
     const rm = margin;

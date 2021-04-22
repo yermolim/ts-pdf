@@ -1,4 +1,4 @@
-import { Double, Quadruple } from "../../../../../common";
+import { buildCloudCurveFromPolyline, Double, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 
@@ -13,6 +13,7 @@ import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { AnnotationDto } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
+import { Vec2 } from "../../../../../math";
 export interface SquareAnnotationDto extends AnnotationDto {  
   rectMargins: Quadruple;
   cloud: boolean;
@@ -22,6 +23,8 @@ export interface SquareAnnotationDto extends AnnotationDto {
 }
 
 export class SquareAnnotation extends GeometricAnnotation {
+  static readonly cloudArcSize = 20;
+
   /**
    * (Optional; PDF 1.5+) A set of four numbers that shall describe the numerical differences 
    * between two rectangles: the Rect entry of the annotation and the actual boundaries 
@@ -182,15 +185,28 @@ export class SquareAnnotation extends GeometricAnnotation {
     if (cloud) {
       gs.LC = lineCapStyles.ROUND;
       gs.LJ = lineJoinStyles.ROUND;
-      throw new Error("Not implemented");
+
+      const curveData = buildCloudCurveFromPolyline([
+        new Vec2(xmin, ymin),
+        new Vec2(xmin, ymax),
+        new Vec2(xmax, ymax),
+        new Vec2(xmax, ymin),
+        new Vec2(xmin, ymin),
+      ], SquareAnnotation.cloudArcSize);      
+      streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
+      curveData.curves.forEach(x => {
+        streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
+      });
+      streamTextData += "\nS"; 
+
     } else {
       gs.LC = lineCapStyles.SQUARE;
       gs.LJ = lineJoinStyles.MITER;
 
       streamTextData += `\n${xmin} ${ymin} m`;
-      streamTextData += `\n${xmax} ${ymin} l`;
-      streamTextData += `\n${xmax} ${ymax} l`;
       streamTextData += `\n${xmin} ${ymax} l`;
+      streamTextData += `\n${xmax} ${ymax} l`;
+      streamTextData += `\n${xmax} ${ymin} l`;
       streamTextData += "\ns"; 
     }
     
