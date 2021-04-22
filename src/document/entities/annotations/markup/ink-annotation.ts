@@ -126,7 +126,7 @@ export class InkAnnotation extends MarkupAnnotation {
       inkList: this.InkList,
       color,
       strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
-      strokeDashGap: this.BS.D ?? [3, 0],
+      strokeDashGap: this.BS?.D ?? [3, 0],
     };
   }
   

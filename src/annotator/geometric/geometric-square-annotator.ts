@@ -2,9 +2,10 @@ import { buildCloudCurveFromPolyline, getRandomUuid, Quadruple } from "../../com
 import { Vec2, vecMinMax } from "../../math";
 
 import { DocumentData } from "../../document/document-data";
+import { SquareAnnotationDto, SquareAnnotation } from "../../document/entities/annotations/markup/geometric/square-annotation";
+
 import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
-import { SquareAnnotationDto, SquareAnnotation } from "../../document/entities/annotations/markup/geometric/square-annotation";
 
 export class GeometricSquareAnnotator extends GeometricAnnotator {
   /**last 'pointerdown' position in the page coordinate system */

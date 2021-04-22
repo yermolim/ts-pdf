@@ -1,6 +1,7 @@
 import { buildCloudCurveFromPolyline, Double, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
+import { Vec2 } from "../../../../../math";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -13,7 +14,7 @@ import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { AnnotationDto } from "../../annotation-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
-import { Vec2 } from "../../../../../math";
+
 export interface SquareAnnotationDto extends AnnotationDto {  
   rectMargins: Quadruple;
   cloud: boolean;
@@ -131,7 +132,7 @@ export class SquareAnnotation extends GeometricAnnotation {
       cloud: this._cloud,
       color,
       strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
-      strokeDashGap: this.BS.D ?? [3, 0],
+      strokeDashGap: this.BS?.D ?? [3, 0],
     };
   }
   
@@ -199,9 +200,6 @@ export class SquareAnnotation extends GeometricAnnotation {
     gs.ca = ca;
     gs.LW = width;
     gs.D = [[dash, gap], 0];
-
-    gs.LC = lineCapStyles.SQUARE;
-    gs.LJ = lineJoinStyles.MITER;
 
     const xmin = this.Rect[0] + this.RD[0];
     const ymin = this.Rect[1] + this.RD[3];

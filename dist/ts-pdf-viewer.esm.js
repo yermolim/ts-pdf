@@ -13781,7 +13781,7 @@ class InkAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         const color = this.getColorRect();
         return {
             annotationType: "/Ink",
@@ -13799,7 +13799,7 @@ class InkAnnotation extends MarkupAnnotation {
             inkList: this.InkList,
             color,
             strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
-            strokeDashGap: (_h = this.BS.D) !== null && _h !== void 0 ? _h : [3, 0],
+            strokeDashGap: (_j = (_h = this.BS) === null || _h === void 0 ? void 0 : _h.D) !== null && _j !== void 0 ? _j : [3, 0],
         };
     }
     parseProps(parseInfo) {
@@ -14057,7 +14057,7 @@ class SquareAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         const color = this.getColorRect();
         return {
             annotationType: "/Square",
@@ -14076,7 +14076,7 @@ class SquareAnnotation extends GeometricAnnotation {
             cloud: this._cloud,
             color,
             strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
-            strokeDashGap: (_h = this.BS.D) !== null && _h !== void 0 ? _h : [3, 0],
+            strokeDashGap: (_j = (_h = this.BS) === null || _h === void 0 ? void 0 : _h.D) !== null && _j !== void 0 ? _j : [3, 0],
         };
     }
     parseProps(parseInfo) {
@@ -14139,8 +14139,6 @@ class SquareAnnotation extends GeometricAnnotation {
         gs.ca = ca;
         gs.LW = width;
         gs.D = [[dash, gap], 0];
-        gs.LC = lineCapStyles.SQUARE;
-        gs.LJ = lineJoinStyles.MITER;
         const xmin = this.Rect[0] + this.RD[0];
         const ymin = this.Rect[1] + this.RD[3];
         const xmax = this.Rect[2] - this.RD[2];
@@ -14184,6 +14182,33 @@ class CircleAnnotation extends GeometricAnnotation {
     constructor() {
         super(annotationTypes.CIRCLE);
     }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Square") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new CircleAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Rect = dto.rect;
+        annotation.RD = dto.rectMargins;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation._cloud = dto.cloud;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -14214,6 +14239,29 @@ class CircleAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Square",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            rect: this.Rect,
+            rectMargins: this.RD,
+            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            cloud: this._cloud,
+            color,
+            strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
+            strokeDashGap: (_j = (_h = this.BS) === null || _h === void 0 ? void 0 : _h.D) !== null && _j !== void 0 ? _j : [3, 0],
+        };
+    }
     parseProps(parseInfo) {
         super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
@@ -14241,7 +14289,84 @@ class CircleAnnotation extends GeometricAnnotation {
             }
         }
     }
+    generateApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = this.Rect;
+        let colorString;
+        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const ca = this.CA || 1;
+        const width = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const dash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const gap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = ca;
+        gs.ca = ca;
+        gs.LW = width;
+        gs.D = [[dash, gap], 0];
+        gs.LC = lineCapStyles.ROUND;
+        gs.LJ = lineJoinStyles.ROUND;
+        const xmin = this.Rect[0] + this.RD[0];
+        const ymin = this.Rect[1] + this.RD[3];
+        const xmax = this.Rect[2] - this.RD[2];
+        const ymax = this.Rect[3] - this.RD[1];
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        if (this._cloud) {
+            const curveData = buildCloudCurveFromPolyline([
+                new Vec2(xmin, ymin),
+                new Vec2(xmin, ymax),
+                new Vec2(xmax, ymax),
+                new Vec2(xmax, ymin),
+                new Vec2(xmin, ymin),
+            ], CircleAnnotation.cloudArcSize);
+            streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
+            curveData.curves.forEach(x => {
+                streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
+            });
+            streamTextData += "\nS";
+        }
+        else {
+            const c = CircleAnnotation.bezierConstant;
+            const halfw = (xmax - xmin) / 2;
+            const halfh = (ymax - ymin) / 2;
+            const xcenter = xmin + halfw;
+            const ycenter = ymin + halfh;
+            const cw = c * halfw;
+            const ch = c * halfh;
+            streamTextData += `\n${xcenter} ${ymax} m`;
+            streamTextData += `\n${xcenter + cw} ${ymax} ${xmax} ${ycenter + ch} ${xmax} ${ycenter} c`;
+            streamTextData += `\n${xmax} ${ycenter - ch} ${xcenter + cw} ${ymin} ${xcenter} ${ymin} c`;
+            streamTextData += `\n${xcenter - cw} ${ymin} ${xmin} ${ycenter - ch} ${xmin} ${ycenter} c`;
+            streamTextData += `\n${xmin} ${ycenter + ch} ${xcenter - cw} ${ymax} ${xcenter} ${ymax} c`;
+            streamTextData += "\ns";
+        }
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
 }
+CircleAnnotation.cloudArcSize = 20;
+CircleAnnotation.bezierConstant = 0.551915;
 
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {
@@ -15798,6 +15923,55 @@ class GeometricArrowAnnotator extends GeometricAnnotator {
 class GeometricCircleAnnotator extends GeometricAnnotator {
     constructor(docData, parent, pages, options) {
         super(docData, parent, pages, options || {});
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords) {
+                return;
+            }
+            const { pageX: px, pageY: py, pageId } = pageCoords;
+            this._pageId = pageId;
+            this._down = new Vec2(px, py);
+            this.clear();
+            this.refreshGroupPosition();
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary
+                || !this._down) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords || pageCoords.pageId !== this._pageId) {
+                return;
+            }
+            const { pageX: px, pageY: py } = pageCoords;
+            const { min, max } = vecMinMax(this._down, new Vec2(px, py));
+            this.redrawCircle(min, max);
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            if (this._rect) {
+                this.emitPointCount(2);
+            }
+        };
         this.init();
     }
     destroy() {
@@ -15805,13 +15979,98 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this.emitPointCount(0);
     }
     undo() {
+        this.clear();
     }
     clear() {
+        this._rect = null;
+        this.clearGroup();
+        this.emitPointCount(0);
     }
     saveAnnotation() {
+        if (!this._rect) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = CircleAnnotation.createFromDto(dto);
+        this._docData.appendAnnotationToPage(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
+    }
+    redrawCircle(min, max) {
+        this._svgGroup.innerHTML = "";
+        const minSize = this._strokeWidth * 2;
+        if (max.x - min.x <= minSize || max.y - min.y <= minSize) {
+            this._rect = null;
+            return;
+        }
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._rect = [min.x, min.y, max.x, max.y];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        let pathString;
+        if (this._cloudMode) {
+            const curveData = buildCloudCurveFromPolyline([
+                new Vec2(min.x, min.y),
+                new Vec2(min.x, max.y),
+                new Vec2(max.x, max.y),
+                new Vec2(max.x, min.y),
+                new Vec2(min.x, min.y),
+            ], CircleAnnotation.cloudArcSize);
+            pathString = "M" + curveData.start.x + "," + curveData.start.y;
+            curveData.curves.forEach(x => {
+                pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+            });
+        }
+        else {
+            const c = CircleAnnotation.bezierConstant;
+            const halfw = (max.x - min.x) / 2;
+            const halfh = (max.y - min.y) / 2;
+            const xcenter = min.x + halfw;
+            const ycenter = min.y + halfh;
+            const cw = c * halfw;
+            const ch = c * halfh;
+            pathString = "M" + xcenter + "," + max.y;
+            pathString += ` C${xcenter + cw},${max.y} ${max.x},${ycenter + ch} ${max.x},${ycenter}`;
+            pathString += ` C${max.x},${ycenter - ch} ${xcenter + cw},${min.y} ${xcenter},${min.y}`;
+            pathString += ` C${xcenter - cw},${min.y} ${min.x},${ycenter - ch} ${min.x},${ycenter}`;
+            pathString += ` C${min.x},${ycenter + ch} ${xcenter - cw},${max.y} ${xcenter},${max.y}`;
+        }
+        path.setAttribute("d", pathString);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const margin = this._strokeWidth / 2 + (this._cloudMode ? CircleAnnotation.cloudArcSize / 2 : 0);
+        const lm = margin;
+        const tm = margin;
+        const rm = margin;
+        const bm = margin;
+        const rectMargins = [lm, tm, rm, bm];
+        const [xmin, ymin, xmax, ymax] = this._rect;
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Square",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
+            rectMargins,
+            matrix: [1, 0, 0, 1, 0, 0],
+            cloud: this._cloudMode,
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
     }
 }
 

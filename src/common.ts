@@ -70,6 +70,7 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
 }
 
 type CurveData = [control1: Vec2, control2: Vec2, end: Vec2];
+
 export interface CloudCurveData {
   start: Vec2;
   curves: CurveData[];

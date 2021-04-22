@@ -1,11 +1,33 @@
-import { Quadruple } from "../../../../../common";
+import { buildCloudCurveFromPolyline, Double, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
-import { annotationTypes } from "../../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
+import { Vec2 } from "../../../../../math";
+
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
+
+import { DateString } from "../../../strings/date-string";
+import { LiteralString } from "../../../strings/literal-string";
+import { XFormStream } from "../../../streams/x-form-stream";
+import { BorderStyleDict } from "../../../appearance/border-style-dict";
+import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
+import { ResourceDict } from "../../../appearance/resource-dict";
 import { GeometricAnnotation } from "./geometric-annotation";
+import { AnnotationDto } from "../../annotation-dict";
+
+export interface CircleAnnotationDto extends AnnotationDto {  
+  rectMargins: Quadruple;
+  cloud: boolean;
+  color: Quadruple;
+  strokeWidth: number;
+  strokeDashGap?: Double;
+}
 
 export class CircleAnnotation extends GeometricAnnotation {
+  static readonly cloudArcSize = 20;
+  /**constant used to imitate circle using four cubic bezier curves */
+  static readonly bezierConstant = 0.551915;
+
   /**
    * (Optional; PDF 1.5+) A set of four numbers that shall describe the numerical differences 
    * between two rectangles: the Rect entry of the annotation and the actual boundaries 
@@ -17,6 +39,38 @@ export class CircleAnnotation extends GeometricAnnotation {
   
   constructor() {
     super(annotationTypes.CIRCLE);
+  }
+  
+  static createFromDto(dto: CircleAnnotationDto): CircleAnnotation {
+    if (dto.annotationType !== "/Square") {
+      throw new Error("Invalid annotation type");
+    }
+
+    const bs = new BorderStyleDict();
+    bs.W = dto.strokeWidth;
+    if (dto.strokeDashGap) {
+      bs.D = dto.strokeDashGap;
+    }
+    
+    const annotation = new CircleAnnotation();
+    annotation.$name = dto.uuid;
+    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.T = LiteralString.fromString(dto.author);
+    annotation.M = DateString.fromDate(new Date(dto.dateModified));
+    annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Rect = dto.rect;
+    annotation.RD = dto.rectMargins;
+    annotation.C = dto.color.slice(0, 3);
+    annotation.CA = dto.color[3];
+    annotation.BS = bs;
+    annotation._cloud = dto.cloud;
+    
+    annotation.generateApStream();
+
+    const proxy = new Proxy<CircleAnnotation>(annotation, annotation.onChange);
+    annotation._proxy = proxy;
+    annotation._added = true;
+    return proxy;
   }
 
   static parse(parseInfo: ParseInfo): ParseResult<CircleAnnotation> {
@@ -55,7 +109,34 @@ export class CircleAnnotation extends GeometricAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
-  }  
+  }
+  
+  toDto(): CircleAnnotationDto {
+    const color = this.getColorRect();
+
+    return {
+      annotationType: "/Square",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this.T?.literal,
+
+      rect: this.Rect,
+      rectMargins: this.RD,
+      matrix: this.apStream?.Matrix,
+
+      cloud: this._cloud,
+      color,
+      strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
+      strokeDashGap: this.BS?.D ?? [3, 0],
+    };
+  }
   
   /**
    * fill public properties from data using info/parser if available
@@ -87,5 +168,86 @@ export class CircleAnnotation extends GeometricAnnotation {
         break;
       }
     };
+  }
+  
+  protected generateApStream() {
+    const apStream = new XFormStream();
+    apStream.Filter = "/FlateDecode";
+    apStream.LastModified = DateString.fromDate(new Date());
+    apStream.BBox = this.Rect;
+
+    let colorString: string;
+    if (!this.C?.length) {
+      colorString = "0 G 0 g";
+    } else if (this.C.length < 3) {
+      const g = this.C[0];
+      colorString = `${g} G ${g} g`;
+    } else if (this.C.length === 3) {
+      const [r, g, b] = this.C;      
+      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+    } else {      
+      const [c, m, y, k] = this.C;      
+      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+    }
+
+    const ca = this.CA || 1;
+    const width = this.BS?.W ?? this.Border?.width ?? 1;
+    const dash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const gap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    const gs = new GraphicsStateDict();
+    gs.AIS = true;
+    gs.BM = "/Normal";
+    gs.CA = ca;
+    gs.ca = ca;
+    gs.LW = width;
+    gs.D = [[dash, gap], 0];
+
+    gs.LC = lineCapStyles.ROUND;
+    gs.LJ = lineJoinStyles.ROUND;
+
+    const xmin = this.Rect[0] + this.RD[0];
+    const ymin = this.Rect[1] + this.RD[3];
+    const xmax = this.Rect[2] - this.RD[2];
+    const ymax = this.Rect[3] - this.RD[1];
+
+    let streamTextData = `q ${colorString} /GS0 gs`;
+
+    if (this._cloud) {
+      const curveData = buildCloudCurveFromPolyline([
+        new Vec2(xmin, ymin),
+        new Vec2(xmin, ymax),
+        new Vec2(xmax, ymax),
+        new Vec2(xmax, ymin),
+        new Vec2(xmin, ymin),
+      ], CircleAnnotation.cloudArcSize);      
+      streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
+      curveData.curves.forEach(x => {
+        streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
+      });
+      streamTextData += "\nS";
+    } else {
+      const c = CircleAnnotation.bezierConstant;
+      const halfw = (xmax - xmin) / 2;
+      const halfh = (ymax - ymin) / 2;
+      const xcenter = xmin + halfw;
+      const ycenter = ymin + halfh;
+      const cw = c * halfw;
+      const ch = c * halfh;
+      // drawing four cubic bezier curves starting at the top tangent
+      streamTextData += `\n${xcenter} ${ymax} m`;
+      streamTextData += `\n${xcenter + cw} ${ymax} ${xmax} ${ycenter + ch} ${xmax} ${ycenter} c`;
+      streamTextData += `\n${xmax} ${ycenter - ch} ${xcenter + cw} ${ymin} ${xcenter} ${ymin} c`;
+      streamTextData += `\n${xcenter - cw} ${ymin} ${xmin} ${ycenter - ch} ${xmin} ${ycenter} c`;
+      streamTextData += `\n${xmin} ${ycenter + ch} ${xcenter - cw} ${ymax} ${xcenter} ${ymax} c`;
+      streamTextData += "\ns"; 
+    }
+    
+    streamTextData += "\nQ";
+
+    apStream.Resources = new ResourceDict();
+    apStream.Resources.setGraphicsState("/GS0", gs);
+    apStream.setTextStreamData(streamTextData);    
+
+    this.apStream = apStream;
   }
 }
