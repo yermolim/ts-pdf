@@ -1,5 +1,5 @@
 import { buildCloudCurveFromEllipse, getRandomUuid, Quadruple } from "../../common";
-import { Vec2, vecMinMax } from "../../math";
+import { Mat3, Vec2, vecMinMax } from "../../math";
 
 import { DocumentData } from "../../document/document-data";
 import { CircleAnnotation, CircleAnnotationDto } from "../../document/entities/annotations/markup/geometric/circle-annotation";
@@ -89,7 +89,8 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     const center = new Vec2(min.x + rx, min.y + ry);
 
     if (this._cloudMode) {
-      const curveData = buildCloudCurveFromEllipse(rx, ry, center, CircleAnnotation.cloudArcSize);    
+      const curveData = buildCloudCurveFromEllipse(rx, ry, CircleAnnotation.cloudArcSize, 
+        new Mat3().applyTranslation(center.x, center.y));    
   
       pathString = "M" + curveData.start.x + "," + curveData.start.y;
       curveData.curves.forEach(x => {

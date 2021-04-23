@@ -1,7 +1,7 @@
-import { buildCloudCurveFromPolyline, Double, Hextuple, Quadruple } from "../../../../../common";
+import { buildCloudCurveFromPolyline, Hextuple, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
-import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../../../math";
+import { Mat3, Vec2 } from "../../../../../math";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -284,6 +284,7 @@ export class SquareAnnotation extends GeometricAnnotation {
       streamTextData += `\n${trBoxUL.x} ${trBoxUL.y} l`;
       streamTextData += "\ns"; 
     }
+
     // pop the graphics state back from the stack
     streamTextData += "\nQ";
 

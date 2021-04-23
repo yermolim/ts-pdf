@@ -1,4 +1,4 @@
-import { buildCloudCurveFromEllipse, Double, Hextuple, Quadruple } from "../../../../../common";
+import { buildCloudCurveFromEllipse, Hextuple, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { Mat3, Vec2 } from "../../../../../math";
@@ -13,6 +13,7 @@ import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
+import { AppearanceStreamRenderer } from "../../../../render/appearance-stream-renderer";
 
 export interface CircleAnnotationDto extends GeometricAnnotationDto {  
   rectMargins: Quadruple;
@@ -170,19 +171,22 @@ export class CircleAnnotation extends GeometricAnnotation {
     };
   }
   
-  protected generateApStream(bbox?: Quadruple, matrix?: Hextuple) {      
+  protected generateApStream(bbox?: Quadruple, matrix?: Hextuple) {
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
     apStream.LastModified = DateString.fromDate(new Date());
-
+    
+    // set bounding box and transformation matrix
     const streamBbox: Quadruple = bbox 
       ? [bbox[0], bbox[1], bbox[2], bbox[3]]
       : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];  
     apStream.BBox = streamBbox;
-    apStream.Matrix = matrix 
+    const streamMatrix: Hextuple =  matrix 
       ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
       : [1 ,0, 0, 1, 0, 0];
+    apStream.Matrix = streamMatrix;
 
+    // set color
     let colorString: string;
     if (!this.C?.length) {
       colorString = "0 G 0 g";
@@ -197,53 +201,103 @@ export class CircleAnnotation extends GeometricAnnotation {
       colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
     }
 
-    const ca = this.CA || 1;
-    const width = this.BS?.W ?? this.Border?.width ?? 1;
-    const dash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
-    const gap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    // set stroke style options
+    const opacity = this.CA || 1;
+    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();
     gs.AIS = true;
     gs.BM = "/Normal";
-    gs.CA = ca;
-    gs.ca = ca;
-    gs.LW = width;
-    gs.D = [[dash, gap], 0];
-
+    gs.CA = opacity;
+    gs.ca = opacity;
+    gs.LW = strokeWidth;
+    gs.D = [[strokeDash, strokeGap], 0]; 
     gs.LC = lineCapStyles.ROUND;
     gs.LJ = lineJoinStyles.ROUND;
 
-    const xmin = streamBbox[0] + this.RD[0];
-    const ymin = streamBbox[1] + this.RD[3];
-    const xmax = streamBbox[2] - this.RD[2];
-    const ymax = streamBbox[3] - this.RD[1];
+    // set margins to default if absent
+    if (!this.RD) {
+      const defaultMargin = this._cloud
+        ? CircleAnnotation.cloudArcSize / 2
+        : strokeWidth / 2;
+      this.RD ||= [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
+    }  
+    
+    // calculate matrices needed for drawing
+    const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+    const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
+    const {r: rotation} = apStream.matrix.getTRS(); 
+    const marginsRotationMat = new Mat3().applyRotation(rotation);
+        
+    // box corners starting positions
+    const boxLL = new Vec2(streamBbox[0], streamBbox[1]);
+    const boxLR = new Vec2(streamBbox[2], streamBbox[1]);
+    const boxUR = new Vec2(streamBbox[2], streamBbox[3]);
+    const boxUL = new Vec2(streamBbox[0], streamBbox[3]);
 
-    let streamTextData = `q ${colorString} /GS0 gs`;
+    // calculating margin vectors for the box corners
+    // applying only rotation to keep margin values in their original state after any scaling
+    const [marginLeft, marginTop, marginRight, marginBottom] = this.RD; 
+    const marginLL = new Vec2(marginLeft, marginBottom).applyMat3(marginsRotationMat);
+    const marginLR = new Vec2(-marginRight, marginBottom).applyMat3(marginsRotationMat);
+    const marginUR = new Vec2(-marginRight, -marginTop).applyMat3(marginsRotationMat);
+    const marginUL = new Vec2(marginLeft, -marginTop).applyMat3(marginsRotationMat);
 
-    const rx = (xmax - xmin) / 2;
-    const ry = (ymax - ymin) / 2;
-    const xcenter = xmin + rx;
-    const ycenter = ymin + ry;
+    // apply transformation to the box corners
+    // add the rotated margin vectors after transformation to preserve the initial margin values
+    const trBoxLL = Vec2.applyMat3(boxLL, bBoxToRectMat).add(marginLL);
+    const trBoxLR = Vec2.applyMat3(boxLR, bBoxToRectMat).add(marginLR);
+    const trBoxUR = Vec2.applyMat3(boxUR, bBoxToRectMat).add(marginUR);
+    const trBoxUL = Vec2.applyMat3(boxUL, bBoxToRectMat).add(marginUL);  
+    const trBoxCenter = Vec2.add(trBoxLL, trBoxUR).multiplyByScalar(0.5);
+    const trBoxLeft = Vec2.add(trBoxLL, trBoxUL).multiplyByScalar(0.5);
+    const trBoxTop = Vec2.add(trBoxUL, trBoxUR).multiplyByScalar(0.5);
+    const trBoxRight = Vec2.add(trBoxLR, trBoxUR).multiplyByScalar(0.5);
+    const trBoxBottom = Vec2.add(trBoxLL, trBoxLR).multiplyByScalar(0.5);
+    
+    const rx = Vec2.substract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
+    const ry = Vec2.substract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
 
+    // push the graphics state onto the stack
+    let streamTextData = `q ${colorString} /GS0 gs`; 
+    // add the inversed transformation matrix to 
+    streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
+
+    // the graphics will be drawn using transformed coordinates to preserve stroke options
+    // (by using such way line width, margins, etc. will still be as they were specified)
     if (this._cloud) {
-      const curveData = buildCloudCurveFromEllipse(rx, ry, new Vec2(xcenter, ycenter), CircleAnnotation.cloudArcSize); 
+      const curveData = buildCloudCurveFromEllipse(rx.getMagnitude(), ry.getMagnitude(), 
+        CircleAnnotation.cloudArcSize, new Mat3().applyRotation(rotation).applyTranslation(trBoxCenter.x, trBoxCenter.y)); 
       streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
       curveData.curves.forEach(x => {
         streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
       });
       streamTextData += "\nS";
     } else {
+      // draw ellipse using four cubic bezier curves
+      // calculate the curves control points
       const c = CircleAnnotation.bezierConstant;
-      const cw = c * rx;
-      const ch = c * ry;
-      // drawing four cubic bezier curves starting at the top tangent
-      streamTextData += `\n${xcenter} ${ymax} m`;
-      streamTextData += `\n${xcenter + cw} ${ymax} ${xmax} ${ycenter + ch} ${xmax} ${ycenter} c`;
-      streamTextData += `\n${xmax} ${ycenter - ch} ${xcenter + cw} ${ymin} ${xcenter} ${ymin} c`;
-      streamTextData += `\n${xcenter - cw} ${ymin} ${xmin} ${ycenter - ch} ${xmin} ${ycenter} c`;
-      streamTextData += `\n${xmin} ${ycenter + ch} ${xcenter - cw} ${ymax} ${xcenter} ${ymax} c`;
+      const cx = Vec2.multiplyByScalar(rx, c);
+      const cy = Vec2.multiplyByScalar(ry, c);
+      const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);
+      const controlTR2 = Vec2.add(Vec2.add(trBoxCenter, cy), rx);
+      const controlRB1 = Vec2.add(Vec2.substract(trBoxCenter, cy), rx);
+      const controlRB2 = Vec2.add(Vec2.substract(trBoxCenter, ry), cx);
+      const controlBL1 = Vec2.substract(Vec2.substract(trBoxCenter, ry), cx);
+      const controlBL2 = Vec2.substract(Vec2.substract(trBoxCenter, cy), rx);
+      const controlLT1 = Vec2.substract(Vec2.add(trBoxCenter, cy), rx);
+      const controlLT2 = Vec2.substract(Vec2.add(trBoxCenter, ry), cx);
+      // drawing the curves starting at the top tangent
+      streamTextData += `\n${trBoxTop.x} ${trBoxTop.y} m`;
+      streamTextData += `\n${controlTR1.x} ${controlTR1.y} ${controlTR2.x} ${controlTR2.y} ${trBoxRight.x} ${trBoxRight.y} c`;
+      streamTextData += `\n${controlRB1.x} ${controlRB1.y} ${controlRB2.x} ${controlRB2.y} ${trBoxBottom.x} ${trBoxBottom.y} c`;
+      streamTextData += `\n${controlBL1.x} ${controlBL1.y} ${controlBL2.x} ${controlBL2.y} ${trBoxLeft.x} ${trBoxLeft.y} c`;
+      streamTextData += `\n${controlLT1.x} ${controlLT1.y} ${controlLT2.x} ${controlLT2.y} ${trBoxTop.x} ${trBoxTop.y} c`;
       streamTextData += "\ns"; 
     }
     
+    // pop the graphics state back from the stack
     streamTextData += "\nQ";
 
     apStream.Resources = new ResourceDict();
@@ -251,5 +305,21 @@ export class CircleAnnotation extends GeometricAnnotation {
     apStream.setTextStreamData(streamTextData);    
 
     this.apStream = apStream;
+  }
+  
+  protected applyCommonTransform(matrix: Mat3) {    
+    // transform bounding boxes
+    this.applyRectTransform(matrix);
+
+    const dict = <CircleAnnotation>this._proxy || this;
+    
+    // if the annotation has a content stream, rebuild the stream
+    const stream = dict.apStream;
+    if (stream) {
+      const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+      dict.generateApStream(stream.BBox, <Hextuple><unknown>newApMatrix.toFloatShortArray());
+    }
+
+    dict.M = DateString.fromDate(new Date());
   }
 }

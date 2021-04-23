@@ -3014,7 +3014,9 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
         curves,
     };
 }
-function buildCloudCurveFromEllipse(rx, ry, center, maxArcSize) {
+function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
+    matrix || (matrix = new Mat3());
+    const center = new Vec2();
     const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
     const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
     const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
@@ -3023,7 +3025,7 @@ function buildCloudCurveFromEllipse(rx, ry, center, maxArcSize) {
     const next = new Vec2();
     let angle = 0;
     let distance;
-    points.push(current.clone());
+    points.push(current.clone().applyMat3(matrix));
     for (let i = 0; i < segmentsNumber; i++) {
         distance = 0;
         while (distance < maxSegmentLength) {
@@ -3032,7 +3034,7 @@ function buildCloudCurveFromEllipse(rx, ry, center, maxArcSize) {
             distance += getDistance(current.x, current.y, next.x, next.y);
             current.setFromVec2(next);
         }
-        points.push(current.clone());
+        points.push(current.clone().applyMat3(matrix));
     }
     const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
     return curveData;
@@ -14369,9 +14371,10 @@ class CircleAnnotation extends GeometricAnnotation {
             ? [bbox[0], bbox[1], bbox[2], bbox[3]]
             : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
         apStream.BBox = streamBbox;
-        apStream.Matrix = matrix
+        const streamMatrix = matrix
             ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
             : [1, 0, 0, 1, 0, 0];
+        apStream.Matrix = streamMatrix;
         let colorString;
         if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
             colorString = "0 G 0 g";
@@ -14388,30 +14391,53 @@ class CircleAnnotation extends GeometricAnnotation {
             const [c, m, y, k] = this.C;
             colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
         }
-        const ca = this.CA || 1;
-        const width = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
-        const dash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
-        const gap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const opacity = this.CA || 1;
+        const strokeWidth = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const strokeDash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const strokeGap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
-        gs.CA = ca;
-        gs.ca = ca;
-        gs.LW = width;
-        gs.D = [[dash, gap], 0];
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
         gs.LC = lineCapStyles.ROUND;
         gs.LJ = lineJoinStyles.ROUND;
-        const xmin = streamBbox[0] + this.RD[0];
-        const ymin = streamBbox[1] + this.RD[3];
-        const xmax = streamBbox[2] - this.RD[2];
-        const ymax = streamBbox[3] - this.RD[1];
+        if (!this.RD) {
+            const defaultMargin = this._cloud
+                ? CircleAnnotation.cloudArcSize / 2
+                : strokeWidth / 2;
+            this.RD || (this.RD = [defaultMargin, defaultMargin, defaultMargin, defaultMargin]);
+        }
+        const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+        const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray();
+        const { r: rotation } = apStream.matrix.getTRS();
+        const marginsRotationMat = new Mat3().applyRotation(rotation);
+        const boxLL = new Vec2(streamBbox[0], streamBbox[1]);
+        const boxLR = new Vec2(streamBbox[2], streamBbox[1]);
+        const boxUR = new Vec2(streamBbox[2], streamBbox[3]);
+        const boxUL = new Vec2(streamBbox[0], streamBbox[3]);
+        const [marginLeft, marginTop, marginRight, marginBottom] = this.RD;
+        const marginLL = new Vec2(marginLeft, marginBottom).applyMat3(marginsRotationMat);
+        const marginLR = new Vec2(-marginRight, marginBottom).applyMat3(marginsRotationMat);
+        const marginUR = new Vec2(-marginRight, -marginTop).applyMat3(marginsRotationMat);
+        const marginUL = new Vec2(marginLeft, -marginTop).applyMat3(marginsRotationMat);
+        const trBoxLL = Vec2.applyMat3(boxLL, bBoxToRectMat).add(marginLL);
+        const trBoxLR = Vec2.applyMat3(boxLR, bBoxToRectMat).add(marginLR);
+        const trBoxUR = Vec2.applyMat3(boxUR, bBoxToRectMat).add(marginUR);
+        const trBoxUL = Vec2.applyMat3(boxUL, bBoxToRectMat).add(marginUL);
+        const trBoxCenter = Vec2.add(trBoxLL, trBoxUR).multiplyByScalar(0.5);
+        const trBoxLeft = Vec2.add(trBoxLL, trBoxUL).multiplyByScalar(0.5);
+        const trBoxTop = Vec2.add(trBoxUL, trBoxUR).multiplyByScalar(0.5);
+        const trBoxRight = Vec2.add(trBoxLR, trBoxUR).multiplyByScalar(0.5);
+        const trBoxBottom = Vec2.add(trBoxLL, trBoxLR).multiplyByScalar(0.5);
+        const rx = Vec2.substract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
+        const ry = Vec2.substract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
         let streamTextData = `q ${colorString} /GS0 gs`;
-        const rx = (xmax - xmin) / 2;
-        const ry = (ymax - ymin) / 2;
-        const xcenter = xmin + rx;
-        const ycenter = ymin + ry;
+        streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
         if (this._cloud) {
-            const curveData = buildCloudCurveFromEllipse(rx, ry, new Vec2(xcenter, ycenter), CircleAnnotation.cloudArcSize);
+            const curveData = buildCloudCurveFromEllipse(rx.getMagnitude(), ry.getMagnitude(), CircleAnnotation.cloudArcSize, new Mat3().applyRotation(rotation).applyTranslation(trBoxCenter.x, trBoxCenter.y));
             streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
             curveData.curves.forEach(x => {
                 streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
@@ -14420,13 +14446,21 @@ class CircleAnnotation extends GeometricAnnotation {
         }
         else {
             const c = CircleAnnotation.bezierConstant;
-            const cw = c * rx;
-            const ch = c * ry;
-            streamTextData += `\n${xcenter} ${ymax} m`;
-            streamTextData += `\n${xcenter + cw} ${ymax} ${xmax} ${ycenter + ch} ${xmax} ${ycenter} c`;
-            streamTextData += `\n${xmax} ${ycenter - ch} ${xcenter + cw} ${ymin} ${xcenter} ${ymin} c`;
-            streamTextData += `\n${xcenter - cw} ${ymin} ${xmin} ${ycenter - ch} ${xmin} ${ycenter} c`;
-            streamTextData += `\n${xmin} ${ycenter + ch} ${xcenter - cw} ${ymax} ${xcenter} ${ymax} c`;
+            const cx = Vec2.multiplyByScalar(rx, c);
+            const cy = Vec2.multiplyByScalar(ry, c);
+            const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);
+            const controlTR2 = Vec2.add(Vec2.add(trBoxCenter, cy), rx);
+            const controlRB1 = Vec2.add(Vec2.substract(trBoxCenter, cy), rx);
+            const controlRB2 = Vec2.add(Vec2.substract(trBoxCenter, ry), cx);
+            const controlBL1 = Vec2.substract(Vec2.substract(trBoxCenter, ry), cx);
+            const controlBL2 = Vec2.substract(Vec2.substract(trBoxCenter, cy), rx);
+            const controlLT1 = Vec2.substract(Vec2.add(trBoxCenter, cy), rx);
+            const controlLT2 = Vec2.substract(Vec2.add(trBoxCenter, ry), cx);
+            streamTextData += `\n${trBoxTop.x} ${trBoxTop.y} m`;
+            streamTextData += `\n${controlTR1.x} ${controlTR1.y} ${controlTR2.x} ${controlTR2.y} ${trBoxRight.x} ${trBoxRight.y} c`;
+            streamTextData += `\n${controlRB1.x} ${controlRB1.y} ${controlRB2.x} ${controlRB2.y} ${trBoxBottom.x} ${trBoxBottom.y} c`;
+            streamTextData += `\n${controlBL1.x} ${controlBL1.y} ${controlBL2.x} ${controlBL2.y} ${trBoxLeft.x} ${trBoxLeft.y} c`;
+            streamTextData += `\n${controlLT1.x} ${controlLT1.y} ${controlLT2.x} ${controlLT2.y} ${trBoxTop.x} ${trBoxTop.y} c`;
             streamTextData += "\ns";
         }
         streamTextData += "\nQ";
@@ -14434,6 +14468,16 @@ class CircleAnnotation extends GeometricAnnotation {
         apStream.Resources.setGraphicsState("/GS0", gs);
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
+    }
+    applyCommonTransform(matrix) {
+        this.applyRectTransform(matrix);
+        const dict = this._proxy || this;
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+            dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
+        }
+        dict.M = DateString.fromDate(new Date());
     }
 }
 CircleAnnotation.cloudArcSize = 20;
@@ -16097,7 +16141,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         const ry = (max.y - min.y) / 2;
         const center = new Vec2(min.x + rx, min.y + ry);
         if (this._cloudMode) {
-            const curveData = buildCloudCurveFromEllipse(rx, ry, center, CircleAnnotation.cloudArcSize);
+            const curveData = buildCloudCurveFromEllipse(rx, ry, CircleAnnotation.cloudArcSize, new Mat3().applyTranslation(center.x, center.y));
             pathString = "M" + curveData.start.x + "," + curveData.start.y;
             curveData.curves.forEach(x => {
                 pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;

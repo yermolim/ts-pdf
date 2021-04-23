@@ -1,5 +1,5 @@
 import { v4 as uuidV4 } from "uuid";
-import { mat3From4Vec2, Vec2 } from "./math";
+import { Mat3, mat3From4Vec2, Vec2 } from "./math";
 
 /* eslint-disable no-bitwise */
 export function getRandomUuid(): string {
@@ -79,11 +79,13 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
  * calculate cubic bezier curves of the 'cloud' using the provided information
  * @param rx ellipse horizontal radius
  * @param ry ellipse vertical radius
- * @param center ellipse center
  * @param maxArcSize maximum size of the single 'cloud' arc
+ * @param matrix transformation matrix to apply to the result
  * @returns 
  */
-export function buildCloudCurveFromEllipse(rx: number, ry: number, center: Vec2, maxArcSize: number): CloudCurveData {  
+export function buildCloudCurveFromEllipse(rx: number, ry: number, maxArcSize: number, matrix?: Mat3,): CloudCurveData {  
+  matrix ||= new Mat3();
+  const center = new Vec2();
   // use Srinivasa Ramanujan's approximation
   const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
   // calculate ellipse segments rounding to the nearest multiple of 4 (for symmetry)
@@ -95,7 +97,7 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, center: Vec2,
   let angle = 0;
   let distance: number;
   // push start point
-  points.push(current.clone());
+  points.push(current.clone().applyMat3(matrix));
   for (let i = 0; i < segmentsNumber; i++) {
     distance = 0;
     while (distance < maxSegmentLength) {
@@ -104,7 +106,7 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, center: Vec2,
       distance += getDistance(current.x, current.y, next.x, next.y);
       current.setFromVec2(next);
     }
-    points.push(current.clone());
+    points.push(current.clone().applyMat3(matrix));
   }
 
   const curveData = buildCloudCurveFromPolyline(points, maxArcSize);    
