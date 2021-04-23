@@ -121,6 +121,7 @@ export class InkAnnotation extends MarkupAnnotation {
       author: this.T?.literal,
 
       rect: this.Rect,
+      bbox: this.apStream?.BBox,
       matrix: this.apStream?.Matrix,
 
       inkList: this.InkList,
@@ -186,7 +187,7 @@ export class InkAnnotation extends MarkupAnnotation {
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
     apStream.LastModified = DateString.fromDate(new Date());
-    apStream.BBox = this.Rect;
+    apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
 
     let colorString: string;
     if (!this.C?.length) {

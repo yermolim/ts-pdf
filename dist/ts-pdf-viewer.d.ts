@@ -22,7 +22,8 @@ export interface AnnotationDto {
 	dateModified: string;
 	author: string;
 	rect: Quadruple;
-	matrix: Hextuple;
+	bbox?: Quadruple;
+	matrix?: Hextuple;
 }
 export interface AnnotEventDetail {
 	type: "select" | "add" | "edit" | "delete";

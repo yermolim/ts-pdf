@@ -1,7 +1,7 @@
-import { buildCloudCurveFromEllipse, Double, Quadruple } from "../../../../../common";
+import { buildCloudCurveFromEllipse, Double, Hextuple, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
-import { Vec2 } from "../../../../../math";
+import { Mat3, Vec2 } from "../../../../../math";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -12,15 +12,11 @@ import { XFormStream } from "../../../streams/x-form-stream";
 import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
-import { GeometricAnnotation } from "./geometric-annotation";
-import { AnnotationDto } from "../../annotation-dict";
+import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 
-export interface CircleAnnotationDto extends AnnotationDto {  
+export interface CircleAnnotationDto extends GeometricAnnotationDto {  
   rectMargins: Quadruple;
   cloud: boolean;
-  color: Quadruple;
-  strokeWidth: number;
-  strokeDashGap?: Double;
 }
 
 export class CircleAnnotation extends GeometricAnnotation {
@@ -36,13 +32,16 @@ export class CircleAnnotation extends GeometricAnnotation {
    * beyond that of the square or circle
    */
   RD: Quadruple;
+
+  /**defines if annotation should be rendered using wavy lines (for custom annotations) */
+  protected _cloud: boolean;
   
   constructor() {
     super(annotationTypes.CIRCLE);
   }
   
   static createFromDto(dto: CircleAnnotationDto): CircleAnnotation {
-    if (dto.annotationType !== "/Square") {
+    if (dto.annotationType !== "/Circle") {
       throw new Error("Invalid annotation type");
     }
 
@@ -63,9 +62,9 @@ export class CircleAnnotation extends GeometricAnnotation {
     annotation.C = dto.color.slice(0, 3);
     annotation.CA = dto.color[3];
     annotation.BS = bs;
+
     annotation._cloud = dto.cloud;
-    
-    annotation.generateApStream();
+    annotation.generateApStream(dto.bbox, dto.matrix);
 
     const proxy = new Proxy<CircleAnnotation>(annotation, annotation.onChange);
     annotation._proxy = proxy;
@@ -115,7 +114,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     const color = this.getColorRect();
 
     return {
-      annotationType: "/Square",
+      annotationType: "/Circle",
       uuid: this.$name,
       pageId: this.$pageId,
 
@@ -129,6 +128,7 @@ export class CircleAnnotation extends GeometricAnnotation {
 
       rect: this.Rect,
       rectMargins: this.RD,
+      bbox: this.apStream?.BBox,
       matrix: this.apStream?.Matrix,
 
       cloud: this._cloud,
@@ -170,11 +170,18 @@ export class CircleAnnotation extends GeometricAnnotation {
     };
   }
   
-  protected generateApStream() {
+  protected generateApStream(bbox?: Quadruple, matrix?: Hextuple) {      
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
     apStream.LastModified = DateString.fromDate(new Date());
-    apStream.BBox = this.Rect;
+
+    const streamBbox: Quadruple = bbox 
+      ? [bbox[0], bbox[1], bbox[2], bbox[3]]
+      : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];  
+    apStream.BBox = streamBbox;
+    apStream.Matrix = matrix 
+      ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
+      : [1 ,0, 0, 1, 0, 0];
 
     let colorString: string;
     if (!this.C?.length) {
@@ -205,10 +212,10 @@ export class CircleAnnotation extends GeometricAnnotation {
     gs.LC = lineCapStyles.ROUND;
     gs.LJ = lineJoinStyles.ROUND;
 
-    const xmin = this.Rect[0] + this.RD[0];
-    const ymin = this.Rect[1] + this.RD[3];
-    const xmax = this.Rect[2] - this.RD[2];
-    const ymax = this.Rect[3] - this.RD[1];
+    const xmin = streamBbox[0] + this.RD[0];
+    const ymin = streamBbox[1] + this.RD[3];
+    const xmax = streamBbox[2] - this.RD[2];
+    const ymax = streamBbox[3] - this.RD[1];
 
     let streamTextData = `q ${colorString} /GS0 gs`;
 

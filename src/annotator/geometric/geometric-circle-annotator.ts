@@ -191,7 +191,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     const nowString = new Date().toISOString();
     const dto: CircleAnnotationDto = {
       uuid: getRandomUuid(),
-      annotationType: "/Square",
+      annotationType: "/Circle",
       pageId: null,
 
       dateCreated: nowString,
@@ -200,7 +200,6 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
 
       rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
       rectMargins,
-      matrix: [1, 0, 0, 1, 0, 0],
 
       cloud: this._cloudMode,
       color: this._color,

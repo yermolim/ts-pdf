@@ -1,8 +1,17 @@
+import { Double, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { AnnotationType } from "../../../../const";
+
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
+import { AnnotationDto } from "../../annotation-dict";
 import { MarkupAnnotation } from "../markup-annotation";
+
+export interface GeometricAnnotationDto extends AnnotationDto {
+  color: Quadruple;
+  strokeWidth: number;
+  strokeDashGap?: Double;
+}
 
 export abstract class GeometricAnnotation extends MarkupAnnotation {
   /** 
@@ -10,9 +19,6 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
    * specifying the interior color that shall be used to fill the annotation’s line endings
    */
   IC: number[];  
-
-  /**defines if annotation should be rendered using wavy lines */
-  protected _cloud: boolean;
   
   protected constructor(type: AnnotationType) {
     super(type);

@@ -27,8 +27,21 @@ export interface AnnotationDto {
   dateModified: string;
   author: string;
 
+  /**
+   * annotation AABB min and max coordinates after all translations 
+   * (annotation dictionary 'Rect' property value)
+   */
   rect: Quadruple;
-  matrix: Hextuple;
+  /**
+   * annotation AABB min and max coordinates before all translations 
+   * (appearance stream 'BBox' property value) 
+   */
+  bbox?: Quadruple;
+  /**
+   * annotation transformation matrix for 'BBox' to fit inside 'Rect'
+   * (appearance stream 'Matrix' property value)
+   */
+  matrix?: Hextuple;
 }
 
 

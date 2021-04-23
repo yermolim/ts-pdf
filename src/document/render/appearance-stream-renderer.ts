@@ -1,7 +1,8 @@
-import { RenderToSvgResult, Quadruple } from "../../common";
+import { RenderToSvgResult, Quadruple, BBox, Hextuple } from "../../common";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../math";
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, valueTypes } from "../const";
+
 import { DataParser } from "../data-parser";
 import { ImageStream } from "../entities/streams/image-stream";
 import { XFormStream } from "../entities/streams/x-form-stream";
@@ -44,7 +45,7 @@ export class AppearanceStreamRenderer {
     this._rect = rect;
     this._objectName = objectName; 
 
-    const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream, rect);
+    const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream.BBox, rect, stream.Matrix);
 
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     clipPath.id = `clip0_${objectName}`;
@@ -56,13 +57,21 @@ export class AppearanceStreamRenderer {
 
   /**
    * calculate the transformation matrix between the stream bounding box and the specified AABB
-   * @param stream appearance stream
-   * @param rect AABB coordinates in the page coordinate system
+   * @param bBox source AABB in the page coordinate system
+   * @param rect target AABB coordinates in the page coordinate system
+   * @param matrix optional transformation from the source AABB to properly oriented BB
    * @returns transformation matrix
    */
-  protected static calcBBoxToRectMatrix(stream: XFormStream, rect: Quadruple): Mat3 {
-    const matrix = stream.matrix;
-    const {ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL} = stream.bBox;
+  static calcBBoxToRectMatrix(bBox: Quadruple, rect: Quadruple, matrix?: Hextuple): Mat3 {          
+    const appMatrix = new Mat3();
+    if (matrix) {
+      const [m0, m1, m3, m4, m6, m7] = matrix;
+      appMatrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+    } 
+    const bBoxLL = new Vec2(bBox[0], bBox[1]);
+    const bBoxLR = new Vec2(bBox[2], bBox[1]);
+    const bBoxUR = new Vec2(bBox[2], bBox[3]);
+    const bBoxUL = new Vec2(bBox[0], bBox[3]);
     /*
     The appearance’s bounding box (specified by its BBox entry) is transformed, 
     using Matrix, to produce a quadrilateral with arbitrary orientation. 
@@ -70,10 +79,10 @@ export class AppearanceStreamRenderer {
     that encompasses this quadrilateral.
     */
     const {min: appBoxMin, max: appBoxMax} = vecMinMax(
-      Vec2.applyMat3(bBoxLL, matrix),
-      Vec2.applyMat3(bBoxLR, matrix), 
-      Vec2.applyMat3(bBoxUR, matrix),
-      Vec2.applyMat3(bBoxUL, matrix), 
+      Vec2.applyMat3(bBoxLL, appMatrix),
+      Vec2.applyMat3(bBoxLR, appMatrix), 
+      Vec2.applyMat3(bBoxUR, appMatrix),
+      Vec2.applyMat3(bBoxUL, appMatrix), 
     );
     /*
     A matrix A is computed that scales and translates the transformed appearance box 
@@ -89,7 +98,7 @@ export class AppearanceStreamRenderer {
     Matrix is concatenated with A to form a matrix AA that maps from 
     the appearance’s coordinate system to the annotation’s rectangle in default user space
     */
-    const matAA = Mat3.fromMat3(matrix).multiply(matA);
+    const matAA = Mat3.fromMat3(appMatrix).multiply(matA);
 
     return matAA;
   }

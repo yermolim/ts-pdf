@@ -2934,6 +2934,7 @@ export class StampAnnotation extends MarkupAnnotation {
     const apStream = new XFormStream();
     apStream.LastModified = modified;
     apStream.BBox = bBox;
+    apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];  
     apStream.Resources = new ResourceDict();
     apStream.Resources.setXObject("/Fm", stampForm);
     apStream.Filter = "/FlateDecode";
@@ -2944,16 +2945,14 @@ export class StampAnnotation extends MarkupAnnotation {
     annotation.Subj = LiteralString.fromString(subject);
     annotation.C = color;
     annotation.CA = 1;
-    annotation.apStream = apStream;
-  
-    annotation.$name = dto.uuid;
     annotation.CreationDate = created;
     annotation.M = modified;
     annotation.NM = LiteralString.fromString(dto.uuid);
     annotation.T = LiteralString.fromString(dto.author || "unknown");
     annotation.Name = dto.stampType;
-    apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];  
-    annotation.Rect = dto.rect || stampCreationInfo.rect;  
+    annotation.Rect = dto.rect || stampCreationInfo.rect;
+    annotation.apStream = apStream;  
+    annotation.$name = dto.uuid;
 
     // TODO: add reading custom image data
 
@@ -3013,6 +3012,7 @@ export class StampAnnotation extends MarkupAnnotation {
       author: this.T?.literal,
 
       rect: this.Rect,
+      bbox: this.apStream?.BBox,
       matrix: this.apStream?.Matrix,
 
       stampType: this.Name,

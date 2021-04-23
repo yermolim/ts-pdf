@@ -4,8 +4,8 @@ import { ParseInfo, ParseResult } from "./data-parser";
 import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
 import { StampAnnotation, StampAnnotationDto } from "./entities/annotations/markup/stamp-annotation";
 import { InkAnnotation, InkAnnotationDto } from "./entities/annotations/markup/ink-annotation";
-import { SquareAnnotation } from "./entities/annotations/markup/geometric/square-annotation";
-import { CircleAnnotation } from "./entities/annotations/markup/geometric/circle-annotation";
+import { SquareAnnotation, SquareAnnotationDto } from "./entities/annotations/markup/geometric/square-annotation";
+import { CircleAnnotation, CircleAnnotationDto } from "./entities/annotations/markup/geometric/circle-annotation";
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
@@ -54,6 +54,12 @@ export class AnnotationParseFactory {
         break;
       case "/Ink":
         annotation = InkAnnotation.createFromDto(dto as InkAnnotationDto);
+        break;
+      case "/Square":        
+        annotation = SquareAnnotation.createFromDto(dto as SquareAnnotationDto);
+        break;
+      case "/Circle":        
+        annotation = CircleAnnotation.createFromDto(dto as CircleAnnotationDto);
         break;
       default:
         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);

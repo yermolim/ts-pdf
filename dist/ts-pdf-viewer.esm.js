@@ -7281,7 +7281,7 @@ class AppearanceStreamRenderer {
         this._parser = new DataParser(stream.decodedStreamData);
         this._rect = rect;
         this._objectName = objectName;
-        const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream, rect);
+        const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream.BBox, rect, stream.Matrix);
         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
         clipPath.id = `clip0_${objectName}`;
         clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
@@ -7291,14 +7291,21 @@ class AppearanceStreamRenderer {
     get state() {
         return this._graphicsStates[this._graphicsStates.length - 1];
     }
-    static calcBBoxToRectMatrix(stream, rect) {
-        const matrix = stream.matrix;
-        const { ll: bBoxLL, lr: bBoxLR, ur: bBoxUR, ul: bBoxUL } = stream.bBox;
-        const { min: appBoxMin, max: appBoxMax } = vecMinMax(Vec2.applyMat3(bBoxLL, matrix), Vec2.applyMat3(bBoxLR, matrix), Vec2.applyMat3(bBoxUR, matrix), Vec2.applyMat3(bBoxUL, matrix));
+    static calcBBoxToRectMatrix(bBox, rect, matrix) {
+        const appMatrix = new Mat3();
+        if (matrix) {
+            const [m0, m1, m3, m4, m6, m7] = matrix;
+            appMatrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+        }
+        const bBoxLL = new Vec2(bBox[0], bBox[1]);
+        const bBoxLR = new Vec2(bBox[2], bBox[1]);
+        const bBoxUR = new Vec2(bBox[2], bBox[3]);
+        const bBoxUL = new Vec2(bBox[0], bBox[3]);
+        const { min: appBoxMin, max: appBoxMax } = vecMinMax(Vec2.applyMat3(bBoxLL, appMatrix), Vec2.applyMat3(bBoxLR, appMatrix), Vec2.applyMat3(bBoxUR, appMatrix), Vec2.applyMat3(bBoxUL, appMatrix));
         const rectMin = new Vec2(rect[0], rect[1]);
         const rectMax = new Vec2(rect[2], rect[3]);
         const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
-        const matAA = Mat3.fromMat3(matrix).multiply(matA);
+        const matAA = Mat3.fromMat3(appMatrix).multiply(matA);
         return matAA;
     }
     static parseNextCommand(parser, i) {
@@ -13630,6 +13637,7 @@ class StampAnnotation extends MarkupAnnotation {
         const apStream = new XFormStream();
         apStream.LastModified = modified;
         apStream.BBox = bBox;
+        apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
         apStream.Resources = new ResourceDict();
         apStream.Resources.setXObject("/Fm", stampForm);
         apStream.Filter = "/FlateDecode";
@@ -13639,15 +13647,14 @@ class StampAnnotation extends MarkupAnnotation {
         annotation.Subj = LiteralString.fromString(subject);
         annotation.C = color;
         annotation.CA = 1;
-        annotation.apStream = apStream;
-        annotation.$name = dto.uuid;
         annotation.CreationDate = created;
         annotation.M = modified;
         annotation.NM = LiteralString.fromString(dto.uuid);
         annotation.T = LiteralString.fromString(dto.author || "unknown");
         annotation.Name = dto.stampType;
-        apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
         annotation.Rect = dto.rect || stampCreationInfo.rect;
+        annotation.apStream = apStream;
+        annotation.$name = dto.uuid;
         const proxy = new Proxy(annotation, annotation.onChange);
         annotation._proxy = proxy;
         annotation._added = true;
@@ -13687,7 +13694,7 @@ class StampAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         return {
             annotationType: "/Stamp",
             uuid: this.$name,
@@ -13700,7 +13707,8 @@ class StampAnnotation extends MarkupAnnotation {
                 : new Date().toISOString(),
             author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
             rect: this.Rect,
-            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
             stampType: this.Name,
             stampImageData: null,
         };
@@ -13804,7 +13812,7 @@ class InkAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         const color = this.getColorRect();
         return {
             annotationType: "/Ink",
@@ -13818,11 +13826,12 @@ class InkAnnotation extends MarkupAnnotation {
                 : new Date().toISOString(),
             author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
             rect: this.Rect,
-            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
             inkList: this.InkList,
             color,
-            strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
-            strokeDashGap: (_j = (_h = this.BS) === null || _h === void 0 ? void 0 : _h.D) !== null && _j !== void 0 ? _j : [3, 0],
+            strokeWidth: (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.W) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.width) !== null && _h !== void 0 ? _h : 1,
+            strokeDashGap: (_k = (_j = this.BS) === null || _j === void 0 ? void 0 : _j.D) !== null && _k !== void 0 ? _k : [3, 0],
         };
     }
     parseProps(parseInfo) {
@@ -13876,7 +13885,7 @@ class InkAnnotation extends MarkupAnnotation {
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
-        apStream.BBox = this.Rect;
+        apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
         let colorString;
         if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
             colorString = "0 G 0 g";
@@ -14043,7 +14052,7 @@ class SquareAnnotation extends GeometricAnnotation {
         annotation.CA = dto.color[3];
         annotation.BS = bs;
         annotation._cloud = dto.cloud;
-        annotation.generateApStream();
+        annotation.generateApStream(dto.bbox, dto.matrix);
         const proxy = new Proxy(annotation, annotation.onChange);
         annotation._proxy = proxy;
         annotation._added = true;
@@ -14080,7 +14089,7 @@ class SquareAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         const color = this.getColorRect();
         return {
             annotationType: "/Square",
@@ -14095,11 +14104,12 @@ class SquareAnnotation extends GeometricAnnotation {
             author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
             rect: this.Rect,
             rectMargins: this.RD,
-            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
             cloud: this._cloud,
             color,
-            strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
-            strokeDashGap: (_j = (_h = this.BS) === null || _h === void 0 ? void 0 : _h.D) !== null && _j !== void 0 ? _j : [3, 0],
+            strokeWidth: (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.W) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.width) !== null && _h !== void 0 ? _h : 1,
+            strokeDashGap: (_k = (_j = this.BS) === null || _j === void 0 ? void 0 : _j.D) !== null && _k !== void 0 ? _k : [3, 0],
         };
     }
     parseProps(parseInfo) {
@@ -14129,12 +14139,18 @@ class SquareAnnotation extends GeometricAnnotation {
             }
         }
     }
-    generateApStream() {
+    generateApStream(bbox, matrix) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
-        apStream.BBox = this.Rect;
+        const streamBbox = bbox
+            ? [bbox[0], bbox[1], bbox[2], bbox[3]]
+            : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        apStream.BBox = streamBbox;
+        apStream.Matrix = matrix
+            ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
+            : [1, 0, 0, 1, 0, 0];
         let colorString;
         if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
             colorString = "0 G 0 g";
@@ -14162,10 +14178,10 @@ class SquareAnnotation extends GeometricAnnotation {
         gs.ca = ca;
         gs.LW = width;
         gs.D = [[dash, gap], 0];
-        const xmin = this.Rect[0] + this.RD[0];
-        const ymin = this.Rect[1] + this.RD[3];
-        const xmax = this.Rect[2] - this.RD[2];
-        const ymax = this.Rect[3] - this.RD[1];
+        const xmin = streamBbox[0] + this.RD[0];
+        const ymin = streamBbox[1] + this.RD[3];
+        const xmax = streamBbox[2] - this.RD[2];
+        const ymax = streamBbox[3] - this.RD[1];
         let streamTextData = `q ${colorString} /GS0 gs`;
         if (this._cloud) {
             gs.LC = lineCapStyles.ROUND;
@@ -14206,7 +14222,7 @@ class CircleAnnotation extends GeometricAnnotation {
         super(annotationTypes.CIRCLE);
     }
     static createFromDto(dto) {
-        if (dto.annotationType !== "/Square") {
+        if (dto.annotationType !== "/Circle") {
             throw new Error("Invalid annotation type");
         }
         const bs = new BorderStyleDict();
@@ -14226,7 +14242,7 @@ class CircleAnnotation extends GeometricAnnotation {
         annotation.CA = dto.color[3];
         annotation.BS = bs;
         annotation._cloud = dto.cloud;
-        annotation.generateApStream();
+        annotation.generateApStream(dto.bbox, dto.matrix);
         const proxy = new Proxy(annotation, annotation.onChange);
         annotation._proxy = proxy;
         annotation._added = true;
@@ -14263,10 +14279,10 @@ class CircleAnnotation extends GeometricAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         const color = this.getColorRect();
         return {
-            annotationType: "/Square",
+            annotationType: "/Circle",
             uuid: this.$name,
             pageId: this.$pageId,
             dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
@@ -14278,11 +14294,12 @@ class CircleAnnotation extends GeometricAnnotation {
             author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
             rect: this.Rect,
             rectMargins: this.RD,
-            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
             cloud: this._cloud,
             color,
-            strokeWidth: (_g = (_e = (_d = this.BS) === null || _d === void 0 ? void 0 : _d.W) !== null && _e !== void 0 ? _e : (_f = this.Border) === null || _f === void 0 ? void 0 : _f.width) !== null && _g !== void 0 ? _g : 1,
-            strokeDashGap: (_j = (_h = this.BS) === null || _h === void 0 ? void 0 : _h.D) !== null && _j !== void 0 ? _j : [3, 0],
+            strokeWidth: (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.W) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.width) !== null && _h !== void 0 ? _h : 1,
+            strokeDashGap: (_k = (_j = this.BS) === null || _j === void 0 ? void 0 : _j.D) !== null && _k !== void 0 ? _k : [3, 0],
         };
     }
     parseProps(parseInfo) {
@@ -14312,12 +14329,18 @@ class CircleAnnotation extends GeometricAnnotation {
             }
         }
     }
-    generateApStream() {
+    generateApStream(bbox, matrix) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
-        apStream.BBox = this.Rect;
+        const streamBbox = bbox
+            ? [bbox[0], bbox[1], bbox[2], bbox[3]]
+            : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        apStream.BBox = streamBbox;
+        apStream.Matrix = matrix
+            ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
+            : [1, 0, 0, 1, 0, 0];
         let colorString;
         if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
             colorString = "0 G 0 g";
@@ -14347,10 +14370,10 @@ class CircleAnnotation extends GeometricAnnotation {
         gs.D = [[dash, gap], 0];
         gs.LC = lineCapStyles.ROUND;
         gs.LJ = lineJoinStyles.ROUND;
-        const xmin = this.Rect[0] + this.RD[0];
-        const ymin = this.Rect[1] + this.RD[3];
-        const xmax = this.Rect[2] - this.RD[2];
-        const ymax = this.Rect[3] - this.RD[1];
+        const xmin = streamBbox[0] + this.RD[0];
+        const ymin = streamBbox[1] + this.RD[3];
+        const xmax = streamBbox[2] - this.RD[2];
+        const ymax = streamBbox[3] - this.RD[1];
         let streamTextData = `q ${colorString} /GS0 gs`;
         const rx = (xmax - xmin) / 2;
         const ry = (ymax - ymin) / 2;
@@ -14413,6 +14436,12 @@ class AnnotationParseFactory {
                 break;
             case "/Ink":
                 annotation = InkAnnotation.createFromDto(dto);
+                break;
+            case "/Square":
+                annotation = SquareAnnotation.createFromDto(dto);
+                break;
+            case "/Circle":
+                annotation = CircleAnnotation.createFromDto(dto);
                 break;
             default:
                 throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
@@ -16067,14 +16096,13 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         const nowString = new Date().toISOString();
         const dto = {
             uuid: getRandomUuid(),
-            annotationType: "/Square",
+            annotationType: "/Circle",
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
             author: this._docData.userName || "unknown",
             rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
             rectMargins,
-            matrix: [1, 0, 0, 1, 0, 0],
             cloud: this._cloudMode,
             color: this._color,
             strokeWidth: this._strokeWidth,
@@ -16284,7 +16312,6 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
             author: this._docData.userName || "unknown",
             rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
             rectMargins,
-            matrix: [1, 0, 0, 1, 0, 0],
             cloud: this._cloudMode,
             color: this._color,
             strokeWidth: this._strokeWidth,
