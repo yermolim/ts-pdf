@@ -189,6 +189,7 @@ export class InkAnnotation extends MarkupAnnotation {
     apStream.LastModified = DateString.fromDate(new Date());
     apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
 
+    // set color
     let colorString: string;
     if (!this.C?.length) {
       colorString = "0 G 0 g";
@@ -203,22 +204,24 @@ export class InkAnnotation extends MarkupAnnotation {
       colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
     }
 
-    const ca = this.CA || 1;
-    const width = this.BS?.W ?? this.Border?.width ?? 1;
-    const dash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
-    const gap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    // set stroke style options
+    const opacity = this.CA || 1;
+    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();
     gs.AIS = true;
     gs.BM = "/Normal";
-    gs.CA = ca;
-    gs.ca = ca;
-    gs.LW = width;
-    gs.D = [[dash, gap], 0];
+    gs.CA = opacity;
+    gs.ca = opacity;
+    gs.LW = strokeWidth;
+    gs.D = [[strokeDash, strokeGap], 0];
     gs.LC = lineCapStyles.ROUND;
     gs.LJ = lineJoinStyles.ROUND;
     apStream.Resources = new ResourceDict();
     apStream.Resources.setGraphicsState("/GS0", gs);
 
+    // push the graphics state onto the stack
     let streamTextData = `q ${colorString} /GS0 gs`;
     let px: number;
     let py: number;
@@ -233,6 +236,7 @@ export class InkAnnotation extends MarkupAnnotation {
       }
       streamTextData += "\nS";
     });    
+    // pop the graphics state back from the stack
     streamTextData += "\nQ";
 
     apStream.setTextStreamData(streamTextData);    
@@ -282,6 +286,7 @@ export class InkAnnotation extends MarkupAnnotation {
       bBox.ul.set(xMin, yMax);
     }
 
+    // rebuild the appearance stream instead of transforming it to get rid of line distorsions
     this.generateApStream();
 
     dict.M = DateString.fromDate(new Date());

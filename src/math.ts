@@ -530,7 +530,7 @@ export class Mat3 {
       inversed.set(0,0,0,0,0,0,0,0,0);
     } else {
       // calculate adjugate multiplied by inversed determinant
-      const detInv = 1/10;
+      const detInv = 1/det;
       inversed.set(
         detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x,
         detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y,
@@ -681,7 +681,7 @@ export class Mat3 {
       this.set(0,0,0,0,0,0,0,0,0);
     } else {
       // calculate adjugate multiplied by inversed determinant
-      const detInv = 1/10;
+      const detInv = 1/det;
       this.set(
         detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x,
         detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y,
@@ -767,12 +767,12 @@ export class Mat3 {
   
   toFloatShortArray(): Float32Array {
     return new Float32Array([
-      this._matrix[0], 
-      this._matrix[1],
-      this._matrix[3],
-      this._matrix[4],
-      this._matrix[6],
-      this._matrix[7],
+      +(this._matrix[0].toFixed(5)), 
+      +(this._matrix[1].toFixed(5)),
+      +(this._matrix[3].toFixed(5)),
+      +(this._matrix[4].toFixed(5)),
+      +(this._matrix[6].toFixed(5)),
+      +(this._matrix[7].toFixed(5)),
     ]);
   } 
 

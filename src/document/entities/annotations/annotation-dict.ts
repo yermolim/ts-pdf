@@ -602,6 +602,10 @@ export abstract class AnnotationDict extends PdfDict {
     return this._bBox;
   }  
 
+  /**
+   * transform annotation bounding boxes using transformation matrix
+   * @param matrix 
+   */
   protected applyRectTransform(matrix: Mat3) {
     const dict = <AnnotationDict>this._proxy || this;
 
@@ -619,10 +623,12 @@ export abstract class AnnotationDict extends PdfDict {
   }  
   
   protected applyCommonTransform(matrix: Mat3) {
+    // transform bounding boxes
     this.applyRectTransform(matrix);
     
-    // if the annotation has a content stream, update its matrix
     const dict = <AnnotationDict>this._proxy || this;
+    
+    // if the annotation has a content stream, update its matrix
     const stream = dict.apStream;
     if (stream) {
       const newApMatrix = Mat3.multiply(stream.matrix, matrix);

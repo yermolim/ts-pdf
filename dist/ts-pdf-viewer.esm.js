@@ -1244,7 +1244,7 @@ class Mat3 {
             inversed.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
         else {
-            const detInv = 1 / 10;
+            const detInv = 1 / det;
             inversed.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
         }
         return inversed;
@@ -1331,7 +1331,7 @@ class Mat3 {
             this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
         else {
-            const detInv = 1 / 10;
+            const detInv = 1 / det;
             this.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
         }
         return this;
@@ -1398,12 +1398,12 @@ class Mat3 {
     }
     toFloatShortArray() {
         return new Float32Array([
-            this._matrix[0],
-            this._matrix[1],
-            this._matrix[3],
-            this._matrix[4],
-            this._matrix[6],
-            this._matrix[7],
+            +(this._matrix[0].toFixed(5)),
+            +(this._matrix[1].toFixed(5)),
+            +(this._matrix[3].toFixed(5)),
+            +(this._matrix[4].toFixed(5)),
+            +(this._matrix[6].toFixed(5)),
+            +(this._matrix[7].toFixed(5)),
         ]);
     }
     *[Symbol.iterator]() {
@@ -13902,17 +13902,17 @@ class InkAnnotation extends MarkupAnnotation {
             const [c, m, y, k] = this.C;
             colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
         }
-        const ca = this.CA || 1;
-        const width = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
-        const dash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
-        const gap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const opacity = this.CA || 1;
+        const strokeWidth = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const strokeDash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const strokeGap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
-        gs.CA = ca;
-        gs.ca = ca;
-        gs.LW = width;
-        gs.D = [[dash, gap], 0];
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
         gs.LC = lineCapStyles.ROUND;
         gs.LJ = lineJoinStyles.ROUND;
         apStream.Resources = new ResourceDict();
@@ -14148,9 +14148,10 @@ class SquareAnnotation extends GeometricAnnotation {
             ? [bbox[0], bbox[1], bbox[2], bbox[3]]
             : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
         apStream.BBox = streamBbox;
-        apStream.Matrix = matrix
+        const streamMatrix = matrix
             ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
             : [1, 0, 0, 1, 0, 0];
+        apStream.Matrix = streamMatrix;
         let colorString;
         if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
             colorString = "0 G 0 g";
@@ -14167,31 +14168,51 @@ class SquareAnnotation extends GeometricAnnotation {
             const [c, m, y, k] = this.C;
             colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
         }
-        const ca = this.CA || 1;
-        const width = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
-        const dash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
-        const gap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const opacity = this.CA || 1;
+        const strokeWidth = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const strokeDash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const strokeGap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
-        gs.CA = ca;
-        gs.ca = ca;
-        gs.LW = width;
-        gs.D = [[dash, gap], 0];
-        const xmin = streamBbox[0] + this.RD[0];
-        const ymin = streamBbox[1] + this.RD[3];
-        const xmax = streamBbox[2] - this.RD[2];
-        const ymax = streamBbox[3] - this.RD[1];
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
+        if (!this.RD) {
+            const defaultMargin = this._cloud
+                ? SquareAnnotation.cloudArcSize / 2
+                : strokeWidth / 2;
+            this.RD || (this.RD = [defaultMargin, defaultMargin, defaultMargin, defaultMargin]);
+        }
+        const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+        const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray();
+        const { r: rotation } = apStream.matrix.getTRS();
+        const marginsRotationMat = new Mat3().applyRotation(rotation);
+        const boxLL = new Vec2(streamBbox[0], streamBbox[1]);
+        const boxLR = new Vec2(streamBbox[2], streamBbox[1]);
+        const boxUR = new Vec2(streamBbox[2], streamBbox[3]);
+        const boxUL = new Vec2(streamBbox[0], streamBbox[3]);
+        const [marginLeft, marginTop, marginRight, marginBottom] = this.RD;
+        const marginLL = new Vec2(marginLeft, marginBottom).applyMat3(marginsRotationMat);
+        const marginLR = new Vec2(-marginRight, marginBottom).applyMat3(marginsRotationMat);
+        const marginUR = new Vec2(-marginRight, -marginTop).applyMat3(marginsRotationMat);
+        const marginUL = new Vec2(marginLeft, -marginTop).applyMat3(marginsRotationMat);
+        const trBoxLL = Vec2.applyMat3(boxLL, bBoxToRectMat).add(marginLL);
+        const trBoxLR = Vec2.applyMat3(boxLR, bBoxToRectMat).add(marginLR);
+        const trBoxUR = Vec2.applyMat3(boxUR, bBoxToRectMat).add(marginUR);
+        const trBoxUL = Vec2.applyMat3(boxUL, bBoxToRectMat).add(marginUL);
         let streamTextData = `q ${colorString} /GS0 gs`;
+        streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
         if (this._cloud) {
             gs.LC = lineCapStyles.ROUND;
             gs.LJ = lineJoinStyles.ROUND;
             const curveData = buildCloudCurveFromPolyline([
-                new Vec2(xmin, ymin),
-                new Vec2(xmin, ymax),
-                new Vec2(xmax, ymax),
-                new Vec2(xmax, ymin),
-                new Vec2(xmin, ymin),
+                trBoxLL.clone(),
+                trBoxUL.clone(),
+                trBoxUR.clone(),
+                trBoxLR.clone(),
+                trBoxLL.clone(),
             ], SquareAnnotation.cloudArcSize);
             streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
             curveData.curves.forEach(x => {
@@ -14202,10 +14223,10 @@ class SquareAnnotation extends GeometricAnnotation {
         else {
             gs.LC = lineCapStyles.SQUARE;
             gs.LJ = lineJoinStyles.MITER;
-            streamTextData += `\n${xmin} ${ymin} m`;
-            streamTextData += `\n${xmin} ${ymax} l`;
-            streamTextData += `\n${xmax} ${ymax} l`;
-            streamTextData += `\n${xmax} ${ymin} l`;
+            streamTextData += `\n${trBoxLL.x} ${trBoxLL.y} m`;
+            streamTextData += `\n${trBoxLR.x} ${trBoxLR.y} l`;
+            streamTextData += `\n${trBoxUR.x} ${trBoxUR.y} l`;
+            streamTextData += `\n${trBoxUL.x} ${trBoxUL.y} l`;
             streamTextData += "\ns";
         }
         streamTextData += "\nQ";
@@ -14213,6 +14234,16 @@ class SquareAnnotation extends GeometricAnnotation {
         apStream.Resources.setGraphicsState("/GS0", gs);
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
+    }
+    applyCommonTransform(matrix) {
+        this.applyRectTransform(matrix);
+        const dict = this._proxy || this;
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+            dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
+        }
+        dict.M = DateString.fromDate(new Date());
     }
 }
 SquareAnnotation.cloudArcSize = 20;

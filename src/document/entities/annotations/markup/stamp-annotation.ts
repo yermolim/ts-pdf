@@ -2915,6 +2915,7 @@ export class StampAnnotation extends MarkupAnnotation {
     stampForm.LastModified = modified;
     stampForm.Filter = "/FlateDecode";
 
+    // set the stamp options using the default stamp information dictionary
     const stampCreationInfo: StampCreationInfo = stampCreationInfos[dto.stampType];
     if (!stampCreationInfo) {
       throw new Error(`Stamp type '${dto.stampType}' is not supported`);
@@ -2944,13 +2945,14 @@ export class StampAnnotation extends MarkupAnnotation {
     annotation.Contents = LiteralString.fromString(subject);
     annotation.Subj = LiteralString.fromString(subject);
     annotation.C = color;
-    annotation.CA = 1;
+    annotation.CA = 1; // opacity
     annotation.CreationDate = created;
     annotation.M = modified;
-    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.NM = LiteralString.fromString(dto.uuid); // identifier
     annotation.T = LiteralString.fromString(dto.author || "unknown");
     annotation.Name = dto.stampType;
     annotation.Rect = dto.rect || stampCreationInfo.rect;
+    
     annotation.apStream = apStream;  
     annotation.$name = dto.uuid;
 

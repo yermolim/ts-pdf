@@ -1,7 +1,7 @@
 import { buildCloudCurveFromPolyline, Double, Hextuple, Quadruple } from "../../../../../common";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
-import { Mat3, Vec2 } from "../../../../../math";
+import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../../../math";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -13,6 +13,7 @@ import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
+import { AppearanceStreamRenderer } from "../../../../render/appearance-stream-renderer";
 
 export interface SquareAnnotationDto extends GeometricAnnotationDto {  
   rectMargins: Quadruple;
@@ -28,6 +29,7 @@ export class SquareAnnotation extends GeometricAnnotation {
    * of the underlying square or circle. Such a difference may occur in situations 
    * where a border effect (described by BE) causes the size of the Rect to increase 
    * beyond that of the square or circle
+   * Order is: left-top-right-bottom
    */
   RD: Quadruple;
 
@@ -174,14 +176,17 @@ export class SquareAnnotation extends GeometricAnnotation {
     apStream.Filter = "/FlateDecode";
     apStream.LastModified = DateString.fromDate(new Date());
     
+    // set bounding box and transformation matrix
     const streamBbox: Quadruple = bbox 
       ? [bbox[0], bbox[1], bbox[2], bbox[3]]
       : [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];  
     apStream.BBox = streamBbox;
-    apStream.Matrix = matrix 
+    const streamMatrix: Hextuple =  matrix 
       ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
       : [1 ,0, 0, 1, 0, 0];
+    apStream.Matrix = streamMatrix;
 
+    // set color
     let colorString: string;
     if (!this.C?.length) {
       colorString = "0 G 0 g";
@@ -196,36 +201,73 @@ export class SquareAnnotation extends GeometricAnnotation {
       colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
     }
 
-    const ca = this.CA || 1;
-    const width = this.BS?.W ?? this.Border?.width ?? 1;
-    const dash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
-    const gap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    // set stroke style options
+    const opacity = this.CA || 1;
+    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();
     gs.AIS = true;
     gs.BM = "/Normal";
-    gs.CA = ca;
-    gs.ca = ca;
-    gs.LW = width;
-    gs.D = [[dash, gap], 0];
+    gs.CA = opacity;
+    gs.ca = opacity;
+    gs.LW = strokeWidth;
+    gs.D = [[strokeDash, strokeGap], 0]; 
 
-    const xmin = streamBbox[0] + this.RD[0];
-    const ymin = streamBbox[1] + this.RD[3];
-    const xmax = streamBbox[2] - this.RD[2];
-    const ymax = streamBbox[3] - this.RD[1];
+    // set margins to default if absent
+    if (!this.RD) {
+      const defaultMargin = this._cloud
+        ? SquareAnnotation.cloudArcSize / 2
+        : strokeWidth / 2;
+      this.RD ||= [defaultMargin, defaultMargin, defaultMargin, defaultMargin];
+    }    
 
-    let streamTextData = `q ${colorString} /GS0 gs`;
+    // calculate matrices needed for drawing
+    const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+    const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
+    const {r: rotation} = apStream.matrix.getTRS(); 
+    const marginsRotationMat = new Mat3().applyRotation(rotation);  
+    
+    // box corners starting positions
+    const boxLL = new Vec2(streamBbox[0], streamBbox[1]);
+    const boxLR = new Vec2(streamBbox[2], streamBbox[1]);
+    const boxUR = new Vec2(streamBbox[2], streamBbox[3]);
+    const boxUL = new Vec2(streamBbox[0], streamBbox[3]);
+    
+    // calculating margin vectors for the box corners
+    // applying only rotation to keep margin values in their original state after any scaling
+    const [marginLeft, marginTop, marginRight, marginBottom] = this.RD; 
+    const marginLL = new Vec2(marginLeft, marginBottom).applyMat3(marginsRotationMat);
+    const marginLR = new Vec2(-marginRight, marginBottom).applyMat3(marginsRotationMat);
+    const marginUR = new Vec2(-marginRight, -marginTop).applyMat3(marginsRotationMat);
+    const marginUL = new Vec2(marginLeft, -marginTop).applyMat3(marginsRotationMat);
 
+    // apply transformation to the box corners
+    // add the rotated margin vectors after transformation to preserve the initial margin values
+    const trBoxLL = Vec2.applyMat3(boxLL, bBoxToRectMat).add(marginLL);
+    const trBoxLR = Vec2.applyMat3(boxLR, bBoxToRectMat).add(marginLR);
+    const trBoxUR = Vec2.applyMat3(boxUR, bBoxToRectMat).add(marginUR);
+    const trBoxUL = Vec2.applyMat3(boxUL, bBoxToRectMat).add(marginUL);  
+
+    // push the graphics state onto the stack
+    let streamTextData = `q ${colorString} /GS0 gs`; 
+    // add the inversed transformation matrix to 
+    streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
+
+    // the graphics will be drawn using transformed coordinates to preserve stroke options
+    // (by using such way line width, margins, etc. will still be as they were specified)
     if (this._cloud) {
       gs.LC = lineCapStyles.ROUND;
-      gs.LJ = lineJoinStyles.ROUND;
-
+      gs.LJ = lineJoinStyles.ROUND; 
+      
       const curveData = buildCloudCurveFromPolyline([
-        new Vec2(xmin, ymin),
-        new Vec2(xmin, ymax),
-        new Vec2(xmax, ymax),
-        new Vec2(xmax, ymin),
-        new Vec2(xmin, ymin),
+        trBoxLL.clone(),
+        trBoxUL.clone(),
+        trBoxUR.clone(),
+        trBoxLR.clone(),
+        trBoxLL.clone(),
       ], SquareAnnotation.cloudArcSize);      
+
       streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
       curveData.curves.forEach(x => {
         streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
@@ -236,13 +278,13 @@ export class SquareAnnotation extends GeometricAnnotation {
       gs.LC = lineCapStyles.SQUARE;
       gs.LJ = lineJoinStyles.MITER;
 
-      streamTextData += `\n${xmin} ${ymin} m`;
-      streamTextData += `\n${xmin} ${ymax} l`;
-      streamTextData += `\n${xmax} ${ymax} l`;
-      streamTextData += `\n${xmax} ${ymin} l`;
+      streamTextData += `\n${trBoxLL.x} ${trBoxLL.y} m`;
+      streamTextData += `\n${trBoxLR.x} ${trBoxLR.y} l`;
+      streamTextData += `\n${trBoxUR.x} ${trBoxUR.y} l`;
+      streamTextData += `\n${trBoxUL.x} ${trBoxUL.y} l`;
       streamTextData += "\ns"; 
     }
-    
+    // pop the graphics state back from the stack
     streamTextData += "\nQ";
 
     apStream.Resources = new ResourceDict();
@@ -250,5 +292,21 @@ export class SquareAnnotation extends GeometricAnnotation {
     apStream.setTextStreamData(streamTextData);    
 
     this.apStream = apStream;
+  }
+  
+  protected applyCommonTransform(matrix: Mat3) {    
+    // transform bounding boxes
+    this.applyRectTransform(matrix);
+
+    const dict = <SquareAnnotation>this._proxy || this;
+    
+    // if the annotation has a content stream, rebuild the stream
+    const stream = dict.apStream;
+    if (stream) {
+      const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+      dict.generateApStream(stream.BBox, <Hextuple><unknown>newApMatrix.toFloatShortArray());
+    }
+
+    dict.M = DateString.fromDate(new Date());
   }
 }
