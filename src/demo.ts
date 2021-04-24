@@ -40,6 +40,8 @@ async function run(): Promise<void> {
 
   // for debug
   window["pdfViewer"] = viewer;
+
+  //
 } 
 
 run();
