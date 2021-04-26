@@ -6,7 +6,7 @@ import { geometricIcons, lineTypeIcons } from "../assets/index.html";
 import { DocumentData } from "../document/document-data";
 
 import { Annotator } from "../annotator/annotator";
-import { GeometricAnnotatorFactory, geometricAnnotatorTypes } 
+import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTypes } 
   from "../annotator/geometric/geometric-annotator-factory";
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
 import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
@@ -41,6 +41,14 @@ export class AnnotationBuilder {
   set mode(value: AnnotationBuilderMode) {
     this.setMode(value);
   }
+
+  private _strokeColor: Quadruple = this._annotationColors[0];
+  private _strokeWidth = 3;
+
+  private _stampType: string = supportedStampTypes[0].type;
+
+  private _geometricCloudMode = false;
+  private _geometricSubmode: GeometricAnnotatorType = geometricAnnotatorTypes[0];
 
   private _annotator: Annotator;
   get annotator(): Annotator {
@@ -84,232 +92,214 @@ export class AnnotationBuilder {
     });
     viewerRObserver.observe(this._viewer.container);
     this._viewerResizeObserver = viewerRObserver;
+    
+    this._contextMenu = new ContextMenu();
   }
 
-  private initContextMenu() {    
-    this._contextMenu?.destroy();
-    switch (this.mode) {
-      case "select":
-        break;
-      case "stamp":
-        this.initStampAnnotatorContextMenu();
-        break;
-      case "pen":
-        this.initPenAnnotatorContextMenu();
-        break;
-      case "geometric":
-        this.initGeometricAnnotatorContextMenu();
-        break;
-      default:
-        // Execution should not come here
-        throw new Error(`Invalid annotation mode: ${this.mode}`);
-    }
-  }
-
-  private setMode(mode: AnnotationBuilderMode) {
-    // return if mode is same
-    if (!mode || mode === this._mode) {
-      return;
-    }
+  private setMode(mode?: AnnotationBuilderMode) {
+    mode ||= this._mode;
 
     // disable previous mode
-    this._contextMenu?.destroy();
+    this._contextMenu.content = [];
     this._annotator?.destroy();
     this._docData.setSelectedAnnotation(null);
 
     this._mode = mode;
     switch (mode) {
       case "select":
-        break;
+        this._contextMenu.enabled = false;
+        return;
       case "stamp":
         this._annotator = new StampAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages);
+          this._viewer.container, this._pageService.renderedPages, this._stampType);
         break;
       case "pen":
         this._annotator = new PenAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages);
+          this._viewer.container, this._pageService.renderedPages, {            
+            strokeWidth: this._strokeWidth,
+            color: this._strokeColor,
+          });
         break;
       case "geometric":
         this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages);
+          this._viewer.container, this._pageService.renderedPages, {
+            strokeWidth: this._strokeWidth,
+            color: this._strokeColor,
+            cloudMode: this._geometricCloudMode,
+          }, this._geometricSubmode);
         break;
       default:
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
     }
-    this.initContextMenu();
+    const cmContent = this.buildContextMenuContent();
+    this._contextMenu.content = cmContent;
+    this._contextMenu.enabled = true;
   }
   
   private onContextMenu = (event: MouseEvent) => {
-    if (this._contextMenu?.enabled) {
+    if (this._contextMenu.enabled) {
       event.preventDefault();
       this._contextMenu.show(new Vec2(event.clientX, event.clientY), this._viewer.container);
     }
   };
 
-  private onPagesRendered = (event: PagesRenderedEvent) => {    
-    this.initContextMenu();
+  private onPagesRendered = (event: PagesRenderedEvent) => {
+    this._contextMenu.hide();
+    this.setMode();
   };
 
-  private initStampAnnotatorContextMenu() {
+  private buildContextMenuContent(): HTMLElement[] {
+    switch (this._mode) {
+      case "select":
+        return [];
+      case "stamp":
+        return [this.buildStampTypePicker()];
+      case "pen":
+        return [
+          this.buildStrokeColorPicker(),
+          this.buildStrokeWidthSlider(false),
+        ];
+      case "geometric":
+        return [
+          this.buildGeometricSubmodePicker(),
+          this.buildStrokeColorPicker(),
+          this.buildStrokeWidthSlider(true),
+        ];
+      default:
+        // Execution should not come here
+        throw new Error(`Invalid annotation mode: ${this._mode}`);
+    }
+  }  
+
+  private buildStampTypePicker(): HTMLDivElement {
     const stampTypes = supportedStampTypes;
 
     // init a stamp type picker
-    const contextMenuContent = document.createElement("div");
-    contextMenuContent.classList.add("context-menu-content", "column");
+    const pickerDiv = document.createElement("div");
+    pickerDiv.classList.add("context-menu-content", "column");
     stampTypes.forEach(x => {          
       const item = document.createElement("div");
       item.classList.add("context-menu-stamp-select-button");
+      if (x.type === this._stampType) {        
+        item.classList.add("on");
+      }
       item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = new StampAnnotator(this._docData,
-          this._viewer.container, this._pageService.renderedPages, x.type);
+        this._stampType = x.type;
+        this.setMode();
       });
       const stampName = document.createElement("div");
       stampName.innerHTML = x.name;
       item.append(stampName);
-      contextMenuContent.append(item);
+      pickerDiv.append(item);
     });
-    
-    this._contextMenu = new ContextMenu();
-    // set the stamp type picker as the context menu content
-    this._contextMenu.content = [contextMenuContent];
-    // enable the context menu
-    this._contextMenu.enabled = true;
+    return pickerDiv;
   }
-
-  private initPenAnnotatorContextMenu() {
-    // init a pen color picker
-    const contextMenuColorPicker = document.createElement("div");
-    contextMenuColorPicker.classList.add("context-menu-content", "row");
-    this._annotationColors.forEach(x => {          
-      const item = document.createElement("div");
-      item.classList.add("panel-button");
-      item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = new PenAnnotator(this._docData, this._viewer.container, 
-          this._pageService.renderedPages, {color:x});
-      });
-      const colorIcon = document.createElement("div");
-      colorIcon.classList.add("context-menu-color-icon");
-      colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
-      item.append(colorIcon);
-      contextMenuColorPicker.append(item);
-    });
-
-    // init a pen stroke width slider
-    const contextMenuWidthSlider = document.createElement("div");
-    contextMenuWidthSlider.classList.add("context-menu-content", "row");
-    const slider = document.createElement("input");
-    slider.setAttribute("type", "range");
-    slider.setAttribute("min", "1");
-    slider.setAttribute("max", "32");
-    slider.setAttribute("step", "1");
-    slider.setAttribute("value", "3");
-    slider.classList.add("context-menu-slider");
-    slider.addEventListener("change", () => {      
-      this._annotator?.destroy();
-      this._annotator = new PenAnnotator(this._docData, this._viewer.container, 
-        this._pageService.renderedPages, {strokeWidth: slider.valueAsNumber});
-    });
-    contextMenuWidthSlider.append(slider);
-
-    this._contextMenu = new ContextMenu();
-    // set the context menu content    
-    this._contextMenu.content = [contextMenuColorPicker, contextMenuWidthSlider];
-    // enable the context menu
-    this._contextMenu.enabled = true;
-  }
-
-  private initGeometricAnnotatorContextMenu() {
-    const contextMenuSubmodePicker = document.createElement("div");
-    contextMenuSubmodePicker.classList.add("context-menu-content", "row");
+  
+  private buildGeometricSubmodePicker(): HTMLDivElement {    
+    const submodePicker = document.createElement("div");
+    submodePicker.classList.add("context-menu-content", "row");
     geometricAnnotatorTypes.forEach(x => {   
       const item = document.createElement("div");
       item.classList.add("panel-button");
+      if (x === this._geometricSubmode) {        
+        item.classList.add("on");
+      }
       item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages, {}, x);
+        this._geometricSubmode = x;
+        this.setMode();
       });
       const submodeIcon = document.createElement("div");
       submodeIcon.classList.add("context-menu-color-icon");
       submodeIcon.innerHTML = geometricIcons[x];
       item.append(submodeIcon);
-      contextMenuSubmodePicker.append(item);
+      submodePicker.append(item);
     });
+    return submodePicker;
+  }
 
-    const contextMenuColorPicker = document.createElement("div");
-    contextMenuColorPicker.classList.add("context-menu-content", "row");
+  private buildStrokeColorPicker(): HTMLDivElement {    
+    const colorPickerDiv = document.createElement("div");
+    colorPickerDiv.classList.add("context-menu-content", "row");
     this._annotationColors.forEach(x => {          
       const item = document.createElement("div");
       item.classList.add("panel-button");
+      if (x === this._strokeColor) {        
+        item.classList.add("on");
+      }
       item.addEventListener("click", () => {
-        this._contextMenu.hide();
-        this._annotator?.destroy();
-        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages, {color:x});
+        this._strokeColor = x;
+        this.setMode();
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
       colorIcon.style.backgroundColor = `rgb(${x[0]*255},${x[1]*255},${x[2]*255})`;
       item.append(colorIcon);
-      contextMenuColorPicker.append(item);
+      colorPickerDiv.append(item);
     });
+    return colorPickerDiv;
+  }
+  
+  private buildStrokeWidthSlider(cloudButtons?: boolean): HTMLDivElement {
+    const disableLineTypeButtons = !cloudButtons   
+      || this._geometricSubmode === "polyline"
+      || this._geometricSubmode === "line"
+      || this._geometricSubmode === "arrow";
     
-    const contextMenuCloudAndWidth = document.createElement("div");
-    contextMenuCloudAndWidth.classList.add("context-menu-content", "row");
-
+    const div = document.createElement("div");
+    div.classList.add("context-menu-content", "row");
+    
     const cloudyLineButton = document.createElement("div");
     cloudyLineButton.classList.add("panel-button");
-    cloudyLineButton.addEventListener("click", () => {
-      this._contextMenu.hide();
-      this._annotator?.destroy();
-      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-        this._viewer.container, this._pageService.renderedPages, {cloudMode: true});
-    });
+    if (disableLineTypeButtons) {
+      cloudyLineButton.classList.add("disabled");
+    } else {
+      if (this._geometricCloudMode) {
+        cloudyLineButton.classList.add("on");
+      }
+      cloudyLineButton.addEventListener("click", () => {
+        this._geometricCloudMode = true;
+        this.setMode();
+      });
+    }
     const cloudyLineIcon = document.createElement("div");
     cloudyLineIcon.classList.add("context-menu-color-icon");
     cloudyLineIcon.innerHTML = lineTypeIcons.cloudy;
     cloudyLineButton.append(cloudyLineIcon);
-    contextMenuCloudAndWidth.append(cloudyLineButton);
+    div.append(cloudyLineButton);
     
     const straightLineButton = document.createElement("div");
     straightLineButton.classList.add("panel-button");
-    straightLineButton.addEventListener("click", () => {
-      this._contextMenu.hide();
-      this._annotator?.destroy();
-      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-        this._viewer.container, this._pageService.renderedPages, {cloudMode: false});
-    });
+    if (disableLineTypeButtons) {
+      straightLineButton.classList.add("disabled");
+    } else {
+      if (!this._geometricCloudMode) {
+        straightLineButton.classList.add("on");
+      }
+      straightLineButton.addEventListener("click", () => {
+        this._geometricCloudMode = false;
+        this.setMode();
+      });
+    }
     const straightLineIcon = document.createElement("div");
     straightLineIcon.classList.add("context-menu-color-icon");
     straightLineIcon.innerHTML = lineTypeIcons.straight;
     straightLineButton.append(straightLineIcon);
-    contextMenuCloudAndWidth.append(straightLineButton);
+    div.append(straightLineButton);
 
     const slider = document.createElement("input");
     slider.setAttribute("type", "range");
     slider.setAttribute("min", "1");
     slider.setAttribute("max", "32");
     slider.setAttribute("step", "1");
-    slider.setAttribute("value", "3");
+    slider.setAttribute("value", this._strokeWidth + "");
     slider.classList.add("context-menu-slider");
-    slider.addEventListener("change", () => {      
-      this._annotator?.destroy();
-      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-        this._viewer.container, this._pageService.renderedPages, {strokeWidth: slider.valueAsNumber});
+    slider.addEventListener("change", () => {
+      this._strokeWidth = slider.valueAsNumber;
+      this.setMode();
     });
-    contextMenuCloudAndWidth.append(slider);
-    
-    this._contextMenu = new ContextMenu();
-    // set the context menu content    
-    this._contextMenu.content = [contextMenuSubmodePicker, contextMenuColorPicker, 
-      contextMenuCloudAndWidth];
-    // enable the context menu
-    this._contextMenu.enabled = true;
+    div.append(slider);
+
+    return div;
   }
 }
