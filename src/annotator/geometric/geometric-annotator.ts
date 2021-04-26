@@ -1,5 +1,7 @@
-import { Quadruple } from "../../common";
+import { Quadruple } from "../../common/types";
+
 import { DocumentData } from "../../document/document-data";
+
 import { PageView } from "../../components/pages/page-view";
 import { Annotator } from "../annotator";
 
@@ -14,7 +16,7 @@ export class GeometricDataChangeEvent extends CustomEvent<GeometricDataChangeEve
   }
 }
 declare global {
-  interface DocumentEventMap {
+  interface HTMLElementEventMap {
     [geometricDataChangeEvent]: GeometricDataChangeEvent;
   }
 }
@@ -39,7 +41,8 @@ export abstract class GeometricAnnotator extends Annotator {
   /**current page id */
   protected _pageId: number;
   
-  protected constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], options: GeometricAnnotatorOptions) {
+  protected constructor(docData: DocumentData, parent: HTMLDivElement, 
+    pages: PageView[], options: GeometricAnnotatorOptions) {
     super(docData, parent, pages);
     
     this._color = options?.color || GeometricAnnotator.lastColor || [0, 0, 0, 0.9];
@@ -61,7 +64,7 @@ export abstract class GeometricAnnotator extends Annotator {
   }
   
   protected emitPointCount(count = 0) {
-    document.dispatchEvent(new GeometricDataChangeEvent({
+    this._docData.eventController.dispatchEvent(new GeometricDataChangeEvent({
       pointCount: count,
     }));
   }

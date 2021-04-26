@@ -1,3 +1,4 @@
+import { ElementEventController } from "../common/element-event-controller";
 import { dictTypes } from "./const";
 import { AuthenticationResult } from "./common-interfaces";
 
@@ -23,6 +24,11 @@ import { AnnotationDict, AnnotationDto, AnnotEvent, annotSelectionRequestEvent,
   AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
 
 export class DocumentData {
+  protected readonly _eventController: ElementEventController;
+  get eventController(): ElementEventController {
+    return this._eventController;
+  }
+
   private readonly _userName: string; 
   get userName(): string {
     return this._userName;
@@ -68,7 +74,12 @@ export class DocumentData {
     return !this._encryption || !!this._authResult;
   }
 
-  constructor(data: Uint8Array, userName: string) {
+  constructor(eventController: ElementEventController, data: Uint8Array, userName: string) {
+    if (!eventController) {
+      throw new Error("Event controller is not defined");
+    }
+    this._eventController = eventController;
+
     this._data = data;
     this._docParser = new DataParser(data);
     this._version = this._docParser.getPdfVersion();
@@ -94,7 +105,7 @@ export class DocumentData {
 
     this._userName = userName;
     
-    document.addEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
+    this._eventController.addListener(annotSelectionRequestEvent, this.onSelectionRequest);
   }
 
   /**free the resources that can prevent garbage to be collected */
@@ -102,7 +113,7 @@ export class DocumentData {
     // clear onEditedAction to prevent memory leak
     this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
 
-    document.removeEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
+    this._eventController.removeListener(annotSelectionRequestEvent, this.onSelectionRequest);
   }
 
   tryAuthenticate(password = ""): boolean {
@@ -202,7 +213,7 @@ export class DocumentData {
       this.getSupportedAnnotationMap().set(pageId, [annotation]);
     }
 
-    document.dispatchEvent(new AnnotEvent({   
+    this._eventController.dispatchEvent(new AnnotEvent({   
       type: "add",   
       annotations: [annotation.toDto()],
     }));
@@ -217,7 +228,7 @@ export class DocumentData {
     annotation.markAsDeleted(true);
     this.setSelectedAnnotation(null);
     
-    document.dispatchEvent(new AnnotEvent({  
+    this._eventController.dispatchEvent(new AnnotEvent({  
       type: "delete",
       annotations: [annotation.toDto()],
     }));
@@ -245,7 +256,7 @@ export class DocumentData {
     }
 
     // dispatch corresponding event
-    document.dispatchEvent(new AnnotEvent({      
+    this._eventController.dispatchEvent(new AnnotEvent({      
       type: "select",
       annotations: this._selectedAnnotation
         ? [this._selectedAnnotation.toDto()]
@@ -298,7 +309,7 @@ export class DocumentData {
       return null;
     }
 
-    return () => document.dispatchEvent(new AnnotEvent({
+    return () => this._eventController.dispatchEvent(new AnnotEvent({
       type: "edit",
       annotations: [annotation.toDto()],
     }));

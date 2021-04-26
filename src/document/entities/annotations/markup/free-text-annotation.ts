@@ -1,4 +1,4 @@
-import { Quadruple } from "../../../../common";
+import { Quadruple } from "../../../../common/types";
 import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 

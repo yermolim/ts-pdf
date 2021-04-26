@@ -1,9 +1,11 @@
-import { RenderToSvgResult } from "../../common";
-import { Vec2 } from "../../math";
-import { DocumentData } from "../../document/document-data";
-import { AnnotationDict, annotChangeEvent, AnnotEvent } from "../../document/entities/annotations/annotation-dict";
+import { RenderToSvgResult } from "../../common/types";
+import { Vec2 } from "../../common/math";
 
-export class PageAnnotationView {  
+import { DocumentData } from "../../document/document-data";
+import { AnnotationDict, annotChangeEvent, 
+  AnnotEvent, AnnotSelectionRequestEvent } from "../../document/entities/annotations/annotation-dict";
+
+export class PageAnnotationView {
   private readonly _pageId: number;
   private readonly _pageDimensions: Vec2;
 
@@ -50,12 +52,15 @@ export class PageAnnotationView {
     this.remove();
     this._container = null;
     this._destroyed = true;
+
+    this._rendered.forEach(x => x.$onPointerDownAction = null);
+    this._rendered.clear();
   }
 
   /**remove the container from DOM */
   remove() {    
     this._container?.remove();
-    document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
+    this._docData.eventController.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
   /**
@@ -70,7 +75,7 @@ export class PageAnnotationView {
     
     await this.renderAnnotationsAsync();
     parent.append(this._container);
-    document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
+    this._docData.eventController.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
@@ -86,6 +91,9 @@ export class PageAnnotationView {
 
       let renderResult: RenderToSvgResult;
       if (!this._rendered.has(annotation)) {
+        annotation.$onPointerDownAction = (e: PointerEvent) => {
+          this._docData.eventController.dispatchEvent(new AnnotSelectionRequestEvent({annotation}));
+        };
         renderResult = await annotation.renderAsync();
       } else {
         renderResult = annotation.lastRenderResult || await annotation.renderAsync();

@@ -52,6 +52,7 @@ export declare class TsPdfViewer {
 	private readonly _outerContainer;
 	private readonly _shadowRoot;
 	private readonly _mainContainer;
+	private readonly _eventController;
 	private readonly _pageService;
 	private readonly _viewer;
 	private readonly _previewer;

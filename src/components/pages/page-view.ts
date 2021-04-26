@@ -2,7 +2,8 @@ import { RenderingCancelledException } from "pdfjs-dist";
 import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 
-import { Vec2 } from "../../math";
+import { Vec2 } from "../../common/math";
+
 import { DocumentData } from "../../document/document-data";
 
 import { PageTextView } from "./page-text-view";
@@ -90,13 +91,14 @@ export class PageView {
     return this._scaleIsValid && this._viewRendered;
   }
 
-  constructor(pageProxy: PDFPageProxy, docData: DocumentData, previewWidth: number) {
+  constructor(docData: DocumentData, pageProxy: PDFPageProxy, previewWidth: number) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
     if (!docData) {
       throw new Error("Annotation data is not defined");
     }
+
     this._pageProxy = pageProxy;
     this._viewport = pageProxy.getViewport({scale: 1});
     this._docData = docData;

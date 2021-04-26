@@ -1,4 +1,4 @@
-import { Quadruple } from "../../../../common";
+import { Quadruple } from "../../../../common/types";
 import { codes } from "../../../codes";
 import { AnnotationType, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";

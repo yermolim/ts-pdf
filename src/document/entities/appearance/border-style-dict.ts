@@ -1,4 +1,4 @@
-import { Double } from "../../../common";
+import { Double } from "../../../common/types";
 import { codes } from "../../codes";
 import { dictTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";

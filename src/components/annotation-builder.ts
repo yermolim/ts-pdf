@@ -1,5 +1,5 @@
-import { Quadruple } from "../common";
-import { Vec2 } from "../math";
+import { Quadruple } from "../common/types";
+import { Vec2 } from "../common/math";
 
 import { geometricIcons, lineTypeIcons } from "../assets/index.html";
 
@@ -47,7 +47,7 @@ export class AnnotationBuilder {
     return this._annotator;
   }
 
-  constructor(docData: DocumentData, pageService: PageService, viewer: Viewer, ) {
+  constructor(docData: DocumentData, pageService: PageService, viewer: Viewer) {
     if (!docData) {
       throw new Error("Document data is not defined");
     }
@@ -66,7 +66,7 @@ export class AnnotationBuilder {
   }
 
   destroy() {
-    document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+    this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
 
     this._viewer.container.removeEventListener("contextmenu", this.onContextMenu);
     this._viewerResizeObserver?.disconnect();
@@ -76,7 +76,7 @@ export class AnnotationBuilder {
   }  
 
   private init() {
-    document.addEventListener(pagesRenderedEvent, this.onPagesRendered);    
+    this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);   
 
     this._viewer.container.addEventListener("contextmenu", this.onContextMenu);
     const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
@@ -232,8 +232,8 @@ export class AnnotationBuilder {
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
-          this._pageService.renderedPages, {}, x);
+        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
+          this._viewer.container, this._pageService.renderedPages, {}, x);
       });
       const submodeIcon = document.createElement("div");
       submodeIcon.classList.add("context-menu-color-icon");
@@ -250,8 +250,8 @@ export class AnnotationBuilder {
       item.addEventListener("click", () => {
         this._contextMenu.hide();
         this._annotator?.destroy();
-        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
-          this._pageService.renderedPages, {color:x});
+        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
+          this._viewer.container, this._pageService.renderedPages, {color:x});
       });
       const colorIcon = document.createElement("div");
       colorIcon.classList.add("context-menu-color-icon");
@@ -268,8 +268,8 @@ export class AnnotationBuilder {
     cloudyLineButton.addEventListener("click", () => {
       this._contextMenu.hide();
       this._annotator?.destroy();
-      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
-        this._pageService.renderedPages, {cloudMode: true});
+      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
+        this._viewer.container, this._pageService.renderedPages, {cloudMode: true});
     });
     const cloudyLineIcon = document.createElement("div");
     cloudyLineIcon.classList.add("context-menu-color-icon");
@@ -282,8 +282,8 @@ export class AnnotationBuilder {
     straightLineButton.addEventListener("click", () => {
       this._contextMenu.hide();
       this._annotator?.destroy();
-      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
-        this._pageService.renderedPages, {cloudMode: false});
+      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
+        this._viewer.container, this._pageService.renderedPages, {cloudMode: false});
     });
     const straightLineIcon = document.createElement("div");
     straightLineIcon.classList.add("context-menu-color-icon");
@@ -300,8 +300,8 @@ export class AnnotationBuilder {
     slider.classList.add("context-menu-slider");
     slider.addEventListener("change", () => {      
       this._annotator?.destroy();
-      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, 
-        this._pageService.renderedPages, {strokeWidth: slider.valueAsNumber});
+      this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
+        this._viewer.container, this._pageService.renderedPages, {strokeWidth: slider.valueAsNumber});
     });
     contextMenuCloudAndWidth.append(slider);
     

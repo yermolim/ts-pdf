@@ -40,8 +40,8 @@
 
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import CryptoES from 'crypto-es';
-import { v4 } from 'uuid';
 import Pako from 'pako';
+import { v4 } from 'uuid';
 
 var img$r = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABcmlDQ1BpY2MAACiRdZE9S8NQFIbftkpFWwrqIOKQoYpCC0VBHKWCXapDW8GqS3KbtEKShpsUKa6Ci0PBQXTxa/Af6Cq4KgiCIoi4+Af8WqTEc5tCi7Qn3JyH9573cO+5gD+tM8PuSQCG6fBMKimt5tek4Dt8GEQYQ5iSmW0tZRdz6Bo/j1RN8RAXvbrXdYyBgmozwNdHPMss7hDPE6e3HEvwHvEwK8kF4hPiGKcDEt8KXfH4TXDR4y/BPJdZAPyip1RsY6WNWYkbxJPEUUOvsOZ5xE1CqrmSpTxKaww2MkghCQkKKtiEDgdxyibNrLMv0fAto0weRn8LVXByFFEib4zUCnVVKWukq/TpqIq5/5+nrc1Me91DSaD31XU/x4HgPlCvue7vqevWz4DAC3BttvxlmtPcN+m1lhY9BiI7wOVNS1MOgKtdYOTZkrnckAK0/JoGfFwA4TwwdA/0r3uzau7j/AnIbdMT3QGHR8AE1Uc2/gDt82gCvNGYhAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAcpJREFUeNrtWwFuwyAMjBEPWNf8/4XpugesoWMKUppBYidQ5cAnVZWaRtGdDxscoC6Bvu9d7PfRue6sMETJa8MwRC8Slzi6ACkhiEu8FgGWQpiucdBW9FNj5wiWzyvxjOk5/muVm30n8Xfjl8NfkNeEMLHo10Cem/CbyAHeCZMb/sGePfqTfXfh5/Hovu/3F25Lx9ujiURad6WIld1xHDtjTLLshXv8f7Zgka2dY04ClQNCxDmR5eL0Dvi63Vavf16vh1xjzzy13YKUPPQQWFaDHOShBJjX8VzkIRdDa+RDvvBlskoBOOSlVcLURr7KIVCKPIQAJclDJsGc5FkzwdBUqJE8pANykocTIDd59mKI2zIv0Q8oSR7GAaXIQwhQkjx0GVQBGI5xjEWRrTGqkmGjQ0AFUAFUABVABVAB2sXmRMi3pEbnSDLJyNm3h3MAEvnsAqCRZw0Bb/l5Q2THjg1qaghoFVABVAAVQAVQAVQAFUCCI9thxYSJXj5WcspCHaACNNgP+LhcTr+gySqAX/nNX2nP99ujI/aaX3NAbAPDkQ0RSNFfPTUWbkA/QLUVTNoT9RpOj+rJ0aUDJE5AdkDy8LRECEQBUrnsCeUexwK5uUFRAAAAAElFTkSuQmCC";
 
@@ -1432,6 +1432,9 @@ function vecMinMax(...values) {
     const min = new Vec2(Math.min(...values.map(x => x.x)), Math.min(...values.map(x => x.y)));
     const max = new Vec2(Math.max(...values.map(x => x.x)), Math.max(...values.map(x => x.y)));
     return { min, max };
+}
+function getDistance(x1, y1, x2, y2) {
+    return Math.hypot(x2 - x1, y2 - y1);
 }
 
 const objectTypes = {
@@ -2959,86 +2962,6 @@ class DataParser {
     }
 }
 
-function getRandomUuid() {
-    return v4();
-}
-function getDistance(x1, y1, x2, y2) {
-    return Math.hypot(x2 - x1, y2 - y1);
-}
-function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
-    if (!polylinePoints || polylinePoints.length < 2) {
-        return null;
-    }
-    if (isNaN(maxArcSize) || maxArcSize <= 0) {
-        throw new Error(`Invalid maximal arc size ${maxArcSize}`);
-    }
-    const start = polylinePoints[0].clone();
-    const curves = [];
-    const zeroVec = new Vec2();
-    const lengthVec = new Vec2();
-    let i;
-    let j;
-    let lineStart;
-    let lineEnd;
-    let lineLength;
-    let arcCount;
-    let arcSize;
-    let halfArcSize;
-    let arcStart;
-    let arcEnd;
-    for (i = 0; i < polylinePoints.length - 1; i++) {
-        lineStart = polylinePoints[i];
-        lineEnd = polylinePoints[i + 1];
-        lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
-        if (!lineLength) {
-            continue;
-        }
-        lengthVec.set(lineLength, 0);
-        const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
-        arcCount = Math.ceil(lineLength / maxArcSize);
-        arcSize = lineLength / arcCount;
-        halfArcSize = arcSize / 2;
-        for (j = 0; j < arcCount; j++) {
-            arcStart = j * arcSize;
-            arcEnd = (j + 1) * arcSize;
-            const curve = [
-                new Vec2(arcStart, halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, 0).applyMat3(matrix),
-            ];
-            curves.push(curve);
-        }
-    }
-    return {
-        start,
-        curves,
-    };
-}
-function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
-    matrix || (matrix = new Mat3());
-    const center = new Vec2();
-    const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
-    const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
-    const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
-    const points = [];
-    const current = new Vec2(center.x + rx, center.y);
-    const next = new Vec2();
-    let angle = 0;
-    let distance;
-    points.push(current.clone().applyMat3(matrix));
-    for (let i = 0; i < segmentsNumber; i++) {
-        distance = 0;
-        while (distance < maxSegmentLength) {
-            angle -= 0.25 / 180 * Math.PI;
-            next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
-            distance += getDistance(current.x, current.y, next.x, next.y);
-            current.setFromVec2(next);
-        }
-        points.push(current.clone().applyMat3(matrix));
-    }
-    const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
-    return curveData;
-}
 class LinkedListNode {
     constructor(data) {
         this.data = data;
@@ -7172,6 +7095,10 @@ class XFormStream extends PdfStream {
     }
 }
 
+function getRandomUuid() {
+    return v4();
+}
+
 class TextState {
     constructor(params) {
         Object.assign(this, TextState.defaultParams, params);
@@ -8233,7 +8160,9 @@ class AnnotationDict extends PdfDict {
             if (!this.$pageId) {
                 return;
             }
-            document.dispatchEvent(new AnnotSelectionRequestEvent({ annotation: this }));
+            if (this.$onPointerDownAction) {
+                this.$onPointerDownAction(e);
+            }
             if (!this.$translationEnabled || !e.isPrimary) {
                 return;
             }
@@ -13980,6 +13909,81 @@ class InkAnnotation extends MarkupAnnotation {
     }
 }
 
+function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
+    if (!polylinePoints || polylinePoints.length < 2) {
+        return null;
+    }
+    if (isNaN(maxArcSize) || maxArcSize <= 0) {
+        throw new Error(`Invalid maximal arc size ${maxArcSize}`);
+    }
+    const start = polylinePoints[0].clone();
+    const curves = [];
+    const zeroVec = new Vec2();
+    const lengthVec = new Vec2();
+    let i;
+    let j;
+    let lineStart;
+    let lineEnd;
+    let lineLength;
+    let arcCount;
+    let arcSize;
+    let halfArcSize;
+    let arcStart;
+    let arcEnd;
+    for (i = 0; i < polylinePoints.length - 1; i++) {
+        lineStart = polylinePoints[i];
+        lineEnd = polylinePoints[i + 1];
+        lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
+        if (!lineLength) {
+            continue;
+        }
+        lengthVec.set(lineLength, 0);
+        const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
+        arcCount = Math.ceil(lineLength / maxArcSize);
+        arcSize = lineLength / arcCount;
+        halfArcSize = arcSize / 2;
+        for (j = 0; j < arcCount; j++) {
+            arcStart = j * arcSize;
+            arcEnd = (j + 1) * arcSize;
+            const curve = [
+                new Vec2(arcStart, halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, 0).applyMat3(matrix),
+            ];
+            curves.push(curve);
+        }
+    }
+    return {
+        start,
+        curves,
+    };
+}
+function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
+    matrix || (matrix = new Mat3());
+    const center = new Vec2();
+    const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+    const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
+    const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
+    const points = [];
+    const current = new Vec2(center.x + rx, center.y);
+    const next = new Vec2();
+    let angle = 0;
+    let distance;
+    points.push(current.clone().applyMat3(matrix));
+    for (let i = 0; i < segmentsNumber; i++) {
+        distance = 0;
+        while (distance < maxSegmentLength) {
+            angle -= 0.25 / 180 * Math.PI;
+            next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
+            distance += getDistance(current.x, current.y, next.x, next.y);
+            current.setFromVec2(next);
+        }
+        points.push(current.clone().applyMat3(matrix));
+    }
+    const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
+    return curveData;
+}
+
 class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
@@ -14526,7 +14530,7 @@ class AnnotationParseFactory {
 }
 
 class DocumentData {
-    constructor(data, userName) {
+    constructor(eventController, data, userName) {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
         this.getObjectParseInfo = (id) => {
@@ -14580,6 +14584,10 @@ class DocumentData {
                 this.setSelectedAnnotation(null);
             }
         };
+        if (!eventController) {
+            throw new Error("Event controller is not defined");
+        }
+        this._eventController = eventController;
         this._data = data;
         this._docParser = new DataParser(data);
         this._version = this._docParser.getPdfVersion();
@@ -14599,7 +14607,10 @@ class DocumentData {
         this._referenceData = new ReferenceData(xrefs);
         this.parseEncryption();
         this._userName = userName;
-        document.addEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
+        this._eventController.addListener(annotSelectionRequestEvent, this.onSelectionRequest);
+    }
+    get eventController() {
+        return this._eventController;
     }
     get userName() {
         return this._userName;
@@ -14624,7 +14635,7 @@ class DocumentData {
     }
     destroy() {
         this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
-        document.removeEventListener(annotSelectionRequestEvent, this.onSelectionRequest);
+        this._eventController.removeListener(annotSelectionRequestEvent, this.onSelectionRequest);
     }
     tryAuthenticate(password = "") {
         if (!this.authenticated) {
@@ -14691,7 +14702,7 @@ class DocumentData {
         else {
             this.getSupportedAnnotationMap().set(pageId, [annotation]);
         }
-        document.dispatchEvent(new AnnotEvent({
+        this._eventController.dispatchEvent(new AnnotEvent({
             type: "add",
             annotations: [annotation.toDto()],
         }));
@@ -14702,7 +14713,7 @@ class DocumentData {
         }
         annotation.markAsDeleted(true);
         this.setSelectedAnnotation(null);
-        document.dispatchEvent(new AnnotEvent({
+        this._eventController.dispatchEvent(new AnnotEvent({
             type: "delete",
             annotations: [annotation.toDto()],
         }));
@@ -14726,7 +14737,7 @@ class DocumentData {
             newSelectedSvg.classList.add("selected");
             this._selectedAnnotation = annotation;
         }
-        document.dispatchEvent(new AnnotEvent({
+        this._eventController.dispatchEvent(new AnnotEvent({
             type: "select",
             annotations: this._selectedAnnotation
                 ? [this._selectedAnnotation.toDto()]
@@ -14762,7 +14773,7 @@ class DocumentData {
         if (!annotation) {
             return null;
         }
-        return () => document.dispatchEvent(new AnnotEvent({
+        return () => this._eventController.dispatchEvent(new AnnotEvent({
             type: "edit",
             annotations: [annotation.toDto()],
         }));
@@ -14897,6 +14908,82 @@ class DocumentData {
     }
 }
 
+class ElementEventController {
+    constructor(container) {
+        this._eventMap = new Map();
+        if (!container) {
+            throw new Error("Container is not defined");
+        }
+        const element = document.createElement("div");
+        element.style.position = "absolute";
+        element.style.width = "0";
+        element.style.height = "0";
+        element.style.zIndex = "-1000";
+        container.append(element);
+        this._element = element;
+    }
+    get element() {
+        return this._element;
+    }
+    destroy() {
+        this.removeAllListeners();
+        this._element.remove();
+        this._element = null;
+    }
+    addListener(key, listener, options) {
+        if (!this._element) {
+            return;
+        }
+        this._element.addEventListener(key, listener, options);
+        if (this._eventMap.has(key)) {
+            this._eventMap.get(key).add(listener);
+        }
+        else {
+            this._eventMap.set(key, new Set().add(listener));
+        }
+    }
+    removeListener(key, listener) {
+        if (!this._element) {
+            return;
+        }
+        this._element.removeEventListener(key, listener);
+        if (this._eventMap.has(key)) {
+            this._eventMap.get(key).delete(listener);
+        }
+    }
+    removeAllListenersForKey(key) {
+        if (!this._element) {
+            return;
+        }
+        if (this._eventMap.has(key)) {
+            const listeners = this._eventMap.get(key);
+            listeners.forEach(x => this._element.removeEventListener(key, x));
+            this._eventMap.delete(key);
+        }
+    }
+    removeAllListeners() {
+        if (!this._element) {
+            return;
+        }
+        this._eventMap.forEach((v, k) => {
+            v.forEach(x => this._element.removeEventListener(k, x));
+        });
+        this._eventMap.clear();
+    }
+    getListenersByKey(key) {
+        const listenerSet = this._eventMap.get(key);
+        return listenerSet
+            ? [...listenerSet]
+            : [];
+    }
+    dispatchEvent(e) {
+        if (!this._element) {
+            return;
+        }
+        this._element.dispatchEvent(e);
+    }
+}
+
 const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest";
 class CurrentPageChangeRequestEvent extends CustomEvent {
     constructor(detail) {
@@ -14928,10 +15015,17 @@ class ScaleChangedEvent extends CustomEvent {
     }
 }
 class PageService {
-    constructor(options) {
+    constructor(eventController, options) {
         this._pages = [];
         this._renderedPages = [];
+        if (!eventController) {
+            throw new Error("Event controller is not defined");
+        }
+        this._eventController = eventController;
         this._visibleAdjPages = (options === null || options === void 0 ? void 0 : options.visibleAdjPages) || 0;
+    }
+    get eventController() {
+        return this._eventController;
     }
     get currentPageIndex() {
         return this._currentPageIndex || 0;
@@ -14942,7 +15036,7 @@ class PageService {
     set pages(value) {
         this._pages.forEach(x => x.destroy());
         this._pages = value.slice();
-        document.dispatchEvent(new PagesLoadedEvent({ pages: value.slice() }));
+        this._eventController.dispatchEvent(new PagesLoadedEvent({ pages: value.slice() }));
         this.setCurrentPageIndex(0);
     }
     get renderedPages() {
@@ -14956,7 +15050,7 @@ class PageService {
             value = 1;
         }
         this._pages.forEach(x => x.scale = value);
-        document.dispatchEvent(new ScaleChangedEvent({ scale: value }));
+        this._eventController.dispatchEvent(new ScaleChangedEvent({ scale: value }));
     }
     destroy() {
         this._pages.forEach(x => x.destroy);
@@ -14970,7 +15064,7 @@ class PageService {
     requestSetCurrentPageIndex(index) {
         index = clamp(index || 0, 0, this._pages.length - 1);
         if (index !== this._currentPageIndex) {
-            document.dispatchEvent(new CurrentPageChangeRequestEvent({ pageIndex: index }));
+            this._eventController.dispatchEvent(new CurrentPageChangeRequestEvent({ pageIndex: index }));
         }
     }
     renderVisiblePages(container) {
@@ -14988,7 +15082,7 @@ class PageService {
             }
         }
         this._renderedPages = renderedPages;
-        document.dispatchEvent(new PagesRenderedEvent({ pages: renderedPages.slice() }));
+        this._eventController.dispatchEvent(new PagesRenderedEvent({ pages: renderedPages.slice() }));
         this.updateCurrentPage(container);
     }
     renderVisiblePreviews(container) {
@@ -15019,7 +15113,7 @@ class PageService {
             this._currentPageIndex = newIndex;
             (_a = this._pages[oldIndex]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
             (_b = this._pages[newIndex]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
-            document.dispatchEvent(new CurrentPageChangeEvent({ oldIndex, newIndex }));
+            this._eventController.dispatchEvent(new CurrentPageChangeEvent({ oldIndex, newIndex }));
         }
     }
     getVisiblePageIndices(container, preview = false) {
@@ -15218,8 +15312,8 @@ class Viewer {
         return this._scale;
     }
     destroy() {
-        document.removeEventListener(pagesLoadedEvent, this.onPagesLoaded);
-        document.removeEventListener(currentPageChangeRequestEvent, this.onScrollRequest);
+        this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventController.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
     }
     zoomOut() {
         this.zoomOutCentered();
@@ -15257,8 +15351,8 @@ class Viewer {
         this._container.addEventListener("pointermove", this.onPointerMove);
         this._container.addEventListener("pointerdown", this.onPointerDownScroll);
         this._container.addEventListener("touchstart", this.onTouchZoom);
-        document.addEventListener(pagesLoadedEvent, this.onPagesLoaded);
-        document.addEventListener(currentPageChangeRequestEvent, this.onScrollRequest);
+        this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventController.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
     }
     renderVisible() {
         this._pageService.renderVisiblePages(this._container);
@@ -15378,8 +15472,8 @@ class Previewer {
         return this._hidden;
     }
     destroy() {
-        document.removeEventListener(pagesLoadedEvent, this.onPagesLoaded);
-        document.removeEventListener(currentPageChangeEvent, this.onCurrentPageChanged);
+        this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventController.removeListener(currentPageChangeEvent, this.onCurrentPageChanged);
     }
     show() {
         this._hidden = false;
@@ -15396,8 +15490,8 @@ class Previewer {
     }
     init() {
         this._container.addEventListener("scroll", this.onPreviewerScroll);
-        document.addEventListener(pagesLoadedEvent, this.onPagesLoaded);
-        document.addEventListener(currentPageChangeEvent, this.onCurrentPageChanged);
+        this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventController.addListener(currentPageChangeEvent, this.onCurrentPageChanged);
     }
     scrollToPreview(pageIndex) {
         if (!this._pageService.pages.length) {
@@ -15547,11 +15641,13 @@ class PageAnnotationView {
         this.remove();
         this._container = null;
         this._destroyed = true;
+        this._rendered.forEach(x => x.$onPointerDownAction = null);
+        this._rendered.clear();
     }
     remove() {
         var _a;
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
-        document.removeEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
+        this._docData.eventController.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
     appendAsync(parent) {
         return __awaiter$3(this, void 0, void 0, function* () {
@@ -15560,7 +15656,7 @@ class PageAnnotationView {
             }
             yield this.renderAnnotationsAsync();
             parent.append(this._container);
-            document.addEventListener(annotChangeEvent, this.onAnnotationSelectionChange);
+            this._docData.eventController.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
         });
     }
     renderAnnotationsAsync() {
@@ -15574,6 +15670,9 @@ class PageAnnotationView {
                 }
                 let renderResult;
                 if (!this._rendered.has(annotation)) {
+                    annotation.$onPointerDownAction = (e) => {
+                        this._docData.eventController.dispatchEvent(new AnnotSelectionRequestEvent({ annotation }));
+                    };
                     renderResult = yield annotation.renderAsync();
                 }
                 else {
@@ -15606,7 +15705,7 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class PageView {
-    constructor(pageProxy, docData, previewWidth) {
+    constructor(docData, pageProxy, previewWidth) {
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
         }
@@ -15867,7 +15966,7 @@ class Annotator {
     }
     destroy() {
         var _a, _b, _c;
-        document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
         (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onParentScroll);
         (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
         (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
@@ -15922,7 +16021,7 @@ class Annotator {
         });
         this._parentMutationObserver = parentMObserver;
         this._parentResizeObserver = parentRObserver;
-        document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
     }
     refreshViewBox() {
         const { width: w, height: h } = this._overlay.getBoundingClientRect();
@@ -15994,7 +16093,7 @@ class GeometricAnnotator extends Annotator {
         super.init();
     }
     emitPointCount(count = 0) {
-        document.dispatchEvent(new GeometricDataChangeEvent({
+        this._docData.eventController.dispatchEvent(new GeometricDataChangeEvent({
             pointCount: count,
         }));
     }
@@ -16657,7 +16756,7 @@ class PenAnnotator extends Annotator {
     }
     emitPathCount() {
         var _a;
-        document.dispatchEvent(new PenDataChangeEvent({
+        this._docData.eventController.dispatchEvent(new PenDataChangeEvent({
             pathCount: ((_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.pathCount) || 0,
         }));
     }
@@ -16926,14 +17025,14 @@ class AnnotationBuilder {
     }
     destroy() {
         var _a, _b, _c;
-        document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
         this._viewer.container.removeEventListener("contextmenu", this.onContextMenu);
         (_a = this._viewerResizeObserver) === null || _a === void 0 ? void 0 : _a.disconnect();
         (_b = this._contextMenu) === null || _b === void 0 ? void 0 : _b.destroy();
         (_c = this._annotator) === null || _c === void 0 ? void 0 : _c.destroy();
     }
     init() {
-        document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
         this._viewer.container.addEventListener("contextmenu", this.onContextMenu);
         const viewerRObserver = new ResizeObserver((entries) => {
             var _a;
@@ -17348,7 +17447,8 @@ class TsPdfViewer {
         this._shadowRoot = this._outerContainer.attachShadow({ mode: "open" });
         this._shadowRoot.innerHTML = styles + html;
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
-        this._pageService = new PageService({ visibleAdjPages: visibleAdjPages });
+        this._eventController = new ElementEventController(this._mainContainer);
+        this._pageService = new PageService(this._eventController, { visibleAdjPages: visibleAdjPages });
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
         this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
         this.initMainContainerEventHandlers();
@@ -17356,10 +17456,10 @@ class TsPdfViewer {
         this.initFileButtons(options.fileButtons || []);
         this.initModeSwitchButtons();
         this.initAnnotationButtons();
-        document.addEventListener(annotChangeEvent, this.onAnnotationChange);
-        document.addEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-        document.addEventListener(penDataChangeEvent, this.onPenDataChanged);
-        document.addEventListener(geometricDataChangeEvent, this.onGeometricDataChanged);
+        this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
+        this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
+        this._eventController.addListener(penDataChangeEvent, this.onPenDataChanged);
+        this._eventController.addListener(geometricDataChangeEvent, this.onGeometricDataChanged);
     }
     static downloadFile(blob, name) {
         const url = URL.createObjectURL(blob);
@@ -17373,11 +17473,8 @@ class TsPdfViewer {
     }
     destroy() {
         var _a, _b, _c, _d;
-        document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
-        document.removeEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-        document.removeEventListener(penDataChangeEvent, this.onPenDataChanged);
-        document.removeEventListener(geometricDataChangeEvent, this.onGeometricDataChanged);
         this._annotChangeCallback = null;
+        this._eventController.destroy();
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
         (_b = this._annotationBuilder) === null || _b === void 0 ? void 0 : _b.destroy();
         this._viewer.destroy();
@@ -17415,7 +17512,7 @@ class TsPdfViewer {
             catch (e) {
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
-            const docData = new DocumentData(data, this._userName);
+            const docData = new DocumentData(this._eventController, data, this._userName);
             let password;
             while (true) {
                 const authenticated = docData.tryAuthenticate(password);
@@ -17445,7 +17542,7 @@ class TsPdfViewer {
             this._pdfDocument = doc;
             this._docData = docData;
             yield this.refreshPagesAsync();
-            this._annotationBuilder = new AnnotationBuilder(docData, this._pageService, this._viewer);
+            this._annotationBuilder = new AnnotationBuilder(this._docData, this._pageService, this._viewer);
             this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
         });
@@ -17692,7 +17789,7 @@ class TsPdfViewer {
             if (docPagesNumber) {
                 for (let i = 0; i < docPagesNumber; i++) {
                     const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                    const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
+                    const page = new PageView(this._docData, pageProxy, this._previewer.canvasWidth);
                     pages.push(page);
                 }
             }

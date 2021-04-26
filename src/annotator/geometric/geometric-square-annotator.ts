@@ -1,5 +1,7 @@
-import { buildCloudCurveFromPolyline, getRandomUuid, Quadruple } from "../../common";
-import { Vec2, vecMinMax } from "../../math";
+import { Quadruple } from "../../common/types";
+import { Vec2, vecMinMax } from "../../common/math";
+import { buildCloudCurveFromPolyline } from "../../common/drawing";
+import { getRandomUuid } from "../../common/uuid";
 
 import { DocumentData } from "../../document/document-data";
 import { SquareAnnotationDto, SquareAnnotation } from "../../document/entities/annotations/markup/geometric/square-annotation";
@@ -14,7 +16,8 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   /**min and max rectangle corners in the page coordinate system */
   protected _rect: Quadruple;
   
-  constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], options?: GeometricAnnotatorOptions) {
+  constructor(docData: DocumentData, parent: HTMLDivElement, 
+    pages: PageView[], options?: GeometricAnnotatorOptions) {
     super(docData, parent, pages, options || {});
     this.init();
   }

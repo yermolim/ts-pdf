@@ -1,4 +1,4 @@
-import { PointerDownInfo } from "../common";
+import { PointerDownInfo } from "../common/types";
 
 import { DocumentData } from "../document/document-data";
 
@@ -71,7 +71,7 @@ export abstract class Annotator {
 
   /**free resources to let GC clean them to avoid memory leak */
   destroy() {    
-    document.removeEventListener(pagesRenderedEvent, this.onPagesRendered);
+    this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
 
     this._parent?.removeEventListener("scroll", this.onParentScroll);
     this._parentMutationObserver?.disconnect();
@@ -144,7 +144,7 @@ export abstract class Annotator {
     this._parentResizeObserver = parentRObserver;
 
     // handle page render events to keep the view box dimensions actual
-    document.addEventListener(pagesRenderedEvent, this.onPagesRendered);
+    this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
   }
 
   /**

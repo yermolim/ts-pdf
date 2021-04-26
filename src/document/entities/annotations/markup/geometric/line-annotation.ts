@@ -1,4 +1,4 @@
-import { Quadruple, Double } from "../../../../../common";
+import { Quadruple, Double } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { LineEndingType, lineEndingTypes, annotationTypes, 
   valueTypes } from "../../../../const";

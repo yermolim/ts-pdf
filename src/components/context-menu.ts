@@ -1,4 +1,4 @@
-import { Vec2 } from "../math";
+import { Vec2 } from "../common/math";
 
 export class ContextMenu {
   private _container: HTMLDivElement;

@@ -1,7 +1,8 @@
-import { buildCloudCurveFromPolyline, Hextuple, Quadruple } from "../../../../../common";
+import { Hextuple, Quadruple } from "../../../../../common/types";
+import { Mat3, Vec2 } from "../../../../../common/math";
+import { buildCloudCurveFromPolyline } from "../../../../../common/drawing";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
-import { Mat3, Vec2 } from "../../../../../math";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";

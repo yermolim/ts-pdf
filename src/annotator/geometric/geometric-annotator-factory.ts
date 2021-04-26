@@ -2,7 +2,7 @@ import { DocumentData } from "../../document/document-data";
 
 import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
-import { GeometricArrowAnnotator } from "./geometric-arrow";
+import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
 import { GeometricCircleAnnotator } from "./geometric-circle-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";
 import { GeometricPolygonAnnotator } from "./geometric-polygon-annotator";

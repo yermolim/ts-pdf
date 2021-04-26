@@ -1,5 +1,6 @@
-import { Mat3, Vec2 } from "../../../math";
-import { BBox, Hextuple, Quadruple } from "../../../common";
+import { Mat3, Vec2 } from "../../../common/math";
+import { Hextuple, Quadruple } from "../../../common/types";
+import { BBox } from "../../../common/drawing";
 
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";

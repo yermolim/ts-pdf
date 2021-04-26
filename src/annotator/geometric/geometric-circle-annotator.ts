@@ -1,5 +1,7 @@
-import { buildCloudCurveFromEllipse, getRandomUuid, Quadruple } from "../../common";
-import { Mat3, Vec2, vecMinMax } from "../../math";
+import { Quadruple } from "../../common/types";
+import { Mat3, Vec2, vecMinMax } from "../../common/math";
+import { buildCloudCurveFromEllipse } from "../../common/drawing";
+import { getRandomUuid } from "../../common/uuid";
 
 import { DocumentData } from "../../document/document-data";
 import { CircleAnnotation, CircleAnnotationDto } from "../../document/entities/annotations/markup/geometric/circle-annotation";
@@ -14,7 +16,8 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
   /**min and max rectangle corners in the page coordinate system */
   protected _rect: Quadruple;
   
-  constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], options?: GeometricAnnotatorOptions) {
+  constructor(docData: DocumentData, parent: HTMLDivElement, 
+    pages: PageView[], options?: GeometricAnnotatorOptions) {
     super(docData, parent, pages, options || {});
     this.init();
   }

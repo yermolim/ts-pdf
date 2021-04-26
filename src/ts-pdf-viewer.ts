@@ -5,11 +5,12 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { html, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { clamp } from "./math";
+import { clamp } from "./common/math";
 
 import { DocumentData } from "./document/document-data";
 import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
 
+import { ElementEventController } from "./common/element-event-controller";
 import { Viewer, ViewerMode } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
@@ -60,6 +61,7 @@ export class TsPdfViewer {
   private readonly _shadowRoot: ShadowRoot;
   private readonly _mainContainer: HTMLDivElement;
 
+  private readonly _eventController: ElementEventController;
   private readonly _pageService: PageService;
   private readonly _viewer: Viewer;
   private readonly _previewer: Previewer;
@@ -121,7 +123,8 @@ export class TsPdfViewer {
     this._shadowRoot.innerHTML = styles + html;   
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
-    this._pageService = new PageService(
+    this._eventController = new ElementEventController(this._mainContainer);
+    this._pageService = new PageService(this._eventController,
       {visibleAdjPages: visibleAdjPages});
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
       {canvasWidth: previewWidth});
@@ -133,11 +136,11 @@ export class TsPdfViewer {
     this.initFileButtons(options.fileButtons || []);
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
-    
-    document.addEventListener(annotChangeEvent, this.onAnnotationChange);
-    document.addEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    document.addEventListener(penDataChangeEvent, this.onPenDataChanged);
-    document.addEventListener(geometricDataChangeEvent, this.onGeometricDataChanged);
+
+    this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
+    this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
+    this._eventController.addListener(penDataChangeEvent, this.onPenDataChanged);
+    this._eventController.addListener(geometricDataChangeEvent, this.onGeometricDataChanged);
   }
 
   /**create a temp download link and click on it */
@@ -157,19 +160,18 @@ export class TsPdfViewer {
   //#region public API
   /**free resources to let GC clean them to avoid memory leak */
   destroy() {
-    document.removeEventListener(annotChangeEvent, this.onAnnotationChange);
-    document.removeEventListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    document.removeEventListener(penDataChangeEvent, this.onPenDataChanged);
-    document.removeEventListener(geometricDataChangeEvent, this.onGeometricDataChanged);
-
     this._annotChangeCallback = null;
+
+    this._eventController.destroy();
 
     this._pdfLoadingTask?.destroy();
 
     this._annotationBuilder?.destroy();
+
     this._viewer.destroy();
     this._previewer.destroy();
     this._pageService.destroy();
+
     if (this._pdfDocument) {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
@@ -204,7 +206,7 @@ export class TsPdfViewer {
     }
 
     // create DocumentData
-    const docData = new DocumentData(data, this._userName);
+    const docData = new DocumentData(this._eventController, data, this._userName);
     let password: string;
     while (true) {      
       const authenticated = docData.tryAuthenticate(password);
@@ -244,7 +246,7 @@ export class TsPdfViewer {
     await this.refreshPagesAsync();
 
     // create an annotation builder and set its mode to 'select'
-    this._annotationBuilder = new AnnotationBuilder(docData, this._pageService, this._viewer);
+    this._annotationBuilder = new AnnotationBuilder(this._docData, this._pageService, this._viewer);
     this.setAnnotationMode("select");
 
     this._mainContainer.classList.remove("disabled");
@@ -733,7 +735,7 @@ export class TsPdfViewer {
     if (docPagesNumber) {
       for (let i = 0; i < docPagesNumber; i++) {    
         const pageProxy = await this._pdfDocument.getPage(i + 1);
-        const page = new PageView(pageProxy, this._docData, this._previewer.canvasWidth);
+        const page = new PageView(this._docData, pageProxy, this._previewer.canvasWidth);
         pages.push(page);
       }
     }

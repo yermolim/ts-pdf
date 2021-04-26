@@ -1,6 +1,6 @@
 import { codes } from "../../../codes";
-import { Mat3, Vec2 } from "../../../../math";
-import { Double, Quadruple } from "../../../../common";
+import { Mat3, Vec2 } from "../../../../common/math";
+import { Double, Quadruple } from "../../../../common/types";
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 

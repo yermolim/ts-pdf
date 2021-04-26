@@ -1,4 +1,4 @@
-import { Mat3, Vec3 } from "../../math";
+import { Mat3, Vec3 } from "../../common/math";
 import { TextState } from "./text-state";
 
 export interface GraphicsStateParams {  

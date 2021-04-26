@@ -34,9 +34,9 @@ export class Previewer {
     this.init();
   }
   
-  destroy() {    
-    document.removeEventListener(pagesLoadedEvent, this.onPagesLoaded);
-    document.removeEventListener(currentPageChangeEvent, this.onCurrentPageChanged);
+  destroy() {   
+    this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded); 
+    this._pageService.eventController.removeListener(currentPageChangeEvent, this.onCurrentPageChanged);
   }
 
   show() {
@@ -59,8 +59,8 @@ export class Previewer {
 
   private init() {
     this._container.addEventListener("scroll", this.onPreviewerScroll);
-    document.addEventListener(pagesLoadedEvent, this.onPagesLoaded);
-    document.addEventListener(currentPageChangeEvent, this.onCurrentPageChanged);
+    this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded); 
+    this._pageService.eventController.addListener(currentPageChangeEvent, this.onCurrentPageChanged);
   }
   
   private scrollToPreview(pageIndex: number) { 

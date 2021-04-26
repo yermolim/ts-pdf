@@ -3,7 +3,7 @@ import { annotationTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
-import { Quadruple } from "../../../../common";
+import { Quadruple } from "../../../../common/types";
 
 export const caretSymbolTypes = {
   NONE: "/None",

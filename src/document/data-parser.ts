@@ -1,4 +1,4 @@
-import { Quadruple } from "../common";
+import { Quadruple } from "../common/types";
 import { codes, keywordCodes, isRegularChar,
   DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./codes";
 import { ObjectType, ValueType, valueTypes } from "./const";

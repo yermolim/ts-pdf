@@ -1,4 +1,4 @@
-import { Double, Quadruple } from "../../../../../common";
+import { Double, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { AnnotationType } from "../../../../const";
 

@@ -1,4 +1,4 @@
-import { getDistance } from "../../common";
+import { getDistance } from "../../common/math";
 
 import { DocumentData } from "../../document/document-data";
 import { StampAnnotation, StampType, stampTypes } 
@@ -38,7 +38,8 @@ export class StampAnnotator extends Annotator {
    * @param parent 
    * @param type stamp type
    */
-  constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], type?: string) {
+  constructor(docData: DocumentData, parent: HTMLDivElement, 
+    pages: PageView[], type?: string) {
     super(docData, parent, pages);
     
     if (type) {

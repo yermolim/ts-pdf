@@ -1,6 +1,7 @@
-import { annotationTypes } from "../../../const";
-import { getRandomUuid, Quadruple } from "../../../../common";
+import { Quadruple } from "../../../../common/types";
+import { getRandomUuid } from "../../../../common/uuid";
 import { CryptInfo } from "../../../common-interfaces";
+import { annotationTypes } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";

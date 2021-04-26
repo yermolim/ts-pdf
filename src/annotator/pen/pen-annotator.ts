@@ -1,5 +1,6 @@
-import { Vec2, vecMinMax } from "../../math";
-import { getRandomUuid, Quadruple } from "../../common";
+import { Vec2, vecMinMax } from "../../common/math";
+import { Quadruple } from "../../common/types";
+import { getRandomUuid } from "../../common/uuid";
 
 import { DocumentData } from "../../document/document-data";
 import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
@@ -19,7 +20,7 @@ export class PenDataChangeEvent extends CustomEvent<PenDataChangeEventDetail> {
   }
 }
 declare global {
-  interface DocumentEventMap {
+  interface HTMLElementEventMap {
     [penDataChangeEvent]: PenDataChangeEvent;
   }
 }
@@ -39,7 +40,8 @@ export class PenAnnotator extends Annotator {
   protected _color: Quadruple;
   protected _strokeWidth: number;
 
-  constructor(docData: DocumentData, parent: HTMLDivElement, pages: PageView[], options?: PenAnnotatorOptions) {
+  constructor(docData: DocumentData, parent: HTMLDivElement, 
+    pages: PageView[], options?: PenAnnotatorOptions) {
     super(docData, parent, pages);
     this.init();
 
@@ -207,7 +209,7 @@ export class PenAnnotator extends Annotator {
   };
 
   protected emitPathCount() {
-    document.dispatchEvent(new PenDataChangeEvent({
+    this._docData.eventController.dispatchEvent(new PenDataChangeEvent({
       pathCount: this._annotationPenData?.pathCount || 0,
     }));
   }

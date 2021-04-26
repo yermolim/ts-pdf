@@ -1,5 +1,5 @@
-import { RenderToSvgResult, Quadruple, BBox, Hextuple } from "../../common";
-import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../math";
+import { RenderToSvgResult, Quadruple, Hextuple } from "../../common/types";
+import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../common/math";
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, valueTypes } from "../const";
 

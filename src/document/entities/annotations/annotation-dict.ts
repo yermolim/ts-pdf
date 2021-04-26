@@ -1,5 +1,7 @@
-import { BBox, getRandomUuid, Hextuple, Quadruple, RenderToSvgResult } from "../../../common";
-import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../math";
+import { Hextuple, Quadruple, RenderToSvgResult } from "../../../common/types";
+import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../common/math";
+import { BBox } from "../../../common/drawing";
+import { getRandomUuid } from "../../../common/uuid";
 
 import { codes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
@@ -69,7 +71,7 @@ export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
 }
 
 declare global {
-  interface DocumentEventMap {
+  interface HTMLElementEventMap {
     [annotSelectionRequestEvent]: AnnotSelectionRequestEvent;
     [annotChangeEvent]: AnnotEvent;
   }
@@ -84,6 +86,9 @@ export abstract class AnnotationDict extends PdfDict {
   /**the parent page rect */
   $pageRect: Quadruple;
   $translationEnabled: boolean;
+
+  /**optional action callback which is called on 'pointer down' event */
+  $onPointerDownAction: (e: PointerEvent) => void;
 
   //#region PDF properties
 
@@ -902,8 +907,10 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    // emit a selection request
-    document.dispatchEvent(new AnnotSelectionRequestEvent({annotation: this}));
+    // call the additional action if present
+    if (this.$onPointerDownAction) {
+      this.$onPointerDownAction(e);
+    }
 
     if (!this.$translationEnabled || !e.isPrimary) {
       // translation disabled or it's a secondary touch action
