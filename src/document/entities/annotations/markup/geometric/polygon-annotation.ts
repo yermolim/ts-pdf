@@ -48,6 +48,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     annotation.IT = dto.cloud
       ? polyIntents.CLOUD
       : polyIntents.POLYGON_DIMENSION;
+    annotation.Vertices = dto.vertices;
 
     annotation.generateApStream();
 

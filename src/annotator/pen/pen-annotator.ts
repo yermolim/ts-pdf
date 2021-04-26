@@ -6,25 +6,8 @@ import { DocumentData } from "../../document/document-data";
 import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
 
 import { PageView } from "../../components/pages/page-view";
-import { Annotator } from "../annotator";
+import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 import { PenData } from "./pen-data";
-
-//#region custom events
-export const penDataChangeEvent = "tspdf-pendatachange" as const;
-export interface PenDataChangeEventDetail {
-  pathCount: number;
-}
-export class PenDataChangeEvent extends CustomEvent<PenDataChangeEventDetail> {
-  constructor(detail: PenDataChangeEventDetail) {
-    super(penDataChangeEvent, {detail});
-  }
-}
-declare global {
-  interface HTMLElementEventMap {
-    [penDataChangeEvent]: PenDataChangeEvent;
-  }
-}
-//#endregion
 
 export interface PenAnnotatorOptions {
   strokeWidth?: number;  
@@ -60,7 +43,7 @@ export class PenAnnotator extends Annotator {
   /**remove the last path from the temp path group */
   undo() {
     this._annotationPenData?.removeLastPath();
-    this.emitPathCount();
+    this.emitDataChanged();
   }
 
   /**clear the temp path group */
@@ -124,7 +107,7 @@ export class PenAnnotator extends Annotator {
     if (this._annotationPenData) {
       this._annotationPenData.group.remove();
       this._annotationPenData = null;
-      this.emitPathCount();
+      this.emitDataChanged();
     }    
   }
 
@@ -205,12 +188,17 @@ export class PenAnnotator extends Annotator {
     target.releasePointerCapture(e.pointerId);   
 
     this._annotationPenData?.endPath();
-    this.emitPathCount();
+    this.emitDataChanged();
   };
 
-  protected emitPathCount() {
-    this._docData.eventController.dispatchEvent(new PenDataChangeEvent({
-      pathCount: this._annotationPenData?.pathCount || 0,
+  protected emitDataChanged() {
+    const count = this._annotationPenData?.pathCount || 0;
+    this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+      annotatorType: "pen",
+      elementCount: count,
+      undoable: count > 1,
+      clearable: count > 0,
+      saveable: count > 0,
     }));
   }
 

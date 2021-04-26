@@ -398,24 +398,24 @@ const styles = `
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }  
   :not(.annotation-selected) #button-annotation-delete,
-  :not(.complex-pen-data-present) #button-annotation-pen-undo,
-  :not(.simple-pen-data-present) #button-annotation-pen-clear,
-  :not(.simple-pen-data-present) #button-annotation-pen-save,
-  :not(.complex-geometric-data-present) #button-annotation-geometric-undo,
-  :not(.simple-geometric-data-present) #button-annotation-geometric-clear,
-  :not(.simple-geometric-data-present) #button-annotation-geometric-save {
+  :not(.pen-annotator-data-undoable) #button-annotation-pen-undo,
+  :not(.pen-annotator-data-clearable) #button-annotation-pen-clear,
+  :not(.pen-annotator-data-saveable) #button-annotation-pen-save,
+  :not(.geom-annotator-data-undoable) #button-annotation-geometric-undo,
+  :not(.geom-annotator-data-clearable) #button-annotation-geometric-clear,
+  :not(.geom-annotator-data-saveable) #button-annotation-geometric-save {
     cursor: default;      
     opacity: 0;
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }
   .annotation-selected #button-annotation-delete,
-  .complex-pen-data-present #button-annotation-pen-undo,
-  .simple-pen-data-present #button-annotation-pen-clear,
-  .simple-pen-data-present #button-annotation-pen-save,
-  .complex-geometric-data-present #button-annotation-geometric-undo,
-  .simple-geometric-data-present #button-annotation-geometric-clear,
-  .simple-geometric-data-present #button-annotation-geometric-save { 
+  .pen-annotator-data-undoable #button-annotation-pen-undo,
+  .pen-annotator-data-clearable #button-annotation-pen-clear,
+  .pen-annotator-data-saveable #button-annotation-pen-save,
+  .geom-annotator-data-undoable #button-annotation-geometric-undo,
+  .geom-annotator-data-clearable #button-annotation-geometric-clear,
+  .geom-annotator-data-saveable #button-annotation-geometric-save { 
     cursor: pointer;
     opacity: 100;
     transform: scale(1);    
@@ -14632,6 +14632,7 @@ class PolygonAnnotation extends PolyAnnotation {
         annotation.IT = dto.cloud
             ? polyIntents.CLOUD
             : polyIntents.POLYGON_DIMENSION;
+        annotation.Vertices = dto.vertices;
         annotation.generateApStream();
         const proxy = new Proxy(annotation, annotation.onChange);
         annotation._proxy = proxy;
@@ -14835,6 +14836,7 @@ class PolylineAnnotation extends PolyAnnotation {
         annotation.BS = bs;
         annotation.IT = polyIntents.POLYLINE_DIMENSION;
         annotation.LE = dto.endingType;
+        annotation.Vertices = dto.vertices;
         annotation.generateApStream();
         const proxy = new Proxy(annotation, annotation.onChange);
         annotation._proxy = proxy;
@@ -16481,6 +16483,12 @@ class PageView {
     }
 }
 
+const annotatorDataChangeEvent = "tspdf-annotatordatachange";
+class AnnotatorDataChangeEvent extends CustomEvent {
+    constructor(detail) {
+        super(annotatorDataChangeEvent, { detail });
+    }
+}
 class Annotator {
     constructor(docData, parent, pages) {
         var _a;
@@ -16633,12 +16641,6 @@ class Annotator {
     }
 }
 
-const geometricDataChangeEvent = "tspdf-geometricdatachange";
-class GeometricDataChangeEvent extends CustomEvent {
-    constructor(detail) {
-        super(geometricDataChangeEvent, { detail });
-    }
-}
 class GeometricAnnotator extends Annotator {
     constructor(docData, parent, pages, options) {
         var _a, _b;
@@ -16651,19 +16653,24 @@ class GeometricAnnotator extends Annotator {
         GeometricAnnotator.lastCloudMode = this._cloudMode;
     }
     destroy() {
+        this.clearGroup();
         super.destroy();
     }
     init() {
         super.init();
     }
-    emitPointCount(count = 0) {
-        this._docData.eventController.dispatchEvent(new GeometricDataChangeEvent({
-            pointCount: count,
+    emitDataChanged(count, saveable, clearable, undoable) {
+        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+            annotatorType: "geom",
+            elementCount: count,
+            undoable,
+            clearable,
+            saveable,
         }));
     }
     clearGroup() {
         this._svgGroup.innerHTML = "";
-        this.emitPointCount(0);
+        this.emitDataChanged(0);
     }
     refreshGroupPosition() {
         if (!this._pageId && this._pageId !== 0) {
@@ -16691,7 +16698,7 @@ class GeometricArrowAnnotator extends GeometricAnnotator {
     }
     destroy() {
         super.destroy();
-        this.emitPointCount(0);
+        this.emitDataChanged(0);
     }
     undo() {
     }
@@ -16753,14 +16760,13 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
             target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             if (this._rect) {
-                this.emitPointCount(2);
+                this.emitDataChanged(2, true, true);
             }
         };
         this.init();
     }
     destroy() {
         super.destroy();
-        this.emitPointCount(0);
     }
     undo() {
         this.clear();
@@ -16768,7 +16774,6 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
     clear() {
         this._rect = null;
         this.clearGroup();
-        this.emitPointCount(0);
     }
     saveAnnotation() {
         if (!this._rect) {
@@ -16857,7 +16862,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
     }
     destroy() {
         super.destroy();
-        this.emitPointCount(0);
+        this.emitDataChanged(0);
     }
     undo() {
     }
@@ -16873,40 +16878,321 @@ class GeometricLineAnnotator extends GeometricAnnotator {
 class GeometricPolygonAnnotator extends GeometricAnnotator {
     constructor(docData, parent, pages, options) {
         super(docData, parent, pages, options || {});
+        this._points = [];
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords) {
+                return;
+            }
+            const { pageX: px, pageY: py, pageId } = pageCoords;
+            this._pageId = pageId;
+            this.refreshGroupPosition();
+            if (!this._points.length) {
+                this._points.push(new Vec2(px, py));
+            }
+            this._points.push(new Vec2(px, py));
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords || pageCoords.pageId !== this._pageId) {
+                return;
+            }
+            const { pageX: px, pageY: py } = pageCoords;
+            this._points[this._points.length - 1].set(px, py);
+            this.redraw();
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this.emitPointsDataChanged();
+        };
         this.init();
     }
     destroy() {
         super.destroy();
-        this.emitPointCount(0);
     }
     undo() {
+        if (this._points.length) {
+            this._points.pop();
+            this.redraw();
+            this.emitPointsDataChanged();
+        }
     }
     clear() {
+        var _a;
+        if ((_a = this._points) === null || _a === void 0 ? void 0 : _a.length) {
+            this._points.length = 0;
+            this.clearGroup();
+        }
     }
     saveAnnotation() {
+        if (this._points.length < 3) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = PolygonAnnotation.createFromDto(dto);
+        this._docData.appendAnnotationToPage(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
+    }
+    emitPointsDataChanged() {
+        const count = this._points.length;
+        this.emitDataChanged(count, count > 1, count > 0, count > 2);
+    }
+    redraw() {
+        this._svgGroup.innerHTML = "";
+        if (this._points.length < 2) {
+            return;
+        }
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        let pathString;
+        if (this._cloudMode) {
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("stroke-linejoin", "round");
+            const curveData = buildCloudCurveFromPolyline([...this._points, this._points[0]], PolygonAnnotation.cloudArcSize);
+            pathString = "M" + curveData.start.x + "," + curveData.start.y;
+            curveData.curves.forEach(x => {
+                pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
+            });
+            path.setAttribute("d", pathString);
+        }
+        else {
+            path.setAttribute("stroke-linecap", "square");
+            path.setAttribute("stroke-linejoin", "miter");
+            const start = this._points[0];
+            pathString = "M" + start.x + "," + start.y;
+            for (let i = 1; i < this._points.length; i++) {
+                const point = this._points[i];
+                pathString += " L" + point.x + "," + point.y;
+            }
+            pathString += " Z";
+        }
+        path.setAttribute("d", pathString);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const margin = this._strokeWidth / 2 + (this._cloudMode ? PolygonAnnotation.cloudArcSize / 2 : 0);
+        let xmin;
+        let ymin;
+        let xmax;
+        let ymax;
+        let vec;
+        const points = this._points;
+        const vertices = [];
+        for (let i = 0; i < points.length; i++) {
+            vec = points[i];
+            if (!xmin || vec.x < xmin) {
+                xmin = vec.x;
+            }
+            if (!ymin || vec.y < ymin) {
+                ymin = vec.y;
+            }
+            if (!xmax || vec.x > xmax) {
+                xmax = vec.x;
+            }
+            if (!ymax || vec.y > ymax) {
+                ymax = vec.y;
+            }
+            vertices.push(vec.x, vec.y);
+        }
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Polygon",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect: [xmin - margin, ymin - margin, xmax + margin, ymax + margin],
+            vertices,
+            cloud: this._cloudMode,
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
     }
 }
 
 class GeometricPolylineAnnotator extends GeometricAnnotator {
     constructor(docData, parent, pages, options) {
         super(docData, parent, pages, options || {});
+        this._points = [];
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords) {
+                return;
+            }
+            const { pageX: px, pageY: py, pageId } = pageCoords;
+            this._pageId = pageId;
+            this.refreshGroupPosition();
+            if (!this._points.length) {
+                this._points.push(new Vec2(px, py));
+            }
+            this._points.push(new Vec2(px, py));
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords || pageCoords.pageId !== this._pageId) {
+                return;
+            }
+            const { pageX: px, pageY: py } = pageCoords;
+            this._points[this._points.length - 1].set(px, py);
+            this.redraw();
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this.emitPointsDataChanged();
+        };
         this.init();
     }
     destroy() {
         super.destroy();
-        this.emitPointCount(0);
     }
     undo() {
+        if (this._points.length) {
+            this._points.pop();
+            this.redraw();
+            this.emitPointsDataChanged();
+        }
     }
     clear() {
+        var _a;
+        if ((_a = this._points) === null || _a === void 0 ? void 0 : _a.length) {
+            this._points.length = 0;
+            this.clearGroup();
+        }
     }
     saveAnnotation() {
+        if (this._points.length < 2) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = PolylineAnnotation.createFromDto(dto);
+        this._docData.appendAnnotationToPage(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
+    }
+    emitPointsDataChanged() {
+        const count = this._points.length;
+        this.emitDataChanged(count, count > 1, count > 0, count > 2);
+    }
+    redraw() {
+        this._svgGroup.innerHTML = "";
+        if (this._points.length < 2) {
+            return;
+        }
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke-linecap", "square");
+        path.setAttribute("stroke-linejoin", "miter");
+        const start = this._points[0];
+        let pathString = "M" + start.x + "," + start.y;
+        for (let i = 1; i < this._points.length; i++) {
+            const point = this._points[i];
+            pathString += " L" + point.x + "," + point.y;
+        }
+        path.setAttribute("d", pathString);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const margin = this._strokeWidth / 2;
+        let xmin;
+        let ymin;
+        let xmax;
+        let ymax;
+        let vec;
+        const points = this._points;
+        const vertices = [];
+        for (let i = 0; i < points.length; i++) {
+            vec = points[i];
+            if (!xmin || vec.x < xmin) {
+                xmin = vec.x;
+            }
+            if (!ymin || vec.y < ymin) {
+                ymin = vec.y;
+            }
+            if (!xmax || vec.x > xmax) {
+                xmax = vec.x;
+            }
+            if (!ymax || vec.y > ymax) {
+                ymax = vec.y;
+            }
+            vertices.push(vec.x, vec.y);
+        }
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Polyline",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect: [xmin - margin, ymin - margin, xmax + margin, ymax + margin],
+            vertices,
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
     }
 }
 
@@ -16959,14 +17245,13 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
             target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             if (this._rect) {
-                this.emitPointCount(2);
+                this.emitDataChanged(2, true, true);
             }
         };
         this.init();
     }
     destroy() {
         super.destroy();
-        this.emitPointCount(0);
     }
     undo() {
         this.clear();
@@ -16974,7 +17259,6 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
     clear() {
         this._rect = null;
         this.clearGroup();
-        this.emitPointCount(0);
     }
     saveAnnotation() {
         if (!this._rect) {
@@ -17197,12 +17481,6 @@ PenData.defaultOptions = {
     color: [0, 0, 0, 0.5],
 };
 
-const penDataChangeEvent = "tspdf-pendatachange";
-class PenDataChangeEvent extends CustomEvent {
-    constructor(detail) {
-        super(penDataChangeEvent, { detail });
-    }
-}
 class PenAnnotator extends Annotator {
     constructor(docData, parent, pages, options) {
         super(docData, parent, pages);
@@ -17250,7 +17528,7 @@ class PenAnnotator extends Annotator {
             target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             (_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.endPath();
-            this.emitPathCount();
+            this.emitDataChanged();
         };
         this.init();
         this._color = (options === null || options === void 0 ? void 0 : options.color) || PenAnnotator.lastColor || [0, 0, 0, 0.9];
@@ -17265,7 +17543,7 @@ class PenAnnotator extends Annotator {
     undo() {
         var _a;
         (_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.removeLastPath();
-        this.emitPathCount();
+        this.emitDataChanged();
     }
     clear() {
         this.removeTempPenData();
@@ -17305,7 +17583,7 @@ class PenAnnotator extends Annotator {
         if (this._annotationPenData) {
             this._annotationPenData.group.remove();
             this._annotationPenData = null;
-            this.emitPathCount();
+            this.emitDataChanged();
         }
     }
     resetTempPenData(pageId) {
@@ -17318,10 +17596,15 @@ class PenAnnotator extends Annotator {
         this._svgGroup.append(this._annotationPenData.group);
         this.refreshGroupPosition();
     }
-    emitPathCount() {
+    emitDataChanged() {
         var _a;
-        this._docData.eventController.dispatchEvent(new PenDataChangeEvent({
-            pathCount: ((_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.pathCount) || 0,
+        const count = ((_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.pathCount) || 0;
+        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+            annotatorType: "pen",
+            elementCount: count,
+            undoable: count > 1,
+            clearable: count > 0,
+            saveable: count > 0,
         }));
     }
     buildAnnotationDto(data) {
@@ -17901,32 +18184,36 @@ class TsPdfViewer {
                 this._pageService.renderSpecifiedPages(pageIdSet);
             }
         };
-        this.onPenDataChanged = (event) => {
-            if (!event.detail.pathCount) {
-                this._mainContainer.classList.remove("simple-pen-data-present");
-                this._mainContainer.classList.remove("complex-pen-data-present");
+        this.onAnnotatorDataChanged = (event) => {
+            this._mainContainer.classList.remove("pen-annotator-data-saveable");
+            this._mainContainer.classList.remove("geom-annotator-data-saveable");
+            this._mainContainer.classList.remove("pen-annotator-data-undoable");
+            this._mainContainer.classList.remove("geom-annotator-data-undoable");
+            this._mainContainer.classList.remove("pen-annotator-data-clearable");
+            this._mainContainer.classList.remove("geom-annotator-data-clearable");
+            if (event.detail.saveable) {
+                if (event.detail.annotatorType === "pen") {
+                    this._mainContainer.classList.add("pen-annotator-data-saveable");
+                }
+                else if (event.detail.annotatorType === "geom") {
+                    this._mainContainer.classList.add("geom-annotator-data-saveable");
+                }
             }
-            else if (event.detail.pathCount > 1) {
-                this._mainContainer.classList.add("simple-pen-data-present");
-                this._mainContainer.classList.add("complex-pen-data-present");
+            if (event.detail.undoable) {
+                if (event.detail.annotatorType === "pen") {
+                    this._mainContainer.classList.add("pen-annotator-data-undoable");
+                }
+                else if (event.detail.annotatorType === "geom") {
+                    this._mainContainer.classList.add("geom-annotator-data-undoable");
+                }
             }
-            else {
-                this._mainContainer.classList.add("simple-pen-data-present");
-                this._mainContainer.classList.remove("complex-pen-data-present");
-            }
-        };
-        this.onGeometricDataChanged = (event) => {
-            if (!event.detail.pointCount) {
-                this._mainContainer.classList.remove("simple-geometric-data-present");
-                this._mainContainer.classList.remove("complex-geometric-data-present");
-            }
-            else if (event.detail.pointCount > 2) {
-                this._mainContainer.classList.add("simple-geometric-data-present");
-                this._mainContainer.classList.add("complex-geometric-data-present");
-            }
-            else {
-                this._mainContainer.classList.add("simple-geometric-data-present");
-                this._mainContainer.classList.remove("complex-geometric-data-present");
+            if (event.detail.clearable) {
+                if (event.detail.annotatorType === "pen") {
+                    this._mainContainer.classList.add("pen-annotator-data-clearable");
+                }
+                else if (event.detail.annotatorType === "geom") {
+                    this._mainContainer.classList.add("geom-annotator-data-clearable");
+                }
             }
         };
         this.onAnnotationSelectModeButtonClick = () => {
@@ -18022,8 +18309,7 @@ class TsPdfViewer {
         this.initAnnotationButtons();
         this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
         this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-        this._eventController.addListener(penDataChangeEvent, this.onPenDataChanged);
-        this._eventController.addListener(geometricDataChangeEvent, this.onGeometricDataChanged);
+        this._eventController.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
     }
     static downloadFile(blob, name) {
         const url = URL.createObjectURL(blob);

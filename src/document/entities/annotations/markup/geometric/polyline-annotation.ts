@@ -55,6 +55,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     annotation.BS = bs;
     annotation.IT = polyIntents.POLYLINE_DIMENSION;
     annotation.LE = dto.endingType;
+    annotation.Vertices = dto.vertices;
  
     annotation.generateApStream();
 

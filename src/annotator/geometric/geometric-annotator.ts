@@ -3,24 +3,7 @@ import { Quadruple } from "../../common/types";
 import { DocumentData } from "../../document/document-data";
 
 import { PageView } from "../../components/pages/page-view";
-import { Annotator } from "../annotator";
-
-//#region custom events
-export const geometricDataChangeEvent = "tspdf-geometricdatachange" as const;
-export interface GeometricDataChangeEventDetail {
-  pointCount: number;
-}
-export class GeometricDataChangeEvent extends CustomEvent<GeometricDataChangeEventDetail> {
-  constructor(detail: GeometricDataChangeEventDetail) {
-    super(geometricDataChangeEvent, {detail});
-  }
-}
-declare global {
-  interface HTMLElementEventMap {
-    [geometricDataChangeEvent]: GeometricDataChangeEvent;
-  }
-}
-//#endregion
+import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 
 export interface GeometricAnnotatorOptions {
   strokeWidth?: number;  
@@ -56,6 +39,7 @@ export abstract class GeometricAnnotator extends Annotator {
   }
   
   destroy() {
+    this.clearGroup();
     super.destroy();
   }
 
@@ -63,15 +47,20 @@ export abstract class GeometricAnnotator extends Annotator {
     super.init();
   }
   
-  protected emitPointCount(count = 0) {
-    this._docData.eventController.dispatchEvent(new GeometricDataChangeEvent({
-      pointCount: count,
+  protected emitDataChanged(count: number, 
+    saveable?: boolean, clearable?: boolean, undoable?: boolean) {
+    this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+      annotatorType: "geom",
+      elementCount: count,
+      undoable,
+      clearable,
+      saveable,
     }));
   }
 
   protected clearGroup() {
     this._svgGroup.innerHTML = "";
-    this.emitPointCount(0);
+    this.emitDataChanged(0);
   }
     
   protected refreshGroupPosition() {

@@ -13,7 +13,7 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
 
   destroy() {
     super.destroy();    
-    this.emitPointCount(0);
+    this.emitDataChanged(0);
   }  
   
   undo() {

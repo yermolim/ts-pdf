@@ -17,8 +17,9 @@ import { PageView } from "./components/pages/page-view";
 import { PageService, currentPageChangeEvent, CurrentPageChangeEvent } from "./components/pages/page-service";
 import { AnnotationBuilder } from "./components/annotation-builder";
 
-import { penDataChangeEvent, PenDataChangeEvent, PenAnnotator } from "./annotator/pen/pen-annotator";
-import { GeometricAnnotator, geometricDataChangeEvent, GeometricDataChangeEvent } from "./annotator/geometric/geometric-annotator";
+import { annotatorDataChangeEvent, AnnotatorDataChangeEvent } from "./annotator/annotator";
+import { PenAnnotator } from "./annotator/pen/pen-annotator";
+import { GeometricAnnotator } from "./annotator/geometric/geometric-annotator";
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
@@ -139,8 +140,7 @@ export class TsPdfViewer {
 
     this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
     this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    this._eventController.addListener(penDataChangeEvent, this.onPenDataChanged);
-    this._eventController.addListener(geometricDataChangeEvent, this.onGeometricDataChanged);
+    this._eventController.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
   }
 
   /**create a temp download link and click on it */
@@ -661,32 +661,37 @@ export class TsPdfViewer {
       this._pageService.renderSpecifiedPages(pageIdSet);
     }
   };
-  
-  private onPenDataChanged = (event: PenDataChangeEvent) => {
-    if (!event.detail.pathCount) {
-      this._mainContainer.classList.remove("simple-pen-data-present");
-      this._mainContainer.classList.remove("complex-pen-data-present");
-    } else if (event.detail.pathCount > 1) {
-      this._mainContainer.classList.add("simple-pen-data-present");
-      this._mainContainer.classList.add("complex-pen-data-present");
-    } else {
-      this._mainContainer.classList.add("simple-pen-data-present");
-      this._mainContainer.classList.remove("complex-pen-data-present");
+
+  private onAnnotatorDataChanged = (event: AnnotatorDataChangeEvent) => {
+    this._mainContainer.classList.remove("pen-annotator-data-saveable");
+    this._mainContainer.classList.remove("geom-annotator-data-saveable");
+    this._mainContainer.classList.remove("pen-annotator-data-undoable");
+    this._mainContainer.classList.remove("geom-annotator-data-undoable");
+    this._mainContainer.classList.remove("pen-annotator-data-clearable");
+    this._mainContainer.classList.remove("geom-annotator-data-clearable");
+
+    if (event.detail.saveable) {
+      if (event.detail.annotatorType === "pen") {
+        this._mainContainer.classList.add("pen-annotator-data-saveable");
+      } else if (event.detail.annotatorType === "geom") {
+        this._mainContainer.classList.add("geom-annotator-data-saveable");        
+      }
     }
-  }; 
-  
-  private onGeometricDataChanged = (event: GeometricDataChangeEvent) => {
-    if (!event.detail.pointCount) {
-      this._mainContainer.classList.remove("simple-geometric-data-present");
-      this._mainContainer.classList.remove("complex-geometric-data-present");
-    } else if (event.detail.pointCount > 2) {
-      this._mainContainer.classList.add("simple-geometric-data-present");
-      this._mainContainer.classList.add("complex-geometric-data-present");
-    } else {
-      this._mainContainer.classList.add("simple-geometric-data-present");
-      this._mainContainer.classList.remove("complex-geometric-data-present");
+    if (event.detail.undoable) {
+      if (event.detail.annotatorType === "pen") {
+        this._mainContainer.classList.add("pen-annotator-data-undoable");
+      } else if (event.detail.annotatorType === "geom") {
+        this._mainContainer.classList.add("geom-annotator-data-undoable");        
+      }
     }
-  }; 
+    if (event.detail.clearable) {
+      if (event.detail.annotatorType === "pen") {
+        this._mainContainer.classList.add("pen-annotator-data-clearable");
+      } else if (event.detail.annotatorType === "geom") {
+        this._mainContainer.classList.add("geom-annotator-data-clearable");        
+      }
+    }
+  };
 
   private setAnnotationMode(mode: AnnotatorMode) {
     if (!this._annotationBuilder || !mode) {

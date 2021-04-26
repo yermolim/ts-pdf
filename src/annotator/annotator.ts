@@ -5,6 +5,27 @@ import { DocumentData } from "../document/document-data";
 import { PageView } from "../components/pages/page-view";
 import { PagesRenderedEvent, pagesRenderedEvent } from "../components/pages/page-service";
 
+//#region custom events
+export const annotatorDataChangeEvent = "tspdf-annotatordatachange" as const;
+export interface AnnotatorDataChangeEventDetail {
+  annotatorType: string;
+  elementCount?: number;
+  undoable?: boolean;
+  clearable?: boolean;
+  saveable?: boolean;
+}
+export class AnnotatorDataChangeEvent extends CustomEvent<AnnotatorDataChangeEventDetail> {
+  constructor(detail: AnnotatorDataChangeEventDetail) {
+    super(annotatorDataChangeEvent, {detail});
+  }
+}
+declare global {
+  interface HTMLElementEventMap {
+    [annotatorDataChangeEvent]: AnnotatorDataChangeEvent;
+  }
+}
+//#endregion
+
 /**coordinates in the PDF page coordinate system */
 interface PageCoords {
   pageId: number;

@@ -23,8 +23,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   }
 
   destroy() {
-    super.destroy();    
-    this.emitPointCount(0);
+    super.destroy();
   }  
   
   undo() {
@@ -34,7 +33,6 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   clear() {  
     this._rect = null;
     this.clearGroup();
-    this.emitPointCount(0);
   }
   
   saveAnnotation() {
@@ -177,7 +175,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     target.releasePointerCapture(e.pointerId); 
     
     if (this._rect) {
-      this.emitPointCount(2);
+      this.emitDataChanged(2, true, true);
     }
   };
   
