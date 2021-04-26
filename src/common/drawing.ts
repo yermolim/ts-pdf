@@ -10,7 +10,7 @@ export interface CloudCurveData {
 
 /**
  * calculate cubic bezier curves of the 'cloud' using the provided polyline points
- * @param polylinePoints 
+ * @param polylinePoints ordered counterclockwise
  * @param maxArcSize maximum size of the single 'cloud' arc
  * @returns 
  */
@@ -58,8 +58,8 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
       arcStart = j * arcSize;
       arcEnd = (j + 1) * arcSize;
       const curve: CurveData = [
-        new Vec2(arcStart, halfArcSize).applyMat3(matrix), // curve control 1
-        new Vec2(arcEnd, halfArcSize).applyMat3(matrix), // curve control 2
+        new Vec2(arcStart, -halfArcSize).applyMat3(matrix), // curve control 1
+        new Vec2(arcEnd, -halfArcSize).applyMat3(matrix), // curve control 2
         new Vec2(arcEnd, 0).applyMat3(matrix), // curve end
       ];
       curves.push(curve);
@@ -98,7 +98,7 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, maxArcSize: n
   for (let i = 0; i < segmentsNumber; i++) {
     distance = 0;
     while (distance < maxSegmentLength) {
-      angle -= 0.25 / 180 * Math.PI;
+      angle += 0.25 / 180 * Math.PI;
       next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
       distance += getDistance(current.x, current.y, next.x, next.y);
       current.setFromVec2(next);

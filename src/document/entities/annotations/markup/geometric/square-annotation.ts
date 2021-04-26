@@ -1,9 +1,9 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
 import { Mat3, Vec2 } from "../../../../../common/math";
 import { buildCloudCurveFromPolyline } from "../../../../../common/drawing";
+
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
-
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
@@ -263,9 +263,9 @@ export class SquareAnnotation extends GeometricAnnotation {
       
       const curveData = buildCloudCurveFromPolyline([
         trBoxLL.clone(),
-        trBoxUL.clone(),
-        trBoxUR.clone(),
         trBoxLR.clone(),
+        trBoxUR.clone(),
+        trBoxUL.clone(),
         trBoxLL.clone(),
       ], SquareAnnotation.cloudArcSize);      
 

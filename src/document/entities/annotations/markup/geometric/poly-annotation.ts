@@ -4,7 +4,11 @@ import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../appearance/measure-dict";
-import { GeometricAnnotation } from "./geometric-annotation";
+import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
+
+export interface PolyAnnotationDto extends GeometricAnnotationDto {
+  vertices: number[];
+}
 
 export const polyIntents = {
   CLOUD: "/PolygonCloud",

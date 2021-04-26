@@ -227,12 +227,12 @@ export class PenAnnotator extends Annotator {
     });
     const {min: newRectMin, max: newRectMax} = 
       vecMinMax(...positions);  
-    const w = data.strokeWidth; 
+    const halfW = data.strokeWidth / 2; 
     const rect: Quadruple = [
-      newRectMin.x - w / 2, 
-      newRectMin.y - w / 2, 
-      newRectMax.x + w / 2, 
-      newRectMax.y + w / 2,
+      newRectMin.x - halfW, 
+      newRectMin.y - halfW, 
+      newRectMax.x + halfW, 
+      newRectMax.y + halfW,
     ];
 
     const nowString = new Date().toISOString();

@@ -89,9 +89,9 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
 
       const curveData = buildCloudCurveFromPolyline([
         new Vec2(min.x, min.y),
-        new Vec2(min.x, max.y),
-        new Vec2(max.x, max.y),
         new Vec2(max.x, min.y),
+        new Vec2(max.x, max.y),
+        new Vec2(min.x, max.y),
         new Vec2(min.x, min.y),
       ], SquareAnnotation.cloudArcSize);    
   

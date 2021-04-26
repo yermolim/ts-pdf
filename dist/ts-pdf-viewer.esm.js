@@ -1578,6 +1578,18 @@ const annotationTypes = {
     PROJECTION: "/Projection",
     RICH_MEDIA: "/RichMedia",
 };
+const lineEndingTypes = {
+    SQUARE: "/Square",
+    CIRCLE: "/Circle",
+    DIAMOND: "/Diamond",
+    ARROW_OPEN: "/OpenArrow",
+    ARROW_CLOSED: "/ClosedArrow",
+    NONE: "/None",
+    BUTT: "/Butt",
+    ARROW_OPEN_R: "/ROpenArrow",
+    ARROW_CLOSED_R: "/RClosedArrow",
+    SLASH: "/Slash",
+};
 const lineCapStyles = {
     BUTT: 0,
     ROUND: 1,
@@ -13844,10 +13856,6 @@ class InkAnnotation extends MarkupAnnotation {
         gs.ca = opacity;
         gs.LW = strokeWidth;
         gs.D = [[strokeDash, strokeGap], 0];
-        gs.LC = lineCapStyles.ROUND;
-        gs.LJ = lineJoinStyles.ROUND;
-        apStream.Resources = new ResourceDict();
-        apStream.Resources.setGraphicsState("/GS0", gs);
         let streamTextData = `q ${colorString} /GS0 gs`;
         let px;
         let py;
@@ -13863,10 +13871,13 @@ class InkAnnotation extends MarkupAnnotation {
             streamTextData += "\nS";
         });
         streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
     applyCommonTransform(matrix) {
+        var _a, _b, _c, _d;
         const dict = this._proxy || this;
         let x;
         let y;
@@ -13896,6 +13907,11 @@ class InkAnnotation extends MarkupAnnotation {
                 }
             }
         });
+        const margin = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
+        xMin -= margin;
+        yMin -= margin;
+        xMax += margin;
+        yMax += margin;
         this.Rect = [xMin, yMin, xMax, yMax];
         if (this._bBox) {
             const bBox = dict.getLocalBB();
@@ -13946,8 +13962,8 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
             arcStart = j * arcSize;
             arcEnd = (j + 1) * arcSize;
             const curve = [
-                new Vec2(arcStart, halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, halfArcSize).applyMat3(matrix),
+                new Vec2(arcStart, -halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, -halfArcSize).applyMat3(matrix),
                 new Vec2(arcEnd, 0).applyMat3(matrix),
             ];
             curves.push(curve);
@@ -13973,7 +13989,7 @@ function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
     for (let i = 0; i < segmentsNumber; i++) {
         distance = 0;
         while (distance < maxSegmentLength) {
-            angle -= 0.25 / 180 * Math.PI;
+            angle += 0.25 / 180 * Math.PI;
             next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
             distance += getDistance(current.x, current.y, next.x, next.y);
             current.setFromVec2(next);
@@ -14215,9 +14231,9 @@ class SquareAnnotation extends GeometricAnnotation {
             gs.LJ = lineJoinStyles.ROUND;
             const curveData = buildCloudCurveFromPolyline([
                 trBoxLL.clone(),
-                trBoxUL.clone(),
-                trBoxUR.clone(),
                 trBoxLR.clone(),
+                trBoxUR.clone(),
+                trBoxUL.clone(),
                 trBoxLL.clone(),
             ], SquareAnnotation.cloudArcSize);
             streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
@@ -14487,6 +14503,542 @@ class CircleAnnotation extends GeometricAnnotation {
 CircleAnnotation.cloudArcSize = 20;
 CircleAnnotation.bezierConstant = 0.551915;
 
+const polyIntents = {
+    CLOUD: "/PolygonCloud",
+    POLYGON_DIMENSION: "/PolygonDimension",
+    POLYLINE_DIMENSION: "/PolyLineDimension",
+};
+class PolyAnnotation extends GeometricAnnotation {
+    constructor(type) {
+        super(type);
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Vertices) {
+            bytes.push(...encoder.encode("/Vertices "), codes.L_BRACKET);
+            this.Vertices.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
+        }
+        if (this.Measure) {
+            bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Vertices":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (Object.values(polyIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/Measure":
+                        const measureEntryType = parser.getValueTypeAt(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = ObjectId.parseRef(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetter) {
+                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                                    if (measureDict) {
+                                        this.Measure = measureDict.value;
+                                        i = measureDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = parser.getDictBoundsAt(i);
+                            if (measureDictBounds) {
+                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Vertices) {
+            throw new Error("Not all required properties parsed");
+        }
+    }
+}
+
+class PolygonAnnotation extends PolyAnnotation {
+    constructor() {
+        super(annotationTypes.POLYGON);
+    }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Polygon") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new PolygonAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Rect = dto.rect;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.IT = dto.cloud
+            ? polyIntents.CLOUD
+            : polyIntents.POLYGON_DIMENSION;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PolygonAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        return superBytes;
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Square",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            rect: this.Rect,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
+            vertices: this.Vertices,
+            cloud: this.IT === polyIntents.CLOUD,
+            color,
+            strokeWidth: (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.W) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.width) !== null && _h !== void 0 ? _h : 1,
+            strokeDashGap: (_k = (_j = this.BS) === null || _j === void 0 ? void 0 : _j.D) !== null && _k !== void 0 ? _k : [3, 0],
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+    }
+    generateApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        if (!((_a = this.Vertices) === null || _a === void 0 ? void 0 : _a.length) || this.Vertices.length < 6) {
+            return;
+        }
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        let colorString;
+        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const opacity = this.CA || 1;
+        const strokeWidth = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.W) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.width) !== null && _f !== void 0 ? _f : 1;
+        const strokeDash = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[0]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.dash) !== null && _k !== void 0 ? _k : 3;
+        const strokeGap = (_p = (_m = (_l = this.BS) === null || _l === void 0 ? void 0 : _l.D[1]) !== null && _m !== void 0 ? _m : (_o = this.Border) === null || _o === void 0 ? void 0 : _o.gap) !== null && _p !== void 0 ? _p : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
+        const list = this.Vertices;
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        if (this.IT === polyIntents.CLOUD) {
+            gs.LC = lineCapStyles.ROUND;
+            gs.LJ = lineJoinStyles.ROUND;
+            const vertices = [];
+            for (let i = 0; i < list.length; i = i + 2) {
+                vertices.push(new Vec2(list[i], list[i + 1]));
+            }
+            vertices.push(new Vec2(list[0], list[1]));
+            const curveData = buildCloudCurveFromPolyline(vertices, PolygonAnnotation.cloudArcSize);
+            streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
+            curveData.curves.forEach(x => {
+                streamTextData += `\n${x[0].x} ${x[0].y} ${x[1].x} ${x[1].y} ${x[2].x} ${x[2].y} c`;
+            });
+            streamTextData += "\nS";
+        }
+        else {
+            gs.LC = lineCapStyles.SQUARE;
+            gs.LJ = lineJoinStyles.MITER;
+            let px;
+            let py;
+            streamTextData += `\n${list[0]} ${list[1]} m`;
+            for (let i = 2; i < list.length; i = i + 2) {
+                px = list[i];
+                py = list[i + 1];
+                streamTextData += `\n${px} ${py} l`;
+            }
+            streamTextData += "\ns";
+        }
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
+    applyCommonTransform(matrix) {
+        var _a, _b, _c, _d;
+        const dict = this._proxy || this;
+        let x;
+        let y;
+        let xMin;
+        let yMin;
+        let xMax;
+        let yMax;
+        const vec = new Vec2();
+        const list = dict.Vertices;
+        for (let i = 0; i < list.length; i = i + 2) {
+            x = list[i];
+            y = list[i + 1];
+            vec.set(x, y).applyMat3(matrix);
+            list[i] = vec.x;
+            list[i + 1] = vec.y;
+            if (!xMin || vec.x < xMin) {
+                xMin = vec.x;
+            }
+            if (!yMin || vec.y < yMin) {
+                yMin = vec.y;
+            }
+            if (!xMax || vec.x > xMax) {
+                xMax = vec.x;
+            }
+            if (!yMax || vec.y > yMax) {
+                yMax = vec.y;
+            }
+        }
+        const halfStrokeWidth = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
+        const margin = dict.IT === polyIntents.CLOUD
+            ? PolygonAnnotation.cloudArcSize / 2 + halfStrokeWidth
+            : halfStrokeWidth;
+        xMin -= margin;
+        yMin -= margin;
+        xMax += margin;
+        yMax += margin;
+        this.Rect = [xMin, yMin, xMax, yMax];
+        if (this._bBox) {
+            const bBox = dict.getLocalBB();
+            bBox.ll.set(xMin, yMin);
+            bBox.lr.set(xMax, yMin);
+            bBox.ur.set(xMax, yMax);
+            bBox.ul.set(xMin, yMax);
+        }
+        this.generateApStream();
+        dict.M = DateString.fromDate(new Date());
+    }
+}
+PolygonAnnotation.cloudArcSize = 20;
+
+class PolylineAnnotation extends PolyAnnotation {
+    constructor() {
+        super(annotationTypes.POLYLINE);
+        this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+    }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Polyline") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new PolylineAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Rect = dto.rect;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.IT = polyIntents.POLYLINE_DIMENSION;
+        annotation.LE = dto.endingType;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PolylineAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE "), codes.L_BRACKET);
+            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Square",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            rect: this.Rect,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
+            vertices: this.Vertices,
+            endingType: this.LE,
+            color,
+            strokeWidth: (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.W) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.width) !== null && _h !== void 0 ? _h : 1,
+            strokeDashGap: (_k = (_j = this.BS) === null || _j === void 0 ? void 0 : _j.D) !== null && _k !== void 0 ? _k : [3, 0],
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/LE":
+                        const lineEndings = parser.parseNameAt(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+    }
+    generateApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        if (!((_a = this.Vertices) === null || _a === void 0 ? void 0 : _a.length) || this.Vertices.length < 4) {
+            return;
+        }
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        let colorString;
+        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const opacity = this.CA || 1;
+        const strokeWidth = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.W) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.width) !== null && _f !== void 0 ? _f : 1;
+        const strokeDash = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[0]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.dash) !== null && _k !== void 0 ? _k : 3;
+        const strokeGap = (_p = (_m = (_l = this.BS) === null || _l === void 0 ? void 0 : _l.D[1]) !== null && _m !== void 0 ? _m : (_o = this.Border) === null || _o === void 0 ? void 0 : _o.gap) !== null && _p !== void 0 ? _p : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        const list = this.Vertices;
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        let px;
+        let py;
+        streamTextData += `\n${list[0]} ${list[1]} m`;
+        for (let i = 2; i < list.length; i = i + 2) {
+            px = list[i];
+            py = list[i + 1];
+            streamTextData += `\n${px} ${py} l`;
+        }
+        streamTextData += "\nS";
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
+    applyCommonTransform(matrix) {
+        var _a, _b, _c, _d;
+        const dict = this._proxy || this;
+        let x;
+        let y;
+        let xMin;
+        let yMin;
+        let xMax;
+        let yMax;
+        const vec = new Vec2();
+        const list = dict.Vertices;
+        for (let i = 0; i < list.length; i = i + 2) {
+            x = list[i];
+            y = list[i + 1];
+            vec.set(x, y).applyMat3(matrix);
+            list[i] = vec.x;
+            list[i + 1] = vec.y;
+            if (!xMin || vec.x < xMin) {
+                xMin = vec.x;
+            }
+            if (!yMin || vec.y < yMin) {
+                yMin = vec.y;
+            }
+            if (!xMax || vec.x > xMax) {
+                xMax = vec.x;
+            }
+            if (!yMax || vec.y > yMax) {
+                yMax = vec.y;
+            }
+        }
+        const margin = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
+        xMin -= margin;
+        yMin -= margin;
+        xMax += margin;
+        yMax += margin;
+        this.Rect = [xMin, yMin, xMax, yMax];
+        if (this._bBox) {
+            const bBox = dict.getLocalBB();
+            bBox.ll.set(xMin, yMin);
+            bBox.lr.set(xMax, yMin);
+            bBox.ur.set(xMax, yMax);
+            bBox.ul.set(xMin, yMax);
+        }
+        this.generateApStream();
+        dict.M = DateString.fromDate(new Date());
+    }
+}
+
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
@@ -14503,6 +15055,12 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.CIRCLE:
                 annot = CircleAnnotation.parse(info);
+                break;
+            case annotationTypes.POLYGON:
+                annot = PolygonAnnotation.parse(info);
+                break;
+            case annotationTypes.POLYLINE:
+                annot = PolylineAnnotation.parse(info);
                 break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;
@@ -14521,6 +15079,12 @@ class AnnotationParseFactory {
                 break;
             case "/Circle":
                 annotation = CircleAnnotation.createFromDto(dto);
+                break;
+            case "/Polygon":
+                annotation = PolygonAnnotation.createFromDto(dto);
+                break;
+            case "/Polyline":
+                annotation = PolylineAnnotation.createFromDto(dto);
                 break;
             default:
                 throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
@@ -16444,9 +17008,9 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
             path.setAttribute("stroke-linejoin", "round");
             const curveData = buildCloudCurveFromPolyline([
                 new Vec2(min.x, min.y),
-                new Vec2(min.x, max.y),
-                new Vec2(max.x, max.y),
                 new Vec2(max.x, min.y),
+                new Vec2(max.x, max.y),
+                new Vec2(min.x, max.y),
                 new Vec2(min.x, min.y),
             ], SquareAnnotation.cloudArcSize);
             let pathString = "M" + curveData.start.x + "," + curveData.start.y;
@@ -16772,12 +17336,12 @@ class PenAnnotator extends Annotator {
             inkList.push(ink);
         });
         const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
-        const w = data.strokeWidth;
+        const halfW = data.strokeWidth / 2;
         const rect = [
-            newRectMin.x - w / 2,
-            newRectMin.y - w / 2,
-            newRectMax.x + w / 2,
-            newRectMax.y + w / 2,
+            newRectMin.x - halfW,
+            newRectMin.y - halfW,
+            newRectMax.x + halfW,
+            newRectMax.y + halfW,
         ];
         const nowString = new Date().toISOString();
         const dto = {

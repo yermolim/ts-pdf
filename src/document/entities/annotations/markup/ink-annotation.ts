@@ -216,10 +216,6 @@ export class InkAnnotation extends MarkupAnnotation {
     gs.ca = opacity;
     gs.LW = strokeWidth;
     gs.D = [[strokeDash, strokeGap], 0];
-    gs.LC = lineCapStyles.ROUND;
-    gs.LJ = lineJoinStyles.ROUND;
-    apStream.Resources = new ResourceDict();
-    apStream.Resources.setGraphicsState("/GS0", gs);
 
     // push the graphics state onto the stack
     let streamTextData = `q ${colorString} /GS0 gs`;
@@ -239,7 +235,10 @@ export class InkAnnotation extends MarkupAnnotation {
     // pop the graphics state back from the stack
     streamTextData += "\nQ";
 
-    apStream.setTextStreamData(streamTextData);    
+    apStream.Resources = new ResourceDict();
+    apStream.Resources.setGraphicsState("/GS0", gs);
+    apStream.setTextStreamData(streamTextData);   
+
     this.apStream = apStream;
   }  
   
@@ -276,6 +275,12 @@ export class InkAnnotation extends MarkupAnnotation {
         }
       }
     });
+    
+    const margin = (dict.BS?.W ?? dict.Border?.width ?? 1) / 2;
+    xMin -= margin;
+    yMin -= margin;
+    xMax += margin;
+    yMax += margin;
     this.Rect = [xMin, yMin, xMax, yMax];
     // update calculated bBox if present
     if (this._bBox) {
