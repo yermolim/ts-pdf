@@ -21,6 +21,7 @@ export const captionPositions = {
 export type CaptionPosition = typeof captionPositions[keyof typeof captionPositions];
 
 export class LineAnnotation extends GeometricAnnotation {
+  //#region PDF fields
   /**
    * (Required) An array of four numbers, [x1y1x2y2], 
    * specifying the starting and ending coordinates of the line in default user space. 
@@ -87,6 +88,7 @@ export class LineAnnotation extends GeometricAnnotation {
    * with a positive value indicating a shift up and a negative value indicating a shift down
    */
   CO: Double = [0, 0];
+  //#endregion
   
   constructor() {
     super(annotationTypes.LINE);

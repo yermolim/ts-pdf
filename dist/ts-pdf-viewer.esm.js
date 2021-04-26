@@ -362,6 +362,7 @@ const styles = `
     right: 20px;
     z-index: -5;
     transition: z-index 0s linear 0.25s;
+    pointer-events: none;
   }
   .mode-annotation #annotation-panel {
     z-index: 1;
@@ -384,6 +385,7 @@ const styles = `
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    pointer-events: all;
   }    
   .mode-annotation .annotation-panel-item { 
     cursor: pointer;
@@ -396,6 +398,7 @@ const styles = `
     margin: 3px;    
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+    pointer-events: all;
   }  
   :not(.annotation-selected) #button-annotation-delete,
   :not(.pen-annotator-data-undoable) #button-annotation-pen-undo,
