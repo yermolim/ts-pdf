@@ -7225,7 +7225,7 @@ class AppearanceStreamRenderer {
         this._parser = new DataParser(stream.decodedStreamData);
         this._rect = rect;
         this._objectName = objectName;
-        const matAA = AppearanceStreamRenderer.calcBBoxToRectMatrix(stream.BBox, rect, stream.Matrix);
+        const { matAA } = AppearanceStreamRenderer.calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
         clipPath.id = `clip0_${objectName}`;
         clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
@@ -7235,22 +7235,22 @@ class AppearanceStreamRenderer {
     get state() {
         return this._graphicsStates[this._graphicsStates.length - 1];
     }
-    static calcBBoxToRectMatrix(bBox, rect, matrix) {
-        const appMatrix = new Mat3();
+    static calcBBoxToRectMatrices(bBox, rect, matrix) {
+        const matAP = new Mat3();
         if (matrix) {
             const [m0, m1, m3, m4, m6, m7] = matrix;
-            appMatrix.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+            matAP.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
         }
         const bBoxLL = new Vec2(bBox[0], bBox[1]);
         const bBoxLR = new Vec2(bBox[2], bBox[1]);
         const bBoxUR = new Vec2(bBox[2], bBox[3]);
         const bBoxUL = new Vec2(bBox[0], bBox[3]);
-        const { min: appBoxMin, max: appBoxMax } = vecMinMax(Vec2.applyMat3(bBoxLL, appMatrix), Vec2.applyMat3(bBoxLR, appMatrix), Vec2.applyMat3(bBoxUR, appMatrix), Vec2.applyMat3(bBoxUL, appMatrix));
+        const { min: appBoxMin, max: appBoxMax } = vecMinMax(Vec2.applyMat3(bBoxLL, matAP), Vec2.applyMat3(bBoxLR, matAP), Vec2.applyMat3(bBoxUR, matAP), Vec2.applyMat3(bBoxUL, matAP));
         const rectMin = new Vec2(rect[0], rect[1]);
         const rectMax = new Vec2(rect[2], rect[3]);
         const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
-        const matAA = Mat3.fromMat3(appMatrix).multiply(matA);
-        return matAA;
+        const matAA = Mat3.fromMat3(matAP).multiply(matA);
+        return { matAP, matA, matAA };
     }
     static parseNextCommand(parser, i) {
         const parameters = [];
@@ -13855,6 +13855,8 @@ class InkAnnotation extends MarkupAnnotation {
         gs.CA = opacity;
         gs.ca = opacity;
         gs.LW = strokeWidth;
+        gs.LJ = lineJoinStyles.ROUND;
+        gs.LC = lineCapStyles.SQUARE;
         gs.D = [[strokeDash, strokeGap], 0];
         let streamTextData = `q ${colorString} /GS0 gs`;
         let px;
@@ -14207,7 +14209,9 @@ class SquareAnnotation extends GeometricAnnotation {
                 : strokeWidth / 2;
             this.RD || (this.RD = [defaultMargin, defaultMargin, defaultMargin, defaultMargin]);
         }
-        const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+        const bBoxToRectMat = AppearanceStreamRenderer
+            .calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix)
+            .matAA;
         const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray();
         const { r: rotation } = apStream.matrix.getTRS();
         const marginsRotationMat = new Mat3().applyRotation(rotation);
@@ -14430,7 +14434,9 @@ class CircleAnnotation extends GeometricAnnotation {
                 : strokeWidth / 2;
             this.RD || (this.RD = [defaultMargin, defaultMargin, defaultMargin, defaultMargin]);
         }
-        const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+        const bBoxToRectMat = AppearanceStreamRenderer
+            .calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix)
+            .matAA;
         const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray();
         const { r: rotation } = apStream.matrix.getTRS();
         const marginsRotationMat = new Mat3().applyRotation(rotation);
@@ -15060,6 +15066,60 @@ class LineAnnotation extends GeometricAnnotation {
         this.Cap = false;
         this.CP = captionPositions.INLINE;
         this.CO = [0, 0];
+        this.onLineEndHandlePointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            document.addEventListener("pointerup", this.onLineEndHandlePointerUp);
+            document.addEventListener("pointerout", this.onLineEndHandlePointerUp);
+            const target = e.target;
+            const handleName = target.dataset["handleName"];
+            switch (handleName) {
+                case "start":
+                    this._scaleHandleActive = "start";
+                    break;
+                case "end":
+                    this._scaleHandleActive = "end";
+                    break;
+                default:
+                    throw new Error(`Invalid handle name: ${handleName}`);
+            }
+            this._transformationTimer = setTimeout(() => {
+                this._transformationTimer = null;
+                this._svg.after(this._svgContentCopy);
+                document.addEventListener("pointermove", this.onLineEndHandlePointerMove);
+            }, 200);
+            e.stopPropagation();
+        };
+        this.onLineEndHandlePointerMove = (e) => {
+            if (!e.isPrimary || !this._scaleHandleActive) {
+                return;
+            }
+            const start = new Vec2(this.L[0], this.L[1]);
+            const end = new Vec2(this.L[2], this.L[3]);
+            let startTemp;
+            let endTemp;
+            if (this._scaleHandleActive === "start") {
+                startTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
+                endTemp = end.clone();
+            }
+            else {
+                startTemp = start.clone();
+                endTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
+            }
+            this._tempTransformationMatrix = mat3From4Vec2(start, end, startTemp, endTemp);
+            this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+        };
+        this.onLineEndHandlePointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            document.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
+            document.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
+            document.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+            this.applyTempTransform();
+            this.updateRenderAsync();
+        };
     }
     static createFromDto(dto) {
         if (dto.annotationType !== "/Line") {
@@ -15231,7 +15291,7 @@ class LineAnnotation extends GeometricAnnotation {
                     case "/CP":
                         const captionPosition = parser.parseNameAt(i, true);
                         if (captionPosition && Object.values(captionPositions)
-                            .includes(captionPosition.value[0])) {
+                            .includes(captionPosition.value)) {
                             this.CP = captionPosition.value;
                             i = captionPosition.end + 1;
                         }
@@ -15307,7 +15367,8 @@ class LineAnnotation extends GeometricAnnotation {
             marginTop = marginBottom = halfStrokeWidth;
         }
         else {
-            const endingSize = strokeWidth * (LineAnnotation.lineEndingMultiplier + 1);
+            const endingSizeInner = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
+            const endingSize = endingSizeInner + strokeWidth;
             const halfEnding = endingSize / 2;
             marginLeft = marginTop = marginRight = marginBottom = halfEnding;
         }
@@ -15391,8 +15452,27 @@ class LineAnnotation extends GeometricAnnotation {
         dict.generateApStream();
         dict.M = DateString.fromDate(new Date());
     }
+    renderHandles() {
+        return [...this.renderLineEndHandles(), this.renderRotationHandle()];
+    }
+    renderLineEndHandles() {
+        const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        startHandle.classList.add("svg-annot-handle-scale");
+        startHandle.setAttribute("data-handle-name", "start");
+        startHandle.setAttribute("cx", this.L[0] + "");
+        startHandle.setAttribute("cy", this.L[1] + "");
+        startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
+        const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        endHandle.classList.add("svg-annot-handle-scale");
+        endHandle.setAttribute("data-handle-name", "end");
+        endHandle.setAttribute("cx", this.L[2] + "");
+        endHandle.setAttribute("cy", this.L[3] + "");
+        endHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
+        return [startHandle, endHandle];
+    }
 }
 LineAnnotation.lineEndingMultiplier = 3;
+LineAnnotation.lineEndingMinimalSize = 10;
 
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {

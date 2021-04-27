@@ -1066,7 +1066,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._tempX = this._tempVecX.getMagnitude();
     this._tempY = this._tempVecY.getMagnitude();
 
-    // set timeout to prevent an accidental annotation rotation
+    // set timeout to prevent an accidental annotation scaling
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;       
       // append the svg element copy     

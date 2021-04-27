@@ -215,6 +215,8 @@ export class InkAnnotation extends MarkupAnnotation {
     gs.CA = opacity;
     gs.ca = opacity;
     gs.LW = strokeWidth;
+    gs.LJ = lineJoinStyles.ROUND;
+    gs.LC = lineCapStyles.SQUARE;
     gs.D = [[strokeDash, strokeGap], 0];
 
     // push the graphics state onto the stack

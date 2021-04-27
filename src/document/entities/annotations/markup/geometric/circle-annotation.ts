@@ -226,7 +226,9 @@ export class CircleAnnotation extends GeometricAnnotation {
     }  
     
     // calculate matrices needed for drawing
-    const bBoxToRectMat = AppearanceStreamRenderer.calcBBoxToRectMatrix(streamBbox, this.Rect, streamMatrix);
+    const bBoxToRectMat = AppearanceStreamRenderer
+      .calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix)
+      .matAA;
     const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
     const {r: rotation} = apStream.matrix.getTRS(); 
     const marginsRotationMat = new Mat3().applyRotation(rotation);

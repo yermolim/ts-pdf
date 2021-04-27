@@ -52,6 +52,7 @@ export interface LineAnnotationDto extends GeometricAnnotationDto {
 export class LineAnnotation extends GeometricAnnotation {
   /**defines how many times the line ending size is larger than the line width */
   static readonly lineEndingMultiplier = 3;
+  static readonly lineEndingMinimalSize = 10;
 
   //#region PDF fields
   /**
@@ -124,6 +125,8 @@ export class LineAnnotation extends GeometricAnnotation {
    */
   Measure: MeasureDict;
   //#endregion
+
+  protected _scaleHandleActive: "start" | "end";
   
   constructor() {
     super(annotationTypes.LINE);
@@ -283,8 +286,7 @@ export class LineAnnotation extends GeometricAnnotation {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentEnd || bounds.end; 
-    
+    const end = bounds.contentEnd || bounds.end;    
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
     let parseResult: ParseResult<string>;
@@ -326,7 +328,7 @@ export class LineAnnotation extends GeometricAnnotation {
           case "/CP":
             const captionPosition = parser.parseNameAt(i, true);
             if (captionPosition && (<string[]>Object.values(captionPositions))
-              .includes(captionPosition.value[0])) {
+              .includes(captionPosition.value)) {
               this.CP = <CaptionPosition>captionPosition.value;
               i = captionPosition.end + 1;
             } else {              
@@ -408,8 +410,10 @@ export class LineAnnotation extends GeometricAnnotation {
       }
       marginTop = marginBottom = halfStrokeWidth;
     } else {
-      // '+ 1' is used to include the ending figure stroke width
-      const endingSize = strokeWidth * (LineAnnotation.lineEndingMultiplier + 1);
+      const endingSizeInner = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, 
+        LineAnnotation.lineEndingMinimalSize);
+      // '+ strokeWidth' is used to include the ending figure stroke width
+      const endingSize = endingSizeInner + strokeWidth;
       const halfEnding = endingSize / 2;
       marginLeft = marginTop = marginRight = marginBottom = halfEnding;
     }
@@ -522,4 +526,106 @@ export class LineAnnotation extends GeometricAnnotation {
 
     dict.M = DateString.fromDate(new Date());
   }
+  
+  //#region overriding handles
+  protected renderHandles(): SVGGraphicsElement[] {   
+    return [...this.renderLineEndHandles(), this.renderRotationHandle()];
+  } 
+  
+  protected renderLineEndHandles(): SVGGraphicsElement[] {
+    const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    startHandle.classList.add("svg-annot-handle-scale");
+    startHandle.setAttribute("data-handle-name", "start");
+    startHandle.setAttribute("cx", this.L[0] + "");
+    startHandle.setAttribute("cy", this.L[1] + ""); 
+    startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
+    
+    const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    endHandle.classList.add("svg-annot-handle-scale");
+    endHandle.setAttribute("data-handle-name", "end");
+    endHandle.setAttribute("cx", this.L[2] + "");
+    endHandle.setAttribute("cy", this.L[3] + ""); 
+    endHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
+
+    return [startHandle, endHandle];
+  } 
+  
+  protected onLineEndHandlePointerDown = (e: PointerEvent) => { 
+    if (!e.isPrimary) {
+      //it's a secondary touch action
+      return;
+    }
+
+    document.addEventListener("pointerup", this.onLineEndHandlePointerUp);
+    document.addEventListener("pointerout", this.onLineEndHandlePointerUp); 
+
+    const target = e.target as HTMLElement;
+
+    const handleName = target.dataset["handleName"];
+    switch (handleName) {
+      case "start": 
+        this._scaleHandleActive = "start";    
+        break;
+      case "end":
+        this._scaleHandleActive = "end";    
+        break;
+      default:
+        // execution should not reach here
+        throw new Error(`Invalid handle name: ${handleName}`);
+    }
+
+    // set timeout to prevent an accidental annotation scaling
+    this._transformationTimer = setTimeout(() => {
+      this._transformationTimer = null;       
+      // append the svg element copy     
+      this._svg.after(this._svgContentCopy);
+      document.addEventListener("pointermove", this.onLineEndHandlePointerMove);
+    }, 200);
+
+    e.stopPropagation();
+  };
+
+  protected onLineEndHandlePointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary || !this._scaleHandleActive) {
+      //it's a secondary touch action or no scale handle is activated
+      return;
+    }
+
+    // calculate transformation
+    // source line ends
+    const start = new Vec2(this.L[0], this.L[1]);
+    const end = new Vec2(this.L[2], this.L[3]);
+    // transformed line ends
+    let startTemp: Vec2;
+    let endTemp: Vec2;
+    if (this._scaleHandleActive === "start") {
+      startTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
+      endTemp = end.clone();
+    } else {
+      startTemp = start.clone();
+      endTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
+    }    
+    // set the temp transformation matrix
+    this._tempTransformationMatrix = mat3From4Vec2(start, end, startTemp, endTemp);
+    
+    // move the svg element copy to visualize the future transformation in real-time
+    this._svgContentCopyUse.setAttribute("transform", 
+      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+  };
+  
+  protected onLineEndHandlePointerUp = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      // it's a secondary touch action
+      return;
+    }
+
+    document.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
+    document.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
+    document.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+    
+    // transform the annotation
+    this.applyTempTransform();
+    this.updateRenderAsync();
+  };
+  //#endregion
 }
