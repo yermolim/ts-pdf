@@ -302,4 +302,6 @@ export class AnnotationBuilder {
 
     return div;
   }
+  
+  // TODO: add opacity slider
 }

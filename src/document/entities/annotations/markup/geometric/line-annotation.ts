@@ -388,10 +388,15 @@ export class LineAnnotation extends GeometricAnnotation {
     };
   }
 
-  protected getBboxAndMatrix(): BboxAndMatrix {
+  /**
+   * actualize the 'Rect' property content using the current 'L' property value
+   * @returns 
+   */
+  protected updateRect(): BboxAndMatrix {
     const [x1, y1, x2, y2] = this.L;
     const start = new Vec2(x1, y1);
     const end = new Vec2(x2, y2);
+
     // calculate the data for updating bounding boxes
     const length = Vec2.substract(end, start).getMagnitude();
     const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
@@ -428,7 +433,18 @@ export class LineAnnotation extends GeometricAnnotation {
     
     const xAlignedStart = new Vec2();
     const xAlignedEnd = new Vec2(length, 0);
-    const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
+    const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);        
+
+    // update the non axis-aligned bounding-box
+    const localBox =  this.getLocalBB();
+    localBox.ll.set(bbox[0].x, bbox[0].y).applyMat3(matrix);
+    localBox.lr.set(bbox[1].x, bbox[0].y).applyMat3(matrix);
+    localBox.ur.set(bbox[1].x, bbox[1].y).applyMat3(matrix);
+    localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
+
+    // update the Rect (AABB)
+    const {min: rectMin, max: rectMax} = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+    this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
 
     return {bbox, matrix};
   }
@@ -477,14 +493,14 @@ export class LineAnnotation extends GeometricAnnotation {
         text += "\ns";
         return text;
       case lineEndingTypes.ARROW_CLOSED_R:
-        if (side === "left") {   
-          text += `\n${point.x} ${point.y + size / 2} m`;
-          text += `\n${point.x} ${point.y - size / 2} l`;
-          text += `\n${point.x + size} ${point.y} l`;
-        } else { 
-          text += `\n${point.x} ${point.y - size / 2} m`;
+        if (side === "left") {  
+          text += `\n${point.x + size} ${point.y} m`; 
           text += `\n${point.x} ${point.y + size / 2} l`;
-          text += `\n${point.x - size} ${point.y} l`;
+          text += `\n${point.x} ${point.y - size / 2} l`;
+        } else { 
+          text += `\n${point.x - size} ${point.y} m`;
+          text += `\n${point.x} ${point.y - size / 2} l`;
+          text += `\n${point.x} ${point.y + size / 2} l`;
         }
         text += "\ns";
         return text;
@@ -522,10 +538,10 @@ export class LineAnnotation extends GeometricAnnotation {
         const ymax = point.y + r;
         // drawing four cubic bezier curves starting at the top tangent
         text += `\n${point.x} ${ymax} m`;
-        text += `\n${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y} c`;
-        text += `\n${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin} c`;
-        text += `\n${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y} c`;
-        text += `\n${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax} c`;
+        text += `\n${point.x + cw} ${ymax} ${xmax} ${point.y + cw} ${xmax} ${point.y} c`;
+        text += `\n${xmax} ${point.y - cw} ${point.x + cw} ${ymin} ${point.x} ${ymin} c`;
+        text += `\n${point.x - cw} ${ymin} ${xmin} ${point.y - cw} ${xmin} ${point.y} c`;
+        text += `\n${xmin} ${point.y + cw} ${point.x - cw} ${ymax} ${point.x} ${ymax} c`;
         text += "\nS";
         return text;
       case lineEndingTypes.NONE:
@@ -534,12 +550,13 @@ export class LineAnnotation extends GeometricAnnotation {
     }
   }
 
-  protected generateApStream(data?: BboxAndMatrix) {
+  protected generateApStream() {
     if (!this.L) {
       return;
     }
 
-    data ||= this.getBboxAndMatrix();
+    // update Rect and get the bounding box and the matrix for the stream
+    const data = this.updateRect();
 
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
@@ -623,24 +640,11 @@ export class LineAnnotation extends GeometricAnnotation {
   protected applyCommonTransform(matrix: Mat3) {  
     const dict = <LineAnnotation>this._proxy || this;
 
-    // transform current endpoints    
+    // transform the segment end points    
     const [x1, y1, x2, y2] = dict.L;
     const start = new Vec2(x1, y1).applyMat3(matrix);
     const end = new Vec2(x2, y2).applyMat3(matrix);
     dict.L = [start.x, start.y, end.x, end.y];
-
-    const {bbox: apBbox, matrix: apMatrix} = dict.getBboxAndMatrix();    
-
-    // update the non axis-aligned bounding-box
-    const localBox =  dict.getLocalBB();
-    localBox.ll.set(apBbox[0].x, apBbox[0].y).applyMat3(apMatrix);
-    localBox.lr.set(apBbox[1].x, apBbox[0].y).applyMat3(apMatrix);
-    localBox.ur.set(apBbox[1].x, apBbox[1].y).applyMat3(apMatrix);
-    localBox.ul.set(apBbox[0].x, apBbox[1].y).applyMat3(apMatrix);
-
-    // update the Rect (AABB)
-    const {min: rectMin, max: rectMax} = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
-    dict.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
 
     // rebuild the appearance stream instead of transforming it to get rid of line distorsions
     dict.generateApStream();

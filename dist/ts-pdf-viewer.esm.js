@@ -8337,7 +8337,10 @@ class AnnotationDict extends PdfDict {
     get apStream() {
         var _a;
         if (!this._apStream) {
-            this._apStream = [...(_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStreams()][0];
+            const streams = (_a = this.AP) === null || _a === void 0 ? void 0 : _a.getStreams();
+            if (streams) {
+                this._apStream = [...streams][0];
+            }
         }
         return this._apStream;
     }
@@ -8667,11 +8670,17 @@ class AnnotationDict extends PdfDict {
             bBoxUR = apTrBoxUR.applyMat3(mat);
             bBoxUL = apTrBoxUL.applyMat3(mat);
         }
-        else {
+        else if (this.Rect) {
             bBoxLL = new Vec2(this.Rect[0], this.Rect[1]);
             bBoxLR = new Vec2(this.Rect[2], this.Rect[1]);
             bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
             bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
+        }
+        else {
+            bBoxLL = new Vec2();
+            bBoxLR = new Vec2();
+            bBoxUR = new Vec2();
+            bBoxUL = new Vec2();
         }
         this._bBox = {
             ll: bBoxLL,
@@ -15352,7 +15361,7 @@ class LineAnnotation extends GeometricAnnotation {
             }
         }
     }
-    getBboxAndMatrix() {
+    updateRect() {
         var _a, _b, _c, _d;
         const [x1, y1, x2, y2] = this.L;
         const start = new Vec2(x1, y1);
@@ -15380,6 +15389,13 @@ class LineAnnotation extends GeometricAnnotation {
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(length, 0);
         const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        const localBox = this.getLocalBB();
+        localBox.ll.set(bbox[0].x, bbox[0].y).applyMat3(matrix);
+        localBox.lr.set(bbox[1].x, bbox[0].y).applyMat3(matrix);
+        localBox.ur.set(bbox[1].x, bbox[1].y).applyMat3(matrix);
+        localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
+        const { min: rectMin, max: rectMax } = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+        this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
         return { bbox, matrix };
     }
     getLineEndingStreamText(point, type, side) {
@@ -15429,14 +15445,14 @@ class LineAnnotation extends GeometricAnnotation {
                 return text;
             case lineEndingTypes.ARROW_CLOSED_R:
                 if (side === "left") {
-                    text += `\n${point.x} ${point.y + size / 2} m`;
+                    text += `\n${point.x + size} ${point.y} m`;
+                    text += `\n${point.x} ${point.y + size / 2} l`;
                     text += `\n${point.x} ${point.y - size / 2} l`;
-                    text += `\n${point.x + size} ${point.y} l`;
                 }
                 else {
-                    text += `\n${point.x} ${point.y - size / 2} m`;
+                    text += `\n${point.x - size} ${point.y} m`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
                     text += `\n${point.x} ${point.y + size / 2} l`;
-                    text += `\n${point.x - size} ${point.y} l`;
                 }
                 text += "\ns";
                 return text;
@@ -15473,10 +15489,10 @@ class LineAnnotation extends GeometricAnnotation {
                 const xmax = point.x + r;
                 const ymax = point.y + r;
                 text += `\n${point.x} ${ymax} m`;
-                text += `\n${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y} c`;
-                text += `\n${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin} c`;
-                text += `\n${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y} c`;
-                text += `\n${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax} c`;
+                text += `\n${point.x + cw} ${ymax} ${xmax} ${point.y + cw} ${xmax} ${point.y} c`;
+                text += `\n${xmax} ${point.y - cw} ${point.x + cw} ${ymin} ${point.x} ${ymin} c`;
+                text += `\n${point.x - cw} ${ymin} ${xmin} ${point.y - cw} ${xmin} ${point.y} c`;
+                text += `\n${xmin} ${point.y + cw} ${point.x - cw} ${ymax} ${point.x} ${ymax} c`;
                 text += "\nS";
                 return text;
             case lineEndingTypes.NONE:
@@ -15484,12 +15500,12 @@ class LineAnnotation extends GeometricAnnotation {
                 return "";
         }
     }
-    generateApStream(data) {
+    generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         if (!this.L) {
             return;
         }
-        data || (data = this.getBboxAndMatrix());
+        const data = this.updateRect();
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
@@ -15558,14 +15574,6 @@ class LineAnnotation extends GeometricAnnotation {
         const start = new Vec2(x1, y1).applyMat3(matrix);
         const end = new Vec2(x2, y2).applyMat3(matrix);
         dict.L = [start.x, start.y, end.x, end.y];
-        const { bbox: apBbox, matrix: apMatrix } = dict.getBboxAndMatrix();
-        const localBox = dict.getLocalBB();
-        localBox.ll.set(apBbox[0].x, apBbox[0].y).applyMat3(apMatrix);
-        localBox.lr.set(apBbox[1].x, apBbox[0].y).applyMat3(apMatrix);
-        localBox.ur.set(apBbox[1].x, apBbox[1].y).applyMat3(apMatrix);
-        localBox.ul.set(apBbox[0].x, apBbox[1].y).applyMat3(apMatrix);
-        const { min: rectMin, max: rectMax } = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
-        dict.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
         dict.generateApStream();
         dict.M = DateString.fromDate(new Date());
     }
@@ -17247,23 +17255,162 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-class GeometricArrowAnnotator extends GeometricAnnotator {
+class GeometricLineAnnotator extends GeometricAnnotator {
     constructor(docData, parent, pages, options) {
         super(docData, parent, pages, options || {});
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords) {
+                return;
+            }
+            const { pageX: px, pageY: py, pageId } = pageCoords;
+            this._pageId = pageId;
+            this._down = new Vec2(px, py);
+            this.clear();
+            this.refreshGroupPosition();
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary
+                || !this._down) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            this.updatePointerCoords(cx, cy);
+            const pageCoords = this._pointerCoordsInPageCS;
+            if (!pageCoords || pageCoords.pageId !== this._pageId) {
+                return;
+            }
+            const { pageX: px, pageY: py } = pageCoords;
+            const end = new Vec2(px, py);
+            this.redrawLine(this._down, end);
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            if (this._vertices) {
+                this.emitDataChanged(2, true, true);
+            }
+        };
         this.init();
     }
     destroy() {
         super.destroy();
-        this.emitDataChanged(0);
     }
     undo() {
+        this.clear();
     }
     clear() {
+        this._vertices = null;
+        this.clearGroup();
     }
     saveAnnotation() {
+        if (!this._vertices) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = LineAnnotation.createFromDto(dto);
+        this._docData.appendAnnotationToPage(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
+        this._overlay.addEventListener("pointerdown", this.onPointerDown);
+    }
+    redrawLine(min, max) {
+        this._svgGroup.innerHTML = "";
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._vertices = [min.x, min.y, max.x, max.y];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke-linecap", "square");
+        const pathString = `M ${min.x},${min.y} L ${max.x},${max.y}`;
+        path.setAttribute("d", pathString);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Line",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect: null,
+            vertices: this._vertices,
+            intent: lineIntents.DIMENSION,
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
+    }
+}
+
+class GeometricArrowAnnotator extends GeometricLineAnnotator {
+    constructor(docData, parent, pages, options) {
+        super(docData, parent, pages, options || {});
+    }
+    redrawLine(min, max) {
+        this._svgGroup.innerHTML = "";
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._vertices = [min.x, min.y, max.x, max.y];
+        const start = new Vec2(min.x, min.y);
+        const end = new Vec2(max.x, max.y);
+        const xAlignedStart = new Vec2();
+        const xAlignedEnd = new Vec2(Vec2.substract(end, start).getMagnitude(), 0);
+        const mat = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._strokeWidth + "");
+        path.setAttribute("stroke-linecap", "square");
+        let pathString = `M ${xAlignedStart.x},${xAlignedStart.y} L ${xAlignedEnd.x},${xAlignedEnd.y}`;
+        const arrowSize = Math.max(this._strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
+        pathString += ` M ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y + arrowSize / 2}`;
+        pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
+        pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;
+        path.setAttribute("d", pathString);
+        path.setAttribute("transform", `matrix(${mat.toFloatShortArray().join(" ")})`);
+        this._svgGroup.append(path);
+    }
+    buildAnnotationDto() {
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Line",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: this._docData.userName || "unknown",
+            rect: null,
+            vertices: this._vertices,
+            intent: lineIntents.ARROW,
+            endingType: [lineEndingTypes.NONE, lineEndingTypes.ARROW_OPEN],
+            color: this._color,
+            strokeWidth: this._strokeWidth,
+            strokeDashGap: null,
+        };
+        return dto;
     }
 }
 
@@ -17408,26 +17555,6 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
             strokeDashGap: null,
         };
         return dto;
-    }
-}
-
-class GeometricLineAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
-        this.init();
-    }
-    destroy() {
-        super.destroy();
-        this.emitDataChanged(0);
-    }
-    undo() {
-    }
-    clear() {
-    }
-    saveAnnotation() {
-    }
-    init() {
-        super.init();
     }
 }
 

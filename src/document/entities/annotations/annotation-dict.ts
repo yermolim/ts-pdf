@@ -157,7 +157,10 @@ export abstract class AnnotationDict extends PdfDict {
   protected _apStream: XFormStream;
   get apStream(): XFormStream {
     if (!this._apStream) {
-      this._apStream = [...this.AP?.getStreams()][0];
+      const streams = this.AP?.getStreams();
+      if (streams) {
+        this._apStream = [...streams][0];
+      }
     }
     return this._apStream;
   }
@@ -585,13 +588,18 @@ export abstract class AnnotationDict extends PdfDict {
       bBoxLR = apTrBoxLR.applyMat3(mat);
       bBoxUR = apTrBoxUR.applyMat3(mat);
       bBoxUL = apTrBoxUL.applyMat3(mat);
-    } else {  
+    } else if (this.Rect) {  
       // else use the Rect property data
       bBoxLL = new Vec2(this.Rect[0], this.Rect[1]);
       bBoxLR = new Vec2(this.Rect[2], this.Rect[1]);
       bBoxUR = new Vec2(this.Rect[2], this.Rect[3]);
       bBoxUL = new Vec2(this.Rect[0], this.Rect[3]);
-    }  
+    } else {
+      bBoxLL = new Vec2();
+      bBoxLR = new Vec2();
+      bBoxUR = new Vec2();
+      bBoxUL = new Vec2();      
+    }
     
     this._bBox = {
       ll: bBoxLL,
