@@ -153,6 +153,12 @@ export class Vec2 {
       && +this.y.toFixed(precision) === +v.y.toFixed(precision);
   }  
 
+  truncate(decimalDigits = 5): Vec2 {
+    this.x = +this.x.toFixed(decimalDigits);
+    this.y = +this.y.toFixed(decimalDigits);
+    return this;
+  }
+
   toArray(): number[] {
     return [this.x, this.y];
   }

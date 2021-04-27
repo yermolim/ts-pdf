@@ -2,7 +2,7 @@ import { Hextuple, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { buildCloudCurveFromEllipse } from "../../../../../common/drawing";
+import { bezierConstant, buildCloudCurveFromEllipse } from "../../../../../common/drawing";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -23,8 +23,6 @@ export interface CircleAnnotationDto extends GeometricAnnotationDto {
 
 export class CircleAnnotation extends GeometricAnnotation {
   static readonly cloudArcSize = 20;
-  /**constant used to imitate circle using four cubic bezier curves */
-  static readonly bezierConstant = 0.551915;
 
   /**
    * (Optional; PDF 1.5+) A set of four numbers that shall describe the numerical differences 
@@ -280,7 +278,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     } else {
       // draw ellipse using four cubic bezier curves
       // calculate the curves control points
-      const c = CircleAnnotation.bezierConstant;
+      const c = bezierConstant;
       const cx = Vec2.multiplyByScalar(rx, c);
       const cy = Vec2.multiplyByScalar(ry, c);
       const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);

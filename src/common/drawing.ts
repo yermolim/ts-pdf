@@ -116,3 +116,6 @@ export interface BBox {
   ur: Vec2; 
   ul: Vec2;
 }
+
+/**constant used to imitate circle using four cubic bezier curves */
+export const bezierConstant = 0.551915;

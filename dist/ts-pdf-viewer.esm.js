@@ -987,6 +987,11 @@ class Vec2 {
         return +this.x.toFixed(precision) === +v.x.toFixed(precision)
             && +this.y.toFixed(precision) === +v.y.toFixed(precision);
     }
+    truncate(decimalDigits = 5) {
+        this.x = +this.x.toFixed(decimalDigits);
+        this.y = +this.y.toFixed(decimalDigits);
+        return this;
+    }
     toArray() {
         return [this.x, this.y];
     }
@@ -14001,6 +14006,7 @@ function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
     const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
     return curveData;
 }
+const bezierConstant = 0.551915;
 
 class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
@@ -14471,7 +14477,7 @@ class CircleAnnotation extends GeometricAnnotation {
             streamTextData += "\nS";
         }
         else {
-            const c = CircleAnnotation.bezierConstant;
+            const c = bezierConstant;
             const cx = Vec2.multiplyByScalar(rx, c);
             const cy = Vec2.multiplyByScalar(ry, c);
             const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);
@@ -14507,7 +14513,6 @@ class CircleAnnotation extends GeometricAnnotation {
     }
 }
 CircleAnnotation.cloudArcSize = 20;
-CircleAnnotation.bezierConstant = 0.551915;
 
 const polyIntents = {
     CLOUD: "/PolygonCloud",
@@ -15355,32 +15360,129 @@ class LineAnnotation extends GeometricAnnotation {
         const length = Vec2.substract(end, start).getMagnitude();
         const strokeWidth = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1;
         const halfStrokeWidth = strokeWidth / 2;
-        let marginLeft;
-        let marginTop;
-        let marginRight;
-        let marginBottom;
-        if (this.LE[0] === lineEndingTypes.NONE && this.LE[1] === lineEndingTypes.NONE) {
-            marginLeft = marginRight = halfStrokeWidth;
-            if (this.LL) {
-                marginTop = marginBottom = Math.max(Math.max(Math.abs(this.LL), Math.abs(this.LLE || 0)) + (this.LLO || 0), halfStrokeWidth);
-            }
-            marginTop = marginBottom = halfStrokeWidth;
+        let marginLeader = 0;
+        if (this.LL) {
+            marginLeader = Math.max(Math.max(Math.abs(this.LL), Math.abs(this.LLE || 0)) + (this.LLO || 0), halfStrokeWidth);
         }
-        else {
+        let marginEnding = 0;
+        if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
             const endingSizeInner = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
             const endingSize = endingSizeInner + strokeWidth;
-            const halfEnding = endingSize / 2;
-            marginLeft = marginTop = marginRight = marginBottom = halfEnding;
+            marginEnding = endingSize / 2;
         }
-        const xMin = 0 - marginLeft;
-        const yMin = 0 - marginBottom;
-        const xMax = length + marginRight;
-        const yMax = 0 + marginTop;
+        const marginSide = Math.max(marginEnding, halfStrokeWidth);
+        const marginNonLateral = Math.max(marginEnding, marginLeader, halfStrokeWidth);
+        const xMin = 0 - marginSide;
+        const yMin = 0 - marginNonLateral;
+        const xMax = length + marginSide;
+        const yMax = 0 + marginNonLateral;
         const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(length, 0);
         const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
         return { bbox, matrix };
+    }
+    getLineEndingStreamText(point, type, side) {
+        var _a, _b, _c, _d;
+        const strokeWidth = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1;
+        const size = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
+        let text = "";
+        switch (type) {
+            case lineEndingTypes.ARROW_OPEN:
+                if (side === "left") {
+                    text += `\n${point.x + size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x + size} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x - size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x - size} ${point.y - size / 2} l`;
+                }
+                text += "\nS";
+                return text;
+            case lineEndingTypes.ARROW_OPEN_R:
+                if (side === "left") {
+                    text += `\n${point.x} ${point.y + size / 2} m`;
+                    text += `\n${point.x + size} ${point.y} l`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x} ${point.y + size / 2} m`;
+                    text += `\n${point.x - size} ${point.y} l`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                }
+                text += "\nS";
+                return text;
+            case lineEndingTypes.ARROW_CLOSED:
+                if (side === "left") {
+                    text += `\n${point.x + size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x + size} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x - size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x - size} ${point.y - size / 2} l`;
+                }
+                text += "\ns";
+                return text;
+            case lineEndingTypes.ARROW_CLOSED_R:
+                if (side === "left") {
+                    text += `\n${point.x} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                    text += `\n${point.x + size} ${point.y} l`;
+                }
+                else {
+                    text += `\n${point.x} ${point.y - size / 2} m`;
+                    text += `\n${point.x} ${point.y + size / 2} l`;
+                    text += `\n${point.x - size} ${point.y} l`;
+                }
+                text += "\ns";
+                return text;
+            case lineEndingTypes.BUTT:
+                text += `\n${point.x} ${point.y + size / 2} m`;
+                text += `\n${point.x} ${point.y - size / 2} l`;
+                text += "\nS";
+                return text;
+            case lineEndingTypes.SLASH:
+                text += `\n${point.x + size / 2} ${point.y + size / 2} m`;
+                text += `\n${point.x - size / 2} ${point.y - size / 2} l`;
+                text += "\nS";
+                return text;
+            case lineEndingTypes.DIAMOND:
+                text += `\n${point.x} ${point.y + size / 2} m`;
+                text += `\n${point.x + size / 2} ${point.y} l`;
+                text += `\n${point.x} ${point.y - size / 2} l`;
+                text += `\n${point.x - size / 2} ${point.y} l`;
+                text += "\ns";
+                return text;
+            case lineEndingTypes.SQUARE:
+                text += `\n${point.x - size / 2} ${point.y + size / 2} m`;
+                text += `\n${point.x + size / 2} ${point.y + size / 2} l`;
+                text += `\n${point.x + size / 2} ${point.y - size / 2} l`;
+                text += `\n${point.x - size / 2} ${point.y - size / 2} l`;
+                text += "\ns";
+                return text;
+            case lineEndingTypes.CIRCLE:
+                const c = bezierConstant;
+                const r = size / 2;
+                const cw = c * r;
+                const xmin = point.x - r;
+                const ymin = point.y - r;
+                const xmax = point.x + r;
+                const ymax = point.y + r;
+                text += `\n${point.x} ${ymax} m`;
+                text += `\n${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y} c`;
+                text += `\n${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin} c`;
+                text += `\n${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y} c`;
+                text += `\n${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax} c`;
+                text += "\nS";
+                return text;
+            case lineEndingTypes.NONE:
+            default:
+                return "";
+        }
     }
     generateApStream(data) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
@@ -15423,12 +15525,27 @@ class LineAnnotation extends GeometricAnnotation {
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
         const matrixInv = Mat3.invert(data.matrix);
-        const apStart = new Vec2(this.L[0], this.L[1]).applyMat3(matrixInv);
-        const apEnd = new Vec2(this.L[2], this.L[3]).applyMat3(matrixInv);
+        const apStart = new Vec2(this.L[0], this.L[1]).applyMat3(matrixInv).truncate();
+        const apEnd = new Vec2(this.L[2], this.L[3]).applyMat3(matrixInv).truncate();
         let streamTextData = `q ${colorString} /GS0 gs`;
-        streamTextData += `\n${apStart.x.toFixed(5)} ${apStart.y.toFixed(5)} m`;
-        streamTextData += `\n${apEnd.x.toFixed(5)} ${apEnd.y.toFixed(5)} l`;
+        streamTextData += `\n${apStart.x} ${apStart.y} m`;
+        streamTextData += `\n${apEnd.x} ${apEnd.y} l`;
         streamTextData += "\nS";
+        if (this.LL) {
+            if (this.LL > 0) {
+                streamTextData += `\n${apStart.x} ${apStart.y - Math.abs(this.LL)} m`;
+                streamTextData += `\n${apStart.x} ${apStart.y + this.LLE} l`;
+                streamTextData += "\nS";
+            }
+            else {
+                streamTextData += `\n${apStart.x} ${apStart.y + Math.abs(this.LL)} m`;
+                streamTextData += `\n${apStart.x} ${apStart.y - this.LLE} l`;
+                streamTextData += "\nS";
+            }
+        }
+        const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], "left");
+        const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], "right");
+        streamTextData += leftEnding + rightEnding;
         streamTextData += "\nQ";
         apStream.Resources = new ResourceDict();
         apStream.Resources.setGraphicsState("/GS0", gs);
@@ -17255,7 +17372,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
             });
         }
         else {
-            const c = CircleAnnotation.bezierConstant;
+            const c = bezierConstant;
             const cw = c * rx;
             const ch = c * ry;
             pathString = "M" + center.x + "," + max.y;
