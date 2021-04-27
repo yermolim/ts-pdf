@@ -169,7 +169,12 @@ export class PolylineAnnotation extends PolyAnnotation {
       } else {
         break;
       }
-    };
+    }
+    
+    // bake the current annotation rotation into its appearance stream
+    // works perfectly with PDF-XChange annotations
+    // TODO: test with annotations created not in PDF-XChange
+    this.bakeRotation();   
   }
   
   protected generateApStream() {
@@ -289,5 +294,19 @@ export class PolylineAnnotation extends PolyAnnotation {
     dict.generateApStream();
 
     dict.M = DateString.fromDate(new Date());
+  }
+  
+  protected bakeRotation() {    
+    const angle = this.getCurrentRotation();
+    const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+    const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+
+    // calculate the rotation matrix
+    const matrix = new Mat3()
+      .applyTranslation(-centerX, -centerY)
+      .applyRotation(angle)
+      .applyTranslation(centerX, centerY);
+
+    this.applyCommonTransform(matrix);
   }
 }

@@ -14,6 +14,7 @@ import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
 import { AnnotationDto } from "../annotation-dict";
+import { AppearanceStreamRenderer } from "../../../render/appearance-stream-renderer";
 
 export interface InkAnnotationDto extends AnnotationDto {
   inkList: number[][];
@@ -181,6 +182,11 @@ export class InkAnnotation extends MarkupAnnotation {
     if (!this.InkList?.length) {
       throw new Error("Not all required properties parsed");
     }
+
+    // bake the current annotation rotation into its appearance stream
+    // works perfectly with PDF-XChange annotations
+    // TODO: test with annotations created not in PDF-XChange
+    this.bakeRotation();    
   }
 
   protected generateApStream() {
@@ -297,5 +303,19 @@ export class InkAnnotation extends MarkupAnnotation {
     this.generateApStream();
 
     dict.M = DateString.fromDate(new Date());
+  }
+
+  protected bakeRotation() {    
+    const angle = this.getCurrentRotation();
+    const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+    const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+
+    // calculate the rotation matrix
+    const matrix = new Mat3()
+      .applyTranslation(-centerX, -centerY)
+      .applyRotation(angle)
+      .applyTranslation(centerX, centerY);
+
+    this.applyCommonTransform(matrix);
   }
 }

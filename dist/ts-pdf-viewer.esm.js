@@ -13846,6 +13846,7 @@ class InkAnnotation extends MarkupAnnotation {
         if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
             throw new Error("Not all required properties parsed");
         }
+        this.bakeRotation();
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
@@ -13948,6 +13949,16 @@ class InkAnnotation extends MarkupAnnotation {
         }
         this.generateApStream();
         dict.M = DateString.fromDate(new Date());
+    }
+    bakeRotation() {
+        const angle = this.getCurrentRotation();
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(angle)
+            .applyTranslation(centerX, centerY);
+        this.applyCommonTransform(matrix);
     }
 }
 
@@ -14715,6 +14726,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
     parseProps(parseInfo) {
         super.parseProps(parseInfo);
+        this.bakeRotation();
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
@@ -14836,6 +14848,16 @@ class PolygonAnnotation extends PolyAnnotation {
         }
         dict.generateApStream();
         dict.M = DateString.fromDate(new Date());
+    }
+    bakeRotation() {
+        const angle = this.getCurrentRotation();
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(angle)
+            .applyTranslation(centerX, centerY);
+        this.applyCommonTransform(matrix);
     }
 }
 PolygonAnnotation.cloudArcSize = 20;
@@ -14967,6 +14989,7 @@ class PolylineAnnotation extends PolyAnnotation {
                 break;
             }
         }
+        this.bakeRotation();
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
@@ -15068,6 +15091,16 @@ class PolylineAnnotation extends PolyAnnotation {
         }
         dict.generateApStream();
         dict.M = DateString.fromDate(new Date());
+    }
+    bakeRotation() {
+        const angle = this.getCurrentRotation();
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(angle)
+            .applyTranslation(centerX, centerY);
+        this.applyCommonTransform(matrix);
     }
 }
 
