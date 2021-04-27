@@ -245,7 +245,7 @@ export class AppearanceStreamRenderer {
     parent.append(path);
     
     if (!fill && stroke && this.state.strokeWidth < 20) {
-      // create path copy with large stroke width to simplify interaction
+      // create a transparent path copy with large stroke width to simplify user interaction
       const clonedPath = path.cloneNode(true);
       path.setAttribute("stroke-width", "20");
       path.setAttribute("stroke", "transparent");
