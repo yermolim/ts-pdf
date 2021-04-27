@@ -202,7 +202,7 @@ export class PolygonAnnotation extends PolyAnnotation {
   protected applyCommonTransform(matrix: Mat3) {  
     const dict = <PolygonAnnotation>this._proxy || this;
 
-    // transform current InkList and Rect
+    // transform current Vertices
     let x: number;
     let y: number;
     let xMin: number;
@@ -232,6 +232,7 @@ export class PolygonAnnotation extends PolyAnnotation {
       }
     }
     
+    // update the Rect
     const halfStrokeWidth = (dict.BS?.W ?? dict.Border?.width ?? 1) / 2;
     const margin = dict.IT === polyIntents.CLOUD
       ? PolygonAnnotation.cloudArcSize / 2 + halfStrokeWidth
@@ -240,9 +241,9 @@ export class PolygonAnnotation extends PolyAnnotation {
     yMin -= margin;
     xMax += margin;
     yMax += margin;
-    this.Rect = [xMin, yMin, xMax, yMax];
+    dict.Rect = [xMin, yMin, xMax, yMax];
     // update calculated bBox if present
-    if (this._bBox) {
+    if (dict._bBox) {
       const bBox =  dict.getLocalBB();
       bBox.ll.set(xMin, yMin);
       bBox.lr.set(xMax, yMin);
@@ -251,7 +252,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     }
 
     // rebuild the appearance stream instead of transforming it to get rid of line distorsions
-    this.generateApStream();
+    dict.generateApStream();
 
     dict.M = DateString.fromDate(new Date());
   }

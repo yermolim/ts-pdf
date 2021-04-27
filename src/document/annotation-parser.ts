@@ -8,6 +8,7 @@ import { SquareAnnotation, SquareAnnotationDto } from "./entities/annotations/ma
 import { CircleAnnotation, CircleAnnotationDto } from "./entities/annotations/markup/geometric/circle-annotation";
 import { PolygonAnnotation, PolygonAnnotationDto } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation, PolylineAnnotationDto } from "./entities/annotations/markup/geometric/polyline-annotation";
+import { LineAnnotation, LineAnnotationDto } from "./entities/annotations/markup/geometric/line-annotation";
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
@@ -32,9 +33,9 @@ export class AnnotationParseFactory {
       case annotationTypes.POLYLINE:
         annot = PolylineAnnotation.parse(info);
         break;
-        // case annotationTypes.LINE:
-        //   annot = LineAnnotation.parse(info);
-        //   break;
+      case annotationTypes.LINE:
+        annot = LineAnnotation.parse(info);
+        break;
         // case annotationTypes.FREE_TEXT:
         //   annot = FreeTextAnnotation.parse(info);
         //   break;
@@ -68,6 +69,9 @@ export class AnnotationParseFactory {
         break;
       case "/Polyline":        
         annotation = PolylineAnnotation.createFromDto(dto as PolylineAnnotationDto);
+        break;
+      case "/Line":        
+        annotation = LineAnnotation.createFromDto(dto as LineAnnotationDto);
         break;
       default:
         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);

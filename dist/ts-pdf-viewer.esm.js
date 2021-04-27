@@ -8649,10 +8649,7 @@ class AnnotationDict extends PdfDict {
         let bBoxUR;
         let bBoxUL;
         if (this._bBox) {
-            bBoxLL = this._bBox.ll;
-            bBoxLR = this._bBox.lr;
-            bBoxUR = this._bBox.ur;
-            bBoxUL = this._bBox.ul;
+            return this._bBox;
         }
         else if (this.apStream) {
             const { ll: apTrBoxLL, lr: apTrBoxLR, ur: apTrBoxUR, ul: apTrBoxUL } = this.apStream.transformedBBox;
@@ -14799,15 +14796,15 @@ class PolygonAnnotation extends PolyAnnotation {
         yMin -= margin;
         xMax += margin;
         yMax += margin;
-        this.Rect = [xMin, yMin, xMax, yMax];
-        if (this._bBox) {
+        dict.Rect = [xMin, yMin, xMax, yMax];
+        if (dict._bBox) {
             const bBox = dict.getLocalBB();
             bBox.ll.set(xMin, yMin);
             bBox.lr.set(xMax, yMin);
             bBox.ur.set(xMax, yMax);
             bBox.ul.set(xMin, yMax);
         }
-        this.generateApStream();
+        dict.generateApStream();
         dict.M = DateString.fromDate(new Date());
     }
 }
@@ -15031,18 +15028,371 @@ class PolylineAnnotation extends PolyAnnotation {
         yMin -= margin;
         xMax += margin;
         yMax += margin;
-        this.Rect = [xMin, yMin, xMax, yMax];
-        if (this._bBox) {
+        dict.Rect = [xMin, yMin, xMax, yMax];
+        if (dict._bBox) {
             const bBox = dict.getLocalBB();
             bBox.ll.set(xMin, yMin);
             bBox.lr.set(xMax, yMin);
             bBox.ur.set(xMax, yMax);
             bBox.ul.set(xMin, yMax);
         }
-        this.generateApStream();
+        dict.generateApStream();
         dict.M = DateString.fromDate(new Date());
     }
 }
+
+const lineIntents = {
+    ARROW: "/LineArrow",
+    DIMENSION: "/LineDimension",
+};
+const captionPositions = {
+    INLINE: "/Inline",
+    TOP: "/Top",
+};
+class LineAnnotation extends GeometricAnnotation {
+    constructor() {
+        super(annotationTypes.LINE);
+        this.IT = lineIntents.DIMENSION;
+        this.LE = [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        this.LLE = 0;
+        this.LL = 0;
+        this.LLO = 0;
+        this.Cap = false;
+        this.CP = captionPositions.INLINE;
+        this.CO = [0, 0];
+    }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Line") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new LineAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Rect = dto.rect;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.IT = dto.intent || lineIntents.DIMENSION;
+        annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        annotation.L = dto.vertices;
+        annotation.LL = dto.leaderLineLength || 0;
+        annotation.LLE = dto.leaderLineExtension || 0;
+        annotation.LLO = dto.leaderLineOffset || 0;
+        annotation.Cap = dto.caption;
+        annotation.CP = dto.captionPosition || captionPositions.INLINE;
+        annotation.CO = dto.captionOffset || [0, 0];
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new LineAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.L) {
+            bytes.push(...encoder.encode("/L "), codes.L_BRACKET, ...encoder.encode(this.L[0] + ""), codes.WHITESPACE, ...encoder.encode(this.L[1] + ""), codes.WHITESPACE, ...encoder.encode(this.L[2] + ""), codes.WHITESPACE, ...encoder.encode(this.L[3] + ""), codes.R_BRACKET);
+        }
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE "), codes.L_BRACKET);
+            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.LL) {
+            bytes.push(...encoder.encode("/LL "), ...encoder.encode(" " + this.LL));
+        }
+        if (this.LLE) {
+            bytes.push(...encoder.encode("/LLE "), ...encoder.encode(" " + this.LLE));
+        }
+        if (this.Cap) {
+            bytes.push(...encoder.encode("/Cap "), ...encoder.encode(" " + this.Cap));
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
+        }
+        if (this.LLO) {
+            bytes.push(...encoder.encode("/LLO "), ...encoder.encode(" " + this.LLO));
+        }
+        if (this.CP) {
+            bytes.push(...encoder.encode("/CP "), ...encoder.encode(this.CP));
+        }
+        if (this.Measure) {
+            bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
+        }
+        if (this.CO) {
+            bytes.push(...encoder.encode("/CO "), codes.L_BRACKET, ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Square",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            rect: this.Rect,
+            bbox: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.BBox,
+            matrix: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.Matrix,
+            vertices: this.L,
+            intent: this.IT,
+            endingType: this.LE,
+            leaderLineLength: this.LL,
+            leaderLineExtension: this.LLE,
+            leaderLineOffset: this.LLO,
+            caption: this.Cap,
+            captionPosition: this.CP,
+            captionOffset: this.CO,
+            color,
+            strokeWidth: (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.W) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.width) !== null && _h !== void 0 ? _h : 1,
+            strokeDashGap: (_k = (_j = this.BS) === null || _j === void 0 ? void 0 : _j.D) !== null && _k !== void 0 ? _k : [3, 0],
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/L":
+                    case "/CO":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    case "/LE":
+                        const lineEndings = parser.parseNameArrayAt(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (Object.values(lineIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/CP":
+                        const captionPosition = parser.parseNameAt(i, true);
+                        if (captionPosition && Object.values(captionPositions)
+                            .includes(captionPosition.value[0])) {
+                            this.CP = captionPosition.value;
+                            i = captionPosition.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CP property value");
+                        }
+                        break;
+                    case "/LL":
+                    case "/LLE":
+                    case "/LLO":
+                        i = this.parseNumberProp(name, parser, i, false);
+                        break;
+                    case "/Cap":
+                        i = this.parseBoolProp(name, parser, i);
+                        break;
+                    case "/Measure":
+                        const measureEntryType = parser.getValueTypeAt(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = ObjectId.parseRef(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetter) {
+                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                                    if (measureDict) {
+                                        this.Measure = measureDict.value;
+                                        i = measureDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            throw new Error("Can't parse /BS value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = parser.getDictBoundsAt(i);
+                            if (measureDictBounds) {
+                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+    }
+    getBboxAndMatrix() {
+        var _a, _b, _c, _d;
+        const [x1, y1, x2, y2] = this.L;
+        const start = new Vec2(x1, y1);
+        const end = new Vec2(x2, y2);
+        const length = Vec2.substract(end, start).getMagnitude();
+        const strokeWidth = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1;
+        const halfStrokeWidth = strokeWidth / 2;
+        let marginLeft;
+        let marginTop;
+        let marginRight;
+        let marginBottom;
+        if (this.LE[0] === lineEndingTypes.NONE && this.LE[1] === lineEndingTypes.NONE) {
+            marginLeft = marginRight = halfStrokeWidth;
+            if (this.LL) {
+                marginTop = marginBottom = Math.max(Math.max(Math.abs(this.LL), Math.abs(this.LLE || 0)) + (this.LLO || 0), halfStrokeWidth);
+            }
+            marginTop = marginBottom = halfStrokeWidth;
+        }
+        else {
+            const endingSize = strokeWidth * (LineAnnotation.lineEndingMultiplier + 1);
+            const halfEnding = endingSize / 2;
+            marginLeft = marginTop = marginRight = marginBottom = halfEnding;
+        }
+        const xMin = 0 - marginLeft;
+        const yMin = 0 - marginBottom;
+        const xMax = length + marginRight;
+        const yMax = 0 + marginTop;
+        const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
+        const xAlignedStart = new Vec2();
+        const xAlignedEnd = new Vec2(length, 0);
+        const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        return { bbox, matrix };
+    }
+    generateApStream(data) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+        if (!this.L) {
+            return;
+        }
+        data || (data = this.getBboxAndMatrix());
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [data.bbox[0].x, data.bbox[0].y, data.bbox[1].x, data.bbox[1].y];
+        apStream.Matrix = data.matrix.toFloatShortArray();
+        let colorString;
+        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const opacity = this.CA || 1;
+        const strokeWidth = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.W) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.width) !== null && _e !== void 0 ? _e : 1;
+        const strokeDash = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[0]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.dash) !== null && _j !== void 0 ? _j : 3;
+        const strokeGap = (_o = (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D[1]) !== null && _l !== void 0 ? _l : (_m = this.Border) === null || _m === void 0 ? void 0 : _m.gap) !== null && _o !== void 0 ? _o : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        const matrixInv = Mat3.invert(data.matrix);
+        const apStart = new Vec2(this.L[0], this.L[1]).applyMat3(matrixInv);
+        const apEnd = new Vec2(this.L[2], this.L[3]).applyMat3(matrixInv);
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        streamTextData += `\n${apStart.x.toFixed(5)} ${apStart.y.toFixed(5)} m`;
+        streamTextData += `\n${apEnd.x.toFixed(5)} ${apEnd.y.toFixed(5)} l`;
+        streamTextData += "\nS";
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
+    applyCommonTransform(matrix) {
+        const dict = this._proxy || this;
+        const [x1, y1, x2, y2] = dict.L;
+        const start = new Vec2(x1, y1).applyMat3(matrix);
+        const end = new Vec2(x2, y2).applyMat3(matrix);
+        dict.L = [start.x, start.y, end.x, end.y];
+        const { bbox: apBbox, matrix: apMatrix } = dict.getBboxAndMatrix();
+        const localBox = dict.getLocalBB();
+        localBox.ll.set(apBbox[0].x, apBbox[0].y).applyMat3(apMatrix);
+        localBox.lr.set(apBbox[1].x, apBbox[0].y).applyMat3(apMatrix);
+        localBox.ur.set(apBbox[1].x, apBbox[1].y).applyMat3(apMatrix);
+        localBox.ul.set(apBbox[0].x, apBbox[1].y).applyMat3(apMatrix);
+        const { min: rectMin, max: rectMax } = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+        dict.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
+        dict.generateApStream();
+        dict.M = DateString.fromDate(new Date());
+    }
+}
+LineAnnotation.lineEndingMultiplier = 3;
 
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {
@@ -15067,6 +15417,9 @@ class AnnotationParseFactory {
             case annotationTypes.POLYLINE:
                 annot = PolylineAnnotation.parse(info);
                 break;
+            case annotationTypes.LINE:
+                annot = LineAnnotation.parse(info);
+                break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;
     }
@@ -15090,6 +15443,9 @@ class AnnotationParseFactory {
                 break;
             case "/Polyline":
                 annotation = PolylineAnnotation.createFromDto(dto);
+                break;
+            case "/Line":
+                annotation = LineAnnotation.createFromDto(dto);
                 break;
             default:
                 throw new Error(`Unsupported annotation type: ${dto.annotationType}`);

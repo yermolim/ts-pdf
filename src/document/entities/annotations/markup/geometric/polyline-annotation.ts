@@ -1,5 +1,4 @@
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { buildCloudCurveFromPolyline } from "../../../../../common/drawing";
 
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles } from "../../../../const";
@@ -240,7 +239,7 @@ export class PolylineAnnotation extends PolyAnnotation {
   protected applyCommonTransform(matrix: Mat3) {  
     const dict = <PolylineAnnotation>this._proxy || this;
 
-    // transform current InkList and Rect
+    // transform current Vertices
     let x: number;
     let y: number;
     let xMin: number;
@@ -270,14 +269,15 @@ export class PolylineAnnotation extends PolyAnnotation {
       }
     }
     
+    // update the Rect
     const margin = (dict.BS?.W ?? dict.Border?.width ?? 1) / 2;
     xMin -= margin;
     yMin -= margin;
     xMax += margin;
     yMax += margin;
-    this.Rect = [xMin, yMin, xMax, yMax];
+    dict.Rect = [xMin, yMin, xMax, yMax];
     // update calculated bBox if present
-    if (this._bBox) {
+    if (dict._bBox) {
       const bBox =  dict.getLocalBB();
       bBox.ll.set(xMin, yMin);
       bBox.lr.set(xMax, yMin);
@@ -286,7 +286,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     }
 
     // rebuild the appearance stream instead of transforming it to get rid of line distorsions
-    this.generateApStream();
+    dict.generateApStream();
 
     dict.M = DateString.fromDate(new Date());
   }

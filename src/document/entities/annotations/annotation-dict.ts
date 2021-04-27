@@ -568,11 +568,7 @@ export abstract class AnnotationDict extends PdfDict {
     let bBoxUL: Vec2;
     
     if (this._bBox) {
-      // use the saved bounding box if present
-      bBoxLL = this._bBox.ll;
-      bBoxLR = this._bBox.lr;
-      bBoxUR = this._bBox.ur;
-      bBoxUL = this._bBox.ul;
+      return this._bBox;
     } else if (this.apStream) {
       // or calculate a bounding box using the appearance stream data if present
       // get the transformed bounding box from the appearance stream
@@ -602,8 +598,7 @@ export abstract class AnnotationDict extends PdfDict {
       lr: bBoxLR,
       ur: bBoxUR,
       ul: bBoxUL,
-    }; 
-
+    };
     return this._bBox;
   }  
 
