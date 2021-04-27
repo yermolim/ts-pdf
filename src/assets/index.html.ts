@@ -13,6 +13,7 @@ import icon_fit_page from "./icons/fit-page.png";
 import icon_caret from "./icons/caret.png";
 import icon_hand from "./icons/hand.png";
 import icon_popup from "./icons/popup.png";
+import icon_text from "./icons/text.png";
 import icon_load from "./icons/load.png";
 import icon_download from "./icons/download.png";
 import icon_close2 from "./icons/close2.png";
@@ -114,6 +115,10 @@ export const html = /*html*/`
     </div>
     <div id="annotation-panel">
       <div class="annotation-panel-row">
+        <div id="button-annotation-edit-text" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_text}"/>
+        </div> 
         <div id="button-annotation-delete" 
           class="panel-button annotation-panel-subitem">
           <img src="${icon_close}"/>
@@ -178,6 +183,20 @@ export const passwordDialogHtml =  /*html*/`
           <img src="${icon_ok}"/>
         </div>
         <div id="password-cancel" class="panel-button">
+          <img src="${icon_close}"/>
+        </div>
+      </div>
+    </div>
+`;
+
+export const textDialogHtml =  /*html*/`
+    <div class="form">
+      <input id="text-input" type="text" maxlength="255"/>
+      <div class="buttons">
+        <div id="text-ok" class="panel-button">
+          <img src="${icon_ok}"/>
+        </div>
+        <div id="text-cancel" class="panel-button">
           <img src="${icon_close}"/>
         </div>
       </div>

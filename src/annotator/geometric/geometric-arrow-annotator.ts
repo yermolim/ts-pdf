@@ -60,6 +60,8 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
       dateModified: nowString,
       author: this._docData.userName || "unknown",
 
+      textContent: null,
+
       rect: null,
       vertices: this._vertices,
       intent: lineIntents.ARROW,

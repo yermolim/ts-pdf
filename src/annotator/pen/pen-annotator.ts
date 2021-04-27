@@ -232,6 +232,8 @@ export class PenAnnotator extends Annotator {
       dateCreated: nowString,
       dateModified: nowString,
       author: this._docData.userName || "unknown",
+      
+      textContent: null,
 
       rect,
       matrix: [1, 0, 0, 1, 0, 0],

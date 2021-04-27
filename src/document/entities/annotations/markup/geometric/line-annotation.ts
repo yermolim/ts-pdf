@@ -150,11 +150,14 @@ export class LineAnnotation extends GeometricAnnotation {
     annotation.T = LiteralString.fromString(dto.author);
     annotation.M = DateString.fromDate(new Date(dto.dateModified));
     annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : null;
+      
     annotation.Rect = dto.rect;
     annotation.C = dto.color.slice(0, 3);
     annotation.CA = dto.color[3];
     annotation.BS = bs;
-
     annotation.IT = dto.intent || lineIntents.DIMENSION;
     annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
     annotation.L = dto.vertices;
@@ -259,6 +262,8 @@ export class LineAnnotation extends GeometricAnnotation {
           : this.M.date.toISOString()
         : new Date().toISOString(),
       author: this.T?.literal,
+
+      textContent: this.Contents?.literal,
 
       rect: this.Rect,
       bbox: this.apStream?.BBox,

@@ -48,12 +48,16 @@ export class PolylineAnnotation extends PolyAnnotation {
     annotation.T = LiteralString.fromString(dto.author);
     annotation.M = DateString.fromDate(new Date(dto.dateModified));
     annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : null;
+      
     annotation.Rect = dto.rect;
     annotation.C = dto.color.slice(0, 3);
     annotation.CA = dto.color[3];
     annotation.BS = bs;
     annotation.IT = polyIntents.POLYLINE_DIMENSION;
-    annotation.LE = dto.endingType;
+    annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
     annotation.Vertices = dto.vertices;
  
     annotation.generateApStream();
@@ -114,6 +118,8 @@ export class PolylineAnnotation extends PolyAnnotation {
         : new Date().toISOString(),
       author: this.T?.literal,
 
+      textContent: this.Contents?.literal,
+
       rect: this.Rect,
       bbox: this.apStream?.BBox,
       matrix: this.apStream?.Matrix,
@@ -147,7 +153,7 @@ export class PolylineAnnotation extends PolyAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/LE":
-            const lineEndings = parser.parseNameAt(i, true);
+            const lineEndings = parser.parseNameArrayAt(i, true);
             if (lineEndings
                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[0])
                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[1])) {

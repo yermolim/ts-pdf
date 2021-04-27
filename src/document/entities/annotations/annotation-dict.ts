@@ -29,6 +29,8 @@ export interface AnnotationDto {
   dateModified: string;
   author: string;
 
+  textContent: string;
+
   /**
    * annotation AABB min and max coordinates after all translations 
    * (annotation dictionary 'Rect' property value)
@@ -351,9 +353,31 @@ export abstract class AnnotationDict extends PdfDict {
         : new Date().toISOString(),
       author: this["T"]?.literal,
 
+      textContent: this.Contents?.literal,
+
       rect: this.Rect,
       matrix: this.apStream?.Matrix,
     };
+  }
+
+  /**
+   * set the annotation text content
+   * (override in subclasses to fill all the required fields)
+   * @param text 
+   */
+  setTextContent(text: string) {
+    // use proxy for tracking property changes
+    const dict = <AnnotationDict>this._proxy || this;
+
+    if (!text) {
+      dict.Contents = null;
+    }
+    const literalString = LiteralString.fromString(text);
+    dict.Contents = literalString;
+
+    dict.M = DateString.fromDate(new Date());
+
+    console.log(dict);
   }
   
   /**

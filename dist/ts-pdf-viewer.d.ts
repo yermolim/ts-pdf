@@ -21,6 +21,7 @@ export interface AnnotationDto {
 	dateCreated: string;
 	dateModified: string;
 	author: string;
+	textContent: string;
 	rect: Quadruple;
 	bbox?: Quadruple;
 	matrix?: Hextuple;
@@ -101,10 +102,11 @@ export declare class TsPdfViewer {
 	private onPaginatorPrevClick;
 	private onPaginatorNextClick;
 	private onCurrentPagesChanged;
-	private onAnnotationDeleteButtonClick;
 	private onAnnotationChange;
 	private onAnnotatorDataChanged;
 	private setAnnotationMode;
+	private onAnnotationEditTextButtonClick;
+	private onAnnotationDeleteButtonClick;
 	private onAnnotationSelectModeButtonClick;
 	private onAnnotationStampModeButtonClick;
 	private onAnnotationPenModeButtonClick;
@@ -114,6 +116,7 @@ export declare class TsPdfViewer {
 	private onPreviewerToggleClick;
 	private onMainContainerPointerMove;
 	private showPasswordDialogAsync;
+	private showTextDialogAsync;
 }
 
 export {};

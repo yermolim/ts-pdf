@@ -53,6 +53,10 @@ export class InkAnnotation extends MarkupAnnotation {
     annotation.T = LiteralString.fromString(dto.author);
     annotation.M = DateString.fromDate(new Date(dto.dateModified));
     annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : null;
+      
     annotation.InkList = dto.inkList;
     annotation.Rect = dto.rect;
     annotation.C = dto.color.slice(0, 3);
@@ -120,6 +124,8 @@ export class InkAnnotation extends MarkupAnnotation {
           : this.M.date.toISOString()
         : new Date().toISOString(),
       author: this.T?.literal,
+
+      textContent: this.Contents?.literal,
 
       rect: this.Rect,
       bbox: this.apStream?.BBox,

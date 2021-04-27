@@ -199,6 +199,8 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
       dateCreated: nowString,
       dateModified: nowString,
       author: this._docData.userName || "unknown",
+      
+      textContent: null,
 
       rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
       rectMargins,

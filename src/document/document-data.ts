@@ -195,6 +195,23 @@ export class DocumentData {
   }
 
   /**
+   * serialize supported annotations to the data-transfer objecst
+   * @param addedOnly serialize only newly added annotations
+   * @returns 
+   */
+  serializeAnnotations(addedOnly = false): AnnotationDto[] {
+    const result: AnnotationDto[] = [];
+    this.getSupportedAnnotationMap().forEach((v, k) => {
+      v.forEach(x => {
+        if (!addedOnly || x.added) {
+          result.push(x.toDto());
+        }
+      });
+    });
+    return result;
+  }
+
+  /**
    * append an annotation to the page.
    * any annotation can be appended only to one page at a time.
    * appending an annotation to another page removes it from the first one
@@ -217,6 +234,18 @@ export class DocumentData {
       type: "add",   
       annotations: [annotation.toDto()],
     }));
+  } 
+
+  /**
+   * append annotations described using the passed data-transfer objects
+   * @param dtos previously exported data-transfer objects
+   */
+  appendSerializedAnnotations(dtos: AnnotationDto[]) {
+    let annotation: AnnotationDict;
+    for (const dto of dtos) {
+      annotation = AnnotationParseFactory.ParseAnnotationFromDto(dto);
+      this.appendAnnotationToPage(dto.pageId, annotation);
+    }
   }
 
   /**mark an annotation as deleted */
@@ -232,6 +261,14 @@ export class DocumentData {
       type: "delete",
       annotations: [annotation.toDto()],
     }));
+  }
+
+  /**mark the currently selected annotation as deleted */
+  removeSelectedAnnotation() {
+    const annotation = this.selectedAnnotation;
+    if (annotation) {
+      this.removeAnnotation(annotation);
+    }
   }
   
   /** set an annotation as the selected one */
@@ -264,43 +301,14 @@ export class DocumentData {
     }));
 
     return this._selectedAnnotation;
-  }  
+  } 
 
-  /**mark the currently selected annotation as deleted */
-  deleteSelectedAnnotation() {
-    const annotation = this.selectedAnnotation;
-    if (annotation) {
-      this.removeAnnotation(annotation);
-    }
+  getSelectedAnnotationTextContent(): string {
+    return this._selectedAnnotation?.Contents?.literal;
   }
 
-  /**
-   * append annotations described using the passed data-transfer objects
-   * @param dtos previously exported data-transfer objects
-   */
-  appendSerializedAnnotations(dtos: AnnotationDto[]) {
-    let annotation: AnnotationDict;
-    for (const dto of dtos) {
-      annotation = AnnotationParseFactory.ParseAnnotationFromDto(dto);
-      this.appendAnnotationToPage(dto.pageId, annotation);
-    }
-  }
-
-  /**
-   * serialize supported annotations to the data-transfer objecst
-   * @param addedOnly serialize only newly added annotations
-   * @returns 
-   */
-  serializeAnnotations(addedOnly = false): AnnotationDto[] {
-    const result: AnnotationDto[] = [];
-    this.getSupportedAnnotationMap().forEach((v, k) => {
-      v.forEach(x => {
-        if (!addedOnly || x.added) {
-          result.push(x.toDto());
-        }
-      });
-    });
-    return result;
+  setSelectedAnnotationTextContent(text: string) {
+    this.selectedAnnotation?.setTextContent(text);
   }
   //#endregion
 

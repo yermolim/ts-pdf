@@ -157,6 +157,7 @@ export const styles = /*html*/`
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     pointer-events: all;
   }  
+  :not(.annotation-selected) #button-annotation-edit-text,
   :not(.annotation-selected) #button-annotation-delete,
   :not(.pen-annotator-data-undoable) #button-annotation-pen-undo,
   :not(.pen-annotator-data-clearable) #button-annotation-pen-clear,
@@ -169,6 +170,7 @@ export const styles = /*html*/`
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }
+  .annotation-selected #button-annotation-edit-text,
   .annotation-selected #button-annotation-delete,
   .pen-annotator-data-undoable #button-annotation-pen-undo,
   .pen-annotator-data-clearable #button-annotation-pen-clear,
@@ -443,7 +445,8 @@ export const styles = /*html*/`
   .mode-hand .page-annotations {
     pointer-events: none;
   }
-  
+
+  #text-dialog,
   #password-dialog {
     position: absolute;
     left: 0;
@@ -453,6 +456,7 @@ export const styles = /*html*/`
     background: var(--tspdf-color-secondary-tr-final);
     z-index: 2;
   }
+  #text-dialog .form,
   #password-dialog .form {
     position: absolute;
     display: flex;
@@ -468,6 +472,7 @@ export const styles = /*html*/`
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
+  #text-dialog input,
   #password-dialog input {
     width: 220px;
     margin: 10px 0 10px 10px;
@@ -478,11 +483,13 @@ export const styles = /*html*/`
     color: var(--tspdf-color-fg-primary-final);
     background-color: var(--tspdf-color-primary-final);
   }
+  #text-dialog input::placeholder,
   #password-dialog input::placeholder {
     font-size: 14px;
     font-style: italic;
     color: var(--tspdf-color-fg-primary-final);
   }
+  #text-dialog .buttons,
   #password-dialog .buttons {
     display: flex;
     flex-direction: row;

@@ -158,6 +158,8 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
       dateCreated: nowString,
       dateModified: nowString,
       author: this._docData.userName || "unknown",
+      
+      textContent: null,
 
       rect: null,
       vertices: this._vertices,

@@ -196,6 +196,8 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
       dateCreated: nowString,
       dateModified: nowString,
       author: this._docData.userName || "unknown",
+      
+      textContent: null,
 
       rect: [xmin - margin, ymin - margin, xmax + margin, ymax + margin],
 

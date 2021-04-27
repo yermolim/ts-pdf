@@ -2,7 +2,7 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-import { html, passwordDialogHtml } from "./assets/index.html";
+import { html, passwordDialogHtml, textDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
 import { clamp } from "./common/math";
@@ -458,6 +458,8 @@ export class TsPdfViewer {
       .addEventListener("click", this.onAnnotationGeometricModeButtonClick); 
 
     // select buttons
+    this._shadowRoot.querySelector("#button-annotation-edit-text")
+      .addEventListener("click", this.onAnnotationEditTextButtonClick);   
     this._shadowRoot.querySelector("#button-annotation-delete")
       .addEventListener("click", this.onAnnotationDeleteButtonClick);     
 
@@ -623,11 +625,7 @@ export class TsPdfViewer {
   //#endregion
   
 
-  //#region annotations 
-  private onAnnotationDeleteButtonClick = () => {
-    this._docData?.deleteSelectedAnnotation();
-  };
-
+  //#region annotations
   private onAnnotationChange = (e: AnnotEvent) => {
     if (!e.detail) {
       return;
@@ -704,6 +702,19 @@ export class TsPdfViewer {
 
     this._annotationBuilder.mode = mode;
   }
+   
+  private onAnnotationEditTextButtonClick = async () => {
+    const initialText = this._docData?.getSelectedAnnotationTextContent();
+    const text = await this.showTextDialogAsync(initialText);
+    if (text === null) {
+      return;
+    }
+    this._docData?.setSelectedAnnotationTextContent(text);
+  };
+
+  private onAnnotationDeleteButtonClick = () => {
+    this._docData?.removeSelectedAnnotation();
+  };
 
   private onAnnotationSelectModeButtonClick = () => {
     this.setAnnotationMode("select");
@@ -792,7 +803,6 @@ export class TsPdfViewer {
   };
 
   private async showPasswordDialogAsync(): Promise<string> {
-
     const passwordPromise = new Promise<string>((resolve, reject) => {
 
       const dialogContainer = document.createElement("div");
@@ -825,6 +835,42 @@ export class TsPdfViewer {
     });
 
     return passwordPromise;
+  }
+  
+  private async showTextDialogAsync(initialText: string): Promise<string> {
+    const textPromise = new Promise<string>((resolve, reject) => {
+
+      const dialogContainer = document.createElement("div");
+      dialogContainer.id = "text-dialog";
+      dialogContainer.innerHTML = textDialogHtml;
+      this._mainContainer.append(dialogContainer);
+
+      let value = initialText || "";      
+      const input = this._shadowRoot.getElementById("text-input") as HTMLInputElement;
+      input.placeholder = "Enter text...";
+      input.value = value;
+      input.addEventListener("change", () => value = input.value);
+
+      const ok = () => {
+        dialogContainer.remove();
+        resolve(value || "");
+      };
+      const cancel = () => {
+        dialogContainer.remove();
+        resolve(null);
+      };
+
+      dialogContainer.addEventListener("click", (e: Event) => {
+        if (e.target === dialogContainer) {
+          cancel();
+        }
+      });
+      
+      this._shadowRoot.getElementById("text-ok").addEventListener("click", ok);
+      this._shadowRoot.getElementById("text-cancel").addEventListener("click", cancel);
+    });
+
+    return textPromise;
   }
   //#endregion
 }

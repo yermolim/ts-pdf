@@ -57,6 +57,10 @@ export class CircleAnnotation extends GeometricAnnotation {
     annotation.T = LiteralString.fromString(dto.author);
     annotation.M = DateString.fromDate(new Date(dto.dateModified));
     annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : null;
+
     annotation.Rect = dto.rect;
     annotation.RD = dto.rectMargins;
     annotation.C = dto.color.slice(0, 3);
@@ -125,6 +129,8 @@ export class CircleAnnotation extends GeometricAnnotation {
           : this.M.date.toISOString()
         : new Date().toISOString(),
       author: this.T?.literal,
+
+      textContent: this.Contents?.literal,
 
       rect: this.Rect,
       rectMargins: this.RD,

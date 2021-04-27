@@ -2894,6 +2894,8 @@ export class StampAnnotation extends MarkupAnnotation {
       dateModified: nowString,
       author: userName || "unknown",
 
+      textContent: null,
+
       rect: null,
       matrix: null,
 
@@ -2943,19 +2945,21 @@ export class StampAnnotation extends MarkupAnnotation {
     apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
 
     const annotation = new StampAnnotation();
-    annotation.Contents = LiteralString.fromString(subject);
-    annotation.Subj = LiteralString.fromString(subject);
-    annotation.C = color;
-    annotation.CA = 1; // opacity
-    annotation.CreationDate = created;
-    annotation.M = modified;
+    annotation.$name = dto.uuid;  
     annotation.NM = LiteralString.fromString(dto.uuid); // identifier
     annotation.T = LiteralString.fromString(dto.author || "unknown");
+    annotation.M = modified;
+    annotation.CreationDate = created;
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : LiteralString.fromString(subject);
+
+    annotation.Subj = LiteralString.fromString(subject);
     annotation.Name = dto.stampType;
     annotation.Rect = dto.rect || stampCreationInfo.rect;
-    
-    annotation.apStream = apStream;  
-    annotation.$name = dto.uuid;
+    annotation.C = color;
+    annotation.CA = 1; // opacity
+    annotation.apStream = apStream;
 
     // TODO: add reading custom image data
 
@@ -3013,6 +3017,8 @@ export class StampAnnotation extends MarkupAnnotation {
           : this.M.date.toISOString()
         : new Date().toISOString(),
       author: this.T?.literal,
+
+      textContent: this.Contents?.literal,
 
       rect: this.Rect,
       bbox: this.apStream?.BBox,
