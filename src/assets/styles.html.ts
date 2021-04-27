@@ -501,7 +501,7 @@ export const styles = /*html*/`
   }
   .svg-annot-rect,
   .svg-annot-box {
-    fill: transparent;
+    fill: none;
   }
   .mode-annotation .svg-annotation.selected {
     cursor: grab;

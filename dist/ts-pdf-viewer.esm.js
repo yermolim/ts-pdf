@@ -744,7 +744,7 @@ const styles = `
   }
   .svg-annot-rect,
   .svg-annot-box {
-    fill: transparent;
+    fill: none;
   }
   .mode-annotation .svg-annotation.selected {
     cursor: grab;
@@ -7335,7 +7335,7 @@ class AppearanceStreamRenderer {
         }
         return this._graphicsStates.pop();
     }
-    drawPath(d, stroke, fill, close = false, evenOdd = false) {
+    drawPath(parent, d, stroke, fill, close = false, evenOdd = false) {
         if (close && d[d.length - 1] !== "Z") {
             d += " Z";
         }
@@ -7369,7 +7369,13 @@ class AppearanceStreamRenderer {
         else {
             path.setAttribute("stroke", "none");
         }
-        return path;
+        parent.append(path);
+        if (!fill && stroke && this.state.strokeWidth < 20) {
+            const clonedPath = path.cloneNode(true);
+            path.setAttribute("stroke-width", "20");
+            path.setAttribute("stroke", "transparent");
+            parent.append(clonedPath);
+        }
     }
     drawText(value) {
         throw new Error("Method is not implemented");
@@ -7389,10 +7395,6 @@ class AppearanceStreamRenderer {
             const lastCoord = new Vec2();
             let lastOperator;
             let d = "";
-            const addPath = (path) => {
-                g.append(path);
-                d = "";
-            };
             let i = 0;
             while (i !== -1) {
                 const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
@@ -7557,30 +7559,38 @@ class AppearanceStreamRenderer {
                         d += " Z";
                         break;
                     case "S":
-                        addPath(this.drawPath(d, true, false));
+                        this.drawPath(g, d, true, false);
+                        d = "";
                         break;
                     case "s":
-                        addPath(this.drawPath(d, true, false, true));
+                        this.drawPath(g, d, true, false, true);
+                        d = "";
                         break;
                     case "F":
                     case "f":
-                        addPath(this.drawPath(d, false, true, true));
+                        this.drawPath(g, d, false, true, true);
+                        d = "";
                         break;
                     case "F*":
                     case "f*":
-                        addPath(this.drawPath(d, false, true, true, true));
+                        this.drawPath(g, d, false, true, true, true);
+                        d = "";
                         break;
                     case "B":
-                        addPath(this.drawPath(d, true, true, false, false));
+                        this.drawPath(g, d, true, true, false, false);
+                        d = "";
                         break;
                     case "B*":
-                        addPath(this.drawPath(d, true, true, false, true));
+                        this.drawPath(g, d, true, true, false, true);
+                        d = "";
                         break;
                     case "b":
-                        addPath(this.drawPath(d, true, true, true, false));
+                        this.drawPath(g, d, true, true, true, false);
+                        d = "";
                         break;
                     case "b*":
-                        addPath(this.drawPath(d, true, true, true, true));
+                        this.drawPath(g, d, true, true, true, true);
+                        d = "";
                         break;
                     case "n":
                         if (lastOperator === "W" || lastOperator === "W*") {

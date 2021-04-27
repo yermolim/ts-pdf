@@ -204,8 +204,8 @@ export class AppearanceStreamRenderer {
     return this._graphicsStates.pop();
   }
 
-  protected drawPath(d: string, stroke: boolean, fill: boolean, 
-    close = false, evenOdd = false): SVGPathElement {
+  protected drawPath(parent: SVGGraphicsElement, d: string, 
+    stroke: boolean, fill: boolean, close = false, evenOdd = false) {
     if (close && d[d.length - 1] !== "Z") {
       d += " Z";
     }
@@ -241,8 +241,16 @@ export class AppearanceStreamRenderer {
     } else {
       path.setAttribute("stroke", "none");
     }
+
+    parent.append(path);
     
-    return path;
+    if (!fill && stroke && this.state.strokeWidth < 20) {
+      // create path copy with large stroke width to simplify interaction
+      const clonedPath = path.cloneNode(true);
+      path.setAttribute("stroke-width", "20");
+      path.setAttribute("stroke", "transparent");
+      parent.append(clonedPath);
+    }
   }
 
   protected drawText(value: string): SVGTextElement {
@@ -291,11 +299,7 @@ export class AppearanceStreamRenderer {
 
     const lastCoord = new Vec2();
     let lastOperator: string;
-    let d = "";  
-    const addPath = (path: SVGPathElement) => {      
-      g.append(path);
-      d = "";
-    };  
+    let d = "";
     let i = 0;
     while (i !== -1) {
       const {endIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
@@ -477,30 +481,38 @@ export class AppearanceStreamRenderer {
         //#endregion
         //#region Path painting operators        
         case "S": // stroke          
-          addPath(this.drawPath(d, true, false));
+          this.drawPath(g, d, true, false);
+          d = "";
           break;
         case "s": // close + stroke
-          addPath(this.drawPath(d, true, false, true));
+          this.drawPath(g, d, true, false, true);
+          d = "";
           break;
         case "F": // close + fill (non-zero)
         case "f": // same
-          addPath(this.drawPath(d, false, true, true));
+          this.drawPath(g, d, false, true, true);
+          d = "";
           break;
         case "F*": // close + fill (even-odd)
         case "f*": // same
-          addPath(this.drawPath(d, false, true, true, true));
+          this.drawPath(g, d, false, true, true, true);
+          d = "";
           break;
         case "B": // fill (non-zero) + stroke
-          addPath(this.drawPath(d, true, true, false, false));
+          this.drawPath(g, d, true, true, false, false);
+          d = "";
           break;
         case "B*": // fill (even-odd) + stroke
-          addPath(this.drawPath(d, true, true, false, true));
+          this.drawPath(g, d, true, true, false, true);
+          d = "";
           break;
         case "b": // close + fill (non-zero) + stroke
-          addPath(this.drawPath(d, true, true, true, false));
+          this.drawPath(g, d, true, true, true, false);
+          d = "";
           break;
         case "b*": // close + fill (even-odd) + stroke
-          addPath(this.drawPath(d, true, true, true, true));
+          this.drawPath(g, d, true, true, true, true);
+          d = "";
           break;
         case "n": // end path without stroking or filling
           if (lastOperator === "W" || lastOperator === "W*") {
