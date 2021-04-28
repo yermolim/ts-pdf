@@ -1,5 +1,6 @@
 import { RenderToSvgResult, Quadruple, Hextuple } from "../../common/types";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../common/math";
+import { selectionStrokeWidth } from "../../common/drawing";
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, valueTypes } from "../const";
 
@@ -244,11 +245,12 @@ export class AppearanceStreamRenderer {
 
     parent.append(path);
     
-    if (!fill && stroke && this.state.strokeWidth < 20) {
+    if (!stroke || this.state.strokeWidth < selectionStrokeWidth) {
       // create a transparent path copy with large stroke width to simplify user interaction
-      const clonedPath = path.cloneNode(true);
-      path.setAttribute("stroke-width", "20");
-      path.setAttribute("stroke", "transparent");
+      const clonedPath = path.cloneNode(true) as SVGPathElement;
+      clonedPath.setAttribute("stroke-width", selectionStrokeWidth + "");
+      clonedPath.setAttribute("stroke", "transparent");
+      clonedPath.setAttribute("fill", "none");
       parent.append(clonedPath);
     }
   }

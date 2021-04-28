@@ -119,3 +119,6 @@ export interface BBox {
 
 /**constant used to imitate circle using four cubic bezier curves */
 export const bezierConstant = 0.551915;
+
+/**width (in PDF page units) of the transparent lines rendered to simplify annotation selection */
+export const selectionStrokeWidth = 20;

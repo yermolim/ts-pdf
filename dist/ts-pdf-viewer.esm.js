@@ -7161,6 +7161,83 @@ function getRandomUuid() {
     return v4();
 }
 
+function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
+    if (!polylinePoints || polylinePoints.length < 2) {
+        return null;
+    }
+    if (isNaN(maxArcSize) || maxArcSize <= 0) {
+        throw new Error(`Invalid maximal arc size ${maxArcSize}`);
+    }
+    const start = polylinePoints[0].clone();
+    const curves = [];
+    const zeroVec = new Vec2();
+    const lengthVec = new Vec2();
+    let i;
+    let j;
+    let lineStart;
+    let lineEnd;
+    let lineLength;
+    let arcCount;
+    let arcSize;
+    let halfArcSize;
+    let arcStart;
+    let arcEnd;
+    for (i = 0; i < polylinePoints.length - 1; i++) {
+        lineStart = polylinePoints[i];
+        lineEnd = polylinePoints[i + 1];
+        lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
+        if (!lineLength) {
+            continue;
+        }
+        lengthVec.set(lineLength, 0);
+        const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
+        arcCount = Math.ceil(lineLength / maxArcSize);
+        arcSize = lineLength / arcCount;
+        halfArcSize = arcSize / 2;
+        for (j = 0; j < arcCount; j++) {
+            arcStart = j * arcSize;
+            arcEnd = (j + 1) * arcSize;
+            const curve = [
+                new Vec2(arcStart, -halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, -halfArcSize).applyMat3(matrix),
+                new Vec2(arcEnd, 0).applyMat3(matrix),
+            ];
+            curves.push(curve);
+        }
+    }
+    return {
+        start,
+        curves,
+    };
+}
+function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
+    matrix || (matrix = new Mat3());
+    const center = new Vec2();
+    const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+    const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
+    const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
+    const points = [];
+    const current = new Vec2(center.x + rx, center.y);
+    const next = new Vec2();
+    let angle = 0;
+    let distance;
+    points.push(current.clone().applyMat3(matrix));
+    for (let i = 0; i < segmentsNumber; i++) {
+        distance = 0;
+        while (distance < maxSegmentLength) {
+            angle += 0.25 / 180 * Math.PI;
+            next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
+            distance += getDistance(current.x, current.y, next.x, next.y);
+            current.setFromVec2(next);
+        }
+        points.push(current.clone().applyMat3(matrix));
+    }
+    const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
+    return curveData;
+}
+const bezierConstant = 0.551915;
+const selectionStrokeWidth = 20;
+
 class TextState {
     constructor(params) {
         Object.assign(this, TextState.defaultParams, params);
@@ -7412,10 +7489,11 @@ class AppearanceStreamRenderer {
             path.setAttribute("stroke", "none");
         }
         parent.append(path);
-        if (!fill && stroke && this.state.strokeWidth < 20) {
+        if (!stroke || this.state.strokeWidth < selectionStrokeWidth) {
             const clonedPath = path.cloneNode(true);
-            path.setAttribute("stroke-width", "20");
-            path.setAttribute("stroke", "transparent");
+            clonedPath.setAttribute("stroke-width", selectionStrokeWidth + "");
+            clonedPath.setAttribute("stroke", "transparent");
+            clonedPath.setAttribute("fill", "none");
             parent.append(clonedPath);
         }
     }
@@ -14022,82 +14100,6 @@ class InkAnnotation extends MarkupAnnotation {
         this.applyCommonTransform(matrix);
     }
 }
-
-function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
-    if (!polylinePoints || polylinePoints.length < 2) {
-        return null;
-    }
-    if (isNaN(maxArcSize) || maxArcSize <= 0) {
-        throw new Error(`Invalid maximal arc size ${maxArcSize}`);
-    }
-    const start = polylinePoints[0].clone();
-    const curves = [];
-    const zeroVec = new Vec2();
-    const lengthVec = new Vec2();
-    let i;
-    let j;
-    let lineStart;
-    let lineEnd;
-    let lineLength;
-    let arcCount;
-    let arcSize;
-    let halfArcSize;
-    let arcStart;
-    let arcEnd;
-    for (i = 0; i < polylinePoints.length - 1; i++) {
-        lineStart = polylinePoints[i];
-        lineEnd = polylinePoints[i + 1];
-        lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
-        if (!lineLength) {
-            continue;
-        }
-        lengthVec.set(lineLength, 0);
-        const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
-        arcCount = Math.ceil(lineLength / maxArcSize);
-        arcSize = lineLength / arcCount;
-        halfArcSize = arcSize / 2;
-        for (j = 0; j < arcCount; j++) {
-            arcStart = j * arcSize;
-            arcEnd = (j + 1) * arcSize;
-            const curve = [
-                new Vec2(arcStart, -halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, -halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, 0).applyMat3(matrix),
-            ];
-            curves.push(curve);
-        }
-    }
-    return {
-        start,
-        curves,
-    };
-}
-function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
-    matrix || (matrix = new Mat3());
-    const center = new Vec2();
-    const ellipseCircumferenceApprox = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
-    const segmentsNumber = Math.ceil(ellipseCircumferenceApprox / maxArcSize / 4) * 4;
-    const maxSegmentLength = Math.ceil(ellipseCircumferenceApprox / segmentsNumber);
-    const points = [];
-    const current = new Vec2(center.x + rx, center.y);
-    const next = new Vec2();
-    let angle = 0;
-    let distance;
-    points.push(current.clone().applyMat3(matrix));
-    for (let i = 0; i < segmentsNumber; i++) {
-        distance = 0;
-        while (distance < maxSegmentLength) {
-            angle += 0.25 / 180 * Math.PI;
-            next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
-            distance += getDistance(current.x, current.y, next.x, next.y);
-            current.setFromVec2(next);
-        }
-        points.push(current.clone().applyMat3(matrix));
-    }
-    const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
-    return curveData;
-}
-const bezierConstant = 0.551915;
 
 class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
