@@ -19114,13 +19114,17 @@ class TsPdfViewer {
                         this._mainContainer.classList.remove("annotation-selected");
                     }
                     break;
+                case "add":
+                case "edit":
+                case "delete":
+                    if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
+                        const pageIdSet = new Set(annotations.map(x => x.pageId));
+                        this._pageService.renderSpecifiedPages(pageIdSet);
+                    }
+                    break;
             }
             if (this._annotChangeCallback) {
                 this._annotChangeCallback(e.detail);
-            }
-            if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
-                const pageIdSet = new Set(annotations.map(x => x.pageId));
-                this._pageService.renderSpecifiedPages(pageIdSet);
             }
         };
         this.onAnnotatorDataChanged = (event) => {

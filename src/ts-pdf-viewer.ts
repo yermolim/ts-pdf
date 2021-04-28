@@ -640,22 +640,19 @@ export class TsPdfViewer {
         }
         break;
       case "add":
-        break;
       case "edit":
-        break;
       case "delete":
+        // rerender changed pages
+        if (annotations?.length) {
+          const pageIdSet = new Set<number>(annotations.map(x => x.pageId));
+          this._pageService.renderSpecifiedPages(pageIdSet);
+        }
         break;
     }
     
     // execute change callback if present
     if (this._annotChangeCallback) {
       this._annotChangeCallback(e.detail);
-    }
-
-    // rerender changed pages
-    if (annotations?.length) {
-      const pageIdSet = new Set<number>(annotations.map(x => x.pageId));
-      this._pageService.renderSpecifiedPages(pageIdSet);
     }
   };
 
