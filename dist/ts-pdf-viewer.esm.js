@@ -19280,6 +19280,7 @@ class TsPdfViewer {
     }
     openPdfAsync(src) {
         return __awaiter(this, void 0, void 0, function* () {
+            yield this.closePdfAsync();
             let data;
             let doc;
             try {

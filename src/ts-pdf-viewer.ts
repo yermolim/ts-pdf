@@ -181,6 +181,9 @@ export class TsPdfViewer {
   }
   
   async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
+    // close the currently opened file if present
+    await this.closePdfAsync();
+
     let data: Uint8Array;
     let doc: PDFDocumentProxy;
 
