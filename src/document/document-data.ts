@@ -20,8 +20,50 @@ import { PageDict } from "./entities/structure/page-dict";
 import { PageTreeDict } from "./entities/structure/page-tree-dict";
 
 import { AnnotationParseFactory } from "./annotation-parser";
-import { AnnotationDict, AnnotationDto, AnnotEvent, annotSelectionRequestEvent, 
-  AnnotSelectionRequestEvent } from "./entities/annotations/annotation-dict";
+import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
+
+export { AnnotationDto };
+
+//#region custom events
+export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;
+export const annotFocusRequestEvent = "tspdf-annotfocusrequest" as const;
+export const annotChangeEvent = "tspdf-annotchange" as const;
+
+export interface AnnotSelectionRequestEventDetail {
+  annotation: AnnotationDict;
+}
+export interface AnnotFocusRequestEventDetail {
+  annotation: AnnotationDict;
+}
+export interface AnnotEventDetail {
+  type: "focus" | "select" | "add" | "edit" | "delete";
+  annotations: AnnotationDto[];
+}
+
+export class AnnotSelectionRequestEvent extends CustomEvent<AnnotSelectionRequestEventDetail> {
+  constructor(detail: AnnotSelectionRequestEventDetail) {
+    super(annotSelectionRequestEvent, {detail});
+  }
+}
+export class AnnotFocusRequestEvent extends CustomEvent<AnnotFocusRequestEventDetail> {
+  constructor(detail: AnnotFocusRequestEventDetail) {
+    super(annotFocusRequestEvent, {detail});
+  }
+}
+export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
+  constructor(detail: AnnotEventDetail) {
+    super(annotChangeEvent, {detail});
+  }
+}
+
+declare global {
+  interface HTMLElementEventMap {
+    [annotSelectionRequestEvent]: AnnotSelectionRequestEvent;
+    [annotFocusRequestEvent]: AnnotFocusRequestEvent;
+    [annotChangeEvent]: AnnotEvent;
+  }
+}
+//#endregion
 
 export class DocumentData {
   protected readonly _eventController: ElementEventController;
@@ -50,6 +92,12 @@ export class DocumentData {
   
   private _annotIdsByPageId = new Map<number, ObjectId[]>();
   private _supportedAnnotsByPageId: Map<number, AnnotationDict[]>;
+  
+  private _focusedAnnotation: AnnotationDict;
+  get focusedAnnotation(): AnnotationDict {
+    return this._focusedAnnotation;
+  }
+
   private _selectedAnnotation: AnnotationDict;
   get selectedAnnotation(): AnnotationDict {
     return this._selectedAnnotation;
@@ -105,7 +153,8 @@ export class DocumentData {
 
     this._userName = userName;
     
-    this._eventController.addListener(annotSelectionRequestEvent, this.onSelectionRequest);
+    this._eventController.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+    this._eventController.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
   }
 
   /**free the resources that can prevent garbage to be collected */
@@ -113,7 +162,8 @@ export class DocumentData {
     // clear onEditedAction to prevent memory leak
     this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
 
-    this._eventController.removeListener(annotSelectionRequestEvent, this.onSelectionRequest);
+    this._eventController.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+    this._eventController.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
   }
 
   tryAuthenticate(password = ""): boolean {
@@ -301,6 +351,38 @@ export class DocumentData {
     }));
 
     return this._selectedAnnotation;
+  } 
+  
+  /** set an annotation as the focused one */
+  setFocusedAnnotation(annotation: AnnotationDict): AnnotationDict {
+    if (annotation === this._focusedAnnotation) {
+      return;
+    }
+
+    if (this._focusedAnnotation) {
+      this._focusedAnnotation.$translationEnabled = false;
+      const oldFocusedSvg = this._focusedAnnotation?.lastRenderResult?.svg;
+      oldFocusedSvg?.classList.remove("focused");
+    }
+
+    const newFocusedSvg = annotation?.lastRenderResult.svg;
+    if (!newFocusedSvg) {
+      this._focusedAnnotation = null;
+    } else {
+      annotation.$translationEnabled = true;    
+      newFocusedSvg.classList.add("focused");
+      this._focusedAnnotation = annotation;
+    }
+
+    // dispatch corresponding event
+    this._eventController.dispatchEvent(new AnnotEvent({      
+      type: "focus",
+      annotations: this._focusedAnnotation
+        ? [this._focusedAnnotation.toDto()]
+        : [],
+    }));
+
+    return this._focusedAnnotation;
   } 
 
   getSelectedAnnotationTextContent(): string {
@@ -536,11 +618,19 @@ export class DocumentData {
   }
   //#endregion
   
-  private onSelectionRequest = (e: AnnotSelectionRequestEvent) => {
+  private onAnnotationSelectionRequest = (e: AnnotSelectionRequestEvent) => {
     if (e.detail?.annotation) {
       this.setSelectedAnnotation(e.detail.annotation);
     } else {
       this.setSelectedAnnotation(null);
+    }
+  };
+
+  private onAnnotationFocusRequest = (e: AnnotFocusRequestEvent) => {    
+    if (e.detail?.annotation) {
+      this.setFocusedAnnotation(e.detail.annotation);
+    } else {
+      this.setFocusedAnnotation(null);
     }
   };
 }

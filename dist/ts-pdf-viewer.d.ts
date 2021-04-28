@@ -27,7 +27,7 @@ export interface AnnotationDto {
 	matrix?: Hextuple;
 }
 export interface AnnotEventDetail {
-	type: "select" | "add" | "edit" | "delete";
+	type: "focus" | "select" | "add" | "edit" | "delete";
 	annotations: AnnotationDto[];
 }
 export declare class AnnotEvent extends CustomEvent<AnnotEventDetail> {
@@ -102,6 +102,9 @@ export declare class TsPdfViewer {
 	private onPaginatorPrevClick;
 	private onPaginatorNextClick;
 	private onCurrentPagesChanged;
+	private annotatorUndo;
+	private annotatorClear;
+	private annotatorSave;
 	private onAnnotationChange;
 	private onAnnotatorDataChanged;
 	private setAnnotationMode;

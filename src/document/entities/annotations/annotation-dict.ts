@@ -48,38 +48,6 @@ export interface AnnotationDto {
   matrix?: Hextuple;
 }
 
-
-//#region custom events
-export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;
-export const annotChangeEvent = "tspdf-annotchange" as const;
-
-export interface AnnotSelectionRequestEventDetail {
-  annotation: AnnotationDict;
-}
-export interface AnnotEventDetail {
-  type: "select" | "add" | "edit" | "delete";
-  annotations: AnnotationDto[];
-}
-
-export class AnnotSelectionRequestEvent extends CustomEvent<AnnotSelectionRequestEventDetail> {
-  constructor(detail: AnnotSelectionRequestEventDetail) {
-    super(annotSelectionRequestEvent, {detail});
-  }
-}
-export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
-  constructor(detail: AnnotEventDetail) {
-    super(annotChangeEvent, {detail});
-  }
-}
-
-declare global {
-  interface HTMLElementEventMap {
-    [annotSelectionRequestEvent]: AnnotSelectionRequestEvent;
-    [annotChangeEvent]: AnnotEvent;
-  }
-}
-//#endregion
-
 export abstract class AnnotationDict extends PdfDict {
   /**annotation name (should be a uuid) */
   $name: string;
@@ -90,7 +58,11 @@ export abstract class AnnotationDict extends PdfDict {
   $translationEnabled: boolean;
 
   /**optional action callback which is called on 'pointer down' event */
-  $onPointerDownAction: (e: PointerEvent) => void;
+  $onPointerDownAction: (e: PointerEvent) => void;  
+  /**optional action callback which is called on 'pointer enter' event */
+  $onPointerEnterAction: (e: PointerEvent) => void;
+  /**optional action callback which is called on 'pointer leave' event */
+  $onPointerLeaveAction: (e: PointerEvent) => void;
 
   //#region PDF properties
 
@@ -741,7 +713,9 @@ export abstract class AnnotationDict extends PdfDict {
     const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
     mainSvg.classList.add("svg-annotation");
     mainSvg.setAttribute("data-annotation-name", this.$name);    
-    mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
+    mainSvg.addEventListener("pointerdown", this.onSvgPointerDown);
+    mainSvg.addEventListener("pointerenter", this.onSvgPointerEnter);
+    mainSvg.addEventListener("pointerleave", this.onSvgPointerLeave);
 
     return mainSvg;
   }  
@@ -926,8 +900,20 @@ export abstract class AnnotationDict extends PdfDict {
     this._tempTransformationMatrix.reset();
   }
 
-  //#region main svg handlers (selection + translation)
-  protected onRectPointerDown = (e: PointerEvent) => { 
+  //#region main svg handlers (selection + translation)  
+  protected onSvgPointerEnter = (e: PointerEvent) => { 
+    if (this.$onPointerEnterAction) {
+      this.$onPointerEnterAction(e);
+    }
+  };
+
+  protected onSvgPointerLeave = (e: PointerEvent) => { 
+    if (this.$onPointerLeaveAction) {
+      this.$onPointerLeaveAction(e);
+    }    
+  };
+
+  protected onSvgPointerDown = (e: PointerEvent) => { 
     if (!this.$pageId) {
       // the annotation is not appended to the page (a temporary one)
       // do nothing
@@ -944,8 +930,8 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.addEventListener("pointerup", this.onRectPointerUp);
-    document.addEventListener("pointerout", this.onRectPointerUp);  
+    document.addEventListener("pointerup", this.onSvgPointerUp);
+    document.addEventListener("pointerout", this.onSvgPointerUp);  
 
     // set timeout to prevent an accidental annotation translation
     this._transformationTimer = setTimeout(() => {
@@ -954,11 +940,11 @@ export abstract class AnnotationDict extends PdfDict {
       this._svg.after(this._svgContentCopy);
       // set the starting transformation point
       this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
-      document.addEventListener("pointermove", this.onRectPointerMove);
+      document.addEventListener("pointermove", this.onSvgPointerMove);
     }, 200);
   };
 
-  protected onRectPointerMove = (e: PointerEvent) => {
+  protected onSvgPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -974,15 +960,15 @@ export abstract class AnnotationDict extends PdfDict {
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onRectPointerUp = (e: PointerEvent) => {
+  protected onSvgPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
     }
 
-    document.removeEventListener("pointermove", this.onRectPointerMove);
-    document.removeEventListener("pointerup", this.onRectPointerUp);
-    document.removeEventListener("pointerout", this.onRectPointerUp);
+    document.removeEventListener("pointermove", this.onSvgPointerMove);
+    document.removeEventListener("pointerup", this.onSvgPointerUp);
+    document.removeEventListener("pointerout", this.onSvgPointerUp);
 
     // transform the annotation
     this.applyTempTransform();

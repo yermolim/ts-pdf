@@ -6,9 +6,12 @@ import { PageView } from "../components/pages/page-view";
 import { PagesRenderedEvent, pagesRenderedEvent } from "../components/pages/page-service";
 
 //#region custom events
+export const annotatorTypes = ["geom", "pen", "stamp"] as const;
+export type AnnotatorType = typeof annotatorTypes[number];
+
 export const annotatorDataChangeEvent = "tspdf-annotatordatachange" as const;
 export interface AnnotatorDataChangeEventDetail {
-  annotatorType: string;
+  annotatorType: AnnotatorType;
   elementCount?: number;
   undoable?: boolean;
   clearable?: boolean;
@@ -257,7 +260,13 @@ export abstract class Annotator {
     }
     // point is not inside a page
     return null;
-  }  
+  }
+  
+  abstract undo(): void; 
+  
+  abstract clear(): void; 
+  
+  abstract saveAnnotation(): void;  
   
   protected abstract refreshGroupPosition(): void;
 }

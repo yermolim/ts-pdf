@@ -5,7 +5,7 @@ import { StampAnnotation, StampType, stampTypes }
   from "../../document/entities/annotations/markup/stamp-annotation";
   
 import { PageView } from "../../components/pages/page-view";
-import { Annotator } from "../annotator";
+import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 
 export const supportedStampTypes = [
   {type:"/Draft", name: "Draft"},
@@ -31,6 +31,9 @@ export class StampAnnotator extends Annotator {
 
   protected _type: StampType;
   protected _tempAnnotation: StampAnnotation;
+  protected _pageId: number;
+
+  protected _addedAnnotations: StampAnnotation[] = [];
 
   /**
    * 
@@ -59,6 +62,41 @@ export class StampAnnotator extends Annotator {
     this._tempAnnotation = null;
     super.destroy();
   }
+
+  /**remove the most recently added annotation by this annotation instance */
+  undo() {
+    if (!this._addedAnnotations.length) {
+      return;
+    }
+
+    const lastAnnotation = this._addedAnnotations.pop();
+    this._docData.removeAnnotation(lastAnnotation);
+    const empty = !this._addedAnnotations.length;
+    this.emitDataChanged(this._addedAnnotations.length, !empty, !empty);
+  }
+
+  /**remove all the annotations added by this annotation instance */
+  clear() {
+    while (this._addedAnnotations.length) {
+      this.undo();
+    }
+  }
+
+  /**saves the current temp annotation to the document data */
+  saveAnnotation() {
+    if (!this._pageId || !this._tempAnnotation) {
+      return;
+    }
+
+    // append the current temp stamp to the page
+    this._docData.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+
+    this._addedAnnotations.push(this._tempAnnotation);
+    this.emitDataChanged(this._addedAnnotations.length, true, true);
+
+    // create new temp annotation
+    this.createTempStampAnnotationAsync();
+  }
   
   protected init() {
     super.init();
@@ -69,7 +107,17 @@ export class StampAnnotator extends Annotator {
       this.onPointerUp);
     this.createTempStampAnnotationAsync();
   }
-
+  
+  protected emitDataChanged(count: number, clearable?: boolean, undoable?: boolean) {
+    this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+      annotatorType: "stamp",
+      elementCount: count,
+      undoable,
+      clearable,
+      saveable: false,
+    }));
+  }
+  
   /**
    * create temporary stamp annotation to render in under the pointer
    */
@@ -143,11 +191,10 @@ export class StampAnnotator extends Annotator {
     // translate the stamp to the pointer position
     const {pageId, pageX, pageY} = this._pointerCoordsInPageCS;
     this._tempAnnotation.moveTo(pageX, pageY);
-    // append the current temp stamp to the page
-    this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
+    this._pageId = pageId;
 
-    // create new temp annotation
-    this.createTempStampAnnotationAsync();
+    // save the current temp stamp to the document data
+    this.saveAnnotation();
   };
 
   protected refreshGroupPosition() {

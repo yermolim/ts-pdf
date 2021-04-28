@@ -190,6 +190,14 @@ const html = `
         </div> 
       </div>
       <div class="annotation-panel-row">
+        <div id="button-annotation-stamp-undo" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${img$c}"/>
+        </div> 
+        <div id="button-annotation-stamp-clear" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${img$d}"/>
+        </div> 
         <div id="button-annotation-mode-stamp" 
           class="panel-button annotation-panel-item">
           <img src="${img$a}"/>
@@ -421,6 +429,8 @@ const styles = `
   }  
   :not(.annotation-selected) #button-annotation-edit-text,
   :not(.annotation-selected) #button-annotation-delete,
+  :not(.stamp-annotator-data-undoable) #button-annotation-stamp-undo,
+  :not(.stamp-annotator-data-clearable) #button-annotation-stamp-clear,
   :not(.pen-annotator-data-undoable) #button-annotation-pen-undo,
   :not(.pen-annotator-data-clearable) #button-annotation-pen-clear,
   :not(.pen-annotator-data-saveable) #button-annotation-pen-save,
@@ -434,6 +444,8 @@ const styles = `
   }
   .annotation-selected #button-annotation-edit-text,
   .annotation-selected #button-annotation-delete,
+  .stamp-annotator-data-undoable #button-annotation-stamp-undo,
+  .stamp-annotator-data-clearable #button-annotation-stamp-clear,
   .pen-annotator-data-undoable #button-annotation-pen-undo,
   .pen-annotator-data-clearable #button-annotation-pen-clear,
   .pen-annotator-data-saveable #button-annotation-pen-save,
@@ -779,6 +791,10 @@ const styles = `
   .mode-annotation .svg-annotation.selected .svg-annot-box {
     stroke: var(--tspdf-color-secondary-tr-final);
     stroke-dasharray: 3 3;
+  }   
+  .mode-annotation .svg-annotation.focused .svg-annot-box {
+    stroke: var(--tspdf-color-fg-accent);
+    stroke-dasharray: 3 0;
   } 
   .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
   .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
@@ -8189,18 +8205,6 @@ var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
-const annotChangeEvent = "tspdf-annotchange";
-class AnnotSelectionRequestEvent extends CustomEvent {
-    constructor(detail) {
-        super(annotSelectionRequestEvent, { detail });
-    }
-}
-class AnnotEvent extends CustomEvent {
-    constructor(detail) {
-        super(annotChangeEvent, { detail });
-    }
-}
 class AnnotationDict extends PdfDict {
     constructor(subType) {
         super(dictTypes.ANNOTATION);
@@ -8212,7 +8216,17 @@ class AnnotationDict extends PdfDict {
         this._tempVecX = new Vec2();
         this._tempVecY = new Vec2();
         this._svgId = getRandomUuid();
-        this.onRectPointerDown = (e) => {
+        this.onSvgPointerEnter = (e) => {
+            if (this.$onPointerEnterAction) {
+                this.$onPointerEnterAction(e);
+            }
+        };
+        this.onSvgPointerLeave = (e) => {
+            if (this.$onPointerLeaveAction) {
+                this.$onPointerLeaveAction(e);
+            }
+        };
+        this.onSvgPointerDown = (e) => {
             if (!this.$pageId) {
                 return;
             }
@@ -8222,16 +8236,16 @@ class AnnotationDict extends PdfDict {
             if (!this.$translationEnabled || !e.isPrimary) {
                 return;
             }
-            document.addEventListener("pointerup", this.onRectPointerUp);
-            document.addEventListener("pointerout", this.onRectPointerUp);
+            document.addEventListener("pointerup", this.onSvgPointerUp);
+            document.addEventListener("pointerout", this.onSvgPointerUp);
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
                 this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
-                document.addEventListener("pointermove", this.onRectPointerMove);
+                document.addEventListener("pointermove", this.onSvgPointerMove);
             }, 200);
         };
-        this.onRectPointerMove = (e) => {
+        this.onSvgPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -8240,13 +8254,13 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onRectPointerUp = (e) => {
+        this.onSvgPointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
-            document.removeEventListener("pointermove", this.onRectPointerMove);
-            document.removeEventListener("pointerup", this.onRectPointerUp);
-            document.removeEventListener("pointerout", this.onRectPointerUp);
+            document.removeEventListener("pointermove", this.onSvgPointerMove);
+            document.removeEventListener("pointerup", this.onSvgPointerUp);
+            document.removeEventListener("pointerout", this.onSvgPointerUp);
             this.applyTempTransform();
             this.updateRenderAsync();
         };
@@ -8797,7 +8811,9 @@ class AnnotationDict extends PdfDict {
         const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
         mainSvg.classList.add("svg-annotation");
         mainSvg.setAttribute("data-annotation-name", this.$name);
-        mainSvg.addEventListener("pointerdown", this.onRectPointerDown);
+        mainSvg.addEventListener("pointerdown", this.onSvgPointerDown);
+        mainSvg.addEventListener("pointerenter", this.onSvgPointerEnter);
+        mainSvg.addEventListener("pointerleave", this.onSvgPointerLeave);
         return mainSvg;
     }
     renderContentCopy() {
@@ -15767,6 +15783,24 @@ class AnnotationParseFactory {
     }
 }
 
+const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
+const annotFocusRequestEvent = "tspdf-annotfocusrequest";
+const annotChangeEvent = "tspdf-annotchange";
+class AnnotSelectionRequestEvent extends CustomEvent {
+    constructor(detail) {
+        super(annotSelectionRequestEvent, { detail });
+    }
+}
+class AnnotFocusRequestEvent extends CustomEvent {
+    constructor(detail) {
+        super(annotFocusRequestEvent, { detail });
+    }
+}
+class AnnotEvent extends CustomEvent {
+    constructor(detail) {
+        super(annotChangeEvent, { detail });
+    }
+}
 class DocumentData {
     constructor(eventController, data, userName) {
         this._pageById = new Map();
@@ -15813,13 +15847,22 @@ class DocumentData {
             }
             return null;
         };
-        this.onSelectionRequest = (e) => {
+        this.onAnnotationSelectionRequest = (e) => {
             var _a;
             if ((_a = e.detail) === null || _a === void 0 ? void 0 : _a.annotation) {
                 this.setSelectedAnnotation(e.detail.annotation);
             }
             else {
                 this.setSelectedAnnotation(null);
+            }
+        };
+        this.onAnnotationFocusRequest = (e) => {
+            var _a;
+            if ((_a = e.detail) === null || _a === void 0 ? void 0 : _a.annotation) {
+                this.setFocusedAnnotation(e.detail.annotation);
+            }
+            else {
+                this.setFocusedAnnotation(null);
             }
         };
         if (!eventController) {
@@ -15845,13 +15888,17 @@ class DocumentData {
         this._referenceData = new ReferenceData(xrefs);
         this.parseEncryption();
         this._userName = userName;
-        this._eventController.addListener(annotSelectionRequestEvent, this.onSelectionRequest);
+        this._eventController.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+        this._eventController.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
     get eventController() {
         return this._eventController;
     }
     get userName() {
         return this._userName;
+    }
+    get focusedAnnotation() {
+        return this._focusedAnnotation;
     }
     get selectedAnnotation() {
         return this._selectedAnnotation;
@@ -15873,7 +15920,8 @@ class DocumentData {
     }
     destroy() {
         this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
-        this._eventController.removeListener(annotSelectionRequestEvent, this.onSelectionRequest);
+        this._eventController.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+        this._eventController.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
     tryAuthenticate(password = "") {
         if (!this.authenticated) {
@@ -16006,6 +16054,33 @@ class DocumentData {
                 : [],
         }));
         return this._selectedAnnotation;
+    }
+    setFocusedAnnotation(annotation) {
+        var _a, _b;
+        if (annotation === this._focusedAnnotation) {
+            return;
+        }
+        if (this._focusedAnnotation) {
+            this._focusedAnnotation.$translationEnabled = false;
+            const oldFocusedSvg = (_b = (_a = this._focusedAnnotation) === null || _a === void 0 ? void 0 : _a.lastRenderResult) === null || _b === void 0 ? void 0 : _b.svg;
+            oldFocusedSvg === null || oldFocusedSvg === void 0 ? void 0 : oldFocusedSvg.classList.remove("focused");
+        }
+        const newFocusedSvg = annotation === null || annotation === void 0 ? void 0 : annotation.lastRenderResult.svg;
+        if (!newFocusedSvg) {
+            this._focusedAnnotation = null;
+        }
+        else {
+            annotation.$translationEnabled = true;
+            newFocusedSvg.classList.add("focused");
+            this._focusedAnnotation = annotation;
+        }
+        this._eventController.dispatchEvent(new AnnotEvent({
+            type: "focus",
+            annotations: this._focusedAnnotation
+                ? [this._focusedAnnotation.toDto()]
+                : [],
+        }));
+        return this._focusedAnnotation;
     }
     getSelectedAnnotationTextContent() {
         var _a, _b;
@@ -16887,7 +16962,11 @@ class PageAnnotationView {
         this.remove();
         this._container = null;
         this._destroyed = true;
-        this._rendered.forEach(x => x.$onPointerDownAction = null);
+        this._rendered.forEach(x => {
+            x.$onPointerDownAction = null;
+            x.$onPointerEnterAction = null;
+            x.$onPointerLeaveAction = null;
+        });
         this._rendered.clear();
     }
     remove() {
@@ -16918,6 +16997,12 @@ class PageAnnotationView {
                 if (!this._rendered.has(annotation)) {
                     annotation.$onPointerDownAction = (e) => {
                         this._docData.eventController.dispatchEvent(new AnnotSelectionRequestEvent({ annotation }));
+                    };
+                    annotation.$onPointerEnterAction = (e) => {
+                        this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({ annotation }));
+                    };
+                    annotation.$onPointerLeaveAction = (e) => {
+                        this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
                     };
                     renderResult = yield annotation.renderAsync();
                 }
@@ -17163,6 +17248,7 @@ class PageView {
     }
 }
 
+const annotatorTypes = ["geom", "pen", "stamp"];
 const annotatorDataChangeEvent = "tspdf-annotatordatachange";
 class AnnotatorDataChangeEvent extends CustomEvent {
     constructor(detail) {
@@ -18479,6 +18565,7 @@ const supportedStampTypes = [
 class StampAnnotator extends Annotator {
     constructor(docData, parent, pages, type) {
         super(docData, parent, pages);
+        this._addedAnnotations = [];
         this.onPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -18517,8 +18604,8 @@ class StampAnnotator extends Annotator {
             }
             const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
             this._tempAnnotation.moveTo(pageX, pageY);
-            this._docData.appendAnnotationToPage(pageId, this._tempAnnotation);
-            this.createTempStampAnnotationAsync();
+            this._pageId = pageId;
+            this.saveAnnotation();
         };
         if (type) {
             if (!Object.values(stampTypes).includes(type)) {
@@ -18536,11 +18623,43 @@ class StampAnnotator extends Annotator {
         this._tempAnnotation = null;
         super.destroy();
     }
+    undo() {
+        if (!this._addedAnnotations.length) {
+            return;
+        }
+        const lastAnnotation = this._addedAnnotations.pop();
+        this._docData.removeAnnotation(lastAnnotation);
+        const empty = !this._addedAnnotations.length;
+        this.emitDataChanged(this._addedAnnotations.length, !empty, !empty);
+    }
+    clear() {
+        while (this._addedAnnotations.length) {
+            this.undo();
+        }
+    }
+    saveAnnotation() {
+        if (!this._pageId || !this._tempAnnotation) {
+            return;
+        }
+        this._docData.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+        this._addedAnnotations.push(this._tempAnnotation);
+        this.emitDataChanged(this._addedAnnotations.length, true, true);
+        this.createTempStampAnnotationAsync();
+    }
     init() {
         super.init();
         this._overlay.addEventListener("pointermove", this.onPointerMove);
         this._overlay.addEventListener("pointerup", this.onPointerUp);
         this.createTempStampAnnotationAsync();
+    }
+    emitDataChanged(count, clearable, undoable) {
+        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+            annotatorType: "stamp",
+            elementCount: count,
+            undoable,
+            clearable,
+            saveable: false,
+        }));
     }
     createTempStampAnnotationAsync() {
         return __awaiter$1(this, void 0, void 0, function* () {
@@ -18961,12 +19080,32 @@ class TsPdfViewer {
             const { newIndex } = event.detail;
             this._shadowRoot.getElementById("paginator-input").value = newIndex + 1 + "";
         };
+        this.annotatorUndo = () => {
+            var _a;
+            (_a = this._annotationBuilder.annotator) === null || _a === void 0 ? void 0 : _a.undo();
+        };
+        this.annotatorClear = () => {
+            var _a;
+            (_a = this._annotationBuilder.annotator) === null || _a === void 0 ? void 0 : _a.clear();
+        };
+        this.annotatorSave = () => {
+            var _a;
+            (_a = this._annotationBuilder.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotation();
+        };
         this.onAnnotationChange = (e) => {
             if (!e.detail) {
                 return;
             }
             const annotations = e.detail.annotations;
             switch (e.detail.type) {
+                case "focus":
+                    if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
+                        this._mainContainer.classList.add("annotation-focused");
+                    }
+                    else {
+                        this._mainContainer.classList.remove("annotation-focused");
+                    }
+                    break;
                 case "select":
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                         this._mainContainer.classList.add("annotation-selected");
@@ -18985,35 +19124,19 @@ class TsPdfViewer {
             }
         };
         this.onAnnotatorDataChanged = (event) => {
-            this._mainContainer.classList.remove("pen-annotator-data-saveable");
-            this._mainContainer.classList.remove("geom-annotator-data-saveable");
-            this._mainContainer.classList.remove("pen-annotator-data-undoable");
-            this._mainContainer.classList.remove("geom-annotator-data-undoable");
-            this._mainContainer.classList.remove("pen-annotator-data-clearable");
-            this._mainContainer.classList.remove("geom-annotator-data-clearable");
+            annotatorTypes.forEach(x => {
+                this._mainContainer.classList.remove(x + "-annotator-data-saveable");
+                this._mainContainer.classList.remove(x + "-annotator-data-undoable");
+                this._mainContainer.classList.remove(x + "-annotator-data-clearable");
+            });
             if (event.detail.saveable) {
-                if (event.detail.annotatorType === "pen") {
-                    this._mainContainer.classList.add("pen-annotator-data-saveable");
-                }
-                else if (event.detail.annotatorType === "geom") {
-                    this._mainContainer.classList.add("geom-annotator-data-saveable");
-                }
+                this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-saveable");
             }
             if (event.detail.undoable) {
-                if (event.detail.annotatorType === "pen") {
-                    this._mainContainer.classList.add("pen-annotator-data-undoable");
-                }
-                else if (event.detail.annotatorType === "geom") {
-                    this._mainContainer.classList.add("geom-annotator-data-undoable");
-                }
+                this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-undoable");
             }
             if (event.detail.clearable) {
-                if (event.detail.annotatorType === "pen") {
-                    this._mainContainer.classList.add("pen-annotator-data-clearable");
-                }
-                else if (event.detail.annotatorType === "geom") {
-                    this._mainContainer.classList.add("geom-annotator-data-clearable");
-                }
+                this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-clearable");
             }
         };
         this.onAnnotationEditTextButtonClick = () => __awaiter(this, void 0, void 0, function* () {
@@ -19351,48 +19474,22 @@ class TsPdfViewer {
             .addEventListener("click", this.onAnnotationEditTextButtonClick);
         this._shadowRoot.querySelector("#button-annotation-delete")
             .addEventListener("click", this.onAnnotationDeleteButtonClick);
+        this._shadowRoot.querySelector("#button-annotation-stamp-undo")
+            .addEventListener("click", this.annotatorUndo);
+        this._shadowRoot.querySelector("#button-annotation-stamp-clear")
+            .addEventListener("click", this.annotatorClear);
         this._shadowRoot.querySelector("#button-annotation-pen-undo")
-            .addEventListener("click", () => {
-            var _a;
-            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof PenAnnotator) {
-                this._annotationBuilder.annotator.undo();
-            }
-        });
+            .addEventListener("click", this.annotatorUndo);
         this._shadowRoot.querySelector("#button-annotation-pen-clear")
-            .addEventListener("click", () => {
-            var _a;
-            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof PenAnnotator) {
-                this._annotationBuilder.annotator.clear();
-            }
-        });
+            .addEventListener("click", this.annotatorClear);
         this._shadowRoot.querySelector("#button-annotation-pen-save")
-            .addEventListener("click", () => {
-            var _a;
-            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof PenAnnotator) {
-                this._annotationBuilder.annotator.saveAnnotation();
-            }
-        });
+            .addEventListener("click", this.annotatorSave);
         this._shadowRoot.querySelector("#button-annotation-geometric-undo")
-            .addEventListener("click", () => {
-            var _a;
-            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof GeometricAnnotator) {
-                this._annotationBuilder.annotator.undo();
-            }
-        });
+            .addEventListener("click", this.annotatorUndo);
         this._shadowRoot.querySelector("#button-annotation-geometric-clear")
-            .addEventListener("click", () => {
-            var _a;
-            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof GeometricAnnotator) {
-                this._annotationBuilder.annotator.clear();
-            }
-        });
+            .addEventListener("click", this.annotatorClear);
         this._shadowRoot.querySelector("#button-annotation-geometric-save")
-            .addEventListener("click", () => {
-            var _a;
-            if (((_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.annotator) instanceof GeometricAnnotator) {
-                this._annotationBuilder.annotator.saveAnnotation();
-            }
-        });
+            .addEventListener("click", this.annotatorSave);
     }
     setViewerMode(mode) {
         mode = mode || "text";

@@ -7,8 +7,8 @@ import { styles } from "./assets/styles.html";
 
 import { clamp } from "./common/math";
 
-import { DocumentData } from "./document/document-data";
-import { AnnotationDto, annotChangeEvent, AnnotEvent, AnnotEventDetail } from "./document/entities/annotations/annotation-dict";
+import { DocumentData, annotChangeEvent, AnnotEvent, 
+  AnnotEventDetail, AnnotationDto } from "./document/document-data";
 
 import { ElementEventController } from "./common/element-event-controller";
 import { Viewer, ViewerMode } from "./components/viewer";
@@ -17,9 +17,7 @@ import { PageView } from "./components/pages/page-view";
 import { PageService, currentPageChangeEvent, CurrentPageChangeEvent } from "./components/pages/page-service";
 import { AnnotationBuilder } from "./components/annotation-builder";
 
-import { annotatorDataChangeEvent, AnnotatorDataChangeEvent } from "./annotator/annotator";
-import { PenAnnotator } from "./annotator/pen/pen-annotator";
-import { GeometricAnnotator } from "./annotator/geometric/geometric-annotator";
+import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, annotatorTypes } from "./annotator/annotator";
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
 
@@ -461,47 +459,29 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#button-annotation-edit-text")
       .addEventListener("click", this.onAnnotationEditTextButtonClick);   
     this._shadowRoot.querySelector("#button-annotation-delete")
-      .addEventListener("click", this.onAnnotationDeleteButtonClick);     
+      .addEventListener("click", this.onAnnotationDeleteButtonClick); 
+      
+    // stamp buttons
+    this._shadowRoot.querySelector("#button-annotation-stamp-undo")
+      .addEventListener("click", this.annotatorUndo);
+    this._shadowRoot.querySelector("#button-annotation-stamp-clear")
+      .addEventListener("click", this.annotatorClear);    
 
     // pen buttons
     this._shadowRoot.querySelector("#button-annotation-pen-undo")
-      .addEventListener("click", () => {
-        if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
-          this._annotationBuilder.annotator.undo();
-        }
-      });
+      .addEventListener("click", this.annotatorUndo);
     this._shadowRoot.querySelector("#button-annotation-pen-clear")
-      .addEventListener("click", () => {
-        if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
-          this._annotationBuilder.annotator.clear();
-        }
-      });
+      .addEventListener("click", this.annotatorClear);
     this._shadowRoot.querySelector("#button-annotation-pen-save")
-      .addEventListener("click", () => {
-        if (this._annotationBuilder?.annotator instanceof PenAnnotator) {
-          this._annotationBuilder.annotator.saveAnnotation();
-        }
-      });
+      .addEventListener("click", this.annotatorSave);
       
     // geometric buttons
     this._shadowRoot.querySelector("#button-annotation-geometric-undo")
-      .addEventListener("click", () => {
-        if (this._annotationBuilder?.annotator instanceof GeometricAnnotator) {
-          this._annotationBuilder.annotator.undo();
-        }
-      });
+      .addEventListener("click", this.annotatorUndo);
     this._shadowRoot.querySelector("#button-annotation-geometric-clear")
-      .addEventListener("click", () => {
-        if (this._annotationBuilder?.annotator instanceof GeometricAnnotator) {
-          this._annotationBuilder.annotator.clear();
-        }
-      });
+      .addEventListener("click", this.annotatorClear);
     this._shadowRoot.querySelector("#button-annotation-geometric-save")
-      .addEventListener("click", () => {
-        if (this._annotationBuilder?.annotator instanceof GeometricAnnotator) {
-          this._annotationBuilder.annotator.saveAnnotation();
-        }
-      });
+      .addEventListener("click", this.annotatorSave);
   }
   //#endregion
 
@@ -626,6 +606,18 @@ export class TsPdfViewer {
   
 
   //#region annotations
+  private annotatorUndo = () => {
+    this._annotationBuilder.annotator?.undo();
+  };
+
+  private annotatorClear = () => {
+    this._annotationBuilder.annotator?.clear();
+  };
+  
+  private annotatorSave = () => {
+    this._annotationBuilder.annotator?.saveAnnotation();
+  };
+
   private onAnnotationChange = (e: AnnotEvent) => {
     if (!e.detail) {
       return;
@@ -633,6 +625,13 @@ export class TsPdfViewer {
 
     const annotations = e.detail.annotations;
     switch(e.detail.type) {
+      case "focus":      
+        if (annotations?.length) {
+          this._mainContainer.classList.add("annotation-focused");
+        } else {
+          this._mainContainer.classList.remove("annotation-focused");
+        }
+        break;
       case "select":      
         if (annotations?.length) {
           this._mainContainer.classList.add("annotation-selected");
@@ -661,33 +660,20 @@ export class TsPdfViewer {
   };
 
   private onAnnotatorDataChanged = (event: AnnotatorDataChangeEvent) => {
-    this._mainContainer.classList.remove("pen-annotator-data-saveable");
-    this._mainContainer.classList.remove("geom-annotator-data-saveable");
-    this._mainContainer.classList.remove("pen-annotator-data-undoable");
-    this._mainContainer.classList.remove("geom-annotator-data-undoable");
-    this._mainContainer.classList.remove("pen-annotator-data-clearable");
-    this._mainContainer.classList.remove("geom-annotator-data-clearable");
+    annotatorTypes.forEach(x => {
+      this._mainContainer.classList.remove(x + "-annotator-data-saveable");
+      this._mainContainer.classList.remove(x + "-annotator-data-undoable");
+      this._mainContainer.classList.remove(x + "-annotator-data-clearable");
+    });
 
     if (event.detail.saveable) {
-      if (event.detail.annotatorType === "pen") {
-        this._mainContainer.classList.add("pen-annotator-data-saveable");
-      } else if (event.detail.annotatorType === "geom") {
-        this._mainContainer.classList.add("geom-annotator-data-saveable");        
-      }
+      this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-saveable");
     }
     if (event.detail.undoable) {
-      if (event.detail.annotatorType === "pen") {
-        this._mainContainer.classList.add("pen-annotator-data-undoable");
-      } else if (event.detail.annotatorType === "geom") {
-        this._mainContainer.classList.add("geom-annotator-data-undoable");        
-      }
+      this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-undoable");
     }
     if (event.detail.clearable) {
-      if (event.detail.annotatorType === "pen") {
-        this._mainContainer.classList.add("pen-annotator-data-clearable");
-      } else if (event.detail.annotatorType === "geom") {
-        this._mainContainer.classList.add("geom-annotator-data-clearable");        
-      }
+      this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-clearable");
     }
   };
 

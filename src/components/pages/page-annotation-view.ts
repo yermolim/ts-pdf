@@ -1,9 +1,9 @@
 import { RenderToSvgResult } from "../../common/types";
 import { Vec2 } from "../../common/math";
 
-import { DocumentData } from "../../document/document-data";
-import { AnnotationDict, annotChangeEvent, 
-  AnnotEvent, AnnotSelectionRequestEvent } from "../../document/entities/annotations/annotation-dict";
+import { DocumentData, annotChangeEvent, 
+  AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } from "../../document/document-data";
+import { AnnotationDict } from "../../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
   private readonly _pageId: number;
@@ -53,7 +53,11 @@ export class PageAnnotationView {
     this._container = null;
     this._destroyed = true;
 
-    this._rendered.forEach(x => x.$onPointerDownAction = null);
+    this._rendered.forEach(x => {
+      x.$onPointerDownAction = null;
+      x.$onPointerEnterAction = null;
+      x.$onPointerLeaveAction = null;
+    });
     this._rendered.clear();
   }
 
@@ -91,8 +95,15 @@ export class PageAnnotationView {
 
       let renderResult: RenderToSvgResult;
       if (!this._rendered.has(annotation)) {
+        // attach events to the annotation
         annotation.$onPointerDownAction = (e: PointerEvent) => {
           this._docData.eventController.dispatchEvent(new AnnotSelectionRequestEvent({annotation}));
+        };        
+        annotation.$onPointerEnterAction = (e: PointerEvent) => {
+          this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({annotation}));
+        };        
+        annotation.$onPointerLeaveAction = (e: PointerEvent) => {
+          this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({annotation: null}));
         };
         renderResult = await annotation.renderAsync();
       } else {

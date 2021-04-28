@@ -129,6 +129,14 @@ export const html = /*html*/`
         </div> 
       </div>
       <div class="annotation-panel-row">
+        <div id="button-annotation-stamp-undo" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_back}"/>
+        </div> 
+        <div id="button-annotation-stamp-clear" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_close}"/>
+        </div> 
         <div id="button-annotation-mode-stamp" 
           class="panel-button annotation-panel-item">
           <img src="${icon_stamp}"/>

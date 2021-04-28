@@ -159,6 +159,8 @@ export const styles = /*html*/`
   }  
   :not(.annotation-selected) #button-annotation-edit-text,
   :not(.annotation-selected) #button-annotation-delete,
+  :not(.stamp-annotator-data-undoable) #button-annotation-stamp-undo,
+  :not(.stamp-annotator-data-clearable) #button-annotation-stamp-clear,
   :not(.pen-annotator-data-undoable) #button-annotation-pen-undo,
   :not(.pen-annotator-data-clearable) #button-annotation-pen-clear,
   :not(.pen-annotator-data-saveable) #button-annotation-pen-save,
@@ -172,6 +174,8 @@ export const styles = /*html*/`
   }
   .annotation-selected #button-annotation-edit-text,
   .annotation-selected #button-annotation-delete,
+  .stamp-annotator-data-undoable #button-annotation-stamp-undo,
+  .stamp-annotator-data-clearable #button-annotation-stamp-clear,
   .pen-annotator-data-undoable #button-annotation-pen-undo,
   .pen-annotator-data-clearable #button-annotation-pen-clear,
   .pen-annotator-data-saveable #button-annotation-pen-save,
@@ -517,6 +521,10 @@ export const styles = /*html*/`
   .mode-annotation .svg-annotation.selected .svg-annot-box {
     stroke: var(--tspdf-color-secondary-tr-final);
     stroke-dasharray: 3 3;
+  }   
+  .mode-annotation .svg-annotation.focused .svg-annot-box {
+    stroke: var(--tspdf-color-fg-accent);
+    stroke-dasharray: 3 0;
   } 
   .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
   .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
