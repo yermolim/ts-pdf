@@ -348,8 +348,6 @@ export abstract class AnnotationDict extends PdfDict {
     dict.Contents = literalString;
 
     dict.M = DateString.fromDate(new Date());
-
-    console.log(dict);
   }
   
   /**

@@ -812,6 +812,7 @@ export class TsPdfViewer {
 
       const dialogContainer = document.createElement("div");
       dialogContainer.id = "password-dialog";
+      dialogContainer.classList.add("full-size-dialog");
       dialogContainer.innerHTML = passwordDialogHtml;
       this._mainContainer.append(dialogContainer);
 
@@ -847,11 +848,12 @@ export class TsPdfViewer {
 
       const dialogContainer = document.createElement("div");
       dialogContainer.id = "text-dialog";
+      dialogContainer.classList.add("full-size-dialog");
       dialogContainer.innerHTML = textDialogHtml;
       this._mainContainer.append(dialogContainer);
 
       let value = initialText || "";      
-      const input = this._shadowRoot.getElementById("text-input") as HTMLInputElement;
+      const input = this._shadowRoot.getElementById("text-input") as HTMLTextAreaElement;
       input.placeholder = "Enter text...";
       input.value = value;
       input.addEventListener("change", () => value = input.value);

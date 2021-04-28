@@ -6,7 +6,12 @@ async function run(): Promise<void> {
     workerSource: "assets/pdf.worker.min.js",
     userName: "viva",
     fileButtons: ["open", "close", "save"],
-    annotChangeCallback: (detail: AnnotEventDetail) => console.log(detail),
+    annotChangeCallback: (detail: AnnotEventDetail) =>  {
+      if (detail.type === "focus" || detail.type === "select") {
+        return;
+      }
+      console.log(detail);
+    },
   });
   // await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");

@@ -265,7 +265,7 @@ const passwordDialogHtml = `
 `;
 const textDialogHtml = `
     <div class="form">
-      <input id="text-input" type="text" maxlength="255"/>
+      <textarea id="text-input" maxlength="1024"></textarea>
       <div class="buttons">
         <div id="text-ok" class="panel-button">
           <img src="${img$e}"/>
@@ -772,8 +772,7 @@ const styles = `
     pointer-events: none;
   }
 
-  #text-dialog,
-  #password-dialog {
+  .full-size-dialog {
     position: absolute;
     left: 0;
     top: 0;
@@ -782,7 +781,7 @@ const styles = `
     background: var(--tspdf-color-secondary-tr-final);
     z-index: 2;
   }
-  #text-dialog .form,
+
   #password-dialog .form {
     position: absolute;
     display: flex;
@@ -794,11 +793,10 @@ const styles = `
     left: calc(50% - 160px);
     top: calc(50% - 25px);
     width: 320px;
-    height: 50px;  
+    height: 50px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
-  #text-dialog input,
   #password-dialog input {
     width: 220px;
     margin: 10px 0 10px 10px;
@@ -809,13 +807,11 @@ const styles = `
     color: var(--tspdf-color-fg-primary-final);
     background-color: var(--tspdf-color-primary-final);
   }
-  #text-dialog input::placeholder,
   #password-dialog input::placeholder {
     font-size: 14px;
     font-style: italic;
     color: var(--tspdf-color-fg-primary-final);
   }
-  #text-dialog .buttons,
   #password-dialog .buttons {
     display: flex;
     flex-direction: row;
@@ -824,6 +820,48 @@ const styles = `
     flex-grow: 1;
     flex-shrink: 1;
     width: 100px;
+  } 
+  
+  #text-dialog .form {
+    box-sizing: border-box;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    left: calc(50% - 160px);
+    top: calc(50% - 120px);
+    width: 320px;
+    height: 240px;
+    padding: 5px;
+    background: var(--tspdf-color-primary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+  }
+  #text-dialog textarea {
+    height: 100%;
+    margin: 0 0 5px 0;
+    padding: 5px;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    border: none;
+    color: var(--tspdf-color-fg-primary-final);
+    background-color: var(--tspdf-color-primary-final);
+  }
+  #text-dialog textarea::placeholder {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--tspdf-color-fg-primary-final);
+  }
+  #text-dialog .buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    flex-grow: 1;
+    flex-shrink: 1;
   } 
 
   .svg-annotation {
@@ -8648,7 +8686,6 @@ class AnnotationDict extends PdfDict {
         const literalString = LiteralString.fromString(text);
         dict.Contents = literalString;
         dict.M = DateString.fromDate(new Date());
-        console.log(dict);
     }
     parseProps(parseInfo) {
         var _a;
@@ -19641,6 +19678,7 @@ class TsPdfViewer {
             const passwordPromise = new Promise((resolve, reject) => {
                 const dialogContainer = document.createElement("div");
                 dialogContainer.id = "password-dialog";
+                dialogContainer.classList.add("full-size-dialog");
                 dialogContainer.innerHTML = passwordDialogHtml;
                 this._mainContainer.append(dialogContainer);
                 let value = "";
@@ -19671,6 +19709,7 @@ class TsPdfViewer {
             const textPromise = new Promise((resolve, reject) => {
                 const dialogContainer = document.createElement("div");
                 dialogContainer.id = "text-dialog";
+                dialogContainer.classList.add("full-size-dialog");
                 dialogContainer.innerHTML = textDialogHtml;
                 this._mainContainer.append(dialogContainer);
                 let value = initialText || "";

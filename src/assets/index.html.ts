@@ -206,7 +206,7 @@ export const passwordDialogHtml =  /*html*/`
 
 export const textDialogHtml =  /*html*/`
     <div class="form">
-      <input id="text-input" type="text" maxlength="255"/>
+      <textarea id="text-input" maxlength="1024"></textarea>
       <div class="buttons">
         <div id="text-ok" class="panel-button">
           <img src="${icon_ok}"/>
