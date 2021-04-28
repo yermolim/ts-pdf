@@ -240,6 +240,13 @@ const html = `
         </div>
       </div>
     </div>
+
+    <div id="focused-annotation-panel">
+      <p id="focused-annotation-author" class="line-clamp"></p>
+      <p id="focused-annotation-date" class="line-clamp"></p>
+      <p id="focused-annotation-text" class="line-clamp"></p>
+    </div>
+
     <input id="open-file-input" type="file">
   </div>
 `;
@@ -323,6 +330,13 @@ const styles = `
     margin: 0 5px;
   }
 
+  .line-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical; 
+    overflow: hidden; 
+  }
+
   #main-container {
     box-sizing: border-box;
     position: relative;
@@ -375,6 +389,44 @@ const styles = `
     bottom: 0;
     height: 0;
     transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
+  }
+
+  #focused-annotation-panel {
+    box-sizing: border-box;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    left: 20px;
+    top: 80px;
+    width: 240px;
+    height: 84px; 
+    padding: 18px;
+    border-radius: 18px;
+    background: var(--tspdf-color-secondary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+  }
+  .mobile #focused-annotation-panel {
+    width: 150px;
+  }
+  .annotation-focused #focused-annotation-panel {
+    opacity: 100;
+    transform: scale(1);    
+    transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
+  }
+  #focused-annotation-panel p {
+    margin: 0;
+    padding: 0;
+    line-height: 16px;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: var(--tspdf-color-fg-primary-final);
   }
   
   #annotation-panel {
@@ -19107,6 +19159,23 @@ class TsPdfViewer {
                     else {
                         this._mainContainer.classList.remove("annotation-focused");
                     }
+                    const annotation = annotations[0];
+                    if (annotation) {
+                        this._shadowRoot.querySelector("#focused-annotation-author")
+                            .textContent = annotation.author || "";
+                        this._shadowRoot.querySelector("#focused-annotation-date")
+                            .textContent = new Date(annotation.dateModified || annotation.dateCreated).toDateString();
+                        this._shadowRoot.querySelector("#focused-annotation-text")
+                            .textContent = annotation.textContent || "";
+                    }
+                    else {
+                        this._shadowRoot.querySelector("#focused-annotation-author")
+                            .textContent = "";
+                        this._shadowRoot.querySelector("#focused-annotation-date")
+                            .textContent = "";
+                        this._shadowRoot.querySelector("#focused-annotation-text")
+                            .textContent = "";
+                    }
                     break;
                 case "select":
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
@@ -19350,6 +19419,8 @@ class TsPdfViewer {
                 this._pdfLoadingTask = null;
             }
             this._mainContainer.classList.add("disabled");
+            this._mainContainer.classList.remove("annotation-focused");
+            this._mainContainer.classList.remove("annotation-selected");
             this.setViewerMode();
             if (this._pdfDocument) {
                 this._pdfDocument.destroy();

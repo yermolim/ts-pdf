@@ -179,6 +179,13 @@ export const html = /*html*/`
         </div>
       </div>
     </div>
+
+    <div id="focused-annotation-panel">
+      <p id="focused-annotation-author" class="line-clamp"></p>
+      <p id="focused-annotation-date" class="line-clamp"></p>
+      <p id="focused-annotation-text" class="line-clamp"></p>
+    </div>
+
     <input id="open-file-input" type="file">
   </div>
 `;

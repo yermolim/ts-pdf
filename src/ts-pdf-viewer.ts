@@ -263,6 +263,9 @@ export class TsPdfViewer {
     }
 
     this._mainContainer.classList.add("disabled");
+    // remove unneeded classes from the main container
+    this._mainContainer.classList.remove("annotation-focused");
+    this._mainContainer.classList.remove("annotation-selected");
 
     // reset viewer state to default
     this.setViewerMode();
@@ -633,6 +636,22 @@ export class TsPdfViewer {
           this._mainContainer.classList.add("annotation-focused");
         } else {
           this._mainContainer.classList.remove("annotation-focused");
+        }
+        const annotation = annotations[0];
+        if (annotation) {
+          (<HTMLParagraphElement>this._shadowRoot.querySelector("#focused-annotation-author"))
+            .textContent = annotation.author || "";
+          (<HTMLParagraphElement>this._shadowRoot.querySelector("#focused-annotation-date"))
+            .textContent = new Date(annotation.dateModified || annotation.dateCreated).toDateString();
+          (<HTMLParagraphElement>this._shadowRoot.querySelector("#focused-annotation-text"))
+            .textContent = annotation.textContent || "";
+        } else {
+          (<HTMLParagraphElement>this._shadowRoot.querySelector("#focused-annotation-author"))
+            .textContent = "";
+          (<HTMLParagraphElement>this._shadowRoot.querySelector("#focused-annotation-date"))
+            .textContent = "";
+          (<HTMLParagraphElement>this._shadowRoot.querySelector("#focused-annotation-text"))
+            .textContent = "";
         }
         break;
       case "select":      
