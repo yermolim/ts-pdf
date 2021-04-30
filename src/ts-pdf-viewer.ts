@@ -20,7 +20,9 @@ import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
 
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
-  annotatorTypes } from "./annotator/annotator";
+  annotatorTypes, 
+  TextSelectionChangeEvent, 
+  textSelectionChangeEvent} from "./annotator/annotator";
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
@@ -355,8 +357,11 @@ export class TsPdfViewer {
       return;
     }
     
-    const selectionInfos = getSelectionInfosFromSelection(selection);
-    // TODO: add dispatching event
+    if (this._eventService.hasListenersForKey(textSelectionChangeEvent)) {
+      // get selection text and coordinates
+      const selectionInfos = getSelectionInfosFromSelection(selection);
+      this._eventService.dispatchEvent(new TextSelectionChangeEvent({selectionInfos}));
+    }
   };
   //#endregion
 

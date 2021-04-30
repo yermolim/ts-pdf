@@ -1,3 +1,4 @@
+import { TextSelectionInfo } from "../common/text-selection";
 import { PointerDownInfo } from "../common/types";
 
 import { DocumentService } from "../services/document-service";
@@ -21,9 +22,21 @@ export class AnnotatorDataChangeEvent extends CustomEvent<AnnotatorDataChangeEve
     super(annotatorDataChangeEvent, {detail});
   }
 }
+
+export const textSelectionChangeEvent = "tspdf-textselectionchange" as const;
+export interface TextSelectionChangeEventDetail {
+  selectionInfos: TextSelectionInfo[];
+}
+export class TextSelectionChangeEvent extends CustomEvent<TextSelectionChangeEventDetail> {
+  constructor(detail: TextSelectionChangeEventDetail) {
+    super(textSelectionChangeEvent, {detail});
+  }
+}
+
 declare global {
   interface HTMLElementEventMap {
     [annotatorDataChangeEvent]: AnnotatorDataChangeEvent;
+    [textSelectionChangeEvent]: TextSelectionChangeEvent;
   }
 }
 //#endregion

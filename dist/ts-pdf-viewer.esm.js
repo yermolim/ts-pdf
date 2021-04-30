@@ -16872,6 +16872,12 @@ class AnnotatorDataChangeEvent extends CustomEvent {
         super(annotatorDataChangeEvent, { detail });
     }
 }
+const textSelectionChangeEvent = "tspdf-textselectionchange";
+class TextSelectionChangeEvent extends CustomEvent {
+    constructor(detail) {
+        super(textSelectionChangeEvent, { detail });
+    }
+}
 class Annotator {
     constructor(docService, pageService, parent) {
         this.onPagesRendered = (event) => {
@@ -19508,7 +19514,10 @@ class TsPdfViewer {
             if (!selection.rangeCount) {
                 return;
             }
-            getSelectionInfosFromSelection(selection);
+            if (this._eventService.hasListenersForKey(textSelectionChangeEvent)) {
+                const selectionInfos = getSelectionInfosFromSelection(selection);
+                this._eventService.dispatchEvent(new TextSelectionChangeEvent({ selectionInfos }));
+            }
         };
         this.onFileInput = () => {
             const files = this._fileInput.files;
