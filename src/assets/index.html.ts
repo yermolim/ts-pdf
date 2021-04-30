@@ -1,42 +1,42 @@
 /// <reference path="./assets.d.ts" />
 
-import icon_sidebar from "./icons/sidebar.png";
-
+import icon_arrow from "./icons/arrow.png";
 import icon_arrow_up from "./icons/arrow-up.png";
 import icon_arrow_down from "./icons/arrow-down.png";
-
-import icon_minus from "./icons/minus.png";
-import icon_plus from "./icons/plus.png";
-import icon_fit_viewer from "./icons/fit-viewer.png";
-import icon_fit_page from "./icons/fit-page.png";
-
-import icon_caret from "./icons/caret.png";
-import icon_hand from "./icons/hand.png";
-import icon_popup from "./icons/popup.png";
-import icon_text from "./icons/text.png";
-import icon_load from "./icons/load.png";
-import icon_download from "./icons/download.png";
-import icon_close2 from "./icons/close2.png";
-
-import icon_ok from "./icons/ok.png";
-import icon_close from "./icons/close.png";
 import icon_back from "./icons/back.png";
-import icon_delete from "./icons/delete.png";
-
-import icon_pointer from "./icons/pointer.png";
-import icon_stamp from "./icons/stamp.png";
-import icon_pen from "./icons/pen.png";
-import icon_geometric from "./icons/geometric.png";
-
-import icon_straight from "./icons/line-straight.png";
-import icon_cloudy from "./icons/line-cloudy.png";
-
-import icon_square from "./icons/square.png";
+import icon_caret from "./icons/caret.png";
 import icon_circle from "./icons/circle.png";
+import icon_close from "./icons/close.png";
+import icon_close2 from "./icons/close2.png";
+import icon_cloudy from "./icons/line-cloudy.png";
+import icon_delete from "./icons/delete.png";
+import icon_download from "./icons/download.png";
+import icon_fit_page from "./icons/fit-page.png";
+import icon_fit_viewer from "./icons/fit-viewer.png";
+import icon_geometric from "./icons/geometric.png";
+import icon_hand from "./icons/hand.png";
 import icon_line from "./icons/line.png";
-import icon_arrow from "./icons/arrow.png";
-import icon_polyline from "./icons/polyline.png";
+import icon_load from "./icons/load.png";
+import icon_minus from "./icons/minus.png";
+import icon_ok from "./icons/ok.png";
+import icon_pen from "./icons/pen.png";
+import icon_plus from "./icons/plus.png";
+import icon_pointer from "./icons/pointer.png";
 import icon_polygon from "./icons/polygon.png";
+import icon_polyline from "./icons/polyline.png";
+import icon_popup from "./icons/popup.png";
+import icon_popup2 from "./icons/popup2.png";
+import icon_sidebar from "./icons/sidebar.png";
+import icon_square from "./icons/square.png";
+import icon_stamp from "./icons/stamp.png";
+import icon_straight from "./icons/line-straight.png";
+import icon_text from "./icons/text.png";
+import icon_text2 from "./icons/text2.png";
+import icon_text_free from "./icons/text-free.png";
+import icon_text_callout from "./icons/text-callout.png";
+import icon_text_highlight from "./icons/text-highlight.png";
+import icon_text_strikeout from "./icons/text-strikeout.png";
+import icon_text_underline from "./icons/text-underline.png";
 
 export const geometricIcons = {
   square: `<img src="${icon_square}"/>`,
@@ -45,6 +45,15 @@ export const geometricIcons = {
   arrow: `<img src="${icon_arrow}"/>`,
   polyline: `<img src="${icon_polyline}"/>`,
   polygon: `<img src="${icon_polygon}"/>`,
+} as const;
+
+export const textIcons = {
+  popupText: `<img src="${icon_popup2}"/>`,
+  freeText: `<img src="${icon_text_free}"/>`,
+  freeTextCallout: `<img src="${icon_text_callout}"/>`,
+  strikeout: `<img src="${icon_text_strikeout}"/>`,
+  underline: `<img src="${icon_text_underline}"/>`,
+  highlight: `<img src="${icon_text_highlight}"/>`,
 } as const;
 
 export const lineTypeIcons = {  
@@ -136,7 +145,7 @@ export const html = /*html*/`
         <div id="button-annotation-stamp-clear" 
           class="panel-button annotation-panel-subitem">
           <img src="${icon_close}"/>
-        </div> 
+        </div>
         <div id="button-annotation-mode-stamp" 
           class="panel-button annotation-panel-item">
           <img src="${icon_stamp}"/>
@@ -176,6 +185,24 @@ export const html = /*html*/`
         <div id="button-annotation-mode-geometric" 
           class="panel-button annotation-panel-item">
           <img src="${icon_geometric}"/>
+        </div>
+      </div>
+      <div class="annotation-panel-row">
+        <div id="button-annotation-text-undo" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_back}"/>
+        </div> 
+        <div id="button-annotation-text-clear" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_close}"/>
+        </div> 
+        <div id="button-annotation-text-save" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_ok}"/>
+        </div> 
+        <div id="button-annotation-mode-text" 
+          class="panel-button annotation-panel-item">
+          <img src="${icon_text2}"/>
         </div>
       </div>
     </div>

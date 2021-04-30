@@ -1,0 +1,171 @@
+import { Octuple } from "../../common/types";
+import { Vec2 } from "../../common/math";
+import { getRandomUuid } from "../../common/uuid";
+
+import { DocumentData } from "../../document/document-data";
+
+import { PageView } from "../../components/pages/page-view";
+import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
+
+export class TextHighlightAnnotator extends TextAnnotator {
+  /**last 'pointerdown' position in the page coordinate system */
+  protected _down: Vec2;
+  
+  /**segment end positions in the page coordinate system */
+  protected _quadPoints: Octuple;
+  
+  constructor(docData: DocumentData, parent: HTMLDivElement, 
+    pages: PageView[], options?: TextAnnotatorOptions) {
+    super(docData, parent, pages, options || {});
+    this.init();
+  }
+
+  destroy() {
+    super.destroy();
+  }  
+  
+  undo() {
+    this.clear();
+  }
+  
+  clear() {  
+    this._quadPoints = null;
+    this.clearGroup();
+  }
+  
+  saveAnnotation() {
+    if (!this._quadPoints) {
+      return;
+    }
+
+    const pageId = this._pageId;
+    // const dto = this.buildAnnotationDto();
+    // const annotation = HighlightAnnotation.createFromDto(dto);
+
+    // // DEBUG
+    // // console.log(annotation);
+
+    // this._docData.appendAnnotationToPage(pageId, annotation);
+    
+    // this.clear();
+
+  }
+  
+  protected init() {
+    super.init();
+    // this._overlay.addEventListener("pointerdown", 
+    //   this.onPointerDown);
+  }
+   
+  /**
+   * clear the old svg line if present and draw a new one instead
+   * @param min segment start
+   * @param max segment end
+   */
+  protected redrawLine(min: Vec2, max: Vec2) {
+    this._svgGroup.innerHTML = "";
+
+    const [r, g, b, a] = this._color || [0, 0, 0, 1];
+    // this._vertices = [min.x, min.y, max.x, max.y];
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+    path.setAttribute("stroke-width", this._strokeWidth + "");
+    path.setAttribute("stroke-linecap", "square"); 
+
+    const pathString = `M ${min.x},${min.y} L ${max.x},${max.y}`;
+    path.setAttribute("d", pathString);
+
+    this._svgGroup.append(path);
+  }
+    
+  // protected onPointerDown = (e: PointerEvent) => {
+  //   if (!e.isPrimary || e.button === 2) {
+  //     return;
+  //   }
+
+  //   const {clientX: cx, clientY: cy} = e;
+  //   this.updatePointerCoords(cx, cy);
+  //   const pageCoords = this._pointerCoordsInPageCS;
+  //   if (!pageCoords) {
+  //     // return if the pointer is outside page
+  //     return;
+  //   }
+
+  //   const {pageX: px, pageY: py, pageId} = pageCoords;
+  //   this._pageId = pageId;
+  //   this._down = new Vec2(px, py);
+
+  //   this.clear();
+  //   this.refreshGroupPosition();
+
+  //   const target = e.target as HTMLElement;
+  //   target.addEventListener("pointermove", this.onPointerMove);
+  //   target.addEventListener("pointerup", this.onPointerUp);    
+  //   target.addEventListener("pointerout", this.onPointerUp);  
+  //   // capture pointer to make pointer events fire on same target
+  //   target.setPointerCapture(e.pointerId);
+  // };
+
+  // protected onPointerMove = (e: PointerEvent) => {
+  //   if (!e.isPrimary // the event caused not by primary pointer
+  //     || !this._down // the pointer is not in the 'down' state
+  //   ) {
+  //     return;
+  //   }
+
+  //   const {clientX: cx, clientY: cy} = e;
+  //   this.updatePointerCoords(cx, cy);
+
+  //   const pageCoords = this._pointerCoordsInPageCS;    
+  //   if (!pageCoords || pageCoords.pageId !== this._pageId) {
+  //     // skip move if the pointer is outside of the starting page
+  //     return;
+  //   }
+
+  //   const {pageX: px, pageY: py} = pageCoords;
+  //   const end = new Vec2(px, py);
+        
+  //   this.redrawLine(this._down, end);
+  // };
+
+  // protected onPointerUp = (e: PointerEvent) => {
+  //   if (!e.isPrimary) {
+  //     return;
+  //   }
+
+  //   const target = e.target as HTMLElement;
+  //   target.removeEventListener("pointermove", this.onPointerMove);
+  //   target.removeEventListener("pointerup", this.onPointerUp);    
+  //   target.removeEventListener("pointerout", this.onPointerUp);
+  //   target.releasePointerCapture(e.pointerId); 
+    
+  //   if (this._quadPoints) {
+  //     this.emitDataChanged(2, true, true);
+  //   }
+  // };
+  
+  // protected buildAnnotationDto(): HighlightAnnotationDto {
+  //   const nowString = new Date().toISOString();
+  //   const dto: HighlightAnnotationDto = {
+  //     uuid: getRandomUuid(),
+  //     annotationType: "/Highlight",
+  //     pageId: null,
+
+  //     dateCreated: nowString,
+  //     dateModified: nowString,
+  //     author: this._docData.userName || "unknown",
+      
+  //     textContent: null,
+
+  //     rect: null,
+
+  //     color: this._color,
+  //     strokeWidth: this._strokeWidth,
+  //     strokeDashGap: null,
+  //   };
+
+  //   return dto;
+  // }
+}

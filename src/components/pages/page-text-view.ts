@@ -66,6 +66,22 @@ export class PageTextView {
         throw error;
       }
     }
+
+    const spans = this._container.querySelectorAll("span");
+    spans.forEach(x => {
+      // add additional empty spans positioned at the text span corners
+      // to supply an easy way to get the text coordinates on user selection
+      const blCornerSpan = document.createElement("span");
+      blCornerSpan.classList.add("dummy-corner", "bl");
+      const brCornerSpan = document.createElement("span");
+      brCornerSpan.classList.add("dummy-corner", "br");
+      const trCornerSpan = document.createElement("span");
+      trCornerSpan.classList.add("dummy-corner", "tr");
+      const tlCornerSpan = document.createElement("span");
+      tlCornerSpan.classList.add("dummy-corner", "tl");
+      x.append(blCornerSpan, brCornerSpan, trCornerSpan, tlCornerSpan);
+    });
+
     return true;
   }
 

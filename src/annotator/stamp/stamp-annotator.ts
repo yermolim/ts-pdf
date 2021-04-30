@@ -59,6 +59,7 @@ export class StampAnnotator extends Annotator {
   }
 
   destroy() {    
+    this.emitDataChanged(0, false, false);
     this._tempAnnotation = null;
     super.destroy();
   }

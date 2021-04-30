@@ -6,12 +6,13 @@ import { html, passwordDialogHtml, textDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
 import { clamp } from "./common/math";
+import { getSelectionInfosFromSelection } from "./common/text-selection";
 
 import { DocumentData, annotChangeEvent, AnnotEvent, 
   AnnotEventDetail, AnnotationDto } from "./document/document-data";
 
 import { ElementEventController } from "./common/element-event-controller";
-import { Viewer, ViewerMode } from "./components/viewer";
+import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
 import { PageService, currentPageChangeEvent, CurrentPageChangeEvent } from "./components/pages/page-service";
@@ -19,7 +20,7 @@ import { AnnotationBuilder } from "./components/annotation-builder";
 
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, annotatorTypes } from "./annotator/annotator";
 
-type AnnotatorMode = "select" | "stamp" | "pen" | "geometric";
+type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
 type FileButtons = "open" | "save" | "close";
 
@@ -119,7 +120,7 @@ export class TsPdfViewer {
     const maxScale = options.maxScale || 4;
 
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = styles + html;   
+    this._shadowRoot.innerHTML = styles + html;    
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
     this._eventController = new ElementEventController(this._mainContainer);
@@ -139,6 +140,8 @@ export class TsPdfViewer {
     this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
     this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
     this._eventController.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
+    
+    document.addEventListener("selectionchange", this.onTextSelectionChange); 
   }
 
   /**create a temp download link and click on it */
@@ -178,6 +181,8 @@ export class TsPdfViewer {
 
     this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
+    
+    document.removeEventListener("selectionchange", this.onTextSelectionChange); 
   }
   
   async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
@@ -342,6 +347,17 @@ export class TsPdfViewer {
   }
   //#endregion
 
+  //#region text selection
+  protected onTextSelectionChange = () => {
+    const selection = this._shadowRoot.getSelection();
+    if (!selection.rangeCount) {
+      return;
+    }
+    
+    const selectionInfos = getSelectionInfosFromSelection(selection);
+    // TODO: add dispatching event
+  };
+  //#endregion
 
   //#region GUI initialization methods
   private initMainContainerEventHandlers() { 
@@ -460,6 +476,8 @@ export class TsPdfViewer {
       .addEventListener("click", this.onAnnotationPenModeButtonClick);
     this._shadowRoot.querySelector("#button-annotation-mode-geometric")
       .addEventListener("click", this.onAnnotationGeometricModeButtonClick); 
+    this._shadowRoot.querySelector("#button-annotation-mode-text")
+      .addEventListener("click", this.onAnnotationTextModeButtonClick); 
 
     // select buttons
     this._shadowRoot.querySelector("#button-annotation-edit-text")
@@ -488,6 +506,14 @@ export class TsPdfViewer {
       .addEventListener("click", this.annotatorClear);
     this._shadowRoot.querySelector("#button-annotation-geometric-save")
       .addEventListener("click", this.annotatorSave);
+      
+    // text buttons
+    this._shadowRoot.querySelector("#button-annotation-text-undo")
+      .addEventListener("click", this.annotatorUndo);
+    this._shadowRoot.querySelector("#button-annotation-text-clear")
+      .addEventListener("click", this.annotatorClear);
+    this._shadowRoot.querySelector("#button-annotation-text-save")
+      .addEventListener("click", this.annotatorSave);
   }
   //#endregion
 
@@ -502,49 +528,17 @@ export class TsPdfViewer {
     }
 
     // disable previous viewer mode
-    this.disableCurrentViewerMode();
+    viewerModes.forEach(x => {
+      this._mainContainer.classList.remove("mode-" + x);
+      this._shadowRoot.querySelector("#button-mode-" + x).classList.remove("on");
+    });
+    this.setAnnotationMode("select");
 
-    switch (mode) {
-      case "text":
-        this._mainContainer.classList.add("mode-text");
-        this._shadowRoot.querySelector("#button-mode-text").classList.add("on");
-        break;
-      case "hand":
-        this._mainContainer.classList.add("mode-hand");
-        this._shadowRoot.querySelector("#button-mode-hand").classList.add("on");
-        break;
-      case "annotation":
-        this._mainContainer.classList.add("mode-annotation");
-        this._shadowRoot.querySelector("#button-mode-annotation").classList.add("on");
-        break;
-      default:
-        // Execution should not come here
-        throw new Error(`Invalid viewer mode: ${mode}`);
-    }
+    this._mainContainer.classList.add("mode-" + mode);
+    this._shadowRoot.querySelector("#button-mode-" + mode).classList.add("on");
     this._viewer.mode = mode;
   }
 
-  private disableCurrentViewerMode() {    
-    switch (this._viewer.mode) {
-      case "text":
-        this._mainContainer.classList.remove("mode-text");
-        this._shadowRoot.querySelector("#button-mode-text").classList.remove("on");
-        break;
-      case "hand":
-        this._mainContainer.classList.remove("mode-hand");
-        this._shadowRoot.querySelector("#button-mode-hand").classList.remove("on");
-        break;
-      case "annotation":
-        this._mainContainer.classList.remove("mode-annotation");
-        this._shadowRoot.querySelector("#button-mode-annotation").classList.remove("on");
-        this.setAnnotationMode("select");
-        break;
-      default:
-        // mode hasn't been set yet. do nothing
-        break;
-    }
-  }  
-  
   private onTextModeButtonClick = () => {
     this.setViewerMode("text");
   };
@@ -735,6 +729,10 @@ export class TsPdfViewer {
   
   private onAnnotationGeometricModeButtonClick = () => {
     this.setAnnotationMode("geometric");
+  };
+
+  private onAnnotationTextModeButtonClick = () => {
+    this.setAnnotationMode("text");
   };
   //#endregion
 

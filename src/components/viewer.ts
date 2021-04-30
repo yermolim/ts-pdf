@@ -2,7 +2,8 @@ import { clamp, Vec2, getDistance } from "../common/math";
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "./pages/page-service";
 
-export type ViewerMode = "text" | "hand" | "annotation";
+export const viewerModes = ["text", "hand", "annotation"] as const;
+export type ViewerMode =  typeof viewerModes[number];
 
 export interface ViewerOptions {
   minScale?: number;

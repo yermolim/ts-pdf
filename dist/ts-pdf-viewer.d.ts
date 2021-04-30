@@ -79,6 +79,7 @@ export declare class TsPdfViewer {
 	importAnnotationsFromJson(json: string): void;
 	exportAnnotationsToJson(): string;
 	getCurrentPdf(): Blob;
+	protected onTextSelectionChange: () => void;
 	private initMainContainerEventHandlers;
 	private initViewControls;
 	private initFileButtons;
@@ -89,7 +90,6 @@ export declare class TsPdfViewer {
 	private initModeSwitchButtons;
 	private initAnnotationButtons;
 	private setViewerMode;
-	private disableCurrentViewerMode;
 	private onTextModeButtonClick;
 	private onHandModeButtonClick;
 	private onAnnotationModeButtonClick;
@@ -114,6 +114,7 @@ export declare class TsPdfViewer {
 	private onAnnotationStampModeButtonClick;
 	private onAnnotationPenModeButtonClick;
 	private onAnnotationGeometricModeButtonClick;
+	private onAnnotationTextModeButtonClick;
 	private onPdfLoadingProgress;
 	private refreshPagesAsync;
 	private onPreviewerToggleClick;

@@ -45,12 +45,13 @@ export abstract class PdfDict extends PdfObject {
       throw new Error("Parse info is empty");
     }
 
-    this._ref = parseInfo.cryptInfo?.ref;
-    this._streamId = parseInfo.streamId;
-
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;
+
+    this._ref = parseInfo.cryptInfo?.ref;
+    this._streamId = parseInfo.streamId;
+    this._sourceBytes = parser.sliceCharCodes(start, end);
 
     let i = parser.skipToNextName(start, end - 1);
     if (i === -1) {     

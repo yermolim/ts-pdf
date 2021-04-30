@@ -206,9 +206,13 @@ export const styles = /*html*/`
   :not(.annotation-selected) #button-annotation-delete,
   :not(.stamp-annotator-data-undoable) #button-annotation-stamp-undo,
   :not(.stamp-annotator-data-clearable) #button-annotation-stamp-clear,
+  :not(.stamp-annotator-data-saveable) #button-annotation-stamp-save,
   :not(.pen-annotator-data-undoable) #button-annotation-pen-undo,
   :not(.pen-annotator-data-clearable) #button-annotation-pen-clear,
   :not(.pen-annotator-data-saveable) #button-annotation-pen-save,
+  :not(.text-annotator-data-undoable) #button-annotation-text-undo,
+  :not(.text-annotator-data-clearable) #button-annotation-text-clear,
+  :not(.text-annotator-data-saveable) #button-annotation-text-save,
   :not(.geom-annotator-data-undoable) #button-annotation-geometric-undo,
   :not(.geom-annotator-data-clearable) #button-annotation-geometric-clear,
   :not(.geom-annotator-data-saveable) #button-annotation-geometric-save {
@@ -221,9 +225,13 @@ export const styles = /*html*/`
   .annotation-selected #button-annotation-delete,
   .stamp-annotator-data-undoable #button-annotation-stamp-undo,
   .stamp-annotator-data-clearable #button-annotation-stamp-clear,
+  .stamp-annotator-data-saveable #button-annotation-stamp-save,
   .pen-annotator-data-undoable #button-annotation-pen-undo,
   .pen-annotator-data-clearable #button-annotation-pen-clear,
   .pen-annotator-data-saveable #button-annotation-pen-save,
+  .text-annotator-data-undoable #button-annotation-text-undo,
+  .text-annotator-data-clearable #button-annotation-text-clear,
+  .text-annotator-data-saveable #button-annotation-text-save,
   .geom-annotator-data-undoable #button-annotation-geometric-undo,
   .geom-annotator-data-clearable #button-annotation-geometric-clear,
   .geom-annotator-data-saveable #button-annotation-geometric-save { 
@@ -402,6 +410,9 @@ export const styles = /*html*/`
     margin-top: 50px;
     transition: margin-top 0.25s ease-in 0.2s;
   }
+  .mode-text-markup #annotation-overlay-container {
+    pointer-events: none;
+  }
   
   #annotation-overlay {
     position: absolute;
@@ -479,6 +490,27 @@ export const styles = /*html*/`
   .mode-hand .page-text span {
     cursor: grab;
   }
+  .dummy-corner {    
+    position: absolute;
+    width: 0;
+    height: 0;
+  }
+  .dummy-corner.bl {
+    bottom: 0;
+    left: 0;
+  }
+  .dummy-corner.br {
+    bottom: 0;
+    right: 0;
+  }
+  .dummy-corner.tr {
+    top: 0;
+    right: 0;
+  }
+  .dummy-corner.tl {
+    top: 0;
+    left: 0;
+  }
   
   .page-annotations {
     position: absolute;
@@ -490,6 +522,7 @@ export const styles = /*html*/`
     padding: 0;
     overflow: hidden;
   }
+  .mode-text-markup .page-annotations,
   .mode-text .page-annotations,
   .mode-hand .page-annotations {
     pointer-events: none;

@@ -87,9 +87,19 @@ export class ElementEventController {
       ? [...listenerSet]
       : [];
   }
+  
+  hasListenersForKey(key: keyof HTMLElementEventMap): boolean {
+    const listenerSet = this._eventMap.get(key);
+    return !!listenerSet.size;
+  }
 
   dispatchEvent<K extends keyof HTMLElementEventMap>(e: HTMLElementEventMap[K]) {
     if (!this._element) {
+      return;
+    }
+
+    if (!this.hasListenersForKey) {
+      // dispatch event only if the corresponding listeners are present
       return;
     }
 

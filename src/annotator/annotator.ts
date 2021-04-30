@@ -6,7 +6,7 @@ import { PageView } from "../components/pages/page-view";
 import { PagesRenderedEvent, pagesRenderedEvent } from "../components/pages/page-service";
 
 //#region custom events
-export const annotatorTypes = ["geom", "pen", "stamp"] as const;
+export const annotatorTypes = ["geom", "pen", "stamp", "text"] as const;
 export type AnnotatorType = typeof annotatorTypes[number];
 
 export const annotatorDataChangeEvent = "tspdf-annotatordatachange" as const;
@@ -51,11 +51,11 @@ export abstract class Annotator {
   protected _lastScale: number;
 
   protected _pages: PageView[];
-  /**currently rendered PDF cocument pages */
+  /**currently rendered PDF document pages */
   get pages(): PageView[] {
     return this._pages.slice();
   }
-  /**currently rendered PDF cocument pages */
+  /**currently rendered PDF document pages */
   set pages(value: PageView[]) {
     this._pages = value?.length
       ? value.slice()
@@ -102,6 +102,25 @@ export abstract class Annotator {
     this._parentResizeObserver?.disconnect();
 
     this._overlayContainer.remove();
+  }
+
+  /**
+   * refresh the inner SVG view box dimensions 
+   */
+  refreshViewBox() {
+    const {width: w, height: h} = this._overlay.getBoundingClientRect();
+    if (!w || !h) {
+      return;
+    }
+
+    this._overlay.style.left = this._parent.scrollLeft + "px";
+    this._overlay.style.top = this._parent.scrollTop + "px";   
+    const viewBoxWidth = w / this._scale;
+    const viewBoxHeight = h / this._scale;
+    this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+    this._lastScale = this._scale;
+    
+    this.refreshGroupPosition();
   }
   
   protected init() {
@@ -169,25 +188,6 @@ export abstract class Annotator {
 
     // handle page render events to keep the view box dimensions actual
     this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
-  }
-
-  /**
-   * refresh the inner SVG view box dimensions 
-   */
-  protected refreshViewBox() {
-    const {width: w, height: h} = this._overlay.getBoundingClientRect();
-    if (!w || !h) {
-      return;
-    }
-
-    this._overlay.style.left = this._parent.scrollLeft + "px";
-    this._overlay.style.top = this._parent.scrollTop + "px";   
-    const viewBoxWidth = w / this._scale;
-    const viewBoxHeight = h / this._scale;
-    this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-    this._lastScale = this._scale;
-    
-    this.refreshGroupPosition();
   }
 
   protected onPagesRendered = (event: PagesRenderedEvent) => {   

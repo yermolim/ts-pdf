@@ -739,26 +739,98 @@ export class DataParser {
   }  
   
   parseDictType(bounds: Bounds): string  {
-    return this.parseDictNameProperty(keywordCodes.TYPE, bounds);   
+    return this.parseDictPropertyByName(keywordCodes.TYPE, bounds);   
   } 
   
   parseDictSubtype(bounds: Bounds): string {
-    return this.parseDictNameProperty(keywordCodes.SUBTYPE, bounds);   
+    return this.parseDictPropertyByName(keywordCodes.SUBTYPE, bounds);   
   } 
   
-  parseDictNameProperty(subarray: readonly number[] | number[], bounds: Bounds): string {
-    const typeProp = this.findSubarrayIndex(subarray, 
-      {minIndex: bounds.start, maxIndex: bounds.end});
-    if (!typeProp) {
+  parseDictPropertyByName(propName: readonly number[] | number[], bounds: Bounds): string {
+    const arr = this._data;
+    if (!propName?.length) {
       return null;
     }
 
-    const type = this.parseNameAt(typeProp.end + 1);
+    const minIndex = Math.max(Math.min(bounds.start ?? 0, this._maxIndex), 0);
+    const maxIndex = Math.max(Math.min(bounds.end ?? this._maxIndex, this._maxIndex), 0);
+
+    let propNameBounds: Bounds;
+    let i = minIndex;
+    let j: number;
+    let code: number;
+    let prevCode: number;
+    let dictOpened = 0;
+    let dictBound = true;
+    let literalOpened = 0;
+    outer_loop:
+    for (i; i <= maxIndex; i++) {
+      prevCode = code;
+      code = arr[i];
+      
+      // check if literal opens
+      if (code === codes.L_PARENTHESE
+        && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+        // increase string literal nesting
+        literalOpened++;
+      }
+
+      // check if literal closes
+      if (code === codes.R_PARENTHESE
+        && (literalOpened && prevCode !== codes.BACKSLASH)) {
+        // decrease string literal nesting
+        literalOpened--;
+      }
+
+      if (literalOpened) {
+        // ignore all bytes while being inside a literal
+        continue;
+      }
+
+      // check if dict opens or closes
+      if (!dictBound) {
+        if (code === codes.LESS && code === prevCode) {
+          dictOpened++;
+          dictBound = true;
+        } else if (code === codes.GREATER && code === prevCode) {
+          dictOpened--;
+          dictBound = true;
+        }
+      } else {        
+        dictBound = false;
+      }
+
+      // compare next j values to the corresponding values of the sought name
+      for (j = 0; j < propName.length; j++) {
+        if (arr[i + j] !== propName[j]) {
+          continue outer_loop;
+        }
+      }
+
+      if (dictOpened !== 1) {
+        // the found property name is not inside the topmost dict
+        continue;
+      }
+
+      // check if name is closed
+      if (!isRegularChar(arr[i + j])) {
+        propNameBounds = {start: i, end: i + j - 1};
+        break;
+      }
+    }
+    
+    if (!propNameBounds) {
+      // the property name is not found
+      return null;
+    }
+
+    // parse the property value
+    const type = this.parseNameAt(propNameBounds.end + 1);
     if (!type) {
       return null;
     }
 
-    return type.value;    
+    return type.value;     
   } 
   //#endregion
 

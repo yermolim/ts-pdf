@@ -1,5 +1,6 @@
 import { codes, keywordCodes } from "../../codes";
 import { CryptInfo } from "../../common-interfaces";
+import { valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
 import { ObjectId } from "../core/object-id";
@@ -218,7 +219,7 @@ export class ResourceDict extends PdfDict {
             minIndex: streamParseInfo.bounds.start,
             maxIndex: streamParseInfo.bounds.end,
           })
-          ? this._streamParsers.xform(streamParseInfo) // TODO: fix circular dependency
+          ? this._streamParsers.xform(streamParseInfo)
           : this._streamParsers.image(streamParseInfo);
         if (stream) {
           this._xObjectsMap.set(`/XObject${name}`, stream.value);
@@ -265,16 +266,36 @@ export class ResourceDict extends PdfDict {
           case "/XObject": 
           case "/Font": 
           case "/Properties":
-            const mapBounds = parser.getDictBoundsAt(i);
-            if (mapBounds) {
-              const map = ObjectMapDict.parse({parser, bounds: mapBounds});              
-              if (map) {
-                this[name.slice(1)] = map.value;
-                i = mapBounds.end + 1;
-                break;
+            const mapEntryType = parser.getValueTypeAt(i);
+            if (mapEntryType === valueTypes.REF) {              
+              const mapDictId = ObjectId.parseRef(parser, i);
+              if (mapDictId && parseInfo.parseInfoGetter) {
+                const mapParseInfo = parseInfo.parseInfoGetter(mapDictId.value.id);
+                if (mapParseInfo) {
+                  const mapDict = ObjectMapDict.parse(mapParseInfo);
+                  if (mapDict) {
+                    this[name.slice(1)] = mapDict.value;
+                    i = mapDict.end + 1;
+                    break;
+                  }
+                }
               }
-            }            
-            throw new Error(`Can't parse ${name} property value`);
+              throw new Error(`Can't parse ${name} value reference`);
+            } else if (mapEntryType === valueTypes.DICTIONARY) { 
+              const mapBounds = parser.getDictBoundsAt(i);
+              if (mapBounds) {
+                const map = ObjectMapDict.parse({parser, bounds: mapBounds});              
+                if (map) {
+                  this[name.slice(1)] = map.value;
+                  i = mapBounds.end + 1;
+                  break;
+                } else {
+                  throw new Error(`Can't parse ${name} value dictionary`);  
+                }
+              }
+              throw new Error(`Can't parse ${name} dictionary bounds`); 
+            }
+            throw new Error(`Unsupported /Resources property value type: ${mapEntryType}`);    
 
           case "/ProcSet":                     
             i = this.parseNameArrayProp(name, parser, i);

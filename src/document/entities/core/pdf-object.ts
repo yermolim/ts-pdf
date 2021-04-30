@@ -8,6 +8,14 @@ export abstract class PdfObject implements IEncodable {
   /**action to execute on change of any of the public properties of the current object using proxy */
   $onEditedAction: () => void;
 
+  protected _sourceBytes: Uint8Array;
+  /**
+   * copy of the PDF object source bytes 
+   */
+  get sourceBytes(): Uint8Array {
+    return this._sourceBytes?.slice();
+  }
+
   //#region reference
   protected _ref: Reference;
   get ref(): Reference {

@@ -115,11 +115,12 @@ export abstract class PdfStream extends PdfObject {
       throw new Error("Parse info is empty");
     }
 
-    this._ref = parseInfo.cryptInfo?.ref;
-
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentEnd || bounds.end;  
+    const end = bounds.contentEnd || bounds.end;
+
+    this._ref = parseInfo.cryptInfo?.ref;
+    this._sourceBytes = parser.sliceCharCodes(start, end);
 
     const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, { 
       direction: "reverse", 

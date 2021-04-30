@@ -513,7 +513,7 @@ export class DocumentData {
         if (kidTree) {
           this.parsePages(output, kidTree.value);
         }
-      } else if (type === dictTypes.PAGE) {        
+      } else if (type === dictTypes.PAGE) {
         const kidPage = PageDict.parse(parseInfo);
         if (kidPage) {
           output.push(kidPage.value);
@@ -544,9 +544,11 @@ export class DocumentData {
 
     this._pageById.clear();
     pages.forEach(x => this._pageById.set(x.ref.id, x));
+
+    console.log(this._pageById);
   }   
 
-  private parseSupportedAnnotations(): Map<number, AnnotationDict[]> {
+  private parseSupportedAnnotations() {
     this.checkAuthentication();
 
     if (!this._catalog) {      
@@ -595,8 +597,6 @@ export class DocumentData {
 
     this._annotIdsByPageId = annotIdsByPageId;
     this._supportedAnnotsByPageId = annotationMap;
-
-    return this._supportedAnnotsByPageId;
   }   
   
   private getSupportedAnnotationMap(): Map<number, AnnotationDict[]> {
@@ -605,7 +605,8 @@ export class DocumentData {
     if (this._supportedAnnotsByPageId) {
       return this._supportedAnnotsByPageId;
     } 
-    this._supportedAnnotsByPageId = this.parseSupportedAnnotations();
+
+    this.parseSupportedAnnotations();
     return this._supportedAnnotsByPageId;
   } 
 

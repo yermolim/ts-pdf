@@ -1,7 +1,7 @@
 import { Quadruple } from "../common/types";
 import { Vec2 } from "../common/math";
 
-import { geometricIcons, lineTypeIcons } from "../assets/index.html";
+import { geometricIcons, lineTypeIcons, textIcons } from "../assets/index.html";
 
 import { DocumentData } from "../document/document-data";
 
@@ -14,8 +14,9 @@ import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-an
 import { Viewer } from "./viewer";
 import { ContextMenu } from "./context-menu";
 import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./pages/page-service";
+import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } from "../annotator/text/text-annotator-factory";
 
-export type AnnotationBuilderMode = "select" | "stamp" | "pen" | "geometric";
+export type AnnotationBuilderMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
 export class AnnotationBuilder {
   private readonly _annotationColors: readonly Quadruple[] = [
@@ -49,6 +50,8 @@ export class AnnotationBuilder {
 
   private _geometricCloudMode = false;
   private _geometricSubmode: GeometricAnnotatorType = geometricAnnotatorTypes[0];
+  
+  private _textSubmode: TextAnnotatorType = textAnnotatorTypes[0];
 
   private _annotator: Annotator;
   get annotator(): Annotator {
@@ -105,6 +108,18 @@ export class AnnotationBuilder {
     this._docData.setSelectedAnnotation(null);
 
     this._mode = mode;
+
+    // add or remove the css class which signals if any text markup annotator is used
+    // (used for disabling annotation layers pointer events to allow page text selection)
+    if (this._mode === "text"
+      && (this._textSubmode === "highlight"
+      || this._textSubmode === "strikeout"
+      || this._textSubmode === "underline")) {
+      this._viewer.container.classList.add("mode-text-markup");
+    } else {      
+      this._viewer.container.classList.remove("mode-text-markup");
+    }
+
     switch (mode) {
       case "select":
         this._contextMenu.enabled = false;
@@ -128,6 +143,13 @@ export class AnnotationBuilder {
             cloudMode: this._geometricCloudMode,
           }, this._geometricSubmode);
         break;
+      case "text":
+        this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docData, 
+          this._viewer.container, this._pageService.renderedPages, {
+            strokeWidth: this._strokeWidth,
+            color: this._strokeColor,
+          }, this._textSubmode);
+        break;
       default:
         // Execution should not come here
         throw new Error(`Invalid annotation mode: ${mode}`);
@@ -146,7 +168,7 @@ export class AnnotationBuilder {
 
   private onPagesRendered = (event: PagesRenderedEvent) => {
     this._contextMenu.hide();
-    this.setMode();
+    this._annotator?.refreshViewBox();
   };
 
   private buildContextMenuContent(): HTMLElement[] {
@@ -165,6 +187,11 @@ export class AnnotationBuilder {
           this.buildGeometricSubmodePicker(),
           this.buildStrokeColorPicker(),
           this.buildStrokeWidthSlider(true),
+        ];
+      case "text":
+        return [
+          this.buildTextSubmodePicker(),
+          this.buildStrokeColorPicker(),
         ];
       default:
         // Execution should not come here
@@ -212,6 +239,28 @@ export class AnnotationBuilder {
       const submodeIcon = document.createElement("div");
       submodeIcon.classList.add("context-menu-color-icon");
       submodeIcon.innerHTML = geometricIcons[x];
+      item.append(submodeIcon);
+      submodePicker.append(item);
+    });
+    return submodePicker;
+  }
+  
+  private buildTextSubmodePicker(): HTMLDivElement {
+    const submodePicker = document.createElement("div");
+    submodePicker.classList.add("context-menu-content", "row");
+    textAnnotatorTypes.forEach(x => {   
+      const item = document.createElement("div");
+      item.classList.add("panel-button");
+      if (x === this._textSubmode) {        
+        item.classList.add("on");
+      }
+      item.addEventListener("click", () => {
+        this._textSubmode = x;
+        this.setMode();
+      });
+      const submodeIcon = document.createElement("div");
+      submodeIcon.classList.add("context-menu-color-icon");
+      submodeIcon.innerHTML = textIcons[x];
       item.append(submodeIcon);
       submodePicker.append(item);
     });

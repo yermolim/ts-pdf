@@ -37,7 +37,7 @@ export class PageDict extends PdfDict {
    * Omitting the entry entirely indicates that the resources are to be inherited 
    * from an ancestor node in the page tree
    */
-  Resources: ResourceDict;
+  Resources: Uint8Array;
   /**
    * (Required; inheritable) A rectangle , expressed in default user space units, 
    * that shall define the boundaries of the physical medium 
@@ -181,7 +181,7 @@ export class PageDict extends PdfDict {
       bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
     }
     if (this.Resources) {
-      bytes.push(...encoder.encode("/Resources "), ...this.Resources.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Resources "), ...this.Resources);
     }
     if (this.MediaBox) {
       bytes.push(
@@ -300,6 +300,9 @@ export class PageDict extends PdfDict {
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
+
+    // DEBUG
+    // console.log(parser.sliceChars(start, end));    
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
@@ -320,38 +323,23 @@ export class PageDict extends PdfDict {
             i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
             break;           
           
-          case "/Resources":
+          // there is no need to parse page resources
+          // so just save the resource property source bytes
+          // the source bytes will be used when converting the page to bytes
+          case "/Resources":  
             const resEntryType = parser.getValueTypeAt(i);
             if (resEntryType === valueTypes.REF) {              
               const resDictId = ObjectId.parseRef(parser, i);
               if (resDictId && parseInfo.parseInfoGetter) {
-                const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
-                if (resParseInfo) {
-                  const resDict = ResourceDict.parse(resParseInfo, 
-                    {xform: XFormStream.parse, image: ImageStream.parse});
-                  if (resDict) {
-                    this.Resources = resDict.value;
-                    i = resDict.end + 1;
-                    break;
-                  }
-                }
+                this.Resources = parser.sliceCharCodes(resDictId.start, resDictId.end);
+                i = resDictId.end + 1;
+                break;
               }              
               throw new Error("Can't parse /Resources value reference");
             } else if (resEntryType === valueTypes.DICTIONARY) { 
               const resDictBounds = parser.getDictBoundsAt(i); 
               if (resDictBounds) {
-                if (resDictBounds.contentStart) {
-                  const resDict = ResourceDict.parse({
-                    parser,
-                    bounds: resDictBounds,
-                    parseInfoGetter: parseInfo.parseInfoGetter,
-                  }, {xform: XFormStream.parse, image: ImageStream.parse});
-                  if (resDict) {
-                    this.Resources = resDict.value;
-                  } else {                  
-                    throw new Error("Can't parse /Resources value dictionary");  
-                  }
-                }
+                this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
                 i = resDictBounds.end + 1;
                 break;
               }
