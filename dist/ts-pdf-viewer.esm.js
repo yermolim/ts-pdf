@@ -1821,13 +1821,13 @@ class ElementEventService {
     }
     hasListenersForKey(key) {
         const listenerSet = this._eventMap.get(key);
-        return !!listenerSet.size;
+        return !!(listenerSet === null || listenerSet === void 0 ? void 0 : listenerSet.size);
     }
     dispatchEvent(e) {
         if (!this._element) {
             return;
         }
-        if (!this.hasListenersForKey) {
+        if (!this.hasListenersForKey(e.type)) {
             return;
         }
         this._element.dispatchEvent(e);

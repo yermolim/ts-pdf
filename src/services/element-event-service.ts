@@ -90,7 +90,7 @@ export class ElementEventService {
   
   hasListenersForKey(key: keyof HTMLElementEventMap): boolean {
     const listenerSet = this._eventMap.get(key);
-    return !!listenerSet.size;
+    return !!listenerSet?.size;
   }
 
   dispatchEvent<K extends keyof HTMLElementEventMap>(e: HTMLElementEventMap[K]) {
@@ -98,7 +98,7 @@ export class ElementEventService {
       return;
     }
 
-    if (!this.hasListenersForKey) {
+    if (!this.hasListenersForKey(<any>e.type)) {
       // dispatch event only if the corresponding listeners are present
       return;
     }
