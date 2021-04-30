@@ -2,10 +2,10 @@ import { Quadruple } from "../../common/types";
 import { Vec2 } from "../../common/math";
 import { getRandomUuid } from "../../common/uuid";
 
-import { DocumentData } from "../../document/document-data";
+import { PageService } from "../../services/page-service";
+import { DocumentService } from "../../services/document-service";
 import { LineAnnotation, LineAnnotationDto, lineIntents } from "../../document/entities/annotations/markup/geometric/line-annotation";
 
-import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 
 export class GeometricLineAnnotator extends GeometricAnnotator {
@@ -15,9 +15,9 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
   /**segment end positions in the page coordinate system */
   protected _vertices: Quadruple;
   
-  constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], options?: GeometricAnnotatorOptions) {
-    super(docData, parent, pages, options || {});
+  constructor(docService: DocumentService, pageService: PageService, 
+    parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
+    super(docService, pageService, parent, options || {});
     this.init();
   }
 
@@ -46,7 +46,7 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
     // DEBUG
     // console.log(annotation);
 
-    this._docData.appendAnnotationToPage(pageId, annotation);
+    this._docService.appendAnnotationToPage(pageId, annotation);
     
     this.clear();
 
@@ -157,7 +157,7 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
 
       dateCreated: nowString,
       dateModified: nowString,
-      author: this._docData.userName || "unknown",
+      author: this._docService.userName || "unknown",
       
       textContent: null,
 

@@ -4,7 +4,7 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 
 import { Vec2 } from "../../common/math";
 
-import { DocumentData } from "../../document/document-data";
+import { DocumentService } from "../../services/document-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
@@ -19,7 +19,7 @@ export class PageView {
   
   private readonly _pageProxy: PDFPageProxy; 
   private readonly _viewport: PageViewport;
-  private readonly _docData: DocumentData;
+  private readonly _docService: DocumentService;
 
   private _dimensions: {
     width: number; 
@@ -91,17 +91,17 @@ export class PageView {
     return this._scaleIsValid && this._viewRendered;
   }
 
-  constructor(docData: DocumentData, pageProxy: PDFPageProxy, previewWidth: number) {
+  constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
-    if (!docData) {
+    if (!docService) {
       throw new Error("Annotation data is not defined");
     }
 
     this._pageProxy = pageProxy;
     this._viewport = pageProxy.getViewport({scale: 1});
-    this._docData = docData;
+    this._docService = docService;
 
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
@@ -290,7 +290,7 @@ export class PageView {
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
+      this._annotations = new PageAnnotationView(this._docService, this.id, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this.viewContainer);
 

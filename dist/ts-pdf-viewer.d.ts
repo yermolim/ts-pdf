@@ -53,10 +53,12 @@ export declare class TsPdfViewer {
 	private readonly _outerContainer;
 	private readonly _shadowRoot;
 	private readonly _mainContainer;
-	private readonly _eventController;
+	private readonly _eventService;
 	private readonly _pageService;
 	private readonly _viewer;
 	private readonly _previewer;
+	private _docService;
+	private _annotationService;
 	private _fileOpenAction;
 	private _fileSaveAction;
 	private _fileCloseAction;
@@ -66,8 +68,6 @@ export declare class TsPdfViewer {
 	private _fileInput;
 	private _pdfLoadingTask;
 	private _pdfDocument;
-	private _docData;
-	private _annotationBuilder;
 	private _timers;
 	constructor(options: TsPdfViewerOptions);
 	private static downloadFile;

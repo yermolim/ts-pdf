@@ -1,26 +1,26 @@
-import { ElementEventController } from "../common/element-event-controller";
-import { dictTypes } from "./const";
-import { AuthenticationResult } from "./common-interfaces";
+import { ElementEventService } from "./element-event-service";
 
-import { DataCryptHandler } from "./encryption/data-crypt-handler";
-import { DataParser, ParseInfo } from "./data-parser";
+import { dictTypes } from "../document/const";
+import { AuthenticationResult } from "../document/common-interfaces";
 
-import { ReferenceData } from "./reference-data";
-import { DocumentDataUpdater, PageWithAnnotations } from "./document-data-updater";
+import { DataParser, ParseInfo } from "../document/data-parser";
+import { ReferenceData } from "../document/reference-data";
+import { DocumentDataUpdater, PageWithAnnotations } from "../document/document-data-updater";
+import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
 
-import { ObjectId } from "./entities/core/object-id";
-import { ObjectStream } from "./entities/streams/object-stream";
-import { EncryptionDict } from "./entities/encryption/encryption-dict";
+import { ObjectId } from "../document/entities/core/object-id";
+import { ObjectStream } from "../document/entities/streams/object-stream";
+import { EncryptionDict } from "../document/entities/encryption/encryption-dict";
 
-import { XrefParser } from "./xref-parser";
-import { XRef } from "./entities/x-refs/x-ref";
+import { XrefParser } from "../document/xref-parser";
+import { XRef } from "../document/entities/x-refs/x-ref";
 
-import { CatalogDict } from "./entities/structure/catalog-dict";
-import { PageDict } from "./entities/structure/page-dict";
-import { PageTreeDict } from "./entities/structure/page-tree-dict";
+import { CatalogDict } from "../document/entities/structure/catalog-dict";
+import { PageDict } from "../document/entities/structure/page-dict";
+import { PageTreeDict } from "../document/entities/structure/page-tree-dict";
 
-import { AnnotationParseFactory } from "./annotation-parser";
-import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
+import { AnnotationParseFactory } from "../document/annotation-parser";
+import { AnnotationDict, AnnotationDto } from "../document/entities/annotations/annotation-dict";
 
 export { AnnotationDto };
 
@@ -65,10 +65,10 @@ declare global {
 }
 //#endregion
 
-export class DocumentData {
-  protected readonly _eventController: ElementEventController;
-  get eventController(): ElementEventController {
-    return this._eventController;
+export class DocumentService {
+  protected readonly _eventService: ElementEventService;
+  get eventService(): ElementEventService {
+    return this._eventService;
   }
 
   private readonly _userName: string; 
@@ -122,11 +122,11 @@ export class DocumentData {
     return !this._encryption || !!this._authResult;
   }
 
-  constructor(eventController: ElementEventController, data: Uint8Array, userName: string) {
-    if (!eventController) {
+  constructor(eventService: ElementEventService, data: Uint8Array, userName: string) {
+    if (!eventService) {
       throw new Error("Event controller is not defined");
     }
-    this._eventController = eventController;
+    this._eventService = eventService;
 
     this._data = data;
     this._docParser = new DataParser(data);
@@ -153,8 +153,8 @@ export class DocumentData {
 
     this._userName = userName;
     
-    this._eventController.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
-    this._eventController.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+    this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+    this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
   }
 
   /**free the resources that can prevent garbage to be collected */
@@ -162,8 +162,8 @@ export class DocumentData {
     // clear onEditedAction to prevent memory leak
     this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
 
-    this._eventController.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
-    this._eventController.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+    this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+    this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
   }
 
   tryAuthenticate(password = ""): boolean {
@@ -280,7 +280,7 @@ export class DocumentData {
       this.getSupportedAnnotationMap().set(pageId, [annotation]);
     }
 
-    this._eventController.dispatchEvent(new AnnotEvent({   
+    this._eventService.dispatchEvent(new AnnotEvent({   
       type: "add",   
       annotations: [annotation.toDto()],
     }));
@@ -307,7 +307,7 @@ export class DocumentData {
     annotation.markAsDeleted(true);
     this.setSelectedAnnotation(null);
     
-    this._eventController.dispatchEvent(new AnnotEvent({  
+    this._eventService.dispatchEvent(new AnnotEvent({  
       type: "delete",
       annotations: [annotation.toDto()],
     }));
@@ -343,7 +343,7 @@ export class DocumentData {
     }
 
     // dispatch corresponding event
-    this._eventController.dispatchEvent(new AnnotEvent({      
+    this._eventService.dispatchEvent(new AnnotEvent({      
       type: "select",
       annotations: this._selectedAnnotation
         ? [this._selectedAnnotation.toDto()]
@@ -375,7 +375,7 @@ export class DocumentData {
     }
 
     // dispatch corresponding event
-    this._eventController.dispatchEvent(new AnnotEvent({      
+    this._eventService.dispatchEvent(new AnnotEvent({      
       type: "focus",
       annotations: this._focusedAnnotation
         ? [this._focusedAnnotation.toDto()]
@@ -399,7 +399,7 @@ export class DocumentData {
       return null;
     }
 
-    return () => this._eventController.dispatchEvent(new AnnotEvent({
+    return () => this._eventService.dispatchEvent(new AnnotEvent({
       type: "edit",
       annotations: [annotation.toDto()],
     }));

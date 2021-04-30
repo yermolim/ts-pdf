@@ -1,15 +1,15 @@
 import { RenderToSvgResult } from "../../common/types";
 import { Vec2 } from "../../common/math";
 
-import { DocumentData, annotChangeEvent, 
-  AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } from "../../document/document-data";
+import { DocumentService, annotChangeEvent, 
+  AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } from "../../services/document-service";
 import { AnnotationDict } from "../../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
   private readonly _pageId: number;
   private readonly _pageDimensions: Vec2;
 
-  private _docData: DocumentData;
+  private _docService: DocumentService;
   private _rendered = new Set<AnnotationDict>();
 
   private _container: HTMLDivElement;
@@ -18,14 +18,14 @@ export class PageAnnotationView {
 
   private _destroyed: boolean;
 
-  constructor(docData: DocumentData, pageId: number, pageDimensions: Vec2) {
-    if (!docData || isNaN(pageId) || !pageDimensions) {
+  constructor(docService: DocumentService, pageId: number, pageDimensions: Vec2) {
+    if (!docService || isNaN(pageId) || !pageDimensions) {
       throw new Error("Required argument not found");
     }
     this._pageId = pageId;
     this._pageDimensions = pageDimensions;
 
-    this._docData = docData;
+    this._docService = docService;
 
     this._container = document.createElement("div");
     this._container.classList.add("page-annotations");
@@ -39,7 +39,7 @@ export class PageAnnotationView {
     // handle annotation selection
     this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
       if (e.target === this._svg) {
-        docData.setSelectedAnnotation(null);
+        docService.setSelectedAnnotation(null);
       }
     });
     
@@ -64,7 +64,7 @@ export class PageAnnotationView {
   /**remove the container from DOM */
   remove() {    
     this._container?.remove();
-    this._docData.eventController.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
+    this._docService.eventService.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }  
 
   /**
@@ -79,13 +79,13 @@ export class PageAnnotationView {
     
     await this.renderAnnotationsAsync();
     parent.append(this._container);
-    this._docData.eventController.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
+    this._docService.eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
   private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
-    const annotations = this._docData.getPageAnnotations(this._pageId) || [];
+    const annotations = this._docService.getPageAnnotations(this._pageId) || [];
 
     for (let i = 0; i < annotations.length || 0; i++) {
       const annotation = annotations[i];
@@ -97,13 +97,13 @@ export class PageAnnotationView {
       if (!this._rendered.has(annotation)) {
         // attach events to the annotation
         annotation.$onPointerDownAction = (e: PointerEvent) => {
-          this._docData.eventController.dispatchEvent(new AnnotSelectionRequestEvent({annotation}));
+          this._docService.eventService.dispatchEvent(new AnnotSelectionRequestEvent({annotation}));
         };        
         annotation.$onPointerEnterAction = (e: PointerEvent) => {
-          this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({annotation}));
+          this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({annotation}));
         };        
         annotation.$onPointerLeaveAction = (e: PointerEvent) => {
-          this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({annotation: null}));
+          this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({annotation: null}));
         };
         renderResult = await annotation.renderAsync();
       } else {

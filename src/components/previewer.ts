@@ -1,5 +1,5 @@
 import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
-  pagesLoadedEvent, PagesLoadedEvent } from "./pages/page-service";
+  pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
 
 export interface PreviewerOptions {
   canvasWidth?: number;
@@ -35,8 +35,8 @@ export class Previewer {
   }
   
   destroy() {   
-    this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded); 
-    this._pageService.eventController.removeListener(currentPageChangeEvent, this.onCurrentPageChanged);
+    this._pageService.eventService.removeListener(pagesLoadedEvent, this.onPagesLoaded); 
+    this._pageService.eventService.removeListener(currentPageChangeEvent, this.onCurrentPageChanged);
   }
 
   show() {
@@ -59,8 +59,8 @@ export class Previewer {
 
   private init() {
     this._container.addEventListener("scroll", this.onPreviewerScroll);
-    this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded); 
-    this._pageService.eventController.addListener(currentPageChangeEvent, this.onCurrentPageChanged);
+    this._pageService.eventService.addListener(pagesLoadedEvent, this.onPagesLoaded); 
+    this._pageService.eventService.addListener(currentPageChangeEvent, this.onCurrentPageChanged);
   }
   
   private scrollToPreview(pageIndex: number) { 

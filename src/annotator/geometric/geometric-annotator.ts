@@ -1,10 +1,9 @@
 import { Quadruple } from "../../common/types";
 
-import { DocumentData } from "../../document/document-data";
+import { DocumentService } from "../../services/document-service";
+import { PageService } from "../../services/page-service";
 
-import { PageView } from "../../components/pages/page-view";
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
-
 export interface GeometricAnnotatorOptions {
   strokeWidth?: number;  
   color?: Quadruple;
@@ -24,9 +23,9 @@ export abstract class GeometricAnnotator extends Annotator {
   /**current page id */
   protected _pageId: number;
   
-  protected constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], options: GeometricAnnotatorOptions) {
-    super(docData, parent, pages);
+  protected constructor(docService: DocumentService, pageService: PageService, parent: HTMLDivElement, 
+    options: GeometricAnnotatorOptions) {
+    super(docService, pageService, parent);
     
     this._color = options?.color || GeometricAnnotator.lastColor || [0, 0, 0, 0.9];
     GeometricAnnotator.lastColor = this._color;
@@ -49,7 +48,7 @@ export abstract class GeometricAnnotator extends Annotator {
   
   protected emitDataChanged(count: number, 
     saveable?: boolean, clearable?: boolean, undoable?: boolean) {
-    this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+    this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
       annotatorType: "geom",
       elementCount: count,
       undoable,
@@ -69,7 +68,7 @@ export abstract class GeometricAnnotator extends Annotator {
       return;
     }    
 
-    const page = this._pages.find(x => x.id === this._pageId);
+    const page = this._pageService.renderedPages.find(x => x.id === this._pageId);
     if (!page) {
       // set scale to 0 to hide the svg group if it's page is not rendered
       this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
@@ -80,8 +79,8 @@ export abstract class GeometricAnnotator extends Annotator {
     const py = ptop + ph;
     const {height: vh, top: vtop, left: vx} = this._overlay.getBoundingClientRect();
     const vy = vtop + vh;
-    const offsetX = (px - vx) / this._scale;
-    const offsetY = (vy - py) / this._scale;
+    const offsetX = (px - vx) / this._pageService.scale;
+    const offsetY = (vy - py) / this._pageService.scale;
     this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
   }
   

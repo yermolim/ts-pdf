@@ -39,9 +39,9 @@
  */
 
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
-import CryptoES from 'crypto-es';
 import Pako from 'pako';
 import { v4 } from 'uuid';
+import CryptoES from 'crypto-es';
 
 var img$z = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAABb2lDQ1BpY2MAACiRdZE7SwNBFIW/PCSiERUtRCy2iGKRgCiIpUQwTbRIIhi1SdY8hDyW3QQJtoKNRcBCtPFV+A+0FWwVBEERRGz8A74akfVOIkQkmWX2fpyZc5k5A85wTs9b7jHIF0pmJBTUFuNLmucFNz304kRL6JYxF52N0XJ83uFQ9TagerXe13R0rqYsHRztwpO6YZaEp4XD6yVD8bZwv55NrAofCvtNOaDwldKTdX5WnKnzu2IzFpkBp+qpZf5w8g/rWTMvPCrsy+fK+u951E28qcJCVOqgzCEsIoQIopGkzBo5SgSkFiSz5r6xmm+eonh0+RtUMMWRIStev6hl6ZqSmhY9JV+Oisr9f55WemK83t0bhLYn234bBs8OfFdt++vItr+PwfUIF4WGvyg5TX2IXm1ovgPo3oSzy4aW3IXzLRh4MBJmoia5ZDrTaXg9ha449N1Ax3I9q991Tu4htiFPdA17+zAi+7tXfgDAkGftS3qrhgAAAAlwSFlzAAALEwAACxMBAJqcGAAABNVJREFUeNrlW21T4jAQTkJxPI9BeXFGZ27u//8oP934QUcpMnIngjS3GxomhKRt0qSUmjmuRTD22X32NQklkcft7S3ZbreEU0o4vKdZRjhj4krhiiPj8Al8vv8Mvwc/Y3D/+voa9flojEnH4/EOGIBilu9kAJZJASj3tu9xuM7nc5/H4UVYaUjQQssFYOoOnJvg3NWFwcvw1hbAaDQSD4V/iZFmRpabT/b1RRaLhYsAjjAntW0o1zatojm8R5ZsNsIvLO/uxM8GT0+k1+sR2u/v5kGfoPgIfUiG9ZKkiolzg1BoMAHYUXP4x4W2rFp6eBCXpWWK6+trIRich4Y1q70QggsAZ958fpLlcll7LlVwg8GAXFxciGjh4QCtQkhC2STDMAavdDaLQigpUBlWszxMeoIP5wME1UEAabEzCjZeXl7E9ebmZucr3MBTPSxS0r3BXXIe+p3Bk7LQLTO6cwY/mkwKlWwVwGg6dfW4rdQ8LVGkUQBD8LQcPG1XaI8RY4oKrRoFEiVz64LNY7j8skQMZqR+Bx0eAp1MJsUCwMIGa/Iuenv5S5he2xmAtFccH2Z4+i+cE3hQ6O9MUyjWFkYBiHpepwcIY+GR4Y0NVIsFPv9bRs3P5/M/TItk6BBVpe4FwA3dG1ojDE4D+xIAagQPtUfhQ/b7/Z+6Q2RKGc0OanZN1DOPwkZqHyWN9yHYIMGrc1UBj+P5+fmvXjNQ5X1P0l+vt7GkXa/Xzlo3GejHx0cwzf+4uhKvKuD3YR00fmD7wOzLy0uyWq0smSBIyKeet3VwfVlgoj0OF/A43t/fjxgu8xzxf6bZOufcW2PYD2AG3+EqhFDgrf4sFwjDBgMzNDjqDBsTqjrG0OCNAgEGoOmzrZbz86IeniMTjjpHuWM8Bfg0TYlJrYzr1AhYA9jMwcaE2JrXkYnQz0ncYTIHExOaoP2RIxS9TD3+R+gBlDnGJsDbHCPjGuVx0aIpJjQNXo9uorNMNAZsIzZCDI6xUc3r0Q0ZQEuKjjirxzvqn4T2qu8R6xklFVcsH+lVz8cYjfe9bDYvwUcspclwODx2gm0CH7ufoC+lceEETwzeZvMxhKDXA6wpBpSBty2ohm6qUEPRx9qied/aoXYi1Cbau9YOznmAgQG0QoiiTYCvYv919h7gmgA31AasDZqP1VQpbPLAe9xpxtoGvkLt4CcAnf75e9ZG8GWUdxUCJkDUIpCQAuCmB67dydHmxPf4cnGMib6dDuj/ljMslAC46YFDFTZyTnVuNJEqTLi/v78qMgcWEnzMqs7CrlIhrNbrf/p6J+4wLQpxLmGwNVWd0VeMx78gmXo8qAGA/tggDcGAVoMXDEnTR70A2mgdL9ZV8JZkQKwSHTjI7wIebf/NsMWefRfwPdvO887TPq/7bUv9SdfBlx21oQ5gzw58JXb49hJIRwarCx631olzQ80nObgPuPY8SV3Nex5l8x6Q22N6uz+k0bQAQi+UVEaAJS1WdZ8AXhysDLSMn5zYBHmREOQub16whnfuAthrF3N2mp87EsmLQu+YHjex0JI3hJ3ayllWktmh/W8CLOUnocIcbj8VOzALDjyGKGbk8dxQh7SisEsepw0iDAkaXm8RTpJHT2hURyYEAldc8cGrbFXLe5Zf1c9ih9n/LqFyUTq2iTQAAAAASUVORK5CYII=";
 
@@ -1751,6 +1751,89 @@ function getSelectionInfosFromSelection(selection) {
     return getSelectionInfosFromRangeSpans(selectionRange);
 }
 
+class ElementEventService {
+    constructor(container) {
+        this._eventMap = new Map();
+        if (!container) {
+            throw new Error("Container is not defined");
+        }
+        const element = document.createElement("div");
+        element.style.position = "absolute";
+        element.style.width = "0";
+        element.style.height = "0";
+        element.style.zIndex = "-1000";
+        container.append(element);
+        this._element = element;
+    }
+    get element() {
+        return this._element;
+    }
+    destroy() {
+        this.removeAllListeners();
+        this._element.remove();
+        this._element = null;
+    }
+    addListener(key, listener, options) {
+        if (!this._element) {
+            return;
+        }
+        this._element.addEventListener(key, listener, options);
+        if (this._eventMap.has(key)) {
+            this._eventMap.get(key).add(listener);
+        }
+        else {
+            this._eventMap.set(key, new Set().add(listener));
+        }
+    }
+    removeListener(key, listener) {
+        if (!this._element) {
+            return;
+        }
+        this._element.removeEventListener(key, listener);
+        if (this._eventMap.has(key)) {
+            this._eventMap.get(key).delete(listener);
+        }
+    }
+    removeAllListenersForKey(key) {
+        if (!this._element) {
+            return;
+        }
+        if (this._eventMap.has(key)) {
+            const listeners = this._eventMap.get(key);
+            listeners.forEach(x => this._element.removeEventListener(key, x));
+            this._eventMap.delete(key);
+        }
+    }
+    removeAllListeners() {
+        if (!this._element) {
+            return;
+        }
+        this._eventMap.forEach((v, k) => {
+            v.forEach(x => this._element.removeEventListener(k, x));
+        });
+        this._eventMap.clear();
+    }
+    getListenersByKey(key) {
+        const listenerSet = this._eventMap.get(key);
+        return listenerSet
+            ? [...listenerSet]
+            : [];
+    }
+    hasListenersForKey(key) {
+        const listenerSet = this._eventMap.get(key);
+        return !!listenerSet.size;
+    }
+    dispatchEvent(e) {
+        if (!this._element) {
+            return;
+        }
+        if (!this.hasListenersForKey) {
+            return;
+        }
+        this._element.dispatchEvent(e);
+    }
+}
+
 const objectTypes = {
     UNKNOWN: 0,
     NULL: 1,
@@ -1965,510 +2048,6 @@ const supportedFilters = new Set([
     streamFilters.JPX,
 ]);
 const maxGeneration = 65535;
-
-function parseIntFromBytes(bytes) {
-    if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
-        return 0;
-    }
-    if (bytes.length === 1) {
-        return bytes[0];
-    }
-    const hex = Array.from(bytes, (byte) => ("0" + (byte & 0xFF).toString(16)).slice(-2)).join("");
-    return parseInt(hex, 16);
-}
-function int8ToBytes(int) {
-    const buffer = new ArrayBuffer(1);
-    const view = new DataView(buffer);
-    view.setInt8(0, int);
-    return new Uint8Array(buffer);
-}
-function int16ToBytes(int, le = false) {
-    const buffer = new ArrayBuffer(2);
-    const view = new DataView(buffer);
-    view.setInt16(0, int, le);
-    return new Uint8Array(buffer);
-}
-function int32ToBytes(int, le = false) {
-    const buffer = new ArrayBuffer(4);
-    const view = new DataView(buffer);
-    view.setInt32(0, int, le);
-    return new Uint8Array(buffer);
-}
-function int32ArrayToBytes(ints, le = false) {
-    const buffer = new ArrayBuffer(ints.length * 4);
-    const view = new DataView(buffer);
-    for (let i = 0; i < ints.length; i++) {
-        view.setInt32(i * 4, ints[i], le);
-    }
-    return new Uint8Array(buffer);
-}
-function xorBytes(bytes, n) {
-    const result = new Uint8Array(bytes.length);
-    for (let i = 0; i < bytes.length; i++) {
-        result[i] = bytes[i] ^ n;
-    }
-    return result;
-}
-function arraysEqual(a, b) {
-    if (a.length !== b.length) {
-        return false;
-    }
-    for (let i = 0; i < a.length; i++) {
-        if (a[i] !== b[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-function findSubarrayIndex(arr, sub) {
-    if ((arr === null || arr === void 0 ? void 0 : arr.length) && (sub === null || sub === void 0 ? void 0 : sub.length)) {
-        let j;
-        outer_loop: for (let i = 0; i <= arr.length; i++) {
-            let overlap = false;
-            for (j = 0; j < sub.length; j++) {
-                if (i + j < arr.length) {
-                    if (arr[i + j] !== sub[j]) {
-                        continue outer_loop;
-                    }
-                    overlap = true;
-                }
-                else if (overlap) {
-                    return i;
-                }
-                else {
-                    break outer_loop;
-                }
-            }
-        }
-    }
-    return -1;
-}
-function hexStringToBytes(hexString) {
-    const bytes = new Uint8Array(hexString.length / 2);
-    for (let i = 0, j = 0; i < hexString.length; i += 2, j++) {
-        bytes[j] = parseInt(hexString.substr(i, 2), 16);
-    }
-    return bytes;
-}
-
-function bytesToWordArray(data) {
-    return CryptoES.lib.WordArray.create(data);
-}
-function wordArrayToBytes(wordArray) {
-    return int32ArrayToBytes(wordArray.words).slice(0, wordArray.sigBytes);
-}
-function md5(data) {
-    if (data instanceof Uint8Array) {
-        data = bytesToWordArray(data);
-    }
-    const result = CryptoES.MD5(data);
-    return result;
-}
-function rc4(data, key) {
-    if (data instanceof Uint8Array) {
-        data = bytesToWordArray(data);
-    }
-    if (key instanceof Uint8Array) {
-        key = bytesToWordArray(key);
-    }
-    const result = CryptoES.RC4.encrypt(data, key).ciphertext;
-    return result;
-}
-function aes(data, key, decrypt = false) {
-    if (data instanceof Uint8Array) {
-        data = bytesToWordArray(data);
-    }
-    if (key instanceof Uint8Array) {
-        key = bytesToWordArray(key);
-    }
-    if (decrypt) {
-        const ivWordArray = CryptoES.lib.WordArray.create(data.words.slice(0, 4));
-        const d = CryptoES.algo.AES.createDecryptor(key, {
-            mode: CryptoES.mode.CBC,
-            iv: ivWordArray,
-            padding: CryptoES.pad.Pkcs7,
-        });
-        const result = d.finalize(data);
-        return result;
-    }
-    else {
-        const ivWordArray = CryptoES.lib.WordArray.random(16);
-        const e = CryptoES.algo.AES.createEncryptor(key, {
-            mode: CryptoES.mode.CBC,
-            iv: ivWordArray,
-            padding: CryptoES.pad.Pkcs7,
-        });
-        const result = e.finalize(data);
-        return result;
-    }
-}
-
-const AESV2_KEY_PADDING = [
-    0x73, 0x41, 0x6C, 0x54,
-];
-class AESV2DataCryptor {
-    constructor(key) {
-        if (!key) {
-            throw new Error("Empty key");
-        }
-        if (key.length !== 16) {
-            throw new Error(`Invalid key length: ${key.length} (shall be 16)`);
-        }
-        this._n = key.length;
-        this._key = key;
-        this._tempKey = new Uint8Array(key.length + 9);
-    }
-    encrypt(data, ref) {
-        return this.run(data, ref.id, ref.generation);
-    }
-    decrypt(data, ref) {
-        return this.run(data, ref.id, ref.generation, true);
-    }
-    run(data, id, generation, decrypt = false) {
-        const idBytes = int32ToBytes(id, true);
-        const genBytes = int32ToBytes(generation, true);
-        this._tempKey.set(this._key, 0);
-        this._tempKey.set(idBytes.subarray(0, 3), this._n);
-        this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
-        this._tempKey.set(AESV2_KEY_PADDING, this._n + 5);
-        const hash = wordArrayToBytes(md5(this._tempKey));
-        const n = Math.min(this._n + 5, 16);
-        const key = hash.slice(0, n);
-        const result = wordArrayToBytes(aes(data, key, decrypt));
-        return decrypt
-            ? result.slice(16)
-            : result;
-    }
-}
-
-class AESV3DataCryptor {
-    constructor(key) {
-        if (!key) {
-            throw new Error("Empty key");
-        }
-        if (key.length !== 32) {
-            throw new Error(`Invalid key length: ${key.length} (shall be 32)`);
-        }
-        this._n = key.length;
-        this._key = key;
-    }
-    encrypt(data, ref) {
-        return this.run(data, ref.id, ref.generation);
-    }
-    decrypt(data, ref) {
-        return this.run(data, ref.id, ref.generation, true);
-    }
-    run(data, id, generation, decrypt = false) {
-        const result = wordArrayToBytes(aes(data, this._key, decrypt));
-        return decrypt
-            ? result.slice(16)
-            : result;
-    }
-}
-
-class IdentityDataCryptor {
-    constructor() {
-    }
-    encrypt(data, ref) {
-        return data;
-    }
-    decrypt(data, ref) {
-        return data;
-    }
-}
-
-class RC4DataCryptor {
-    constructor(key) {
-        if (!key) {
-            throw new Error("Empty key");
-        }
-        if (key.length < 5 || key.length > 16) {
-            throw new Error(`Invalid key length: ${key.length} (shall be a multiple of 8 in the range from 40 to 128)`);
-        }
-        this._n = key.length;
-        this._key = key;
-        this._tempKey = new Uint8Array(key.length + 5);
-    }
-    encrypt(data, ref) {
-        const idBytes = int32ToBytes(ref.id, true);
-        const genBytes = int32ToBytes(ref.generation, true);
-        this._tempKey.set(this._key, 0);
-        this._tempKey.set(idBytes.slice(0, 3), this._n);
-        this._tempKey.set(genBytes.slice(0, 2), this._n + 3);
-        const hash = wordArrayToBytes(md5(this._tempKey));
-        const n = Math.min(this._n + 5, 16);
-        const key = hash.slice(0, n);
-        const encrypted = wordArrayToBytes(rc4(data, key));
-        return encrypted;
-    }
-    decrypt(data, ref) {
-        return this.encrypt(data, ref);
-    }
-}
-
-const PASSWORD_32_PADDING = [
-    0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
-    0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
-    0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80,
-    0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A,
-];
-class DataCryptHandler {
-    constructor(options, fileId) {
-        const { filter, version, revision, permissions, encryptMetadata, keyLength, stringKeyLength, streamKeyLength, stringMethod, streamMethod, oPasswordHash, uPasswordHash, oEncPasswordHash, uEncPasswordHash, perms } = options;
-        if (filter !== "/Standard") {
-            throw new Error(`Unsupported filter name: ${filter}`);
-        }
-        if (![1, 2, 4, 5].includes(version)) {
-            throw new Error(`Unsupported algorithm version: ${version}`);
-        }
-        if (![2, 3, 4, 5, 6].includes(revision)) {
-            throw new Error(`Unsupported algorithm revision: ${revision}`);
-        }
-        if (isNaN(permissions)) {
-            throw new Error("Permissions not provided");
-        }
-        if (!oPasswordHash || !uPasswordHash) {
-            throw new Error("Password hash not provided");
-        }
-        this._filter = filter;
-        this._version = version;
-        this._revision = revision;
-        this._permissions = permissions;
-        this._keyLength = keyLength;
-        this._encryptMetadata = encryptMetadata;
-        this._stringKeyLength = stringKeyLength;
-        this._streamKeyLength = streamKeyLength;
-        this._stringMethod = stringMethod;
-        this._streamMethod = streamMethod;
-        this._oPasswordHash = oPasswordHash;
-        this._uPasswordHash = uPasswordHash;
-        this._oEncPasswordHash = oEncPasswordHash;
-        this._uEncPasswordHash = uEncPasswordHash;
-        this._perms = perms;
-        this._fileId = fileId;
-    }
-    authenticate(password) {
-        const version = this._version;
-        const stringMethod = this._stringMethod;
-        const streamMethod = this._streamMethod;
-        let owner = false;
-        const ownerAuthenticated = this.authOwnerPassword(password);
-        if (ownerAuthenticated) {
-            owner = true;
-        }
-        else {
-            const userAuthenticated = this.authUserPassword(password);
-            if (!userAuthenticated) {
-                return null;
-            }
-        }
-        const key = this._lastEncryptionKey;
-        switch (version) {
-            case 1:
-                const rc4_40 = new RC4DataCryptor(key);
-                return {
-                    owner,
-                    stringCryptor: rc4_40,
-                    streamCryptor: rc4_40,
-                };
-            case 2:
-                const rc4_128 = new RC4DataCryptor(key);
-                return {
-                    owner,
-                    stringCryptor: rc4_128,
-                    streamCryptor: rc4_128,
-                };
-            case 4:
-                let v4stringCryptor;
-                if (!stringMethod || stringMethod === cryptMethods.NONE) {
-                    v4stringCryptor = new IdentityDataCryptor();
-                }
-                else if (stringMethod === cryptMethods.RC4) {
-                    v4stringCryptor = new RC4DataCryptor(key);
-                }
-                else if (stringMethod === cryptMethods.AES_128) {
-                    v4stringCryptor = new AESV2DataCryptor(key);
-                }
-                else {
-                    throw new Error(`Invalid crypt method: ${stringMethod}`);
-                }
-                let v4streamCryptor;
-                if (!streamMethod || streamMethod === cryptMethods.NONE) {
-                    v4streamCryptor = new IdentityDataCryptor();
-                }
-                else if (streamMethod === cryptMethods.RC4) {
-                    v4streamCryptor = new RC4DataCryptor(key);
-                }
-                else if (streamMethod === cryptMethods.AES_128) {
-                    v4streamCryptor = new AESV2DataCryptor(key);
-                }
-                else {
-                    throw new Error(`Invalid crypt method: ${streamMethod}`);
-                }
-                return {
-                    owner,
-                    stringCryptor: v4stringCryptor,
-                    streamCryptor: v4streamCryptor,
-                };
-            case 5:
-                let v5stringCryptor;
-                if (!stringMethod || stringMethod === cryptMethods.NONE) {
-                    v4stringCryptor = new IdentityDataCryptor();
-                }
-                else if (stringMethod === cryptMethods.AES_256) {
-                    v4stringCryptor = new AESV3DataCryptor(key);
-                }
-                else {
-                    throw new Error(`Invalid crypt method: ${stringMethod}`);
-                }
-                let v5streamCryptor;
-                if (!streamMethod || streamMethod === cryptMethods.NONE) {
-                    v4streamCryptor = new IdentityDataCryptor();
-                }
-                else if (streamMethod === cryptMethods.AES_256) {
-                    v4streamCryptor = new AESV3DataCryptor(key);
-                }
-                else {
-                    throw new Error(`Invalid crypt method: ${streamMethod}`);
-                }
-                return {
-                    owner,
-                    stringCryptor: v5stringCryptor,
-                    streamCryptor: v5streamCryptor,
-                };
-        }
-    }
-    padPassword32(password) {
-        if (!password) {
-            return new Uint8Array(PASSWORD_32_PADDING);
-        }
-        const bytes = new TextEncoder().encode(password);
-        const padded = new Uint8Array(32);
-        padded.set(bytes.slice(0, 32));
-        if (bytes.length < 32) {
-            padded.set(PASSWORD_32_PADDING.slice(0, 32 - bytes.length), bytes.length);
-        }
-        return padded;
-    }
-    computeEncryptionKey(password) {
-        if ([2, 3, 4].includes(this._revision)) {
-            const paddedPassword = this.padPassword32(password);
-            const permissionsLe = int32ToBytes(this._permissions, true);
-            const metadata = this._revision >= 4 && !this._encryptMetadata
-                ? new Uint8Array([255, 255, 255, 255])
-                : new Uint8Array(0);
-            const dataToHash = new Uint8Array([
-                ...paddedPassword,
-                ...this._oPasswordHash,
-                ...permissionsLe,
-                ...this._fileId,
-                ...metadata,
-            ]);
-            let hash = wordArrayToBytes(md5(dataToHash));
-            const keyLength = this._keyLength >> 3;
-            if (this._revision >= 3) {
-                for (let i = 0; i < 50; i++) {
-                    hash = wordArrayToBytes(md5(hash.slice(0, keyLength)));
-                }
-            }
-            const encryptionKey = hash.slice(0, keyLength);
-            this._lastEncryptionKey = encryptionKey;
-            return encryptionKey;
-        }
-        else if (this._revision === 5) {
-            throw new Error("Not implemented yet");
-        }
-        else if (this._revision === 6) {
-            throw new Error("Not implemented yet");
-        }
-    }
-    computeOHashEncryptionKey_R2R3R4(password) {
-        const paddedPassword = this.padPassword32(password);
-        let hash = md5(paddedPassword);
-        if (this._revision >= 3) {
-            for (let i = 0; i < 50; i++) {
-                hash = md5(hash);
-            }
-        }
-        const hashArray = wordArrayToBytes(hash);
-        const keyLength = this._keyLength >> 3;
-        return hashArray.slice(0, keyLength);
-    }
-    computeOHash_R2R3R4(oPassword, uPassword) {
-        const key = this.computeOHashEncryptionKey_R2R3R4(oPassword || uPassword);
-        const paddedUPassword = this.padPassword32(uPassword);
-        let hash = rc4(paddedUPassword, key);
-        if (this._revision >= 3) {
-            for (let i = 1; i < 20; i++) {
-                hash = rc4(hash, xorBytes(key, i));
-            }
-        }
-        return wordArrayToBytes(hash);
-    }
-    computeUHash_R2(password) {
-        const key = this.computeEncryptionKey(password);
-        const padding = new Uint8Array(PASSWORD_32_PADDING);
-        const u = wordArrayToBytes(rc4(padding, key));
-        return u;
-    }
-    computeUHash_R3R4(password) {
-        const key = this.computeEncryptionKey(password);
-        const dataToHash = new Uint8Array([
-            ...PASSWORD_32_PADDING,
-            ...this._fileId,
-        ]);
-        let hash = md5(dataToHash);
-        hash = rc4(hash, key);
-        for (let i = 1; i < 20; i++) {
-            hash = rc4(hash, xorBytes(key, i));
-        }
-        return wordArrayToBytes(hash);
-    }
-    authOwnerPassword(password) {
-        if ([2, 3, 4].includes(this._revision)) {
-            const ownerEncryptionKey = this.computeOHashEncryptionKey_R2R3R4(password);
-            let userPasswordPadded;
-            if (this._revision === 2) {
-                userPasswordPadded = wordArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey));
-            }
-            else {
-                let hash = bytesToWordArray(this._oPasswordHash);
-                for (let i = 19; i >= 0; i--) {
-                    hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
-                }
-                userPasswordPadded = wordArrayToBytes(hash);
-            }
-            const j = findSubarrayIndex(userPasswordPadded, new Uint8Array(PASSWORD_32_PADDING));
-            const userPassword = new TextDecoder().decode(j === -1
-                ? userPasswordPadded
-                : userPasswordPadded.subarray(0, j));
-            return this.authUserPassword(userPassword);
-        }
-        else if (this._revision === 5) {
-            throw new Error("Not implemented yet");
-        }
-        else if (this._revision === 6) {
-            throw new Error("Not implemented yet");
-        }
-    }
-    authUserPassword(password) {
-        let u;
-        if (this._revision === 2) {
-            u = this.computeUHash_R2(password);
-            return arraysEqual(this._uPasswordHash, u);
-        }
-        else if (this._revision === 3 || this._revision === 4) {
-            u = this.computeUHash_R3R4(password);
-            return arraysEqual(this._uPasswordHash.subarray(0, 16), u);
-        }
-        else if (this._revision === 5) {
-            throw new Error("Not implemented yet");
-        }
-        else if (this._revision === 6) {
-            throw new Error("Not implemented yet");
-        }
-    }
-}
 
 const codes = {
     NULL: 0,
@@ -3498,6 +3077,91 @@ class LinkedList {
             current = current.next;
         }
     }
+}
+
+function parseIntFromBytes(bytes) {
+    if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
+        return 0;
+    }
+    if (bytes.length === 1) {
+        return bytes[0];
+    }
+    const hex = Array.from(bytes, (byte) => ("0" + (byte & 0xFF).toString(16)).slice(-2)).join("");
+    return parseInt(hex, 16);
+}
+function int8ToBytes(int) {
+    const buffer = new ArrayBuffer(1);
+    const view = new DataView(buffer);
+    view.setInt8(0, int);
+    return new Uint8Array(buffer);
+}
+function int16ToBytes(int, le = false) {
+    const buffer = new ArrayBuffer(2);
+    const view = new DataView(buffer);
+    view.setInt16(0, int, le);
+    return new Uint8Array(buffer);
+}
+function int32ToBytes(int, le = false) {
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    view.setInt32(0, int, le);
+    return new Uint8Array(buffer);
+}
+function int32ArrayToBytes(ints, le = false) {
+    const buffer = new ArrayBuffer(ints.length * 4);
+    const view = new DataView(buffer);
+    for (let i = 0; i < ints.length; i++) {
+        view.setInt32(i * 4, ints[i], le);
+    }
+    return new Uint8Array(buffer);
+}
+function xorBytes(bytes, n) {
+    const result = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) {
+        result[i] = bytes[i] ^ n;
+    }
+    return result;
+}
+function arraysEqual(a, b) {
+    if (a.length !== b.length) {
+        return false;
+    }
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+function findSubarrayIndex(arr, sub) {
+    if ((arr === null || arr === void 0 ? void 0 : arr.length) && (sub === null || sub === void 0 ? void 0 : sub.length)) {
+        let j;
+        outer_loop: for (let i = 0; i <= arr.length; i++) {
+            let overlap = false;
+            for (j = 0; j < sub.length; j++) {
+                if (i + j < arr.length) {
+                    if (arr[i + j] !== sub[j]) {
+                        continue outer_loop;
+                    }
+                    overlap = true;
+                }
+                else if (overlap) {
+                    return i;
+                }
+                else {
+                    break outer_loop;
+                }
+            }
+        }
+    }
+    return -1;
+}
+function hexStringToBytes(hexString) {
+    const bytes = new Uint8Array(hexString.length / 2);
+    for (let i = 0, j = 0; i < hexString.length; i += 2, j++) {
+        bytes[j] = parseInt(hexString.substr(i, 2), 16);
+    }
+    return bytes;
 }
 
 class XRefEntry {
@@ -9694,6 +9358,425 @@ class DocumentDataUpdater {
         this._writer.writeIndirectObject({ ref: newXrefRef }, newXref);
         this._writer.writeEof(newXrefOffset);
         return newXrefOffset;
+    }
+}
+
+function bytesToWordArray(data) {
+    return CryptoES.lib.WordArray.create(data);
+}
+function wordArrayToBytes(wordArray) {
+    return int32ArrayToBytes(wordArray.words).slice(0, wordArray.sigBytes);
+}
+function md5(data) {
+    if (data instanceof Uint8Array) {
+        data = bytesToWordArray(data);
+    }
+    const result = CryptoES.MD5(data);
+    return result;
+}
+function rc4(data, key) {
+    if (data instanceof Uint8Array) {
+        data = bytesToWordArray(data);
+    }
+    if (key instanceof Uint8Array) {
+        key = bytesToWordArray(key);
+    }
+    const result = CryptoES.RC4.encrypt(data, key).ciphertext;
+    return result;
+}
+function aes(data, key, decrypt = false) {
+    if (data instanceof Uint8Array) {
+        data = bytesToWordArray(data);
+    }
+    if (key instanceof Uint8Array) {
+        key = bytesToWordArray(key);
+    }
+    if (decrypt) {
+        const ivWordArray = CryptoES.lib.WordArray.create(data.words.slice(0, 4));
+        const d = CryptoES.algo.AES.createDecryptor(key, {
+            mode: CryptoES.mode.CBC,
+            iv: ivWordArray,
+            padding: CryptoES.pad.Pkcs7,
+        });
+        const result = d.finalize(data);
+        return result;
+    }
+    else {
+        const ivWordArray = CryptoES.lib.WordArray.random(16);
+        const e = CryptoES.algo.AES.createEncryptor(key, {
+            mode: CryptoES.mode.CBC,
+            iv: ivWordArray,
+            padding: CryptoES.pad.Pkcs7,
+        });
+        const result = e.finalize(data);
+        return result;
+    }
+}
+
+const AESV2_KEY_PADDING = [
+    0x73, 0x41, 0x6C, 0x54,
+];
+class AESV2DataCryptor {
+    constructor(key) {
+        if (!key) {
+            throw new Error("Empty key");
+        }
+        if (key.length !== 16) {
+            throw new Error(`Invalid key length: ${key.length} (shall be 16)`);
+        }
+        this._n = key.length;
+        this._key = key;
+        this._tempKey = new Uint8Array(key.length + 9);
+    }
+    encrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation);
+    }
+    decrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation, true);
+    }
+    run(data, id, generation, decrypt = false) {
+        const idBytes = int32ToBytes(id, true);
+        const genBytes = int32ToBytes(generation, true);
+        this._tempKey.set(this._key, 0);
+        this._tempKey.set(idBytes.subarray(0, 3), this._n);
+        this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);
+        this._tempKey.set(AESV2_KEY_PADDING, this._n + 5);
+        const hash = wordArrayToBytes(md5(this._tempKey));
+        const n = Math.min(this._n + 5, 16);
+        const key = hash.slice(0, n);
+        const result = wordArrayToBytes(aes(data, key, decrypt));
+        return decrypt
+            ? result.slice(16)
+            : result;
+    }
+}
+
+class AESV3DataCryptor {
+    constructor(key) {
+        if (!key) {
+            throw new Error("Empty key");
+        }
+        if (key.length !== 32) {
+            throw new Error(`Invalid key length: ${key.length} (shall be 32)`);
+        }
+        this._n = key.length;
+        this._key = key;
+    }
+    encrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation);
+    }
+    decrypt(data, ref) {
+        return this.run(data, ref.id, ref.generation, true);
+    }
+    run(data, id, generation, decrypt = false) {
+        const result = wordArrayToBytes(aes(data, this._key, decrypt));
+        return decrypt
+            ? result.slice(16)
+            : result;
+    }
+}
+
+class IdentityDataCryptor {
+    constructor() {
+    }
+    encrypt(data, ref) {
+        return data;
+    }
+    decrypt(data, ref) {
+        return data;
+    }
+}
+
+class RC4DataCryptor {
+    constructor(key) {
+        if (!key) {
+            throw new Error("Empty key");
+        }
+        if (key.length < 5 || key.length > 16) {
+            throw new Error(`Invalid key length: ${key.length} (shall be a multiple of 8 in the range from 40 to 128)`);
+        }
+        this._n = key.length;
+        this._key = key;
+        this._tempKey = new Uint8Array(key.length + 5);
+    }
+    encrypt(data, ref) {
+        const idBytes = int32ToBytes(ref.id, true);
+        const genBytes = int32ToBytes(ref.generation, true);
+        this._tempKey.set(this._key, 0);
+        this._tempKey.set(idBytes.slice(0, 3), this._n);
+        this._tempKey.set(genBytes.slice(0, 2), this._n + 3);
+        const hash = wordArrayToBytes(md5(this._tempKey));
+        const n = Math.min(this._n + 5, 16);
+        const key = hash.slice(0, n);
+        const encrypted = wordArrayToBytes(rc4(data, key));
+        return encrypted;
+    }
+    decrypt(data, ref) {
+        return this.encrypt(data, ref);
+    }
+}
+
+const PASSWORD_32_PADDING = [
+    0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41,
+    0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08,
+    0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80,
+    0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A,
+];
+class DataCryptHandler {
+    constructor(options, fileId) {
+        const { filter, version, revision, permissions, encryptMetadata, keyLength, stringKeyLength, streamKeyLength, stringMethod, streamMethod, oPasswordHash, uPasswordHash, oEncPasswordHash, uEncPasswordHash, perms } = options;
+        if (filter !== "/Standard") {
+            throw new Error(`Unsupported filter name: ${filter}`);
+        }
+        if (![1, 2, 4, 5].includes(version)) {
+            throw new Error(`Unsupported algorithm version: ${version}`);
+        }
+        if (![2, 3, 4, 5, 6].includes(revision)) {
+            throw new Error(`Unsupported algorithm revision: ${revision}`);
+        }
+        if (isNaN(permissions)) {
+            throw new Error("Permissions not provided");
+        }
+        if (!oPasswordHash || !uPasswordHash) {
+            throw new Error("Password hash not provided");
+        }
+        this._filter = filter;
+        this._version = version;
+        this._revision = revision;
+        this._permissions = permissions;
+        this._keyLength = keyLength;
+        this._encryptMetadata = encryptMetadata;
+        this._stringKeyLength = stringKeyLength;
+        this._streamKeyLength = streamKeyLength;
+        this._stringMethod = stringMethod;
+        this._streamMethod = streamMethod;
+        this._oPasswordHash = oPasswordHash;
+        this._uPasswordHash = uPasswordHash;
+        this._oEncPasswordHash = oEncPasswordHash;
+        this._uEncPasswordHash = uEncPasswordHash;
+        this._perms = perms;
+        this._fileId = fileId;
+    }
+    authenticate(password) {
+        const version = this._version;
+        const stringMethod = this._stringMethod;
+        const streamMethod = this._streamMethod;
+        let owner = false;
+        const ownerAuthenticated = this.authOwnerPassword(password);
+        if (ownerAuthenticated) {
+            owner = true;
+        }
+        else {
+            const userAuthenticated = this.authUserPassword(password);
+            if (!userAuthenticated) {
+                return null;
+            }
+        }
+        const key = this._lastEncryptionKey;
+        switch (version) {
+            case 1:
+                const rc4_40 = new RC4DataCryptor(key);
+                return {
+                    owner,
+                    stringCryptor: rc4_40,
+                    streamCryptor: rc4_40,
+                };
+            case 2:
+                const rc4_128 = new RC4DataCryptor(key);
+                return {
+                    owner,
+                    stringCryptor: rc4_128,
+                    streamCryptor: rc4_128,
+                };
+            case 4:
+                let v4stringCryptor;
+                if (!stringMethod || stringMethod === cryptMethods.NONE) {
+                    v4stringCryptor = new IdentityDataCryptor();
+                }
+                else if (stringMethod === cryptMethods.RC4) {
+                    v4stringCryptor = new RC4DataCryptor(key);
+                }
+                else if (stringMethod === cryptMethods.AES_128) {
+                    v4stringCryptor = new AESV2DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${stringMethod}`);
+                }
+                let v4streamCryptor;
+                if (!streamMethod || streamMethod === cryptMethods.NONE) {
+                    v4streamCryptor = new IdentityDataCryptor();
+                }
+                else if (streamMethod === cryptMethods.RC4) {
+                    v4streamCryptor = new RC4DataCryptor(key);
+                }
+                else if (streamMethod === cryptMethods.AES_128) {
+                    v4streamCryptor = new AESV2DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${streamMethod}`);
+                }
+                return {
+                    owner,
+                    stringCryptor: v4stringCryptor,
+                    streamCryptor: v4streamCryptor,
+                };
+            case 5:
+                let v5stringCryptor;
+                if (!stringMethod || stringMethod === cryptMethods.NONE) {
+                    v4stringCryptor = new IdentityDataCryptor();
+                }
+                else if (stringMethod === cryptMethods.AES_256) {
+                    v4stringCryptor = new AESV3DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${stringMethod}`);
+                }
+                let v5streamCryptor;
+                if (!streamMethod || streamMethod === cryptMethods.NONE) {
+                    v4streamCryptor = new IdentityDataCryptor();
+                }
+                else if (streamMethod === cryptMethods.AES_256) {
+                    v4streamCryptor = new AESV3DataCryptor(key);
+                }
+                else {
+                    throw new Error(`Invalid crypt method: ${streamMethod}`);
+                }
+                return {
+                    owner,
+                    stringCryptor: v5stringCryptor,
+                    streamCryptor: v5streamCryptor,
+                };
+        }
+    }
+    padPassword32(password) {
+        if (!password) {
+            return new Uint8Array(PASSWORD_32_PADDING);
+        }
+        const bytes = new TextEncoder().encode(password);
+        const padded = new Uint8Array(32);
+        padded.set(bytes.slice(0, 32));
+        if (bytes.length < 32) {
+            padded.set(PASSWORD_32_PADDING.slice(0, 32 - bytes.length), bytes.length);
+        }
+        return padded;
+    }
+    computeEncryptionKey(password) {
+        if ([2, 3, 4].includes(this._revision)) {
+            const paddedPassword = this.padPassword32(password);
+            const permissionsLe = int32ToBytes(this._permissions, true);
+            const metadata = this._revision >= 4 && !this._encryptMetadata
+                ? new Uint8Array([255, 255, 255, 255])
+                : new Uint8Array(0);
+            const dataToHash = new Uint8Array([
+                ...paddedPassword,
+                ...this._oPasswordHash,
+                ...permissionsLe,
+                ...this._fileId,
+                ...metadata,
+            ]);
+            let hash = wordArrayToBytes(md5(dataToHash));
+            const keyLength = this._keyLength >> 3;
+            if (this._revision >= 3) {
+                for (let i = 0; i < 50; i++) {
+                    hash = wordArrayToBytes(md5(hash.slice(0, keyLength)));
+                }
+            }
+            const encryptionKey = hash.slice(0, keyLength);
+            this._lastEncryptionKey = encryptionKey;
+            return encryptionKey;
+        }
+        else if (this._revision === 5) {
+            throw new Error("Not implemented yet");
+        }
+        else if (this._revision === 6) {
+            throw new Error("Not implemented yet");
+        }
+    }
+    computeOHashEncryptionKey_R2R3R4(password) {
+        const paddedPassword = this.padPassword32(password);
+        let hash = md5(paddedPassword);
+        if (this._revision >= 3) {
+            for (let i = 0; i < 50; i++) {
+                hash = md5(hash);
+            }
+        }
+        const hashArray = wordArrayToBytes(hash);
+        const keyLength = this._keyLength >> 3;
+        return hashArray.slice(0, keyLength);
+    }
+    computeOHash_R2R3R4(oPassword, uPassword) {
+        const key = this.computeOHashEncryptionKey_R2R3R4(oPassword || uPassword);
+        const paddedUPassword = this.padPassword32(uPassword);
+        let hash = rc4(paddedUPassword, key);
+        if (this._revision >= 3) {
+            for (let i = 1; i < 20; i++) {
+                hash = rc4(hash, xorBytes(key, i));
+            }
+        }
+        return wordArrayToBytes(hash);
+    }
+    computeUHash_R2(password) {
+        const key = this.computeEncryptionKey(password);
+        const padding = new Uint8Array(PASSWORD_32_PADDING);
+        const u = wordArrayToBytes(rc4(padding, key));
+        return u;
+    }
+    computeUHash_R3R4(password) {
+        const key = this.computeEncryptionKey(password);
+        const dataToHash = new Uint8Array([
+            ...PASSWORD_32_PADDING,
+            ...this._fileId,
+        ]);
+        let hash = md5(dataToHash);
+        hash = rc4(hash, key);
+        for (let i = 1; i < 20; i++) {
+            hash = rc4(hash, xorBytes(key, i));
+        }
+        return wordArrayToBytes(hash);
+    }
+    authOwnerPassword(password) {
+        if ([2, 3, 4].includes(this._revision)) {
+            const ownerEncryptionKey = this.computeOHashEncryptionKey_R2R3R4(password);
+            let userPasswordPadded;
+            if (this._revision === 2) {
+                userPasswordPadded = wordArrayToBytes(rc4(this._oPasswordHash, ownerEncryptionKey));
+            }
+            else {
+                let hash = bytesToWordArray(this._oPasswordHash);
+                for (let i = 19; i >= 0; i--) {
+                    hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
+                }
+                userPasswordPadded = wordArrayToBytes(hash);
+            }
+            const j = findSubarrayIndex(userPasswordPadded, new Uint8Array(PASSWORD_32_PADDING));
+            const userPassword = new TextDecoder().decode(j === -1
+                ? userPasswordPadded
+                : userPasswordPadded.subarray(0, j));
+            return this.authUserPassword(userPassword);
+        }
+        else if (this._revision === 5) {
+            throw new Error("Not implemented yet");
+        }
+        else if (this._revision === 6) {
+            throw new Error("Not implemented yet");
+        }
+    }
+    authUserPassword(password) {
+        let u;
+        if (this._revision === 2) {
+            u = this.computeUHash_R2(password);
+            return arraysEqual(this._uPasswordHash, u);
+        }
+        else if (this._revision === 3 || this._revision === 4) {
+            u = this.computeUHash_R3R4(password);
+            return arraysEqual(this._uPasswordHash.subarray(0, 16), u);
+        }
+        else if (this._revision === 5) {
+            throw new Error("Not implemented yet");
+        }
+        else if (this._revision === 6) {
+            throw new Error("Not implemented yet");
+        }
     }
 }
 
@@ -16130,8 +16213,8 @@ class AnnotEvent extends CustomEvent {
         super(annotChangeEvent, { detail });
     }
 }
-class DocumentData {
-    constructor(eventController, data, userName) {
+class DocumentService {
+    constructor(eventService, data, userName) {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
         this.getObjectParseInfo = (id) => {
@@ -16194,10 +16277,10 @@ class DocumentData {
                 this.setFocusedAnnotation(null);
             }
         };
-        if (!eventController) {
+        if (!eventService) {
             throw new Error("Event controller is not defined");
         }
-        this._eventController = eventController;
+        this._eventService = eventService;
         this._data = data;
         this._docParser = new DataParser(data);
         this._version = this._docParser.getPdfVersion();
@@ -16217,11 +16300,11 @@ class DocumentData {
         this._referenceData = new ReferenceData(xrefs);
         this.parseEncryption();
         this._userName = userName;
-        this._eventController.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
-        this._eventController.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+        this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+        this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
-    get eventController() {
-        return this._eventController;
+    get eventService() {
+        return this._eventService;
     }
     get userName() {
         return this._userName;
@@ -16249,8 +16332,8 @@ class DocumentData {
     }
     destroy() {
         this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
-        this._eventController.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
-        this._eventController.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+        this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+        this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
     tryAuthenticate(password = "") {
         if (!this.authenticated) {
@@ -16328,7 +16411,7 @@ class DocumentData {
         else {
             this.getSupportedAnnotationMap().set(pageId, [annotation]);
         }
-        this._eventController.dispatchEvent(new AnnotEvent({
+        this._eventService.dispatchEvent(new AnnotEvent({
             type: "add",
             annotations: [annotation.toDto()],
         }));
@@ -16346,7 +16429,7 @@ class DocumentData {
         }
         annotation.markAsDeleted(true);
         this.setSelectedAnnotation(null);
-        this._eventController.dispatchEvent(new AnnotEvent({
+        this._eventService.dispatchEvent(new AnnotEvent({
             type: "delete",
             annotations: [annotation.toDto()],
         }));
@@ -16376,7 +16459,7 @@ class DocumentData {
             newSelectedSvg.classList.add("selected");
             this._selectedAnnotation = annotation;
         }
-        this._eventController.dispatchEvent(new AnnotEvent({
+        this._eventService.dispatchEvent(new AnnotEvent({
             type: "select",
             annotations: this._selectedAnnotation
                 ? [this._selectedAnnotation.toDto()]
@@ -16403,7 +16486,7 @@ class DocumentData {
             newFocusedSvg.classList.add("focused");
             this._focusedAnnotation = annotation;
         }
-        this._eventController.dispatchEvent(new AnnotEvent({
+        this._eventService.dispatchEvent(new AnnotEvent({
             type: "focus",
             annotations: this._focusedAnnotation
                 ? [this._focusedAnnotation.toDto()]
@@ -16423,7 +16506,7 @@ class DocumentData {
         if (!annotation) {
             return null;
         }
-        return () => this._eventController.dispatchEvent(new AnnotEvent({
+        return () => this._eventService.dispatchEvent(new AnnotEvent({
             type: "edit",
             annotations: [annotation.toDto()],
         }));
@@ -16558,89 +16641,6 @@ class DocumentData {
     }
 }
 
-class ElementEventController {
-    constructor(container) {
-        this._eventMap = new Map();
-        if (!container) {
-            throw new Error("Container is not defined");
-        }
-        const element = document.createElement("div");
-        element.style.position = "absolute";
-        element.style.width = "0";
-        element.style.height = "0";
-        element.style.zIndex = "-1000";
-        container.append(element);
-        this._element = element;
-    }
-    get element() {
-        return this._element;
-    }
-    destroy() {
-        this.removeAllListeners();
-        this._element.remove();
-        this._element = null;
-    }
-    addListener(key, listener, options) {
-        if (!this._element) {
-            return;
-        }
-        this._element.addEventListener(key, listener, options);
-        if (this._eventMap.has(key)) {
-            this._eventMap.get(key).add(listener);
-        }
-        else {
-            this._eventMap.set(key, new Set().add(listener));
-        }
-    }
-    removeListener(key, listener) {
-        if (!this._element) {
-            return;
-        }
-        this._element.removeEventListener(key, listener);
-        if (this._eventMap.has(key)) {
-            this._eventMap.get(key).delete(listener);
-        }
-    }
-    removeAllListenersForKey(key) {
-        if (!this._element) {
-            return;
-        }
-        if (this._eventMap.has(key)) {
-            const listeners = this._eventMap.get(key);
-            listeners.forEach(x => this._element.removeEventListener(key, x));
-            this._eventMap.delete(key);
-        }
-    }
-    removeAllListeners() {
-        if (!this._element) {
-            return;
-        }
-        this._eventMap.forEach((v, k) => {
-            v.forEach(x => this._element.removeEventListener(k, x));
-        });
-        this._eventMap.clear();
-    }
-    getListenersByKey(key) {
-        const listenerSet = this._eventMap.get(key);
-        return listenerSet
-            ? [...listenerSet]
-            : [];
-    }
-    hasListenersForKey(key) {
-        const listenerSet = this._eventMap.get(key);
-        return !!listenerSet.size;
-    }
-    dispatchEvent(e) {
-        if (!this._element) {
-            return;
-        }
-        if (!this.hasListenersForKey) {
-            return;
-        }
-        this._element.dispatchEvent(e);
-    }
-}
-
 const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest";
 class CurrentPageChangeRequestEvent extends CustomEvent {
     constructor(detail) {
@@ -16672,17 +16672,17 @@ class ScaleChangedEvent extends CustomEvent {
     }
 }
 class PageService {
-    constructor(eventController, options) {
+    constructor(eventService, options) {
         this._pages = [];
         this._renderedPages = [];
-        if (!eventController) {
+        if (!eventService) {
             throw new Error("Event controller is not defined");
         }
-        this._eventController = eventController;
+        this._eventService = eventService;
         this._visibleAdjPages = (options === null || options === void 0 ? void 0 : options.visibleAdjPages) || 0;
     }
-    get eventController() {
-        return this._eventController;
+    get eventService() {
+        return this._eventService;
     }
     get currentPageIndex() {
         return this._currentPageIndex || 0;
@@ -16693,7 +16693,7 @@ class PageService {
     set pages(value) {
         this._pages.forEach(x => x.destroy());
         this._pages = value.slice();
-        this._eventController.dispatchEvent(new PagesLoadedEvent({ pages: value.slice() }));
+        this._eventService.dispatchEvent(new PagesLoadedEvent({ pages: value.slice() }));
         this.setCurrentPageIndex(0);
     }
     get renderedPages() {
@@ -16702,12 +16702,16 @@ class PageService {
     get length() {
         return this._pages.length || 0;
     }
+    get scale() {
+        var _a;
+        return ((_a = this._renderedPages[0]) === null || _a === void 0 ? void 0 : _a.scale) || 1;
+    }
     set scale(value) {
         if (!value || isNaN(value)) {
             value = 1;
         }
         this._pages.forEach(x => x.scale = value);
-        this._eventController.dispatchEvent(new ScaleChangedEvent({ scale: value }));
+        this._eventService.dispatchEvent(new ScaleChangedEvent({ scale: value }));
     }
     destroy() {
         this._pages.forEach(x => x.destroy);
@@ -16721,7 +16725,7 @@ class PageService {
     requestSetCurrentPageIndex(index) {
         index = clamp(index || 0, 0, this._pages.length - 1);
         if (index !== this._currentPageIndex) {
-            this._eventController.dispatchEvent(new CurrentPageChangeRequestEvent({ pageIndex: index }));
+            this._eventService.dispatchEvent(new CurrentPageChangeRequestEvent({ pageIndex: index }));
         }
     }
     renderVisiblePages(container) {
@@ -16739,7 +16743,7 @@ class PageService {
             }
         }
         this._renderedPages = renderedPages;
-        this._eventController.dispatchEvent(new PagesRenderedEvent({ pages: renderedPages.slice() }));
+        this._eventService.dispatchEvent(new PagesRenderedEvent({ pages: renderedPages.slice() }));
         this.updateCurrentPage(container);
     }
     renderVisiblePreviews(container) {
@@ -16770,7 +16774,7 @@ class PageService {
             this._currentPageIndex = newIndex;
             (_a = this._pages[oldIndex]) === null || _a === void 0 ? void 0 : _a.previewContainer.classList.remove("current");
             (_b = this._pages[newIndex]) === null || _b === void 0 ? void 0 : _b.previewContainer.classList.add("current");
-            this._eventController.dispatchEvent(new CurrentPageChangeEvent({ oldIndex, newIndex }));
+            this._eventService.dispatchEvent(new CurrentPageChangeEvent({ oldIndex, newIndex }));
         }
     }
     getVisiblePageIndices(container, preview = false) {
@@ -16840,763 +16844,6 @@ class PageService {
     }
 }
 
-const viewerModes = ["text", "hand", "annotation"];
-class Viewer {
-    constructor(pageService, container, options) {
-        this._scale = 1;
-        this._pointerInfo = {
-            lastPos: null,
-            downPos: null,
-            downScroll: null,
-        };
-        this._pinchInfo = {
-            active: false,
-            lastDist: 0,
-            minDist: 10,
-            sensitivity: 0.025,
-            target: null,
-        };
-        this.onPagesLoaded = (event) => {
-            var _a;
-            (_a = event.detail.pages) === null || _a === void 0 ? void 0 : _a.forEach(x => {
-                x.scale = this._scale;
-                this._container.append(x.viewContainer);
-            });
-            this.renderVisible();
-        };
-        this.onScrollRequest = (event) => {
-            this.scrollToPage(event.detail.pageIndex);
-        };
-        this.onPointerMove = (event) => {
-            const { clientX, clientY } = event;
-            this._pointerInfo.lastPos = new Vec2(clientX, clientY);
-        };
-        this.onScroll = (e) => {
-            this.renderVisible();
-        };
-        this.onPointerDownScroll = (event) => {
-            if (this._mode !== "hand") {
-                return;
-            }
-            const { clientX, clientY } = event;
-            this._pointerInfo.downPos = new Vec2(clientX, clientY);
-            this._pointerInfo.downScroll = new Vec2(this._container.scrollLeft, this._container.scrollTop);
-            const onPointerMove = (moveEvent) => {
-                const { x, y } = this._pointerInfo.downPos;
-                const { x: left, y: top } = this._pointerInfo.downScroll;
-                const dX = moveEvent.clientX - x;
-                const dY = moveEvent.clientY - y;
-                this._container.scrollTo(left - dX, top - dY);
-            };
-            const onPointerUp = (upEvent) => {
-                this._pointerInfo.downPos = null;
-                this._pointerInfo.downScroll = null;
-                document.removeEventListener("pointermove", onPointerMove);
-                document.removeEventListener("pointerup", onPointerUp);
-                document.removeEventListener("pointerout", onPointerUp);
-            };
-            document.addEventListener("pointermove", onPointerMove);
-            document.addEventListener("pointerup", onPointerUp);
-            document.addEventListener("pointerout", onPointerUp);
-        };
-        this.onWheelZoom = (event) => {
-            if (!event.ctrlKey) {
-                return;
-            }
-            event.preventDefault();
-            if (event.deltaY > 0) {
-                this.zoomOutCentered(this._pointerInfo.lastPos);
-            }
-            else {
-                this.zoomInCentered(this._pointerInfo.lastPos);
-            }
-        };
-        this.onTouchZoom = (event) => {
-            if (event.touches.length !== 2) {
-                return;
-            }
-            const a = event.touches[0];
-            const b = event.touches[1];
-            this._pinchInfo.active = true;
-            this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
-            const onTouchMove = (moveEvent) => {
-                if (moveEvent.touches.length !== 2) {
-                    return;
-                }
-                const mA = moveEvent.touches[0];
-                const mB = moveEvent.touches[1];
-                const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
-                const delta = dist - this._pinchInfo.lastDist;
-                const factor = Math.floor(delta / this._pinchInfo.minDist);
-                if (factor) {
-                    const center = new Vec2((mB.clientX + mA.clientX) / 2, (mB.clientY + mA.clientY) / 2);
-                    this._pinchInfo.lastDist = dist;
-                    this.zoom(factor * this._pinchInfo.sensitivity, center);
-                }
-            };
-            const onTouchEnd = (endEvent) => {
-                this._pinchInfo.active = false;
-                this._pinchInfo.lastDist = 0;
-                event.target.removeEventListener("touchmove", onTouchMove);
-                event.target.removeEventListener("touchend", onTouchEnd);
-                event.target.removeEventListener("touchcancel", onTouchEnd);
-            };
-            event.target.addEventListener("touchmove", onTouchMove);
-            event.target.addEventListener("touchend", onTouchEnd);
-            event.target.addEventListener("touchcancel", onTouchEnd);
-        };
-        if (!container) {
-            throw new Error("Container is not defined");
-        }
-        this._pageService = pageService;
-        this._container = container;
-        this._minScale = (options === null || options === void 0 ? void 0 : options.minScale) || 0.25;
-        this._maxScale = (options === null || options === void 0 ? void 0 : options.maxScale) || 4;
-        this.init();
-    }
-    get container() {
-        return this._container;
-    }
-    get mode() {
-        return this._mode;
-    }
-    set mode(value) {
-        if (!value || value === this._mode) {
-            return;
-        }
-        this._mode = value;
-    }
-    get scale() {
-        return this._scale;
-    }
-    destroy() {
-        this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded);
-        this._pageService.eventController.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
-    }
-    zoomOut() {
-        this.zoomOutCentered();
-    }
-    zoomIn() {
-        this.zoomInCentered();
-    }
-    zoomFitViewer() {
-        const cWidth = this._container.getBoundingClientRect().width;
-        const pWidth = this._pageService.getCurrentPage().viewContainer.getBoundingClientRect().width;
-        const scale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-        this.setScale(scale);
-        this.scrollToPage(this._pageService.currentPageIndex);
-    }
-    zoomFitPage() {
-        const { width: cWidth, height: cHeight } = this._container.getBoundingClientRect();
-        const { width: pWidth, height: pHeight } = this._pageService.getCurrentPage().viewContainer.getBoundingClientRect();
-        const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
-        const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
-        this.setScale(Math.min(hScale, vScale));
-        this.scrollToPage(this._pageService.currentPageIndex);
-    }
-    scrollToPage(pageNumber) {
-        if (!this._pageService.pages.length) {
-            return;
-        }
-        const { top: cTop } = this._container.getBoundingClientRect();
-        const { top: pTop } = this._pageService.getPage(pageNumber).viewContainer.getBoundingClientRect();
-        const scroll = pTop - (cTop - this._container.scrollTop);
-        this._container.scrollTo(this._container.scrollLeft, scroll);
-    }
-    init() {
-        this._container.addEventListener("scroll", this.onScroll);
-        this._container.addEventListener("wheel", this.onWheelZoom, { passive: false });
-        this._container.addEventListener("pointermove", this.onPointerMove);
-        this._container.addEventListener("pointerdown", this.onPointerDownScroll);
-        this._container.addEventListener("touchstart", this.onTouchZoom);
-        this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded);
-        this._pageService.eventController.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
-    }
-    renderVisible() {
-        this._pageService.renderVisiblePages(this._container);
-    }
-    setScale(scale, cursorPosition = null) {
-        if (!scale || scale === this._scale) {
-            return;
-        }
-        let pageContainerUnderPivot;
-        let xPageRatio;
-        let yPageRatio;
-        if (cursorPosition) {
-            for (const page of this._pageService.pages) {
-                const { x: x, y: y } = cursorPosition;
-                const { x: pX, y: pY, width: pWidth, height: pHeight } = page.viewContainer.getBoundingClientRect();
-                if (pX <= x
-                    && pX + pWidth >= x
-                    && pY <= y
-                    && pY + pHeight >= y) {
-                    pageContainerUnderPivot = page.viewContainer;
-                    xPageRatio = (x - pX) / pWidth;
-                    yPageRatio = (y - pY) / pHeight;
-                    break;
-                }
-            }
-        }
-        this._scale = scale;
-        this._pageService.scale = scale;
-        if (pageContainerUnderPivot
-            &&
-                (this._container.scrollHeight > this._container.clientHeight
-                    || this._container.scrollWidth > this._container.clientWidth)) {
-            const { x: initialX, y: initialY } = cursorPosition;
-            const { x: pX, y: pY, width: pWidth, height: pHeight } = pageContainerUnderPivot.getBoundingClientRect();
-            const resultX = pX + (pWidth * xPageRatio);
-            const resultY = pY + (pHeight * yPageRatio);
-            let scrollLeft = this._container.scrollLeft + (resultX - initialX);
-            let scrollTop = this._container.scrollTop + (resultY - initialY);
-            scrollLeft = scrollLeft < 0
-                ? 0
-                : scrollLeft;
-            scrollTop = scrollTop < 0
-                ? 0
-                : scrollTop;
-            if (scrollTop !== this._container.scrollTop
-                || scrollLeft !== this._container.scrollLeft) {
-                this._container.scrollTo(scrollLeft, scrollTop);
-                return;
-            }
-        }
-        setTimeout(() => this.renderVisible(), 0);
-    }
-    zoom(diff, cursorPosition = null) {
-        const scale = clamp(this._scale + diff, this._minScale, this._maxScale);
-        this.setScale(scale, cursorPosition || this.getCenterPosition());
-    }
-    zoomOutCentered(center = null) {
-        this.zoom(-0.25, center);
-    }
-    zoomInCentered(center = null) {
-        this.zoom(0.25, center);
-    }
-    getCenterPosition() {
-        const { x, y, width, height } = this._container.getBoundingClientRect();
-        return new Vec2(x + width / 2, y + height / 2);
-    }
-}
-
-class Previewer {
-    constructor(pageService, container, options) {
-        this._hidden = true;
-        this.onPagesLoaded = (event) => {
-            var _a;
-            (_a = event.detail.pages) === null || _a === void 0 ? void 0 : _a.forEach(x => {
-                x.previewContainer.addEventListener("click", this.onPreviewerPageClick);
-                this._container.append(x.previewContainer);
-            });
-            this.renderVisible();
-        };
-        this.onCurrentPageChanged = (event) => {
-            this.scrollToPreview(event.detail.newIndex);
-        };
-        this.onPreviewerPageClick = (e) => {
-            let target = e.target;
-            let pageNumber;
-            while (target && !pageNumber) {
-                const data = target.dataset["pageNumber"];
-                if (data) {
-                    pageNumber = +data;
-                }
-                else {
-                    target = target.parentElement;
-                }
-            }
-            if (pageNumber) {
-                this._pageService.requestSetCurrentPageIndex(pageNumber - 1);
-            }
-        };
-        this.onPreviewerScroll = (e) => {
-            this.renderVisible();
-        };
-        if (!pageService) {
-            throw new Error("Page service is not defined");
-        }
-        if (!container) {
-            throw new Error("Container is not defined");
-        }
-        this._pageService = pageService;
-        this._container = container;
-        this._canvasWidth = (options === null || options === void 0 ? void 0 : options.canvasWidth) || 100;
-        this.init();
-    }
-    get canvasWidth() {
-        return this._canvasWidth;
-    }
-    get hidden() {
-        return this._hidden;
-    }
-    destroy() {
-        this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded);
-        this._pageService.eventController.removeListener(currentPageChangeEvent, this.onCurrentPageChanged);
-    }
-    show() {
-        this._hidden = false;
-        setTimeout(() => this.renderVisible(), 1000);
-    }
-    hide() {
-        this._hidden = true;
-    }
-    renderVisible() {
-        if (this._hidden) {
-            return;
-        }
-        this._pageService.renderVisiblePreviews(this._container);
-    }
-    init() {
-        this._container.addEventListener("scroll", this.onPreviewerScroll);
-        this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded);
-        this._pageService.eventController.addListener(currentPageChangeEvent, this.onCurrentPageChanged);
-    }
-    scrollToPreview(pageIndex) {
-        if (!this._pageService.pages.length) {
-            return;
-        }
-        const { top: cTop, height: cHeight } = this._container.getBoundingClientRect();
-        const { top: pTop, height: pHeight } = this._pageService.getPage(pageIndex).previewContainer.getBoundingClientRect();
-        const cCenter = cTop + cHeight / 2;
-        const pCenter = pTop + pHeight / 2;
-        const scroll = pCenter - cCenter + this._container.scrollTop;
-        this._container.scrollTo(0, scroll);
-    }
-}
-
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PageTextView {
-    constructor(pageProxy) {
-        this.onMouseDown = (e) => {
-            var _a;
-            if (this._divModeTimer) {
-                clearTimeout(this._divModeTimer);
-                this._divModeTimer = null;
-            }
-            (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
-        };
-        this.onMouseUp = (e) => {
-            this._divModeTimer = setTimeout(() => {
-                var _a;
-                (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
-                this._divModeTimer = null;
-            }, 300);
-        };
-        if (!pageProxy) {
-            throw new Error("Page proxy is not defined");
-        }
-        this._pageProxy = pageProxy;
-        this._container = document.createElement("div");
-        this._container.classList.add("page-text");
-        this._container.addEventListener("mousedown", this.onMouseDown);
-        this._container.addEventListener("mouseup", this.onMouseUp);
-    }
-    static appendPageTextAsync(pageProxy, parent, scale) {
-        return __awaiter$4(this, void 0, void 0, function* () {
-            const textObj = new PageTextView(pageProxy);
-            yield textObj.renderTextLayerAsync(scale);
-            parent.append(textObj._container);
-            return textObj;
-        });
-    }
-    destroy() {
-        this.destroyRenderTask();
-        if (this._container) {
-            this._container.remove();
-            this._container = null;
-        }
-    }
-    renderTextLayerAsync(scale) {
-        return __awaiter$4(this, void 0, void 0, function* () {
-            this.clear();
-            this.destroyRenderTask();
-            const viewport = this._pageProxy.getViewport({ scale });
-            const textContentStream = this._pageProxy.streamTextContent();
-            this._renderTask = renderTextLayer({
-                container: this._container,
-                textContentStream,
-                viewport,
-                enhanceTextSelection: true,
-            });
-            try {
-                yield this._renderTask.promise;
-            }
-            catch (error) {
-                if (error.message === "TextLayer task cancelled.") {
-                    return false;
-                }
-                else {
-                    throw error;
-                }
-            }
-            const spans = this._container.querySelectorAll("span");
-            spans.forEach(x => {
-                const blCornerSpan = document.createElement("span");
-                blCornerSpan.classList.add("dummy-corner", "bl");
-                const brCornerSpan = document.createElement("span");
-                brCornerSpan.classList.add("dummy-corner", "br");
-                const trCornerSpan = document.createElement("span");
-                trCornerSpan.classList.add("dummy-corner", "tr");
-                const tlCornerSpan = document.createElement("span");
-                tlCornerSpan.classList.add("dummy-corner", "tl");
-                x.append(blCornerSpan, brCornerSpan, trCornerSpan, tlCornerSpan);
-            });
-            return true;
-        });
-    }
-    clear() {
-        this._container.innerHTML = "";
-    }
-    destroyRenderTask() {
-        if (this._renderTask) {
-            this._renderTask.cancel();
-            this._renderTask = null;
-        }
-    }
-}
-
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PageAnnotationView {
-    constructor(docData, pageId, pageDimensions) {
-        this._rendered = new Set();
-        this.onAnnotationSelectionChange = (e) => {
-            var _a;
-            if (e.detail.type === "select") {
-                if ((_a = e.detail.annotations) === null || _a === void 0 ? void 0 : _a.length) {
-                    this._container.style.touchAction = "none";
-                }
-                else {
-                    this._container.style.touchAction = "";
-                }
-            }
-        };
-        if (!docData || isNaN(pageId) || !pageDimensions) {
-            throw new Error("Required argument not found");
-        }
-        this._pageId = pageId;
-        this._pageDimensions = pageDimensions;
-        this._docData = docData;
-        this._container = document.createElement("div");
-        this._container.classList.add("page-annotations");
-        this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        this._svg.classList.add("stretch");
-        this._svg.setAttribute("data-page-id", pageId + "");
-        this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-        this._svg.setAttribute("transform", "scale(1, -1)");
-        this._svg.addEventListener("pointerdown", (e) => {
-            if (e.target === this._svg) {
-                docData.setSelectedAnnotation(null);
-            }
-        });
-        this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        this._container.append(this._svg);
-    }
-    destroy() {
-        this.remove();
-        this._container = null;
-        this._destroyed = true;
-        this._rendered.forEach(x => {
-            x.$onPointerDownAction = null;
-            x.$onPointerEnterAction = null;
-            x.$onPointerLeaveAction = null;
-        });
-        this._rendered.clear();
-    }
-    remove() {
-        var _a;
-        (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
-        this._docData.eventController.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
-    }
-    appendAsync(parent) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            if (this._destroyed) {
-                return;
-            }
-            yield this.renderAnnotationsAsync();
-            parent.append(this._container);
-            this._docData.eventController.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
-        });
-    }
-    renderAnnotationsAsync() {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            this.clear();
-            const annotations = this._docData.getPageAnnotations(this._pageId) || [];
-            for (let i = 0; i < annotations.length || 0; i++) {
-                const annotation = annotations[i];
-                if (annotation.deleted) {
-                    continue;
-                }
-                let renderResult;
-                if (!this._rendered.has(annotation)) {
-                    annotation.$onPointerDownAction = (e) => {
-                        this._docData.eventController.dispatchEvent(new AnnotSelectionRequestEvent({ annotation }));
-                    };
-                    annotation.$onPointerEnterAction = (e) => {
-                        this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({ annotation }));
-                    };
-                    annotation.$onPointerLeaveAction = (e) => {
-                        this._docData.eventController.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
-                    };
-                    renderResult = yield annotation.renderAsync();
-                }
-                else {
-                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync());
-                }
-                if (!renderResult) {
-                    continue;
-                }
-                this._rendered.add(annotation);
-                const { svg, clipPaths } = renderResult;
-                this._svg.append(svg);
-                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
-            }
-            this._svg.append(this._defs);
-            return true;
-        });
-    }
-    clear() {
-        this._svg.innerHTML = "";
-    }
-}
-
-var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PageView {
-    constructor(docData, pageProxy, previewWidth) {
-        if (!pageProxy) {
-            throw new Error("Page proxy is not defined");
-        }
-        if (!docData) {
-            throw new Error("Annotation data is not defined");
-        }
-        this._pageProxy = pageProxy;
-        this._viewport = pageProxy.getViewport({ scale: 1 });
-        this._docData = docData;
-        this.number = pageProxy.pageNumber;
-        this.id = pageProxy.ref["num"];
-        this.generation = pageProxy.ref["gen"];
-        const { width, height } = this._viewport;
-        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
-        const previewHeight = previewWidth * (height / width);
-        this._dimensions = { width, height, previewWidth, previewHeight };
-        this._previewContainer = document.createElement("div");
-        this._previewContainer.classList.add("page-preview");
-        this._previewContainer.setAttribute("data-page-number", this.number + "");
-        this._previewContainer.setAttribute("data-page-id", this.id + "");
-        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
-        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
-        this._viewContainer = document.createElement("div");
-        this._viewContainer.classList.add("page");
-        this._viewContainer.setAttribute("data-page-number", this.number + "");
-        this._viewContainer.setAttribute("data-page-id", this.id + "");
-        this._viewContainer.setAttribute("data-page-gen", this.generation + "");
-        this.scale = 1;
-    }
-    get previewContainer() {
-        return this._previewContainer;
-    }
-    get viewContainer() {
-        return this._viewContainer;
-    }
-    set _viewRendered(value) {
-        this.$viewRendered = value;
-        this._viewContainer.setAttribute("data-loaded", value + "");
-    }
-    get _viewRendered() {
-        return this.$viewRendered;
-    }
-    get scale() {
-        return this._scale;
-    }
-    set scale(value) {
-        if (value <= 0 || this._scale === value) {
-            return;
-        }
-        this._scale = value;
-        const dpr = window.devicePixelRatio;
-        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
-        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
-        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
-        if (this._viewCanvas) {
-            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
-        }
-        this._scaleIsValid = false;
-    }
-    get viewValid() {
-        return this._scaleIsValid && this._viewRendered;
-    }
-    destroy() {
-        this._previewContainer.remove();
-        this._viewContainer.remove();
-        this._pageProxy.cleanup();
-    }
-    renderPreviewAsync(force = false) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            if (this._renderPromise) {
-                if (force) {
-                    this.cancelRenderTask();
-                }
-                yield this._renderPromise;
-            }
-            if (!force && this._previewRendered) {
-                return;
-            }
-            this._renderPromise = this.runPreviewRenderAsync();
-            return this._renderPromise;
-        });
-    }
-    renderViewAsync(force = false) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            if (this._renderPromise) {
-                if (force) {
-                    this.cancelRenderTask();
-                }
-                yield this._renderPromise;
-            }
-            if (!force && this.viewValid) {
-                return;
-            }
-            this._renderPromise = this.runViewRenderAsync();
-            return this._renderPromise;
-        });
-    }
-    clearPreview() {
-        this._previewContainer.innerHTML = "";
-    }
-    clearView() {
-        var _a, _b, _c;
-        (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._annotations = null;
-        (_b = this._text) === null || _b === void 0 ? void 0 : _b.destroy();
-        this._text = null;
-        (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
-        this._viewRendered = false;
-    }
-    cancelRenderTask() {
-        if (this._renderTask) {
-            this._renderTask.cancel();
-            this._renderTask = null;
-        }
-    }
-    runRenderTaskAsync(renderParams) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            this.cancelRenderTask();
-            this._renderTask = this._pageProxy.render(renderParams);
-            try {
-                yield this._renderTask.promise;
-            }
-            catch (error) {
-                if (error instanceof RenderingCancelledException) {
-                    return false;
-                }
-                else {
-                    throw error;
-                }
-            }
-            finally {
-                this._renderTask = null;
-            }
-            return true;
-        });
-    }
-    createPreviewCanvas() {
-        const canvas = document.createElement("canvas");
-        canvas.classList.add("page-canvas");
-        const dpr = window.devicePixelRatio;
-        const { previewWidth: width, previewHeight: height } = this._dimensions;
-        canvas.style.width = width + "px";
-        canvas.style.height = height + "px";
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
-        return canvas;
-    }
-    createViewCanvas() {
-        const canvas = document.createElement("canvas");
-        canvas.classList.add("page-canvas");
-        canvas.style.width = this._dimensions.scaledWidth + "px";
-        canvas.style.height = this._dimensions.scaledHeight + "px";
-        canvas.width = this._dimensions.scaledDprWidth;
-        canvas.height = this._dimensions.scaledDprHeight;
-        return canvas;
-    }
-    runPreviewRenderAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            const canvas = this.createPreviewCanvas();
-            const params = {
-                canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (!result) {
-                this._previewRendered = false;
-                return;
-            }
-            this._previewContainer.innerHTML = "";
-            this._previewContainer.append(canvas);
-            this._previewRendered = true;
-        });
-    }
-    runViewRenderAsync() {
-        var _a, _b;
-        return __awaiter$2(this, void 0, void 0, function* () {
-            const scale = this._scale;
-            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._text = null;
-            const canvas = this.createViewCanvas();
-            const params = {
-                canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
-                enableWebGL: true,
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (!result || scale !== this._scale) {
-                return;
-            }
-            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
-            this._viewContainer.append(canvas);
-            this._viewCanvas = canvas;
-            this._viewRendered = true;
-            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
-            if (!this._annotations) {
-                const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._docData, this.id, new Vec2(x, y));
-            }
-            yield this._annotations.appendAsync(this.viewContainer);
-            if (scale === this._scale) {
-                this._scaleIsValid = true;
-            }
-        });
-    }
-}
-
 const annotatorTypes = ["geom", "pen", "stamp", "text"];
 const annotatorDataChangeEvent = "tspdf-annotatordatachange";
 class AnnotatorDataChangeEvent extends CustomEvent {
@@ -17605,10 +16852,9 @@ class AnnotatorDataChangeEvent extends CustomEvent {
     }
 }
 class Annotator {
-    constructor(docData, parent, pages) {
-        var _a;
+    constructor(docService, pageService, parent) {
         this.onPagesRendered = (event) => {
-            this.pages = event.detail.pages || [];
+            this.refreshViewBox();
         };
         this.onParentScroll = () => {
             this.refreshViewBox();
@@ -17623,37 +16869,25 @@ class Annotator {
                 clientY: e.clientY,
             };
         };
-        if (!docData) {
-            throw new Error("Document data not found");
+        if (!docService) {
+            throw new Error("Document service not defined");
+        }
+        if (!pageService) {
+            throw new Error("Page service not defined");
         }
         if (!parent) {
-            throw new Error("Parent container not found");
+            throw new Error("Parent container not defined");
         }
-        this._docData = docData;
+        this._docService = docService;
         this._parent = parent;
-        this._pages = pages || [];
-        this._scale = ((_a = this._pages[0]) === null || _a === void 0 ? void 0 : _a.scale) || 1;
-    }
-    get scale() {
-        return this._scale;
-    }
-    get pages() {
-        return this._pages.slice();
-    }
-    set pages(value) {
-        var _a;
-        this._pages = (value === null || value === void 0 ? void 0 : value.length)
-            ? value.slice()
-            : [];
-        this._scale = ((_a = this._pages[0]) === null || _a === void 0 ? void 0 : _a.scale) || 1;
-        this.refreshViewBox();
+        this._pageService = pageService;
     }
     get overlayContainer() {
         return this._overlayContainer;
     }
     destroy() {
         var _a, _b, _c;
-        this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docService.eventService.removeListener(pagesRenderedEvent, this.onPagesRendered);
         (_a = this._parent) === null || _a === void 0 ? void 0 : _a.removeEventListener("scroll", this.onParentScroll);
         (_b = this._parentMutationObserver) === null || _b === void 0 ? void 0 : _b.disconnect();
         (_c = this._parentResizeObserver) === null || _c === void 0 ? void 0 : _c.disconnect();
@@ -17666,10 +16900,9 @@ class Annotator {
         }
         this._overlay.style.left = this._parent.scrollLeft + "px";
         this._overlay.style.top = this._parent.scrollTop + "px";
-        const viewBoxWidth = w / this._scale;
-        const viewBoxHeight = h / this._scale;
+        const viewBoxWidth = w / this._pageService.scale;
+        const viewBoxHeight = h / this._pageService.scale;
         this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-        this._lastScale = this._scale;
         this.refreshGroupPosition();
     }
     init() {
@@ -17721,7 +16954,7 @@ class Annotator {
         });
         this._parentMutationObserver = parentMObserver;
         this._parentResizeObserver = parentRObserver;
-        this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docService.eventService.addListener(pagesRenderedEvent, this.onPagesRendered);
     }
     updatePointerCoords(clientX, clientY) {
         const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
@@ -17734,7 +16967,7 @@ class Annotator {
         this._pointerCoordsInPageCS = pageCoords;
     }
     getPageCoordsUnderPointer(clientX, clientY) {
-        for (const page of this._pages) {
+        for (const page of this._pageService.renderedPages) {
             const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
             const pxMax = pxMin + pw;
             const pyMax = pyMin + ph;
@@ -17744,8 +16977,8 @@ class Annotator {
             if (clientY < pyMin || clientY > pyMax) {
                 continue;
             }
-            const x = (clientX - pxMin) / this._scale;
-            const y = (pyMax - clientY) / this._scale;
+            const x = (clientX - pxMin) / this._pageService.scale;
+            const y = (pyMax - clientY) / this._pageService.scale;
             return {
                 pageId: page.id,
                 pageX: x,
@@ -17757,9 +16990,9 @@ class Annotator {
 }
 
 class GeometricAnnotator extends Annotator {
-    constructor(docData, parent, pages, options) {
+    constructor(docService, pageService, parent, options) {
         var _a, _b;
-        super(docData, parent, pages);
+        super(docService, pageService, parent);
         this._color = (options === null || options === void 0 ? void 0 : options.color) || GeometricAnnotator.lastColor || [0, 0, 0, 0.9];
         GeometricAnnotator.lastColor = this._color;
         this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || GeometricAnnotator.lastStrokeWidth || 3;
@@ -17775,7 +17008,7 @@ class GeometricAnnotator extends Annotator {
         super.init();
     }
     emitDataChanged(count, saveable, clearable, undoable) {
-        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+        this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
             annotatorType: "geom",
             elementCount: count,
             undoable,
@@ -17791,7 +17024,7 @@ class GeometricAnnotator extends Annotator {
         if (!this._pageId && this._pageId !== 0) {
             return;
         }
-        const page = this._pages.find(x => x.id === this._pageId);
+        const page = this._pageService.renderedPages.find(x => x.id === this._pageId);
         if (!page) {
             this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
             return;
@@ -17800,15 +17033,15 @@ class GeometricAnnotator extends Annotator {
         const py = ptop + ph;
         const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
         const vy = vtop + vh;
-        const offsetX = (px - vx) / this._scale;
-        const offsetY = (vy - py) / this._scale;
+        const offsetX = (px - vx) / this._pageService.scale;
+        const offsetY = (vy - py) / this._pageService.scale;
         this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
     }
 }
 
 class GeometricLineAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
         this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -17877,7 +17110,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = LineAnnotation.createFromDto(dto);
-        this._docData.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPage(pageId, annotation);
         this.clear();
     }
     init() {
@@ -17905,7 +17138,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect: null,
             vertices: this._vertices,
@@ -17919,8 +17152,8 @@ class GeometricLineAnnotator extends GeometricAnnotator {
 }
 
 class GeometricArrowAnnotator extends GeometricLineAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
     }
     redrawLine(min, max) {
         this._svgGroup.innerHTML = "";
@@ -17953,7 +17186,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect: null,
             vertices: this._vertices,
@@ -17968,8 +17201,8 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
 }
 
 class GeometricCircleAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
         this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -18038,7 +17271,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = CircleAnnotation.createFromDto(dto);
-        this._docData.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPage(pageId, annotation);
         this.clear();
     }
     init() {
@@ -18099,7 +17332,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
             rectMargins,
@@ -18113,8 +17346,8 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
 }
 
 class GeometricPolygonAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
         this._points = [];
         this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
@@ -18190,7 +17423,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = PolygonAnnotation.createFromDto(dto);
-        this._docData.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPage(pageId, annotation);
         this.clear();
     }
     init() {
@@ -18268,7 +17501,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect: [xmin - margin, ymin - margin, xmax + margin, ymax + margin],
             vertices,
@@ -18282,8 +17515,8 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
 }
 
 class GeometricPolylineAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
         this._points = [];
         this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
@@ -18359,7 +17592,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = PolylineAnnotation.createFromDto(dto);
-        this._docData.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPage(pageId, annotation);
         this.clear();
     }
     init() {
@@ -18423,7 +17656,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect: [xmin - margin, ymin - margin, xmax + margin, ymax + margin],
             vertices,
@@ -18436,8 +17669,8 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
 }
 
 class GeometricSquareAnnotator extends GeometricAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
         this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -18506,7 +17739,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = SquareAnnotation.createFromDto(dto);
-        this._docData.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPage(pageId, annotation);
         this.clear();
     }
     init() {
@@ -18570,7 +17803,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect: [xmin - lm, ymin - bm, xmax + rm, ymax + tm],
             rectMargins,
@@ -18585,22 +17818,22 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
 
 const geometricAnnotatorTypes = ["square", "circle", "line", "arrow", "polyline", "polygon"];
 class GeometricAnnotatorFactory {
-    static CreateAnnotator(docData, parent, pages, options, type) {
+    static CreateAnnotator(docService, pageService, parent, options, type) {
         type || (type = GeometricAnnotatorFactory.lastType || "square");
         GeometricAnnotatorFactory.lastType = type;
         switch (type) {
             case "square":
-                return new GeometricSquareAnnotator(docData, parent, pages, options);
+                return new GeometricSquareAnnotator(docService, pageService, parent, options);
             case "circle":
-                return new GeometricCircleAnnotator(docData, parent, pages, options);
+                return new GeometricCircleAnnotator(docService, pageService, parent, options);
             case "line":
-                return new GeometricLineAnnotator(docData, parent, pages, options);
+                return new GeometricLineAnnotator(docService, pageService, parent, options);
             case "arrow":
-                return new GeometricArrowAnnotator(docData, parent, pages, options);
+                return new GeometricArrowAnnotator(docService, pageService, parent, options);
             case "polyline":
-                return new GeometricPolylineAnnotator(docData, parent, pages, options);
+                return new GeometricPolylineAnnotator(docService, pageService, parent, options);
             case "polygon":
-                return new GeometricPolygonAnnotator(docData, parent, pages, options);
+                return new GeometricPolygonAnnotator(docService, pageService, parent, options);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -18722,8 +17955,8 @@ PenData.defaultOptions = {
 };
 
 class PenAnnotator extends Annotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages);
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent);
         this.onPointerDown = (e) => {
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -18795,7 +18028,7 @@ class PenAnnotator extends Annotator {
         const pageId = this._annotationPenData.id;
         const dto = this.buildAnnotationDto(this._annotationPenData);
         const annotation = InkAnnotation.createFromDto(dto);
-        this._docData.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPage(pageId, annotation);
         this.removeTempPenData();
     }
     init() {
@@ -18806,7 +18039,7 @@ class PenAnnotator extends Annotator {
         if (!this._annotationPenData) {
             return;
         }
-        const page = this._pages.find(x => x.id === this._annotationPenData.id);
+        const page = this._pageService.renderedPages.find(x => x.id === this._annotationPenData.id);
         if (!page) {
             this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
             return;
@@ -18815,8 +18048,8 @@ class PenAnnotator extends Annotator {
         const py = ptop + ph;
         const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
         const vy = vtop + vh;
-        const offsetX = (px - vx) / this._scale;
-        const offsetY = (vy - py) / this._scale;
+        const offsetX = (px - vx) / this._pageService.scale;
+        const offsetY = (vy - py) / this._pageService.scale;
         this._annotationPenData.setGroupMatrix([1, 0, 0, 1, offsetX, offsetY]);
     }
     removeTempPenData() {
@@ -18839,7 +18072,7 @@ class PenAnnotator extends Annotator {
     emitDataChanged() {
         var _a;
         const count = ((_a = this._annotationPenData) === null || _a === void 0 ? void 0 : _a.pathCount) || 0;
-        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+        this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
             annotatorType: "pen",
             elementCount: count,
             undoable: count > 1,
@@ -18873,7 +18106,7 @@ class PenAnnotator extends Annotator {
             pageId: null,
             dateCreated: nowString,
             dateModified: nowString,
-            author: this._docData.userName || "unknown",
+            author: this._docService.userName || "unknown",
             textContent: null,
             rect,
             matrix: [1, 0, 0, 1, 0, 0],
@@ -18886,7 +18119,7 @@ class PenAnnotator extends Annotator {
     }
 }
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -18912,8 +18145,8 @@ const supportedStampTypes = [
     { type: "/NotForPublicRelease", name: "Not For Public" },
 ];
 class StampAnnotator extends Annotator {
-    constructor(docData, parent, pages, type) {
-        super(docData, parent, pages);
+    constructor(docService, pageService, parent, type) {
+        super(docService, pageService, parent);
         this._addedAnnotations = [];
         this.onPointerMove = (e) => {
             if (!e.isPrimary) {
@@ -18922,8 +18155,8 @@ class StampAnnotator extends Annotator {
             const { clientX: cx, clientY: cy } = e;
             const { height: oh, top, left: ox } = this._parent.getBoundingClientRect();
             const oy = top + oh;
-            const offsetX = (cx - ox) / this._scale;
-            const offsetY = (oy - cy) / this._scale;
+            const offsetX = (cx - ox) / this._pageService.scale;
+            const offsetY = (oy - cy) / this._pageService.scale;
             const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
             this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
             this.updatePointerCoords(cx, cy);
@@ -18978,7 +18211,7 @@ class StampAnnotator extends Annotator {
             return;
         }
         const lastAnnotation = this._addedAnnotations.pop();
-        this._docData.removeAnnotation(lastAnnotation);
+        this._docService.removeAnnotation(lastAnnotation);
         const empty = !this._addedAnnotations.length;
         this.emitDataChanged(this._addedAnnotations.length, !empty, !empty);
     }
@@ -18991,7 +18224,7 @@ class StampAnnotator extends Annotator {
         if (!this._pageId || !this._tempAnnotation) {
             return;
         }
-        this._docData.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+        this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
         this._addedAnnotations.push(this._tempAnnotation);
         this.emitDataChanged(this._addedAnnotations.length, true, true);
         this.createTempStampAnnotationAsync();
@@ -19003,7 +18236,7 @@ class StampAnnotator extends Annotator {
         this.createTempStampAnnotationAsync();
     }
     emitDataChanged(count, clearable, undoable) {
-        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+        this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
             annotatorType: "stamp",
             elementCount: count,
             undoable,
@@ -19012,8 +18245,8 @@ class StampAnnotator extends Annotator {
         }));
     }
     createTempStampAnnotationAsync() {
-        return __awaiter$1(this, void 0, void 0, function* () {
-            const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
+        return __awaiter$4(this, void 0, void 0, function* () {
+            const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
             const renderResult = yield stamp.renderAsync();
             this._svgGroup.innerHTML = "";
             this._svgGroup.append(...renderResult.clipPaths || []);
@@ -19103,8 +18336,8 @@ class ContextMenu {
 }
 
 class TextAnnotator extends Annotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages);
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent);
         this._color = (options === null || options === void 0 ? void 0 : options.color) || TextAnnotator.lastColor || [0, 0, 0, 0.9];
         TextAnnotator.lastColor = this._color;
         this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || TextAnnotator.lastStrokeWidth || 3;
@@ -19118,7 +18351,7 @@ class TextAnnotator extends Annotator {
         super.init();
     }
     emitDataChanged(count, saveable, clearable, undoable) {
-        this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+        this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
             annotatorType: "text",
             elementCount: count,
             undoable,
@@ -19134,7 +18367,7 @@ class TextAnnotator extends Annotator {
         if (!this._pageId && this._pageId !== 0) {
             return;
         }
-        const page = this._pages.find(x => x.id === this._pageId);
+        const page = this._pageService.renderedPages.find(x => x.id === this._pageId);
         if (!page) {
             this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
             return;
@@ -19143,15 +18376,15 @@ class TextAnnotator extends Annotator {
         const py = ptop + ph;
         const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
         const vy = vtop + vh;
-        const offsetX = (px - vx) / this._scale;
-        const offsetY = (vy - py) / this._scale;
+        const offsetX = (px - vx) / this._pageService.scale;
+        const offsetY = (vy - py) / this._pageService.scale;
         this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
     }
 }
 
 class TextHighlightAnnotator extends TextAnnotator {
-    constructor(docData, parent, pages, options) {
-        super(docData, parent, pages, options || {});
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
         this.init();
     }
     destroy() {
@@ -19190,7 +18423,7 @@ class TextHighlightAnnotator extends TextAnnotator {
 const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout",
     "strikeout", "underline", "highlight"];
 class TextAnnotatorFactory {
-    static CreateAnnotator(docData, parent, pages, options, type) {
+    static CreateAnnotator(docService, pageService, parent, options, type) {
         type || (type = TextAnnotatorFactory.lastType || "popupText");
         TextAnnotatorFactory.lastType = type;
         switch (type) {
@@ -19205,15 +18438,15 @@ class TextAnnotatorFactory {
             case "underline":
                 return null;
             case "highlight":
-                return new TextHighlightAnnotator(docData, parent, pages, options);
+                return new TextHighlightAnnotator(docService, pageService, parent, options);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
     }
 }
 
-class AnnotationBuilder {
-    constructor(docData, pageService, viewer) {
+class AnnotationService {
+    constructor(docService, pageService, viewer) {
         this._annotationColors = [
             [0, 0, 0, 0.5],
             [0.804, 0, 0, 0.5],
@@ -19235,12 +18468,10 @@ class AnnotationBuilder {
             }
         };
         this.onPagesRendered = (event) => {
-            var _a;
             this._contextMenu.hide();
-            (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.refreshViewBox();
         };
-        if (!docData) {
-            throw new Error("Document data is not defined");
+        if (!docService) {
+            throw new Error("Document service is not defined");
         }
         if (!pageService) {
             throw new Error("Page service is not defined");
@@ -19248,7 +18479,7 @@ class AnnotationBuilder {
         if (!viewer) {
             throw new Error("Viewer is not defined");
         }
-        this._docData = docData;
+        this._docService = docService;
         this._pageService = pageService;
         this._viewer = viewer;
         this.init();
@@ -19264,14 +18495,14 @@ class AnnotationBuilder {
     }
     destroy() {
         var _a, _b, _c;
-        this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docService.eventService.removeListener(pagesRenderedEvent, this.onPagesRendered);
         this._viewer.container.removeEventListener("contextmenu", this.onContextMenu);
         (_a = this._viewerResizeObserver) === null || _a === void 0 ? void 0 : _a.disconnect();
         (_b = this._contextMenu) === null || _b === void 0 ? void 0 : _b.destroy();
         (_c = this._annotator) === null || _c === void 0 ? void 0 : _c.destroy();
     }
     init() {
-        this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
+        this._docService.eventService.addListener(pagesRenderedEvent, this.onPagesRendered);
         this._viewer.container.addEventListener("contextmenu", this.onContextMenu);
         const viewerRObserver = new ResizeObserver((entries) => {
             var _a;
@@ -19286,7 +18517,7 @@ class AnnotationBuilder {
         mode || (mode = this._mode);
         this._contextMenu.content = [];
         (_a = this._annotator) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._docData.setSelectedAnnotation(null);
+        this._docService.setSelectedAnnotation(null);
         this._mode = mode;
         if (this._mode === "text"
             && (this._textSubmode === "highlight"
@@ -19302,23 +18533,23 @@ class AnnotationBuilder {
                 this._contextMenu.enabled = false;
                 return;
             case "stamp":
-                this._annotator = new StampAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, this._stampType);
+                this._annotator = new StampAnnotator(this._docService, this._pageService, this._viewer.container, this._stampType);
                 break;
             case "pen":
-                this._annotator = new PenAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, {
+                this._annotator = new PenAnnotator(this._docService, this._pageService, this._viewer.container, {
                     strokeWidth: this._strokeWidth,
                     color: this._strokeColor,
                 });
                 break;
             case "geometric":
-                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, {
+                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docService, this._pageService, this._viewer.container, {
                     strokeWidth: this._strokeWidth,
                     color: this._strokeColor,
                     cloudMode: this._geometricCloudMode,
                 }, this._geometricSubmode);
                 break;
             case "text":
-                this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docData, this._viewer.container, this._pageService.renderedPages, {
+                this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docService, this._pageService, this._viewer.container, {
                     strokeWidth: this._strokeWidth,
                     color: this._strokeColor,
                 }, this._textSubmode);
@@ -19501,6 +18732,763 @@ class AnnotationBuilder {
     }
 }
 
+const viewerModes = ["text", "hand", "annotation"];
+class Viewer {
+    constructor(pageService, container, options) {
+        this._scale = 1;
+        this._pointerInfo = {
+            lastPos: null,
+            downPos: null,
+            downScroll: null,
+        };
+        this._pinchInfo = {
+            active: false,
+            lastDist: 0,
+            minDist: 10,
+            sensitivity: 0.025,
+            target: null,
+        };
+        this.onPagesLoaded = (event) => {
+            var _a;
+            (_a = event.detail.pages) === null || _a === void 0 ? void 0 : _a.forEach(x => {
+                x.scale = this._scale;
+                this._container.append(x.viewContainer);
+            });
+            this.renderVisible();
+        };
+        this.onScrollRequest = (event) => {
+            this.scrollToPage(event.detail.pageIndex);
+        };
+        this.onPointerMove = (event) => {
+            const { clientX, clientY } = event;
+            this._pointerInfo.lastPos = new Vec2(clientX, clientY);
+        };
+        this.onScroll = (e) => {
+            this.renderVisible();
+        };
+        this.onPointerDownScroll = (event) => {
+            if (this._mode !== "hand") {
+                return;
+            }
+            const { clientX, clientY } = event;
+            this._pointerInfo.downPos = new Vec2(clientX, clientY);
+            this._pointerInfo.downScroll = new Vec2(this._container.scrollLeft, this._container.scrollTop);
+            const onPointerMove = (moveEvent) => {
+                const { x, y } = this._pointerInfo.downPos;
+                const { x: left, y: top } = this._pointerInfo.downScroll;
+                const dX = moveEvent.clientX - x;
+                const dY = moveEvent.clientY - y;
+                this._container.scrollTo(left - dX, top - dY);
+            };
+            const onPointerUp = (upEvent) => {
+                this._pointerInfo.downPos = null;
+                this._pointerInfo.downScroll = null;
+                document.removeEventListener("pointermove", onPointerMove);
+                document.removeEventListener("pointerup", onPointerUp);
+                document.removeEventListener("pointerout", onPointerUp);
+            };
+            document.addEventListener("pointermove", onPointerMove);
+            document.addEventListener("pointerup", onPointerUp);
+            document.addEventListener("pointerout", onPointerUp);
+        };
+        this.onWheelZoom = (event) => {
+            if (!event.ctrlKey) {
+                return;
+            }
+            event.preventDefault();
+            if (event.deltaY > 0) {
+                this.zoomOutCentered(this._pointerInfo.lastPos);
+            }
+            else {
+                this.zoomInCentered(this._pointerInfo.lastPos);
+            }
+        };
+        this.onTouchZoom = (event) => {
+            if (event.touches.length !== 2) {
+                return;
+            }
+            const a = event.touches[0];
+            const b = event.touches[1];
+            this._pinchInfo.active = true;
+            this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
+            const onTouchMove = (moveEvent) => {
+                if (moveEvent.touches.length !== 2) {
+                    return;
+                }
+                const mA = moveEvent.touches[0];
+                const mB = moveEvent.touches[1];
+                const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+                const delta = dist - this._pinchInfo.lastDist;
+                const factor = Math.floor(delta / this._pinchInfo.minDist);
+                if (factor) {
+                    const center = new Vec2((mB.clientX + mA.clientX) / 2, (mB.clientY + mA.clientY) / 2);
+                    this._pinchInfo.lastDist = dist;
+                    this.zoom(factor * this._pinchInfo.sensitivity, center);
+                }
+            };
+            const onTouchEnd = (endEvent) => {
+                this._pinchInfo.active = false;
+                this._pinchInfo.lastDist = 0;
+                event.target.removeEventListener("touchmove", onTouchMove);
+                event.target.removeEventListener("touchend", onTouchEnd);
+                event.target.removeEventListener("touchcancel", onTouchEnd);
+            };
+            event.target.addEventListener("touchmove", onTouchMove);
+            event.target.addEventListener("touchend", onTouchEnd);
+            event.target.addEventListener("touchcancel", onTouchEnd);
+        };
+        if (!container) {
+            throw new Error("Container is not defined");
+        }
+        this._pageService = pageService;
+        this._container = container;
+        this._minScale = (options === null || options === void 0 ? void 0 : options.minScale) || 0.25;
+        this._maxScale = (options === null || options === void 0 ? void 0 : options.maxScale) || 4;
+        this.init();
+    }
+    get container() {
+        return this._container;
+    }
+    get mode() {
+        return this._mode;
+    }
+    set mode(value) {
+        if (!value || value === this._mode) {
+            return;
+        }
+        this._mode = value;
+    }
+    get scale() {
+        return this._scale;
+    }
+    destroy() {
+        this._pageService.eventService.removeListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventService.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
+    }
+    zoomOut() {
+        this.zoomOutCentered();
+    }
+    zoomIn() {
+        this.zoomInCentered();
+    }
+    zoomFitViewer() {
+        const cWidth = this._container.getBoundingClientRect().width;
+        const pWidth = this._pageService.getCurrentPage().viewContainer.getBoundingClientRect().width;
+        const scale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+        this.setScale(scale);
+        this.scrollToPage(this._pageService.currentPageIndex);
+    }
+    zoomFitPage() {
+        const { width: cWidth, height: cHeight } = this._container.getBoundingClientRect();
+        const { width: pWidth, height: pHeight } = this._pageService.getCurrentPage().viewContainer.getBoundingClientRect();
+        const hScale = clamp((cWidth - 20) / pWidth * this._scale, this._minScale, this._maxScale);
+        const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
+        this.setScale(Math.min(hScale, vScale));
+        this.scrollToPage(this._pageService.currentPageIndex);
+    }
+    scrollToPage(pageNumber) {
+        if (!this._pageService.pages.length) {
+            return;
+        }
+        const { top: cTop } = this._container.getBoundingClientRect();
+        const { top: pTop } = this._pageService.getPage(pageNumber).viewContainer.getBoundingClientRect();
+        const scroll = pTop - (cTop - this._container.scrollTop);
+        this._container.scrollTo(this._container.scrollLeft, scroll);
+    }
+    init() {
+        this._container.addEventListener("scroll", this.onScroll);
+        this._container.addEventListener("wheel", this.onWheelZoom, { passive: false });
+        this._container.addEventListener("pointermove", this.onPointerMove);
+        this._container.addEventListener("pointerdown", this.onPointerDownScroll);
+        this._container.addEventListener("touchstart", this.onTouchZoom);
+        this._pageService.eventService.addListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventService.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
+    }
+    renderVisible() {
+        this._pageService.renderVisiblePages(this._container);
+    }
+    setScale(scale, cursorPosition = null) {
+        if (!scale || scale === this._scale) {
+            return;
+        }
+        let pageContainerUnderPivot;
+        let xPageRatio;
+        let yPageRatio;
+        if (cursorPosition) {
+            for (const page of this._pageService.pages) {
+                const { x: x, y: y } = cursorPosition;
+                const { x: pX, y: pY, width: pWidth, height: pHeight } = page.viewContainer.getBoundingClientRect();
+                if (pX <= x
+                    && pX + pWidth >= x
+                    && pY <= y
+                    && pY + pHeight >= y) {
+                    pageContainerUnderPivot = page.viewContainer;
+                    xPageRatio = (x - pX) / pWidth;
+                    yPageRatio = (y - pY) / pHeight;
+                    break;
+                }
+            }
+        }
+        this._scale = scale;
+        this._pageService.scale = scale;
+        if (pageContainerUnderPivot
+            &&
+                (this._container.scrollHeight > this._container.clientHeight
+                    || this._container.scrollWidth > this._container.clientWidth)) {
+            const { x: initialX, y: initialY } = cursorPosition;
+            const { x: pX, y: pY, width: pWidth, height: pHeight } = pageContainerUnderPivot.getBoundingClientRect();
+            const resultX = pX + (pWidth * xPageRatio);
+            const resultY = pY + (pHeight * yPageRatio);
+            let scrollLeft = this._container.scrollLeft + (resultX - initialX);
+            let scrollTop = this._container.scrollTop + (resultY - initialY);
+            scrollLeft = scrollLeft < 0
+                ? 0
+                : scrollLeft;
+            scrollTop = scrollTop < 0
+                ? 0
+                : scrollTop;
+            if (scrollTop !== this._container.scrollTop
+                || scrollLeft !== this._container.scrollLeft) {
+                this._container.scrollTo(scrollLeft, scrollTop);
+                return;
+            }
+        }
+        setTimeout(() => this.renderVisible(), 0);
+    }
+    zoom(diff, cursorPosition = null) {
+        const scale = clamp(this._scale + diff, this._minScale, this._maxScale);
+        this.setScale(scale, cursorPosition || this.getCenterPosition());
+    }
+    zoomOutCentered(center = null) {
+        this.zoom(-0.25, center);
+    }
+    zoomInCentered(center = null) {
+        this.zoom(0.25, center);
+    }
+    getCenterPosition() {
+        const { x, y, width, height } = this._container.getBoundingClientRect();
+        return new Vec2(x + width / 2, y + height / 2);
+    }
+}
+
+class Previewer {
+    constructor(pageService, container, options) {
+        this._hidden = true;
+        this.onPagesLoaded = (event) => {
+            var _a;
+            (_a = event.detail.pages) === null || _a === void 0 ? void 0 : _a.forEach(x => {
+                x.previewContainer.addEventListener("click", this.onPreviewerPageClick);
+                this._container.append(x.previewContainer);
+            });
+            this.renderVisible();
+        };
+        this.onCurrentPageChanged = (event) => {
+            this.scrollToPreview(event.detail.newIndex);
+        };
+        this.onPreviewerPageClick = (e) => {
+            let target = e.target;
+            let pageNumber;
+            while (target && !pageNumber) {
+                const data = target.dataset["pageNumber"];
+                if (data) {
+                    pageNumber = +data;
+                }
+                else {
+                    target = target.parentElement;
+                }
+            }
+            if (pageNumber) {
+                this._pageService.requestSetCurrentPageIndex(pageNumber - 1);
+            }
+        };
+        this.onPreviewerScroll = (e) => {
+            this.renderVisible();
+        };
+        if (!pageService) {
+            throw new Error("Page service is not defined");
+        }
+        if (!container) {
+            throw new Error("Container is not defined");
+        }
+        this._pageService = pageService;
+        this._container = container;
+        this._canvasWidth = (options === null || options === void 0 ? void 0 : options.canvasWidth) || 100;
+        this.init();
+    }
+    get canvasWidth() {
+        return this._canvasWidth;
+    }
+    get hidden() {
+        return this._hidden;
+    }
+    destroy() {
+        this._pageService.eventService.removeListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventService.removeListener(currentPageChangeEvent, this.onCurrentPageChanged);
+    }
+    show() {
+        this._hidden = false;
+        setTimeout(() => this.renderVisible(), 1000);
+    }
+    hide() {
+        this._hidden = true;
+    }
+    renderVisible() {
+        if (this._hidden) {
+            return;
+        }
+        this._pageService.renderVisiblePreviews(this._container);
+    }
+    init() {
+        this._container.addEventListener("scroll", this.onPreviewerScroll);
+        this._pageService.eventService.addListener(pagesLoadedEvent, this.onPagesLoaded);
+        this._pageService.eventService.addListener(currentPageChangeEvent, this.onCurrentPageChanged);
+    }
+    scrollToPreview(pageIndex) {
+        if (!this._pageService.pages.length) {
+            return;
+        }
+        const { top: cTop, height: cHeight } = this._container.getBoundingClientRect();
+        const { top: pTop, height: pHeight } = this._pageService.getPage(pageIndex).previewContainer.getBoundingClientRect();
+        const cCenter = cTop + cHeight / 2;
+        const pCenter = pTop + pHeight / 2;
+        const scroll = pCenter - cCenter + this._container.scrollTop;
+        this._container.scrollTo(0, scroll);
+    }
+}
+
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class PageTextView {
+    constructor(pageProxy) {
+        this.onMouseDown = (e) => {
+            var _a;
+            if (this._divModeTimer) {
+                clearTimeout(this._divModeTimer);
+                this._divModeTimer = null;
+            }
+            (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
+        };
+        this.onMouseUp = (e) => {
+            this._divModeTimer = setTimeout(() => {
+                var _a;
+                (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
+                this._divModeTimer = null;
+            }, 300);
+        };
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
+        this._pageProxy = pageProxy;
+        this._container = document.createElement("div");
+        this._container.classList.add("page-text");
+        this._container.addEventListener("mousedown", this.onMouseDown);
+        this._container.addEventListener("mouseup", this.onMouseUp);
+    }
+    static appendPageTextAsync(pageProxy, parent, scale) {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            const textObj = new PageTextView(pageProxy);
+            yield textObj.renderTextLayerAsync(scale);
+            parent.append(textObj._container);
+            return textObj;
+        });
+    }
+    destroy() {
+        this.destroyRenderTask();
+        if (this._container) {
+            this._container.remove();
+            this._container = null;
+        }
+    }
+    renderTextLayerAsync(scale) {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            this.clear();
+            this.destroyRenderTask();
+            const viewport = this._pageProxy.getViewport({ scale });
+            const textContentStream = this._pageProxy.streamTextContent();
+            this._renderTask = renderTextLayer({
+                container: this._container,
+                textContentStream,
+                viewport,
+                enhanceTextSelection: true,
+            });
+            try {
+                yield this._renderTask.promise;
+            }
+            catch (error) {
+                if (error.message === "TextLayer task cancelled.") {
+                    return false;
+                }
+                else {
+                    throw error;
+                }
+            }
+            const spans = this._container.querySelectorAll("span");
+            spans.forEach(x => {
+                const blCornerSpan = document.createElement("span");
+                blCornerSpan.classList.add("dummy-corner", "bl");
+                const brCornerSpan = document.createElement("span");
+                brCornerSpan.classList.add("dummy-corner", "br");
+                const trCornerSpan = document.createElement("span");
+                trCornerSpan.classList.add("dummy-corner", "tr");
+                const tlCornerSpan = document.createElement("span");
+                tlCornerSpan.classList.add("dummy-corner", "tl");
+                x.append(blCornerSpan, brCornerSpan, trCornerSpan, tlCornerSpan);
+            });
+            return true;
+        });
+    }
+    clear() {
+        this._container.innerHTML = "";
+    }
+    destroyRenderTask() {
+        if (this._renderTask) {
+            this._renderTask.cancel();
+            this._renderTask = null;
+        }
+    }
+}
+
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class PageAnnotationView {
+    constructor(docService, pageId, pageDimensions) {
+        this._rendered = new Set();
+        this.onAnnotationSelectionChange = (e) => {
+            var _a;
+            if (e.detail.type === "select") {
+                if ((_a = e.detail.annotations) === null || _a === void 0 ? void 0 : _a.length) {
+                    this._container.style.touchAction = "none";
+                }
+                else {
+                    this._container.style.touchAction = "";
+                }
+            }
+        };
+        if (!docService || isNaN(pageId) || !pageDimensions) {
+            throw new Error("Required argument not found");
+        }
+        this._pageId = pageId;
+        this._pageDimensions = pageDimensions;
+        this._docService = docService;
+        this._container = document.createElement("div");
+        this._container.classList.add("page-annotations");
+        this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this._svg.classList.add("stretch");
+        this._svg.setAttribute("data-page-id", pageId + "");
+        this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
+        this._svg.setAttribute("transform", "scale(1, -1)");
+        this._svg.addEventListener("pointerdown", (e) => {
+            if (e.target === this._svg) {
+                docService.setSelectedAnnotation(null);
+            }
+        });
+        this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        this._container.append(this._svg);
+    }
+    destroy() {
+        this.remove();
+        this._container = null;
+        this._destroyed = true;
+        this._rendered.forEach(x => {
+            x.$onPointerDownAction = null;
+            x.$onPointerEnterAction = null;
+            x.$onPointerLeaveAction = null;
+        });
+        this._rendered.clear();
+    }
+    remove() {
+        var _a;
+        (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
+        this._docService.eventService.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
+    }
+    appendAsync(parent) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (this._destroyed) {
+                return;
+            }
+            yield this.renderAnnotationsAsync();
+            parent.append(this._container);
+            this._docService.eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
+        });
+    }
+    renderAnnotationsAsync() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            this.clear();
+            const annotations = this._docService.getPageAnnotations(this._pageId) || [];
+            for (let i = 0; i < annotations.length || 0; i++) {
+                const annotation = annotations[i];
+                if (annotation.deleted) {
+                    continue;
+                }
+                let renderResult;
+                if (!this._rendered.has(annotation)) {
+                    annotation.$onPointerDownAction = (e) => {
+                        this._docService.eventService.dispatchEvent(new AnnotSelectionRequestEvent({ annotation }));
+                    };
+                    annotation.$onPointerEnterAction = (e) => {
+                        this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation }));
+                    };
+                    annotation.$onPointerLeaveAction = (e) => {
+                        this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
+                    };
+                    renderResult = yield annotation.renderAsync();
+                }
+                else {
+                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync());
+                }
+                if (!renderResult) {
+                    continue;
+                }
+                this._rendered.add(annotation);
+                const { svg, clipPaths } = renderResult;
+                this._svg.append(svg);
+                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
+            }
+            this._svg.append(this._defs);
+            return true;
+        });
+    }
+    clear() {
+        this._svg.innerHTML = "";
+    }
+}
+
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class PageView {
+    constructor(docService, pageProxy, previewWidth) {
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
+        if (!docService) {
+            throw new Error("Annotation data is not defined");
+        }
+        this._pageProxy = pageProxy;
+        this._viewport = pageProxy.getViewport({ scale: 1 });
+        this._docService = docService;
+        this.number = pageProxy.pageNumber;
+        this.id = pageProxy.ref["num"];
+        this.generation = pageProxy.ref["gen"];
+        const { width, height } = this._viewport;
+        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
+        const previewHeight = previewWidth * (height / width);
+        this._dimensions = { width, height, previewWidth, previewHeight };
+        this._previewContainer = document.createElement("div");
+        this._previewContainer.classList.add("page-preview");
+        this._previewContainer.setAttribute("data-page-number", this.number + "");
+        this._previewContainer.setAttribute("data-page-id", this.id + "");
+        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
+        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
+        this._viewContainer = document.createElement("div");
+        this._viewContainer.classList.add("page");
+        this._viewContainer.setAttribute("data-page-number", this.number + "");
+        this._viewContainer.setAttribute("data-page-id", this.id + "");
+        this._viewContainer.setAttribute("data-page-gen", this.generation + "");
+        this.scale = 1;
+    }
+    get previewContainer() {
+        return this._previewContainer;
+    }
+    get viewContainer() {
+        return this._viewContainer;
+    }
+    set _viewRendered(value) {
+        this.$viewRendered = value;
+        this._viewContainer.setAttribute("data-loaded", value + "");
+    }
+    get _viewRendered() {
+        return this.$viewRendered;
+    }
+    get scale() {
+        return this._scale;
+    }
+    set scale(value) {
+        if (value <= 0 || this._scale === value) {
+            return;
+        }
+        this._scale = value;
+        const dpr = window.devicePixelRatio;
+        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
+        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
+        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+        if (this._viewCanvas) {
+            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
+            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+        }
+        this._scaleIsValid = false;
+    }
+    get viewValid() {
+        return this._scaleIsValid && this._viewRendered;
+    }
+    destroy() {
+        this._previewContainer.remove();
+        this._viewContainer.remove();
+        this._pageProxy.cleanup();
+    }
+    renderPreviewAsync(force = false) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
+            }
+            if (!force && this._previewRendered) {
+                return;
+            }
+            this._renderPromise = this.runPreviewRenderAsync();
+            return this._renderPromise;
+        });
+    }
+    renderViewAsync(force = false) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            if (this._renderPromise) {
+                if (force) {
+                    this.cancelRenderTask();
+                }
+                yield this._renderPromise;
+            }
+            if (!force && this.viewValid) {
+                return;
+            }
+            this._renderPromise = this.runViewRenderAsync();
+            return this._renderPromise;
+        });
+    }
+    clearPreview() {
+        this._previewContainer.innerHTML = "";
+    }
+    clearView() {
+        var _a, _b, _c;
+        (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._annotations = null;
+        (_b = this._text) === null || _b === void 0 ? void 0 : _b.destroy();
+        this._text = null;
+        (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
+        this._viewRendered = false;
+    }
+    cancelRenderTask() {
+        if (this._renderTask) {
+            this._renderTask.cancel();
+            this._renderTask = null;
+        }
+    }
+    runRenderTaskAsync(renderParams) {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            this.cancelRenderTask();
+            this._renderTask = this._pageProxy.render(renderParams);
+            try {
+                yield this._renderTask.promise;
+            }
+            catch (error) {
+                if (error instanceof RenderingCancelledException) {
+                    return false;
+                }
+                else {
+                    throw error;
+                }
+            }
+            finally {
+                this._renderTask = null;
+            }
+            return true;
+        });
+    }
+    createPreviewCanvas() {
+        const canvas = document.createElement("canvas");
+        canvas.classList.add("page-canvas");
+        const dpr = window.devicePixelRatio;
+        const { previewWidth: width, previewHeight: height } = this._dimensions;
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        return canvas;
+    }
+    createViewCanvas() {
+        const canvas = document.createElement("canvas");
+        canvas.classList.add("page-canvas");
+        canvas.style.width = this._dimensions.scaledWidth + "px";
+        canvas.style.height = this._dimensions.scaledHeight + "px";
+        canvas.width = this._dimensions.scaledDprWidth;
+        canvas.height = this._dimensions.scaledDprHeight;
+        return canvas;
+    }
+    runPreviewRenderAsync() {
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const canvas = this.createPreviewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result) {
+                this._previewRendered = false;
+                return;
+            }
+            this._previewContainer.innerHTML = "";
+            this._previewContainer.append(canvas);
+            this._previewRendered = true;
+        });
+    }
+    runViewRenderAsync() {
+        var _a, _b;
+        return __awaiter$1(this, void 0, void 0, function* () {
+            const scale = this._scale;
+            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._text = null;
+            const canvas = this.createViewCanvas();
+            const params = {
+                canvasContext: canvas.getContext("2d"),
+                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
+                enableWebGL: true,
+            };
+            const result = yield this.runRenderTaskAsync(params);
+            if (!result || scale !== this._scale) {
+                return;
+            }
+            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+            this._viewContainer.append(canvas);
+            this._viewCanvas = canvas;
+            this._viewRendered = true;
+            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            if (!this._annotations) {
+                const { width: x, height: y } = this._dimensions;
+                this._annotations = new PageAnnotationView(this._docService, this.id, new Vec2(x, y));
+            }
+            yield this._annotations.appendAsync(this.viewContainer);
+            if (scale === this._scale) {
+                this._scaleIsValid = true;
+            }
+        });
+    }
+}
+
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -19592,15 +19580,15 @@ class TsPdfViewer {
         };
         this.annotatorUndo = () => {
             var _a;
-            (_a = this._annotationBuilder.annotator) === null || _a === void 0 ? void 0 : _a.undo();
+            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.undo();
         };
         this.annotatorClear = () => {
             var _a;
-            (_a = this._annotationBuilder.annotator) === null || _a === void 0 ? void 0 : _a.clear();
+            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.clear();
         };
         this.annotatorSave = () => {
             var _a;
-            (_a = this._annotationBuilder.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotation();
+            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotation();
         };
         this.onAnnotationChange = (e) => {
             if (!e.detail) {
@@ -19672,16 +19660,16 @@ class TsPdfViewer {
         };
         this.onAnnotationEditTextButtonClick = () => __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
-            const initialText = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.getSelectedAnnotationTextContent();
+            const initialText = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.getSelectedAnnotationTextContent();
             const text = yield this.showTextDialogAsync(initialText);
             if (text === null) {
                 return;
             }
-            (_b = this._docData) === null || _b === void 0 ? void 0 : _b.setSelectedAnnotationTextContent(text);
+            (_b = this._docService) === null || _b === void 0 ? void 0 : _b.setSelectedAnnotationTextContent(text);
         });
         this.onAnnotationDeleteButtonClick = () => {
             var _a;
-            (_a = this._docData) === null || _a === void 0 ? void 0 : _a.removeSelectedAnnotation();
+            (_a = this._docService) === null || _a === void 0 ? void 0 : _a.removeSelectedAnnotation();
         };
         this.onAnnotationSelectModeButtonClick = () => {
             this.setAnnotationMode("select");
@@ -19768,8 +19756,8 @@ class TsPdfViewer {
         this._shadowRoot = this._outerContainer.attachShadow({ mode: "open" });
         this._shadowRoot.innerHTML = styles + html;
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
-        this._eventController = new ElementEventController(this._mainContainer);
-        this._pageService = new PageService(this._eventController, { visibleAdjPages: visibleAdjPages });
+        this._eventService = new ElementEventService(this._mainContainer);
+        this._pageService = new PageService(this._eventService, { visibleAdjPages: visibleAdjPages });
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
         this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
         this.initMainContainerEventHandlers();
@@ -19777,9 +19765,9 @@ class TsPdfViewer {
         this.initFileButtons(options.fileButtons || []);
         this.initModeSwitchButtons();
         this.initAnnotationButtons();
-        this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
-        this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-        this._eventController.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
+        this._eventService.addListener(annotChangeEvent, this.onAnnotationChange);
+        this._eventService.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
+        this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
         document.addEventListener("selectionchange", this.onTextSelectionChange);
     }
     static downloadFile(blob, name) {
@@ -19795,9 +19783,9 @@ class TsPdfViewer {
     destroy() {
         var _a, _b, _c, _d;
         this._annotChangeCallback = null;
-        this._eventController.destroy();
+        this._eventService.destroy();
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
-        (_b = this._annotationBuilder) === null || _b === void 0 ? void 0 : _b.destroy();
+        (_b = this._annotationService) === null || _b === void 0 ? void 0 : _b.destroy();
         this._viewer.destroy();
         this._previewer.destroy();
         this._pageService.destroy();
@@ -19805,7 +19793,7 @@ class TsPdfViewer {
             this._pdfDocument.cleanup();
             this._pdfDocument.destroy();
         }
-        (_c = this._docData) === null || _c === void 0 ? void 0 : _c.destroy();
+        (_c = this._docService) === null || _c === void 0 ? void 0 : _c.destroy();
         (_d = this._mainContainerRObserver) === null || _d === void 0 ? void 0 : _d.disconnect();
         this._shadowRoot.innerHTML = "";
         document.removeEventListener("selectionchange", this.onTextSelectionChange);
@@ -19835,10 +19823,10 @@ class TsPdfViewer {
             catch (e) {
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
-            const docData = new DocumentData(this._eventController, data, this._userName);
+            const docService = new DocumentService(this._eventService, data, this._userName);
             let password;
             while (true) {
-                const authenticated = docData.tryAuthenticate(password);
+                const authenticated = docService.tryAuthenticate(password);
                 if (!authenticated) {
                     password = yield this.showPasswordDialogAsync();
                     if (password === null) {
@@ -19848,7 +19836,7 @@ class TsPdfViewer {
                 }
                 break;
             }
-            data = docData.getDataWithoutSupportedAnnotations();
+            data = docService.getDataWithoutSupportedAnnotations();
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();
@@ -19863,9 +19851,9 @@ class TsPdfViewer {
                 throw new Error(`Cannot open PDF: ${e.message}`);
             }
             this._pdfDocument = doc;
-            this._docData = docData;
+            this._docService = docService;
             yield this.refreshPagesAsync();
-            this._annotationBuilder = new AnnotationBuilder(this._docData, this._pageService, this._viewer);
+            this._annotationService = new AnnotationService(this._docService, this._pageService, this._viewer);
             this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
         });
@@ -19886,9 +19874,9 @@ class TsPdfViewer {
             if (this._pdfDocument) {
                 this._pdfDocument.destroy();
                 this._pdfDocument = null;
-                (_a = this._annotationBuilder) === null || _a === void 0 ? void 0 : _a.destroy();
-                (_b = this._docData) === null || _b === void 0 ? void 0 : _b.destroy();
-                this._docData = null;
+                (_a = this._annotationService) === null || _a === void 0 ? void 0 : _a.destroy();
+                (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
+                this._docService = null;
             }
             yield this.refreshPagesAsync();
         });
@@ -19896,7 +19884,7 @@ class TsPdfViewer {
     importAnnotations(dtos) {
         var _a;
         try {
-            (_a = this._docData) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotations(dtos);
+            (_a = this._docService) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotations(dtos);
         }
         catch (e) {
             console.log(`Error while importing annotations: ${e.message}`);
@@ -19904,14 +19892,14 @@ class TsPdfViewer {
     }
     exportAnnotations() {
         var _a;
-        const dtos = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
+        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
         return dtos;
     }
     importAnnotationsFromJson(json) {
         var _a;
         try {
             const dtos = JSON.parse(json);
-            (_a = this._docData) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotations(dtos);
+            (_a = this._docService) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotations(dtos);
         }
         catch (e) {
             console.log(`Error while importing annotations: ${e.message}`);
@@ -19919,12 +19907,12 @@ class TsPdfViewer {
     }
     exportAnnotationsToJson() {
         var _a;
-        const dtos = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
+        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
         return JSON.stringify(dtos);
     }
     getCurrentPdf() {
         var _a;
-        const data = (_a = this._docData) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
+        const data = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             return null;
         }
@@ -20054,13 +20042,13 @@ class TsPdfViewer {
     }
     setAnnotationMode(mode) {
         var _a, _b;
-        if (!this._annotationBuilder || !mode) {
+        if (!this._annotationService || !mode) {
             return;
         }
-        const prevMode = this._annotationBuilder.mode;
+        const prevMode = this._annotationService.mode;
         (_a = this._shadowRoot.querySelector(`#button-annotation-mode-${prevMode}`)) === null || _a === void 0 ? void 0 : _a.classList.remove("on");
         (_b = this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)) === null || _b === void 0 ? void 0 : _b.classList.add("on");
-        this._annotationBuilder.mode = mode;
+        this._annotationService.mode = mode;
     }
     refreshPagesAsync() {
         var _a;
@@ -20071,7 +20059,7 @@ class TsPdfViewer {
             if (docPagesNumber) {
                 for (let i = 0; i < docPagesNumber; i++) {
                     const pageProxy = yield this._pdfDocument.getPage(i + 1);
-                    const page = new PageView(this._docData, pageProxy, this._previewer.canvasWidth);
+                    const page = new PageView(this._docService, pageProxy, this._previewer.canvasWidth);
                     pages.push(page);
                 }
             }

@@ -1,19 +1,19 @@
 import { mat3From4Vec2, Vec2 } from "../../common/math";
 import { getRandomUuid } from "../../common/uuid";
 
-import { DocumentData } from "../../document/document-data";
+import { PageService } from "../../services/page-service";
+import { DocumentService } from "../../services/document-service";
 import { LineAnnotation, LineAnnotationDto, 
   lineIntents } from "../../document/entities/annotations/markup/geometric/line-annotation";
 import { lineEndingTypes } from "../../document/const";
 
-import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";
 
 export class GeometricArrowAnnotator extends GeometricLineAnnotator {  
-  constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], options?: GeometricAnnotatorOptions) {
-    super(docData, parent, pages, options || {});
+  constructor(docService: DocumentService, pageService: PageService, 
+    parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
+    super(docService, pageService, parent, options || {});
   }
    
   protected redrawLine(min: Vec2, max: Vec2) {
@@ -58,7 +58,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
 
       dateCreated: nowString,
       dateModified: nowString,
-      author: this._docData.userName || "unknown",
+      author: this._docService.userName || "unknown",
 
       textContent: null,
 

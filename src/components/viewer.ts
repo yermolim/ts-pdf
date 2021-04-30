@@ -1,6 +1,6 @@
 import { clamp, Vec2, getDistance } from "../common/math";
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
-  pagesLoadedEvent, PagesLoadedEvent } from "./pages/page-service";
+  pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
 
 export const viewerModes = ["text", "hand", "annotation"] as const;
 export type ViewerMode =  typeof viewerModes[number];
@@ -66,8 +66,8 @@ export class Viewer {
   } 
   
   destroy() {  
-    this._pageService.eventController.removeListener(pagesLoadedEvent, this.onPagesLoaded);
-    this._pageService.eventController.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
+    this._pageService.eventService.removeListener(pagesLoadedEvent, this.onPagesLoaded);
+    this._pageService.eventService.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
   }
 
   zoomOut() {
@@ -115,8 +115,8 @@ export class Viewer {
     this._container.addEventListener("pointerdown", this.onPointerDownScroll);    
     this._container.addEventListener("touchstart", this.onTouchZoom);  
 
-    this._pageService.eventController.addListener(pagesLoadedEvent, this.onPagesLoaded);
-    this._pageService.eventController.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
+    this._pageService.eventService.addListener(pagesLoadedEvent, this.onPagesLoaded);
+    this._pageService.eventService.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
   }
   
   private renderVisible() {

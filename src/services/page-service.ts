@@ -1,7 +1,7 @@
-import { clamp } from "../../common/math";
+import { clamp } from "../common/math";
 
-import { ElementEventController } from "../../common/element-event-controller";
-import { PageView } from "./page-view";
+import { ElementEventService } from "./element-event-service";
+import { PageView } from "../components/pages/page-view";
 
 //#region custom events
 export const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest" as const;
@@ -81,9 +81,9 @@ export interface PageServiceOptions {
 }
 
 export class PageService {
-  private readonly _eventController: ElementEventController;
-  get eventController(): ElementEventController {
-    return this._eventController;
+  private readonly _eventService: ElementEventService;
+  get eventService(): ElementEventService {
+    return this._eventService;
   }
 
   private readonly _visibleAdjPages: number;
@@ -100,7 +100,7 @@ export class PageService {
   set pages(value: PageView[]) {
     this._pages.forEach(x => x.destroy());
     this._pages = value.slice();
-    this._eventController.dispatchEvent(new PagesLoadedEvent({pages: value.slice()}));
+    this._eventService.dispatchEvent(new PagesLoadedEvent({pages: value.slice()}));
     this.setCurrentPageIndex(0);
   }
 
@@ -113,19 +113,22 @@ export class PageService {
     return this._pages.length || 0;
   }
 
+  get scale(): number {
+    return this._renderedPages[0]?.scale || 1;
+  }
   set scale(value: number) {
     if (!value || isNaN(value)) {
       value = 1;
     }
     this._pages.forEach(x => x.scale = value);
-    this._eventController.dispatchEvent(new ScaleChangedEvent({scale: value}));
+    this._eventService.dispatchEvent(new ScaleChangedEvent({scale: value}));
   }
 
-  constructor(eventController: ElementEventController, options?: PageServiceOptions) {   
-    if (!eventController) {
+  constructor(eventService: ElementEventService, options?: PageServiceOptions) {   
+    if (!eventService) {
       throw new Error("Event controller is not defined");
     } 
-    this._eventController = eventController;
+    this._eventService = eventService;
 
     this._visibleAdjPages = options?.visibleAdjPages || 0;
   }
@@ -150,7 +153,7 @@ export class PageService {
   requestSetCurrentPageIndex(index: number) {
     index = clamp(index || 0, 0, this._pages.length - 1);
     if (index !== this._currentPageIndex) {
-      this._eventController.dispatchEvent(new CurrentPageChangeRequestEvent({pageIndex: index}));
+      this._eventService.dispatchEvent(new CurrentPageChangeRequestEvent({pageIndex: index}));
     }
   }
 
@@ -172,7 +175,7 @@ export class PageService {
     }
 
     this._renderedPages = renderedPages;
-    this._eventController.dispatchEvent(new PagesRenderedEvent({pages: renderedPages.slice()}));
+    this._eventService.dispatchEvent(new PagesRenderedEvent({pages: renderedPages.slice()}));
 
     this.updateCurrentPage(container);
   }  
@@ -213,7 +216,7 @@ export class PageService {
       this._currentPageIndex = newIndex;
       this._pages[oldIndex]?.previewContainer.classList.remove("current");
       this._pages[newIndex]?.previewContainer.classList.add("current");
-      this._eventController.dispatchEvent(new CurrentPageChangeEvent({oldIndex, newIndex}));
+      this._eventService.dispatchEvent(new CurrentPageChangeEvent({oldIndex, newIndex}));
     }
   }
 

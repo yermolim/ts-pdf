@@ -2,10 +2,10 @@ import { Vec2, vecMinMax } from "../../common/math";
 import { Quadruple } from "../../common/types";
 import { getRandomUuid } from "../../common/uuid";
 
-import { DocumentData } from "../../document/document-data";
+import { DocumentService } from "../../services/document-service";
+import { PageService } from "../../services/page-service";
 import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
 
-import { PageView } from "../../components/pages/page-view";
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 import { PenData } from "./pen-data";
 
@@ -23,9 +23,9 @@ export class PenAnnotator extends Annotator {
   protected _color: Quadruple;
   protected _strokeWidth: number;
 
-  constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], options?: PenAnnotatorOptions) {
-    super(docData, parent, pages);
+  constructor(docService: DocumentService, pageService: PageService, parent: HTMLDivElement, 
+    options?: PenAnnotatorOptions) {
+    super(docService, pageService, parent);
     this.init();
 
     this._color = options?.color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
@@ -66,7 +66,7 @@ export class PenAnnotator extends Annotator {
     // DEBUG
     // console.log(annotation);
 
-    this._docData.appendAnnotationToPage(pageId, annotation);
+    this._docService.appendAnnotationToPage(pageId, annotation);
     
     this.removeTempPenData();
   }
@@ -84,7 +84,7 @@ export class PenAnnotator extends Annotator {
     if (!this._annotationPenData) {
       return;
     }
-    const page = this._pages.find(x => x.id === this._annotationPenData.id);
+    const page = this._pageService.renderedPages.find(x => x.id === this._annotationPenData.id);
     if (!page) {
       // set scale to 0 to hide pen group if it's page is not rendered
       this._annotationPenData.setGroupMatrix(
@@ -96,8 +96,8 @@ export class PenAnnotator extends Annotator {
     const py = ptop + ph;
     const {height: vh, top: vtop, left: vx} = this._overlay.getBoundingClientRect();
     const vy = vtop + vh;
-    const offsetX = (px - vx) / this._scale;
-    const offsetY = (vy - py) / this._scale;
+    const offsetX = (px - vx) / this._pageService.scale;
+    const offsetY = (vy - py) / this._pageService.scale;
     this._annotationPenData.setGroupMatrix(
       [1, 0, 0, 1, offsetX, offsetY]);
   }
@@ -193,7 +193,7 @@ export class PenAnnotator extends Annotator {
 
   protected emitDataChanged() {
     const count = this._annotationPenData?.pathCount || 0;
-    this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+    this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
       annotatorType: "pen",
       elementCount: count,
       undoable: count > 1,
@@ -231,7 +231,7 @@ export class PenAnnotator extends Annotator {
 
       dateCreated: nowString,
       dateModified: nowString,
-      author: this._docData.userName || "unknown",
+      author: this._docService.userName || "unknown",
       
       textContent: null,
 

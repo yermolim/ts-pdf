@@ -1,10 +1,10 @@
 import { getDistance } from "../../common/math";
 
-import { DocumentData } from "../../document/document-data";
+import { PageService } from "../../services/page-service";
+import { DocumentService } from "../../services/document-service";
 import { StampAnnotation, StampType, stampTypes } 
   from "../../document/entities/annotations/markup/stamp-annotation";
   
-import { PageView } from "../../components/pages/page-view";
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 
 export const supportedStampTypes = [
@@ -37,13 +37,13 @@ export class StampAnnotator extends Annotator {
 
   /**
    * 
-   * @param docData 
+   * @param docService 
    * @param parent 
    * @param type stamp type
    */
-  constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], type?: string) {
-    super(docData, parent, pages);
+  constructor(docService: DocumentService, pageService: PageService, 
+    parent: HTMLDivElement, type?: string) {
+    super(docService, pageService, parent);
     
     if (type) {
       if (!(<string[]>Object.values(stampTypes)).includes(type)) {
@@ -71,7 +71,7 @@ export class StampAnnotator extends Annotator {
     }
 
     const lastAnnotation = this._addedAnnotations.pop();
-    this._docData.removeAnnotation(lastAnnotation);
+    this._docService.removeAnnotation(lastAnnotation);
     const empty = !this._addedAnnotations.length;
     this.emitDataChanged(this._addedAnnotations.length, !empty, !empty);
   }
@@ -90,7 +90,7 @@ export class StampAnnotator extends Annotator {
     }
 
     // append the current temp stamp to the page
-    this._docData.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+    this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
 
     this._addedAnnotations.push(this._tempAnnotation);
     this.emitDataChanged(this._addedAnnotations.length, true, true);
@@ -110,7 +110,7 @@ export class StampAnnotator extends Annotator {
   }
   
   protected emitDataChanged(count: number, clearable?: boolean, undoable?: boolean) {
-    this._docData.eventController.dispatchEvent(new AnnotatorDataChangeEvent({
+    this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
       annotatorType: "stamp",
       elementCount: count,
       undoable,
@@ -123,7 +123,7 @@ export class StampAnnotator extends Annotator {
    * create temporary stamp annotation to render in under the pointer
    */
   protected async createTempStampAnnotationAsync() {
-    const stamp = StampAnnotation.createStandard(this._type, this._docData.userName);
+    const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
     const renderResult = await stamp.renderAsync();  
 
     this._svgGroup.innerHTML = "";  
@@ -145,8 +145,8 @@ export class StampAnnotator extends Annotator {
     const {height: oh, top, left: ox} = this._parent.getBoundingClientRect();
     const oy = top + oh;
 
-    const offsetX = (cx - ox) / this._scale;
-    const offsetY = (oy - cy) / this._scale;
+    const offsetX = (cx - ox) / this._pageService.scale;
+    const offsetY = (oy - cy) / this._pageService.scale;
 
     // move temp stamp under the current pointer position
     const [x1, y1, x2, y2] = this._tempAnnotation.Rect;

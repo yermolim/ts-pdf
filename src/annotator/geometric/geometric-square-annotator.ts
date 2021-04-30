@@ -3,10 +3,10 @@ import { Vec2, vecMinMax } from "../../common/math";
 import { buildCloudCurveFromPolyline } from "../../common/drawing";
 import { getRandomUuid } from "../../common/uuid";
 
-import { DocumentData } from "../../document/document-data";
+import { PageService } from "../../services/page-service";
+import { DocumentService } from "../../services/document-service";
 import { SquareAnnotationDto, SquareAnnotation } from "../../document/entities/annotations/markup/geometric/square-annotation";
 
-import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 
 export class GeometricSquareAnnotator extends GeometricAnnotator {
@@ -16,9 +16,9 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   /**min and max rectangle corners in the page coordinate system */
   protected _rect: Quadruple;
   
-  constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], options?: GeometricAnnotatorOptions) {
-    super(docData, parent, pages, options || {});
+  constructor(docService: DocumentService, pageService: PageService, 
+    parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
+    super(docService, pageService, parent, options || {});
     this.init();
   }
 
@@ -47,7 +47,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     // DEBUG
     // console.log(annotation);
 
-    this._docData.appendAnnotationToPage(pageId, annotation);
+    this._docService.appendAnnotationToPage(pageId, annotation);
     
     this.clear();
   }
@@ -198,7 +198,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
 
       dateCreated: nowString,
       dateModified: nowString,
-      author: this._docData.userName || "unknown",
+      author: this._docService.userName || "unknown",
       
       textContent: null,
 

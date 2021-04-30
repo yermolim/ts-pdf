@@ -1,9 +1,10 @@
 import { PointerDownInfo } from "../common/types";
 
-import { DocumentData } from "../document/document-data";
+import { DocumentService } from "../services/document-service";
 
 import { PageView } from "../components/pages/page-view";
-import { PagesRenderedEvent, pagesRenderedEvent } from "../components/pages/page-service";
+import { PageService, PagesRenderedEvent, pagesRenderedEvent } 
+  from "../services/page-service";
 
 //#region custom events
 export const annotatorTypes = ["geom", "pen", "stamp", "text"] as const;
@@ -40,30 +41,9 @@ interface PageCoords {
  * base class for annotation addition tools
  */
 export abstract class Annotator {
-  protected readonly _docData: DocumentData;
+  protected readonly _docService: DocumentService;
+  protected readonly _pageService: PageService;
   protected readonly _parent: HTMLDivElement;
-
-  protected _scale: number;
-  /**current page view scale */
-  get scale(): number {
-    return this._scale;
-  }
-  protected _lastScale: number;
-
-  protected _pages: PageView[];
-  /**currently rendered PDF document pages */
-  get pages(): PageView[] {
-    return this._pages.slice();
-  }
-  /**currently rendered PDF document pages */
-  set pages(value: PageView[]) {
-    this._pages = value?.length
-      ? value.slice()
-      : [];
-    // take scale from the first page (the scale value is uniform for all pages)
-    this._scale = this._pages[0]?.scale || 1;
-    this.refreshViewBox();
-  }  
   
   protected _overlayContainer: HTMLDivElement;
   get overlayContainer(): HTMLDivElement {
@@ -80,22 +60,24 @@ export abstract class Annotator {
   protected _lastPointerDownInfo: PointerDownInfo;
   protected _pointerCoordsInPageCS: PageCoords;  
 
-  constructor(docData: DocumentData, parent: HTMLDivElement, pages?: PageView[]) {
-    if (!docData) {
-      throw new Error("Document data not found");
+  constructor(docService: DocumentService, pageService: PageService, parent: HTMLDivElement) {
+    if (!docService) {
+      throw new Error("Document service not defined");
+    }
+    if (!pageService) {
+      throw new Error("Page service not defined");
     }
     if (!parent) {
-      throw new Error("Parent container not found");
+      throw new Error("Parent container not defined");
     }
-    this._docData = docData;
+    this._docService = docService;
     this._parent = parent;
-    this._pages = pages || [];
-    this._scale = this._pages[0]?.scale || 1;
+    this._pageService = pageService;
   }
 
   /**free resources to let GC clean them to avoid memory leak */
   destroy() {    
-    this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
+    this._docService.eventService.removeListener(pagesRenderedEvent, this.onPagesRendered);
 
     this._parent?.removeEventListener("scroll", this.onParentScroll);
     this._parentMutationObserver?.disconnect();
@@ -115,10 +97,9 @@ export abstract class Annotator {
 
     this._overlay.style.left = this._parent.scrollLeft + "px";
     this._overlay.style.top = this._parent.scrollTop + "px";   
-    const viewBoxWidth = w / this._scale;
-    const viewBoxHeight = h / this._scale;
+    const viewBoxWidth = w / this._pageService.scale;
+    const viewBoxHeight = h / this._pageService.scale;
     this._svgWrapper.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
-    this._lastScale = this._scale;
     
     this.refreshGroupPosition();
   }
@@ -187,12 +168,11 @@ export abstract class Annotator {
     this._parentResizeObserver = parentRObserver;
 
     // handle page render events to keep the view box dimensions actual
-    this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);
+    this._docService.eventService.addListener(pagesRenderedEvent, this.onPagesRendered);
   }
 
-  protected onPagesRendered = (event: PagesRenderedEvent) => {   
-    // update current pages which forces the view box dimensions to be recalculated  
-    this.pages = event.detail.pages || [];
+  protected onPagesRendered = (event: PagesRenderedEvent) => { 
+    this.refreshViewBox();
   };
 
   protected onParentScroll = () => {
@@ -236,7 +216,7 @@ export abstract class Annotator {
    * @returns 
    */
   protected getPageCoordsUnderPointer(clientX: number, clientY: number): PageCoords {
-    for (const page of this._pages) {
+    for (const page of this._pageService.renderedPages) {
       const {left: pxMin, top: pyMin, width: pw, height: ph} = page.viewContainer.getBoundingClientRect();
       const pxMax = pxMin + pw;
       const pyMax = pyMin + ph;
@@ -249,8 +229,8 @@ export abstract class Annotator {
       }
 
       // point is inside the page
-      const x = (clientX - pxMin) / this._scale;
-      const y = (pyMax - clientY) / this._scale;
+      const x = (clientX - pxMin) / this._pageService.scale;
+      const y = (pyMax - clientY) / this._pageService.scale;
 
       return {
         pageId: page.id,

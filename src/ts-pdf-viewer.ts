@@ -8,17 +8,19 @@ import { styles } from "./assets/styles.html";
 import { clamp } from "./common/math";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
 
-import { DocumentData, annotChangeEvent, AnnotEvent, 
-  AnnotEventDetail, AnnotationDto } from "./document/document-data";
+import { ElementEventService } from "./services/element-event-service";
+import { DocumentService, annotChangeEvent, AnnotEvent, 
+  AnnotEventDetail, AnnotationDto } from "./services/document-service";
+import { AnnotationService } from "./services/annotation-service";
+import { PageService, currentPageChangeEvent, 
+  CurrentPageChangeEvent } from "./services/page-service";
 
-import { ElementEventController } from "./common/element-event-controller";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
-import { PageService, currentPageChangeEvent, CurrentPageChangeEvent } from "./components/pages/page-service";
-import { AnnotationBuilder } from "./components/annotation-builder";
 
-import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, annotatorTypes } from "./annotator/annotator";
+import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
+  annotatorTypes } from "./annotator/annotator";
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
@@ -61,10 +63,13 @@ export class TsPdfViewer {
   private readonly _shadowRoot: ShadowRoot;
   private readonly _mainContainer: HTMLDivElement;
 
-  private readonly _eventController: ElementEventController;
+  private readonly _eventService: ElementEventService;
   private readonly _pageService: PageService;
   private readonly _viewer: Viewer;
-  private readonly _previewer: Previewer;
+  private readonly _previewer: Previewer;  
+
+  private _docService: DocumentService;  
+  private _annotationService: AnnotationService;
 
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
@@ -78,10 +83,6 @@ export class TsPdfViewer {
   
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;  
-
-  private _docData: DocumentData;
-  
-  private _annotationBuilder: AnnotationBuilder;
   
   /**common timers */
   private _timers = {    
@@ -123,8 +124,8 @@ export class TsPdfViewer {
     this._shadowRoot.innerHTML = styles + html;    
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
-    this._eventController = new ElementEventController(this._mainContainer);
-    this._pageService = new PageService(this._eventController,
+    this._eventService = new ElementEventService(this._mainContainer);
+    this._pageService = new PageService(this._eventService,
       {visibleAdjPages: visibleAdjPages});
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
       {canvasWidth: previewWidth});
@@ -137,9 +138,9 @@ export class TsPdfViewer {
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
 
-    this._eventController.addListener(annotChangeEvent, this.onAnnotationChange);
-    this._eventController.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
-    this._eventController.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
+    this._eventService.addListener(annotChangeEvent, this.onAnnotationChange);
+    this._eventService.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
+    this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
     
     document.addEventListener("selectionchange", this.onTextSelectionChange); 
   }
@@ -163,11 +164,11 @@ export class TsPdfViewer {
   destroy() {
     this._annotChangeCallback = null;
 
-    this._eventController.destroy();
+    this._eventService.destroy();
 
     this._pdfLoadingTask?.destroy();
 
-    this._annotationBuilder?.destroy();
+    this._annotationService?.destroy();
 
     this._viewer.destroy();
     this._previewer.destroy();
@@ -177,7 +178,7 @@ export class TsPdfViewer {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
     }  
-    this._docData?.destroy();  
+    this._docService?.destroy();  
 
     this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
@@ -212,10 +213,10 @@ export class TsPdfViewer {
     }
 
     // create DocumentData
-    const docData = new DocumentData(this._eventController, data, this._userName);
+    const docService = new DocumentService(this._eventService, data, this._userName);
     let password: string;
     while (true) {      
-      const authenticated = docData.tryAuthenticate(password);
+      const authenticated = docService.tryAuthenticate(password);
       if (!authenticated) {        
         password = await this.showPasswordDialogAsync();
         if (password === null) {          
@@ -227,7 +228,7 @@ export class TsPdfViewer {
     }
 
     // get the pdf data with the supported annotations cut out
-    data = docData.getDataWithoutSupportedAnnotations();
+    data = docService.getDataWithoutSupportedAnnotations();
 
     // try open the data with PDF.js
     try {
@@ -246,13 +247,13 @@ export class TsPdfViewer {
 
     // update viewer state
     this._pdfDocument = doc;
-    this._docData = docData;
+    this._docService = docService;
 
     // load pages from the document
     await this.refreshPagesAsync();
 
     // create an annotation builder and set its mode to 'select'
-    this._annotationBuilder = new AnnotationBuilder(this._docData, this._pageService, this._viewer);
+    this._annotationService = new AnnotationService(this._docService, this._pageService, this._viewer);
     this.setAnnotationMode("select");
 
     this._mainContainer.classList.remove("disabled");
@@ -279,10 +280,10 @@ export class TsPdfViewer {
       this._pdfDocument.destroy();
       this._pdfDocument = null;
 
-      this._annotationBuilder?.destroy();
+      this._annotationService?.destroy();
       
-      this._docData?.destroy();
-      this._docData = null;
+      this._docService?.destroy();
+      this._docService = null;
     }
 
     await this.refreshPagesAsync();
@@ -294,7 +295,7 @@ export class TsPdfViewer {
    */
   importAnnotations(dtos: AnnotationDto[]) {
     try {
-      this._docData?.appendSerializedAnnotations(dtos);
+      this._docService?.appendSerializedAnnotations(dtos);
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }
@@ -305,7 +306,7 @@ export class TsPdfViewer {
    * @returns 
    */
   exportAnnotations(): AnnotationDto[] {
-    const dtos = this._docData?.serializeAnnotations(true);
+    const dtos = this._docService?.serializeAnnotations(true);
     return dtos;
   }  
   
@@ -316,7 +317,7 @@ export class TsPdfViewer {
   importAnnotationsFromJson(json: string) {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
-      this._docData?.appendSerializedAnnotations(dtos);
+      this._docService?.appendSerializedAnnotations(dtos);
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }
@@ -327,7 +328,7 @@ export class TsPdfViewer {
    * @returns 
    */
   exportAnnotationsToJson(): string {
-    const dtos = this._docData?.serializeAnnotations(true);
+    const dtos = this._docService?.serializeAnnotations(true);
     return JSON.stringify(dtos);
   }
 
@@ -336,7 +337,7 @@ export class TsPdfViewer {
    * @returns 
    */
   getCurrentPdf(): Blob {    
-    const data = this._docData?.getDataWithUpdatedAnnotations();
+    const data = this._docService?.getDataWithUpdatedAnnotations();
     if (!data?.length) {
       return null;
     }
@@ -607,15 +608,15 @@ export class TsPdfViewer {
 
   //#region annotations
   private annotatorUndo = () => {
-    this._annotationBuilder.annotator?.undo();
+    this._annotationService.annotator?.undo();
   };
 
   private annotatorClear = () => {
-    this._annotationBuilder.annotator?.clear();
+    this._annotationService.annotator?.clear();
   };
   
   private annotatorSave = () => {
-    this._annotationBuilder.annotator?.saveAnnotation();
+    this._annotationService.annotator?.saveAnnotation();
   };
 
   private onAnnotationChange = (e: AnnotEvent) => {
@@ -691,28 +692,28 @@ export class TsPdfViewer {
   };
 
   private setAnnotationMode(mode: AnnotatorMode) {
-    if (!this._annotationBuilder || !mode) {
+    if (!this._annotationService || !mode) {
       return;
     }
 
-    const prevMode = this._annotationBuilder.mode;
+    const prevMode = this._annotationService.mode;
     this._shadowRoot.querySelector(`#button-annotation-mode-${prevMode}`)?.classList.remove("on");
     this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)?.classList.add("on");
 
-    this._annotationBuilder.mode = mode;
+    this._annotationService.mode = mode;
   }
    
   private onAnnotationEditTextButtonClick = async () => {
-    const initialText = this._docData?.getSelectedAnnotationTextContent();
+    const initialText = this._docService?.getSelectedAnnotationTextContent();
     const text = await this.showTextDialogAsync(initialText);
     if (text === null) {
       return;
     }
-    this._docData?.setSelectedAnnotationTextContent(text);
+    this._docService?.setSelectedAnnotationTextContent(text);
   };
 
   private onAnnotationDeleteButtonClick = () => {
-    this._docData?.removeSelectedAnnotation();
+    this._docService?.removeSelectedAnnotation();
   };
 
   private onAnnotationSelectModeButtonClick = () => {
@@ -754,7 +755,7 @@ export class TsPdfViewer {
     if (docPagesNumber) {
       for (let i = 0; i < docPagesNumber; i++) {    
         const pageProxy = await this._pdfDocument.getPage(i + 1);
-        const page = new PageView(this._docData, pageProxy, this._previewer.canvasWidth);
+        const page = new PageView(this._docService, pageProxy, this._previewer.canvasWidth);
         pages.push(page);
       }
     }

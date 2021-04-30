@@ -1,6 +1,6 @@
-import { DocumentData } from "../../document/document-data";
+import { PageService } from "../../services/page-service";
+import { DocumentService } from "../../services/document-service";
 
-import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
 import { GeometricCircleAnnotator } from "./geometric-circle-annotator";
@@ -15,7 +15,7 @@ export type GeometricAnnotatorType =  typeof geometricAnnotatorTypes[number];
 export class GeometricAnnotatorFactory {
   protected static lastType: GeometricAnnotatorType;
 
-  static CreateAnnotator(docData: DocumentData, parent: HTMLDivElement, pages?: PageView[],
+  static CreateAnnotator(docService: DocumentService, pageService: PageService, parent: HTMLDivElement,
     options?: GeometricAnnotatorOptions, type?: GeometricAnnotatorType): GeometricAnnotator {
     
     type ||= GeometricAnnotatorFactory.lastType || "square";
@@ -23,17 +23,17 @@ export class GeometricAnnotatorFactory {
 
     switch (type) {
       case "square":
-        return new GeometricSquareAnnotator(docData, parent, pages, options);
+        return new GeometricSquareAnnotator(docService, pageService, parent, options);
       case "circle":
-        return new GeometricCircleAnnotator(docData, parent, pages, options);
+        return new GeometricCircleAnnotator(docService, pageService, parent, options);
       case "line":
-        return new GeometricLineAnnotator(docData, parent, pages, options);
+        return new GeometricLineAnnotator(docService, pageService, parent, options);
       case "arrow":
-        return new GeometricArrowAnnotator(docData, parent, pages, options);
+        return new GeometricArrowAnnotator(docService, pageService, parent, options);
       case "polyline":
-        return new GeometricPolylineAnnotator(docData, parent, pages, options);
+        return new GeometricPolylineAnnotator(docService, pageService, parent, options);
       case "polygon":
-        return new GeometricPolygonAnnotator(docData, parent, pages, options);
+        return new GeometricPolygonAnnotator(docService, pageService, parent, options);
       default:
         throw new Error(`Invalid geometric annotator type: ${type}`);
     }

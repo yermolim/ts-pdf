@@ -2,9 +2,9 @@ import { Octuple } from "../../common/types";
 import { Vec2 } from "../../common/math";
 import { getRandomUuid } from "../../common/uuid";
 
-import { DocumentData } from "../../document/document-data";
+import { PageService } from "../../services/page-service";
+import { DocumentService } from "../../services/document-service";
 
-import { PageView } from "../../components/pages/page-view";
 import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
 
 export class TextHighlightAnnotator extends TextAnnotator {
@@ -14,9 +14,9 @@ export class TextHighlightAnnotator extends TextAnnotator {
   /**segment end positions in the page coordinate system */
   protected _quadPoints: Octuple;
   
-  constructor(docData: DocumentData, parent: HTMLDivElement, 
-    pages: PageView[], options?: TextAnnotatorOptions) {
-    super(docData, parent, pages, options || {});
+  constructor(docService: DocumentService, pageService: PageService, 
+    parent: HTMLDivElement, options?: TextAnnotatorOptions) {
+    super(docService, pageService, parent, options || {});
     this.init();
   }
 
@@ -45,7 +45,7 @@ export class TextHighlightAnnotator extends TextAnnotator {
     // // DEBUG
     // // console.log(annotation);
 
-    // this._docData.appendAnnotationToPage(pageId, annotation);
+    // this._docService.appendAnnotationToPage(pageId, annotation);
     
     // this.clear();
 
@@ -155,7 +155,7 @@ export class TextHighlightAnnotator extends TextAnnotator {
 
   //     dateCreated: nowString,
   //     dateModified: nowString,
-  //     author: this._docData.userName || "unknown",
+  //     author: this._docService.userName || "unknown",
       
   //     textContent: null,
 

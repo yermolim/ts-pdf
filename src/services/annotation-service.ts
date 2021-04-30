@@ -3,7 +3,7 @@ import { Vec2 } from "../common/math";
 
 import { geometricIcons, lineTypeIcons, textIcons } from "../assets/index.html";
 
-import { DocumentData } from "../document/document-data";
+import { DocumentService } from "./document-service";
 
 import { Annotator } from "../annotator/annotator";
 import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTypes } 
@@ -11,14 +11,14 @@ import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTy
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
 import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
 
-import { Viewer } from "./viewer";
-import { ContextMenu } from "./context-menu";
-import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./pages/page-service";
+import { Viewer } from "../components/viewer";
+import { ContextMenu } from "../components/context-menu";
+import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";
 import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } from "../annotator/text/text-annotator-factory";
 
-export type AnnotationBuilderMode = "select" | "stamp" | "pen" | "geometric" | "text";
+export type AnnotationServiceMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
-export class AnnotationBuilder {
+export class AnnotationService {
   private readonly _annotationColors: readonly Quadruple[] = [
     [0, 0, 0, 0.5], // black
     [0.804, 0, 0, 0.5], // red
@@ -28,18 +28,18 @@ export class AnnotationBuilder {
     [1, 0.2, 1, 0.5], // pink
   ];
   
-  private readonly _docData: DocumentData;
+  private readonly _docService: DocumentService;
   private readonly _viewer: Viewer;
   private readonly _pageService: PageService;
   
   private _contextMenu: ContextMenu;
   private _viewerResizeObserver: ResizeObserver;
   
-  private _mode: AnnotationBuilderMode;  
-  get mode(): AnnotationBuilderMode {
+  private _mode: AnnotationServiceMode;  
+  get mode(): AnnotationServiceMode {
     return this._mode;
   }
-  set mode(value: AnnotationBuilderMode) {
+  set mode(value: AnnotationServiceMode) {
     this.setMode(value);
   }
 
@@ -58,9 +58,9 @@ export class AnnotationBuilder {
     return this._annotator;
   }
 
-  constructor(docData: DocumentData, pageService: PageService, viewer: Viewer) {
-    if (!docData) {
-      throw new Error("Document data is not defined");
+  constructor(docService: DocumentService, pageService: PageService, viewer: Viewer) {
+    if (!docService) {
+      throw new Error("Document service is not defined");
     }
     if (!pageService) {
       throw new Error("Page service is not defined");
@@ -69,7 +69,7 @@ export class AnnotationBuilder {
       throw new Error("Viewer is not defined");
     }
 
-    this._docData = docData;
+    this._docService = docService;
     this._pageService = pageService;
     this._viewer = viewer;
 
@@ -77,7 +77,7 @@ export class AnnotationBuilder {
   }
 
   destroy() {
-    this._docData.eventController.removeListener(pagesRenderedEvent, this.onPagesRendered);
+    this._docService.eventService.removeListener(pagesRenderedEvent, this.onPagesRendered);
 
     this._viewer.container.removeEventListener("contextmenu", this.onContextMenu);
     this._viewerResizeObserver?.disconnect();
@@ -87,7 +87,7 @@ export class AnnotationBuilder {
   }  
 
   private init() {
-    this._docData.eventController.addListener(pagesRenderedEvent, this.onPagesRendered);   
+    this._docService.eventService.addListener(pagesRenderedEvent, this.onPagesRendered);   
 
     this._viewer.container.addEventListener("contextmenu", this.onContextMenu);
     const viewerRObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {
@@ -99,13 +99,13 @@ export class AnnotationBuilder {
     this._contextMenu = new ContextMenu();
   }
 
-  private setMode(mode?: AnnotationBuilderMode) {
+  private setMode(mode?: AnnotationServiceMode) {
     mode ||= this._mode;
 
     // disable previous mode
     this._contextMenu.content = [];
     this._annotator?.destroy();
-    this._docData.setSelectedAnnotation(null);
+    this._docService.setSelectedAnnotation(null);
 
     this._mode = mode;
 
@@ -125,27 +125,27 @@ export class AnnotationBuilder {
         this._contextMenu.enabled = false;
         return;
       case "stamp":
-        this._annotator = new StampAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages, this._stampType);
+        this._annotator = new StampAnnotator(this._docService, this._pageService,
+          this._viewer.container, this._stampType);
         break;
       case "pen":
-        this._annotator = new PenAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages, {            
+        this._annotator = new PenAnnotator(this._docService, this._pageService,
+          this._viewer.container, {            
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
           });
         break;
       case "geometric":
-        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages, {
+        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docService, this._pageService,
+          this._viewer.container, {
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
             cloudMode: this._geometricCloudMode,
           }, this._geometricSubmode);
         break;
       case "text":
-        this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docData, 
-          this._viewer.container, this._pageService.renderedPages, {
+        this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docService, this._pageService,
+          this._viewer.container, {
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
           }, this._textSubmode);
@@ -168,7 +168,6 @@ export class AnnotationBuilder {
 
   private onPagesRendered = (event: PagesRenderedEvent) => {
     this._contextMenu.hide();
-    this._annotator?.refreshViewBox();
   };
 
   private buildContextMenuContent(): HTMLElement[] {
