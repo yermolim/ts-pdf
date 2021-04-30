@@ -66,6 +66,7 @@ declare global {
 }
 //#endregion
 
+//#region utility interfaces
 export interface VisiblePageIndices {
   /**indices of actually visible pages */
   actual: number[];
@@ -79,6 +80,14 @@ export interface PageServiceOptions {
   /**number of pages that should be prerendered outside view */
   visibleAdjPages?: number;  
 }
+
+/**coordinates in the PDF page coordinate system */
+export interface PageCoords {
+  pageId: number;
+  pageX: number;
+  pageY: number;
+}
+//#endregion
 
 export class PageService {
   private readonly _eventService: ElementEventService;
@@ -207,7 +216,40 @@ export class PageService {
         x.renderViewAsync(true);
       }
     });
-  }  
+  }   
+   
+  /**
+   * convert client coordinates to the current page coordinate system
+   * @param clientX 
+   * @param clientY 
+   * @returns 
+   */
+  getPageCoordsUnderPointer(clientX: number, clientY: number): PageCoords {
+    for (const page of this._renderedPages) {
+      const {left: pxMin, top: pyMin, width: pw, height: ph} = page.viewContainer.getBoundingClientRect();
+      const pxMax = pxMin + pw;
+      const pyMax = pyMin + ph;
+
+      if (clientX < pxMin || clientX > pxMax) {
+        continue;
+      }
+      if (clientY < pyMin || clientY > pyMax) {
+        continue;
+      }
+
+      // point is inside the page
+      const x = (clientX - pxMin) / this.scale;
+      const y = (pyMax - clientY) / this.scale;
+
+      return {
+        pageId: page.id,
+        pageX: x,
+        pageY: y,
+      };
+    }
+    // point is not inside a page
+    return null;
+  } 
 
   private setCurrentPageIndex(index: number) {
     const newIndex = clamp(index || 0, 0, this._pages.length - 1);

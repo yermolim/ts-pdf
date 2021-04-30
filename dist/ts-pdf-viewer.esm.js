@@ -16766,6 +16766,27 @@ class PageService {
             }
         });
     }
+    getPageCoordsUnderPointer(clientX, clientY) {
+        for (const page of this._renderedPages) {
+            const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
+            const pxMax = pxMin + pw;
+            const pyMax = pyMin + ph;
+            if (clientX < pxMin || clientX > pxMax) {
+                continue;
+            }
+            if (clientY < pyMin || clientY > pyMax) {
+                continue;
+            }
+            const x = (clientX - pxMin) / this.scale;
+            const y = (pyMax - clientY) / this.scale;
+            return {
+                pageId: page.id,
+                pageX: x,
+                pageY: y,
+            };
+        }
+        return null;
+    }
     setCurrentPageIndex(index) {
         var _a, _b;
         const newIndex = clamp(index || 0, 0, this._pages.length - 1);
@@ -16957,7 +16978,7 @@ class Annotator {
         this._docService.eventService.addListener(pagesRenderedEvent, this.onPagesRendered);
     }
     updatePointerCoords(clientX, clientY) {
-        const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
+        const pageCoords = this._pageService.getPageCoordsUnderPointer(clientX, clientY);
         if (!pageCoords) {
             this._svgGroup.classList.add("out");
         }
@@ -16965,27 +16986,6 @@ class Annotator {
             this._svgGroup.classList.remove("out");
         }
         this._pointerCoordsInPageCS = pageCoords;
-    }
-    getPageCoordsUnderPointer(clientX, clientY) {
-        for (const page of this._pageService.renderedPages) {
-            const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
-            const pxMax = pxMin + pw;
-            const pyMax = pyMin + ph;
-            if (clientX < pxMin || clientX > pxMax) {
-                continue;
-            }
-            if (clientY < pyMin || clientY > pyMax) {
-                continue;
-            }
-            const x = (clientX - pxMin) / this._pageService.scale;
-            const y = (pyMax - clientY) / this._pageService.scale;
-            return {
-                pageId: page.id,
-                pageX: x,
-                pageY: y,
-            };
-        }
-        return null;
     }
 }
 
@@ -18179,7 +18179,7 @@ class StampAnnotator extends Annotator {
                     }
                 }
             }
-            const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+            const pageCoords = this._pageService.getPageCoordsUnderPointer(cx, cy);
             this._pointerCoordsInPageCS = pageCoords;
             if (!pageCoords || !this._tempAnnotation) {
                 return;

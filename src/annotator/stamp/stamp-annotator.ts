@@ -182,7 +182,7 @@ export class StampAnnotator extends Annotator {
       }
     }
 
-    const pageCoords = this.getPageCoordsUnderPointer(cx, cy);
+    const pageCoords = this._pageService.getPageCoordsUnderPointer(cx, cy);
     this._pointerCoordsInPageCS = pageCoords;
 
     if (!pageCoords || !this._tempAnnotation) {

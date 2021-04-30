@@ -1,9 +1,7 @@
 import { PointerDownInfo } from "../common/types";
 
 import { DocumentService } from "../services/document-service";
-
-import { PageView } from "../components/pages/page-view";
-import { PageService, PagesRenderedEvent, pagesRenderedEvent } 
+import { PageCoords, PageService, PagesRenderedEvent, pagesRenderedEvent } 
   from "../services/page-service";
 
 //#region custom events
@@ -29,13 +27,6 @@ declare global {
   }
 }
 //#endregion
-
-/**coordinates in the PDF page coordinate system */
-interface PageCoords {
-  pageId: number;
-  pageX: number;
-  pageY: number;
-}
 
 /**
  * base class for annotation addition tools
@@ -199,7 +190,7 @@ export abstract class Annotator {
    * @param clientY 
    */
   protected updatePointerCoords(clientX: number, clientY: number) {
-    const pageCoords = this.getPageCoordsUnderPointer(clientX, clientY);
+    const pageCoords = this._pageService.getPageCoordsUnderPointer(clientX, clientY);
     if (!pageCoords) {
       this._svgGroup.classList.add("out");
     } else {      
@@ -208,39 +199,6 @@ export abstract class Annotator {
 
     this._pointerCoordsInPageCS = pageCoords;
   }  
-   
-  /**
-   * convert client coordinates to the current page coordinate system
-   * @param clientX 
-   * @param clientY 
-   * @returns 
-   */
-  protected getPageCoordsUnderPointer(clientX: number, clientY: number): PageCoords {
-    for (const page of this._pageService.renderedPages) {
-      const {left: pxMin, top: pyMin, width: pw, height: ph} = page.viewContainer.getBoundingClientRect();
-      const pxMax = pxMin + pw;
-      const pyMax = pyMin + ph;
-
-      if (clientX < pxMin || clientX > pxMax) {
-        continue;
-      }
-      if (clientY < pyMin || clientY > pyMax) {
-        continue;
-      }
-
-      // point is inside the page
-      const x = (clientX - pxMin) / this._pageService.scale;
-      const y = (pyMax - clientY) / this._pageService.scale;
-
-      return {
-        pageId: page.id,
-        pageX: x,
-        pageY: y,
-      };
-    }
-    // point is not inside a page
-    return null;
-  }
   
   abstract undo(): void; 
   
