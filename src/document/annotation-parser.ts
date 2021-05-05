@@ -11,6 +11,8 @@ import { PolylineAnnotation, PolylineAnnotationDto } from "./entities/annotation
 import { LineAnnotation, LineAnnotationDto } from "./entities/annotations/markup/geometric/line-annotation";
 import { TextMarkupAnnotationDto } from "./entities/annotations/markup/text-markup/text-markup-annotation";
 import { HighlightAnnotation } from "./entities/annotations/markup/text-markup/highlight-annotation";
+import { UnderlineAnnotation } from "./entities/annotations/markup/text-markup/underline-annotation";
+import { StrikeoutAnnotation } from "./entities/annotations/markup/text-markup/strikeout-annotation";
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
@@ -40,6 +42,12 @@ export class AnnotationParseFactory {
         break;
       case annotationTypes.HIGHLIGHT:
         annot = HighlightAnnotation.parse(info);
+        break;
+      case annotationTypes.STRIKEOUT:
+        annot = StrikeoutAnnotation.parse(info);
+        break;
+      case annotationTypes.UNDERLINE:
+        annot = UnderlineAnnotation.parse(info);
         break;
       // case annotationTypes.FREE_TEXT:
       //   annot = FreeTextAnnotation.parse(info);
@@ -80,6 +88,12 @@ export class AnnotationParseFactory {
         break;
       case "/Highlight":        
         annotation = HighlightAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
+        break;
+      case "/Strikeout":        
+        annotation = StrikeoutAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
+        break;
+      case "/Underline":        
+        annotation = UnderlineAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
         break;
       default:
         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);

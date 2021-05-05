@@ -5,6 +5,8 @@ import { DocumentService } from "../../services/document-service";
 
 import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
 import { TextHighlightAnnotator } from "./text-highlight-annotator";
+import { TextStrikeoutAnnotator } from "./text-strikeout-annotator";
+import { TextUnderlineAnnotator } from "./text-underline-annotator";
 
 export const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout", 
   "strikeout", "underline", "highlight"] as const;
@@ -36,19 +38,17 @@ export class TextAnnotatorFactory {
       // TODO: implement all annotators
       case "popupText":
         return null;
-        // return new TextPopupAnnotator(docService, parent, pages, combinedOptions);
+        // return new TextPopupAnnotator(docService, pageService, parent, combinedOptions);
       case "freeText":
         return null;
-        // return new TextFreeAnnotator(docService, parent, pages, combinedOptions);
+        // return new TextFreeAnnotator(docService, pageService, parent, combinedOptions);
       case "freeTextCallout":
         return null;
-        // return new TextFreeCalloutAnnotator(docService, parent, pages, combinedOptions);
+        // return new TextFreeCalloutAnnotator(docService, pageService, parent, combinedOptions);
       case "strikeout":
-        return null;
-        // return new TextStrikeoutAnnotator(docService, parent, pages, combinedOptions);
+        return new TextStrikeoutAnnotator(docService, pageService, parent, combinedOptions);
       case "underline":
-        return null;
-        // return new TextUnderlineAnnotator(docService, parent, pages, combinedOptions);
+        return new TextUnderlineAnnotator(docService, pageService, parent, combinedOptions);
       case "highlight":
         return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
       default:

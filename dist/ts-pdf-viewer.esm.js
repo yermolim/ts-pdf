@@ -14441,7 +14441,7 @@ class InkAnnotation extends MarkupAnnotation {
         gs.ca = opacity;
         gs.LW = strokeWidth;
         gs.LJ = lineJoinStyles.ROUND;
-        gs.LC = lineCapStyles.SQUARE;
+        gs.LC = lineCapStyles.ROUND;
         gs.D = [[strokeDash, strokeGap], 0];
         let streamTextData = `q ${colorString} /GS0 gs`;
         let px;
@@ -16359,6 +16359,327 @@ class HighlightAnnotation extends TextMarkupAnnotation {
     }
 }
 
+class UnderlineAnnotation extends TextMarkupAnnotation {
+    constructor() {
+        super(annotationTypes.UNDERLINE);
+        this.onTranslationPointerDown = (e) => { };
+    }
+    static createFromDto(dto) {
+        var _a;
+        if (dto.annotationType !== "/Underline") {
+            throw new Error("Invalid annotation type");
+        }
+        if (!((_a = dto === null || dto === void 0 ? void 0 : dto.quadPoints) === null || _a === void 0 ? void 0 : _a.length) || dto.quadPoints.length % 8) {
+            return;
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new UnderlineAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Contents = dto.textContent
+            ? LiteralString.fromString(dto.textContent)
+            : null;
+        if (dto.rect) {
+            annotation.Rect = dto.rect;
+        }
+        else {
+            const vectors = [];
+            for (let i = 0; i < dto.quadPoints.length; i += 2) {
+                vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
+            }
+            const { min, max } = vecMinMax(...vectors);
+            const halfW = dto.strokeWidth
+                ? dto.strokeWidth / 2
+                : 1;
+            annotation.Rect = [min.x - halfW, min.y - halfW, max.x + halfW, max.y + halfW];
+        }
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.QuadPoints = dto.quadPoints;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new UnderlineAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        return superBytes;
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Underline",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            textContent: (_c = this.Contents) === null || _c === void 0 ? void 0 : _c.literal,
+            rect: this.Rect,
+            bbox: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.BBox,
+            matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
+            quadPoints: this.QuadPoints,
+            color,
+            strokeWidth: (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.W) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.width) !== null && _j !== void 0 ? _j : 1,
+            strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+    }
+    generateApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
+            return;
+        }
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        let colorString;
+        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const opacity = this.CA || 1;
+        const strokeWidth = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.W) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.width) !== null && _f !== void 0 ? _f : 1;
+        const strokeDash = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[0]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.dash) !== null && _k !== void 0 ? _k : 3;
+        const strokeGap = (_p = (_m = (_l = this.BS) === null || _l === void 0 ? void 0 : _l.D[1]) !== null && _m !== void 0 ? _m : (_o = this.Border) === null || _o === void 0 ? void 0 : _o.gap) !== null && _p !== void 0 ? _p : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        gs.D = [[strokeDash, strokeGap], 0];
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        const bottomLeft = new Vec2();
+        const bottomRight = new Vec2();
+        const q = this.QuadPoints;
+        for (let i = 0; i < q.length; i += 8) {
+            bottomLeft.set(q[i + 4], q[i + 5]);
+            bottomRight.set(q[i + 6], q[i + 7]);
+            streamTextData += `\n${bottomLeft.x} ${bottomLeft.y} m`;
+            streamTextData += `\n${bottomRight.x} ${bottomRight.y} l`;
+            streamTextData += "\nS";
+        }
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
+    renderHandles() {
+        return [];
+    }
+}
+
+class StrikeoutAnnotation extends TextMarkupAnnotation {
+    constructor() {
+        super(annotationTypes.STRIKEOUT);
+        this.onTranslationPointerDown = (e) => { };
+    }
+    static createFromDto(dto) {
+        var _a;
+        if (dto.annotationType !== "/Strikeout") {
+            throw new Error("Invalid annotation type");
+        }
+        if (!((_a = dto === null || dto === void 0 ? void 0 : dto.quadPoints) === null || _a === void 0 ? void 0 : _a.length) || dto.quadPoints.length % 8) {
+            return;
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new StrikeoutAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Contents = dto.textContent
+            ? LiteralString.fromString(dto.textContent)
+            : null;
+        if (dto.rect) {
+            annotation.Rect = dto.rect;
+        }
+        else {
+            const vectors = [];
+            for (let i = 0; i < dto.quadPoints.length; i += 2) {
+                vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
+            }
+            const { min, max } = vecMinMax(...vectors);
+            annotation.Rect = [min.x, min.y, max.x, max.y];
+        }
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.QuadPoints = dto.quadPoints;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new StrikeoutAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        return superBytes;
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Strikeout",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            textContent: (_c = this.Contents) === null || _c === void 0 ? void 0 : _c.literal,
+            rect: this.Rect,
+            bbox: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.BBox,
+            matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
+            quadPoints: this.QuadPoints,
+            color,
+            strokeWidth: (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.W) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.width) !== null && _j !== void 0 ? _j : 1,
+            strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+    }
+    generateApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
+            return;
+        }
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        let colorString;
+        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const opacity = this.CA || 1;
+        const strokeWidth = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.W) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.width) !== null && _f !== void 0 ? _f : 1;
+        const strokeDash = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[0]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.dash) !== null && _k !== void 0 ? _k : 3;
+        const strokeGap = (_p = (_m = (_l = this.BS) === null || _l === void 0 ? void 0 : _l.D[1]) !== null && _m !== void 0 ? _m : (_o = this.Border) === null || _o === void 0 ? void 0 : _o.gap) !== null && _p !== void 0 ? _p : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        gs.D = [[strokeDash, strokeGap], 0];
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        const bottomLeft = new Vec2();
+        const bottomRight = new Vec2();
+        const topRight = new Vec2();
+        const topLeft = new Vec2();
+        const start = new Vec2();
+        const end = new Vec2();
+        const q = this.QuadPoints;
+        for (let i = 0; i < q.length; i += 8) {
+            bottomLeft.set(q[i + 4], q[i + 5]);
+            bottomRight.set(q[i + 6], q[i + 7]);
+            topRight.set(q[i + 2], q[i + 3]);
+            topLeft.set(q[i + 0], q[i + 1]);
+            start.setFromVec2(bottomLeft).add(topLeft).multiplyByScalar(0.5);
+            end.setFromVec2(bottomRight).add(topRight).multiplyByScalar(0.5);
+            streamTextData += `\n${start.x} ${start.y} m`;
+            streamTextData += `\n${end.x} ${end.y} l`;
+            streamTextData += "\nS";
+        }
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
+    renderHandles() {
+        return [];
+    }
+}
+
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
@@ -16387,6 +16708,12 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.HIGHLIGHT:
                 annot = HighlightAnnotation.parse(info);
+                break;
+            case annotationTypes.STRIKEOUT:
+                annot = StrikeoutAnnotation.parse(info);
+                break;
+            case annotationTypes.UNDERLINE:
+                annot = UnderlineAnnotation.parse(info);
                 break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;
@@ -16417,6 +16744,12 @@ class AnnotationParseFactory {
                 break;
             case "/Highlight":
                 annotation = HighlightAnnotation.createFromDto(dto);
+                break;
+            case "/Strikeout":
+                annotation = StrikeoutAnnotation.createFromDto(dto);
+                break;
+            case "/Underline":
+                annotation = UnderlineAnnotation.createFromDto(dto);
                 break;
             default:
                 throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
@@ -18608,6 +18941,26 @@ class TextMarkupAnnotator extends TextAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options);
         this._svgGroupByPageId = new Map();
+        this._coordsByPageId = new Map();
+        this.onTextSelectionChange = (e) => {
+            var _a;
+            this.updateCoords(((_a = e === null || e === void 0 ? void 0 : e.detail) === null || _a === void 0 ? void 0 : _a.selectionInfos) || []);
+        };
+    }
+    destroy() {
+        super.destroy();
+        this._docService.eventService.removeListener(textSelectionChangeEvent, this.onTextSelectionChange);
+    }
+    undo() {
+        this.clear();
+    }
+    clear() {
+        this._coordsByPageId.clear();
+        this.clearGroup();
+    }
+    init() {
+        super.init();
+        this._docService.eventService.addListener(textSelectionChangeEvent, this.onTextSelectionChange);
     }
     clearGroup() {
         this._svgGroupByPageId.forEach(x => x.innerHTML = "");
@@ -18634,64 +18987,9 @@ class TextMarkupAnnotator extends TextAnnotator {
             svg.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
         });
     }
-}
-
-class TextHighlightAnnotator extends TextMarkupAnnotator {
-    constructor(docService, pageService, parent, options) {
-        super(docService, pageService, parent, options || {});
-        this._highlightsByPageId = new Map();
-        this.onTextSelectionChange = (e) => {
-            var _a;
-            this.updateHighlights(((_a = e === null || e === void 0 ? void 0 : e.detail) === null || _a === void 0 ? void 0 : _a.selectionInfos) || []);
-        };
-        this.init();
-    }
-    destroy() {
-        super.destroy();
-        this._docService.eventService.removeListener(textSelectionChangeEvent, this.onTextSelectionChange);
-    }
-    undo() {
-        this.clear();
-    }
-    clear() {
-        this._highlightsByPageId.clear();
-        this.clearGroup();
-    }
-    saveAnnotation() {
-        if (!this._highlightsByPageId.size) {
-            return;
-        }
-        const dtos = this.buildAnnotationDtos();
-        dtos.forEach(dto => {
-            const annotation = HighlightAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPage(dto.pageId, annotation);
-        });
-        this.clear();
-    }
-    init() {
-        super.init();
-        this._docService.eventService.addListener(textSelectionChangeEvent, this.onTextSelectionChange);
-    }
-    redraw() {
-        const [r, g, b, a] = this._color || [0, 0, 0, 1];
-        this._svgGroupByPageId.forEach((group, pageId) => {
-            group.innerHTML = "";
-            const quads = this._highlightsByPageId.get(pageId);
-            if (quads === null || quads === void 0 ? void 0 : quads.length) {
-                quads.forEach(quad => {
-                    const [x3, y3, x2, y2, x0, y0, x1, y1] = quad;
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    path.setAttribute("fill", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-                    path.setAttribute("stroke", "none");
-                    path.setAttribute("d", `M ${x0},${y0} L ${x1},${y1} L ${x2},${y2} L ${x3},${y3} Z`);
-                    group.append(path);
-                });
-            }
-        });
-    }
-    updateHighlights(selections) {
+    updateCoords(selections) {
         var _a;
-        this._highlightsByPageId.clear();
+        this._coordsByPageId.clear();
         for (const selection of selections) {
             const bl = this._pageService.getPageCoordsUnderPointer(selection.bottomLeft.x, selection.bottomLeft.y);
             const br = this._pageService.getPageCoordsUnderPointer(selection.bottomRight.x, selection.bottomRight.y);
@@ -18710,28 +19008,28 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
                 br.pageX, br.pageY,
             ];
             const pageId = bl.pageId;
-            if (this._highlightsByPageId.has(pageId)) {
-                this._highlightsByPageId.get(pageId).push(quadPoints);
+            if (this._coordsByPageId.has(pageId)) {
+                this._coordsByPageId.get(pageId).push(quadPoints);
             }
             else {
-                this._highlightsByPageId.set(pageId, [quadPoints]);
+                this._coordsByPageId.set(pageId, [quadPoints]);
             }
         }
         this.redraw();
-        if ((_a = this._highlightsByPageId) === null || _a === void 0 ? void 0 : _a.size) {
-            this.emitDataChanged(this._highlightsByPageId.size, true, true);
+        if ((_a = this._coordsByPageId) === null || _a === void 0 ? void 0 : _a.size) {
+            this.emitDataChanged(this._coordsByPageId.size, true, true);
         }
         else {
             this.emitDataChanged(0);
         }
     }
-    buildAnnotationDtos() {
+    buildAnnotationDtos(type) {
         const nowString = new Date().toISOString();
         const dtos = [];
-        this._highlightsByPageId.forEach((quads, pageId) => {
+        this._coordsByPageId.forEach((quads, pageId) => {
             const dto = {
                 uuid: getRandomUuid(),
-                annotationType: "/Highlight",
+                annotationType: type,
                 pageId,
                 dateCreated: nowString,
                 dateModified: nowString,
@@ -18746,6 +19044,127 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
             dtos.push(dto);
         });
         return dtos;
+    }
+}
+
+class TextHighlightAnnotator extends TextMarkupAnnotator {
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
+        this.init();
+    }
+    saveAnnotation() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Highlight");
+        dtos.forEach(dto => {
+            const annotation = HighlightAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+        });
+        this.clear();
+    }
+    redraw() {
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._svgGroupByPageId.forEach((group, pageId) => {
+            group.innerHTML = "";
+            const quads = this._coordsByPageId.get(pageId);
+            if (quads === null || quads === void 0 ? void 0 : quads.length) {
+                quads.forEach(quad => {
+                    const [x3, y3, x2, y2, x0, y0, x1, y1] = quad;
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("fill", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                    path.setAttribute("stroke", "none");
+                    path.setAttribute("d", `M ${x0},${y0} L ${x1},${y1} L ${x2},${y2} L ${x3},${y3} Z`);
+                    group.append(path);
+                });
+            }
+        });
+    }
+}
+
+class TextStrikeoutAnnotator extends TextMarkupAnnotator {
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
+        this.init();
+    }
+    saveAnnotation() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Strikeout");
+        dtos.forEach(dto => {
+            const annotation = StrikeoutAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+        });
+        this.clear();
+    }
+    redraw() {
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._svgGroupByPageId.forEach((group, pageId) => {
+            group.innerHTML = "";
+            const quads = this._coordsByPageId.get(pageId);
+            const bottomLeft = new Vec2();
+            const bottomRight = new Vec2();
+            const topRight = new Vec2();
+            const topLeft = new Vec2();
+            const start = new Vec2();
+            const end = new Vec2();
+            if (quads === null || quads === void 0 ? void 0 : quads.length) {
+                quads.forEach(quad => {
+                    const [x3, y3, x2, y2, x0, y0, x1, y1] = quad;
+                    bottomLeft.set(x0, y0);
+                    bottomRight.set(x1, y1);
+                    topRight.set(x2, y2);
+                    topLeft.set(x3, y3);
+                    start.setFromVec2(bottomLeft).add(topLeft).multiplyByScalar(0.5);
+                    end.setFromVec2(bottomRight).add(topRight).multiplyByScalar(0.5);
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("fill", "none");
+                    path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                    path.setAttribute("stroke-width", this._strokeWidth + "");
+                    path.setAttribute("stroke-linecap", "square");
+                    path.setAttribute("d", `M ${start.x},${start.y} L ${end.x},${end.y}`);
+                    group.append(path);
+                });
+            }
+        });
+    }
+}
+
+class TextUnderlineAnnotator extends TextMarkupAnnotator {
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
+        this.init();
+    }
+    saveAnnotation() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Underline");
+        dtos.forEach(dto => {
+            const annotation = UnderlineAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+        });
+        this.clear();
+    }
+    redraw() {
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        this._svgGroupByPageId.forEach((group, pageId) => {
+            group.innerHTML = "";
+            const quads = this._coordsByPageId.get(pageId);
+            if (quads === null || quads === void 0 ? void 0 : quads.length) {
+                quads.forEach(quad => {
+                    const [, , , , x0, y0, x1, y1] = quad;
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("fill", "none");
+                    path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                    path.setAttribute("stroke-width", this._strokeWidth + "");
+                    path.setAttribute("stroke-linecap", "square");
+                    path.setAttribute("d", `M ${x0},${y0} L ${x1},${y1}`);
+                    group.append(path);
+                });
+            }
+        });
     }
 }
 
@@ -18771,9 +19190,9 @@ class TextAnnotatorFactory {
             case "freeTextCallout":
                 return null;
             case "strikeout":
-                return null;
+                return new TextStrikeoutAnnotator(docService, pageService, parent, combinedOptions);
             case "underline":
-                return null;
+                return new TextUnderlineAnnotator(docService, pageService, parent, combinedOptions);
             case "highlight":
                 return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
             default:

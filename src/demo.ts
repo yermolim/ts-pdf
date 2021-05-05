@@ -13,13 +13,13 @@ async function run(): Promise<void> {
       console.log(detail);
     },
   });
-  // await viewer.openPdfAsync("demo.pdf");
+  await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
   // await viewer.openPdfAsync("demo-annots2.pdf");
   // await viewer.openPdfAsync("demo-annots3.pdf");
   // await viewer.openPdfAsync("demo-acad.pdf");
   // await viewer.openPdfAsync("demo-adobe.pdf");
-  await viewer.openPdfAsync("demo-large.pdf");
+  // await viewer.openPdfAsync("demo-large.pdf");
   // await viewer.openPdfAsync("demo-large2.pdf");
   // await viewer.openPdfAsync("demo-drawing.pdf");
   // await viewer.openPdfAsync("demo-word.pdf");
