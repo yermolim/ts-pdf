@@ -18,8 +18,8 @@ export class PageTextView {
 
     this._container = document.createElement("div");
     this._container.classList.add("page-text");
-    this._container.addEventListener("mousedown", this.onMouseDown);
-    this._container.addEventListener("mouseup", this.onMouseUp);
+    this._container.addEventListener("pointerdown", this.onPointerDown);
+    this._container.addEventListener("pointerup", this.onPointerUp);
   } 
 
   /**
@@ -55,7 +55,8 @@ export class PageTextView {
       container: <HTMLElement>this._container,
       textContentStream,
       viewport,
-      enhanceTextSelection: true,
+      // TODO: find a way to enable next option without breaking text markup annotators
+      enhanceTextSelection: false, 
     });
     try {
       await this._renderTask.promise;
@@ -96,7 +97,7 @@ export class PageTextView {
     }
   }
 
-  private onMouseDown = (e: MouseEvent) => {
+  private onPointerDown = (e: PointerEvent) => {
     if (this._divModeTimer) {
       clearTimeout(this._divModeTimer);
       this._divModeTimer = null;
@@ -104,7 +105,7 @@ export class PageTextView {
     this._renderTask?.expandTextDivs(true);
   };
   
-  private onMouseUp = (e: MouseEvent) => {
+  private onPointerUp = (e: PointerEvent) => {
     this._divModeTimer = setTimeout(() => {
       this._renderTask?.expandTextDivs(false);
       this._divModeTimer = null;

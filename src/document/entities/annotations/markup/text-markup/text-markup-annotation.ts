@@ -1,8 +1,19 @@
+import { Double, Octuple, Quadruple } from "../../../../../common/types";
+
 import { codes } from "../../../../codes";
 import { AnnotationType } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
+
+import { AnnotationDto } from "../../annotation-dict";
 import { MarkupAnnotation } from "../markup-annotation";
+
+export interface TextMarkupAnnotationDto extends AnnotationDto {
+  color: Quadruple;
+  quadPoints: number[];
+  strokeWidth?: number;
+  strokeDashGap?: Double;
+}
 
 export abstract class TextMarkupAnnotation extends MarkupAnnotation {
   /** 

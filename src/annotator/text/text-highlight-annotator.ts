@@ -1,18 +1,19 @@
 import { Octuple } from "../../common/types";
-import { Vec2 } from "../../common/math";
+import { TextSelectionInfo } from "../../common/text-selection";
 import { getRandomUuid } from "../../common/uuid";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 
-import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
+import { TextMarkupAnnotationDto } from "../../document/entities/annotations/markup/text-markup/text-markup-annotation";
+import { HighlightAnnotation } from "../../document/entities/annotations/markup/text-markup/highlight-annotation";
 
-export class TextHighlightAnnotator extends TextAnnotator {
-  /**last 'pointerdown' position in the page coordinate system */
-  protected _down: Vec2;
-  
-  /**segment end positions in the page coordinate system */
-  protected _quadPoints: Octuple;
+import { textSelectionChangeEvent, TextSelectionChangeEvent } from "../annotator";
+import { TextAnnotatorOptions } from "./text-annotator";
+import { TextMarkupAnnotator } from "./text-markup-annotator";
+
+export class TextHighlightAnnotator extends TextMarkupAnnotator {
+  protected readonly _highlightsByPageId = new Map<number, Octuple[]>();
   
   constructor(docService: DocumentService, pageService: PageService, 
     parent: HTMLDivElement, options?: TextAnnotatorOptions) {
@@ -22,6 +23,8 @@ export class TextHighlightAnnotator extends TextAnnotator {
 
   destroy() {
     super.destroy();
+    this._docService.eventService.removeListener(textSelectionChangeEvent,
+      this.onTextSelectionChange);
   }  
   
   undo() {
@@ -29,143 +32,135 @@ export class TextHighlightAnnotator extends TextAnnotator {
   }
   
   clear() {  
-    this._quadPoints = null;
+    this._highlightsByPageId.clear();
     this.clearGroup();
   }
   
   saveAnnotation() {
-    if (!this._quadPoints) {
+    if (!this._highlightsByPageId.size) {
       return;
     }
 
-    const pageId = this._pageId;
-    // const dto = this.buildAnnotationDto();
-    // const annotation = HighlightAnnotation.createFromDto(dto);
-
-    // // DEBUG
-    // // console.log(annotation);
-
-    // this._docService.appendAnnotationToPage(pageId, annotation);
+    const dtos = this.buildAnnotationDtos();
+    dtos.forEach(dto => {
+      const annotation = HighlightAnnotation.createFromDto(dto);
+      // DEBUG
+      // console.log(annotation);
+      this._docService.appendAnnotationToPage(dto.pageId, annotation);
+    });
     
-    // this.clear();
-
+    this.clear();
   }
   
   protected init() {
     super.init();
-    // this._overlay.addEventListener("pointerdown", 
-    //   this.onPointerDown);
+    this._docService.eventService.addListener(textSelectionChangeEvent,
+      this.onTextSelectionChange);
   }
    
   /**
-   * clear the old svg line if present and draw a new one instead
-   * @param min segment start
-   * @param max segment end
+   * clear the old svg highlights if present and draw new ones instead
    */
-  protected redrawLine(min: Vec2, max: Vec2) {
-    this._svgGroup.innerHTML = "";
-
+  protected redraw() {
     const [r, g, b, a] = this._color || [0, 0, 0, 1];
-    // this._vertices = [min.x, min.y, max.x, max.y];
 
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-    path.setAttribute("stroke-width", this._strokeWidth + "");
-    path.setAttribute("stroke-linecap", "square"); 
+    this._svgGroupByPageId.forEach((group, pageId) => {
+      group.innerHTML = "";
 
-    const pathString = `M ${min.x},${min.y} L ${max.x},${max.y}`;
-    path.setAttribute("d", pathString);
-
-    this._svgGroup.append(path);
+      const quads = this._highlightsByPageId.get(pageId);
+      if (quads?.length) {
+        quads.forEach(quad => {
+          const [x3, y3, x2, y2, x0, y0, x1, y1] = quad;
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("fill", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+          path.setAttribute("stroke", "none");
+          path.setAttribute("d", `M ${x0},${y0} L ${x1},${y1} L ${x2},${y2} L ${x3},${y3} Z`);    
+          group.append(path);
+        });
+      }
+    });
   }
-    
-  // protected onPointerDown = (e: PointerEvent) => {
-  //   if (!e.isPrimary || e.button === 2) {
-  //     return;
-  //   }
 
-  //   const {clientX: cx, clientY: cy} = e;
-  //   this.updatePointerCoords(cx, cy);
-  //   const pageCoords = this._pointerCoordsInPageCS;
-  //   if (!pageCoords) {
-  //     // return if the pointer is outside page
-  //     return;
-  //   }
+  protected updateHighlights(selections: TextSelectionInfo[]) {
+    this._highlightsByPageId.clear();    
+    for (const selection of selections) { 
+      const bl = this._pageService.getPageCoordsUnderPointer(
+        selection.bottomLeft.x, selection.bottomLeft.y);
+      const br = this._pageService.getPageCoordsUnderPointer(
+        selection.bottomRight.x, selection.bottomRight.y);
+      const tr = this._pageService.getPageCoordsUnderPointer(
+        selection.topRight.x, selection.topRight.y);
+      const tl = this._pageService.getPageCoordsUnderPointer(
+        selection.topLeft.x, selection.topLeft.y);
 
-  //   const {pageX: px, pageY: py, pageId} = pageCoords;
-  //   this._pageId = pageId;
-  //   this._down = new Vec2(px, py);
-
-  //   this.clear();
-  //   this.refreshGroupPosition();
-
-  //   const target = e.target as HTMLElement;
-  //   target.addEventListener("pointermove", this.onPointerMove);
-  //   target.addEventListener("pointerup", this.onPointerUp);    
-  //   target.addEventListener("pointerout", this.onPointerUp);  
-  //   // capture pointer to make pointer events fire on same target
-  //   target.setPointerCapture(e.pointerId);
-  // };
-
-  // protected onPointerMove = (e: PointerEvent) => {
-  //   if (!e.isPrimary // the event caused not by primary pointer
-  //     || !this._down // the pointer is not in the 'down' state
-  //   ) {
-  //     return;
-  //   }
-
-  //   const {clientX: cx, clientY: cy} = e;
-  //   this.updatePointerCoords(cx, cy);
-
-  //   const pageCoords = this._pointerCoordsInPageCS;    
-  //   if (!pageCoords || pageCoords.pageId !== this._pageId) {
-  //     // skip move if the pointer is outside of the starting page
-  //     return;
-  //   }
-
-  //   const {pageX: px, pageY: py} = pageCoords;
-  //   const end = new Vec2(px, py);
-        
-  //   this.redrawLine(this._down, end);
-  // };
-
-  // protected onPointerUp = (e: PointerEvent) => {
-  //   if (!e.isPrimary) {
-  //     return;
-  //   }
-
-  //   const target = e.target as HTMLElement;
-  //   target.removeEventListener("pointermove", this.onPointerMove);
-  //   target.removeEventListener("pointerup", this.onPointerUp);    
-  //   target.removeEventListener("pointerout", this.onPointerUp);
-  //   target.releasePointerCapture(e.pointerId); 
-    
-  //   if (this._quadPoints) {
-  //     this.emitDataChanged(2, true, true);
-  //   }
-  // };
-  
-  // protected buildAnnotationDto(): HighlightAnnotationDto {
-  //   const nowString = new Date().toISOString();
-  //   const dto: HighlightAnnotationDto = {
-  //     uuid: getRandomUuid(),
-  //     annotationType: "/Highlight",
-  //     pageId: null,
-
-  //     dateCreated: nowString,
-  //     dateModified: nowString,
-  //     author: this._docService.userName || "unknown",
+      if (!bl || !br || !tr || !tl) {
+        // at least one of the selection corners is outside the page
+        // skip the current selection
+        continue;
+      }
       
-  //     textContent: null,
+      if (new Set<number>([bl.pageId, br.pageId, tr.pageId, tl.pageId]).size > 1) {
+        // shall not ever happen
+        throw new Error("Not all the text selection corners are inside the same page");
+      }
 
-  //     rect: null,
+      // the order from PDF spec is "bottom-left->bottom-right->top-right->top-left"
+      // but the actual order used ubiquitously is "top-left->top-right->bottom-left->bottom-right"
+      // so use the second one
+      const quadPoints: Octuple = [
+        tl.pageX, tl.pageY,
+        tr.pageX, tr.pageY,
+        bl.pageX, bl.pageY,
+        br.pageX, br.pageY,
+      ];
 
-  //     color: this._color,
-  //     strokeWidth: this._strokeWidth,
-  //     strokeDashGap: null,
-  //   };
+      const pageId = bl.pageId;
+      if (this._highlightsByPageId.has(pageId)) {
+        this._highlightsByPageId.get(pageId).push(quadPoints);
+      } else {
+        this._highlightsByPageId.set(pageId, [quadPoints]);
+      }
+    }    
 
-  //   return dto;
-  // }
+    this.redraw();    
+    
+    if (this._highlightsByPageId?.size) {
+      this.emitDataChanged(this._highlightsByPageId.size, true, true);
+    } else {
+      this.emitDataChanged(0);
+    }
+  }
+
+  protected onTextSelectionChange = (e: TextSelectionChangeEvent) => {
+    this.updateHighlights(e?.detail?.selectionInfos || []);
+  };
+    
+  protected buildAnnotationDtos(): TextMarkupAnnotationDto[] {
+    const nowString = new Date().toISOString();
+    const dtos: TextMarkupAnnotationDto[] = [];    
+
+    this._highlightsByPageId.forEach((quads, pageId) => {
+      const dto: TextMarkupAnnotationDto = {
+        uuid: getRandomUuid(),
+        annotationType: "/Highlight",
+        pageId,
+  
+        dateCreated: nowString,
+        dateModified: nowString,
+        author: this._docService.userName || "unknown",
+        
+        textContent: null,
+  
+        rect: null,
+        quadPoints: quads.flat(),
+  
+        color: this._color,
+        strokeWidth: this._strokeWidth,
+        strokeDashGap: null,
+      }; 
+      dtos.push(dto);     
+    });
+
+    return dtos;
+  }
 }

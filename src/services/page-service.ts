@@ -174,9 +174,9 @@ export class PageService {
     const renderedPages: PageView[] = [];
     for (let i = 0; i < pages.length; i++) {
       const page = pages[i];
-      renderedPages.push(page);
       if (i >= minPageNumber && i <= maxPageNumber) {
         // render page view and dispatch corresponding event
+        renderedPages.push(page);
         page.renderViewAsync();
       } else {
         page.clearView();

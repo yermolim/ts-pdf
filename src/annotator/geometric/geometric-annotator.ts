@@ -11,11 +11,7 @@ export interface GeometricAnnotatorOptions {
   cloudMode?: boolean;
 }
 
-export abstract class GeometricAnnotator extends Annotator {
-  protected static lastColor: Quadruple;
-  protected static lastStrokeWidth: number;
-  protected static lastCloudMode: boolean;
- 
+export abstract class GeometricAnnotator extends Annotator { 
   protected _color: Quadruple;
   protected _strokeWidth: number;
   protected _cloudMode: boolean;
@@ -27,14 +23,9 @@ export abstract class GeometricAnnotator extends Annotator {
     options: GeometricAnnotatorOptions) {
     super(docService, pageService, parent);
     
-    this._color = options?.color || GeometricAnnotator.lastColor || [0, 0, 0, 0.9];
-    GeometricAnnotator.lastColor = this._color;
-
-    this._strokeWidth = options?.strokeWidth || GeometricAnnotator.lastStrokeWidth || 3;
-    GeometricAnnotator.lastStrokeWidth = this._strokeWidth;
-    
-    this._cloudMode = options?.cloudMode ?? GeometricAnnotator.lastCloudMode ?? false;
-    GeometricAnnotator.lastCloudMode = this._cloudMode;
+    this._color = options?.color || [0, 0, 0, 1];
+    this._strokeWidth = options?.strokeWidth || 3;    
+    this._cloudMode = options?.cloudMode || false;
   }
   
   destroy() {

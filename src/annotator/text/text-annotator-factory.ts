@@ -1,3 +1,5 @@
+import { Quadruple } from "../../common/types";
+
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 
@@ -9,33 +11,46 @@ export const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout",
 export type TextAnnotatorType =  typeof textAnnotatorTypes[number];
 
 export class TextAnnotatorFactory {
-  protected static lastType: TextAnnotatorType;
+  protected _lastType: TextAnnotatorType;
+  protected _lastColor: Quadruple;
+  protected _lastStrokeWidth: number;
 
-  static CreateAnnotator(docService: DocumentService, pageService: PageService, parent: HTMLDivElement,
+  createAnnotator(docService: DocumentService, pageService: PageService, parent: HTMLDivElement,
     options?: TextAnnotatorOptions, type?: TextAnnotatorType): TextAnnotator {
     
-    type ||= TextAnnotatorFactory.lastType || "popupText";
-    TextAnnotatorFactory.lastType = type;
+    type ||= this._lastType || "popupText";
+    this._lastType = type;
+
+    const color = options?.color || this._lastColor || [0, 0, 0, 0.9];
+    this._lastColor = color;
+
+    const strokeWidth = options?.strokeWidth || this._lastStrokeWidth || 3;
+    this._lastStrokeWidth = strokeWidth;
+
+    const combinedOptions: TextAnnotatorOptions = {
+      color,
+      strokeWidth,
+    };
 
     switch (type) {
       // TODO: implement all annotators
       case "popupText":
         return null;
-        // return new TextPopupAnnotator(docService, parent, pages, options);
+        // return new TextPopupAnnotator(docService, parent, pages, combinedOptions);
       case "freeText":
         return null;
-        // return new TextFreeAnnotator(docService, parent, pages, options);
+        // return new TextFreeAnnotator(docService, parent, pages, combinedOptions);
       case "freeTextCallout":
         return null;
-        // return new TextFreeCalloutAnnotator(docService, parent, pages, options);
+        // return new TextFreeCalloutAnnotator(docService, parent, pages, combinedOptions);
       case "strikeout":
         return null;
-        // return new TextStrikeoutAnnotator(docService, parent, pages, options);
+        // return new TextStrikeoutAnnotator(docService, parent, pages, combinedOptions);
       case "underline":
         return null;
-        // return new TextUnderlineAnnotator(docService, parent, pages, options);
+        // return new TextUnderlineAnnotator(docService, parent, pages, combinedOptions);
       case "highlight":
-        return new TextHighlightAnnotator(docService, pageService, parent, options);
+        return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
       default:
         throw new Error(`Invalid geometric annotator type: ${type}`);
     }

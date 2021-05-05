@@ -3,8 +3,11 @@ import { Octuple } from "./types";
 
 export interface TextSelectionInfo {
   text: string;
-  /**bounding box coordinates: x1 y1 x2 y2 x3 y3 x4 y4 */
-  clientCoordinates: Octuple;
+
+  bottomLeft: Vec2;
+  bottomRight: Vec2;
+  topRight: Vec2;
+  topLeft: Vec2;
 }
 
 function getNextNode(node: Node): Node {
@@ -84,14 +87,14 @@ function getSelectionInfosFromRangeTextNodes(range: Range): TextSelectionInfo[] 
     const xmin = x + width * startOffset / textLength;
     const xmax = x + width * endOffset / textLength;
     const ymax = ymin + height;
-    const coords: Octuple = [
-      xmin, ymin,
-      xmax, ymin,
-      xmax, ymax,
-      xmin, ymax,
-    ];
-
-    selectionInfos.push({text, clientCoordinates: coords});
+    
+    selectionInfos.push({
+      text,
+      bottomLeft: new Vec2(xmin, ymin),
+      bottomRight: new Vec2(xmax, ymin),
+      topRight: new Vec2(xmax, ymax),
+      topLeft: new Vec2(xmin, ymax),
+    });
   }
 
   return selectionInfos;
@@ -119,7 +122,23 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
 
     const textContent = node.textContent;
     if (!textContent) {
-      // ignore the text node if has no content
+      // ignore the text node if it has no content
+      continue;
+    }
+
+    const textLength = node.textContent?.length || 0;
+    let startOffset = 0;
+    let endOffset = textLength;
+    if (i === 0) {
+      startOffset = range.startOffset;
+    }
+    if (i === textNodes.length - 1) {
+      endOffset = range.endOffset;
+    }
+    const text = textContent.slice(startOffset, endOffset);
+
+    if (!text) {
+      // ignore the selection if it has no text content
       continue;
     }
 
@@ -135,6 +154,10 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
       // otherwise skip the node
       continue;
     }
+    
+    // DEBUG
+    // console.log(parent);  
+    // console.log(parent.getBoundingClientRect());  
 
     // get all span corners positions
     const spanBlVec = new Vec2();
@@ -143,6 +166,11 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
     const spanTlVec = new Vec2();
     dummies.forEach(dummy => {
       const {x, y} = dummy.getBoundingClientRect();
+
+      // DEBUG
+      // console.log(dummy);          
+      // console.log(dummy.getBoundingClientRect());      
+
       if (dummy.classList.contains("bl")) {
         spanBlVec.set(x, y);
       } else if (dummy.classList.contains("br")) {
@@ -153,17 +181,6 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
         spanTlVec.set(x, y);
       }
     });
-
-    const textLength = node.textContent?.length || 0;
-    let startOffset = 0;
-    let endOffset = textLength;
-    if (i === 0) {
-      startOffset = range.startOffset;
-    }
-    if (i === textNodes.length - 1) {
-      endOffset = range.endOffset;
-    }
-    const text = textContent.slice(startOffset, endOffset);
     
     const startOffsetRelative = startOffset / textLength;
     const endOffsetRelative = endOffset / textLength;
@@ -172,9 +189,9 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
     // except for some skew transformations,
     // so decided to keep them separated
     const spanBottomVec = Vec2.substract(spanBrVec, spanBlVec);
-    const spanTopVec = Vec2.substract(spanTrVec, spanTlVec);
+    const spanTopVec = Vec2.substract(spanTrVec, spanTlVec);    
 
-    // calculate the selected text corner positions taking offsets into account
+    //calculate the selected text corner positions taking offsets into account
     const selectionBlVec = Vec2.add(
       spanBlVec, 
       Vec2.multiplyByScalar(spanBottomVec, startOffsetRelative)
@@ -192,18 +209,14 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
       Vec2.multiplyByScalar(spanTopVec, startOffsetRelative)
     );
 
-    // the order from PDF spec is "bottom-left->bottom-right->top-right->top-left"
-    // but the actual order used ubiquitously is "top-left->top-right->bottom-left->bottom-right"
-    // so use the second one
-    const coords: Octuple = [
-      selectionTlVec.x, selectionTlVec.y,
-      selectionTrVec.x, selectionTrVec.y,
-      selectionBlVec.x, selectionBlVec.y,
-      selectionBrVec.x, selectionBrVec.y,
-    ];
-
-    selectionInfos.push({text, clientCoordinates: coords});
-  }
+    selectionInfos.push({
+      text,
+      bottomLeft: selectionBlVec,
+      bottomRight: selectionBrVec,
+      topRight: selectionTrVec,
+      topLeft: selectionTlVec,
+    });
+  }  
 
   return selectionInfos;
 }

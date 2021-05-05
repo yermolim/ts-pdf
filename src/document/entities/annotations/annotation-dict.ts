@@ -605,42 +605,6 @@ export abstract class AnnotationDict extends PdfDict {
   }  
 
   /**
-   * transform annotation bounding boxes using transformation matrix
-   * @param matrix 
-   */
-  protected applyRectTransform(matrix: Mat3) {
-    const dict = <AnnotationDict>this._proxy || this;
-
-    // transform current bounding box (not axis-aligned)
-    const bBox = dict.getLocalBB();
-    bBox.ll.applyMat3(matrix);
-    bBox.lr.applyMat3(matrix);
-    bBox.ur.applyMat3(matrix);
-    bBox.ul.applyMat3(matrix);
-
-    // get an axis-aligned bounding box and assign it to the Rect property
-    const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
-  }  
-  
-  protected applyCommonTransform(matrix: Mat3) {
-    // transform bounding boxes
-    this.applyRectTransform(matrix);
-    
-    const dict = <AnnotationDict>this._proxy || this;
-    
-    // if the annotation has a content stream, update its matrix
-    const stream = dict.apStream;
-    if (stream) {
-      const newApMatrix = Mat3.multiply(stream.matrix, matrix);
-      dict.apStream.matrix = newApMatrix;
-    }
-
-    dict.M = DateString.fromDate(new Date());
-  }
-
-  /**
    * get 2D vector with a position of the specified point in page coords 
    * (0, 0 is lower-left corner of the page)
    * @param clientX 
@@ -678,6 +642,66 @@ export abstract class AnnotationDict extends PdfDict {
     );
 
     return position;
+  }
+  //#endregion
+
+  //#region transformation
+  /**
+   * transform annotation bounding boxes using transformation matrix
+   * @param matrix 
+   */
+  protected applyRectTransform(matrix: Mat3) {
+    const dict = <AnnotationDict>this._proxy || this;
+
+    // transform current bounding box (not axis-aligned)
+    const bBox = dict.getLocalBB();
+    bBox.ll.applyMat3(matrix);
+    bBox.lr.applyMat3(matrix);
+    bBox.ur.applyMat3(matrix);
+    bBox.ul.applyMat3(matrix);
+
+    // get an axis-aligned bounding box and assign it to the Rect property
+    const {min: newRectMin, max: newRectMax} = 
+      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
+    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+  }  
+  
+  protected applyCommonTransform(matrix: Mat3) {
+    // transform bounding boxes
+    this.applyRectTransform(matrix);
+    
+    const dict = <AnnotationDict>this._proxy || this;
+    
+    // if the annotation has a content stream, update its matrix
+    const stream = dict.apStream;
+    if (stream) {
+      const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+      dict.apStream.matrix = newApMatrix;
+    }
+
+    dict.M = DateString.fromDate(new Date());
+  }
+  
+  /**
+   * reset the svg element copy used for transformation purposes
+   */
+  protected applyTempTransform() {
+    if (this._transformationTimer) {
+      clearTimeout(this._transformationTimer);
+      this._transformationTimer = null;
+      return;
+    }
+
+    // remove the copy from DOM
+    this._svgContentCopy.remove();
+    // reset the copy transform
+    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+
+    // transform the annotation
+    this.applyCommonTransform(this._tempTransformationMatrix);
+
+    // reset the temp matrix
+    this._tempTransformationMatrix.reset();
   }
   //#endregion
 
@@ -875,30 +899,8 @@ export abstract class AnnotationDict extends PdfDict {
   //#endregion
 
   //#region event handlers 
-  
-  /**
-   * reset the svg element copy used for transformation purposes
-   */
-  protected applyTempTransform() {
-    if (this._transformationTimer) {
-      clearTimeout(this._transformationTimer);
-      this._transformationTimer = null;
-      return;
-    }
 
-    // remove the copy from DOM
-    this._svgContentCopy.remove();
-    // reset the copy transform
-    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-
-    // transform the annotation
-    this.applyCommonTransform(this._tempTransformationMatrix);
-
-    // reset the temp matrix
-    this._tempTransformationMatrix.reset();
-  }
-
-  //#region main svg handlers (selection + translation)  
+  //#region selection handlers
   protected onSvgPointerEnter = (e: PointerEvent) => { 
     if (this.$onPointerEnterAction) {
       this.$onPointerEnterAction(e);
@@ -910,7 +912,7 @@ export abstract class AnnotationDict extends PdfDict {
       this.$onPointerLeaveAction(e);
     }    
   };
-
+  
   protected onSvgPointerDown = (e: PointerEvent) => { 
     if (!this.$pageId) {
       // the annotation is not appended to the page (a temporary one)
@@ -923,13 +925,19 @@ export abstract class AnnotationDict extends PdfDict {
       this.$onPointerDownAction(e);
     }
 
+    this.onTranslationPointerDown(e);
+  };
+  //#endregion
+
+  //#region translation handlers
+  protected onTranslationPointerDown = (e: PointerEvent) => { 
     if (!this.$translationEnabled || !e.isPrimary) {
       // translation disabled or it's a secondary touch action
       return;
     }
 
-    document.addEventListener("pointerup", this.onSvgPointerUp);
-    document.addEventListener("pointerout", this.onSvgPointerUp);  
+    document.addEventListener("pointerup", this.onTranslationPointerUp);
+    document.addEventListener("pointerout", this.onTranslationPointerUp);  
 
     // set timeout to prevent an accidental annotation translation
     this._transformationTimer = setTimeout(() => {
@@ -938,11 +946,11 @@ export abstract class AnnotationDict extends PdfDict {
       this._svg.after(this._svgContentCopy);
       // set the starting transformation point
       this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
-      document.addEventListener("pointermove", this.onSvgPointerMove);
+      document.addEventListener("pointermove", this.onTranslationPointerMove);
     }, 200);
   };
 
-  protected onSvgPointerMove = (e: PointerEvent) => {
+  protected onTranslationPointerMove = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -958,15 +966,15 @@ export abstract class AnnotationDict extends PdfDict {
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onSvgPointerUp = (e: PointerEvent) => {
+  protected onTranslationPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
     }
 
-    document.removeEventListener("pointermove", this.onSvgPointerMove);
-    document.removeEventListener("pointerup", this.onSvgPointerUp);
-    document.removeEventListener("pointerout", this.onSvgPointerUp);
+    document.removeEventListener("pointermove", this.onTranslationPointerMove);
+    document.removeEventListener("pointerup", this.onTranslationPointerUp);
+    document.removeEventListener("pointerout", this.onTranslationPointerUp);
 
     // transform the annotation
     this.applyTempTransform();

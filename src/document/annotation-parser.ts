@@ -9,6 +9,8 @@ import { CircleAnnotation, CircleAnnotationDto } from "./entities/annotations/ma
 import { PolygonAnnotation, PolygonAnnotationDto } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation, PolylineAnnotationDto } from "./entities/annotations/markup/geometric/polyline-annotation";
 import { LineAnnotation, LineAnnotationDto } from "./entities/annotations/markup/geometric/line-annotation";
+import { TextMarkupAnnotationDto } from "./entities/annotations/markup/text-markup/text-markup-annotation";
+import { HighlightAnnotation } from "./entities/annotations/markup/text-markup/highlight-annotation";
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
@@ -36,12 +38,15 @@ export class AnnotationParseFactory {
       case annotationTypes.LINE:
         annot = LineAnnotation.parse(info);
         break;
-        // case annotationTypes.FREE_TEXT:
-        //   annot = FreeTextAnnotation.parse(info);
-        //   break;
-        // case annotationTypes.TEXT:
-        //   annot = TextAnnotation.parse(info);
-        //   break;
+      case annotationTypes.HIGHLIGHT:
+        annot = HighlightAnnotation.parse(info);
+        break;
+      // case annotationTypes.FREE_TEXT:
+      //   annot = FreeTextAnnotation.parse(info);
+      //   break;
+      // case annotationTypes.TEXT:
+      //   annot = TextAnnotation.parse(info);
+      //   break;
       default:
         break;
     }
@@ -72,6 +77,9 @@ export class AnnotationParseFactory {
         break;
       case "/Line":        
         annotation = LineAnnotation.createFromDto(dto as LineAnnotationDto);
+        break;
+      case "/Highlight":        
+        annotation = HighlightAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
         break;
       default:
         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);

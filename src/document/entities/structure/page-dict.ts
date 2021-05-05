@@ -10,11 +10,6 @@ import { PdfDict } from "../core/pdf-dict";
 import { HexString } from "../strings/hex-string";
 import { DateString } from "../strings/date-string";
 
-import { XFormStream } from "../streams/x-form-stream";
-import { ImageStream } from "../streams/image-stream";
-
-import { ResourceDict } from "../appearance/resource-dict";
-
 /**PDF document page dictionary */
 export class PageDict extends PdfDict {
   /**

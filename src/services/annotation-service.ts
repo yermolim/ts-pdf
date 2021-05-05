@@ -33,6 +33,8 @@ export class AnnotationService {
   private readonly _pageService: PageService;
   
   private _contextMenu: ContextMenu;
+  private _geometricFactory: GeometricAnnotatorFactory;
+  private _textFactory: TextAnnotatorFactory;
   private _viewerResizeObserver: ResizeObserver;
   
   private _mode: AnnotationServiceMode;  
@@ -97,6 +99,8 @@ export class AnnotationService {
     this._viewerResizeObserver = viewerRObserver;
     
     this._contextMenu = new ContextMenu();
+    this._geometricFactory = new GeometricAnnotatorFactory();
+    this._textFactory = new TextAnnotatorFactory();
   }
 
   private setMode(mode?: AnnotationServiceMode) {
@@ -136,7 +140,7 @@ export class AnnotationService {
           });
         break;
       case "geometric":
-        this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docService, this._pageService,
+        this._annotator = this._geometricFactory.createAnnotator(this._docService, this._pageService,
           this._viewer.container, {
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
@@ -144,7 +148,7 @@ export class AnnotationService {
           }, this._geometricSubmode);
         break;
       case "text":
-        this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docService, this._pageService,
+        this._annotator = this._textFactory.createAnnotator(this._docService, this._pageService,
           this._viewer.container, {
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,

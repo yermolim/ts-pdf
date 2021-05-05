@@ -20,7 +20,6 @@ interface ParsedCommand {
 
 export class AppearanceStreamRenderer {
   protected readonly _stream: XFormStream;
-  protected readonly _parser: DataParser;
   protected readonly _rect: Quadruple;
   protected readonly _objectName: string;
 
@@ -42,7 +41,6 @@ export class AppearanceStreamRenderer {
       throw new Error("Stream is not defined");
     }
     this._stream = stream;
-    this._parser = new DataParser(stream.decodedStreamData);
     this._rect = rect;
     this._objectName = objectName; 
 
@@ -101,6 +99,11 @@ export class AppearanceStreamRenderer {
     the appearance’s coordinate system to the annotation’s rectangle in default user space
     */
     const matAA = Mat3.fromMat3(matAP).multiply(matA);
+
+    // DEBUG
+    // console.log(matAP.toFloatShortArray());
+    // console.log(matA.toFloatShortArray());
+    // console.log(matAA.toFloatShortArray());    
 
     return {matAP, matA, matAA};
   }
@@ -176,7 +179,7 @@ export class AppearanceStreamRenderer {
    * @returns 
    */
   async renderAsync(): Promise<RenderToSvgResult> {
-    const g = await this.drawGroupAsync(this._parser);
+    const g = await this.drawGroupAsync(this._stream);
     return {
       svg: g, 
       clipPaths: this._clipPaths,
@@ -296,8 +299,9 @@ export class AppearanceStreamRenderer {
     return g;
   }
 
-  protected async drawGroupAsync(parser: DataParser): Promise<SVGGElement> {
+  protected async drawGroupAsync(stream: XFormStream): Promise<SVGGElement> {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const parser = new DataParser(stream.decodedStreamData);    
 
     const lastCoord = new Vec2();
     let lastOperator: string;
@@ -563,15 +567,26 @@ export class AppearanceStreamRenderer {
           throw new Error("Can't find the appearance stream text object end");
           
         case "Do":
-          const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
-          if (!stream) {            
+          const innerStream = stream.Resources.getXObject((`/XObject${parameters[0]}`));
+          if (!innerStream) {            
             throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
           }
-          if (stream instanceof XFormStream) {
-            const subGroup = await this.drawGroupAsync(new DataParser(stream.decodedStreamData));
+          if (innerStream instanceof XFormStream) {
+            // push the transformation matrix onto the stack
+            const [im0, im1, im3, im4, im6, im7] = innerStream.Matrix;
+            const innerMat = new Mat3().set(im0, im1, 0, im3, im4, 0, im6, im7, 1);
+            this.pushState();
+            this.state.matrix = innerMat.multiply(this.state.matrix);
+
+            // render the inner stream
+            const subGroup = await this.drawGroupAsync(innerStream);
             g.append(subGroup);
-          } else if (stream instanceof ImageStream) {   
-            const url = await stream.getImageUrlAsync();
+
+            // pop the matrix
+            this.popState();
+
+          } else if (innerStream instanceof ImageStream) {   
+            const url = await innerStream.getImageUrlAsync();
             if (!url) {              
               throw new Error("Can't get image url from external image stream");
             }
@@ -581,13 +596,13 @@ export class AppearanceStreamRenderer {
               console.log(`Loading external image stream failed: ${e}`);
             };
             image.setAttribute("href", url);
-            image.setAttribute("width", stream.Width + "");
-            image.setAttribute("height", stream.Height + "");   
+            image.setAttribute("width", innerStream.Width + "");
+            image.setAttribute("height", innerStream.Height + "");   
             const imageMatrix = new Mat3()
-              .applyTranslation(-stream.Width / 2, -stream.Height / 2)
+              .applyTranslation(-innerStream.Width / 2, -innerStream.Height / 2)
               .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
-              .applyTranslation(stream.Width / 2, stream.Height / 2)
-              .applyScaling(1 / stream.Width, 1 / stream.Height)
+              .applyTranslation(innerStream.Width / 2, innerStream.Height / 2)
+              .applyScaling(1 / innerStream.Width, 1 / innerStream.Height)
               .multiply(this.state.matrix);                     
             image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
             image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test

@@ -1691,6 +1691,19 @@ function getSelectionInfosFromRangeSpans(range) {
         if (!textContent) {
             continue;
         }
+        const textLength = ((_a = node.textContent) === null || _a === void 0 ? void 0 : _a.length) || 0;
+        let startOffset = 0;
+        let endOffset = textLength;
+        if (i === 0) {
+            startOffset = range.startOffset;
+        }
+        if (i === textNodes.length - 1) {
+            endOffset = range.endOffset;
+        }
+        const text = textContent.slice(startOffset, endOffset);
+        if (!text) {
+            continue;
+        }
         const parent = node.parentElement;
         if (!parent || parent.tagName.toLowerCase() !== "span") {
             continue;
@@ -1718,16 +1731,6 @@ function getSelectionInfosFromRangeSpans(range) {
                 spanTlVec.set(x, y);
             }
         });
-        const textLength = ((_a = node.textContent) === null || _a === void 0 ? void 0 : _a.length) || 0;
-        let startOffset = 0;
-        let endOffset = textLength;
-        if (i === 0) {
-            startOffset = range.startOffset;
-        }
-        if (i === textNodes.length - 1) {
-            endOffset = range.endOffset;
-        }
-        const text = textContent.slice(startOffset, endOffset);
         const startOffsetRelative = startOffset / textLength;
         const endOffsetRelative = endOffset / textLength;
         const spanBottomVec = Vec2.substract(spanBrVec, spanBlVec);
@@ -1736,13 +1739,13 @@ function getSelectionInfosFromRangeSpans(range) {
         const selectionBrVec = Vec2.add(spanBlVec, Vec2.multiplyByScalar(spanBottomVec, endOffsetRelative));
         const selectionTrVec = Vec2.add(spanTlVec, Vec2.multiplyByScalar(spanTopVec, endOffsetRelative));
         const selectionTlVec = Vec2.add(spanTlVec, Vec2.multiplyByScalar(spanTopVec, startOffsetRelative));
-        const coords = [
-            selectionTlVec.x, selectionTlVec.y,
-            selectionTrVec.x, selectionTrVec.y,
-            selectionBlVec.x, selectionBlVec.y,
-            selectionBrVec.x, selectionBrVec.y,
-        ];
-        selectionInfos.push({ text, clientCoordinates: coords });
+        selectionInfos.push({
+            text,
+            bottomLeft: selectionBlVec,
+            bottomRight: selectionBrVec,
+            topRight: selectionTrVec,
+            topLeft: selectionTlVec,
+        });
     }
     return selectionInfos;
 }
@@ -7356,7 +7359,6 @@ class AppearanceStreamRenderer {
             throw new Error("Stream is not defined");
         }
         this._stream = stream;
-        this._parser = new DataParser(stream.decodedStreamData);
         this._rect = rect;
         this._objectName = objectName;
         const { matAA } = AppearanceStreamRenderer.calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
@@ -7446,7 +7448,7 @@ class AppearanceStreamRenderer {
     }
     renderAsync() {
         return __awaiter$6(this, void 0, void 0, function* () {
-            const g = yield this.drawGroupAsync(this._parser);
+            const g = yield this.drawGroupAsync(this._stream);
             return {
                 svg: g,
                 clipPaths: this._clipPaths,
@@ -7519,9 +7521,10 @@ class AppearanceStreamRenderer {
         }
         return g;
     }
-    drawGroupAsync(parser) {
+    drawGroupAsync(stream) {
         return __awaiter$6(this, void 0, void 0, function* () {
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            const parser = new DataParser(stream.decodedStreamData);
             const lastCoord = new Vec2();
             let lastOperator;
             let d = "";
@@ -7757,16 +7760,21 @@ class AppearanceStreamRenderer {
                         }
                         throw new Error("Can't find the appearance stream text object end");
                     case "Do":
-                        const stream = this._stream.Resources.getXObject((`/XObject${parameters[0]}`));
-                        if (!stream) {
+                        const innerStream = stream.Resources.getXObject((`/XObject${parameters[0]}`));
+                        if (!innerStream) {
                             throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
                         }
-                        if (stream instanceof XFormStream) {
-                            const subGroup = yield this.drawGroupAsync(new DataParser(stream.decodedStreamData));
+                        if (innerStream instanceof XFormStream) {
+                            const [im0, im1, im3, im4, im6, im7] = innerStream.Matrix;
+                            const innerMat = new Mat3().set(im0, im1, 0, im3, im4, 0, im6, im7, 1);
+                            this.pushState();
+                            this.state.matrix = innerMat.multiply(this.state.matrix);
+                            const subGroup = yield this.drawGroupAsync(innerStream);
                             g.append(subGroup);
+                            this.popState();
                         }
-                        else if (stream instanceof ImageStream) {
-                            const url = yield stream.getImageUrlAsync();
+                        else if (innerStream instanceof ImageStream) {
+                            const url = yield innerStream.getImageUrlAsync();
                             if (!url) {
                                 throw new Error("Can't get image url from external image stream");
                             }
@@ -7775,13 +7783,13 @@ class AppearanceStreamRenderer {
                                 console.log(`Loading external image stream failed: ${e}`);
                             };
                             image.setAttribute("href", url);
-                            image.setAttribute("width", stream.Width + "");
-                            image.setAttribute("height", stream.Height + "");
+                            image.setAttribute("width", innerStream.Width + "");
+                            image.setAttribute("height", innerStream.Height + "");
                             const imageMatrix = new Mat3()
-                                .applyTranslation(-stream.Width / 2, -stream.Height / 2)
+                                .applyTranslation(-innerStream.Width / 2, -innerStream.Height / 2)
                                 .applyScaling(1, -1)
-                                .applyTranslation(stream.Width / 2, stream.Height / 2)
-                                .applyScaling(1 / stream.Width, 1 / stream.Height)
+                                .applyTranslation(innerStream.Width / 2, innerStream.Height / 2)
+                                .applyScaling(1 / innerStream.Width, 1 / innerStream.Height)
                                 .multiply(this.state.matrix);
                             image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
                             image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
@@ -8321,19 +8329,22 @@ class AnnotationDict extends PdfDict {
             if (this.$onPointerDownAction) {
                 this.$onPointerDownAction(e);
             }
+            this.onTranslationPointerDown(e);
+        };
+        this.onTranslationPointerDown = (e) => {
             if (!this.$translationEnabled || !e.isPrimary) {
                 return;
             }
-            document.addEventListener("pointerup", this.onSvgPointerUp);
-            document.addEventListener("pointerout", this.onSvgPointerUp);
+            document.addEventListener("pointerup", this.onTranslationPointerUp);
+            document.addEventListener("pointerout", this.onTranslationPointerUp);
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._svg.after(this._svgContentCopy);
                 this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
-                document.addEventListener("pointermove", this.onSvgPointerMove);
+                document.addEventListener("pointermove", this.onTranslationPointerMove);
             }, 200);
         };
-        this.onSvgPointerMove = (e) => {
+        this.onTranslationPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -8342,13 +8353,13 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
             this._svgContentCopyUse.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onSvgPointerUp = (e) => {
+        this.onTranslationPointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
-            document.removeEventListener("pointermove", this.onSvgPointerMove);
-            document.removeEventListener("pointerup", this.onSvgPointerUp);
-            document.removeEventListener("pointerout", this.onSvgPointerUp);
+            document.removeEventListener("pointermove", this.onTranslationPointerMove);
+            document.removeEventListener("pointerup", this.onTranslationPointerUp);
+            document.removeEventListener("pointerout", this.onTranslationPointerUp);
             this.applyTempTransform();
             this.updateRenderAsync();
         };
@@ -8838,6 +8849,24 @@ class AnnotationDict extends PdfDict {
         };
         return this._bBox;
     }
+    convertClientCoordsToPage(clientX, clientY) {
+        const { x, y, width, height } = this._svgBox.getBoundingClientRect();
+        const rectMinScaled = new Vec2(x, y);
+        const rectMaxScaled = new Vec2(x + width, y + height);
+        const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
+        const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
+        const position = new Vec2((clientX - pageLowerLeft.x) / pageScale, (pageLowerLeft.y - clientY) / pageScale);
+        return position;
+    }
+    convertPageCoordsToClient(pageX, pageY) {
+        const { x, y, width, height } = this._svgBox.getBoundingClientRect();
+        const rectMinScaled = new Vec2(x, y);
+        const rectMaxScaled = new Vec2(x + width, y + height);
+        const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
+        const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
+        const position = new Vec2(pageLowerLeft.x + (pageX * pageScale), pageLowerLeft.y - (pageY * pageScale));
+        return position;
+    }
     applyRectTransform(matrix) {
         const dict = this._proxy || this;
         const bBox = dict.getLocalBB();
@@ -8858,23 +8887,16 @@ class AnnotationDict extends PdfDict {
         }
         dict.M = DateString.fromDate(new Date());
     }
-    convertClientCoordsToPage(clientX, clientY) {
-        const { x, y, width, height } = this._svgBox.getBoundingClientRect();
-        const rectMinScaled = new Vec2(x, y);
-        const rectMaxScaled = new Vec2(x + width, y + height);
-        const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
-        const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
-        const position = new Vec2((clientX - pageLowerLeft.x) / pageScale, (pageLowerLeft.y - clientY) / pageScale);
-        return position;
-    }
-    convertPageCoordsToClient(pageX, pageY) {
-        const { x, y, width, height } = this._svgBox.getBoundingClientRect();
-        const rectMinScaled = new Vec2(x, y);
-        const rectMaxScaled = new Vec2(x + width, y + height);
-        const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
-        const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
-        const position = new Vec2(pageLowerLeft.x + (pageX * pageScale), pageLowerLeft.y - (pageY * pageScale));
-        return position;
+    applyTempTransform() {
+        if (this._transformationTimer) {
+            clearTimeout(this._transformationTimer);
+            this._transformationTimer = null;
+            return;
+        }
+        this._svgContentCopy.remove();
+        this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+        this.applyCommonTransform(this._tempTransformationMatrix);
+        this._tempTransformationMatrix.reset();
     }
     renderRect() {
         const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
@@ -9017,17 +9039,6 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopyUse = use;
             this._svgClipPaths = contentResult.clipPaths;
         });
-    }
-    applyTempTransform() {
-        if (this._transformationTimer) {
-            clearTimeout(this._transformationTimer);
-            this._transformationTimer = null;
-            return;
-        }
-        this._svgContentCopy.remove();
-        this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-        this.applyCommonTransform(this._tempTransformationMatrix);
-        this._tempTransformationMatrix.reset();
     }
 }
 
@@ -16135,6 +16146,219 @@ class LineAnnotation extends GeometricAnnotation {
 LineAnnotation.lineEndingMultiplier = 3;
 LineAnnotation.lineEndingMinimalSize = 10;
 
+class TextMarkupAnnotation extends MarkupAnnotation {
+    constructor(type) {
+        super(type);
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.QuadPoints) {
+            bytes.push(...encoder.encode("/QuadPoints "), codes.L_BRACKET);
+            this.QuadPoints.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/QuadPoints":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.QuadPoints) {
+            throw new Error("Not all required properties parsed");
+        }
+    }
+}
+
+class HighlightAnnotation extends TextMarkupAnnotation {
+    constructor() {
+        super(annotationTypes.HIGHLIGHT);
+        this.onTranslationPointerDown = (e) => { };
+    }
+    static createFromDto(dto) {
+        var _a;
+        if (dto.annotationType !== "/Highlight") {
+            throw new Error("Invalid annotation type");
+        }
+        if (!((_a = dto === null || dto === void 0 ? void 0 : dto.quadPoints) === null || _a === void 0 ? void 0 : _a.length) || dto.quadPoints.length % 8) {
+            return;
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new HighlightAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Contents = dto.textContent
+            ? LiteralString.fromString(dto.textContent)
+            : null;
+        if (dto.rect) {
+            annotation.Rect = dto.rect;
+        }
+        else {
+            const vectors = [];
+            for (let i = 0; i < dto.quadPoints.length; i += 2) {
+                vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
+            }
+            const { min, max } = vecMinMax(...vectors);
+            annotation.Rect = [min.x, min.y, max.x, max.y];
+        }
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.QuadPoints = dto.quadPoints;
+        annotation.generateApStream();
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new HighlightAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        return superBytes;
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Highlight",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            textContent: (_c = this.Contents) === null || _c === void 0 ? void 0 : _c.literal,
+            rect: this.Rect,
+            bbox: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.BBox,
+            matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
+            quadPoints: this.QuadPoints,
+            color,
+            strokeWidth: (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.W) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.width) !== null && _j !== void 0 ? _j : 1,
+            strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+    }
+    generateApStream() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
+            return;
+        }
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+        let colorString;
+        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        const opacity = this.CA || 1;
+        const strokeWidth = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.W) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.width) !== null && _f !== void 0 ? _f : 1;
+        const strokeDash = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[0]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.dash) !== null && _k !== void 0 ? _k : 3;
+        const strokeGap = (_p = (_m = (_l = this.BS) === null || _l === void 0 ? void 0 : _l.D[1]) !== null && _m !== void 0 ? _m : (_o = this.Border) === null || _o === void 0 ? void 0 : _o.gap) !== null && _p !== void 0 ? _p : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        gs.D = [[strokeDash, strokeGap], 0];
+        let streamTextData = `q ${colorString} /GS0 gs`;
+        const bottomLeft = new Vec2();
+        const bottomRight = new Vec2();
+        const topRight = new Vec2();
+        const topLeft = new Vec2();
+        const q = this.QuadPoints;
+        for (let i = 0; i < q.length; i += 8) {
+            bottomLeft.set(q[i + 4], q[i + 5]);
+            bottomRight.set(q[i + 6], q[i + 7]);
+            topRight.set(q[i + 2], q[i + 3]);
+            topLeft.set(q[i + 0], q[i + 1]);
+            streamTextData += `\n${bottomLeft.x} ${bottomLeft.y} m`;
+            streamTextData += `\n${bottomRight.x} ${bottomRight.y} l`;
+            streamTextData += `\n${topRight.x} ${topRight.y} l`;
+            streamTextData += `\n${topLeft.x} ${topLeft.y} l`;
+            streamTextData += "\nf";
+        }
+        streamTextData += "\nQ";
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
+    }
+    renderHandles() {
+        return [];
+    }
+}
+
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
@@ -16160,6 +16384,9 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.LINE:
                 annot = LineAnnotation.parse(info);
+                break;
+            case annotationTypes.HIGHLIGHT:
+                annot = HighlightAnnotation.parse(info);
                 break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;
@@ -16187,6 +16414,9 @@ class AnnotationParseFactory {
                 break;
             case "/Line":
                 annotation = LineAnnotation.createFromDto(dto);
+                break;
+            case "/Highlight":
+                annotation = HighlightAnnotation.createFromDto(dto);
                 break;
             default:
                 throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
@@ -16734,8 +16964,8 @@ class PageService {
         const renderedPages = [];
         for (let i = 0; i < pages.length; i++) {
             const page = pages[i];
-            renderedPages.push(page);
             if (i >= minPageNumber && i <= maxPageNumber) {
+                renderedPages.push(page);
                 page.renderViewAsync();
             }
             else {
@@ -16997,14 +17227,10 @@ class Annotator {
 
 class GeometricAnnotator extends Annotator {
     constructor(docService, pageService, parent, options) {
-        var _a, _b;
         super(docService, pageService, parent);
-        this._color = (options === null || options === void 0 ? void 0 : options.color) || GeometricAnnotator.lastColor || [0, 0, 0, 0.9];
-        GeometricAnnotator.lastColor = this._color;
-        this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || GeometricAnnotator.lastStrokeWidth || 3;
-        GeometricAnnotator.lastStrokeWidth = this._strokeWidth;
-        this._cloudMode = (_b = (_a = options === null || options === void 0 ? void 0 : options.cloudMode) !== null && _a !== void 0 ? _a : GeometricAnnotator.lastCloudMode) !== null && _b !== void 0 ? _b : false;
-        GeometricAnnotator.lastCloudMode = this._cloudMode;
+        this._color = (options === null || options === void 0 ? void 0 : options.color) || [0, 0, 0, 1];
+        this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || 3;
+        this._cloudMode = (options === null || options === void 0 ? void 0 : options.cloudMode) || false;
     }
     destroy() {
         this.clearGroup();
@@ -17824,22 +18050,34 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
 
 const geometricAnnotatorTypes = ["square", "circle", "line", "arrow", "polyline", "polygon"];
 class GeometricAnnotatorFactory {
-    static CreateAnnotator(docService, pageService, parent, options, type) {
-        type || (type = GeometricAnnotatorFactory.lastType || "square");
-        GeometricAnnotatorFactory.lastType = type;
+    createAnnotator(docService, pageService, parent, options, type) {
+        var _a, _b;
+        type || (type = this._lastType || "square");
+        this._lastType = type;
+        const color = (options === null || options === void 0 ? void 0 : options.color) || this._lastColor || [0, 0, 0, 0.9];
+        this._lastColor = color;
+        const strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || this._lastStrokeWidth || 3;
+        this._lastStrokeWidth = strokeWidth;
+        const cloudMode = (_b = (_a = options === null || options === void 0 ? void 0 : options.cloudMode) !== null && _a !== void 0 ? _a : this._lastCloudMode) !== null && _b !== void 0 ? _b : false;
+        this._lastCloudMode = cloudMode;
+        const combinedOptions = {
+            color,
+            strokeWidth,
+            cloudMode,
+        };
         switch (type) {
             case "square":
-                return new GeometricSquareAnnotator(docService, pageService, parent, options);
+                return new GeometricSquareAnnotator(docService, pageService, parent, combinedOptions);
             case "circle":
-                return new GeometricCircleAnnotator(docService, pageService, parent, options);
+                return new GeometricCircleAnnotator(docService, pageService, parent, combinedOptions);
             case "line":
-                return new GeometricLineAnnotator(docService, pageService, parent, options);
+                return new GeometricLineAnnotator(docService, pageService, parent, combinedOptions);
             case "arrow":
-                return new GeometricArrowAnnotator(docService, pageService, parent, options);
+                return new GeometricArrowAnnotator(docService, pageService, parent, combinedOptions);
             case "polyline":
-                return new GeometricPolylineAnnotator(docService, pageService, parent, options);
+                return new GeometricPolylineAnnotator(docService, pageService, parent, combinedOptions);
             case "polygon":
-                return new GeometricPolygonAnnotator(docService, pageService, parent, options);
+                return new GeometricPolygonAnnotator(docService, pageService, parent, combinedOptions);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -18344,17 +18582,12 @@ class ContextMenu {
 class TextAnnotator extends Annotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent);
-        this._color = (options === null || options === void 0 ? void 0 : options.color) || TextAnnotator.lastColor || [0, 0, 0, 0.9];
-        TextAnnotator.lastColor = this._color;
-        this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || TextAnnotator.lastStrokeWidth || 3;
-        TextAnnotator.lastStrokeWidth = this._strokeWidth;
+        this._color = (options === null || options === void 0 ? void 0 : options.color) || [0, 0, 0, 1];
+        this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || 3;
     }
     destroy() {
         this.clearGroup();
         super.destroy();
-    }
-    init() {
-        super.init();
     }
     emitDataChanged(count, saveable, clearable, undoable) {
         this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
@@ -18369,69 +18602,167 @@ class TextAnnotator extends Annotator {
         this._svgGroup.innerHTML = "";
         this.emitDataChanged(0);
     }
+}
+
+class TextMarkupAnnotator extends TextAnnotator {
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options);
+        this._svgGroupByPageId = new Map();
+    }
+    clearGroup() {
+        this._svgGroupByPageId.forEach(x => x.innerHTML = "");
+        this.emitDataChanged(0);
+    }
     refreshGroupPosition() {
-        if (!this._pageId && this._pageId !== 0) {
-            return;
-        }
-        const page = this._pageService.renderedPages.find(x => x.id === this._pageId);
-        if (!page) {
-            this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
-            return;
-        }
-        const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
-        const py = ptop + ph;
         const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
-        const vy = vtop + vh;
-        const offsetX = (px - vx) / this._pageService.scale;
-        const offsetY = (vy - py) / this._pageService.scale;
-        this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+        const scale = this._pageService.scale;
+        this._pageService.renderedPages.forEach(x => {
+            const { height: ph, top: ptop, left: px } = x.viewContainer.getBoundingClientRect();
+            const py = ptop + ph;
+            const vy = vtop + vh;
+            const offsetX = (px - vx) / scale;
+            const offsetY = (vy - py) / scale;
+            let svg;
+            if (this._svgGroupByPageId.has(x.id)) {
+                svg = this._svgGroupByPageId.get(x.id);
+            }
+            else {
+                svg = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                this._svgGroupByPageId.set(x.id, svg);
+                this._svgGroup.append(svg);
+            }
+            svg.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+        });
     }
 }
 
-class TextHighlightAnnotator extends TextAnnotator {
+class TextHighlightAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
+        this._highlightsByPageId = new Map();
+        this.onTextSelectionChange = (e) => {
+            var _a;
+            this.updateHighlights(((_a = e === null || e === void 0 ? void 0 : e.detail) === null || _a === void 0 ? void 0 : _a.selectionInfos) || []);
+        };
         this.init();
     }
     destroy() {
         super.destroy();
+        this._docService.eventService.removeListener(textSelectionChangeEvent, this.onTextSelectionChange);
     }
     undo() {
         this.clear();
     }
     clear() {
-        this._quadPoints = null;
+        this._highlightsByPageId.clear();
         this.clearGroup();
     }
     saveAnnotation() {
-        if (!this._quadPoints) {
+        if (!this._highlightsByPageId.size) {
             return;
         }
-        this._pageId;
+        const dtos = this.buildAnnotationDtos();
+        dtos.forEach(dto => {
+            const annotation = HighlightAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+        });
+        this.clear();
     }
     init() {
         super.init();
+        this._docService.eventService.addListener(textSelectionChangeEvent, this.onTextSelectionChange);
     }
-    redrawLine(min, max) {
-        this._svgGroup.innerHTML = "";
+    redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("fill", "none");
-        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-        path.setAttribute("stroke-width", this._strokeWidth + "");
-        path.setAttribute("stroke-linecap", "square");
-        const pathString = `M ${min.x},${min.y} L ${max.x},${max.y}`;
-        path.setAttribute("d", pathString);
-        this._svgGroup.append(path);
+        this._svgGroupByPageId.forEach((group, pageId) => {
+            group.innerHTML = "";
+            const quads = this._highlightsByPageId.get(pageId);
+            if (quads === null || quads === void 0 ? void 0 : quads.length) {
+                quads.forEach(quad => {
+                    const [x3, y3, x2, y2, x0, y0, x1, y1] = quad;
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("fill", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+                    path.setAttribute("stroke", "none");
+                    path.setAttribute("d", `M ${x0},${y0} L ${x1},${y1} L ${x2},${y2} L ${x3},${y3} Z`);
+                    group.append(path);
+                });
+            }
+        });
+    }
+    updateHighlights(selections) {
+        var _a;
+        this._highlightsByPageId.clear();
+        for (const selection of selections) {
+            const bl = this._pageService.getPageCoordsUnderPointer(selection.bottomLeft.x, selection.bottomLeft.y);
+            const br = this._pageService.getPageCoordsUnderPointer(selection.bottomRight.x, selection.bottomRight.y);
+            const tr = this._pageService.getPageCoordsUnderPointer(selection.topRight.x, selection.topRight.y);
+            const tl = this._pageService.getPageCoordsUnderPointer(selection.topLeft.x, selection.topLeft.y);
+            if (!bl || !br || !tr || !tl) {
+                continue;
+            }
+            if (new Set([bl.pageId, br.pageId, tr.pageId, tl.pageId]).size > 1) {
+                throw new Error("Not all the text selection corners are inside the same page");
+            }
+            const quadPoints = [
+                tl.pageX, tl.pageY,
+                tr.pageX, tr.pageY,
+                bl.pageX, bl.pageY,
+                br.pageX, br.pageY,
+            ];
+            const pageId = bl.pageId;
+            if (this._highlightsByPageId.has(pageId)) {
+                this._highlightsByPageId.get(pageId).push(quadPoints);
+            }
+            else {
+                this._highlightsByPageId.set(pageId, [quadPoints]);
+            }
+        }
+        this.redraw();
+        if ((_a = this._highlightsByPageId) === null || _a === void 0 ? void 0 : _a.size) {
+            this.emitDataChanged(this._highlightsByPageId.size, true, true);
+        }
+        else {
+            this.emitDataChanged(0);
+        }
+    }
+    buildAnnotationDtos() {
+        const nowString = new Date().toISOString();
+        const dtos = [];
+        this._highlightsByPageId.forEach((quads, pageId) => {
+            const dto = {
+                uuid: getRandomUuid(),
+                annotationType: "/Highlight",
+                pageId,
+                dateCreated: nowString,
+                dateModified: nowString,
+                author: this._docService.userName || "unknown",
+                textContent: null,
+                rect: null,
+                quadPoints: quads.flat(),
+                color: this._color,
+                strokeWidth: this._strokeWidth,
+                strokeDashGap: null,
+            };
+            dtos.push(dto);
+        });
+        return dtos;
     }
 }
 
 const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout",
     "strikeout", "underline", "highlight"];
 class TextAnnotatorFactory {
-    static CreateAnnotator(docService, pageService, parent, options, type) {
-        type || (type = TextAnnotatorFactory.lastType || "popupText");
-        TextAnnotatorFactory.lastType = type;
+    createAnnotator(docService, pageService, parent, options, type) {
+        type || (type = this._lastType || "popupText");
+        this._lastType = type;
+        const color = (options === null || options === void 0 ? void 0 : options.color) || this._lastColor || [0, 0, 0, 0.9];
+        this._lastColor = color;
+        const strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || this._lastStrokeWidth || 3;
+        this._lastStrokeWidth = strokeWidth;
+        const combinedOptions = {
+            color,
+            strokeWidth,
+        };
         switch (type) {
             case "popupText":
                 return null;
@@ -18444,7 +18775,7 @@ class TextAnnotatorFactory {
             case "underline":
                 return null;
             case "highlight":
-                return new TextHighlightAnnotator(docService, pageService, parent, options);
+                return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -18517,6 +18848,8 @@ class AnnotationService {
         viewerRObserver.observe(this._viewer.container);
         this._viewerResizeObserver = viewerRObserver;
         this._contextMenu = new ContextMenu();
+        this._geometricFactory = new GeometricAnnotatorFactory();
+        this._textFactory = new TextAnnotatorFactory();
     }
     setMode(mode) {
         var _a;
@@ -18548,14 +18881,14 @@ class AnnotationService {
                 });
                 break;
             case "geometric":
-                this._annotator = GeometricAnnotatorFactory.CreateAnnotator(this._docService, this._pageService, this._viewer.container, {
+                this._annotator = this._geometricFactory.createAnnotator(this._docService, this._pageService, this._viewer.container, {
                     strokeWidth: this._strokeWidth,
                     color: this._strokeColor,
                     cloudMode: this._geometricCloudMode,
                 }, this._geometricSubmode);
                 break;
             case "text":
-                this._annotator = TextAnnotatorFactory.CreateAnnotator(this._docService, this._pageService, this._viewer.container, {
+                this._annotator = this._textFactory.createAnnotator(this._docService, this._pageService, this._viewer.container, {
                     strokeWidth: this._strokeWidth,
                     color: this._strokeColor,
                 }, this._textSubmode);
@@ -19073,7 +19406,7 @@ var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class PageTextView {
     constructor(pageProxy) {
-        this.onMouseDown = (e) => {
+        this.onPointerDown = (e) => {
             var _a;
             if (this._divModeTimer) {
                 clearTimeout(this._divModeTimer);
@@ -19081,7 +19414,7 @@ class PageTextView {
             }
             (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
         };
-        this.onMouseUp = (e) => {
+        this.onPointerUp = (e) => {
             this._divModeTimer = setTimeout(() => {
                 var _a;
                 (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
@@ -19094,8 +19427,8 @@ class PageTextView {
         this._pageProxy = pageProxy;
         this._container = document.createElement("div");
         this._container.classList.add("page-text");
-        this._container.addEventListener("mousedown", this.onMouseDown);
-        this._container.addEventListener("mouseup", this.onMouseUp);
+        this._container.addEventListener("pointerdown", this.onPointerDown);
+        this._container.addEventListener("pointerup", this.onPointerUp);
     }
     static appendPageTextAsync(pageProxy, parent, scale) {
         return __awaiter$3(this, void 0, void 0, function* () {
@@ -19122,7 +19455,7 @@ class PageTextView {
                 container: this._container,
                 textContentStream,
                 viewport,
-                enhanceTextSelection: true,
+                enhanceTextSelection: false,
             });
             try {
                 yield this._renderTask.promise;
