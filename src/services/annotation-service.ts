@@ -253,6 +253,12 @@ export class AnnotationService {
     textAnnotatorTypes.forEach(x => {   
       const item = document.createElement("div");
       item.classList.add("panel-button");
+      
+      // TODO: remove after implementing all the annotators
+      if (x === "freeText" || x === "freeTextCallout" || x === "popupText") {
+        item.classList.add("disabled");
+      }
+
       if (x === this._textSubmode) {        
         item.classList.add("on");
       }
