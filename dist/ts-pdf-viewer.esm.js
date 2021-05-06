@@ -701,6 +701,9 @@ const styles = `
     padding-top: 0;
     transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
   }
+  #viewer.dialog-shown {
+    overflow: hidden;
+  }
   .mode-hand #viewer {
     cursor: grab !important;
     user-select: none !important;
@@ -2728,13 +2731,20 @@ class DataParser {
         if (this.isOutside(start)) {
             return null;
         }
-        const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, { minIndex: start });
+        const nearestDelimiter = this.findDelimiterIndex("straight", start);
+        const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {
+            minIndex: start,
+            maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
+        });
         if (isTrue) {
             return { value: true, start, end: isTrue.end };
         }
-        const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, { minIndex: start });
+        const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, {
+            minIndex: start,
+            maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
+        });
         if (isFalse) {
-            return { value: true, start, end: isFalse.end };
+            return { value: false, start, end: isFalse.end };
         }
         return null;
     }
@@ -5479,7 +5489,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5574,7 +5584,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -6244,7 +6254,7 @@ class GraphicsStateDict extends PdfDict {
             bytes.push(...encoder.encode("/AIS "), ...encoder.encode(" " + this.AIS));
         }
         if (this.TK) {
-            bytes.push(...encoder.encode("/AIS "), ...encoder.encode(" " + this.TK));
+            bytes.push(...encoder.encode("/TK "), ...encoder.encode(" " + this.TK));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -7403,7 +7413,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7508,7 +7518,7 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             const g = yield this.drawGroupAsync(this._stream);
             return {
                 svg: g,
@@ -7583,7 +7593,7 @@ class AppearanceStreamRenderer {
         return g;
     }
     drawGroupAsync(stream) {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
             const parser = new DataParser(stream.decodedStreamData);
             const lastCoord = new Vec2();
@@ -8353,7 +8363,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8629,7 +8639,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!this._svg) {
                 this._svg = this.renderMainElement();
             }
@@ -9005,7 +9015,7 @@ class AnnotationDict extends PdfDict {
         return { copy, use };
     }
     renderApAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -9071,7 +9081,7 @@ class AnnotationDict extends PdfDict {
         return [...this.renderScaleHandles(), this.renderRotationHandle()];
     }
     updateRenderAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!this._svg) {
                 return;
             }
@@ -19168,7 +19178,7 @@ class PenAnnotator extends Annotator {
     }
 }
 
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -19294,7 +19304,7 @@ class StampAnnotator extends Annotator {
         }));
     }
     createTempStampAnnotationAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
             const renderResult = yield stamp.renderAsync();
             this._svgGroup.innerHTML = "";
@@ -19677,7 +19687,7 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -19769,7 +19779,7 @@ class TextNoteAnnotator extends TextAnnotator {
         this.createTempNoteAnnotationAsync();
     }
     createTempNoteAnnotationAsync() {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             const note = TextAnnotation.createStandard(this._docService.userName, this._color);
             const renderResult = yield note.renderAsync();
             this._svgGroup.innerHTML = "";
@@ -20099,6 +20109,15 @@ class AnnotationService {
     }
 }
 
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const viewerModes = ["text", "hand", "annotation"];
 class Viewer {
     constructor(pageService, container, options) {
@@ -20220,6 +20239,9 @@ class Viewer {
         return this._mode;
     }
     set mode(value) {
+        if (this._dialogClose) {
+            this._dialogClose();
+        }
         if (!value || value === this._mode) {
             return;
         }
@@ -20252,6 +20274,45 @@ class Viewer {
         const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
         this.setScale(Math.min(hScale, vScale));
         this.scrollToPage(this._pageService.currentPageIndex);
+    }
+    showTextDialogAsync(initialText) {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            if (this._dialogClose) {
+                return;
+            }
+            const dialogContainer = document.createElement("div");
+            dialogContainer.id = "text-dialog";
+            dialogContainer.classList.add("full-size-dialog");
+            dialogContainer.innerHTML = textDialogHtml;
+            this._container.append(dialogContainer);
+            this._container.classList.add("dialog-shown");
+            let value = initialText || "";
+            const input = dialogContainer.querySelector("#text-input");
+            input.placeholder = "Enter text...";
+            input.value = value;
+            input.addEventListener("change", () => value = input.value);
+            const textPromise = new Promise((resolve, reject) => {
+                const ok = () => {
+                    resolve(value || "");
+                };
+                const cancel = () => {
+                    resolve(null);
+                };
+                dialogContainer.addEventListener("click", (e) => {
+                    if (e.target === dialogContainer) {
+                        cancel();
+                    }
+                });
+                dialogContainer.querySelector("#text-ok").addEventListener("click", ok);
+                dialogContainer.querySelector("#text-cancel").addEventListener("click", cancel);
+                this._dialogClose = () => resolve(null);
+            });
+            const result = yield textPromise;
+            this._dialogClose = null;
+            dialogContainer.remove();
+            this._container.classList.remove("dialog-shown");
+            return result;
+        });
     }
     scrollToPage(pageNumber) {
         if (!this._pageService.pages.length) {
@@ -21031,7 +21092,7 @@ class TsPdfViewer {
         this.onAnnotationEditTextButtonClick = () => __awaiter(this, void 0, void 0, function* () {
             var _a, _b;
             const initialText = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.getSelectedAnnotationTextContent();
-            const text = yield this.showTextDialogAsync(initialText);
+            const text = yield this._viewer.showTextDialogAsync(initialText);
             if (text === null) {
                 return;
             }
@@ -21206,13 +21267,15 @@ class TsPdfViewer {
                 }
                 break;
             }
-            data = docService.getDataWithoutSupportedAnnotations();
             try {
                 if (this._pdfLoadingTask) {
                     yield this.closePdfAsync();
                     return this.openPdfAsync(data);
                 }
-                this._pdfLoadingTask = getDocument({ data, password });
+                this._pdfLoadingTask = getDocument({
+                    data: docService.getDataWithoutSupportedAnnotations(),
+                    password,
+                });
                 this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
                 doc = yield this._pdfLoadingTask.promise;
                 this._pdfLoadingTask = null;
@@ -21398,9 +21461,6 @@ class TsPdfViewer {
     }
     setViewerMode(mode) {
         mode = mode || "text";
-        if (!mode || mode === this._viewer.mode) {
-            return;
-        }
         viewerModes.forEach(x => {
             this._mainContainer.classList.remove("mode-" + x);
             this._shadowRoot.querySelector("#button-mode-" + x).classList.remove("on");
@@ -21465,38 +21525,6 @@ class TsPdfViewer {
                 this._shadowRoot.getElementById("password-cancel").addEventListener("click", cancel);
             });
             return passwordPromise;
-        });
-    }
-    showTextDialogAsync(initialText) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const textPromise = new Promise((resolve, reject) => {
-                const dialogContainer = document.createElement("div");
-                dialogContainer.id = "text-dialog";
-                dialogContainer.classList.add("full-size-dialog");
-                dialogContainer.innerHTML = textDialogHtml;
-                this._mainContainer.append(dialogContainer);
-                let value = initialText || "";
-                const input = this._shadowRoot.getElementById("text-input");
-                input.placeholder = "Enter text...";
-                input.value = value;
-                input.addEventListener("change", () => value = input.value);
-                const ok = () => {
-                    dialogContainer.remove();
-                    resolve(value || "");
-                };
-                const cancel = () => {
-                    dialogContainer.remove();
-                    resolve(null);
-                };
-                dialogContainer.addEventListener("click", (e) => {
-                    if (e.target === dialogContainer) {
-                        cancel();
-                    }
-                });
-                this._shadowRoot.getElementById("text-ok").addEventListener("click", ok);
-                this._shadowRoot.getElementById("text-cancel").addEventListener("click", cancel);
-            });
-            return textPromise;
         });
     }
 }

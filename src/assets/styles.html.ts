@@ -377,6 +377,9 @@ export const styles = /*html*/`
     padding-top: 0;
     transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, left 0.25s ease-out;
   }
+  #viewer.dialog-shown {
+    overflow: hidden;
+  }
   .mode-hand #viewer {
     cursor: grab !important;
     user-select: none !important;

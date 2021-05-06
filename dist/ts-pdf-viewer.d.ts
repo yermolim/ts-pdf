@@ -120,7 +120,6 @@ export declare class TsPdfViewer {
 	private onPreviewerToggleClick;
 	private onMainContainerPointerMove;
 	private showPasswordDialogAsync;
-	private showTextDialogAsync;
 }
 
 export {};

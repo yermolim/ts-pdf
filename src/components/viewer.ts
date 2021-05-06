@@ -1,4 +1,7 @@
+import { textDialogHtml } from "../assets/index.html";
+
 import { clamp, Vec2, getDistance } from "../common/math";
+
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
 
@@ -24,10 +27,16 @@ export class Viewer {
   get mode(): ViewerMode {
     return this._mode;
   }
-  set mode(value: ViewerMode) {    
+  set mode(value: ViewerMode) {
+    // close an opened dialog if present
+    if (this._dialogClose) {
+      this._dialogClose();
+    }
+
     if (!value || value === this._mode) {
       return;
     }
+
     this._mode = value;
   }
 
@@ -50,6 +59,8 @@ export class Viewer {
     sensitivity: 0.025,
     target: <HTMLElement>null,
   };
+
+  private _dialogClose: () => void;
 
   constructor(pageService: PageService, container: HTMLDivElement, options?: ViewerOptions) {
     if (!container) {
@@ -93,6 +104,56 @@ export class Viewer {
     const vScale = clamp((cHeight - 20) / pHeight * this._scale, this._minScale, this._maxScale);
     this.setScale(Math.min(hScale, vScale));
     this.scrollToPage(this._pageService.currentPageIndex);
+  }  
+  
+  async showTextDialogAsync(initialText: string): Promise<string> {
+    if (this._dialogClose) {
+      // can't open multiple dialogs at the same time
+      return;
+    }
+
+    const dialogContainer = document.createElement("div");
+    dialogContainer.id = "text-dialog";
+    dialogContainer.classList.add("full-size-dialog");
+    dialogContainer.innerHTML = textDialogHtml;
+
+    this._container.append(dialogContainer);
+    this._container.classList.add("dialog-shown");
+
+    let value = initialText || "";      
+    const input = dialogContainer.querySelector("#text-input") as HTMLTextAreaElement;
+    input.placeholder = "Enter text...";
+    input.value = value;
+    input.addEventListener("change", () => value = input.value);
+
+    const textPromise = new Promise<string>((resolve, reject) => {
+
+      const ok = () => {
+        resolve(value || "");
+      };
+      const cancel = () => {
+        resolve(null);
+      };
+
+      dialogContainer.addEventListener("click", (e: Event) => {
+        if (e.target === dialogContainer) {
+          cancel();
+        }
+      });      
+      dialogContainer.querySelector("#text-ok").addEventListener("click", ok);
+      dialogContainer.querySelector("#text-cancel").addEventListener("click", cancel);
+      
+      // save the dialog close callback to the viewer property
+      this._dialogClose = () => resolve(null);
+    });
+
+    const result = await textPromise;
+
+    this._dialogClose = null;
+    dialogContainer.remove();
+    this._container.classList.remove("dialog-shown");
+    
+    return result;
   }
 
   private scrollToPage(pageNumber: number) { 

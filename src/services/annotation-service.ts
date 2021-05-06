@@ -176,6 +176,7 @@ export class AnnotationService {
     this._contextMenu.hide();
   };
 
+  //#region building context menu
   private buildContextMenuContent(): HTMLElement[] {
     switch (this._mode) {
       case "select":
@@ -350,6 +351,7 @@ export class AnnotationService {
 
     return div;
   }
+  //#endregion
   
   // TODO: add opacity slider
 }

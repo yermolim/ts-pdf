@@ -58,6 +58,21 @@ export class TextNoteAnnotator extends TextAnnotator {
 
     // create new temp annotation
     this.createTempNoteAnnotationAsync();
+    
+    // const initialText = this._tempAnnotation?.Contents?.literal;
+    // this._viewer.showTextDialogAsync(initialText).then(text => {
+    //   if (text !== null) {
+    //     this._tempAnnotation.setTextContent(text);
+    //     // append the current temp stamp to the page
+    //     this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+    
+    //     this._addedAnnotations.push(this._tempAnnotation);
+    //     this.emitDataChanged(this._addedAnnotations.length, false, true, true);
+    //   }
+
+    //   // create new temp annotation
+    //   this.createTempNoteAnnotationAsync();
+    // });
   }
   
   protected init() {

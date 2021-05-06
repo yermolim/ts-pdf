@@ -676,19 +676,28 @@ export class DataParser {
   parseBoolAt(start: number, skipEmpty = true): ParseResult<boolean>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
-    }
+    }    
+
     if (this.isOutside(start)) {
       return null;
     }
 
-    const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {minIndex: start});
+    const nearestDelimiter = this.findDelimiterIndex("straight", start);
+
+    const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {
+      minIndex: start, 
+      maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
+    });
     if (isTrue) {
       return {value: true, start, end: isTrue.end};
-    }
+    }    
     
-    const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, {minIndex: start});
+    const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, {
+      minIndex: start,      
+      maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
+    });
     if (isFalse) {
-      return {value: true, start, end: isFalse.end};
+      return {value: false, start, end: isFalse.end};
     }
 
     return null;

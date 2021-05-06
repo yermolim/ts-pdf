@@ -211,7 +211,7 @@ export class GraphicsStateDict extends PdfDict {
       bytes.push(...encoder.encode("/AIS "), ...encoder.encode(" " + this.AIS));
     }
     if (this.TK) {
-      bytes.push(...encoder.encode("/AIS "), ...encoder.encode(" " + this.TK));
+      bytes.push(...encoder.encode("/TK "), ...encoder.encode(" " + this.TK));
     }
     
     //TODO: handle remaining properties
@@ -291,7 +291,7 @@ export class GraphicsStateDict extends PdfDict {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const end = bounds.contentEnd || bounds.end;     
+    const end = bounds.contentEnd || bounds.end;
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
@@ -441,6 +441,6 @@ export class GraphicsStateDict extends PdfDict {
       } else {
         break;
       }
-    };
+    };    
   }
 }

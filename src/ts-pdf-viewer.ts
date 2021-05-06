@@ -229,8 +229,6 @@ export class TsPdfViewer {
       break;
     }
 
-    // get the pdf data with the supported annotations cut out
-    data = docService.getDataWithoutSupportedAnnotations();
 
     // try open the data with PDF.js
     try {
@@ -238,8 +236,12 @@ export class TsPdfViewer {
         await this.closePdfAsync();
         return this.openPdfAsync(data);
       }
-  
-      this._pdfLoadingTask = getDocument({data, password});
+
+      this._pdfLoadingTask = getDocument({
+        // get the pdf data with the supported annotations cut out
+        data: docService.getDataWithoutSupportedAnnotations(), 
+        password,
+      });
       this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
       doc = await this._pdfLoadingTask.promise;    
       this._pdfLoadingTask = null;
@@ -528,11 +530,6 @@ export class TsPdfViewer {
   private setViewerMode(mode?: ViewerMode) {
     mode = mode || "text"; // 'text' is the default mode
 
-    // return if mode not changed
-    if (!mode || mode === this._viewer.mode) {
-      return;
-    }
-
     // disable previous viewer mode
     viewerModes.forEach(x => {
       this._mainContainer.classList.remove("mode-" + x);
@@ -710,7 +707,7 @@ export class TsPdfViewer {
    
   private onAnnotationEditTextButtonClick = async () => {
     const initialText = this._docService?.getSelectedAnnotationTextContent();
-    const text = await this.showTextDialogAsync(initialText);
+    const text = await this._viewer.showTextDialogAsync(initialText);
     if (text === null) {
       return;
     }
@@ -845,43 +842,6 @@ export class TsPdfViewer {
     });
 
     return passwordPromise;
-  }
-  
-  private async showTextDialogAsync(initialText: string): Promise<string> {
-    const textPromise = new Promise<string>((resolve, reject) => {
-
-      const dialogContainer = document.createElement("div");
-      dialogContainer.id = "text-dialog";
-      dialogContainer.classList.add("full-size-dialog");
-      dialogContainer.innerHTML = textDialogHtml;
-      this._mainContainer.append(dialogContainer);
-
-      let value = initialText || "";      
-      const input = this._shadowRoot.getElementById("text-input") as HTMLTextAreaElement;
-      input.placeholder = "Enter text...";
-      input.value = value;
-      input.addEventListener("change", () => value = input.value);
-
-      const ok = () => {
-        dialogContainer.remove();
-        resolve(value || "");
-      };
-      const cancel = () => {
-        dialogContainer.remove();
-        resolve(null);
-      };
-
-      dialogContainer.addEventListener("click", (e: Event) => {
-        if (e.target === dialogContainer) {
-          cancel();
-        }
-      });
-      
-      this._shadowRoot.getElementById("text-ok").addEventListener("click", ok);
-      this._shadowRoot.getElementById("text-cancel").addEventListener("click", cancel);
-    });
-
-    return textPromise;
   }
   //#endregion
 }
