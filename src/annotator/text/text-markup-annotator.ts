@@ -24,10 +24,12 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
   }
 
   destroy() {
-    super.destroy();
     this._docService.eventService.removeListener(textSelectionChangeEvent,
       this.onTextSelectionChange);
-  }  
+    this.clearGroup();
+      
+    super.destroy();
+  }
   
   undo() {
     this.clear();

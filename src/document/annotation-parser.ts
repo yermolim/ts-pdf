@@ -3,6 +3,7 @@ import { ParseInfo, ParseResult } from "./data-parser";
 
 import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
 import { StampAnnotation, StampAnnotationDto } from "./entities/annotations/markup/stamp-annotation";
+import { TextAnnotation, TextAnnotationDto } from "./entities/annotations/markup/text-annotation";
 import { InkAnnotation, InkAnnotationDto } from "./entities/annotations/markup/ink-annotation";
 
 import { SquareAnnotation, SquareAnnotationDto } from "./entities/annotations/markup/geometric/square-annotation";
@@ -24,6 +25,9 @@ export class AnnotationParseFactory {
     switch (annotationType) {
       case annotationTypes.STAMP:
         annot = StampAnnotation.parse(info);
+        break;     
+      case annotationTypes.TEXT:
+        annot = TextAnnotation.parse(info);
         break;
       case annotationTypes.INK:
         annot = InkAnnotation.parse(info);
@@ -54,12 +58,9 @@ export class AnnotationParseFactory {
         break;
       case annotationTypes.UNDERLINE:
         annot = UnderlineAnnotation.parse(info);
-        break;
+        break; 
       // case annotationTypes.FREE_TEXT:
       //   annot = FreeTextAnnotation.parse(info);
-      //   break;
-      // case annotationTypes.TEXT:
-      //   annot = TextAnnotation.parse(info);
       //   break;
       default:
         break;
@@ -73,6 +74,9 @@ export class AnnotationParseFactory {
     switch (dto.annotationType) {
       case "/Stamp":
         annotation = StampAnnotation.createFromDto(dto as StampAnnotationDto);
+        break;
+      case "/Text":
+        annotation = TextAnnotation.createFromDto(dto as TextAnnotationDto);
         break;
       case "/Ink":
         annotation = InkAnnotation.createFromDto(dto as InkAnnotationDto);

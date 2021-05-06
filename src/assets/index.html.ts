@@ -49,7 +49,7 @@ export const geometricIcons = {
 } as const;
 
 export const textIcons = {
-  popupText: `<img src="${icon_popup2}"/>`,
+  note: `<img src="${icon_popup2}"/>`,
   freeText: `<img src="${icon_text_free}"/>`,
   freeTextCallout: `<img src="${icon_text_callout}"/>`,
   strikeout: `<img src="${icon_text_strikeout}"/>`,
@@ -148,6 +148,10 @@ export const html = /*html*/`
           class="panel-button annotation-panel-subitem">
           <img src="${icon_close}"/>
         </div>
+        <div id="button-annotation-stamp-save" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${icon_ok}"/>
+        </div> 
         <div id="button-annotation-mode-stamp" 
           class="panel-button annotation-panel-item">
           <img src="${icon_stamp}"/>

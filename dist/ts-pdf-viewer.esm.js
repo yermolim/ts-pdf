@@ -126,7 +126,7 @@ const geometricIcons = {
     polygon: `<img src="${img$f}"/>`,
 };
 const textIcons = {
-    popupText: `<img src="${img$c}"/>`,
+    note: `<img src="${img$c}"/>`,
     freeText: `<img src="${img$5}"/>`,
     freeTextCallout: `<img src="${img$4}"/>`,
     strikeout: `<img src="${img$1}"/>`,
@@ -223,6 +223,10 @@ const html = `
           class="panel-button annotation-panel-subitem">
           <img src="${img$u}"/>
         </div>
+        <div id="button-annotation-stamp-save" 
+          class="panel-button annotation-panel-subitem">
+          <img src="${img$j}"/>
+        </div> 
         <div id="button-annotation-mode-stamp" 
           class="panel-button annotation-panel-item">
           <img src="${img$9}"/>
@@ -1987,6 +1991,30 @@ const annotationTypes = {
     REDACT: "/Redact",
     PROJECTION: "/Projection",
     RICH_MEDIA: "/RichMedia",
+};
+const annotationStateModelTypes = {
+    MARKED: "/Marked",
+    REVIEW: "/Review",
+};
+const annotationMarkedStates = {
+    MARKED: "/Marked",
+    UNMARKED: "/Unmarked",
+};
+const annotationReviewStates = {
+    ACCEPTED: "/Accepted",
+    REJECTED: "/Rejected",
+    CANCELLED: "/Cancelled",
+    COMPLETED: "/Completed",
+    NONE: "/None",
+};
+const annotationIconTypes = {
+    COMMENT: "/Comment",
+    KEY: "/Key",
+    NOTE: "/Note",
+    HELP: "/Help",
+    NEW_PARAGRAPH: "/NewParagraph",
+    PARAGRAPH: "/Paragraph",
+    INSERT: "/Insert",
 };
 const lineEndingTypes = {
     SQUARE: "/Square",
@@ -5451,7 +5479,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5546,7 +5574,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -7375,7 +7403,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7480,7 +7508,7 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             const g = yield this.drawGroupAsync(this._stream);
             return {
                 svg: g,
@@ -7555,7 +7583,7 @@ class AppearanceStreamRenderer {
         return g;
     }
     drawGroupAsync(stream) {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
             const parser = new DataParser(stream.decodedStreamData);
             const lastCoord = new Vec2();
@@ -8325,7 +8353,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8601,7 +8629,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             if (!this._svg) {
                 this._svg = this.renderMainElement();
             }
@@ -8977,7 +9005,7 @@ class AnnotationDict extends PdfDict {
         return { copy, use };
     }
     renderApAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -9043,7 +9071,7 @@ class AnnotationDict extends PdfDict {
         return [...this.renderScaleHandles(), this.renderRotationHandle()];
     }
     updateRenderAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             if (!this._svg) {
                 return;
             }
@@ -14301,6 +14329,254 @@ class StampAnnotation extends MarkupAnnotation {
     }
 }
 
+const textNoteForms = {
+    NOTE: `25 10 m
+  175 10 l
+  175 10 190 10 190 25 c
+  190 135 l
+  190 135 190 150 175 150 c
+  95 150 l
+  10 190 l
+  35 150 l
+  25 150 l
+  25 150 10 150 10 135 c
+  10 25 l
+  10 25 10 10 25 10 c
+  b  
+  35 35 m
+  165 35 l
+  S  
+  35 55 m
+  165 55 l
+  S
+  35 75 m
+  125 75 l
+  S
+  35 95 m
+  165 95 l
+  S
+  35 115 m
+  115 115 l
+  S
+  `,
+};
+const textNoteCreationInfos = {
+    "/Note": {
+        textStreamData: textNoteForms.NOTE,
+        fillColor: [1, 1, 0.4],
+        subject: "Note",
+        bBox: [0, 0, 200, 200],
+        rect: [0, 0, 25, 25],
+    },
+};
+class TextAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.TEXT);
+        this.Open = false;
+        this.Name = annotationIconTypes.NOTE;
+    }
+    static createStandard(userName, color, type = annotationIconTypes.NOTE) {
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Text",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: userName || "unknown",
+            textContent: null,
+            rect: null,
+            matrix: null,
+            color,
+            textNoteType: type,
+        };
+        return this.createFromDto(dto);
+    }
+    static createFromDto(dto) {
+        if (dto.annotationType !== "/Text") {
+            throw new Error("Invalid annotation type");
+        }
+        const created = DateString.fromDate(new Date(dto.dateCreated));
+        const modified = DateString.fromDate(new Date(dto.dateModified));
+        const stampForm = new XFormStream();
+        stampForm.LastModified = modified;
+        stampForm.Filter = "/FlateDecode";
+        const stampCreationInfo = textNoteCreationInfos[dto.textNoteType];
+        if (!stampCreationInfo) {
+            throw new Error(`Stamp type '${dto.textNoteType}' is not supported`);
+        }
+        stampForm.setTextStreamData(stampCreationInfo.textStreamData);
+        const strokeColor = dto.color;
+        const fillColor = stampCreationInfo.fillColor;
+        const subject = stampCreationInfo.subject;
+        const bBox = stampCreationInfo.bBox;
+        stampForm.BBox = bBox;
+        const strokeR = strokeColor[0].toFixed(3);
+        const strokeG = strokeColor[1].toFixed(3);
+        const strokeB = strokeColor[2].toFixed(3);
+        const fillR = fillColor[0].toFixed(3);
+        const fillG = fillColor[1].toFixed(3);
+        const fillB = fillColor[2].toFixed(3);
+        const strokeString = `${fillR} ${fillG} ${fillB} rg ${strokeR} ${strokeG} ${strokeB} RG`;
+        const apStream = new XFormStream();
+        apStream.LastModified = modified;
+        apStream.BBox = bBox;
+        apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
+        apStream.Resources = new ResourceDict();
+        apStream.Resources.setXObject("/Fm", stampForm);
+        apStream.Filter = "/FlateDecode";
+        apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${strokeString} 1 j 8.58 w /Fm Do Q`);
+        const annotation = new TextAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author || "unknown");
+        annotation.M = modified;
+        annotation.CreationDate = created;
+        annotation.Contents = dto.textContent
+            ? LiteralString.fromString(dto.textContent)
+            : LiteralString.fromString(subject);
+        annotation.Subj = LiteralString.fromString(subject);
+        annotation.Name = dto.textNoteType;
+        annotation.State = dto.textNoteState;
+        annotation.StateModel = dto.textNoteStateModel;
+        annotation.Rect = dto.rect || stampCreationInfo.rect;
+        annotation.C = strokeColor;
+        annotation.CA = 1;
+        annotation.apStream = apStream;
+        const proxy = new Proxy(annotation, annotation.onChange);
+        annotation._proxy = proxy;
+        annotation._added = true;
+        return proxy;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TextAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Open) {
+            bytes.push(...encoder.encode("/Open "), ...encoder.encode(" " + this.Open));
+        }
+        if (this.Name) {
+            bytes.push(...encoder.encode("/Name "), ...encoder.encode(this.Name));
+        }
+        if (this.State) {
+            bytes.push(...encoder.encode("/State "), ...encoder.encode(this.State));
+        }
+        if (this.StateModel) {
+            bytes.push(...encoder.encode("/StateModel "), ...encoder.encode(this.StateModel));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e;
+        const color = this.getColorRect();
+        return {
+            annotationType: "/Text",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_a = this.CreationDate) === null || _a === void 0 ? void 0 : _a.date.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_b = this.T) === null || _b === void 0 ? void 0 : _b.literal,
+            textContent: (_c = this.Contents) === null || _c === void 0 ? void 0 : _c.literal,
+            rect: this.Rect,
+            bbox: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.BBox,
+            matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
+            color,
+            textNoteType: this.Name,
+            textNoteState: this.State,
+            textNoteStateModel: this.StateModel,
+        };
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Open":
+                        i = this.parseBoolProp(name, parser, i);
+                        break;
+                    case "/Name":
+                        const iconType = parser.parseNameAt(i, true);
+                        if (iconType && Object.values(annotationIconTypes)
+                            .includes(iconType.value)) {
+                            this.Name = iconType.value;
+                            i = iconType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Name property value");
+                        }
+                        break;
+                    case "/State":
+                        const state = parser.parseNameAt(i, true);
+                        if (state && Object.values(annotationMarkedStates)
+                            .concat(Object.values(annotationReviewStates))
+                            .includes(state.value)) {
+                            this.State = state.value;
+                            i = state.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /State property value");
+                        }
+                        break;
+                    case "/StateModel":
+                        const stateModelType = parser.parseNameAt(i, true);
+                        if (stateModelType && Object.values(annotationStateModelTypes)
+                            .includes(stateModelType.value)) {
+                            this.StateModel = stateModelType.value;
+                            i = stateModelType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StateModel property value");
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+    }
+    renderHandles() {
+        return [];
+    }
+}
+
 class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
@@ -16872,6 +17148,9 @@ class AnnotationParseFactory {
             case annotationTypes.STAMP:
                 annot = StampAnnotation.parse(info);
                 break;
+            case annotationTypes.TEXT:
+                annot = TextAnnotation.parse(info);
+                break;
             case annotationTypes.INK:
                 annot = InkAnnotation.parse(info);
                 break;
@@ -16910,6 +17189,9 @@ class AnnotationParseFactory {
         switch (dto.annotationType) {
             case "/Stamp":
                 annotation = StampAnnotation.createFromDto(dto);
+                break;
+            case "/Text":
+                annotation = TextAnnotation.createFromDto(dto);
                 break;
             case "/Ink":
                 annotation = InkAnnotation.createFromDto(dto);
@@ -18886,7 +19168,7 @@ class PenAnnotator extends Annotator {
     }
 }
 
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -19012,7 +19294,7 @@ class StampAnnotator extends Annotator {
         }));
     }
     createTempStampAnnotationAsync() {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
             const renderResult = yield stamp.renderAsync();
             this._svgGroup.innerHTML = "";
@@ -19108,10 +19390,6 @@ class TextAnnotator extends Annotator {
         this._color = (options === null || options === void 0 ? void 0 : options.color) || [0, 0, 0, 1];
         this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || 3;
     }
-    destroy() {
-        this.clearGroup();
-        super.destroy();
-    }
     emitDataChanged(count, saveable, clearable, undoable) {
         this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
             annotatorType: "text",
@@ -19120,10 +19398,6 @@ class TextAnnotator extends Annotator {
             clearable,
             saveable,
         }));
-    }
-    clearGroup() {
-        this._svgGroup.innerHTML = "";
-        this.emitDataChanged(0);
     }
 }
 
@@ -19138,8 +19412,9 @@ class TextMarkupAnnotator extends TextAnnotator {
         };
     }
     destroy() {
-        super.destroy();
         this._docService.eventService.removeListener(textSelectionChangeEvent, this.onTextSelectionChange);
+        this.clearGroup();
+        super.destroy();
     }
     undo() {
         this.clear();
@@ -19402,11 +19677,116 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
     }
 }
 
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class TextNoteAnnotator extends TextAnnotator {
+    constructor(docService, pageService, parent, options) {
+        super(docService, pageService, parent, options || {});
+        this._addedAnnotations = [];
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            const { height: oh, top, left: ox } = this._parent.getBoundingClientRect();
+            const oy = top + oh;
+            const offsetX = (cx - ox) / this._pageService.scale;
+            const offsetY = (oy - cy) / this._pageService.scale;
+            const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
+            this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 4} ${offsetY - (y2 - y1) / 4})`);
+            this.updatePointerCoords(cx, cy);
+        };
+        this.onPointerUp = (e) => {
+            var _a, _b, _c;
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: cx, clientY: cy } = e;
+            if (e.pointerType === "touch") {
+                const longTap = performance.now() - ((_a = this._lastPointerDownInfo) === null || _a === void 0 ? void 0 : _a.timestamp) > 700;
+                if (longTap) {
+                    const downX = ((_b = this._lastPointerDownInfo) === null || _b === void 0 ? void 0 : _b.clientX) || 0;
+                    const downY = ((_c = this._lastPointerDownInfo) === null || _c === void 0 ? void 0 : _c.clientY) || 0;
+                    const displacement = Math.abs(getDistance(cx, cy, downX, downY));
+                    const displaced = displacement > 7.5;
+                    if (!displaced) {
+                        return;
+                    }
+                }
+            }
+            const pageCoords = this._pageService.getPageCoordsUnderPointer(cx, cy);
+            this._pointerCoordsInPageCS = pageCoords;
+            if (!pageCoords || !this._tempAnnotation) {
+                return;
+            }
+            const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
+            const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
+            this._tempAnnotation.moveTo(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4);
+            this._pageId = pageId;
+            this.saveAnnotation();
+        };
+        this.init();
+    }
+    destroy() {
+        this.emitDataChanged(0);
+        this._tempAnnotation = null;
+        super.destroy();
+    }
+    undo() {
+        if (!this._addedAnnotations.length) {
+            return;
+        }
+        const lastAnnotation = this._addedAnnotations.pop();
+        this._docService.removeAnnotation(lastAnnotation);
+        const empty = !this._addedAnnotations.length;
+        this.emitDataChanged(this._addedAnnotations.length, false, !empty, !empty);
+    }
+    clear() {
+        while (this._addedAnnotations.length) {
+            this.undo();
+        }
+    }
+    saveAnnotation() {
+        if (!this._pageId || !this._tempAnnotation) {
+            return;
+        }
+        this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+        this._addedAnnotations.push(this._tempAnnotation);
+        this.emitDataChanged(this._addedAnnotations.length, false, true, true);
+        this.createTempNoteAnnotationAsync();
+    }
+    init() {
+        super.init();
+        this._overlay.addEventListener("pointermove", this.onPointerMove);
+        this._overlay.addEventListener("pointerup", this.onPointerUp);
+        this.createTempNoteAnnotationAsync();
+    }
+    createTempNoteAnnotationAsync() {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            const note = TextAnnotation.createStandard(this._docService.userName, this._color);
+            const renderResult = yield note.renderAsync();
+            this._svgGroup.innerHTML = "";
+            this._svgGroup.append(...renderResult.clipPaths || []);
+            this._svgGroup.append(renderResult.svg);
+            this._tempAnnotation = note;
+        });
+    }
+    refreshGroupPosition() {
+    }
+}
+
 const textAnnotatorTypes = ["highlight", "strikeout", "squiggly", "underline",
-    "popupText", "freeText", "freeTextCallout"];
+    "note", "freeText", "freeTextCallout"];
 class TextAnnotatorFactory {
     createAnnotator(docService, pageService, parent, options, type) {
-        type || (type = this._lastType || "popupText");
+        type || (type = this._lastType || "highlight");
         this._lastType = type;
         const color = (options === null || options === void 0 ? void 0 : options.color) || this._lastColor || [0, 0, 0, 0.9];
         this._lastColor = color;
@@ -19417,8 +19797,8 @@ class TextAnnotatorFactory {
             strokeWidth,
         };
         switch (type) {
-            case "popupText":
-                return null;
+            case "note":
+                return new TextNoteAnnotator(docService, pageService, parent, combinedOptions);
             case "freeText":
                 return null;
             case "freeTextCallout":
@@ -19628,7 +20008,7 @@ class AnnotationService {
         textAnnotatorTypes.forEach(x => {
             const item = document.createElement("div");
             item.classList.add("panel-button");
-            if (x === "freeText" || x === "freeTextCallout" || x === "popupText") {
+            if (x === "freeText" || x === "freeTextCallout") {
                 item.classList.add("disabled");
             }
             if (x === this._textSubmode) {

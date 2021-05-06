@@ -10,8 +10,7 @@ export interface TextAnnotatorOptions {
   color?: Quadruple;
 }
 
-export abstract class TextAnnotator extends Annotator {
- 
+export abstract class TextAnnotator extends Annotator { 
   protected _color: Quadruple;
   protected _strokeWidth: number;
   
@@ -21,11 +20,6 @@ export abstract class TextAnnotator extends Annotator {
     
     this._color = options?.color || [0, 0, 0, 1];
     this._strokeWidth = options?.strokeWidth || 3;
-  }
-  
-  destroy() {
-    this.clearGroup();
-    super.destroy();
   }
 
   protected emitDataChanged(count: number, 
@@ -37,10 +31,5 @@ export abstract class TextAnnotator extends Annotator {
       clearable,
       saveable,
     }));
-  }
-
-  protected clearGroup() {
-    this._svgGroup.innerHTML = "";
-    this.emitDataChanged(0);
   }
 }

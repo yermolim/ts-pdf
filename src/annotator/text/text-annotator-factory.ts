@@ -8,9 +8,10 @@ import { TextHighlightAnnotator } from "./text-highlight-annotator";
 import { TextSquigglyAnnotator } from "./text-squiggly-annotator";
 import { TextStrikeoutAnnotator } from "./text-strikeout-annotator";
 import { TextUnderlineAnnotator } from "./text-underline-annotator";
+import { TextNoteAnnotator } from "./text-note-annotator";
 
 export const textAnnotatorTypes = ["highlight", "strikeout", "squiggly", "underline", 
-  "popupText", "freeText", "freeTextCallout"] as const;
+  "note", "freeText", "freeTextCallout"] as const;
 export type TextAnnotatorType =  typeof textAnnotatorTypes[number];
 
 export class TextAnnotatorFactory {
@@ -21,7 +22,7 @@ export class TextAnnotatorFactory {
   createAnnotator(docService: DocumentService, pageService: PageService, parent: HTMLDivElement,
     options?: TextAnnotatorOptions, type?: TextAnnotatorType): TextAnnotator {
     
-    type ||= this._lastType || "popupText";
+    type ||= this._lastType || "highlight";
     this._lastType = type;
 
     const color = options?.color || this._lastColor || [0, 0, 0, 0.9];
@@ -37,9 +38,8 @@ export class TextAnnotatorFactory {
 
     switch (type) {
       // TODO: implement all annotators
-      case "popupText":
-        return null;
-        // return new TextPopupAnnotator(docService, pageService, parent, combinedOptions);
+      case "note":
+        return new TextNoteAnnotator(docService, pageService, parent, combinedOptions);
       case "freeText":
         return null;
         // return new TextFreeAnnotator(docService, pageService, parent, combinedOptions);
