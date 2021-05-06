@@ -6345,6 +6345,8 @@ class GraphicsStateDict extends PdfDict {
                 case "/Exclusion":
                     params.mixBlendMode = "exclusion";
                     break;
+                default:
+                    throw new Error(`Unsupported blend mode: ${this.BM}`);
             }
         }
         if (this.SMask) ;
@@ -17487,10 +17489,15 @@ class DocumentService {
         return result;
     }
     appendAnnotationToPage(pageId, annotation) {
-        if (isNaN(pageId) || !annotation) {
-            throw new Error("Undefined argument exception");
+        if (!annotation) {
+            throw new Error("Annotation is not defined");
         }
-        annotation.$pageId = pageId;
+        const page = this._pageById.get(pageId);
+        if (!page) {
+            throw new Error(`Page with id ${pageId} is not found`);
+        }
+        annotation.$pageId = page.id;
+        annotation.$pageRect = page.MediaBox;
         annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
         const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
         if (pageAnnotations) {

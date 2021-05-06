@@ -41,7 +41,7 @@ export class PageDict extends PdfDict {
   MediaBox: Quadruple;
   /**
    * (Optional; inheritable) A rectangle, expressed in default user space units, 
-   * defining the visible region of default user space. When the page is dis-played or printed, 
+   * defining the visible region of default user space. When the page is displayed or printed, 
    * its contents are to be clipped (cropped) to this rectangle and then imposed 
    * on the output medium in some implementation-defined manner. 
    * Default value: the value of MediaBox

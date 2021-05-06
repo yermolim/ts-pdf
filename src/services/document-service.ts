@@ -267,11 +267,17 @@ export class DocumentService {
    * appending an annotation to another page removes it from the first one
    */
   appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
-    if (isNaN(pageId) || !annotation) {
-      throw new Error("Undefined argument exception");
+    if (!annotation) {
+      throw new Error("Annotation is not defined");
     }
 
-    annotation.$pageId = pageId;
+    const page = this._pageById.get(pageId);
+    if (!page) {
+      throw new Error(`Page with id ${pageId} is not found`);
+    }
+
+    annotation.$pageId = page.id;
+    annotation.$pageRect = page.MediaBox;
     annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
