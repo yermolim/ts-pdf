@@ -4078,6 +4078,11 @@ class PdfObject {
         var _a;
         return (_a = this._sourceBytes) === null || _a === void 0 ? void 0 : _a.slice();
     }
+    get sourceChars() {
+        return this._sourceBytes
+            ? String.fromCharCode(...this._sourceBytes.slice(0, this._sourceBytes.length))
+            : "";
+    }
     get ref() {
         return this._ref;
     }
@@ -6303,7 +6308,44 @@ class GraphicsStateDict extends PdfDict {
         }
         if (this.Font) ;
         if (this.BM) {
-            params.mixBlendMode = "normal";
+            switch (this.BM) {
+                case "/Normal":
+                    params.mixBlendMode = "normal";
+                    break;
+                case "/Multiply":
+                    params.mixBlendMode = "multiply";
+                    break;
+                case "/Screen":
+                    params.mixBlendMode = "screen";
+                    break;
+                case "/Overlay":
+                    params.mixBlendMode = "overlay";
+                    break;
+                case "/Darken":
+                    params.mixBlendMode = "darken";
+                    break;
+                case "/Lighten":
+                    params.mixBlendMode = "lighten";
+                    break;
+                case "/ColorDodge":
+                    params.mixBlendMode = "color-dodge";
+                    break;
+                case "/ColorBurn":
+                    params.mixBlendMode = "color-burn";
+                    break;
+                case "/HardLight":
+                    params.mixBlendMode = "hard-light";
+                    break;
+                case "/SoftLight":
+                    params.mixBlendMode = "soft-light";
+                    break;
+                case "/Difference":
+                    params.mixBlendMode = "difference";
+                    break;
+                case "/Exclusion":
+                    params.mixBlendMode = "exclusion";
+                    break;
+            }
         }
         if (this.SMask) ;
         if (this.CA) {
@@ -7886,6 +7928,7 @@ const borderStyles = {
     BEVELED: "/B",
     INSET: "/I",
     UNDERLINE: "/U",
+    NONE: "/N",
 };
 class BorderStyleDict extends PdfDict {
     constructor() {

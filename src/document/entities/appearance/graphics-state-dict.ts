@@ -265,8 +265,44 @@ export class GraphicsStateDict extends PdfDict {
       // TODO: implement
     }
     if (this.BM) {
-      // TODO: implement
-      params.mixBlendMode = "normal";
+      switch (this.BM) {
+        case "/Normal":
+          params.mixBlendMode = "normal";
+          break;
+        case "/Multiply":
+          params.mixBlendMode = "multiply";
+          break;
+        case "/Screen":
+          params.mixBlendMode = "screen";
+          break;
+        case "/Overlay":
+          params.mixBlendMode = "overlay";
+          break;
+        case "/Darken":
+          params.mixBlendMode = "darken";
+          break;
+        case "/Lighten":
+          params.mixBlendMode = "lighten";
+          break;
+        case "/ColorDodge":
+          params.mixBlendMode = "color-dodge";
+          break;
+        case "/ColorBurn":
+          params.mixBlendMode = "color-burn";
+          break;
+        case "/HardLight":
+          params.mixBlendMode = "hard-light";
+          break;
+        case "/SoftLight":
+          params.mixBlendMode = "soft-light";
+          break;
+        case "/Difference":
+          params.mixBlendMode = "difference";
+          break;
+        case "/Exclusion":
+          params.mixBlendMode = "exclusion";
+          break;
+      }
     }
     if (this.SMask) {
       // TODO: implement

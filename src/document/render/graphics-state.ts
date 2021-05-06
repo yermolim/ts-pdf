@@ -21,7 +21,7 @@ export interface GraphicsStateParams {
   strokeDashOffset?: number;
 
   mixBlendMode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
-  | "color-dodge" |" color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
+  | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
 }
 
 /**graphics state used in appearance streams */
@@ -74,7 +74,7 @@ export class GraphicsState {
   strokeDashOffset: number;
 
   mixBlendMode: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
-  | "color-dodge" |" color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
+  | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
 
   constructor(params?: GraphicsStateParams) {
     Object.assign(this, GraphicsState.defaultParams, params);

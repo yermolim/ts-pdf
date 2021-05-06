@@ -15,6 +15,11 @@ export abstract class PdfObject implements IEncodable {
   get sourceBytes(): Uint8Array {
     return this._sourceBytes?.slice();
   }
+  get sourceChars(): string {    
+    return this._sourceBytes
+      ? String.fromCharCode(...this._sourceBytes.slice(0, this._sourceBytes.length))
+      : "";
+  }
 
   //#region reference
   protected _ref: Reference;

@@ -358,6 +358,9 @@ export abstract class AnnotationDict extends PdfDict {
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
+
+    // DEBUG
+    // console.log(parser.sliceChars(start, end));    
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;

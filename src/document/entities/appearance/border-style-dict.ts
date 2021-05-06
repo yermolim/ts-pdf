@@ -14,6 +14,7 @@ export const borderStyles = {
   BEVELED: "/B",
   INSET: "/I",
   UNDERLINE: "/U",
+  NONE: "/N", // came across some files, missing in the PDF specification (v1.7)
 } as const;
 export type BorderStyle = typeof borderStyles[keyof typeof borderStyles];
 
