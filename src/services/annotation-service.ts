@@ -241,10 +241,7 @@ export class AnnotationService {
         this._geometricSubmode = x;
         this.setMode();
       });
-      const submodeIcon = document.createElement("div");
-      submodeIcon.classList.add("context-menu-color-icon");
-      submodeIcon.innerHTML = geometricIcons[x];
-      item.append(submodeIcon);
+      item.innerHTML = geometricIcons[x];
       submodePicker.append(item);
     });
     return submodePicker;
@@ -263,10 +260,7 @@ export class AnnotationService {
         this._textSubmode = x;
         this.setMode();
       });
-      const submodeIcon = document.createElement("div");
-      submodeIcon.classList.add("context-menu-color-icon");
-      submodeIcon.innerHTML = textIcons[x];
-      item.append(submodeIcon);
+      item.innerHTML = textIcons[x];
       submodePicker.append(item);
     });
     return submodePicker;
@@ -316,10 +310,7 @@ export class AnnotationService {
         this.setMode();
       });
     }
-    const cloudyLineIcon = document.createElement("div");
-    cloudyLineIcon.classList.add("context-menu-color-icon");
-    cloudyLineIcon.innerHTML = lineTypeIcons.cloudy;
-    cloudyLineButton.append(cloudyLineIcon);
+    cloudyLineButton.innerHTML = lineTypeIcons.cloudy;
     div.append(cloudyLineButton);
     
     const straightLineButton = document.createElement("div");
@@ -335,10 +326,7 @@ export class AnnotationService {
         this.setMode();
       });
     }
-    const straightLineIcon = document.createElement("div");
-    straightLineIcon.classList.add("context-menu-color-icon");
-    straightLineIcon.innerHTML = lineTypeIcons.straight;
-    straightLineButton.append(straightLineIcon);
+    straightLineButton.innerHTML = lineTypeIcons.straight;
     div.append(straightLineButton);
 
     const slider = document.createElement("input");

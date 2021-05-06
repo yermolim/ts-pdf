@@ -591,9 +591,13 @@ const styles = `
   .panel-button.on img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
   }  
-  .disabled .panel-button img {
+  .disabled .panel-button img,
+  .panel-button.disabled img {
     filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }  
+  .context-menu-content .panel-button {
+    margin: 1px;
+  }
   
   .subpanel {
     display: flex;
@@ -1012,7 +1016,10 @@ const styles = `
   .context-menu-color-icon {
     width: 20px;
     height: 20px;
-    border-radius: 3px;
+    border-radius: 12px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--tspdf-color-fg-secondary-final);
   }
   .context-menu-stamp-select-button {
     box-sizing: border-box;
@@ -19395,8 +19402,8 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
     }
 }
 
-const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout",
-    "highlight", "strikeout", "squiggly", "underline"];
+const textAnnotatorTypes = ["highlight", "strikeout", "squiggly", "underline",
+    "popupText", "freeText", "freeTextCallout"];
 class TextAnnotatorFactory {
     createAnnotator(docService, pageService, parent, options, type) {
         type || (type = this._lastType || "popupText");
@@ -19610,10 +19617,7 @@ class AnnotationService {
                 this._geometricSubmode = x;
                 this.setMode();
             });
-            const submodeIcon = document.createElement("div");
-            submodeIcon.classList.add("context-menu-color-icon");
-            submodeIcon.innerHTML = geometricIcons[x];
-            item.append(submodeIcon);
+            item.innerHTML = geometricIcons[x];
             submodePicker.append(item);
         });
         return submodePicker;
@@ -19631,10 +19635,7 @@ class AnnotationService {
                 this._textSubmode = x;
                 this.setMode();
             });
-            const submodeIcon = document.createElement("div");
-            submodeIcon.classList.add("context-menu-color-icon");
-            submodeIcon.innerHTML = textIcons[x];
-            item.append(submodeIcon);
+            item.innerHTML = textIcons[x];
             submodePicker.append(item);
         });
         return submodePicker;
@@ -19681,10 +19682,7 @@ class AnnotationService {
                 this.setMode();
             });
         }
-        const cloudyLineIcon = document.createElement("div");
-        cloudyLineIcon.classList.add("context-menu-color-icon");
-        cloudyLineIcon.innerHTML = lineTypeIcons.cloudy;
-        cloudyLineButton.append(cloudyLineIcon);
+        cloudyLineButton.innerHTML = lineTypeIcons.cloudy;
         div.append(cloudyLineButton);
         const straightLineButton = document.createElement("div");
         straightLineButton.classList.add("panel-button");
@@ -19700,10 +19698,7 @@ class AnnotationService {
                 this.setMode();
             });
         }
-        const straightLineIcon = document.createElement("div");
-        straightLineIcon.classList.add("context-menu-color-icon");
-        straightLineIcon.innerHTML = lineTypeIcons.straight;
-        straightLineButton.append(straightLineIcon);
+        straightLineButton.innerHTML = lineTypeIcons.straight;
         div.append(straightLineButton);
         const slider = document.createElement("input");
         slider.setAttribute("type", "range");

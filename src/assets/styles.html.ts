@@ -271,9 +271,13 @@ export const styles = /*html*/`
   .panel-button.on img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
   }  
-  .disabled .panel-button img {
+  .disabled .panel-button img,
+  .panel-button.disabled img {
     filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }  
+  .context-menu-content .panel-button {
+    margin: 1px;
+  }
   
   .subpanel {
     display: flex;
@@ -692,7 +696,10 @@ export const styles = /*html*/`
   .context-menu-color-icon {
     width: 20px;
     height: 20px;
-    border-radius: 3px;
+    border-radius: 12px;
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--tspdf-color-fg-secondary-final);
   }
   .context-menu-stamp-select-button {
     box-sizing: border-box;

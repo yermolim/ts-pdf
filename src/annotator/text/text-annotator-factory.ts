@@ -9,8 +9,8 @@ import { TextSquigglyAnnotator } from "./text-squiggly-annotator";
 import { TextStrikeoutAnnotator } from "./text-strikeout-annotator";
 import { TextUnderlineAnnotator } from "./text-underline-annotator";
 
-export const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout", 
-  "highlight", "strikeout", "squiggly", "underline"] as const;
+export const textAnnotatorTypes = ["highlight", "strikeout", "squiggly", "underline", 
+  "popupText", "freeText", "freeTextCallout"] as const;
 export type TextAnnotatorType =  typeof textAnnotatorTypes[number];
 
 export class TextAnnotatorFactory {
