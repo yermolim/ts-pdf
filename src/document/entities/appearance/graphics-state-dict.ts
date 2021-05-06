@@ -302,6 +302,8 @@ export class GraphicsStateDict extends PdfDict {
         case "/Exclusion":
           params.mixBlendMode = "exclusion";
           break;
+        default:
+          throw new Error(`Unsupported blend mode: ${this.BM}`);
       }
     }
     if (this.SMask) {
