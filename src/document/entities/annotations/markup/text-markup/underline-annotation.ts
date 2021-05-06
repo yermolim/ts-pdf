@@ -51,10 +51,10 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
         vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
       }
       const {min, max} = vecMinMax(...vectors);
-      const halfW = dto.strokeWidth
+      const margin = dto.strokeWidth
         ? dto.strokeWidth / 2
         : 1;
-      annotation.Rect = [min.x - halfW, min.y - halfW, max.x + halfW, max.y + halfW];
+      annotation.Rect = [min.x - margin, min.y - margin, max.x + margin, max.y + margin];
     }
     annotation.C = dto.color.slice(0, 3);
     annotation.CA = dto.color[3];
@@ -213,12 +213,4 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
 
     this.apStream = apStream;
   }
-  
-  // disable translation
-  protected onTranslationPointerDown = (e: PointerEvent) => { };
-  
-  // disable handles
-  protected renderHandles(): SVGGraphicsElement[] {   
-    return [];
-  } 
 }

@@ -4,15 +4,18 @@ import { ParseInfo, ParseResult } from "./data-parser";
 import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
 import { StampAnnotation, StampAnnotationDto } from "./entities/annotations/markup/stamp-annotation";
 import { InkAnnotation, InkAnnotationDto } from "./entities/annotations/markup/ink-annotation";
+
 import { SquareAnnotation, SquareAnnotationDto } from "./entities/annotations/markup/geometric/square-annotation";
 import { CircleAnnotation, CircleAnnotationDto } from "./entities/annotations/markup/geometric/circle-annotation";
 import { PolygonAnnotation, PolygonAnnotationDto } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation, PolylineAnnotationDto } from "./entities/annotations/markup/geometric/polyline-annotation";
 import { LineAnnotation, LineAnnotationDto } from "./entities/annotations/markup/geometric/line-annotation";
+
 import { TextMarkupAnnotationDto } from "./entities/annotations/markup/text-markup/text-markup-annotation";
 import { HighlightAnnotation } from "./entities/annotations/markup/text-markup/highlight-annotation";
 import { UnderlineAnnotation } from "./entities/annotations/markup/text-markup/underline-annotation";
 import { StrikeoutAnnotation } from "./entities/annotations/markup/text-markup/strikeout-annotation";
+import { SquigglyAnnotation } from "./entities/annotations/markup/text-markup/squiggly-annotation";
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
@@ -42,6 +45,9 @@ export class AnnotationParseFactory {
         break;
       case annotationTypes.HIGHLIGHT:
         annot = HighlightAnnotation.parse(info);
+        break;
+      case annotationTypes.SQUIGGLY:
+        annot = SquigglyAnnotation.parse(info);
         break;
       case annotationTypes.STRIKEOUT:
         annot = StrikeoutAnnotation.parse(info);
@@ -88,6 +94,9 @@ export class AnnotationParseFactory {
         break;
       case "/Highlight":        
         annotation = HighlightAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
+        break;
+      case "/Squiggly":        
+        annotation = SquigglyAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
         break;
       case "/Strikeout":        
         annotation = StrikeoutAnnotation.createFromDto(dto as TextMarkupAnnotationDto);

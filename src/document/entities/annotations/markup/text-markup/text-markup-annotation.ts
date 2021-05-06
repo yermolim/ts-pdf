@@ -81,4 +81,12 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
       throw new Error("Not all required properties parsed");
     }
   }
+  
+  // disable translation
+  protected onTranslationPointerDown = (e: PointerEvent) => { };
+  
+  // disable handles
+  protected renderHandles(): SVGGraphicsElement[] {   
+    return [];
+  } 
 }

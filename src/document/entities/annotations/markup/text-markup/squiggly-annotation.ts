@@ -1,11 +1,73 @@
-import { annotationTypes } from "../../../../const";
+import { Vec2, vecMinMax } from "../../../../../common/math";
+
+import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
-import { TextMarkupAnnotation } from "./text-markup-annotation";
+
+import { DateString } from "../../../strings/date-string";
+import { LiteralString } from "../../../strings/literal-string";
+import { BorderStyleDict } from "../../../appearance/border-style-dict";
+import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
+import { ResourceDict } from "../../../appearance/resource-dict";
+import { XFormStream } from "../../../streams/x-form-stream";
+import { TextMarkupAnnotation, TextMarkupAnnotationDto } from "./text-markup-annotation";
+import { buildSquigglyLine } from "../../../../../common/drawing";
 
 export class SquigglyAnnotation extends TextMarkupAnnotation {   
+  static readonly squiggleSize = 6;
+
   constructor() {
     super(annotationTypes.SQUIGGLY);
+  }
+  
+  static createFromDto(dto: TextMarkupAnnotationDto): SquigglyAnnotation {
+    if (dto.annotationType !== "/Squiggly") {
+      throw new Error("Invalid annotation type");
+    }
+
+    if (!dto?.quadPoints?.length || dto.quadPoints.length % 8) {
+      // the coordinates array length must be a multiple of 8
+      return;
+    }
+
+    const bs = new BorderStyleDict();
+    bs.W = dto.strokeWidth;
+    if (dto.strokeDashGap) {
+      bs.D = dto.strokeDashGap;
+    }
+    
+    const annotation = new SquigglyAnnotation();
+    annotation.$name = dto.uuid;
+    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.T = LiteralString.fromString(dto.author);
+    annotation.M = DateString.fromDate(new Date(dto.dateModified));
+    annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : null;
+    
+    if (dto.rect) {
+      annotation.Rect = dto.rect;
+    } else {
+      const vectors: Vec2[] = [];
+      for (let i = 0; i < dto.quadPoints.length; i += 2) {
+        vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
+      }
+      const {min, max} = vecMinMax(...vectors);
+      const margin = this.squiggleSize / 2 + (dto.strokeWidth || 2) / 2;
+      annotation.Rect = [min.x - margin, min.y - margin, max.x + margin, max.y + margin];
+    }
+    annotation.C = dto.color.slice(0, 3);
+    annotation.CA = dto.color[3];
+    annotation.BS = bs;
+    annotation.QuadPoints = dto.quadPoints;
+    
+    annotation.generateApStream();
+
+    const proxy = new Proxy<SquigglyAnnotation>(annotation, annotation.onChange);
+    annotation._proxy = proxy;
+    annotation._added = true;
+    return proxy;
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<SquigglyAnnotation> { 
@@ -15,7 +77,9 @@ export class SquigglyAnnotation extends TextMarkupAnnotation {
     try {
       const pdfObject = new SquigglyAnnotation();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<SquigglyAnnotation>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;
@@ -27,7 +91,35 @@ export class SquigglyAnnotation extends TextMarkupAnnotation {
     return superBytes;
   }  
   
-  // TODO: implement render method
+  toDto(): TextMarkupAnnotationDto {
+    const color = this.getColorRect();
+
+    return {
+      annotationType: "/Squiggly",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this.CreationDate?.date.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this.T?.literal,
+
+      textContent: this.Contents?.literal,
+
+      rect: this.Rect,
+      bbox: this.apStream?.BBox,
+      matrix: this.apStream?.Matrix,
+
+      quadPoints: this.QuadPoints,
+
+      color,
+      strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
+      strokeDashGap: this.BS?.D ?? [3, 0],
+    };
+  }
   
   /**
    * fill public properties from data using info/parser if available
@@ -56,5 +148,79 @@ export class SquigglyAnnotation extends TextMarkupAnnotation {
     //     break;
     //   }
     // };
+  }
+  
+  protected generateApStream() {
+    if (!this.QuadPoints?.length || this.QuadPoints.length % 8) {
+      return;
+    }
+
+    const apStream = new XFormStream();
+    apStream.Filter = "/FlateDecode";
+    apStream.LastModified = DateString.fromDate(new Date());
+    apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
+
+    // set color
+    let colorString: string;
+    if (!this.C?.length) {
+      colorString = "0 G 0 g";
+    } else if (this.C.length < 3) {
+      const g = this.C[0];
+      colorString = `${g} G ${g} g`;
+    } else if (this.C.length === 3) {
+      const [r, g, b] = this.C;      
+      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+    } else {      
+      const [c, m, y, k] = this.C;      
+      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+    }
+
+    // set stroke style options
+    const opacity = this.CA || 1;
+    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
+    const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
+    const gs = new GraphicsStateDict();
+    gs.AIS = true;
+    gs.BM = "/Normal";
+    gs.CA = opacity;
+    gs.ca = opacity;
+    gs.LW = strokeWidth;
+    gs.LC = lineCapStyles.SQUARE;
+    gs.LJ = lineJoinStyles.MITER;
+    gs.D = [[strokeDash, strokeGap], 0];
+    
+    // push the graphics state onto the stack
+    let streamTextData = `q ${colorString} /GS0 gs`;
+
+    // fill stream data
+    const bottomLeft = new Vec2();
+    const bottomRight = new Vec2();
+    const q = this.QuadPoints;
+    for (let i = 0; i < q.length; i += 8) {
+      bottomLeft.set(q[i + 4], q[i + 5]);
+      bottomRight.set(q[i + 6], q[i + 7]);
+
+      const squigglyLinePoints = buildSquigglyLine(bottomLeft, bottomRight, 
+        SquigglyAnnotation.squiggleSize);
+      if (!squigglyLinePoints?.length) {
+        continue;
+      }
+
+      streamTextData += `\n${squigglyLinePoints[0].x} ${squigglyLinePoints[0].y} m`;
+      for (let j = 1; j < squigglyLinePoints.length; j++) {
+        streamTextData += `\n${squigglyLinePoints[j].x} ${squigglyLinePoints[j].y} l`;
+      }
+      streamTextData += "\nS";
+    }
+
+    // pop the graphics state back from the stack
+    streamTextData += "\nQ";
+
+    apStream.Resources = new ResourceDict();
+    apStream.Resources.setGraphicsState("/GS0", gs);
+    apStream.setTextStreamData(streamTextData);   
+
+    this.apStream = apStream;
   }
 }

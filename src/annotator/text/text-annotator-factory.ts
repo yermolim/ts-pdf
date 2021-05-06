@@ -5,11 +5,12 @@ import { DocumentService } from "../../services/document-service";
 
 import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
 import { TextHighlightAnnotator } from "./text-highlight-annotator";
+import { TextSquigglyAnnotator } from "./text-squiggly-annotator";
 import { TextStrikeoutAnnotator } from "./text-strikeout-annotator";
 import { TextUnderlineAnnotator } from "./text-underline-annotator";
 
 export const textAnnotatorTypes = ["popupText", "freeText", "freeTextCallout", 
-  "strikeout", "underline", "highlight"] as const;
+  "highlight", "strikeout", "squiggly", "underline"] as const;
 export type TextAnnotatorType =  typeof textAnnotatorTypes[number];
 
 export class TextAnnotatorFactory {
@@ -26,7 +27,7 @@ export class TextAnnotatorFactory {
     const color = options?.color || this._lastColor || [0, 0, 0, 0.9];
     this._lastColor = color;
 
-    const strokeWidth = options?.strokeWidth || this._lastStrokeWidth || 3;
+    const strokeWidth = options?.strokeWidth || this._lastStrokeWidth || 2;
     this._lastStrokeWidth = strokeWidth;
 
     const combinedOptions: TextAnnotatorOptions = {
@@ -45,12 +46,14 @@ export class TextAnnotatorFactory {
       case "freeTextCallout":
         return null;
         // return new TextFreeCalloutAnnotator(docService, pageService, parent, combinedOptions);
+      case "highlight":
+        return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
+      case "squiggly":
+        return new TextSquigglyAnnotator(docService, pageService, parent, combinedOptions);
       case "strikeout":
         return new TextStrikeoutAnnotator(docService, pageService, parent, combinedOptions);
       case "underline":
         return new TextUnderlineAnnotator(docService, pageService, parent, combinedOptions);
-      case "highlight":
-        return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
       default:
         throw new Error(`Invalid geometric annotator type: ${type}`);
     }

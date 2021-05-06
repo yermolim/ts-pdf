@@ -126,7 +126,8 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
     this.updateCoords(e?.detail?.selectionInfos || []);
   };
   
-  protected buildAnnotationDtos(type: "/Highlight" | "/Strikeout" | "/Underline"): TextMarkupAnnotationDto[] {
+  protected buildAnnotationDtos(type: "/Highlight" | "/Strikeout" | "/Underline" | "/Squiggly"): 
+  TextMarkupAnnotationDto[] {
     const nowString = new Date().toISOString();
     const dtos: TextMarkupAnnotationDto[] = [];    
 

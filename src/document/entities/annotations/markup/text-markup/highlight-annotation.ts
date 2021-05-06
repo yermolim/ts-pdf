@@ -216,12 +216,4 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
 
     this.apStream = apStream;
   }
-  
-  // disable translation
-  protected onTranslationPointerDown = (e: PointerEvent) => { };
-  
-  // disable handles
-  protected renderHandles(): SVGGraphicsElement[] {   
-    return [];
-  } 
 }

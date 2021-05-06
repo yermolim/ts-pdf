@@ -35,6 +35,7 @@ import icon_text2 from "./icons/text2.png";
 import icon_text_free from "./icons/text-free.png";
 import icon_text_callout from "./icons/text-callout.png";
 import icon_text_highlight from "./icons/text-highlight.png";
+import icon_text_squiggly from "./icons/text-squiggly.png";
 import icon_text_strikeout from "./icons/text-strikeout.png";
 import icon_text_underline from "./icons/text-underline.png";
 
@@ -52,6 +53,7 @@ export const textIcons = {
   freeText: `<img src="${icon_text_free}"/>`,
   freeTextCallout: `<img src="${icon_text_callout}"/>`,
   strikeout: `<img src="${icon_text_strikeout}"/>`,
+  squiggly: `<img src="${icon_text_squiggly}"/>`,
   underline: `<img src="${icon_text_underline}"/>`,
   highlight: `<img src="${icon_text_highlight}"/>`,
 } as const;

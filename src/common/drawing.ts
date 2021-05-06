@@ -110,6 +110,41 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, maxArcSize: n
   return curveData;
 }
 
+export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): Vec2[] {
+  if (!start || !end) {
+    // endpoints are not defined
+    return null;
+  }
+  if (isNaN(maxWaveSize) || maxWaveSize <= 0) {
+    throw new Error(`Invalid maximal squiggle size ${maxWaveSize}`);
+  }
+  
+  const lineLength = Vec2.substract(start, end).getMagnitude();
+  if (!lineLength) {
+    // the line has a zero length
+    return null;
+  }
+  
+  const resultPoints: Vec2[] = [start.clone()];
+
+  const zeroVec = new Vec2();
+  const lengthVec = new Vec2(lineLength, 0);
+  // get the matrix to transform the 'cloudy' line to the same position the source line has
+  const matrix = mat3From4Vec2(zeroVec, lengthVec, start, end);    
+  
+  const waveCount = Math.ceil(lineLength / maxWaveSize);
+  const waveSize = lineLength / waveCount;
+  const halfWaveSize = waveSize / 2;
+  for (let i = 0; i < waveCount; i++) {
+    resultPoints.push(
+      new Vec2(i * waveSize + halfWaveSize, -halfWaveSize).applyMat3(matrix), // top point
+      new Vec2((i + 1) * waveSize, 0).applyMat3(matrix), // bottom point
+    );
+  }
+
+  return resultPoints;
+}
+
 export interface BBox {
   ll: Vec2; 
   lr: Vec2; 

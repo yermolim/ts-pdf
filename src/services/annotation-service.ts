@@ -117,6 +117,7 @@ export class AnnotationService {
     // (used for disabling annotation layers pointer events to allow page text selection)
     if (this._mode === "text"
       && (this._textSubmode === "highlight"
+      || this._textSubmode === "squiggly"
       || this._textSubmode === "strikeout"
       || this._textSubmode === "underline")) {
       this._viewer.container.classList.add("mode-text-markup");
@@ -148,6 +149,7 @@ export class AnnotationService {
           }, this._geometricSubmode);
         break;
       case "text":
+        this._strokeWidth = 2;
         this._annotator = this._textFactory.createAnnotator(this._docService, this._pageService,
           this._viewer.container, {
             strokeWidth: this._strokeWidth,
