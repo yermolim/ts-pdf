@@ -7589,9 +7589,7 @@ class AppearanceStreamRenderer {
         path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
         path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
         path.setAttribute("d", d);
-        if (this.state.mixBlendMode) {
-            path.setAttribute("mix-blend-mode", this.state.mixBlendMode);
-        }
+        if (this.state.mixBlendMode && this.state.mixBlendMode !== "normal") ;
         if (fill) {
             path.setAttribute("fill", this.state.fill);
             path.setAttribute("fill-rule", evenOdd ? "evenodd" : "nonzero");
@@ -8692,8 +8690,6 @@ class AnnotationDict extends PdfDict {
             const renderResult = {
                 svg: this._svg,
                 clipPaths: this._svgClipPaths,
-                tempCopy: this._svgContentCopy,
-                tempCopyUse: this._svgContentCopyUse,
             };
             this._lastRenderResult = renderResult;
             return renderResult;

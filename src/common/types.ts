@@ -7,9 +7,6 @@ export interface PointerDownInfo {
 export interface RenderToSvgResult {
   svg: SVGGraphicsElement;
   clipPaths?: SVGClipPathElement[];
-  
-  tempCopy?: SVGGraphicsElement;
-  tempCopyUse?: SVGUseElement;
 }
 
 export class LinkedListNode<T> {

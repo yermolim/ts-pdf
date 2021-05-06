@@ -285,9 +285,7 @@ export abstract class AnnotationDict extends PdfDict {
 
     const renderResult: RenderToSvgResult = {
       svg: this._svg,
-      clipPaths: this._svgClipPaths,      
-      tempCopy: this._svgContentCopy,
-      tempCopyUse: this._svgContentCopyUse,
+      clipPaths: this._svgClipPaths,
     };
     this._lastRenderResult = renderResult;
     return renderResult;

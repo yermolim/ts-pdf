@@ -219,8 +219,8 @@ export class AppearanceStreamRenderer {
     path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test
     path.setAttribute("d", d);
 
-    if (this.state.mixBlendMode) {
-      path.setAttribute("mix-blend-mode", this.state.mixBlendMode);
+    if (this.state.mixBlendMode && this.state.mixBlendMode !== "normal") {
+      // TODO: try to implement applying blend modes individually to every path somehow
     }
 
     if (fill) {
