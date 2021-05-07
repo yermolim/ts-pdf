@@ -16749,6 +16749,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
         gs.D = [[strokeDash, strokeGap], 0];
+        gs.BM = blendModes.MULTIPLY;
         let streamTextData = `q ${colorString} /GS0 gs`;
         const bottomLeft = new Vec2();
         const bottomRight = new Vec2();

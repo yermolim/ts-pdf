@@ -1,6 +1,6 @@
 import { Vec2, vecMinMax } from "../../../../../common/math";
 
-import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
+import { annotationTypes, blendModes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
@@ -185,6 +185,7 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
     gs.LC = lineCapStyles.SQUARE;
     gs.LJ = lineJoinStyles.MITER;
     gs.D = [[strokeDash, strokeGap], 0];
+    gs.BM = blendModes.MULTIPLY;
     
     // push the graphics state onto the stack
     let streamTextData = `q ${colorString} /GS0 gs`;
