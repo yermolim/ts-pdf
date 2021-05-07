@@ -130,19 +130,19 @@ export class AnnotationService {
         this._contextMenu.enabled = false;
         return;
       case "stamp":
-        this._annotator = new StampAnnotator(this._docService, this._pageService,
-          this._viewer.container, this._stampType);
+        this._annotator = new StampAnnotator(this._docService, 
+          this._pageService, this._viewer.container, this._stampType);
         break;
       case "pen":
-        this._annotator = new PenAnnotator(this._docService, this._pageService,
-          this._viewer.container, {            
+        this._annotator = new PenAnnotator(this._docService, 
+          this._pageService, this._viewer.container, {            
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
           });
         break;
       case "geometric":
-        this._annotator = this._geometricFactory.createAnnotator(this._docService, this._pageService,
-          this._viewer.container, {
+        this._annotator = this._geometricFactory.createAnnotator(this._docService, 
+          this._pageService, this._viewer.container, {
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
             cloudMode: this._geometricCloudMode,
@@ -150,8 +150,8 @@ export class AnnotationService {
         break;
       case "text":
         this._strokeWidth = 2;
-        this._annotator = this._textFactory.createAnnotator(this._docService, this._pageService,
-          this._viewer.container, {
+        this._annotator = this._textFactory.createAnnotator(this._docService, 
+          this._pageService, this._viewer, {
             strokeWidth: this._strokeWidth,
             color: this._strokeColor,
           }, this._textSubmode);

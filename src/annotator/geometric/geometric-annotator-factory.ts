@@ -22,6 +22,16 @@ export class GeometricAnnotatorFactory {
 
   createAnnotator(docService: DocumentService, pageService: PageService, parent: HTMLDivElement,
     options?: GeometricAnnotatorOptions, type?: GeometricAnnotatorType): GeometricAnnotator {
+
+    if (!docService) {
+      throw new Error("Document service is not defined");
+    }
+    if (!pageService) {
+      throw new Error("Page service is not defined");
+    }
+    if (!parent) {
+      throw new Error("Parent container is not defined");
+    }
     
     type ||= this._lastType || "square";
     this._lastType = type;   

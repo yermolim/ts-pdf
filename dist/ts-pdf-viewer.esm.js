@@ -18968,6 +18968,15 @@ const geometricAnnotatorTypes = ["square", "circle", "line", "arrow", "polyline"
 class GeometricAnnotatorFactory {
     createAnnotator(docService, pageService, parent, options, type) {
         var _a, _b;
+        if (!docService) {
+            throw new Error("Document service is not defined");
+        }
+        if (!pageService) {
+            throw new Error("Page service is not defined");
+        }
+        if (!parent) {
+            throw new Error("Parent container is not defined");
+        }
         type || (type = this._lastType || "square");
         this._lastType = type;
         const color = (options === null || options === void 0 ? void 0 : options.color) || this._lastColor || [0, 0, 0, 0.9];
@@ -19798,8 +19807,8 @@ var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class TextNoteAnnotator extends TextAnnotator {
-    constructor(docService, pageService, parent, options) {
-        super(docService, pageService, parent, options || {});
+    constructor(docService, pageService, viewer, options) {
+        super(docService, pageService, viewer.container, options || {});
         this._addedAnnotations = [];
         this.onPointerMove = (e) => {
             if (!e.isPrimary) {
@@ -19843,6 +19852,7 @@ class TextNoteAnnotator extends TextAnnotator {
             this._pageId = pageId;
             this.saveAnnotation();
         };
+        this._viewer = viewer;
         this.init();
     }
     destroy() {
@@ -19865,13 +19875,20 @@ class TextNoteAnnotator extends TextAnnotator {
         }
     }
     saveAnnotation() {
+        var _a, _b;
         if (!this._pageId || !this._tempAnnotation) {
             return;
         }
-        this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
-        this._addedAnnotations.push(this._tempAnnotation);
-        this.emitDataChanged(this._addedAnnotations.length, false, true, true);
-        this.createTempNoteAnnotationAsync();
+        const initialText = (_b = (_a = this._tempAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
+        this._viewer.showTextDialogAsync(initialText).then(text => {
+            if (text !== null) {
+                this._tempAnnotation.setTextContent(text);
+                this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+                this._addedAnnotations.push(this._tempAnnotation);
+                this.emitDataChanged(this._addedAnnotations.length, false, true, true);
+            }
+            this.createTempNoteAnnotationAsync();
+        });
     }
     init() {
         super.init();
@@ -19896,7 +19913,16 @@ class TextNoteAnnotator extends TextAnnotator {
 const textAnnotatorTypes = ["highlight", "strikeout", "squiggly", "underline",
     "note", "freeText", "freeTextCallout"];
 class TextAnnotatorFactory {
-    createAnnotator(docService, pageService, parent, options, type) {
+    createAnnotator(docService, pageService, viewer, options, type) {
+        if (!docService) {
+            throw new Error("Document service is not defined");
+        }
+        if (!pageService) {
+            throw new Error("Page service is not defined");
+        }
+        if (!viewer) {
+            throw new Error("Viewer is not defined");
+        }
         type || (type = this._lastType || "highlight");
         this._lastType = type;
         const color = (options === null || options === void 0 ? void 0 : options.color) || this._lastColor || [0, 0, 0, 0.9];
@@ -19909,19 +19935,19 @@ class TextAnnotatorFactory {
         };
         switch (type) {
             case "note":
-                return new TextNoteAnnotator(docService, pageService, parent, combinedOptions);
+                return new TextNoteAnnotator(docService, pageService, viewer, combinedOptions);
             case "freeText":
                 return null;
             case "freeTextCallout":
                 return null;
             case "highlight":
-                return new TextHighlightAnnotator(docService, pageService, parent, combinedOptions);
+                return new TextHighlightAnnotator(docService, pageService, viewer.container, combinedOptions);
             case "squiggly":
-                return new TextSquigglyAnnotator(docService, pageService, parent, combinedOptions);
+                return new TextSquigglyAnnotator(docService, pageService, viewer.container, combinedOptions);
             case "strikeout":
-                return new TextStrikeoutAnnotator(docService, pageService, parent, combinedOptions);
+                return new TextStrikeoutAnnotator(docService, pageService, viewer.container, combinedOptions);
             case "underline":
-                return new TextUnderlineAnnotator(docService, pageService, parent, combinedOptions);
+                return new TextUnderlineAnnotator(docService, pageService, viewer.container, combinedOptions);
             default:
                 throw new Error(`Invalid geometric annotator type: ${type}`);
         }
@@ -20036,7 +20062,7 @@ class AnnotationService {
                 break;
             case "text":
                 this._strokeWidth = 2;
-                this._annotator = this._textFactory.createAnnotator(this._docService, this._pageService, this._viewer.container, {
+                this._annotator = this._textFactory.createAnnotator(this._docService, this._pageService, this._viewer, {
                     strokeWidth: this._strokeWidth,
                     color: this._strokeColor,
                 }, this._textSubmode);

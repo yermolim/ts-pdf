@@ -3,19 +3,24 @@ import { getDistance } from "../../common/math";
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 
+import { Viewer } from "../../components/viewer";
+
 import { TextAnnotation } from "../../document/entities/annotations/markup/text-annotation";
 
 import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
 
 export class TextNoteAnnotator extends TextAnnotator {
+  protected readonly _viewer: Viewer;
+
   protected _tempAnnotation: TextAnnotation;
   protected _pageId: number;
 
   protected _addedAnnotations: TextAnnotation[] = [];
 
   constructor(docService: DocumentService, pageService: PageService, 
-    parent: HTMLDivElement, options?: TextAnnotatorOptions) {
-    super(docService, pageService, parent, options || {});
+    viewer: Viewer, options?: TextAnnotatorOptions) {
+    super(docService, pageService, viewer.container, options || {});
+    this._viewer = viewer;
     this.init();
   }
 
@@ -49,30 +54,21 @@ export class TextNoteAnnotator extends TextAnnotator {
     if (!this._pageId || !this._tempAnnotation) {
       return;
     }
-
-    // append the current temp stamp to the page
-    this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
-
-    this._addedAnnotations.push(this._tempAnnotation);
-    this.emitDataChanged(this._addedAnnotations.length, false, true, true);
-
-    // create new temp annotation
-    this.createTempNoteAnnotationAsync();
     
-    // const initialText = this._tempAnnotation?.Contents?.literal;
-    // this._viewer.showTextDialogAsync(initialText).then(text => {
-    //   if (text !== null) {
-    //     this._tempAnnotation.setTextContent(text);
-    //     // append the current temp stamp to the page
-    //     this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+    const initialText = this._tempAnnotation?.Contents?.literal;
+    this._viewer.showTextDialogAsync(initialText).then(text => {
+      if (text !== null) {
+        this._tempAnnotation.setTextContent(text);
+        // append the current temp stamp to the page
+        this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
     
-    //     this._addedAnnotations.push(this._tempAnnotation);
-    //     this.emitDataChanged(this._addedAnnotations.length, false, true, true);
-    //   }
+        this._addedAnnotations.push(this._tempAnnotation);
+        this.emitDataChanged(this._addedAnnotations.length, false, true, true);
+      }
 
-    //   // create new temp annotation
-    //   this.createTempNoteAnnotationAsync();
-    // });
+      // create new temp annotation
+      this.createTempNoteAnnotationAsync();
+    });
   }
   
   protected init() {
