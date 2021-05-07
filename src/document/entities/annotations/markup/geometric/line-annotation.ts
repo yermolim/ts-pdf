@@ -670,14 +670,14 @@ export class LineAnnotation extends GeometricAnnotation {
   
   protected renderLineEndHandles(): SVGGraphicsElement[] {
     const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    startHandle.classList.add("svg-annot-handle-scale");
+    startHandle.classList.add("annotation-handle-scale");
     startHandle.setAttribute("data-handle-name", "start");
     startHandle.setAttribute("cx", this.L[0] + "");
     startHandle.setAttribute("cy", this.L[1] + ""); 
     startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
     
     const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    endHandle.classList.add("svg-annot-handle-scale");
+    endHandle.classList.add("annotation-handle-scale");
     endHandle.setAttribute("data-handle-name", "end");
     endHandle.setAttribute("cx", this.L[2] + "");
     endHandle.setAttribute("cy", this.L[3] + ""); 
@@ -714,7 +714,7 @@ export class LineAnnotation extends GeometricAnnotation {
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;       
       // append the svg element copy     
-      this._svg.after(this._svgContentCopy);
+      this._renderedControls.after(this._svgContentCopy);
       document.addEventListener("pointermove", this.onLineEndHandlePointerMove);
     }, 200);
 
@@ -745,7 +745,7 @@ export class LineAnnotation extends GeometricAnnotation {
     this._tempTransformationMatrix = mat3From4Vec2(start, end, startTemp, endTemp);
     
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopyUse.setAttribute("transform", 
+    this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   

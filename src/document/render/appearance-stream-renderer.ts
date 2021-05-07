@@ -1,4 +1,4 @@
-import { Quadruple, Hextuple } from "../../common/types";
+import { Quadruple, Hextuple, CssMixBlendMode } from "../../common/types";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../common/math";
 import { selectionStrokeWidth } from "../../common/drawing";
 import { codes } from "../codes";
@@ -18,11 +18,34 @@ interface ParsedCommand {
   operator: string;
 }
 
+interface SvgElementWithBlendMode {
+  element: SVGGraphicsElement; 
+  blendMode: CssMixBlendMode;
+}
+
+export interface AppearanceRenderResult {
+  /**
+   * array of all clip paths used in the stream.
+   * taken out separately to prevent duplicating the clip paths for each stream item
+   */
+  clipPaths: SVGClipPathElement[];
+  /**
+   * svg graphics elements for each item in the stream paired with its blend mode
+   */
+  elements: SvgElementWithBlendMode[];
+  /**
+   * transparent copies with wide stroke of the SVG elements.
+   * they are intended to use in user interaction layer to simplify narrow items selection
+   */
+  pickHelpers: SVGGraphicsElement[];
+}
+
 export class AppearanceStreamRenderer {
   protected readonly _stream: XFormStream;
   protected readonly _objectName: string;
 
   protected _clipPaths: SVGClipPathElement[] = [];
+  protected _selectionCopies: SVGGraphicsElement[] = [];
   protected _graphicsStates: GraphicsState[] = [];
   get state(): GraphicsState {
     return this._graphicsStates[this._graphicsStates.length - 1];
@@ -31,7 +54,7 @@ export class AppearanceStreamRenderer {
   /**
    * 
    * @param stream appearance stream
-   * @param rect parent PDF object AABB coordinates in the page coordinate system
+   * @param rect parent PDF object AABB coordinates in the view box coordinate system
    * @param objectName PDF object name (it is desirable to be unique)
    */
   constructor(stream: XFormStream, rect: Quadruple, objectName: string) {
@@ -39,7 +62,7 @@ export class AppearanceStreamRenderer {
       throw new Error("Stream is not defined");
     }
     this._stream = stream;
-    this._objectName = objectName; 
+    this._objectName = objectName;
 
     const {matAA} = AppearanceStreamRenderer.calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
 
@@ -175,19 +198,23 @@ export class AppearanceStreamRenderer {
    * render appearance stream to an SVG element
    * @returns 
    */
-  async renderAsync(): Promise<SVGGraphicsElement> {
+  async renderAsync(): Promise<AppearanceRenderResult> {
     this.reset();
 
-    const svg = this.createSvgElement();
-    svg.append(...await this.drawStreamAsync(this._stream));
-    svg.append(...this._clipPaths);
-    return svg;
+    const elements = await this.drawStreamAsync(this._stream);
+    return {
+      elements,
+      clipPaths: this._clipPaths.slice(),
+      pickHelpers: this._selectionCopies.slice(),
+    };
   }
 
   protected reset() {
     // clear all graphic states and clip paths except the first ones
     this._graphicsStates.length = 1;
     this._clipPaths.length = 1;
+    // clear the list of selection copies
+    this._selectionCopies.length = 0;
   }
 
   /**
@@ -218,7 +245,7 @@ export class AppearanceStreamRenderer {
   }
 
   protected drawPath(d: string, stroke: boolean, fill: boolean, 
-    close = false, evenOdd = false): SVGGraphicsElement[] {
+    close = false, evenOdd = false): SvgElementWithBlendMode {
 
     if (close && d[d.length - 1] !== "Z") {
       d += " Z";
@@ -227,10 +254,6 @@ export class AppearanceStreamRenderer {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
     path.setAttribute("d", d);
-
-    if (this.state.mixBlendMode && this.state.mixBlendMode !== "normal") {
-      // TODO: try to implement applying blend modes individually to every path somehow
-    }
 
     if (fill) {
       path.setAttribute("fill", this.state.fill);
@@ -261,7 +284,7 @@ export class AppearanceStreamRenderer {
     
     // create a transparent path copy with large stroke width to simplify user interaction    
     const clonedSvg = this.createSvgElement();
-    clonedSvg.classList.add("svg-annot-selection-alias");
+    clonedSvg.classList.add("annotation-pick-helper");
     const clonedPath = path.cloneNode(true) as SVGPathElement;
     const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
       ? selectionStrokeWidth
@@ -270,8 +293,9 @@ export class AppearanceStreamRenderer {
     clonedPath.setAttribute("stroke", "transparent");
     clonedPath.setAttribute("fill", fill ? "transparent" : "none");
     clonedSvg.append(clonedPath);
+    this._selectionCopies.push(clonedPath);
 
-    return [svg, clonedSvg];
+    return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
   }
 
   protected drawText(value: string): SVGTextElement {
@@ -279,7 +303,7 @@ export class AppearanceStreamRenderer {
     throw new Error("Method is not implemented");
   }
 
-  protected drawTextGroup(parser: DataParser): SVGGraphicsElement[] {
+  protected drawTextGroup(parser: DataParser): SvgElementWithBlendMode {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     let i = 0;
     while (i !== -1) {
@@ -312,12 +336,12 @@ export class AppearanceStreamRenderer {
           // throw new Error(`Unsupported appearance stream text operator: ${operator}`);
       }
     }
-    return [g];
+    return {element: g, blendMode: this.state.mixBlendMode || "normal"};
   }
 
-  protected async drawStreamAsync(stream: XFormStream): Promise<SVGGraphicsElement[]> {
+  protected async drawStreamAsync(stream: XFormStream): Promise<SvgElementWithBlendMode[]> {
     const parser = new DataParser(stream.decodedStreamData);    
-    const svgElements: SVGGraphicsElement[] = [];
+    const svgElements: SvgElementWithBlendMode[] = [];
 
     const lastCoord = new Vec2();
     let lastOperator: string;
@@ -503,37 +527,37 @@ export class AppearanceStreamRenderer {
         //#endregion
         //#region Path painting operators        
         case "S": // stroke          
-          svgElements.push(...this.drawPath(d, true, false));
+          svgElements.push(this.drawPath(d, true, false));
           d = "";
           break;
         case "s": // close + stroke
-          svgElements.push(...this.drawPath(d, true, false, true));
+          svgElements.push(this.drawPath(d, true, false, true));
           d = "";
           break;
         case "F": // close + fill (non-zero)
         case "f": // same
-          svgElements.push(...this.drawPath(d, false, true, true));
+          svgElements.push(this.drawPath(d, false, true, true));
           d = "";
           break;
         case "F*": // close + fill (even-odd)
         case "f*": // same
-          svgElements.push(...this.drawPath(d, false, true, true, true));
+          svgElements.push(this.drawPath(d, false, true, true, true));
           d = "";
           break;
         case "B": // fill (non-zero) + stroke
-          svgElements.push(...this.drawPath(d, true, true, false, false));
+          svgElements.push(this.drawPath(d, true, true, false, false));
           d = "";
           break;
         case "B*": // fill (even-odd) + stroke
-          svgElements.push(...this.drawPath(d, true, true, false, true));
+          svgElements.push(this.drawPath(d, true, true, false, true));
           d = "";
           break;
         case "b": // close + fill (non-zero) + stroke
-          svgElements.push(...this.drawPath(d, true, true, true, false));
+          svgElements.push(this.drawPath(d, true, true, true, false));
           d = "";
           break;
         case "b*": // close + fill (even-odd) + stroke
-          svgElements.push(...this.drawPath(d, true, true, true, true));
+          svgElements.push(this.drawPath(d, true, true, true, true));
           d = "";
           break;
         case "n": // end path without stroking or filling
@@ -576,7 +600,7 @@ export class AppearanceStreamRenderer {
           });
           if (textObjectEnd) {            
             const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
-            svgElements.push(...textGroup);
+            svgElements.push(textGroup);
             i = parser.skipEmpty(textObjectEnd.end + 1);
             break;
           }
@@ -626,7 +650,10 @@ export class AppearanceStreamRenderer {
             imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
             imageWrapper.append(image);
 
-            svgElements.push(imageWrapper);
+            svgElements.push({ 
+              element: imageWrapper, 
+              blendMode: this.state.mixBlendMode || "normal" 
+            });
           } else {            
             throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
           }

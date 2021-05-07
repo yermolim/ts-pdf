@@ -205,9 +205,9 @@ export abstract class Annotator {
   protected updatePointerCoords(clientX: number, clientY: number) {
     const pageCoords = this._pageService.getPageCoordsUnderPointer(clientX, clientY);
     if (!pageCoords) {
-      this._svgGroup.classList.add("out");
+      this._svgGroup.classList.add("annotation-out-of-page");
     } else {      
-      this._svgGroup.classList.remove("out");
+      this._svgGroup.classList.remove("annotation-out-of-page");
     }
 
     this._pointerCoordsInPageCS = pageCoords;

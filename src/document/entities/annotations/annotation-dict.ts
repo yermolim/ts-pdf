@@ -8,7 +8,8 @@ import { CryptInfo } from "../../common-interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
-import { AppearanceStreamRenderer } from "../../render/appearance-stream-renderer";
+import { AppearanceStreamRenderer, AppearanceRenderResult } 
+  from "../../render/appearance-stream-renderer";
 
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
@@ -46,6 +47,13 @@ export interface AnnotationDto {
    * (appearance stream 'Matrix' property value)
    */
   matrix?: Hextuple;
+}
+
+export interface AnnotationRenderResult {
+  /**svg container with all the annotation rendered helpers (boxes, handles, etc.) */
+  controls: SVGGraphicsElement;
+  /**container with the annotation rendered content*/
+  content: HTMLDivElement;
 }
 
 export abstract class AnnotationDict extends PdfDict {
@@ -164,21 +172,27 @@ export abstract class AnnotationDict extends PdfDict {
   //#endregion
 
   //#region render-related properties
-  protected readonly _svgId = getRandomUuid();
-  
-  /**outer svg container */
-  protected _svg: SVGGraphicsElement;
+  protected readonly _svgId = getRandomUuid();  
+
   /**rendered box showing the annotation dimensions */
-  protected _svgBox: SVGGraphicsElement;
-  /**rendered annotation content */
-  protected _svgContent: SVGGraphicsElement;
+  protected _renderedBox: SVGGraphicsElement;
+  /**svg container with all the annotation rendered helpers (boxes, handles, etc.) */
+  protected _renderedControls: SVGGraphicsElement;  
+  /**container with the annotation rendered content*/
+  protected _renderedContent: HTMLDivElement;
+
   /**copy of the rendered annotation content */
   protected _svgContentCopy: SVGGraphicsElement;
-  /**use element attached to the copy of the rendered annotation content */
-  protected _svgContentCopyUse: SVGUseElement;
 
-  get lastRenderResult(): SVGGraphicsElement {
-    return this._svg;
+  get lastRenderResult(): AnnotationRenderResult {
+    if (!this._renderedControls || !this._renderedContent) {
+      return null;
+    }
+    
+    return {
+      controls: this._renderedControls,
+      content: this._renderedContent,
+    };
   }
   //#endregion
 
@@ -273,14 +287,38 @@ export abstract class AnnotationDict extends PdfDict {
    * render current annotation to an svg element
    * @returns 
    */
-  async renderAsync(): Promise<SVGGraphicsElement> {
-    if (!this._svg) {
-      this._svg = this.renderMainElement();
+  async renderAsync(): Promise<AnnotationRenderResult> {
+    if (!this.$pageRect) {
+      // TODO: find an elegant solution to avoid the possibility of the error
+      throw new Error("Can't render the annotation without '$pageRect' field defined");
+    }
+    
+    if (!this._renderedControls) {
+      this._renderedControls = this.renderControls();
     }
 
     await this.updateRenderAsync(); 
 
-    return this._svg;
+    return this.lastRenderResult;
+  }  
+
+  //#region annotation content render
+  /**
+   * default annotation content renderer using the appearance stream 
+   * (common for all annotation types)
+   */
+  async renderApStreamAsync(): Promise<AppearanceRenderResult> {
+    const stream = this.apStream;
+    if (stream) {
+      try {
+        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
+        return await renderer.renderAsync();
+      }
+      catch (e) {
+        console.log(`Annotation stream render error: ${e.message}`);
+      }
+    }
+    return null;    
   }
 
   /**
@@ -605,7 +643,7 @@ export abstract class AnnotationDict extends PdfDict {
    */
   protected convertClientCoordsToPage(clientX: number, clientY: number): Vec2 {
     // html coords (0,0 is top-left corner)
-    const {x, y, width, height} = this._svgBox.getBoundingClientRect();
+    const {x, y, width, height} = this._renderedBox.getBoundingClientRect();
     const rectMinScaled = new Vec2(x, y);
     const rectMaxScaled = new Vec2(x + width, y + height);
     const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
@@ -622,7 +660,7 @@ export abstract class AnnotationDict extends PdfDict {
   
   protected convertPageCoordsToClient(pageX: number, pageY: number): Vec2 {
     // html coords (0,0 is top-left corner)
-    const {x, y, width, height} = this._svgBox.getBoundingClientRect();
+    const {x, y, width, height} = this._renderedBox.getBoundingClientRect();
     const rectMinScaled = new Vec2(x, y);
     const rectMaxScaled = new Vec2(x + width, y + height);
     const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
@@ -685,10 +723,9 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    // remove the copy from DOM
+    // reset and remove the copy from DOM
+    this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
     this._svgContentCopy.remove();
-    // reset the copy transform
-    this._svgContentCopyUse.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
     // transform the annotation
     this.applyCommonTransform(this._tempTransformationMatrix);
@@ -698,11 +735,19 @@ export abstract class AnnotationDict extends PdfDict {
   }
   //#endregion
 
-  //#region annotation container render
+  /**
+   * override in subclass to apply a custom annotation content renderer
+   * (if implemented, takes precedence over the 'renderApAsync' method)
+   */
+  protected renderAppearance(): AppearanceRenderResult {
+    return null;
+  }   
+
+  //#region render containers creation
   /**render the graphical representation of the annotation Rect (AABB) */
   protected renderRect(): SVGGraphicsElement {
     const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.classList.add("svg-annot-rect");
+    rect.classList.add("annotation-rect");
     rect.setAttribute("data-annotation-name", this.$name);
     rect.setAttribute("x", this.Rect[0] + "");
     rect.setAttribute("y", this.Rect[1] + "");
@@ -716,77 +761,65 @@ export abstract class AnnotationDict extends PdfDict {
   protected renderBox(): SVGGraphicsElement {
     const {ll, lr, ur, ul} = this.getLocalBB();
     const boxPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    boxPath.classList.add("svg-annot-box");
+    boxPath.classList.add("annotation-bbox");
     boxPath.setAttribute("data-annotation-name", this.$name);
     boxPath.setAttribute("d", `M ${ll.x} ${ll.y} L ${lr.x} ${lr.y} L ${ur.x} ${ur.y} L ${ul.x} ${ul.y} Z`);
 
     return boxPath;
   }
 
-  /**render the outer svg container for the annotation graphical representation */
-  protected renderMainElement(): SVGGraphicsElement {    
-    const mainSvg = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    mainSvg.classList.add("svg-annotation");
-    mainSvg.setAttribute("data-annotation-name", this.$name);    
-    mainSvg.addEventListener("pointerdown", this.onSvgPointerDown);
-    mainSvg.addEventListener("pointerenter", this.onSvgPointerEnter);
-    mainSvg.addEventListener("pointerleave", this.onSvgPointerLeave);
+  /**render the outer svg container for the annotation UI */
+  protected renderControls(): SVGGraphicsElement {    
+    const controlsGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    controlsGroup.classList.add("annotation-controls");
+    controlsGroup.setAttribute("data-annotation-name", this.$name);    
+    controlsGroup.addEventListener("pointerdown", this.onSvgPointerDown);
+    controlsGroup.addEventListener("pointerenter", this.onSvgPointerEnter);
+    controlsGroup.addEventListener("pointerleave", this.onSvgPointerLeave);
 
-    return mainSvg;
+    return controlsGroup;
   }  
 
-  /**render the copy of the main svg (used as a temp object for a transformation visualization) */
-  protected renderContentCopy(): {copy: SVGGraphicsElement; use: SVGUseElement} {
-    const copy = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-
-    const copyDefs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const copySymbol = document.createElementNS("http://www.w3.org/2000/svg", "symbol");
-    copySymbol.id = this._svgId + "_symbol";
-    const copySymbolUse = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    copySymbolUse.setAttribute("href", `#${this._svgId}`);
-    if (this.$pageRect) {
-      copySymbolUse.setAttribute("viewBox", 
-        `${this.$pageRect[0]} ${this.$pageRect[1]} ${this.$pageRect[2]} ${this.$pageRect[3]}`);
-    }
-    copySymbol.append(copySymbolUse);
-    copyDefs.append(copySymbol);
-
-    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    use.setAttribute("href", `#${this._svgId}_symbol`);
-    use.setAttribute("opacity", "0.2");
+  /**convert the annotation content render result to a structured html div */
+  protected buildRenderedContentStructure(renderResult: AppearanceRenderResult): HTMLDivElement {
+    const content = document.createElement("div");
+    content.id = this._svgId;
+    content.classList.add("annotation-content");
+    content.setAttribute("data-annotation-name", this.$name); 
     
-    copy.append(copyDefs, use);
+    if (renderResult.clipPaths?.length) {
+      const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      clipPathsContainer.append(...renderResult.clipPaths);
+      content.append(clipPathsContainer);
+    }
+      
+    const [x0, y0, x1, y1] = this.$pageRect;
+    renderResult.elements.forEach(x => {      
+      const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      elementContainer.classList.add("annotation-content-element");
+      elementContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+      // flip Y to match PDF coords where 0,0 is the lower-left corner
+      elementContainer.setAttribute("transform", "scale(1, -1)");
 
-    return {copy, use};
+      elementContainer.style["mixBlendMode"] = x.blendMode;
+      elementContainer.append(x.element);
+      content.append(elementContainer);
+    });
+
+    return content;
+  }
+
+  /**render the copy of the annotation content (used as a temp object for a transformation visualization) */
+  protected buildRenderContentCopy(contentRenderResult: AppearanceRenderResult): SVGGraphicsElement {
+    const copy = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    contentRenderResult.elements.forEach(x => {
+      copy.append(x.element.cloneNode(true));
+    });
+    copy.setAttribute("opacity", "0.2");
+    return copy;
   }
   //#endregion
 
-  //#region annotation content render
-  /**
-   * default annotation content renderer using the appearance stream 
-   * (common for all annotation types)
-   */
-  protected async renderApAsync(): Promise<SVGGraphicsElement> {
-    const stream = this.apStream;
-    if (stream) {
-      try {
-        const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
-        return await renderer.renderAsync();
-      }
-      catch (e) {
-        console.log(`Annotation stream render error: ${e.message}`);
-      }
-    }
-    return null;    
-  }
-
-  /**
-   * override in subclass to apply a custom annotation content renderer
-   * (if implemented, takes precedence over the 'renderApAsync' method)
-   */
-  protected renderContent(): SVGGraphicsElement {
-    return null;
-  }   
   //#endregion
 
   //#region render of the annotation control handles 
@@ -796,7 +829,7 @@ export abstract class AnnotationDict extends PdfDict {
     const handles: SVGGraphicsElement[] = [];
     ["ll", "lr", "ur", "ul"].forEach(x => {
       const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      handle.classList.add("svg-annot-handle-scale");
+      handle.classList.add("annotation-handle-scale");
       handle.setAttribute("data-handle-name", x);
       handle.setAttribute("cx", bBox[x].x + "");
       handle.setAttribute("cy", bBox[x].y + ""); 
@@ -813,7 +846,7 @@ export abstract class AnnotationDict extends PdfDict {
     const currentRotation = this.getCurrentRotation();
 
     const rotationGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    rotationGroup.classList.add("svg-annot-rotation");
+    rotationGroup.classList.add("annotation-rotator");
     rotationGroup.setAttribute("data-handle-name", "center");  
      
     const rotationGroupCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -835,7 +868,7 @@ export abstract class AnnotationDict extends PdfDict {
     rotationGroupLine.setAttribute("y2", handleCenter.y + "");
     
     const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    centerRectHandle.classList.add("svg-annot-handle-rotation");
+    centerRectHandle.classList.add("annotation-handle-rotation");
     centerRectHandle.setAttribute("data-handle-name", "center");
     centerRectHandle.setAttribute("cx", handleCenter.x + "");
     centerRectHandle.setAttribute("cy", handleCenter.y + "");
@@ -854,36 +887,35 @@ export abstract class AnnotationDict extends PdfDict {
   //#endregion
 
   protected async updateRenderAsync() {
-    if (!this._svg) {
+    if (!this._renderedControls) {
       // not rendered yet. no svg to update
       return;
     }
+    // clear controls group
+    this._renderedControls.innerHTML = "";
 
-    this._svg.innerHTML = "";
-
-    const content = this.renderContent() || await this.renderApAsync();
-    if (!content) { 
-      this._svgBox = null;
-      this._svgContent = null;
+    // render annotation appearance
+    const contentRenderResult = this.renderAppearance() || await this.renderApStreamAsync();
+    if (!contentRenderResult || !contentRenderResult.elements?.length) { 
+      this._renderedBox = null;
       this._svgContentCopy = null;
-      this._svgContentCopyUse = null;
-      return;
-    }  
-    content.id = this._svgId;
-    content.classList.add("svg-annotation-content");
-    content.setAttribute("data-annotation-name", this.$name); 
-    const {copy, use} = this.renderContentCopy(); 
+      return null;
+    }    
+
+    // convert the appearance render result to a structured html div
+    const content = this.buildRenderedContentStructure(contentRenderResult);
+    this._renderedContent = content;
     
+    // render controls
     const rect = this.renderRect();
     const box = this.renderBox();
     const handles = this.renderHandles(); 
+    this._renderedBox = box;
+    this._renderedControls.append(rect, box, ...contentRenderResult.pickHelpers, ...handles);
 
-    this._svg.append(rect, box, content, ...handles);  
-
-    this._svgBox = box;
-    this._svgContent = content;
+    // render annotation content copy used for its transformation
+    const copy = this.buildRenderContentCopy(contentRenderResult); 
     this._svgContentCopy = copy;
-    this._svgContentCopyUse = use; 
   }
 
   //#endregion
@@ -933,7 +965,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;    
       // append the svg element copy       
-      this._svg.after(this._svgContentCopy);
+      this._renderedControls.after(this._svgContentCopy);
       // set the starting transformation point
       this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
       document.addEventListener("pointermove", this.onTranslationPointerMove);
@@ -952,7 +984,7 @@ export abstract class AnnotationDict extends PdfDict {
       .applyTranslation(current.x - this._tempStartPoint.x, 
         current.y - this._tempStartPoint.y);
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopyUse.setAttribute("transform", 
+    this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
@@ -986,7 +1018,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;  
       // append the svg element copy       
-      this._svg.after(this._svgContentCopy);
+      this._renderedControls.after(this._svgContentCopy);
       document.addEventListener("pointermove", this.onRotationHandlePointerMove);
     }, 200);
 
@@ -1017,7 +1049,7 @@ export abstract class AnnotationDict extends PdfDict {
       .applyTranslation(centerX, centerY);
 
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopyUse.setAttribute("transform", 
+    this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
@@ -1084,7 +1116,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;       
       // append the svg element copy     
-      this._svg.after(this._svgContentCopy);
+      this._renderedControls.after(this._svgContentCopy);
       document.addEventListener("pointermove", this.onScaleHandlePointerMove);
     }, 200);
 
@@ -1133,7 +1165,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
     
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopyUse.setAttribute("transform", 
+    this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   

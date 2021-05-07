@@ -124,10 +124,11 @@ export class StampAnnotator extends Annotator {
    */
   protected async createTempStampAnnotationAsync() {
     const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
-    const renderResult = await stamp.renderAsync();  
+    const renderResult = await stamp.renderApStreamAsync();  
 
     this._svgGroup.innerHTML = "";
-    this._svgGroup.append(renderResult);
+    this._svgGroup.append(...renderResult.clipPaths);
+    this._svgGroup.append(...renderResult.elements.map(x => x.element));
 
     this._tempAnnotation = stamp;
   }

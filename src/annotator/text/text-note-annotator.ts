@@ -90,10 +90,11 @@ export class TextNoteAnnotator extends TextAnnotator {
    */
   protected async createTempNoteAnnotationAsync() {
     const note = TextAnnotation.createStandard(this._docService.userName, this._color);
-    const renderResult = await note.renderAsync();  
+    const renderResult = await note.renderApStreamAsync();  
 
     this._svgGroup.innerHTML = "";
-    this._svgGroup.append(renderResult);
+    this._svgGroup.append(...renderResult.clipPaths);
+    this._svgGroup.append(...renderResult.elements.map(x => x.element));
 
     this._tempAnnotation = note;
   }

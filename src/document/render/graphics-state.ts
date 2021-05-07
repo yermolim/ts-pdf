@@ -1,4 +1,5 @@
 import { Mat3, Vec3 } from "../../common/math";
+import { CssMixBlendMode } from "../../common/types";
 import { TextState } from "./text-state";
 
 export interface GraphicsStateParams {  
@@ -20,8 +21,7 @@ export interface GraphicsStateParams {
   strokeDashArray?: string;
   strokeDashOffset?: number;
 
-  mixBlendMode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
-  | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
+  mixBlendMode?: CssMixBlendMode;
 }
 
 /**graphics state used in appearance streams */
@@ -73,8 +73,7 @@ export class GraphicsState {
   strokeDashArray: string;
   strokeDashOffset: number;
 
-  mixBlendMode: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
-  | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
+  mixBlendMode: CssMixBlendMode;
 
   constructor(params?: GraphicsStateParams) {
     Object.assign(this, GraphicsState.defaultParams, params);

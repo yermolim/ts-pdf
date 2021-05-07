@@ -167,7 +167,7 @@ export const styles = /*html*/`
     pointer-events: none;
   }
   .mode-annotation #annotation-panel {
-    z-index: 1;
+    z-index: 5;
   }
   
   .annotation-panel-row {      
@@ -412,6 +412,7 @@ export const styles = /*html*/`
     left: 0; 
     margin-top: 0;
     transition: margin-top 0.25s ease-out 0.1s;
+    z-index: 2;
   }
   .hide-panels #annotation-overlay-container {
     margin-top: 50px;
@@ -534,12 +535,20 @@ export const styles = /*html*/`
   .mode-hand .page-annotations {
     pointer-events: none;
   }
-  .page-annotations svg {    
+  .page-annotations-controls,
+  .annotation-content,
+  .annotation-content-element {    
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
+  }
+  .page-annotations-controls {
+    z-index: 1;
+  }
+  .annotation-content {
+    pointer-events: none;
   }
 
   .full-size-dialog {
@@ -566,6 +575,7 @@ export const styles = /*html*/`
     height: 50px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+    z-index: 10;
   }
   #password-dialog input {
     width: 220px;
@@ -608,6 +618,7 @@ export const styles = /*html*/`
     padding: 5px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+    z-index: 9;
   }
   #text-dialog textarea {
     height: 100%;
@@ -634,42 +645,42 @@ export const styles = /*html*/`
     flex-shrink: 1;
   } 
 
-  .svg-annotation {
+  .annotation-controls {
     cursor: pointer;
   }     
-  .out .svg-annotation {
+  .annotation-out-of-page {
     cursor: not-allowed;
   }
-  .svg-annot-rect,
-  .svg-annot-box {
+  .annotation-rect,
+  .annotation-bbox {
     fill: none;
   }
-  .mode-annotation .svg-annotation.selected {
+  .mode-annotation .annotation-controls.selected {
     cursor: grab;
   } 
-  .mode-annotation .svg-annotation.selected .svg-annot-rect,
-  .mode-annotation .svg-annotation.selected .svg-annot-box {
+  .mode-annotation .annotation-controls.selected .annotation-rect,
+  .mode-annotation .annotation-controls.selected .annotation-bbox {
     stroke: var(--tspdf-color-secondary-tr-final);
     stroke-dasharray: 3 3;
   }   
-  .mode-annotation .svg-annotation.focused .svg-annot-box {
+  .mode-annotation .annotation-controls.focused .annotation-bbox {
     stroke: var(--tspdf-color-fg-accent);
     stroke-dasharray: 3 0;
   } 
-  .mode-annotation .svg-annotation.selected .svg-annot-handle-scale,
-  .mode-annotation .svg-annotation.selected .svg-annot-handle-rotation {
+  .mode-annotation .annotation-controls.selected .annotation-handle-scale,
+  .mode-annotation .annotation-controls.selected .annotation-handle-rotation {
     r: 8;
     fill: var(--tspdf-color-primary-final);
     cursor: pointer;
   }
-  .mode-annotation .svg-annotation.selected .svg-annot-rotation {
+  .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
     cursor: pointer;
   }
-  .mode-annotation .svg-annotation.selected .svg-annot-rotation .circle {
+  .mode-annotation .annotation-controls.selected .annotation-rotator .circle {
     r: 25;
   }
-  .mode-annotation .svg-annotation.selected .svg-annot-rotation .dashed {
+  .mode-annotation .annotation-controls.selected .annotation-rotator .dashed {
     stroke: var(--tspdf-color-secondary-tr-final);
     stroke-dasharray: 3 3;
   }
@@ -677,7 +688,7 @@ export const styles = /*html*/`
   #context-menu {
     box-sizing: border-box;
     position: absolute;
-    z-index: 2;
+    z-index: 5;
     min-width: 50px;
     min-height: 50px;
     max-height: 300px;

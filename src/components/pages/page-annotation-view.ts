@@ -2,7 +2,7 @@ import { Vec2 } from "../../common/math";
 
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } from "../../services/document-service";
-import { AnnotationDict } from "../../document/entities/annotations/annotation-dict";
+import { AnnotationDict, AnnotationRenderResult } from "../../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
   private readonly _pageId: number;
@@ -29,10 +29,11 @@ export class PageAnnotationView {
     this._container.classList.add("page-annotations");
 
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    this._svg.classList.add("page-annotations-controls");
     this._svg.setAttribute("data-page-id", pageId + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-    this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
-    this._container.append(this._svg);
+    // flip Y to match PDF coords where 0,0 is the lower-left corner
+    this._svg.setAttribute("transform", "scale(1, -1)");
     // handle annotation selection
     this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
       if (e.target === this._svg) {
@@ -87,7 +88,7 @@ export class PageAnnotationView {
         continue;
       }
 
-      let renderResult: SVGGraphicsElement;
+      let renderResult: AnnotationRenderResult;
       if (!this._rendered.has(annotation)) {
         // attach events to the annotation
         annotation.$onPointerDownAction = (e: PointerEvent) => {
@@ -109,15 +110,17 @@ export class PageAnnotationView {
       }      
 
       this._rendered.add(annotation);
-      this._svg.append(renderResult);
+      this._svg.append(renderResult.controls);
+      this._container.append(renderResult.content);
     }
 
+    this._container.append(this._svg);
     return true;
   }
 
   private clear() {
+    this._container.innerHTML = "";
     this._svg.innerHTML = "";
-    // this._rendered.clear();
   }
 
   private onAnnotationSelectionChange = (e: AnnotEvent) => {
