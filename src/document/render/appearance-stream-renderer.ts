@@ -1,4 +1,4 @@
-import { RenderToSvgResult, Quadruple, Hextuple } from "../../common/types";
+import { Quadruple, Hextuple } from "../../common/types";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../common/math";
 import { selectionStrokeWidth } from "../../common/drawing";
 import { codes } from "../codes";
@@ -20,10 +20,8 @@ interface ParsedCommand {
 
 export class AppearanceStreamRenderer {
   protected readonly _stream: XFormStream;
-  protected readonly _rect: Quadruple;
   protected readonly _objectName: string;
 
-  // protected _cropBox: {min: Vec2; max: Vec2};
   protected _clipPaths: SVGClipPathElement[] = [];
   protected _graphicsStates: GraphicsState[] = [];
   get state(): GraphicsState {
@@ -41,7 +39,6 @@ export class AppearanceStreamRenderer {
       throw new Error("Stream is not defined");
     }
     this._stream = stream;
-    this._rect = rect;
     this._objectName = objectName; 
 
     const {matAA} = AppearanceStreamRenderer.calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
@@ -49,9 +46,9 @@ export class AppearanceStreamRenderer {
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     clipPath.id = `clip0_${objectName}`;
     clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
+    
     this._clipPaths.push(clipPath);
-
-    this._graphicsStates.push(new GraphicsState({matrix: matAA}));
+    this._graphicsStates.push(new GraphicsState({matrix: matAA, clipPath}));
   }  
 
   /**
@@ -178,12 +175,19 @@ export class AppearanceStreamRenderer {
    * render appearance stream to an SVG element
    * @returns 
    */
-  async renderAsync(): Promise<RenderToSvgResult> {
-    const g = await this.drawGroupAsync(this._stream);
-    return {
-      svg: g, 
-      clipPaths: this._clipPaths,
-    };
+  async renderAsync(): Promise<SVGGraphicsElement> {
+    this.reset();
+
+    const svg = this.createSvgElement();
+    svg.append(...await this.drawStreamAsync(this._stream));
+    svg.append(...this._clipPaths);
+    return svg;
+  }
+
+  protected reset() {
+    // clear all graphic states and clip paths except the first ones
+    this._graphicsStates.length = 1;
+    this._clipPaths.length = 1;
   }
 
   /**
@@ -208,15 +212,20 @@ export class AppearanceStreamRenderer {
     return this._graphicsStates.pop();
   }
 
-  protected drawPath(parent: SVGGraphicsElement, d: string, 
-    stroke: boolean, fill: boolean, close = false, evenOdd = false) {
+  protected createSvgElement(): SVGGraphicsElement {
+    const element = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    return element;
+  }
+
+  protected drawPath(d: string, stroke: boolean, fill: boolean, 
+    close = false, evenOdd = false): SVGGraphicsElement[] {
+
     if (close && d[d.length - 1] !== "Z") {
       d += " Z";
     }
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
-    path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test
     path.setAttribute("d", d);
 
     if (this.state.mixBlendMode && this.state.mixBlendMode !== "normal") {
@@ -246,17 +255,23 @@ export class AppearanceStreamRenderer {
       path.setAttribute("stroke", "none");
     }
 
-    parent.append(path);
+    const svg = this.createSvgElement();
+    svg.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+    svg.append(path);
     
-    // create a transparent path copy with large stroke width to simplify user interaction
+    // create a transparent path copy with large stroke width to simplify user interaction    
+    const clonedSvg = this.createSvgElement();
+    clonedSvg.classList.add("svg-annot-selection-alias");
     const clonedPath = path.cloneNode(true) as SVGPathElement;
-    const clonedPathStrokeWidth = this.state.strokeWidth < selectionStrokeWidth
+    const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
       ? selectionStrokeWidth
       : this.state.strokeWidth;
     clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
     clonedPath.setAttribute("stroke", "transparent");
     clonedPath.setAttribute("fill", fill ? "transparent" : "none");
-    parent.append(clonedPath);
+    clonedSvg.append(clonedPath);
+
+    return [svg, clonedSvg];
   }
 
   protected drawText(value: string): SVGTextElement {
@@ -264,7 +279,7 @@ export class AppearanceStreamRenderer {
     throw new Error("Method is not implemented");
   }
 
-  protected drawTextGroup(parser: DataParser): SVGGElement {
+  protected drawTextGroup(parser: DataParser): SVGGraphicsElement[] {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     let i = 0;
     while (i !== -1) {
@@ -297,12 +312,12 @@ export class AppearanceStreamRenderer {
           // throw new Error(`Unsupported appearance stream text operator: ${operator}`);
       }
     }
-    return g;
+    return [g];
   }
 
-  protected async drawGroupAsync(stream: XFormStream): Promise<SVGGElement> {
-    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  protected async drawStreamAsync(stream: XFormStream): Promise<SVGGraphicsElement[]> {
     const parser = new DataParser(stream.decodedStreamData);    
+    const svgElements: SVGGraphicsElement[] = [];
 
     const lastCoord = new Vec2();
     let lastOperator: string;
@@ -488,37 +503,37 @@ export class AppearanceStreamRenderer {
         //#endregion
         //#region Path painting operators        
         case "S": // stroke          
-          this.drawPath(g, d, true, false);
+          svgElements.push(...this.drawPath(d, true, false));
           d = "";
           break;
         case "s": // close + stroke
-          this.drawPath(g, d, true, false, true);
+          svgElements.push(...this.drawPath(d, true, false, true));
           d = "";
           break;
         case "F": // close + fill (non-zero)
         case "f": // same
-          this.drawPath(g, d, false, true, true);
+          svgElements.push(...this.drawPath(d, false, true, true));
           d = "";
           break;
         case "F*": // close + fill (even-odd)
         case "f*": // same
-          this.drawPath(g, d, false, true, true, true);
+          svgElements.push(...this.drawPath(d, false, true, true, true));
           d = "";
           break;
         case "B": // fill (non-zero) + stroke
-          this.drawPath(g, d, true, true, false, false);
+          svgElements.push(...this.drawPath(d, true, true, false, false));
           d = "";
           break;
         case "B*": // fill (even-odd) + stroke
-          this.drawPath(g, d, true, true, false, true);
+          svgElements.push(...this.drawPath(d, true, true, false, true));
           d = "";
           break;
         case "b": // close + fill (non-zero) + stroke
-          this.drawPath(g, d, true, true, true, false);
+          svgElements.push(...this.drawPath(d, true, true, true, false));
           d = "";
           break;
         case "b*": // close + fill (even-odd) + stroke
-          this.drawPath(g, d, true, true, true, true);
+          svgElements.push(...this.drawPath(d, true, true, true, true));
           d = "";
           break;
         case "n": // end path without stroking or filling
@@ -561,7 +576,7 @@ export class AppearanceStreamRenderer {
           });
           if (textObjectEnd) {            
             const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
-            g.append(textGroup);
+            svgElements.push(...textGroup);
             i = parser.skipEmpty(textObjectEnd.end + 1);
             break;
           }
@@ -580,8 +595,8 @@ export class AppearanceStreamRenderer {
             this.state.matrix = innerMat.multiply(this.state.matrix);
 
             // render the inner stream
-            const subGroup = await this.drawGroupAsync(innerStream);
-            g.append(subGroup);
+            const innerStreamSvgElements = await this.drawStreamAsync(innerStream);
+            svgElements.push(...innerStreamSvgElements);
 
             // pop the matrix
             this.popState();
@@ -606,8 +621,12 @@ export class AppearanceStreamRenderer {
               .applyScaling(1 / innerStream.Width, 1 / innerStream.Height)
               .multiply(this.state.matrix);                     
             image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
-            image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`); // TODO: test
-            g.append(image);
+            
+            const imageWrapper = this.createSvgElement();
+            imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+            imageWrapper.append(image);
+
+            svgElements.push(imageWrapper);
           } else {            
             throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
           }
@@ -618,6 +637,6 @@ export class AppearanceStreamRenderer {
       }
       lastOperator = operator;
     }
-    return g;
+    return svgElements;
   }
 }

@@ -335,11 +335,11 @@ export class DocumentService {
 
     if (this._selectedAnnotation) {
       this._selectedAnnotation.$translationEnabled = false;
-      const oldSelectedSvg = this._selectedAnnotation?.lastRenderResult?.svg;
+      const oldSelectedSvg = this._selectedAnnotation?.lastRenderResult;
       oldSelectedSvg?.classList.remove("selected");
     }
 
-    const newSelectedSvg = annotation?.lastRenderResult.svg;
+    const newSelectedSvg = annotation?.lastRenderResult;
     if (!newSelectedSvg) {
       this._selectedAnnotation = null;
     } else {
@@ -367,11 +367,11 @@ export class DocumentService {
 
     if (this._focusedAnnotation) {
       this._focusedAnnotation.$translationEnabled = false;
-      const oldFocusedSvg = this._focusedAnnotation?.lastRenderResult?.svg;
+      const oldFocusedSvg = this._focusedAnnotation?.lastRenderResult;
       oldFocusedSvg?.classList.remove("focused");
     }
 
-    const newFocusedSvg = annotation?.lastRenderResult.svg;
+    const newFocusedSvg = annotation?.lastRenderResult;
     if (!newFocusedSvg) {
       this._focusedAnnotation = null;
     } else {

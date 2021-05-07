@@ -1,4 +1,3 @@
-import { RenderToSvgResult } from "../../common/types";
 import { Vec2 } from "../../common/math";
 
 import { DocumentService, annotChangeEvent, 
@@ -14,7 +13,6 @@ export class PageAnnotationView {
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
-  private _defs: SVGDefsElement;
 
   private _destroyed: boolean;
 
@@ -34,16 +32,13 @@ export class PageAnnotationView {
     this._svg.setAttribute("data-page-id", pageId + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner
-    
+    this._container.append(this._svg);
     // handle annotation selection
     this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
       if (e.target === this._svg) {
         docService.setSelectedAnnotation(null);
       }
-    });
-    
-    this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    this._container.append(this._svg);
+    });    
   } 
 
   /**free the resources that can prevent garbage to be collected */
@@ -92,7 +87,7 @@ export class PageAnnotationView {
         continue;
       }
 
-      let renderResult: RenderToSvgResult;
+      let renderResult: SVGGraphicsElement;
       if (!this._rendered.has(annotation)) {
         // attach events to the annotation
         annotation.$onPointerDownAction = (e: PointerEvent) => {
@@ -114,12 +109,8 @@ export class PageAnnotationView {
       }      
 
       this._rendered.add(annotation);
-      const {svg, clipPaths} = renderResult;
-      this._svg.append(svg);
-      clipPaths?.forEach(x => this._defs.append(x));
+      this._svg.append(renderResult);
     }
-
-    this._svg.append(this._defs);
 
     return true;
   }

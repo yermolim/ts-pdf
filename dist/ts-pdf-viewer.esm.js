@@ -7481,14 +7481,13 @@ class AppearanceStreamRenderer {
             throw new Error("Stream is not defined");
         }
         this._stream = stream;
-        this._rect = rect;
         this._objectName = objectName;
         const { matAA } = AppearanceStreamRenderer.calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
         clipPath.id = `clip0_${objectName}`;
         clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
         this._clipPaths.push(clipPath);
-        this._graphicsStates.push(new GraphicsState({ matrix: matAA }));
+        this._graphicsStates.push(new GraphicsState({ matrix: matAA, clipPath }));
     }
     get state() {
         return this._graphicsStates[this._graphicsStates.length - 1];
@@ -7570,12 +7569,16 @@ class AppearanceStreamRenderer {
     }
     renderAsync() {
         return __awaiter$8(this, void 0, void 0, function* () {
-            const g = yield this.drawGroupAsync(this._stream);
-            return {
-                svg: g,
-                clipPaths: this._clipPaths,
-            };
+            this.reset();
+            const svg = this.createSvgElement();
+            svg.append(...yield this.drawStreamAsync(this._stream));
+            svg.append(...this._clipPaths);
+            return svg;
         });
+    }
+    reset() {
+        this._graphicsStates.length = 1;
+        this._clipPaths.length = 1;
     }
     pushState(params) {
         const lastState = this._graphicsStates[this._graphicsStates.length - 1];
@@ -7588,13 +7591,16 @@ class AppearanceStreamRenderer {
         }
         return this._graphicsStates.pop();
     }
-    drawPath(parent, d, stroke, fill, close = false, evenOdd = false) {
+    createSvgElement() {
+        const element = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        return element;
+    }
+    drawPath(d, stroke, fill, close = false, evenOdd = false) {
         if (close && d[d.length - 1] !== "Z") {
             d += " Z";
         }
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
-        path.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
         path.setAttribute("d", d);
         if (this.state.mixBlendMode && this.state.mixBlendMode !== "normal") ;
         if (fill) {
@@ -7620,15 +7626,20 @@ class AppearanceStreamRenderer {
         else {
             path.setAttribute("stroke", "none");
         }
-        parent.append(path);
+        const svg = this.createSvgElement();
+        svg.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+        svg.append(path);
+        const clonedSvg = this.createSvgElement();
+        clonedSvg.classList.add("svg-annot-selection-alias");
         const clonedPath = path.cloneNode(true);
-        const clonedPathStrokeWidth = this.state.strokeWidth < selectionStrokeWidth
+        const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
             ? selectionStrokeWidth
             : this.state.strokeWidth;
         clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
         clonedPath.setAttribute("stroke", "transparent");
         clonedPath.setAttribute("fill", fill ? "transparent" : "none");
-        parent.append(clonedPath);
+        clonedSvg.append(clonedPath);
+        return [svg, clonedSvg];
     }
     drawText(value) {
         throw new Error("Method is not implemented");
@@ -7640,12 +7651,12 @@ class AppearanceStreamRenderer {
             const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
             i = parser.skipEmpty(endIndex + 1);
         }
-        return g;
+        return [g];
     }
-    drawGroupAsync(stream) {
+    drawStreamAsync(stream) {
         return __awaiter$8(this, void 0, void 0, function* () {
-            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
             const parser = new DataParser(stream.decodedStreamData);
+            const svgElements = [];
             const lastCoord = new Vec2();
             let lastOperator;
             let d = "";
@@ -7813,37 +7824,37 @@ class AppearanceStreamRenderer {
                         d += " Z";
                         break;
                     case "S":
-                        this.drawPath(g, d, true, false);
+                        svgElements.push(...this.drawPath(d, true, false));
                         d = "";
                         break;
                     case "s":
-                        this.drawPath(g, d, true, false, true);
+                        svgElements.push(...this.drawPath(d, true, false, true));
                         d = "";
                         break;
                     case "F":
                     case "f":
-                        this.drawPath(g, d, false, true, true);
+                        svgElements.push(...this.drawPath(d, false, true, true));
                         d = "";
                         break;
                     case "F*":
                     case "f*":
-                        this.drawPath(g, d, false, true, true, true);
+                        svgElements.push(...this.drawPath(d, false, true, true, true));
                         d = "";
                         break;
                     case "B":
-                        this.drawPath(g, d, true, true, false, false);
+                        svgElements.push(...this.drawPath(d, true, true, false, false));
                         d = "";
                         break;
                     case "B*":
-                        this.drawPath(g, d, true, true, false, true);
+                        svgElements.push(...this.drawPath(d, true, true, false, true));
                         d = "";
                         break;
                     case "b":
-                        this.drawPath(g, d, true, true, true, false);
+                        svgElements.push(...this.drawPath(d, true, true, true, false));
                         d = "";
                         break;
                     case "b*":
-                        this.drawPath(g, d, true, true, true, true);
+                        svgElements.push(...this.drawPath(d, true, true, true, true));
                         d = "";
                         break;
                     case "n":
@@ -7875,7 +7886,7 @@ class AppearanceStreamRenderer {
                         });
                         if (textObjectEnd) {
                             const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
-                            g.append(textGroup);
+                            svgElements.push(...textGroup);
                             i = parser.skipEmpty(textObjectEnd.end + 1);
                             break;
                         }
@@ -7890,8 +7901,8 @@ class AppearanceStreamRenderer {
                             const innerMat = new Mat3().set(im0, im1, 0, im3, im4, 0, im6, im7, 1);
                             this.pushState();
                             this.state.matrix = innerMat.multiply(this.state.matrix);
-                            const subGroup = yield this.drawGroupAsync(innerStream);
-                            g.append(subGroup);
+                            const innerStreamSvgElements = yield this.drawStreamAsync(innerStream);
+                            svgElements.push(...innerStreamSvgElements);
                             this.popState();
                         }
                         else if (innerStream instanceof ImageStream) {
@@ -7913,8 +7924,10 @@ class AppearanceStreamRenderer {
                                 .applyScaling(1 / innerStream.Width, 1 / innerStream.Height)
                                 .multiply(this.state.matrix);
                             image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
-                            image.setAttribute("clipPath", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
-                            g.append(image);
+                            const imageWrapper = this.createSvgElement();
+                            imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+                            imageWrapper.append(image);
+                            svgElements.push(imageWrapper);
                         }
                         else {
                             throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
@@ -7925,7 +7938,7 @@ class AppearanceStreamRenderer {
                 }
                 lastOperator = operator;
             }
-            return g;
+            return svgElements;
         });
     }
 }
@@ -8620,7 +8633,7 @@ class AnnotationDict extends PdfDict {
         this._edited = true;
     }
     get lastRenderResult() {
-        return this._lastRenderResult;
+        return this._svg;
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -8695,12 +8708,7 @@ class AnnotationDict extends PdfDict {
                 this._svg = this.renderMainElement();
             }
             yield this.updateRenderAsync();
-            const renderResult = {
-                svg: this._svg,
-                clipPaths: this._svgClipPaths,
-            };
-            this._lastRenderResult = renderResult;
-            return renderResult;
+            return this._svg;
         });
     }
     moveTo(pageX, pageY) {
@@ -9135,16 +9143,14 @@ class AnnotationDict extends PdfDict {
                 return;
             }
             this._svg.innerHTML = "";
-            const contentResult = this.renderContent() || (yield this.renderApAsync());
-            if (!contentResult) {
+            const content = this.renderContent() || (yield this.renderApAsync());
+            if (!content) {
                 this._svgBox = null;
                 this._svgContent = null;
                 this._svgContentCopy = null;
                 this._svgContentCopyUse = null;
-                this._svgClipPaths = null;
                 return;
             }
-            const content = contentResult.svg;
             content.id = this._svgId;
             content.classList.add("svg-annotation-content");
             content.setAttribute("data-annotation-name", this.$name);
@@ -9152,12 +9158,11 @@ class AnnotationDict extends PdfDict {
             const rect = this.renderRect();
             const box = this.renderBox();
             const handles = this.renderHandles();
-            this._svg.append(rect, box, contentResult.svg, ...handles);
+            this._svg.append(rect, box, content, ...handles);
             this._svgBox = box;
             this._svgContent = content;
             this._svgContentCopy = copy;
             this._svgContentCopyUse = use;
-            this._svgClipPaths = contentResult.clipPaths;
         });
     }
 }
@@ -17540,16 +17545,16 @@ class DocumentService {
         }
     }
     setSelectedAnnotation(annotation) {
-        var _a, _b;
+        var _a;
         if (annotation === this._selectedAnnotation) {
             return;
         }
         if (this._selectedAnnotation) {
             this._selectedAnnotation.$translationEnabled = false;
-            const oldSelectedSvg = (_b = (_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.lastRenderResult) === null || _b === void 0 ? void 0 : _b.svg;
+            const oldSelectedSvg = (_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.lastRenderResult;
             oldSelectedSvg === null || oldSelectedSvg === void 0 ? void 0 : oldSelectedSvg.classList.remove("selected");
         }
-        const newSelectedSvg = annotation === null || annotation === void 0 ? void 0 : annotation.lastRenderResult.svg;
+        const newSelectedSvg = annotation === null || annotation === void 0 ? void 0 : annotation.lastRenderResult;
         if (!newSelectedSvg) {
             this._selectedAnnotation = null;
         }
@@ -17567,16 +17572,16 @@ class DocumentService {
         return this._selectedAnnotation;
     }
     setFocusedAnnotation(annotation) {
-        var _a, _b;
+        var _a;
         if (annotation === this._focusedAnnotation) {
             return;
         }
         if (this._focusedAnnotation) {
             this._focusedAnnotation.$translationEnabled = false;
-            const oldFocusedSvg = (_b = (_a = this._focusedAnnotation) === null || _a === void 0 ? void 0 : _a.lastRenderResult) === null || _b === void 0 ? void 0 : _b.svg;
+            const oldFocusedSvg = (_a = this._focusedAnnotation) === null || _a === void 0 ? void 0 : _a.lastRenderResult;
             oldFocusedSvg === null || oldFocusedSvg === void 0 ? void 0 : oldFocusedSvg.classList.remove("focused");
         }
-        const newFocusedSvg = annotation === null || annotation === void 0 ? void 0 : annotation.lastRenderResult.svg;
+        const newFocusedSvg = annotation === null || annotation === void 0 ? void 0 : annotation.lastRenderResult;
         if (!newFocusedSvg) {
             this._focusedAnnotation = null;
         }
@@ -19362,8 +19367,7 @@ class StampAnnotator extends Annotator {
             const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
             const renderResult = yield stamp.renderAsync();
             this._svgGroup.innerHTML = "";
-            this._svgGroup.append(...renderResult.clipPaths || []);
-            this._svgGroup.append(renderResult.svg);
+            this._svgGroup.append(renderResult);
             this._tempAnnotation = stamp;
         });
     }
@@ -19837,8 +19841,7 @@ class TextNoteAnnotator extends TextAnnotator {
             const note = TextAnnotation.createStandard(this._docService.userName, this._color);
             const renderResult = yield note.renderAsync();
             this._svgGroup.innerHTML = "";
-            this._svgGroup.append(...renderResult.clipPaths || []);
-            this._svgGroup.append(renderResult.svg);
+            this._svgGroup.append(renderResult);
             this._tempAnnotation = note;
         });
     }
@@ -20672,13 +20675,12 @@ class PageAnnotationView {
         this._svg.setAttribute("data-page-id", pageId + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
         this._svg.setAttribute("transform", "scale(1, -1)");
+        this._container.append(this._svg);
         this._svg.addEventListener("pointerdown", (e) => {
             if (e.target === this._svg) {
                 docService.setSelectedAnnotation(null);
             }
         });
-        this._defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-        this._container.append(this._svg);
     }
     destroy() {
         this.remove();
@@ -20735,11 +20737,8 @@ class PageAnnotationView {
                     continue;
                 }
                 this._rendered.add(annotation);
-                const { svg, clipPaths } = renderResult;
-                this._svg.append(svg);
-                clipPaths === null || clipPaths === void 0 ? void 0 : clipPaths.forEach(x => this._defs.append(x));
+                this._svg.append(renderResult);
             }
-            this._svg.append(this._defs);
             return true;
         });
     }

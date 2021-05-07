@@ -1,4 +1,4 @@
-import { Hextuple, Quadruple, RenderToSvgResult } from "../../../common/types";
+import { Hextuple, Quadruple } from "../../../common/types";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../common/math";
 import { BBox } from "../../../common/drawing";
 import { getRandomUuid } from "../../../common/uuid";
@@ -176,12 +176,9 @@ export abstract class AnnotationDict extends PdfDict {
   protected _svgContentCopy: SVGGraphicsElement;
   /**use element attached to the copy of the rendered annotation content */
   protected _svgContentCopyUse: SVGUseElement;
-  /**rendered svg clip paths */
-  protected _svgClipPaths: SVGClipPathElement[];
 
-  protected _lastRenderResult: RenderToSvgResult;
-  get lastRenderResult(): RenderToSvgResult {
-    return this._lastRenderResult;
+  get lastRenderResult(): SVGGraphicsElement {
+    return this._svg;
   }
   //#endregion
 
@@ -276,19 +273,14 @@ export abstract class AnnotationDict extends PdfDict {
    * render current annotation to an svg element
    * @returns 
    */
-  async renderAsync(): Promise<RenderToSvgResult> {
+  async renderAsync(): Promise<SVGGraphicsElement> {
     if (!this._svg) {
       this._svg = this.renderMainElement();
     }
 
     await this.updateRenderAsync(); 
 
-    const renderResult: RenderToSvgResult = {
-      svg: this._svg,
-      clipPaths: this._svgClipPaths,
-    };
-    this._lastRenderResult = renderResult;
-    return renderResult;
+    return this._svg;
   }
 
   /**
@@ -774,7 +766,7 @@ export abstract class AnnotationDict extends PdfDict {
    * default annotation content renderer using the appearance stream 
    * (common for all annotation types)
    */
-  protected async renderApAsync(): Promise<RenderToSvgResult> {
+  protected async renderApAsync(): Promise<SVGGraphicsElement> {
     const stream = this.apStream;
     if (stream) {
       try {
@@ -792,7 +784,7 @@ export abstract class AnnotationDict extends PdfDict {
    * override in subclass to apply a custom annotation content renderer
    * (if implemented, takes precedence over the 'renderApAsync' method)
    */
-  protected renderContent(): RenderToSvgResult {
+  protected renderContent(): SVGGraphicsElement {
     return null;
   }   
   //#endregion
@@ -869,16 +861,14 @@ export abstract class AnnotationDict extends PdfDict {
 
     this._svg.innerHTML = "";
 
-    const contentResult = this.renderContent() || await this.renderApAsync();
-    if (!contentResult) { 
+    const content = this.renderContent() || await this.renderApAsync();
+    if (!content) { 
       this._svgBox = null;
       this._svgContent = null;
       this._svgContentCopy = null;
       this._svgContentCopyUse = null;
-      this._svgClipPaths = null;
       return;
     }  
-    const content = contentResult.svg;
     content.id = this._svgId;
     content.classList.add("svg-annotation-content");
     content.setAttribute("data-annotation-name", this.$name); 
@@ -888,13 +878,12 @@ export abstract class AnnotationDict extends PdfDict {
     const box = this.renderBox();
     const handles = this.renderHandles(); 
 
-    this._svg.append(rect, box, contentResult.svg, ...handles);  
+    this._svg.append(rect, box, content, ...handles);  
 
     this._svgBox = box;
     this._svgContent = content;
     this._svgContentCopy = copy;
     this._svgContentCopyUse = use; 
-    this._svgClipPaths = contentResult.clipPaths;
   }
 
   //#endregion
