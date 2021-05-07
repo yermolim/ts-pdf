@@ -248,14 +248,15 @@ export class AppearanceStreamRenderer {
 
     parent.append(path);
     
-    if (!stroke || this.state.strokeWidth < selectionStrokeWidth) {
-      // create a transparent path copy with large stroke width to simplify user interaction
-      const clonedPath = path.cloneNode(true) as SVGPathElement;
-      clonedPath.setAttribute("stroke-width", selectionStrokeWidth + "");
-      clonedPath.setAttribute("stroke", "transparent");
-      clonedPath.setAttribute("fill", "none");
-      parent.append(clonedPath);
-    }
+    // create a transparent path copy with large stroke width to simplify user interaction
+    const clonedPath = path.cloneNode(true) as SVGPathElement;
+    const clonedPathStrokeWidth = this.state.strokeWidth < selectionStrokeWidth
+      ? selectionStrokeWidth
+      : this.state.strokeWidth;
+    clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+    clonedPath.setAttribute("stroke", "transparent");
+    clonedPath.setAttribute("fill", fill ? "transparent" : "none");
+    parent.append(clonedPath);
   }
 
   protected drawText(value: string): SVGTextElement {

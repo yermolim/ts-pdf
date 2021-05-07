@@ -534,6 +534,13 @@ export const styles = /*html*/`
   .mode-hand .page-annotations {
     pointer-events: none;
   }
+  .page-annotations svg {    
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
 
   .full-size-dialog {
     position: absolute;

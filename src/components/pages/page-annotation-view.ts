@@ -31,7 +31,6 @@ export class PageAnnotationView {
     this._container.classList.add("page-annotations");
 
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    this._svg.classList.add("stretch");
     this._svg.setAttribute("data-page-id", pageId + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     this._svg.setAttribute("transform", "scale(1, -1)"); // flip Y to match PDF coords where 0,0 is the lower-left corner

@@ -858,6 +858,13 @@ const styles = `
   .mode-hand .page-annotations {
     pointer-events: none;
   }
+  .page-annotations svg {    
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
 
   .full-size-dialog {
     position: absolute;
@@ -7614,13 +7621,14 @@ class AppearanceStreamRenderer {
             path.setAttribute("stroke", "none");
         }
         parent.append(path);
-        if (!stroke || this.state.strokeWidth < selectionStrokeWidth) {
-            const clonedPath = path.cloneNode(true);
-            clonedPath.setAttribute("stroke-width", selectionStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", "none");
-            parent.append(clonedPath);
-        }
+        const clonedPath = path.cloneNode(true);
+        const clonedPathStrokeWidth = this.state.strokeWidth < selectionStrokeWidth
+            ? selectionStrokeWidth
+            : this.state.strokeWidth;
+        clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+        clonedPath.setAttribute("stroke", "transparent");
+        clonedPath.setAttribute("fill", fill ? "transparent" : "none");
+        parent.append(clonedPath);
     }
     drawText(value) {
         throw new Error("Method is not implemented");
@@ -20661,7 +20669,6 @@ class PageAnnotationView {
         this._container = document.createElement("div");
         this._container.classList.add("page-annotations");
         this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        this._svg.classList.add("stretch");
         this._svg.setAttribute("data-page-id", pageId + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
         this._svg.setAttribute("transform", "scale(1, -1)");
