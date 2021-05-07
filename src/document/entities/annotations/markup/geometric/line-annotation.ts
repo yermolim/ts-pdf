@@ -618,9 +618,15 @@ export class LineAnnotation extends GeometricAnnotation {
         streamTextData += `\n${apStart.x} ${apStart.y - Math.abs(this.LL)} m`;
         streamTextData += `\n${apStart.x} ${apStart.y + this.LLE} l`;
         streamTextData += "\nS";
+        streamTextData += `\n${apEnd.x} ${apEnd.y - Math.abs(this.LL)} m`;
+        streamTextData += `\n${apEnd.x} ${apEnd.y + this.LLE} l`;
+        streamTextData += "\nS";
       } else {
         streamTextData += `\n${apStart.x} ${apStart.y + Math.abs(this.LL)} m`;
         streamTextData += `\n${apStart.x} ${apStart.y - this.LLE} l`;
+        streamTextData += "\nS";
+        streamTextData += `\n${apEnd.x} ${apEnd.y + Math.abs(this.LL)} m`;
+        streamTextData += `\n${apEnd.x} ${apEnd.y - this.LLE} l`;
         streamTextData += "\nS";
       }
     }
