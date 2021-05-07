@@ -7291,7 +7291,7 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
     if (isNaN(maxArcSize) || maxArcSize <= 0) {
         throw new Error(`Invalid maximal arc size ${maxArcSize}`);
     }
-    const start = polylinePoints[0].clone();
+    const start = polylinePoints[0].clone().truncate(2);
     const curves = [];
     const zeroVec = new Vec2();
     const lengthVec = new Vec2();
@@ -7321,9 +7321,9 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
             arcStart = j * arcSize;
             arcEnd = (j + 1) * arcSize;
             const curve = [
-                new Vec2(arcStart, -halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, -halfArcSize).applyMat3(matrix),
-                new Vec2(arcEnd, 0).applyMat3(matrix),
+                new Vec2(arcStart, -halfArcSize).applyMat3(matrix).truncate(2),
+                new Vec2(arcEnd, -halfArcSize).applyMat3(matrix).truncate(2),
+                new Vec2(arcEnd, 0).applyMat3(matrix).truncate(2),
             ];
             curves.push(curve);
         }
@@ -7344,7 +7344,7 @@ function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
     const next = new Vec2();
     let angle = 0;
     let distance;
-    points.push(current.clone().applyMat3(matrix));
+    points.push(current.clone().applyMat3(matrix).truncate(2));
     for (let i = 0; i < segmentsNumber; i++) {
         distance = 0;
         while (distance < maxSegmentLength) {
@@ -7353,7 +7353,7 @@ function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
             distance += getDistance(current.x, current.y, next.x, next.y);
             current.setFromVec2(next);
         }
-        points.push(current.clone().applyMat3(matrix));
+        points.push(current.clone().applyMat3(matrix).truncate(2));
     }
     const curveData = buildCloudCurveFromPolyline(points, maxArcSize);
     return curveData;
@@ -7377,7 +7377,7 @@ function buildSquigglyLine(start, end, maxWaveSize) {
     const waveSize = lineLength / waveCount;
     const halfWaveSize = waveSize / 2;
     for (let i = 0; i < waveCount; i++) {
-        resultPoints.push(new Vec2(i * waveSize + halfWaveSize, -halfWaveSize).applyMat3(matrix), new Vec2((i + 1) * waveSize, 0).applyMat3(matrix));
+        resultPoints.push(new Vec2(i * waveSize + halfWaveSize, -halfWaveSize).applyMat3(matrix).truncate(2), new Vec2((i + 1) * waveSize, 0).applyMat3(matrix).truncate(2));
     }
     return resultPoints;
 }

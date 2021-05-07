@@ -23,7 +23,7 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
     throw new Error(`Invalid maximal arc size ${maxArcSize}`);
   }
   
-  const start = polylinePoints[0].clone();
+  const start = polylinePoints[0].clone().truncate(2);
   const curves: CurveData[] = [];
 
   const zeroVec = new Vec2();
@@ -58,9 +58,9 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
       arcStart = j * arcSize;
       arcEnd = (j + 1) * arcSize;
       const curve: CurveData = [
-        new Vec2(arcStart, -halfArcSize).applyMat3(matrix), // curve control 1
-        new Vec2(arcEnd, -halfArcSize).applyMat3(matrix), // curve control 2
-        new Vec2(arcEnd, 0).applyMat3(matrix), // curve end
+        new Vec2(arcStart, -halfArcSize).applyMat3(matrix).truncate(2), // curve control 1
+        new Vec2(arcEnd, -halfArcSize).applyMat3(matrix).truncate(2), // curve control 2
+        new Vec2(arcEnd, 0).applyMat3(matrix).truncate(2), // curve end
       ];
       curves.push(curve);
     }
@@ -94,7 +94,7 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, maxArcSize: n
   let angle = 0;
   let distance: number;
   // push start point
-  points.push(current.clone().applyMat3(matrix));
+  points.push(current.clone().applyMat3(matrix).truncate(2));
   for (let i = 0; i < segmentsNumber; i++) {
     distance = 0;
     while (distance < maxSegmentLength) {
@@ -103,7 +103,7 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, maxArcSize: n
       distance += getDistance(current.x, current.y, next.x, next.y);
       current.setFromVec2(next);
     }
-    points.push(current.clone().applyMat3(matrix));
+    points.push(current.clone().applyMat3(matrix).truncate(2));
   }
 
   const curveData = buildCloudCurveFromPolyline(points, maxArcSize);    
@@ -137,8 +137,8 @@ export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): 
   const halfWaveSize = waveSize / 2;
   for (let i = 0; i < waveCount; i++) {
     resultPoints.push(
-      new Vec2(i * waveSize + halfWaveSize, -halfWaveSize).applyMat3(matrix), // top point
-      new Vec2((i + 1) * waveSize, 0).applyMat3(matrix), // bottom point
+      new Vec2(i * waveSize + halfWaveSize, -halfWaveSize).applyMat3(matrix).truncate(2), // top point
+      new Vec2((i + 1) * waveSize, 0).applyMat3(matrix).truncate(2), // bottom point
     );
   }
 
