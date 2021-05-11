@@ -83,7 +83,7 @@ export const styles = /*html*/`
     height: 50px;
     background: var(--tspdf-color-primary-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 3;
+    z-index: 4;
     transition: height 0.25s ease-out 0.1s;
   }
   .hide-panels #top-panel {
@@ -105,7 +105,7 @@ export const styles = /*html*/`
     height: 50px;  
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 3;
+    z-index: 4;
     transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
   }
   .hide-panels #bottom-panel {
@@ -346,7 +346,7 @@ export const styles = /*html*/`
     padding-top: 0px;
     background: var(--tspdf-color-secondary-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 1;
+    z-index: 3;
     transition: padding-top 0.25s ease-out 0.1s, top 0.25s ease-out 0.1s, width 0.25s ease-out;
   } 
   .hide-panels #previewer {
@@ -420,7 +420,7 @@ export const styles = /*html*/`
     left: 0; 
     margin-top: 0;
     transition: margin-top 0.25s ease-out 0.1s;
-    z-index: 2;
+    z-index: 3;
   }
   .hide-panels #annotation-overlay-container {
     margin-top: 50px;
@@ -545,6 +545,7 @@ export const styles = /*html*/`
     margin: 0;
     padding: 0;
     overflow: hidden;
+    z-index: 1;
   }
   .mode-text-markup .page-annotations,
   .mode-text .page-annotations,
@@ -561,7 +562,7 @@ export const styles = /*html*/`
     height: 100%;
   }
   .page-annotations-controls {
-    z-index: 1;
+    z-index: 2;
   }
   .annotation-content {
     pointer-events: none;
@@ -574,7 +575,7 @@ export const styles = /*html*/`
     width: 100%;
     height: 100%;
     background: var(--tspdf-color-secondary-tr-final);
-    z-index: 2;
+    z-index: 10;
   }
 
   #password-dialog .form {
