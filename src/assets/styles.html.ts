@@ -12,7 +12,7 @@ export const styles = /*html*/`
     --tspdf-color-bg-final: var(--tspdf-color-bg, rgba(128,128,128,1));
     --tspdf-color-fg-primary-final: var(--tspdf-color-fg-primary, rgba(255,255,255,1));
     --tspdf-color-fg-secondary-final: var(--tspdf-color-fg-secondary, rgba(187,187,187,1));
-    --tspdf-color-fg-accent-final: var(--tspdf-color-fg-accent, rgba(255,255,255,1));
+    --tspdf-color-fg-accent-final: var(--tspdf-color-fg-accent, rgba(255,204,0,1));
     --tspdf-color-text-selection-final: var(--tspdf-color-text-selection, rgba(104,104,128,0.3));
   }
 
@@ -99,7 +99,7 @@ export const styles = /*html*/`
     align-items: center;
     flex-grow: 0;
     flex-shrink: 0;
-    left: calc(50% - 160px);
+    left: calc(50% - 200px);
     bottom: 20px;
     width: 400px;
     height: 50px;  
@@ -113,7 +113,8 @@ export const styles = /*html*/`
     height: 0;
     transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
   }
-  .compact #bottom-panel {    
+  .compact #bottom-panel {  
+    left: calc(50% - 160px);  
     width: 320px;
   }
   .compact #zoom-fit-viewer,
@@ -537,15 +538,8 @@ export const styles = /*html*/`
   }
   
   .page-annotations {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    z-index: 1;
+    width: 0;
+    height: 0;
   }
   .mode-text-markup .page-annotations,
   .mode-text .page-annotations,
@@ -568,14 +562,13 @@ export const styles = /*html*/`
     pointer-events: none;
   }
 
-  .full-size-dialog {
+  .full-size-overlay {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     background: var(--tspdf-color-secondary-tr-final);
-    z-index: 10;
   }
 
   #password-dialog .form {
@@ -592,7 +585,6 @@ export const styles = /*html*/`
     height: 50px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 10;
   }
   #password-dialog input {
     width: 220px;
@@ -635,7 +627,6 @@ export const styles = /*html*/`
     padding: 5px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 9;
   }
   #text-dialog textarea {
     height: 100%;
@@ -681,7 +672,7 @@ export const styles = /*html*/`
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
-    stroke: var(--tspdf-color-fg-accent);
+    stroke: var(--tspdf-color-fg-accent-final);
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle-scale,
@@ -797,6 +788,199 @@ export const styles = /*html*/`
   }
   .disabled #button-open-file img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
+  }
+
+  .loader {
+    position: absolute;
+    left: calc(50% - 30px);
+    top: calc(50% - 30px);
+    width: 60px;
+    height: 60px;
+  }
+  .loader div {   
+    position: absolute; 
+    width: 20px;
+    height: 20px;
+    margin: 5px;
+    border-radius: 5px;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .loader div:nth-child(1) {
+    animation-name: loaderone;
+    background-color: var(--tspdf-color-accent-final);
+  }
+  .loader div:nth-child(2) {
+    animation-name: loadertwo;
+    background-color: var(--tspdf-color-fg-primary-final);  
+  }
+  .loader div:nth-child(3) {  
+    animation-name: loaderthree;
+    background-color: var(--tspdf-color-fg-secondary-final);  
+  }
+
+  @keyframes loaderone {
+    from {
+      left: 0;
+      top: 0;
+    }
+    8.3% {
+      left: 0;
+      top: 0;
+    }
+    16.7% {
+      left: 0;
+      top: 0;
+    }
+    25% { 
+      left: 30px;
+      top: 0px; 
+    }
+    33.3% {
+      left: 30px;
+      top: 0px;        
+    }
+    41.7% {
+      left: 30px;
+      top: 0px;        
+    }
+    50% {
+      left: 30px;
+      top: 30px;         
+    }
+    58.3% {
+      left: 30px;
+      top: 30px;       
+    }
+    66.7% {      
+      left: 30px;
+      top: 30px;   
+    }
+    75% {
+      left: 0;
+      top: 30px;
+    }
+    83.3% {
+      left: 0;
+      top: 30px;
+    }
+    91.7% {
+      left: 0;
+      top: 30px;
+    }
+    to {   
+      left: 0;
+      top: 0;   
+    }
+  }
+  @keyframes loadertwo {
+    from {
+      left: 30px;
+      top: 0px;
+    }
+    8.3% {
+      left: 30px;
+      top: 0px;
+    }
+    16.7% {
+      left: 30px;
+      top: 30px;
+    }
+    25% { 
+      left: 30px;
+      top: 30px;
+    }
+    33.3% {
+      left: 30px;
+      top: 30px;
+    }
+    41.7% {
+      left: 0;
+      top: 30px;
+    }
+    50% {
+      left: 0;
+      top: 30px;
+    }
+    58.3% {
+      left: 0;
+      top: 30px;
+    }
+    66.7% {
+      left: 0;
+      top: 0;
+    }
+    75% {
+      left: 0;
+      top: 0;
+    }
+    83.3% {
+      left: 0;
+      top: 0;
+    }
+    91.7% {
+      left: 30px;
+      top: 0px;
+    }
+    to {
+      left: 30px;
+      top: 0px;
+    }
+  }
+  @keyframes loaderthree {
+    from {
+      left: 30px;
+      top: 30px;
+    }
+    8.3% {
+      left: 0;
+      top: 30px;
+    }
+    16.7% {
+      left: 0;
+      top: 30px;
+    }
+    25% { 
+      left: 0;
+      top: 30px;
+    }
+    33.3% {
+      left: 0;
+      top: 0;
+    }
+    41.7% {
+      left: 0;
+      top: 0;
+    }
+    50% {
+      left: 0;
+      top: 0;
+    }
+    58.3% {
+      left: 30px;
+      top: 0; 
+    }
+    66.7% {
+      left: 30px;
+      top: 0;
+    }
+    75% {
+      left: 30px;
+      top: 0;
+    }
+    83.3% {
+      left: 30px;
+      top: 30px;
+    }
+    91.7% {
+      left: 30px;
+      top: 30px;
+    }
+    to {
+      left: 30px;
+      top: 30px; 
+    }
   }
 </style>
 `;

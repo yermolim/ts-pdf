@@ -15,6 +15,7 @@ import { AnnotationService } from "./services/annotation-service";
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
 
+import { Loader } from "./components/loader";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 import { PageView } from "./components/pages/page-view";
@@ -64,9 +65,11 @@ export class TsPdfViewer {
   private readonly _outerContainer: HTMLDivElement;
   private readonly _shadowRoot: ShadowRoot;
   private readonly _mainContainer: HTMLDivElement;
-
+  
   private readonly _eventService: ElementEventService;
   private readonly _pageService: PageService;
+
+  private readonly _loader: Loader;
   private readonly _viewer: Viewer;
   private readonly _previewer: Previewer;  
 
@@ -129,6 +132,8 @@ export class TsPdfViewer {
     this._eventService = new ElementEventService(this._mainContainer);
     this._pageService = new PageService(this._eventService,
       {visibleAdjPages: visibleAdjPages});
+
+    this._loader = new Loader();
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
       {canvasWidth: previewWidth});
     this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
@@ -189,6 +194,8 @@ export class TsPdfViewer {
   }
   
   async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
+    this._loader.show(this._mainContainer);
+    
     // close the currently opened file if present
     await this.closePdfAsync();
 
@@ -211,17 +218,19 @@ export class TsPdfViewer {
         data = new Uint8Array(buffer);
       }
     } catch (e) {
+      this._loader.hide();
       throw new Error(`Cannot load file data: ${e.message}`);
     }
 
     // create DocumentData
     const docService = new DocumentService(this._eventService, data, this._userName);
     let password: string;
-    while (true) {      
+    while (true) {
       const authenticated = docService.tryAuthenticate(password);
-      if (!authenticated) {        
+      if (!authenticated) {
         password = await this.showPasswordDialogAsync();
-        if (password === null) {          
+        if (password === null) {
+          this._loader.hide();
           throw new Error("File loading cancelled: authentication aborted");
         }
         continue;
@@ -246,6 +255,7 @@ export class TsPdfViewer {
       doc = await this._pdfLoadingTask.promise;    
       this._pdfLoadingTask = null;
     } catch (e) {
+      this._loader.hide();
       throw new Error(`Cannot open PDF: ${e.message}`);
     }
 
@@ -261,6 +271,8 @@ export class TsPdfViewer {
     this.setAnnotationMode("select");
 
     this._mainContainer.classList.remove("disabled");
+    
+    this._loader.hide();
   }
 
   async closePdfAsync(): Promise<void> {
@@ -836,7 +848,8 @@ export class TsPdfViewer {
 
       const dialogContainer = document.createElement("div");
       dialogContainer.id = "password-dialog";
-      dialogContainer.classList.add("full-size-dialog");
+      dialogContainer.classList.add("full-size-overlay");
+      dialogContainer.style.zIndex = "10";
       dialogContainer.innerHTML = passwordDialogHtml;
       this._mainContainer.append(dialogContainer);
 

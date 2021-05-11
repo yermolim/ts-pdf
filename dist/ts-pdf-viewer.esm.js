@@ -336,6 +336,13 @@ const textDialogHtml = `
       </div>
     </div>
 `;
+const loaderHtml = `
+    <div class="loader">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+`;
 
 const styles = `
 <style>
@@ -349,7 +356,7 @@ const styles = `
     --tspdf-color-bg-final: var(--tspdf-color-bg, rgba(128,128,128,1));
     --tspdf-color-fg-primary-final: var(--tspdf-color-fg-primary, rgba(255,255,255,1));
     --tspdf-color-fg-secondary-final: var(--tspdf-color-fg-secondary, rgba(187,187,187,1));
-    --tspdf-color-fg-accent-final: var(--tspdf-color-fg-accent, rgba(255,255,255,1));
+    --tspdf-color-fg-accent-final: var(--tspdf-color-fg-accent, rgba(255,204,0,1));
     --tspdf-color-text-selection-final: var(--tspdf-color-text-selection, rgba(104,104,128,0.3));
   }
 
@@ -436,7 +443,7 @@ const styles = `
     align-items: center;
     flex-grow: 0;
     flex-shrink: 0;
-    left: calc(50% - 160px);
+    left: calc(50% - 200px);
     bottom: 20px;
     width: 400px;
     height: 50px;  
@@ -450,7 +457,8 @@ const styles = `
     height: 0;
     transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
   }
-  .compact #bottom-panel {    
+  .compact #bottom-panel {  
+    left: calc(50% - 160px);  
     width: 320px;
   }
   .compact #zoom-fit-viewer,
@@ -874,15 +882,8 @@ const styles = `
   }
   
   .page-annotations {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    z-index: 1;
+    width: 0;
+    height: 0;
   }
   .mode-text-markup .page-annotations,
   .mode-text .page-annotations,
@@ -905,14 +906,13 @@ const styles = `
     pointer-events: none;
   }
 
-  .full-size-dialog {
+  .full-size-overlay {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
     background: var(--tspdf-color-secondary-tr-final);
-    z-index: 10;
   }
 
   #password-dialog .form {
@@ -929,7 +929,6 @@ const styles = `
     height: 50px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 10;
   }
   #password-dialog input {
     width: 220px;
@@ -972,7 +971,6 @@ const styles = `
     padding: 5px;
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 9;
   }
   #text-dialog textarea {
     height: 100%;
@@ -1018,7 +1016,7 @@ const styles = `
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
-    stroke: var(--tspdf-color-fg-accent);
+    stroke: var(--tspdf-color-fg-accent-final);
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle-scale,
@@ -1134,6 +1132,199 @@ const styles = `
   }
   .disabled #button-open-file img {
     filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
+  }
+
+  .loader {
+    position: absolute;
+    left: calc(50% - 30px);
+    top: calc(50% - 30px);
+    width: 60px;
+    height: 60px;
+  }
+  .loader div {   
+    position: absolute; 
+    width: 20px;
+    height: 20px;
+    margin: 5px;
+    border-radius: 5px;
+    animation-duration: 3s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+  .loader div:nth-child(1) {
+    animation-name: loaderone;
+    background-color: var(--tspdf-color-accent-final);
+  }
+  .loader div:nth-child(2) {
+    animation-name: loadertwo;
+    background-color: var(--tspdf-color-fg-primary-final);  
+  }
+  .loader div:nth-child(3) {  
+    animation-name: loaderthree;
+    background-color: var(--tspdf-color-fg-secondary-final);  
+  }
+
+  @keyframes loaderone {
+    from {
+      left: 0;
+      top: 0;
+    }
+    8.3% {
+      left: 0;
+      top: 0;
+    }
+    16.7% {
+      left: 0;
+      top: 0;
+    }
+    25% { 
+      left: 30px;
+      top: 0px; 
+    }
+    33.3% {
+      left: 30px;
+      top: 0px;        
+    }
+    41.7% {
+      left: 30px;
+      top: 0px;        
+    }
+    50% {
+      left: 30px;
+      top: 30px;         
+    }
+    58.3% {
+      left: 30px;
+      top: 30px;       
+    }
+    66.7% {      
+      left: 30px;
+      top: 30px;   
+    }
+    75% {
+      left: 0;
+      top: 30px;
+    }
+    83.3% {
+      left: 0;
+      top: 30px;
+    }
+    91.7% {
+      left: 0;
+      top: 30px;
+    }
+    to {   
+      left: 0;
+      top: 0;   
+    }
+  }
+  @keyframes loadertwo {
+    from {
+      left: 30px;
+      top: 0px;
+    }
+    8.3% {
+      left: 30px;
+      top: 0px;
+    }
+    16.7% {
+      left: 30px;
+      top: 30px;
+    }
+    25% { 
+      left: 30px;
+      top: 30px;
+    }
+    33.3% {
+      left: 30px;
+      top: 30px;
+    }
+    41.7% {
+      left: 0;
+      top: 30px;
+    }
+    50% {
+      left: 0;
+      top: 30px;
+    }
+    58.3% {
+      left: 0;
+      top: 30px;
+    }
+    66.7% {
+      left: 0;
+      top: 0;
+    }
+    75% {
+      left: 0;
+      top: 0;
+    }
+    83.3% {
+      left: 0;
+      top: 0;
+    }
+    91.7% {
+      left: 30px;
+      top: 0px;
+    }
+    to {
+      left: 30px;
+      top: 0px;
+    }
+  }
+  @keyframes loaderthree {
+    from {
+      left: 30px;
+      top: 30px;
+    }
+    8.3% {
+      left: 0;
+      top: 30px;
+    }
+    16.7% {
+      left: 0;
+      top: 30px;
+    }
+    25% { 
+      left: 0;
+      top: 30px;
+    }
+    33.3% {
+      left: 0;
+      top: 0;
+    }
+    41.7% {
+      left: 0;
+      top: 0;
+    }
+    50% {
+      left: 0;
+      top: 0;
+    }
+    58.3% {
+      left: 30px;
+      top: 0; 
+    }
+    66.7% {
+      left: 30px;
+      top: 0;
+    }
+    75% {
+      left: 30px;
+      top: 0;
+    }
+    83.3% {
+      left: 30px;
+      top: 30px;
+    }
+    91.7% {
+      left: 30px;
+      top: 30px;
+    }
+    to {
+      left: 30px;
+      top: 30px; 
+    }
   }
 </style>
 `;
@@ -20376,6 +20567,30 @@ class AnnotationService {
     }
 }
 
+class Loader {
+    constructor() {
+        const dialogContainer = document.createElement("div");
+        dialogContainer.id = "text-dialog";
+        dialogContainer.classList.add("full-size-overlay");
+        dialogContainer.innerHTML = loaderHtml;
+        this._container = dialogContainer;
+    }
+    show(parent, zIndex = 8) {
+        if (this._isShown || !parent) {
+            return;
+        }
+        this._container.style.zIndex = zIndex + "";
+        this._container.style.top = parent.scrollTop + "px";
+        this._container.style.left = parent.scrollLeft + "px";
+        parent.append(this._container);
+        this._isShown = true;
+    }
+    hide() {
+        this._container.remove();
+        this._isShown = false;
+    }
+}
+
 var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -20549,9 +20764,10 @@ class Viewer {
             }
             const dialogContainer = document.createElement("div");
             dialogContainer.id = "text-dialog";
-            dialogContainer.classList.add("full-size-dialog");
+            dialogContainer.classList.add("full-size-overlay");
             dialogContainer.style.top = this._container.scrollTop + "px";
             dialogContainer.style.left = this._container.scrollLeft + "px";
+            dialogContainer.style.zIndex = "9";
             dialogContainer.innerHTML = textDialogHtml;
             this._container.append(dialogContainer);
             this._container.classList.add("dialog-shown");
@@ -21533,6 +21749,7 @@ class TsPdfViewer {
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         this._eventService = new ElementEventService(this._mainContainer);
         this._pageService = new PageService(this._eventService, { visibleAdjPages: visibleAdjPages });
+        this._loader = new Loader();
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
         this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
         this.initMainContainerEventHandlers();
@@ -21575,6 +21792,7 @@ class TsPdfViewer {
     }
     openPdfAsync(src) {
         return __awaiter(this, void 0, void 0, function* () {
+            this._loader.show(this._mainContainer);
             yield this.closePdfAsync();
             let data;
             let doc;
@@ -21596,6 +21814,7 @@ class TsPdfViewer {
                 }
             }
             catch (e) {
+                this._loader.hide();
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
             const docService = new DocumentService(this._eventService, data, this._userName);
@@ -21605,6 +21824,7 @@ class TsPdfViewer {
                 if (!authenticated) {
                     password = yield this.showPasswordDialogAsync();
                     if (password === null) {
+                        this._loader.hide();
                         throw new Error("File loading cancelled: authentication aborted");
                     }
                     continue;
@@ -21625,6 +21845,7 @@ class TsPdfViewer {
                 this._pdfLoadingTask = null;
             }
             catch (e) {
+                this._loader.hide();
                 throw new Error(`Cannot open PDF: ${e.message}`);
             }
             this._pdfDocument = doc;
@@ -21633,6 +21854,7 @@ class TsPdfViewer {
             this._annotationService = new AnnotationService(this._docService, this._pageService, this._viewer);
             this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
+            this._loader.hide();
         });
     }
     closePdfAsync() {
@@ -21855,7 +22077,8 @@ class TsPdfViewer {
             const passwordPromise = new Promise((resolve, reject) => {
                 const dialogContainer = document.createElement("div");
                 dialogContainer.id = "password-dialog";
-                dialogContainer.classList.add("full-size-dialog");
+                dialogContainer.classList.add("full-size-overlay");
+                dialogContainer.style.zIndex = "10";
                 dialogContainer.innerHTML = passwordDialogHtml;
                 this._mainContainer.append(dialogContainer);
                 let value = "";

@@ -261,3 +261,11 @@ export const textDialogHtml =  /*html*/`
       </div>
     </div>
 `;
+
+export const loaderHtml = /*html*/`
+    <div class="loader">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+`;

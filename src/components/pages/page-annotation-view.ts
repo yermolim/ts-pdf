@@ -81,7 +81,6 @@ export class PageAnnotationView {
   private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
-
     const annotations = this._docService.getPageAnnotations(this._pageId) || [];
 
     for (let i = 0; i < annotations.length || 0; i++) {
