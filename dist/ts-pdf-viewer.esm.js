@@ -20411,6 +20411,8 @@ class Viewer {
             const dialogContainer = document.createElement("div");
             dialogContainer.id = "text-dialog";
             dialogContainer.classList.add("full-size-dialog");
+            dialogContainer.style.top = this._container.scrollTop + "px";
+            dialogContainer.style.left = this._container.scrollLeft + "px";
             dialogContainer.innerHTML = textDialogHtml;
             this._container.append(dialogContainer);
             this._container.classList.add("dialog-shown");
