@@ -4370,6 +4370,77 @@ class DecodeParamsDict extends PdfDict {
     }
 }
 
+class HexString {
+    constructor(literal, hex, bytes) {
+        this._literal = literal;
+        this._hex = hex;
+        this._bytes = bytes;
+    }
+    get literal() {
+        return this._literal;
+    }
+    get hex() {
+        return this._hex.slice();
+    }
+    get bytes() {
+        return this._bytes.slice();
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        const bounds = parser.getHexBounds(start, skipEmpty);
+        if (!bounds) {
+            return null;
+        }
+        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const hex = HexString.fromBytes(bytes);
+        return { value: hex, start: bounds.start, end: bounds.end };
+    }
+    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = hexStringToBytes(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexBytes(hex) {
+        let literal = "";
+        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromString(literal) {
+        const hex = hexStringToBytes(literal);
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(cryptInfo) {
+        return new Uint8Array([
+            ...keywordCodes.STR_HEX_START,
+            ...this._bytes,
+            ...keywordCodes.STR_HEX_END,
+        ]);
+    }
+}
+
 class DecodedStream {
     constructor(encodedStream) {
         this._minBufferLength = 512;
@@ -5290,6 +5361,237 @@ class PdfStream extends PdfObject {
     }
 }
 
+class TrailerStream extends PdfStream {
+    constructor() {
+        super(streamTypes.XREF);
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TrailerStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.Size) {
+            bytes.push(...encoder.encode("/Size "), ...encoder.encode(" " + this.Size));
+        }
+        if (this.Prev) {
+            bytes.push(...encoder.encode("/Prev "), ...encoder.encode(" " + this.Prev));
+        }
+        if (this.Root) {
+            bytes.push(...encoder.encode("/Root "), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
+        }
+        if (this.Encrypt) {
+            bytes.push(...encoder.encode("/Encrypt "), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
+        }
+        if (this.Info) {
+            bytes.push(...encoder.encode("/Info "), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
+        }
+        if (this.ID) {
+            bytes.push(...encoder.encode("/ID "), codes.L_BRACKET, ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
+        }
+        if (this.Index) {
+            bytes.push(...encoder.encode("/Index "), codes.L_BRACKET);
+            this.Index.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.W) {
+            bytes.push(...encoder.encode("/W "), codes.L_BRACKET, ...encoder.encode(this.W[0] + ""), codes.WHITESPACE, ...encoder.encode(this.W[1] + ""), codes.WHITESPACE, ...encoder.encode(this.W[2] + ""), codes.R_BRACKET);
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    parseProps(parseInfo) {
+        var _a;
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = parser.getDictBoundsAt(start);
+        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Size":
+                    case "/Prev":
+                        i = this.parseNumberProp(name, parser, i, false);
+                        break;
+                    case "/Root":
+                    case "/Info":
+                        i = this.parseRefProp(name, parser, i);
+                        break;
+                    case "/Encrypt":
+                        const entryType = parser.getValueTypeAt(i);
+                        if (entryType === valueTypes.REF) {
+                            const encryptId = ObjectId.parseRef(parser, i);
+                            if (encryptId) {
+                                this.Encrypt = encryptId.value;
+                                i = encryptId.end + 1;
+                                break;
+                            }
+                            else {
+                                throw new Error("Can't parse /Encrypt property value");
+                            }
+                        }
+                        throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
+                    case "/ID":
+                        const ids = HexString.parseArray(parser, i);
+                        if (ids) {
+                            this.ID = [ids.value[0], ids.value[1]];
+                            i = ids.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /ID property value");
+                        }
+                        break;
+                    case "/Index":
+                    case "/W":
+                        i = this.parseNumberArrayProp(name, parser, i, false);
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, dictBounds.contentEnd);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
+            this.Index = [0, this.Size];
+        }
+    }
+}
+
+class XRef {
+    constructor(type) {
+        this._type = type;
+    }
+    get type() {
+        return this._type;
+    }
+    get offset() {
+        return this._offset;
+    }
+}
+
+class XRefStream extends XRef {
+    constructor(trailer, offset) {
+        super(xRefTypes.STREAM);
+        this._trailerStream = trailer;
+        this._offset = offset;
+    }
+    get prev() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Prev;
+    }
+    get size() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Size;
+    }
+    get root() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
+    }
+    get info() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
+    }
+    get encrypt() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Encrypt;
+    }
+    get id() {
+        var _a;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.ID;
+    }
+    static createFrom(base, entries, offset) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
+            return null;
+        }
+        const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
+        const size = Math.max(entriesSize, base.size);
+        return XRefStream.create(entries, size, offset, base.root, base.offset, base.info, base.encrypt, base.id);
+    }
+    static create(entries, size, offset, root, prev, info, encrypt, id) {
+        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !offset || !root) {
+            return null;
+        }
+        const trailer = new TrailerStream();
+        trailer.Size = size;
+        trailer.Root = root;
+        trailer.Prev = prev;
+        trailer.Info = info;
+        trailer.Encrypt = encrypt;
+        trailer.ID = id;
+        const w = [1, 4, 2];
+        const wSum = w[0] + w[1] + w[2];
+        const params = new DecodeParamsDict();
+        params.setIntProp("/Predictor", flatePredictors.PNG_UP);
+        params.setIntProp("/Columns", wSum);
+        params.setIntProp("/Colors", 1);
+        params.setIntProp("/BitsPerComponent", 8);
+        const data = XRefEntry.toStreamBytes(entries, w);
+        const stream = new XRefStream(trailer, offset);
+        stream._trailerStream.Filter = streamFilters.FLATE;
+        stream._trailerStream.DecodeParms = params;
+        stream._trailerStream.W = w;
+        stream._trailerStream.Index = data.index;
+        stream._trailerStream.streamData = data.bytes;
+        return stream;
+    }
+    static parse(parseInfo, offset) {
+        if (!parseInfo) {
+            return null;
+        }
+        const trailerStream = TrailerStream.parse(parseInfo);
+        if (!trailerStream) {
+            return null;
+        }
+        const xrefStream = new XRefStream(trailerStream.value, offset);
+        return {
+            value: xrefStream,
+            start: null,
+            end: null,
+        };
+    }
+    createUpdate(entries, offset) {
+        return XRefStream.createFrom(this, entries, offset);
+    }
+    getEntries() {
+        if (!this._trailerStream) {
+            return [];
+        }
+        const entries = XRefEntry.fromStreamBytes(this._trailerStream.decodedStreamData, this._trailerStream.W, this._trailerStream.Index);
+        return entries;
+    }
+    toArray(cryptInfo) {
+        return this._trailerStream.toArray(cryptInfo);
+    }
+}
+
 class TextStream extends PdfStream {
     constructor(type = null) {
         super(type);
@@ -5317,77 +5619,6 @@ class TextStream extends PdfStream {
     }
     parseProps(parseInfo) {
         super.parseProps(parseInfo);
-    }
-}
-
-class HexString {
-    constructor(literal, hex, bytes) {
-        this._literal = literal;
-        this._hex = hex;
-        this._bytes = bytes;
-    }
-    get literal() {
-        return this._literal;
-    }
-    get hex() {
-        return this._hex.slice();
-    }
-    get bytes() {
-        return this._bytes.slice();
-    }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        const bounds = parser.getHexBounds(start, skipEmpty);
-        if (!bounds) {
-            return null;
-        }
-        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        const hex = HexString.fromBytes(bytes);
-        return { value: hex, start: bounds.start, end: bounds.end };
-    }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
-            if (!current) {
-                break;
-            }
-            hexes.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(bytes);
-        const hex = hexStringToBytes(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromHexBytes(hex) {
-        let literal = "";
-        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromString(literal) {
-        const hex = hexStringToBytes(literal);
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    ;
-    toArray(cryptInfo) {
-        return new Uint8Array([
-            ...keywordCodes.STR_HEX_START,
-            ...this._bytes,
-            ...keywordCodes.STR_HEX_END,
-        ]);
     }
 }
 
@@ -9524,10 +9755,15 @@ class DocumentDataUpdater {
     }
     writeXref() {
         const newXrefOffset = this._writer.offset;
-        const newXrefRef = this._changeData.takeFreeRef(newXrefOffset, true);
         const newXrefEntries = this._changeData.exportEntries();
         const newXref = this._lastXref.createUpdate(newXrefEntries, newXrefOffset);
-        this._writer.writeIndirectObject({ ref: newXrefRef }, newXref);
+        if (this._lastXref instanceof XRefStream) {
+            const newXrefRef = this._changeData.takeFreeRef(newXrefOffset, true);
+            this._writer.writeIndirectObject({ ref: newXrefRef }, newXref);
+        }
+        else {
+            this._writer.writeBytes(newXref.toArray());
+        }
         this._writer.writeEof(newXrefOffset);
         return newXrefOffset;
     }
@@ -10558,237 +10794,6 @@ class EncryptionDict extends PdfDict {
         if (this.StmF !== "/Identity") {
             this.streamFilter = (_b = this.CF) === null || _b === void 0 ? void 0 : _b.getProp(this.StmF);
         }
-    }
-}
-
-class TrailerStream extends PdfStream {
-    constructor() {
-        super(streamTypes.XREF);
-    }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new TrailerStream();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
-    }
-    toArray(cryptInfo) {
-        const superBytes = super.toArray(cryptInfo);
-        const encoder = new TextEncoder();
-        const bytes = [];
-        if (this.Size) {
-            bytes.push(...encoder.encode("/Size "), ...encoder.encode(" " + this.Size));
-        }
-        if (this.Prev) {
-            bytes.push(...encoder.encode("/Prev "), ...encoder.encode(" " + this.Prev));
-        }
-        if (this.Root) {
-            bytes.push(...encoder.encode("/Root "), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
-        }
-        if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt "), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
-        }
-        if (this.Info) {
-            bytes.push(...encoder.encode("/Info "), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
-        }
-        if (this.ID) {
-            bytes.push(...encoder.encode("/ID "), codes.L_BRACKET, ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
-        }
-        if (this.Index) {
-            bytes.push(...encoder.encode("/Index "), codes.L_BRACKET);
-            this.Index.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
-        }
-        if (this.W) {
-            bytes.push(...encoder.encode("/W "), codes.L_BRACKET, ...encoder.encode(this.W[0] + ""), codes.WHITESPACE, ...encoder.encode(this.W[1] + ""), codes.WHITESPACE, ...encoder.encode(this.W[2] + ""), codes.R_BRACKET);
-        }
-        const totalBytes = [
-            ...superBytes.subarray(0, 2),
-            ...bytes,
-            ...superBytes.subarray(2, superBytes.length)
-        ];
-        return new Uint8Array(totalBytes);
-    }
-    parseProps(parseInfo) {
-        var _a;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Size":
-                    case "/Prev":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Root":
-                    case "/Info":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Encrypt":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const encryptId = ObjectId.parseRef(parser, i);
-                            if (encryptId) {
-                                this.Encrypt = encryptId.value;
-                                i = encryptId.end + 1;
-                                break;
-                            }
-                            else {
-                                throw new Error("Can't parse /Encrypt property value");
-                            }
-                        }
-                        throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                    case "/ID":
-                        const ids = HexString.parseArray(parser, i);
-                        if (ids) {
-                            this.ID = [ids.value[0], ids.value[1]];
-                            i = ids.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /ID property value");
-                        }
-                        break;
-                    case "/Index":
-                    case "/W":
-                        i = this.parseNumberArrayProp(name, parser, i, false);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
-                }
-            }
-            else {
-                break;
-            }
-        }
-        if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
-            this.Index = [0, this.Size];
-        }
-    }
-}
-
-class XRef {
-    constructor(type) {
-        this._type = type;
-    }
-    get type() {
-        return this._type;
-    }
-    get offset() {
-        return this._offset;
-    }
-}
-
-class XRefStream extends XRef {
-    constructor(trailer, offset) {
-        super(xRefTypes.STREAM);
-        this._trailerStream = trailer;
-        this._offset = offset;
-    }
-    get prev() {
-        var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Prev;
-    }
-    get size() {
-        var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Size;
-    }
-    get root() {
-        var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
-    }
-    get info() {
-        var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
-    }
-    get encrypt() {
-        var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Encrypt;
-    }
-    get id() {
-        var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.ID;
-    }
-    static createFrom(base, entries, offset) {
-        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
-            return null;
-        }
-        const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
-        const size = Math.max(entriesSize, base.size);
-        return XRefStream.create(entries, size, offset, base.root, base.offset, base.info, base.encrypt, base.id);
-    }
-    static create(entries, size, offset, root, prev, info, encrypt, id) {
-        if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !size || !offset || !root) {
-            return null;
-        }
-        const trailer = new TrailerStream();
-        trailer.Size = size;
-        trailer.Root = root;
-        trailer.Prev = prev;
-        trailer.Info = info;
-        trailer.Encrypt = encrypt;
-        trailer.ID = id;
-        const w = [1, 4, 2];
-        const wSum = w[0] + w[1] + w[2];
-        const params = new DecodeParamsDict();
-        params.setIntProp("/Predictor", flatePredictors.PNG_UP);
-        params.setIntProp("/Columns", wSum);
-        params.setIntProp("/Colors", 1);
-        params.setIntProp("/BitsPerComponent", 8);
-        const data = XRefEntry.toStreamBytes(entries, w);
-        const stream = new XRefStream(trailer, offset);
-        stream._trailerStream.Filter = streamFilters.FLATE;
-        stream._trailerStream.DecodeParms = params;
-        stream._trailerStream.W = w;
-        stream._trailerStream.Index = data.index;
-        stream._trailerStream.streamData = data.bytes;
-        return stream;
-    }
-    static parse(parseInfo, offset) {
-        if (!parseInfo) {
-            return null;
-        }
-        const trailerStream = TrailerStream.parse(parseInfo);
-        if (!trailerStream) {
-            return null;
-        }
-        const xrefStream = new XRefStream(trailerStream.value, offset);
-        return {
-            value: xrefStream,
-            start: null,
-            end: null,
-        };
-    }
-    createUpdate(entries, offset) {
-        return XRefStream.createFrom(this, entries, offset);
-    }
-    getEntries() {
-        if (!this._trailerStream) {
-            return [];
-        }
-        const entries = XRefEntry.fromStreamBytes(this._trailerStream.decodedStreamData, this._trailerStream.W, this._trailerStream.Index);
-        return entries;
-    }
-    toArray(cryptInfo) {
-        return this._trailerStream.toArray(cryptInfo);
     }
 }
 

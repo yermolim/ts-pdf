@@ -5,6 +5,7 @@ import { DataWriter } from "./data-writer";
 import { ObjectId } from "./entities/core/object-id";
 import { PdfObject } from "./entities/core/pdf-object";
 import { XRef } from "./entities/x-refs/x-ref";
+import { XRefStream } from "./entities/x-refs/x-ref-stream";
 
 import { ImageStream } from "./entities/streams/image-stream";
 import { XFormStream } from "./entities/streams/x-form-stream";
@@ -241,7 +242,6 @@ export class DocumentDataUpdater {
    */
   private writeXref(): number {
     const newXrefOffset = this._writer.offset;
-    const newXrefRef = this._changeData.takeFreeRef(newXrefOffset, true);
     const newXrefEntries = this._changeData.exportEntries();
 
     // DEBUG
@@ -249,9 +249,18 @@ export class DocumentDataUpdater {
 
     // create a new cross-reference section based on the previous one
     const newXref = this._lastXref.createUpdate(newXrefEntries, newXrefOffset);
-    this._writer.writeIndirectObject({ref: newXrefRef}, newXref);
-    this._writer.writeEof(newXrefOffset); 
-    
+
+    if (this._lastXref instanceof XRefStream) {
+      // cross-reference stream
+      // write the stream as indirect object
+      const newXrefRef = this._changeData.takeFreeRef(newXrefOffset, true);
+      this._writer.writeIndirectObject({ref: newXrefRef}, newXref);
+    } else {      
+      // cross-reference table
+      this._writer.writeBytes(newXref.toArray());
+    }    
+
+    this._writer.writeEof(newXrefOffset);     
     return newXrefOffset;
   }
 }
