@@ -8957,11 +8957,12 @@ class AnnotationDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    renderAsync() {
+    renderAsync(viewBox) {
         return __awaiter$7(this, void 0, void 0, function* () {
-            if (!this.$pageRect) {
-                throw new Error("Can't render the annotation without '$pageRect' field defined");
+            if (!viewBox) {
+                throw new Error("Can't render the annotation: view box is not defined");
             }
+            this._viewBox = viewBox;
             if (!this._renderedControls) {
                 this._renderedControls = this.renderControls();
             }
@@ -9200,7 +9201,6 @@ class AnnotationDict extends PdfDict {
             throw new Error("Not all required properties parsed");
         }
         this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
-        this.$pageRect = parseInfo.rect;
     }
     getCurrentRotation() {
         var _a;
@@ -9340,7 +9340,7 @@ class AnnotationDict extends PdfDict {
             clipPathsContainer.append(...renderResult.clipPaths);
             content.append(clipPathsContainer);
         }
-        const [x0, y0, x1, y1] = this.$pageRect;
+        const [x0, y0, x1, y1] = this._viewBox;
         renderResult.elements.forEach(x => {
             const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             elementContainer.classList.add("annotation-content-element");
@@ -17554,7 +17554,6 @@ class DocumentService {
             throw new Error(`Page with id ${pageId} is not found`);
         }
         annotation.$pageId = page.id;
-        annotation.$pageRect = page.MediaBox;
         annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
         const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
         if (pageAnnotations) {
@@ -20745,7 +20744,7 @@ class PageAnnotationView {
             throw new Error("Required argument not found");
         }
         this._pageId = pageId;
-        this._pageDimensions = pageDimensions;
+        this._viewbox = [0, 0, pageDimensions.x, pageDimensions.y];
         this._docService = docService;
         this._container = document.createElement("div");
         this._container.classList.add("page-annotations");
@@ -20806,10 +20805,10 @@ class PageAnnotationView {
                     annotation.$onPointerLeaveAction = (e) => {
                         this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
                     };
-                    renderResult = yield annotation.renderAsync();
+                    renderResult = yield annotation.renderAsync(this._viewbox);
                 }
                 else {
-                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync());
+                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync(this._viewbox));
                 }
                 if (!renderResult) {
                     continue;
@@ -20839,15 +20838,17 @@ var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class PageView {
     constructor(docService, pageProxy, previewWidth) {
-        if (!pageProxy) {
-            throw new Error("Page proxy is not defined");
-        }
+        this._rotation = 0;
+        this._scale = 1;
         if (!docService) {
             throw new Error("Annotation data is not defined");
         }
-        this._pageProxy = pageProxy;
-        this._viewport = pageProxy.getViewport({ scale: 1 });
+        if (!pageProxy) {
+            throw new Error("Page proxy is not defined");
+        }
         this._docService = docService;
+        this._pageProxy = pageProxy;
+        this._viewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
         this.number = pageProxy.pageNumber;
         this.id = pageProxy.ref["num"];
         this.generation = pageProxy.ref["gen"];
@@ -20867,7 +20868,7 @@ class PageView {
         this._viewContainer.setAttribute("data-page-number", this.number + "");
         this._viewContainer.setAttribute("data-page-id", this.id + "");
         this._viewContainer.setAttribute("data-page-gen", this.generation + "");
-        this.scale = 1;
+        this.refreshDimensions();
     }
     get previewContainer() {
         return this._previewContainer;
@@ -20882,6 +20883,9 @@ class PageView {
     get _viewRendered() {
         return this.$viewRendered;
     }
+    get rotation() {
+        return this._rotation;
+    }
     get scale() {
         return this._scale;
     }
@@ -20890,18 +20894,7 @@ class PageView {
             return;
         }
         this._scale = value;
-        const dpr = window.devicePixelRatio;
-        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
-        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
-        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
-        if (this._viewCanvas) {
-            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
-        }
-        this._scaleIsValid = false;
+        this.refreshDimensions();
     }
     get viewValid() {
         return this._scaleIsValid && this._viewRendered;
@@ -20952,6 +20945,20 @@ class PageView {
         this._text = null;
         (_c = this._viewCanvas) === null || _c === void 0 ? void 0 : _c.remove();
         this._viewRendered = false;
+    }
+    refreshDimensions() {
+        const dpr = window.devicePixelRatio;
+        this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+        this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+        this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
+        this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
+        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+        if (this._viewCanvas) {
+            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
+            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+        }
+        this._scaleIsValid = false;
     }
     cancelRenderTask() {
         if (this._renderTask) {
@@ -21005,7 +21012,7 @@ class PageView {
             const canvas = this.createPreviewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width }),
+                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width, rotation: 0 }),
             };
             const result = yield this.runRenderTaskAsync(params);
             if (!result) {
@@ -21026,7 +21033,7 @@ class PageView {
             const canvas = this.createViewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio }),
+                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio, rotation: 0 }),
                 enableWebGL: true,
             };
             const result = yield this.runRenderTaskAsync(params);

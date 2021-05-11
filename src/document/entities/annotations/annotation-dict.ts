@@ -61,8 +61,6 @@ export abstract class AnnotationDict extends PdfDict {
   $name: string;
   /**internal pdf object id of the parent page */
   $pageId: number;
-  /**the parent page rect */
-  $pageRect: Quadruple;
   $translationEnabled: boolean;
 
   /**optional action callback which is called on 'pointer down' event */
@@ -172,7 +170,10 @@ export abstract class AnnotationDict extends PdfDict {
   //#endregion
 
   //#region render-related properties
-  protected readonly _svgId = getRandomUuid();  
+  protected readonly _svgId = getRandomUuid(); 
+  
+  /**view box used for rendering */
+  protected _viewBox: Quadruple;
 
   /**rendered box showing the annotation dimensions */
   protected _renderedBox: SVGGraphicsElement;
@@ -284,14 +285,15 @@ export abstract class AnnotationDict extends PdfDict {
   }  
   
   /**
-   * render current annotation to an svg element
+   * render current annotation using SVG
+   * @param viewBox view box used for SVG elements
    * @returns 
    */
-  async renderAsync(): Promise<AnnotationRenderResult> {
-    if (!this.$pageRect) {
-      // TODO: find an elegant solution to avoid the possibility of the error
-      throw new Error("Can't render the annotation without '$pageRect' field defined");
+  async renderAsync(viewBox: Quadruple): Promise<AnnotationRenderResult> {
+    if (!viewBox) {
+      throw new Error("Can't render the annotation: view box is not defined");
     }
+    this._viewBox = viewBox;
     
     if (!this._renderedControls) {
       this._renderedControls = this.renderControls();
@@ -573,7 +575,6 @@ export abstract class AnnotationDict extends PdfDict {
     }
 
     this.$name = this.NM?.literal || getRandomUuid();
-    this.$pageRect = parseInfo.rect;
   }
 
   //#region protected render methods
@@ -793,7 +794,7 @@ export abstract class AnnotationDict extends PdfDict {
       content.append(clipPathsContainer);
     }
       
-    const [x0, y0, x1, y1] = this.$pageRect;
+    const [x0, y0, x1, y1] = this._viewBox;
     renderResult.elements.forEach(x => {      
       const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       elementContainer.classList.add("annotation-content-element");

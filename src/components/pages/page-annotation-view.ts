@@ -1,4 +1,5 @@
 import { Vec2 } from "../../common/math";
+import { Quadruple } from "../../common/types";
 
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } from "../../services/document-service";
@@ -6,7 +7,7 @@ import { AnnotationDict, AnnotationRenderResult } from "../../document/entities/
 
 export class PageAnnotationView {
   private readonly _pageId: number;
-  private readonly _pageDimensions: Vec2;
+  private readonly _viewbox: Quadruple;
 
   private _docService: DocumentService;
   private _rendered = new Set<AnnotationDict>();
@@ -21,7 +22,7 @@ export class PageAnnotationView {
       throw new Error("Required argument not found");
     }
     this._pageId = pageId;
-    this._pageDimensions = pageDimensions;
+    this._viewbox = [0, 0, pageDimensions.x, pageDimensions.y];
 
     this._docService = docService;
 
@@ -80,6 +81,7 @@ export class PageAnnotationView {
   private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
+
     const annotations = this._docService.getPageAnnotations(this._pageId) || [];
 
     for (let i = 0; i < annotations.length || 0; i++) {
@@ -100,9 +102,9 @@ export class PageAnnotationView {
         annotation.$onPointerLeaveAction = (e: PointerEvent) => {
           this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({annotation: null}));
         };
-        renderResult = await annotation.renderAsync();
+        renderResult = await annotation.renderAsync(this._viewbox);
       } else {
-        renderResult = annotation.lastRenderResult || await annotation.renderAsync();
+        renderResult = annotation.lastRenderResult || await annotation.renderAsync(this._viewbox);
       }   
 
       if (!renderResult) {

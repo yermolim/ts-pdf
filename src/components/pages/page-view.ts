@@ -57,8 +57,13 @@ export class PageView {
 
   private _renderTask: {cancel: () => void; promise: Promise<void>};
   private _renderPromise: Promise<void>;
+
+  private _rotation = 0;
+  get rotation(): number {
+    return this._rotation;
+  }
   
-  private _scale: number; 
+  private _scale = 1; 
   get scale(): number {
     return this._scale;
   }
@@ -67,22 +72,7 @@ export class PageView {
       return;
     }
     this._scale = value;
-    const dpr = window.devicePixelRatio;
-    
-    this._dimensions.scaledWidth = this._dimensions.width * this._scale;
-    this._dimensions.scaledHeight = this._dimensions.height * this._scale;
-    this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
-    this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-
-    this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-    this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
-    
-    if (this._viewCanvas) {
-      this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-      this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
-    }
-
-    this._scaleIsValid = false;
+    this.refreshDimensions();
   }
 
   private _scaleIsValid: boolean;
@@ -92,16 +82,17 @@ export class PageView {
   }
 
   constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number) {
-    if (!pageProxy) {
-      throw new Error("Page proxy is not defined");
-    }
     if (!docService) {
       throw new Error("Annotation data is not defined");
     }
+    if (!pageProxy) {
+      throw new Error("Page proxy is not defined");
+    }
 
-    this._pageProxy = pageProxy;
-    this._viewport = pageProxy.getViewport({scale: 1});
     this._docService = docService;
+    
+    this._pageProxy = pageProxy;
+    this._viewport = pageProxy.getViewport({scale: 1, rotation: 0});
 
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
@@ -126,7 +117,7 @@ export class PageView {
     this._viewContainer.setAttribute("data-page-id", this.id + "");
     this._viewContainer.setAttribute("data-page-gen", this.generation + "");  
 
-    this.scale = 1;  
+    this.refreshDimensions();
   }
 
   /**free the resources that can prevent garbage to be collected */
@@ -194,6 +185,25 @@ export class PageView {
     this._viewCanvas?.remove();
     this._viewRendered = false;
   }
+
+  private refreshDimensions() {
+    const dpr = window.devicePixelRatio;
+    
+    this._dimensions.scaledWidth = this._dimensions.width * this._scale;
+    this._dimensions.scaledHeight = this._dimensions.height * this._scale;
+    this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
+    this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
+
+    this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
+    this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+    
+    if (this._viewCanvas) {
+      this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
+      this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+    }
+
+    this._scaleIsValid = false;
+  }
  
   private cancelRenderTask() {    
     if (this._renderTask) {
@@ -246,7 +256,7 @@ export class PageView {
     const canvas = this.createPreviewCanvas();
     const params = <RenderParameters>{
       canvasContext: canvas.getContext("2d"),
-      viewport: this._viewport.clone({scale: canvas.width / this._dimensions.width}),
+      viewport: this._viewport.clone({scale: canvas.width / this._dimensions.width, rotation: 0}),
     };
     const result = await this.runRenderTaskAsync(params);
     if (!result) {
@@ -269,7 +279,7 @@ export class PageView {
     const canvas = this.createViewCanvas();
     const params = <RenderParameters>{
       canvasContext: canvas.getContext("2d"),
-      viewport: this._viewport.clone({scale: scale * window.devicePixelRatio}),
+      viewport: this._viewport.clone({scale: scale * window.devicePixelRatio, rotation: 0}),
       enableWebGL: true,
     };
     const result = await this.runRenderTaskAsync(params);

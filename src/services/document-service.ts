@@ -277,7 +277,6 @@ export class DocumentService {
     }
 
     annotation.$pageId = page.id;
-    annotation.$pageRect = page.MediaBox;
     annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
