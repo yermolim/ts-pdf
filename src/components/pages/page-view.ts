@@ -108,8 +108,6 @@ export class PageView {
     this._defaultViewport = pageProxy.getViewport({scale: 1, rotation: 0});
     this._rotation = pageProxy.rotate;
 
-    console.log(pageProxy.rotate);    
-
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
     this.generation = pageProxy.ref["gen"];
@@ -207,6 +205,22 @@ export class PageView {
     
     this._viewCanvas?.remove();
     this._viewRendered = false;
+  }
+  
+  rotateClockwise() {
+    if (!this._rotation) {
+      this.rotation = 270;
+    } else {
+      this.rotation = this._rotation - 90;
+    }
+  }
+
+  rotateCounterClockwise() {
+    if (this._rotation === 270) {
+      this.rotation = 0;
+    } else {
+      this.rotation = (this._rotation || 0) + 90;
+    }
   }
 
   private refreshDimensions() {

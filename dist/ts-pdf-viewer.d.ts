@@ -97,6 +97,8 @@ export declare class TsPdfViewer {
 	private onZoomInClick;
 	private onZoomFitViewerClick;
 	private onZoomFitPageClick;
+	private onRotateCounterClockwiseClick;
+	private onRotateClockwiseClick;
 	private onPaginatorInput;
 	private onPaginatorChange;
 	private onPaginatorPrevClick;

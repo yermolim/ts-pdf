@@ -6,6 +6,8 @@ import icon_arrow_down from "./icons/arrow-down.png";
 import icon_back from "./icons/back.png";
 import icon_caret from "./icons/caret.png";
 import icon_circle from "./icons/circle.png";
+import icon_clockwise from "./icons/clockwise.png";
+import icon_counter_clockwise from "./icons/counter-clockwise.png";
 import icon_close from "./icons/close.png";
 import icon_close2 from "./icons/close2.png";
 import icon_cloudy from "./icons/line-cloudy.png";
@@ -107,6 +109,15 @@ export const html = /*html*/`
         <input id="paginator-input" type="text">
         <span>&nbsp/&nbsp</span>
         <span id="paginator-total">0</span>
+      </div>
+      <div class="panel-v-separator panel-item"></div>
+      <div id="rotator" class="subpanel panel-item">
+        <div id="rotate-counter-clockwise" class="panel-button">
+          <img src="${icon_counter_clockwise}"/>
+        </div>
+        <div id="rotate-clockwise" class="panel-button">
+          <img src="${icon_clockwise}"/>
+        </div>
       </div>
       <div class="panel-v-separator panel-item"></div>
       <div id="zoomer" class="subpanel panel-item">

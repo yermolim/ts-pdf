@@ -376,6 +376,11 @@ export class TsPdfViewer {
       } else {      
         this._mainContainer.classList.remove("mobile");
       }
+      if (width < 400) {        
+        this._mainContainer.classList.add("compact");
+      } else {
+        this._mainContainer.classList.remove("compact");
+      }
     });
     mcResizeObserver.observe(this._mainContainer);
     this._mainContainerRObserver = mcResizeObserver;
@@ -391,6 +396,11 @@ export class TsPdfViewer {
       .addEventListener("click", this.onPaginatorPrevClick);
     this._shadowRoot.querySelector("#paginator-next")
       .addEventListener("click", this.onPaginatorNextClick);
+
+    this._shadowRoot.querySelector("#rotate-clockwise")
+      .addEventListener("click", this.onRotateClockwiseClick);
+    this._shadowRoot.querySelector("#rotate-counter-clockwise")
+      .addEventListener("click", this.onRotateCounterClockwiseClick);
 
     this._shadowRoot.querySelector("#zoom-out")
       .addEventListener("click", this.onZoomOutClick);
@@ -570,6 +580,19 @@ export class TsPdfViewer {
   
   private onZoomFitPageClick = () => {
     this._viewer.zoomFitPage();
+  };
+  //#endregion
+
+
+  //#region page rotation
+  private onRotateCounterClockwiseClick = () => {
+    this._pageService.getCurrentPage().rotateCounterClockwise();
+    this.setAnnotationMode(this._annotationService.mode);
+  };
+  
+  private onRotateClockwiseClick = () => {
+    this._pageService.getCurrentPage().rotateCounterClockwise();
+    this.setAnnotationMode(this._annotationService.mode);
   };
   //#endregion
 

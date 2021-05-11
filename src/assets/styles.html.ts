@@ -83,7 +83,7 @@ export const styles = /*html*/`
     height: 50px;
     background: var(--tspdf-color-primary-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 1;
+    z-index: 3;
     transition: height 0.25s ease-out 0.1s;
   }
   .hide-panels #top-panel {
@@ -101,17 +101,25 @@ export const styles = /*html*/`
     flex-shrink: 0;
     left: calc(50% - 160px);
     bottom: 20px;
-    width: 320px;
+    width: 400px;
     height: 50px;  
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
-    z-index: 1;
+    z-index: 3;
     transition: height 0.25s ease-out, bottom 0.1s linear 0.25s;
   }
   .hide-panels #bottom-panel {
     bottom: 0;
     height: 0;
     transition: bottom 0.1s linear 0.1s, height 0.25s ease-in 0.2s;
+  }
+  .compact #bottom-panel {    
+    width: 320px;
+  }
+  .compact #zoom-fit-viewer,
+  .compact #zoom-fit-page {  
+    width: 0;  
+    transform: scale(0);
   }
 
   #focused-annotation-panel {
