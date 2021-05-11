@@ -220,26 +220,27 @@ export class PageService {
    
   /**
    * convert client coordinates to the current page coordinate system
-   * @param clientX 
-   * @param clientY 
+   * @param pointerX 
+   * @param pointerY 
    * @returns 
    */
-  getPageCoordsUnderPointer(clientX: number, clientY: number): PageCoords {
+  getPageCoordsUnderPointer(pointerX: number, pointerY: number): PageCoords {
     for (const page of this._renderedPages) {
-      const {left: pxMin, top: pyMin, width: pw, height: ph} = page.viewContainer.getBoundingClientRect();
-      const pxMax = pxMin + pw;
-      const pyMax = pyMin + ph;
+      const {left: pageRectMinX, top: pageRectMinY, width: pageRectWidth, height: pageRectHeight} = 
+        page.viewContainer.getBoundingClientRect();
+      const pageRectMaxX = pageRectMinX + pageRectWidth;
+      const pageRectMaxY = pageRectMinY + pageRectHeight;
 
-      if (clientX < pxMin || clientX > pxMax) {
+      if (pointerX < pageRectMinX || pointerX > pageRectMaxX) {
         continue;
       }
-      if (clientY < pyMin || clientY > pyMax) {
+      if (pointerY < pageRectMinY || pointerY > pageRectMaxY) {
         continue;
       }
 
       // point is inside the page
-      const x = (clientX - pxMin) / this.scale;
-      const y = (pyMax - clientY) / this.scale;
+      const x = (pointerX - pageRectMinX) / this.scale;
+      const y = (pageRectMaxY - pointerY) / this.scale;
 
       return {
         pageId: page.id,

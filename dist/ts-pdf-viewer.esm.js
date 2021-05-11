@@ -17917,19 +17917,19 @@ class PageService {
             }
         });
     }
-    getPageCoordsUnderPointer(clientX, clientY) {
+    getPageCoordsUnderPointer(pointerX, pointerY) {
         for (const page of this._renderedPages) {
-            const { left: pxMin, top: pyMin, width: pw, height: ph } = page.viewContainer.getBoundingClientRect();
-            const pxMax = pxMin + pw;
-            const pyMax = pyMin + ph;
-            if (clientX < pxMin || clientX > pxMax) {
+            const { left: pageRectMinX, top: pageRectMinY, width: pageRectWidth, height: pageRectHeight } = page.viewContainer.getBoundingClientRect();
+            const pageRectMaxX = pageRectMinX + pageRectWidth;
+            const pageRectMaxY = pageRectMinY + pageRectHeight;
+            if (pointerX < pageRectMinX || pointerX > pageRectMaxX) {
                 continue;
             }
-            if (clientY < pyMin || clientY > pyMax) {
+            if (pointerY < pageRectMinY || pointerY > pageRectMaxY) {
                 continue;
             }
-            const x = (clientX - pxMin) / this.scale;
-            const y = (pyMax - clientY) / this.scale;
+            const x = (pointerX - pageRectMinX) / this.scale;
+            const y = (pageRectMaxY - pointerY) / this.scale;
             return {
                 pageId: page.id,
                 pageX: x,
@@ -20886,6 +20886,14 @@ class PageView {
     get rotation() {
         return this._rotation;
     }
+    set rotation(value) {
+        if (!PageView.validRotationValues.includes(value)
+            || this._rotation === value) {
+            return;
+        }
+        this._rotation = value;
+        this.refreshDimensions();
+    }
     get scale() {
         return this._scale;
     }
@@ -21056,6 +21064,7 @@ class PageView {
         });
     }
 }
+PageView.validRotationValues = [0, 90, 180, 270];
 
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }

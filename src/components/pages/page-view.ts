@@ -10,6 +10,8 @@ import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
 
 export class PageView { 
+  static readonly validRotationValues = [0, 90, 180, 270];
+
   /**number of the page in the pdf file */
   readonly number: number;
   /**pdf object id of the page */
@@ -61,6 +63,14 @@ export class PageView {
   private _rotation = 0;
   get rotation(): number {
     return this._rotation;
+  }
+  set rotation(value: number) {   
+    if (!PageView.validRotationValues.includes(value) 
+      || this._rotation === value) {
+      return;
+    }
+    this._rotation = value;
+    this.refreshDimensions();
   }
   
   private _scale = 1; 
