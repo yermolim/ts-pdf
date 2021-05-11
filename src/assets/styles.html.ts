@@ -431,7 +431,7 @@ export const styles = /*html*/`
     touch-action: none;
   }
 
-  .page {    
+  .page-container {    
     position: relative;
     display: flex;
     flex-grow: 0;
@@ -439,6 +439,14 @@ export const styles = /*html*/`
     margin: 10px auto;
     background-color: white;
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+  }
+  .page {    
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;    
+    transform-origin: left top;
   }
   .page-preview {   
     cursor: pointer; 

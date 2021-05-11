@@ -19,9 +19,11 @@ export class PageView {
   /**pdf object generation of the page */
   readonly generation: number;
   
-  private readonly _pageProxy: PDFPageProxy; 
-  private readonly _viewport: PageViewport;
   private readonly _docService: DocumentService;
+  private readonly _pageProxy: PDFPageProxy; 
+
+  private readonly _defaultViewport: PageViewport;
+  private _currentViewport: PageViewport;  
 
   private _dimensions: {
     width: number; 
@@ -40,15 +42,16 @@ export class PageView {
   }
   private _previewRendered: boolean;
 
-  private _viewContainer: HTMLDivElement; 
+  private _viewOuterContainer: HTMLDivElement; 
   get viewContainer(): HTMLDivElement {
-    return this._viewContainer;
+    return this._viewOuterContainer;
   }
+  private _viewInnerContainer: HTMLDivElement; 
   private _viewCanvas: HTMLCanvasElement; 
   private $viewRendered: boolean;
   private set _viewRendered(value: boolean) {
     this.$viewRendered = value;
-    this._viewContainer.setAttribute("data-loaded", value + "");
+    this._viewOuterContainer.setAttribute("data-loaded", value + "");
   }  
   private get _viewRendered(): boolean {
     return this.$viewRendered;
@@ -85,10 +88,10 @@ export class PageView {
     this.refreshDimensions();
   }
 
-  private _scaleIsValid: boolean;
+  private _dimensionsIsValid: boolean;
   /**returns 'true' if the view is rendered using the current scale */
   get viewValid(): boolean {
-    return this._scaleIsValid && this._viewRendered;
+    return this._dimensionsIsValid && this._viewRendered;
   }
 
   constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number) {
@@ -102,13 +105,16 @@ export class PageView {
     this._docService = docService;
     
     this._pageProxy = pageProxy;
-    this._viewport = pageProxy.getViewport({scale: 1, rotation: 0});
+    this._defaultViewport = pageProxy.getViewport({scale: 1, rotation: 0});
+    this._rotation = pageProxy.rotate;
+
+    console.log(pageProxy.rotate);    
 
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
     this.generation = pageProxy.ref["gen"];
 
-    const {width, height} = this._viewport;
+    const {width, height} = this._defaultViewport;
     previewWidth = Math.max(previewWidth ?? 0, 50);
     const previewHeight = previewWidth * (height / width);
     this._dimensions = {width, height, previewWidth, previewHeight};
@@ -119,13 +125,20 @@ export class PageView {
     this._previewContainer.setAttribute("data-page-id", this.id + "");
     this._previewContainer.setAttribute("data-page-gen", this.generation + "");
     this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-    this._previewContainer.style.height = this._dimensions.previewHeight + "px";
+    this._previewContainer.style.height = this._dimensions.previewHeight + "px";    
 
-    this._viewContainer = document.createElement("div");
-    this._viewContainer.classList.add("page");
-    this._viewContainer.setAttribute("data-page-number", this.number + ""); 
-    this._viewContainer.setAttribute("data-page-id", this.id + "");
-    this._viewContainer.setAttribute("data-page-gen", this.generation + "");  
+    this._viewOuterContainer = document.createElement("div");
+    this._viewOuterContainer.classList.add("page-container");
+    this._viewOuterContainer.setAttribute("data-page-number", this.number + ""); 
+    this._viewOuterContainer.setAttribute("data-page-id", this.id + "");
+    this._viewOuterContainer.setAttribute("data-page-gen", this.generation + "");  
+
+    this._viewInnerContainer = document.createElement("div");
+    this._viewInnerContainer.classList.add("page");
+    this._viewInnerContainer.setAttribute("data-page-number", this.number + ""); 
+    this._viewInnerContainer.setAttribute("data-page-id", this.id + "");
+    this._viewInnerContainer.setAttribute("data-page-gen", this.generation + "");
+    this._viewOuterContainer.append(this._viewInnerContainer);
 
     this.refreshDimensions();
   }
@@ -133,7 +146,7 @@ export class PageView {
   /**free the resources that can prevent garbage to be collected */
   destroy() {
     this._previewContainer.remove();
-    this._viewContainer.remove();
+    this._viewOuterContainer.remove();
     this._pageProxy.cleanup();
   }  
 
@@ -198,21 +211,52 @@ export class PageView {
 
   private refreshDimensions() {
     const dpr = window.devicePixelRatio;
+    this._currentViewport = this._defaultViewport.clone({
+      scale: this.scale * dpr,
+    });
     
     this._dimensions.scaledWidth = this._dimensions.width * this._scale;
     this._dimensions.scaledHeight = this._dimensions.height * this._scale;
     this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
     this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
 
-    this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-    this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+    const w = this._dimensions.scaledWidth + "px";
+    const h = this._dimensions.scaledHeight + "px";
     
     if (this._viewCanvas) {
-      this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-      this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+      this._viewCanvas.style.width = w;
+      this._viewCanvas.style.height = h;
     }
 
-    this._scaleIsValid = false;
+    this._viewInnerContainer.style.width = w;
+    this._viewInnerContainer.style.height = h;
+
+    switch (this.rotation) {
+      case 0: 
+        this._viewOuterContainer.style.width = w;
+        this._viewOuterContainer.style.height = h;       
+        this._viewInnerContainer.style.transform = "";
+        break;
+      case 90:        
+        this._viewOuterContainer.style.width = h;
+        this._viewOuterContainer.style.height = w;    
+        this._viewInnerContainer.style.transform = "rotate(90deg) translateY(-100%)";
+        break;
+      case 180:
+        this._viewOuterContainer.style.width = w;
+        this._viewOuterContainer.style.height = h; 
+        this._viewInnerContainer.style.transform = "rotate(180deg) translateX(-100%) translateY(-100%)";
+        break;
+      case 270:
+        this._viewOuterContainer.style.width = h;
+        this._viewOuterContainer.style.height = w; 
+        this._viewInnerContainer.style.transform = "rotate(270deg) translateX(-100%)";
+        break;
+      default:
+        throw new Error(`Invalid rotation degree: ${this.rotation}`);
+    }
+
+    this._dimensionsIsValid = false;
   }
  
   private cancelRenderTask() {    
@@ -266,7 +310,7 @@ export class PageView {
     const canvas = this.createPreviewCanvas();
     const params = <RenderParameters>{
       canvasContext: canvas.getContext("2d"),
-      viewport: this._viewport.clone({scale: canvas.width / this._dimensions.width, rotation: 0}),
+      viewport: this._defaultViewport.clone({scale: canvas.width / this._dimensions.width, rotation: 0}),
     };
     const result = await this.runRenderTaskAsync(params);
     if (!result) {
@@ -289,7 +333,7 @@ export class PageView {
     const canvas = this.createViewCanvas();
     const params = <RenderParameters>{
       canvasContext: canvas.getContext("2d"),
-      viewport: this._viewport.clone({scale: scale * window.devicePixelRatio, rotation: 0}),
+      viewport: this._currentViewport,
       enableWebGL: true,
     };
     const result = await this.runRenderTaskAsync(params);
@@ -300,23 +344,23 @@ export class PageView {
     }
 
     this._viewCanvas?.remove();
-    this._viewContainer.append(canvas);
+    this._viewInnerContainer.append(canvas);
     this._viewCanvas = canvas;
     this._viewRendered = true;
 
     // add text div on top of canvas
-    this._text = await PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale); 
+    this._text = await PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale); 
 
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
       this._annotations = new PageAnnotationView(this._docService, this.id, new Vec2(x, y));
     }
-    await this._annotations.appendAsync(this.viewContainer);
+    await this._annotations.appendAsync(this._viewInnerContainer);
 
     // check if scale not changed during text render
     if (scale === this._scale) {
-      this._scaleIsValid = true;
+      this._dimensionsIsValid = true;
     }     
   }
 }

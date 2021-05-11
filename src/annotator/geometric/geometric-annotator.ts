@@ -62,17 +62,47 @@ export abstract class GeometricAnnotator extends Annotator {
     const page = this._pageService.renderedPages.find(x => x.id === this._pageId);
     if (!page) {
       // set scale to 0 to hide the svg group if it's page is not rendered
-      this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
+      this._svgGroup.setAttribute("transform", "scale(0)");
       return;
     }
 
-    const {height: ph, top: ptop, left: px} = page.viewContainer.getBoundingClientRect();
-    const py = ptop + ph;
-    const {height: vh, top: vtop, left: vx} = this._overlay.getBoundingClientRect();
-    const vy = vtop + vh;
-    const offsetX = (px - vx) / this._pageService.scale;
-    const offsetY = (vy - py) / this._pageService.scale;
-    this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+    const {height: pageHeight, width: pageWidth, top: pageTop, left: pageLeft} = 
+      page.viewContainer.getBoundingClientRect();
+    const pageBottom = pageTop + pageHeight;
+    const pageRight = pageLeft + pageWidth;
+    const {height: overlayHeight, top: overlayTop, left: overlayLeft} = 
+      this._overlay.getBoundingClientRect();
+    const overlayBottom = overlayTop + overlayHeight;
+    const rotation = page.rotation;
+    const scale = page.scale;
+    let offsetX: number;
+    let offsetY: number;    
+    switch (rotation) {
+      case 0:
+        // bottom-left page corner
+        offsetX = (pageLeft - overlayLeft) / scale;
+        offsetY = (overlayBottom - pageBottom) / scale;
+        break;
+      case 90:
+        // top-left page corner
+        offsetX = (pageLeft - overlayLeft) / scale;
+        offsetY = (overlayBottom - pageTop) / scale;
+        break;
+      case 180:    
+        // top-right page corner
+        offsetX = (pageRight - overlayLeft) / scale;
+        offsetY = (overlayBottom - pageTop) / scale; 
+        break;
+      case 270:
+        // bottom-right page corner
+        offsetX = (pageRight - overlayLeft) / scale;
+        offsetY = (overlayBottom - pageBottom) / scale;
+        break;
+      default:
+        throw new Error(`Invalid rotation degree: ${rotation}`);
+    }
+    this._svgGroup.setAttribute("transform",
+      `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
   }
   
   abstract undo(): void;

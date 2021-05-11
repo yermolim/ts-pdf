@@ -86,6 +86,7 @@ export interface PageCoords {
   pageId: number;
   pageX: number;
   pageY: number;
+  pageRotation: number;
 }
 //#endregion
 
@@ -238,17 +239,53 @@ export class PageService {
         continue;
       }
 
-      // point is inside the page
-      const x = (pointerX - pageRectMinX) / this.scale;
-      const y = (pageRectMaxY - pointerY) / this.scale;
+      // the point is inside the page
+      let x: number;
+      let y: number;
+      const scale = this.scale;
+      const rotation = page.rotation;
+      switch (rotation) {
+        case 0:
+          // 0, 0 is bottom-left corner
+          // pageX direction = clientX direction
+          // pageY direction = -clientY direction
+          x = (pointerX - pageRectMinX) / scale;
+          y = (pageRectMaxY - pointerY) / scale;
+          break;
+        case 90:  
+          // 0, 0 is top-left corner
+          // pageX direction = clientY direction
+          // pageY direction = clientX direction
+          x = (pointerY - pageRectMinY) / scale;
+          y = (pointerX - pageRectMinX) / scale;      
+          break;
+        case 180:
+          // 0, 0 is top-right corner
+          // pageX direction = -clientX direction
+          // pageY direction = clientY direction
+          x = (pageRectMaxX - pointerX) / scale;
+          y = (pointerY - pageRectMinY) / scale;  
+          break;
+        case 270:
+          // 0, 0 is bottom-right corner
+          // pageX direction = -clientY direction
+          // pageY direction = -clientX direction
+          x = (pageRectMaxY - pointerY) / scale;
+          y = (pageRectMaxX - pointerX) / scale;  
+          break;
+        default:
+          throw new Error(`Invalid rotation degree: ${rotation}`);
+      }
 
       return {
         pageId: page.id,
         pageX: x,
         pageY: y,
+        pageRotation: rotation,
       };
     }
-    // point is not inside a page
+
+    // the point is outside of any page
     return null;
   } 
 

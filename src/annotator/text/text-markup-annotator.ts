@@ -52,16 +52,44 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
   }
 
   protected refreshGroupPosition() {
-    const {height: vh, top: vtop, left: vx} = this._overlay.getBoundingClientRect();
+    const {height: overlayHeight, top: overlayTop, left: overlayLeft} = 
+      this._overlay.getBoundingClientRect();
+    const overlayBottom = overlayTop + overlayHeight;
     const scale = this._pageService.scale;
 
     this._pageService.renderedPages.forEach(x => {
-      const {height: ph, top: ptop, left: px} = x.viewContainer.getBoundingClientRect();
-      const py = ptop + ph;
-      const vy = vtop + vh;
-      const offsetX = (px - vx) / scale;
-      const offsetY = (vy - py) / scale;
-
+      const {height: pageHeight, width: pageWidth, top: pageTop, left: pageLeft} = 
+        x.viewContainer.getBoundingClientRect();
+      const pageBottom = pageTop + pageHeight;
+      const pageRight = pageLeft + pageWidth;
+      const rotation = x.rotation;
+      let offsetX: number;
+      let offsetY: number;    
+      switch (rotation) {
+        case 0:
+          // bottom-left page corner
+          offsetX = (pageLeft - overlayLeft) / scale;
+          offsetY = (overlayBottom - pageBottom) / scale;
+          break;
+        case 90:
+          // top-left page corner
+          offsetX = (pageLeft - overlayLeft) / scale;
+          offsetY = (overlayBottom - pageTop) / scale;
+          break;
+        case 180:    
+          // top-right page corner
+          offsetX = (pageRight - overlayLeft) / scale;
+          offsetY = (overlayBottom - pageTop) / scale; 
+          break;
+        case 270:
+          // bottom-right page corner
+          offsetX = (pageRight - overlayLeft) / scale;
+          offsetY = (overlayBottom - pageBottom) / scale;
+          break;
+        default:
+          throw new Error(`Invalid rotation degree: ${rotation}`);
+      }
+      
       let svg: SVGGraphicsElement;
       if (this._svgGroupByPageId.has(x.id)) {
         svg = this._svgGroupByPageId.get(x.id);  
@@ -69,8 +97,9 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
         svg = document.createElementNS("http://www.w3.org/2000/svg", "g");
         this._svgGroupByPageId.set(x.id, svg);
         this._svgGroup.append(svg);
-      }      
-      svg.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+      }    
+      svg.setAttribute("transform",
+        `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
     });
   }
   

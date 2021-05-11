@@ -755,7 +755,7 @@ const styles = `
     touch-action: none;
   }
 
-  .page {    
+  .page-container {    
     position: relative;
     display: flex;
     flex-grow: 0;
@@ -763,6 +763,14 @@ const styles = `
     margin: 10px auto;
     background-color: white;
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+  }
+  .page {    
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;    
+    transform-origin: left top;
   }
   .page-preview {   
     cursor: pointer; 
@@ -8985,12 +8993,23 @@ class AnnotationDict extends PdfDict {
             return null;
         });
     }
-    moveTo(pageX, pageY) {
+    moveTo(point) {
         const width = this.Rect[2] - this.Rect[0];
         const height = this.Rect[3] - this.Rect[1];
-        const x = pageX - width / 2;
-        const y = pageY - height / 2;
+        const x = point.x - width / 2;
+        const y = point.y - height / 2;
         const mat = Mat3.buildTranslate(x, y);
+        this.applyCommonTransform(mat);
+    }
+    rotateBy(angle, center) {
+        if (!center) {
+            const [x0, y0, x1, y1] = this.Rect;
+            center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
+        }
+        const mat = new Mat3()
+            .applyTranslation(-center.x, -center.y)
+            .applyRotation(angle)
+            .applyTranslation(center.x, center.y);
         this.applyCommonTransform(mat);
     }
     toDto() {
@@ -17928,12 +17947,35 @@ class PageService {
             if (pointerY < pageRectMinY || pointerY > pageRectMaxY) {
                 continue;
             }
-            const x = (pointerX - pageRectMinX) / this.scale;
-            const y = (pageRectMaxY - pointerY) / this.scale;
+            let x;
+            let y;
+            const scale = this.scale;
+            const rotation = page.rotation;
+            switch (rotation) {
+                case 0:
+                    x = (pointerX - pageRectMinX) / scale;
+                    y = (pageRectMaxY - pointerY) / scale;
+                    break;
+                case 90:
+                    x = (pointerY - pageRectMinY) / scale;
+                    y = (pointerX - pageRectMinX) / scale;
+                    break;
+                case 180:
+                    x = (pageRectMaxX - pointerX) / scale;
+                    y = (pointerY - pageRectMinY) / scale;
+                    break;
+                case 270:
+                    x = (pageRectMaxY - pointerY) / scale;
+                    y = (pageRectMaxX - pointerX) / scale;
+                    break;
+                default:
+                    throw new Error(`Invalid rotation degree: ${rotation}`);
+            }
             return {
                 pageId: page.id,
                 pageX: x,
                 pageY: y,
+                pageRotation: rotation,
             };
         }
         return null;
@@ -18179,16 +18221,39 @@ class GeometricAnnotator extends Annotator {
         }
         const page = this._pageService.renderedPages.find(x => x.id === this._pageId);
         if (!page) {
-            this._svgGroup.setAttribute("transform", `matrix(${[0, 0, 0, 0, 0, 0].join(" ")})`);
+            this._svgGroup.setAttribute("transform", "scale(0)");
             return;
         }
-        const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
-        const py = ptop + ph;
-        const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
-        const vy = vtop + vh;
-        const offsetX = (px - vx) / this._pageService.scale;
-        const offsetY = (vy - py) / this._pageService.scale;
-        this._svgGroup.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+        const { height: pageHeight, width: pageWidth, top: pageTop, left: pageLeft } = page.viewContainer.getBoundingClientRect();
+        const pageBottom = pageTop + pageHeight;
+        const pageRight = pageLeft + pageWidth;
+        const { height: overlayHeight, top: overlayTop, left: overlayLeft } = this._overlay.getBoundingClientRect();
+        const overlayBottom = overlayTop + overlayHeight;
+        const rotation = page.rotation;
+        const scale = page.scale;
+        let offsetX;
+        let offsetY;
+        switch (rotation) {
+            case 0:
+                offsetX = (pageLeft - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageBottom) / scale;
+                break;
+            case 90:
+                offsetX = (pageLeft - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageTop) / scale;
+                break;
+            case 180:
+                offsetX = (pageRight - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageTop) / scale;
+                break;
+            case 270:
+                offsetX = (pageRight - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageBottom) / scale;
+                break;
+            default:
+                throw new Error(`Invalid rotation degree: ${rotation}`);
+        }
+        this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
     }
 }
 
@@ -19080,9 +19145,6 @@ class PenData {
         this.appendPositionToBuffer(pos);
         this.updateCurrentPath();
     }
-    setGroupMatrix(matrix) {
-        this._group.setAttribute("transform", `matrix(${matrix.join(" ")})`);
-    }
     appendPositionToBuffer(pos) {
         const buffer = this._positionBuffer;
         buffer.push(pos);
@@ -19215,16 +19277,39 @@ class PenAnnotator extends Annotator {
         }
         const page = this._pageService.renderedPages.find(x => x.id === this._annotationPenData.id);
         if (!page) {
-            this._annotationPenData.setGroupMatrix([0, 0, 0, 0, 0, 0]);
+            this._annotationPenData.group.setAttribute("transform", "scale(0)");
             return;
         }
-        const { height: ph, top: ptop, left: px } = page.viewContainer.getBoundingClientRect();
-        const py = ptop + ph;
-        const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
-        const vy = vtop + vh;
-        const offsetX = (px - vx) / this._pageService.scale;
-        const offsetY = (vy - py) / this._pageService.scale;
-        this._annotationPenData.setGroupMatrix([1, 0, 0, 1, offsetX, offsetY]);
+        const { height: pageHeight, width: pageWidth, top: pageTop, left: pageLeft } = page.viewContainer.getBoundingClientRect();
+        const pageBottom = pageTop + pageHeight;
+        const pageRight = pageLeft + pageWidth;
+        const { height: overlayHeight, top: overlayTop, left: overlayLeft } = this._overlay.getBoundingClientRect();
+        const overlayBottom = overlayTop + overlayHeight;
+        const rotation = page.rotation;
+        const scale = page.scale;
+        let offsetX;
+        let offsetY;
+        switch (rotation) {
+            case 0:
+                offsetX = (pageLeft - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageBottom) / scale;
+                break;
+            case 90:
+                offsetX = (pageLeft - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageTop) / scale;
+                break;
+            case 180:
+                offsetX = (pageRight - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageTop) / scale;
+                break;
+            case 270:
+                offsetX = (pageRight - overlayLeft) / scale;
+                offsetY = (overlayBottom - pageBottom) / scale;
+                break;
+            default:
+                throw new Error(`Invalid rotation degree: ${rotation}`);
+        }
+        this._annotationPenData.group.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
     }
     removeTempPenData() {
         if (this._annotationPenData) {
@@ -19358,8 +19443,11 @@ class StampAnnotator extends Annotator {
             if (!pageCoords || !this._tempAnnotation) {
                 return;
             }
-            const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
-            this._tempAnnotation.moveTo(pageX, pageY);
+            const { pageId, pageX, pageY, pageRotation } = this._pointerCoordsInPageCS;
+            this._tempAnnotation.moveTo(new Vec2(pageX, pageY));
+            if (pageRotation) {
+                this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI);
+            }
             this._pageId = pageId;
             this.saveAnnotation();
         };
@@ -19557,14 +19645,36 @@ class TextMarkupAnnotator extends TextAnnotator {
         this.emitDataChanged(0);
     }
     refreshGroupPosition() {
-        const { height: vh, top: vtop, left: vx } = this._overlay.getBoundingClientRect();
+        const { height: overlayHeight, top: overlayTop, left: overlayLeft } = this._overlay.getBoundingClientRect();
+        const overlayBottom = overlayTop + overlayHeight;
         const scale = this._pageService.scale;
         this._pageService.renderedPages.forEach(x => {
-            const { height: ph, top: ptop, left: px } = x.viewContainer.getBoundingClientRect();
-            const py = ptop + ph;
-            const vy = vtop + vh;
-            const offsetX = (px - vx) / scale;
-            const offsetY = (vy - py) / scale;
+            const { height: pageHeight, width: pageWidth, top: pageTop, left: pageLeft } = x.viewContainer.getBoundingClientRect();
+            const pageBottom = pageTop + pageHeight;
+            const pageRight = pageLeft + pageWidth;
+            const rotation = x.rotation;
+            let offsetX;
+            let offsetY;
+            switch (rotation) {
+                case 0:
+                    offsetX = (pageLeft - overlayLeft) / scale;
+                    offsetY = (overlayBottom - pageBottom) / scale;
+                    break;
+                case 90:
+                    offsetX = (pageLeft - overlayLeft) / scale;
+                    offsetY = (overlayBottom - pageTop) / scale;
+                    break;
+                case 180:
+                    offsetX = (pageRight - overlayLeft) / scale;
+                    offsetY = (overlayBottom - pageTop) / scale;
+                    break;
+                case 270:
+                    offsetX = (pageRight - overlayLeft) / scale;
+                    offsetY = (overlayBottom - pageBottom) / scale;
+                    break;
+                default:
+                    throw new Error(`Invalid rotation degree: ${rotation}`);
+            }
             let svg;
             if (this._svgGroupByPageId.has(x.id)) {
                 svg = this._svgGroupByPageId.get(x.id);
@@ -19574,7 +19684,7 @@ class TextMarkupAnnotator extends TextAnnotator {
                 this._svgGroupByPageId.set(x.id, svg);
                 this._svgGroup.append(svg);
             }
-            svg.setAttribute("transform", `matrix(${[1, 0, 0, 1, offsetX, offsetY].join(" ")})`);
+            svg.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
         });
     }
     updateCoords(selections) {
@@ -19851,9 +19961,12 @@ class TextNoteAnnotator extends TextAnnotator {
             if (!pageCoords || !this._tempAnnotation) {
                 return;
             }
-            const { pageId, pageX, pageY } = this._pointerCoordsInPageCS;
+            const { pageId, pageX, pageY, pageRotation } = this._pointerCoordsInPageCS;
             const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
-            this._tempAnnotation.moveTo(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4);
+            this._tempAnnotation.moveTo(new Vec2(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4));
+            if (pageRotation) {
+                this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI, new Vec2(pageX, pageY));
+            }
             this._pageId = pageId;
             this.saveAnnotation();
         };
@@ -20848,11 +20961,13 @@ class PageView {
         }
         this._docService = docService;
         this._pageProxy = pageProxy;
-        this._viewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
+        this._defaultViewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
+        this._rotation = pageProxy.rotate;
+        console.log(pageProxy.rotate);
         this.number = pageProxy.pageNumber;
         this.id = pageProxy.ref["num"];
         this.generation = pageProxy.ref["gen"];
-        const { width, height } = this._viewport;
+        const { width, height } = this._defaultViewport;
         previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
         const previewHeight = previewWidth * (height / width);
         this._dimensions = { width, height, previewWidth, previewHeight };
@@ -20863,22 +20978,28 @@ class PageView {
         this._previewContainer.setAttribute("data-page-gen", this.generation + "");
         this._previewContainer.style.width = this._dimensions.previewWidth + "px";
         this._previewContainer.style.height = this._dimensions.previewHeight + "px";
-        this._viewContainer = document.createElement("div");
-        this._viewContainer.classList.add("page");
-        this._viewContainer.setAttribute("data-page-number", this.number + "");
-        this._viewContainer.setAttribute("data-page-id", this.id + "");
-        this._viewContainer.setAttribute("data-page-gen", this.generation + "");
+        this._viewOuterContainer = document.createElement("div");
+        this._viewOuterContainer.classList.add("page-container");
+        this._viewOuterContainer.setAttribute("data-page-number", this.number + "");
+        this._viewOuterContainer.setAttribute("data-page-id", this.id + "");
+        this._viewOuterContainer.setAttribute("data-page-gen", this.generation + "");
+        this._viewInnerContainer = document.createElement("div");
+        this._viewInnerContainer.classList.add("page");
+        this._viewInnerContainer.setAttribute("data-page-number", this.number + "");
+        this._viewInnerContainer.setAttribute("data-page-id", this.id + "");
+        this._viewInnerContainer.setAttribute("data-page-gen", this.generation + "");
+        this._viewOuterContainer.append(this._viewInnerContainer);
         this.refreshDimensions();
     }
     get previewContainer() {
         return this._previewContainer;
     }
     get viewContainer() {
-        return this._viewContainer;
+        return this._viewOuterContainer;
     }
     set _viewRendered(value) {
         this.$viewRendered = value;
-        this._viewContainer.setAttribute("data-loaded", value + "");
+        this._viewOuterContainer.setAttribute("data-loaded", value + "");
     }
     get _viewRendered() {
         return this.$viewRendered;
@@ -20905,11 +21026,11 @@ class PageView {
         this.refreshDimensions();
     }
     get viewValid() {
-        return this._scaleIsValid && this._viewRendered;
+        return this._dimensionsIsValid && this._viewRendered;
     }
     destroy() {
         this._previewContainer.remove();
-        this._viewContainer.remove();
+        this._viewOuterContainer.remove();
         this._pageProxy.cleanup();
     }
     renderPreviewAsync(force = false) {
@@ -20956,17 +21077,46 @@ class PageView {
     }
     refreshDimensions() {
         const dpr = window.devicePixelRatio;
+        this._currentViewport = this._defaultViewport.clone({
+            scale: this.scale * dpr,
+        });
         this._dimensions.scaledWidth = this._dimensions.width * this._scale;
         this._dimensions.scaledHeight = this._dimensions.height * this._scale;
         this._dimensions.scaledDprWidth = this._dimensions.scaledWidth * dpr;
         this._dimensions.scaledDprHeight = this._dimensions.scaledHeight * dpr;
-        this._viewContainer.style.width = this._dimensions.scaledWidth + "px";
-        this._viewContainer.style.height = this._dimensions.scaledHeight + "px";
+        const w = this._dimensions.scaledWidth + "px";
+        const h = this._dimensions.scaledHeight + "px";
         if (this._viewCanvas) {
-            this._viewCanvas.style.width = this._dimensions.scaledWidth + "px";
-            this._viewCanvas.style.height = this._dimensions.scaledHeight + "px";
+            this._viewCanvas.style.width = w;
+            this._viewCanvas.style.height = h;
         }
-        this._scaleIsValid = false;
+        this._viewInnerContainer.style.width = w;
+        this._viewInnerContainer.style.height = h;
+        switch (this.rotation) {
+            case 0:
+                this._viewOuterContainer.style.width = w;
+                this._viewOuterContainer.style.height = h;
+                this._viewInnerContainer.style.transform = "";
+                break;
+            case 90:
+                this._viewOuterContainer.style.width = h;
+                this._viewOuterContainer.style.height = w;
+                this._viewInnerContainer.style.transform = "rotate(90deg) translateY(-100%)";
+                break;
+            case 180:
+                this._viewOuterContainer.style.width = w;
+                this._viewOuterContainer.style.height = h;
+                this._viewInnerContainer.style.transform = "rotate(180deg) translateX(-100%) translateY(-100%)";
+                break;
+            case 270:
+                this._viewOuterContainer.style.width = h;
+                this._viewOuterContainer.style.height = w;
+                this._viewInnerContainer.style.transform = "rotate(270deg) translateX(-100%)";
+                break;
+            default:
+                throw new Error(`Invalid rotation degree: ${this.rotation}`);
+        }
+        this._dimensionsIsValid = false;
     }
     cancelRenderTask() {
         if (this._renderTask) {
@@ -21020,7 +21170,7 @@ class PageView {
             const canvas = this.createPreviewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: canvas.width / this._dimensions.width, rotation: 0 }),
+                viewport: this._defaultViewport.clone({ scale: canvas.width / this._dimensions.width, rotation: 0 }),
             };
             const result = yield this.runRenderTaskAsync(params);
             if (!result) {
@@ -21041,7 +21191,7 @@ class PageView {
             const canvas = this.createViewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
-                viewport: this._viewport.clone({ scale: scale * window.devicePixelRatio, rotation: 0 }),
+                viewport: this._currentViewport,
                 enableWebGL: true,
             };
             const result = yield this.runRenderTaskAsync(params);
@@ -21049,17 +21199,17 @@ class PageView {
                 return;
             }
             (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
-            this._viewContainer.append(canvas);
+            this._viewInnerContainer.append(canvas);
             this._viewCanvas = canvas;
             this._viewRendered = true;
-            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewContainer, scale);
+            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
                 this._annotations = new PageAnnotationView(this._docService, this.id, new Vec2(x, y));
             }
-            yield this._annotations.appendAsync(this.viewContainer);
+            yield this._annotations.appendAsync(this._viewInnerContainer);
             if (scale === this._scale) {
-                this._scaleIsValid = true;
+                this._dimensionsIsValid = true;
             }
         });
     }

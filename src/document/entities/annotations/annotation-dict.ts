@@ -325,15 +325,34 @@ export abstract class AnnotationDict extends PdfDict {
 
   /**
    * move the annotation to the specified coords relative to the page
-   * @param pageX 
-   * @param pageY 
+   * @param point target point corrdiantes in the page coordinate system 
    */
-  moveTo(pageX: number, pageY: number) {
+  moveTo(point: Vec2) {
     const width = this.Rect[2] - this.Rect[0];
     const height = this.Rect[3] - this.Rect[1];
-    const x = pageX - width / 2;
-    const y = pageY - height / 2;
+    const x = point.x - width / 2;
+    const y = point.y - height / 2;
     const mat = Mat3.buildTranslate(x, y);
+    this.applyCommonTransform(mat);
+  }
+
+  /**
+   * rotate the annotation by a certain angle
+   * @param angle angle in radians
+   * @param center point to rotate around (if not specified, the annotation center is used)
+   */
+  rotateBy(angle: number, center?: Vec2) {   
+    if (!center) {
+      const [x0, y0, x1, y1] = this.Rect; 
+      center = new Vec2(
+        (x0 + x1) / 2,
+        (y0 + y1) / 2,
+      );
+    } 
+    const mat = new Mat3()
+      .applyTranslation(-center.x, -center.y)
+      .applyRotation(angle)
+      .applyTranslation(center.x, center.y);
     this.applyCommonTransform(mat);
   }
 

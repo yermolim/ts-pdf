@@ -1,4 +1,4 @@
-import { getDistance } from "../../common/math";
+import { getDistance, Mat3, Vec2 } from "../../common/math";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -89,13 +89,13 @@ export class StampAnnotator extends Annotator {
       return;
     }
 
-    // append the current temp stamp to the page
+    // append the current temp annotation to the page
     this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
 
     this._addedAnnotations.push(this._tempAnnotation);
     this.emitDataChanged(this._addedAnnotations.length, true, true);
 
-    // create new temp annotation
+    // create a new temp annotation
     this.createTempStampAnnotationAsync();
   }
   
@@ -189,12 +189,17 @@ export class StampAnnotator extends Annotator {
       return;
     }
 
+    const {pageId, pageX, pageY, pageRotation} = this._pointerCoordsInPageCS;
+
     // translate the stamp to the pointer position
-    const {pageId, pageX, pageY} = this._pointerCoordsInPageCS;
-    this._tempAnnotation.moveTo(pageX, pageY);
-    this._pageId = pageId;
+    this._tempAnnotation.moveTo(new Vec2(pageX, pageY));
+    // rotate the current annotation according to the page rotation
+    if (pageRotation) {      
+      this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI);
+    }
 
     // save the current temp stamp to the document data
+    this._pageId = pageId;
     this.saveAnnotation();
   };
 

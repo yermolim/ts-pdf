@@ -101,10 +101,6 @@ export class PenData {
     this.appendPositionToBuffer(pos);
     this.updateCurrentPath();
   }
-
-  setGroupMatrix(matrix?: Hextuple) {
-    this._group.setAttribute("transform", `matrix(${matrix.join(" ")})`);
-  }
   
   private appendPositionToBuffer(pos: Vec2) {
     const buffer = this._positionBuffer;
