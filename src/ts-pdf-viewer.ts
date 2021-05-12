@@ -52,6 +52,7 @@ export interface TsPdfViewerOptions {
   visibleAdjPages?: number;
   /**page preview canvas width in px */
   previewWidth?: number;
+
   minScale?: number;
   maxScale?: number;
 }

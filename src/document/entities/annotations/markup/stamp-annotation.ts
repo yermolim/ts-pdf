@@ -1,14 +1,16 @@
 import { Quadruple } from "../../../../common/types";
-import { getRandomUuid } from "../../../../common/uuid";
+
 import { CryptInfo } from "../../../common-interfaces";
-import { annotationTypes } from "../../../const";
+import { annotationTypes, colorSpaces } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";
 import { LiteralString } from "../../strings/literal-string";
 
 import { XFormStream } from "../../streams/x-form-stream";
+import { ImageStream } from "../../streams/image-stream";
 import { ResourceDict } from "../../appearance/resource-dict";
+
 import { MarkupAnnotation } from "./markup-annotation";
 import { AnnotationDto } from "../annotation-dict";
 
@@ -2754,12 +2756,20 @@ const stampForms = {
   `,
 } as const;
 
-interface StampCreationInfo {   
-  textStreamData: string;
-  color: [r: number, g: number, b: number];
+interface StampCreationInfo {
   subject: string;
   bBox: Quadruple;
   rect: Quadruple;
+}
+
+export interface StandardStampCreationInfo extends StampCreationInfo {   
+  textStreamData: string;
+  color: [r: number, g: number, b: number];
+}
+
+export interface CustomStampCreationInfo extends StampCreationInfo {
+  /**image data as a byte array (4 bytes for each pixel: RGBA) */
+  imageData: Uint8Array;
 }
 
 const stampCreationInfos = {
@@ -2865,6 +2875,7 @@ const stampCreationInfos = {
 
 export interface StampAnnotationDto extends AnnotationDto {
   stampType: string;
+  stampSubject?: string;
   stampImageData?: number[];
 }
 //#endregion
@@ -2882,29 +2893,6 @@ export class StampAnnotation extends MarkupAnnotation {
   protected constructor() {
     super(annotationTypes.STAMP);
   }
-
-  static createStandard(type: StampType, userName: string): StampAnnotation {
-    const nowString = new Date().toISOString();
-    const dto: StampAnnotationDto = {
-      uuid: getRandomUuid(),
-      annotationType: "/Stamp",
-      pageId: null,
-
-      dateCreated: nowString,
-      dateModified: nowString,
-      author: userName || "unknown",
-
-      textContent: null,
-
-      rect: null,
-      matrix: null,
-
-      stampType: type,
-      stampImageData: null,
-    };
-
-    return this.createFromDto(dto);
-  }
   
   static createFromDto(dto: StampAnnotationDto): StampAnnotation {
     if (dto.annotationType !== "/Stamp") {
@@ -2912,56 +2900,90 @@ export class StampAnnotation extends MarkupAnnotation {
     }
 
     const created = DateString.fromDate(new Date(dto.dateCreated));
-    const modified = DateString.fromDate(new Date(dto.dateModified));
+    const modified = DateString.fromDate(new Date(dto.dateModified)); 
 
-    const stampForm = new XFormStream();
-    stampForm.LastModified = modified;
-    stampForm.Filter = "/FlateDecode";
-
-    // set the stamp options using the default stamp information dictionary
-    const stampCreationInfo: StampCreationInfo = stampCreationInfos[dto.stampType];
-    if (!stampCreationInfo) {
-      throw new Error(`Stamp type '${dto.stampType}' is not supported`);
-    }
-    stampForm.setTextStreamData(stampCreationInfo.textStreamData);
-    const color = stampCreationInfo.color;
-    const subject = stampCreationInfo.subject;
-    const bBox = stampCreationInfo.bBox;
-    
-    stampForm.BBox = bBox;
-
-    const r = color[0].toFixed(3);
-    const g = color[1].toFixed(3);
-    const b = color[2].toFixed(3);
-    const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
-    
     const apStream = new XFormStream();
     apStream.LastModified = modified;
-    apStream.BBox = bBox;
-    apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];  
-    apStream.Resources = new ResourceDict();
-    apStream.Resources.setXObject("/Fm", stampForm);
     apStream.Filter = "/FlateDecode";
-    apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
-
+    apStream.Resources = new ResourceDict();
+    apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];    
+    
     const annotation = new StampAnnotation();
     annotation.$name = dto.uuid;  
     annotation.NM = LiteralString.fromString(dto.uuid); // identifier
     annotation.T = LiteralString.fromString(dto.author || "unknown");
     annotation.M = modified;
     annotation.CreationDate = created;
-    annotation.Contents = dto.textContent 
-      ? LiteralString.fromString(dto.textContent) 
-      : LiteralString.fromString(subject);
-
-    annotation.Subj = LiteralString.fromString(subject);
-    annotation.Name = dto.stampType;
-    annotation.Rect = dto.rect || stampCreationInfo.rect;
-    annotation.C = color;
-    annotation.CA = 1; // opacity
+    annotation.Name = dto.stampType;   
     annotation.apStream = apStream;
+    
+    // set the stamp options using the default stamp information dictionary
+    const stampCreationInfo: StandardStampCreationInfo = stampCreationInfos[dto.stampType];
+    if (stampCreationInfo) {
+      // standard stamp
+      const stampForm = new XFormStream();
+      stampForm.LastModified = modified;
+      stampForm.Filter = "/FlateDecode";
 
-    // TODO: add reading custom image data
+      stampForm.setTextStreamData(stampCreationInfo.textStreamData);
+      const color = stampCreationInfo.color;
+      const subject = stampCreationInfo.subject;
+      const bBox = stampCreationInfo.bBox;
+      const rect = dto.rect || stampCreationInfo.rect;
+      
+      stampForm.BBox = bBox;
+
+      const r = color[0].toFixed(3);
+      const g = color[1].toFixed(3);
+      const b = color[2].toFixed(3);
+      const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
+
+      apStream.BBox = bBox;
+      apStream.Resources.setXObject("/Fm", stampForm);
+      apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
+      
+      annotation.Rect = rect;
+      annotation.Contents = dto.textContent 
+        ? LiteralString.fromString(dto.textContent) 
+        : LiteralString.fromString(subject);
+      annotation.Subj = LiteralString.fromString(subject);
+      annotation.C = color;
+      annotation.CA = 1; // opacity
+    } else if (dto.stampImageData?.length && !(dto.stampImageData.length % 4)) {
+      // custom stamp
+      const data = new Uint8Array(dto.stampImageData);
+
+      const stampMask = new ImageStream();
+      stampMask.Filter = "/FlateDecode";
+      stampMask.BitsPerComponent = 8;
+      stampMask.Width = dto.rect[2];
+      stampMask.Height = dto.rect[3];
+      stampMask.ColorSpace = colorSpaces.GRAYSCALE;
+      stampMask.streamData = data.filter((v, i) => (i + 1) % 4 === 0); // take only alpha values
+
+      const stampImage = new ImageStream();
+      stampImage.Filter = "/FlateDecode";
+      stampImage.BitsPerComponent = 8;
+      stampImage.Width = dto.rect[2];
+      stampImage.Height = dto.rect[3];
+      stampImage.ColorSpace = colorSpaces.RGB;
+      stampImage.streamData = data.filter((v, i) => (i + 1) % 4 !== 0); // skip alpha values
+      stampImage.sMask = stampMask;
+      
+      apStream.BBox = dto.bbox;
+      apStream.Resources.setXObject("/Im", stampImage);
+      apStream.setTextStreamData("q /Im Do Q"); // TODO: check if matrix needed
+      
+      annotation.Rect = dto.rect;
+      annotation.Contents = dto.textContent 
+        ? LiteralString.fromString(dto.textContent) 
+        : LiteralString.fromString(dto.stampType);
+      annotation.Subj = dto.stampSubject 
+        ? LiteralString.fromString(dto.stampSubject) 
+        : LiteralString.fromString(dto.stampType);
+    } else {
+      throw new Error("Custom stamp has no valid image data");
+    }
 
     const proxy = new Proxy<StampAnnotation>(annotation, annotation.onChange);
     annotation._proxy = proxy;
@@ -3025,6 +3047,7 @@ export class StampAnnotation extends MarkupAnnotation {
       matrix: this.apStream?.Matrix,
 
       stampType: this.Name,
+      stampSubject: this.Subj?.literal,
       stampImageData: null, // TODO: add export custom image data
     };
   }

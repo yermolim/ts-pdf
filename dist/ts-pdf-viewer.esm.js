@@ -5984,6 +5984,9 @@ class ImageStream extends PdfStream {
     get sMask() {
         return this._sMask;
     }
+    set sMask(value) {
+        this._sMask = value;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -8108,6 +8111,42 @@ class AppearanceStreamRenderer {
         this._selectionCopies.push(clonedPath);
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
+    drawImageAsync(imageStream) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const url = yield imageStream.getImageUrlAsync();
+            if (!url) {
+                throw new Error("Can't get image url from external image stream");
+            }
+            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            image.onerror = e => {
+                console.log(`Loading external image stream failed: ${e}`);
+            };
+            image.setAttribute("href", url);
+            image.setAttribute("width", imageStream.Width + "");
+            image.setAttribute("height", imageStream.Height + "");
+            const imageMatrix = new Mat3()
+                .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
+                .applyScaling(1, -1)
+                .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
+                .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
+                .multiply(this.state.matrix);
+            const imageMatrixString = imageMatrix.toFloatShortArray().join(" ");
+            image.setAttribute("transform", `matrix(${imageMatrixString})`);
+            const imageWrapper = this.createSvgElement();
+            imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+            imageWrapper.append(image);
+            const clonedSvg = this.createSvgElement();
+            clonedSvg.classList.add("annotation-pick-helper");
+            const clonedRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            clonedRect.setAttribute("width", imageStream.Width + "");
+            clonedRect.setAttribute("height", imageStream.Height + "");
+            clonedRect.setAttribute("fill", "transparent");
+            clonedRect.setAttribute("transform", `matrix(${imageMatrixString})`);
+            clonedSvg.append(clonedRect);
+            this._selectionCopies.push(clonedRect);
+            return imageWrapper;
+        });
+    }
     drawText(value) {
         throw new Error("Method is not implemented");
     }
@@ -8373,29 +8412,9 @@ class AppearanceStreamRenderer {
                             this.popState();
                         }
                         else if (innerStream instanceof ImageStream) {
-                            const url = yield innerStream.getImageUrlAsync();
-                            if (!url) {
-                                throw new Error("Can't get image url from external image stream");
-                            }
-                            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-                            image.onerror = e => {
-                                console.log(`Loading external image stream failed: ${e}`);
-                            };
-                            image.setAttribute("href", url);
-                            image.setAttribute("width", innerStream.Width + "");
-                            image.setAttribute("height", innerStream.Height + "");
-                            const imageMatrix = new Mat3()
-                                .applyTranslation(-innerStream.Width / 2, -innerStream.Height / 2)
-                                .applyScaling(1, -1)
-                                .applyTranslation(innerStream.Width / 2, innerStream.Height / 2)
-                                .applyScaling(1 / innerStream.Width, 1 / innerStream.Height)
-                                .multiply(this.state.matrix);
-                            image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
-                            const imageWrapper = this.createSvgElement();
-                            imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
-                            imageWrapper.append(image);
+                            const image = yield this.drawImageAsync(innerStream);
                             svgElements.push({
-                                element: imageWrapper,
+                                element: image,
                                 blendMode: this.state.mixBlendMode || "normal"
                             });
                         }
@@ -14513,68 +14532,83 @@ class StampAnnotation extends MarkupAnnotation {
         this.Name = stampTypes.DRAFT;
         this.IT = "/Stamp";
     }
-    static createStandard(type, userName) {
-        const nowString = new Date().toISOString();
-        const dto = {
-            uuid: getRandomUuid(),
-            annotationType: "/Stamp",
-            pageId: null,
-            dateCreated: nowString,
-            dateModified: nowString,
-            author: userName || "unknown",
-            textContent: null,
-            rect: null,
-            matrix: null,
-            stampType: type,
-            stampImageData: null,
-        };
-        return this.createFromDto(dto);
-    }
     static createFromDto(dto) {
+        var _a;
         if (dto.annotationType !== "/Stamp") {
             throw new Error("Invalid annotation type");
         }
         const created = DateString.fromDate(new Date(dto.dateCreated));
         const modified = DateString.fromDate(new Date(dto.dateModified));
-        const stampForm = new XFormStream();
-        stampForm.LastModified = modified;
-        stampForm.Filter = "/FlateDecode";
-        const stampCreationInfo = stampCreationInfos[dto.stampType];
-        if (!stampCreationInfo) {
-            throw new Error(`Stamp type '${dto.stampType}' is not supported`);
-        }
-        stampForm.setTextStreamData(stampCreationInfo.textStreamData);
-        const color = stampCreationInfo.color;
-        const subject = stampCreationInfo.subject;
-        const bBox = stampCreationInfo.bBox;
-        stampForm.BBox = bBox;
-        const r = color[0].toFixed(3);
-        const g = color[1].toFixed(3);
-        const b = color[2].toFixed(3);
-        const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
         const apStream = new XFormStream();
         apStream.LastModified = modified;
-        apStream.BBox = bBox;
-        apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
-        apStream.Resources = new ResourceDict();
-        apStream.Resources.setXObject("/Fm", stampForm);
         apStream.Filter = "/FlateDecode";
-        apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
+        apStream.Resources = new ResourceDict();
+        apStream.Matrix = dto.matrix || [1, 0, 0, 1, 0, 0];
         const annotation = new StampAnnotation();
         annotation.$name = dto.uuid;
         annotation.NM = LiteralString.fromString(dto.uuid);
         annotation.T = LiteralString.fromString(dto.author || "unknown");
         annotation.M = modified;
         annotation.CreationDate = created;
-        annotation.Contents = dto.textContent
-            ? LiteralString.fromString(dto.textContent)
-            : LiteralString.fromString(subject);
-        annotation.Subj = LiteralString.fromString(subject);
         annotation.Name = dto.stampType;
-        annotation.Rect = dto.rect || stampCreationInfo.rect;
-        annotation.C = color;
-        annotation.CA = 1;
         annotation.apStream = apStream;
+        const stampCreationInfo = stampCreationInfos[dto.stampType];
+        if (stampCreationInfo) {
+            const stampForm = new XFormStream();
+            stampForm.LastModified = modified;
+            stampForm.Filter = "/FlateDecode";
+            stampForm.setTextStreamData(stampCreationInfo.textStreamData);
+            const color = stampCreationInfo.color;
+            const subject = stampCreationInfo.subject;
+            const bBox = stampCreationInfo.bBox;
+            const rect = dto.rect || stampCreationInfo.rect;
+            stampForm.BBox = bBox;
+            const r = color[0].toFixed(3);
+            const g = color[1].toFixed(3);
+            const b = color[2].toFixed(3);
+            const colorString = `${r} ${g} ${b} rg ${r} ${g} ${b} RG`;
+            apStream.BBox = bBox;
+            apStream.Resources.setXObject("/Fm", stampForm);
+            apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
+            annotation.Rect = rect;
+            annotation.Contents = dto.textContent
+                ? LiteralString.fromString(dto.textContent)
+                : LiteralString.fromString(subject);
+            annotation.Subj = LiteralString.fromString(subject);
+            annotation.C = color;
+            annotation.CA = 1;
+        }
+        else if (((_a = dto.stampImageData) === null || _a === void 0 ? void 0 : _a.length) && !(dto.stampImageData.length % 4)) {
+            const data = new Uint8Array(dto.stampImageData);
+            const stampMask = new ImageStream();
+            stampMask.Filter = "/FlateDecode";
+            stampMask.BitsPerComponent = 8;
+            stampMask.Width = dto.rect[2];
+            stampMask.Height = dto.rect[3];
+            stampMask.ColorSpace = colorSpaces.GRAYSCALE;
+            stampMask.streamData = data.filter((v, i) => (i + 1) % 4 === 0);
+            const stampImage = new ImageStream();
+            stampImage.Filter = "/FlateDecode";
+            stampImage.BitsPerComponent = 8;
+            stampImage.Width = dto.rect[2];
+            stampImage.Height = dto.rect[3];
+            stampImage.ColorSpace = colorSpaces.RGB;
+            stampImage.streamData = data.filter((v, i) => (i + 1) % 4 !== 0);
+            stampImage.sMask = stampMask;
+            apStream.BBox = dto.bbox;
+            apStream.Resources.setXObject("/Im", stampImage);
+            apStream.setTextStreamData("q /Im Do Q");
+            annotation.Rect = dto.rect;
+            annotation.Contents = dto.textContent
+                ? LiteralString.fromString(dto.textContent)
+                : LiteralString.fromString(dto.stampType);
+            annotation.Subj = dto.stampSubject
+                ? LiteralString.fromString(dto.stampSubject)
+                : LiteralString.fromString(dto.stampType);
+        }
+        else {
+            throw new Error("Custom stamp has no valid image data");
+        }
         const proxy = new Proxy(annotation, annotation.onChange);
         annotation._proxy = proxy;
         annotation._added = true;
@@ -14614,7 +14648,7 @@ class StampAnnotation extends MarkupAnnotation {
         return new Uint8Array(totalBytes);
     }
     toDto() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d, _e, _f;
         return {
             annotationType: "/Stamp",
             uuid: this.$name,
@@ -14631,6 +14665,7 @@ class StampAnnotation extends MarkupAnnotation {
             bbox: (_d = this.apStream) === null || _d === void 0 ? void 0 : _d.BBox,
             matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
             stampType: this.Name,
+            stampSubject: (_f = this.Subj) === null || _f === void 0 ? void 0 : _f.literal,
             stampImageData: null,
         };
     }
@@ -19719,9 +19754,27 @@ class StampAnnotator extends Annotator {
             saveable: false,
         }));
     }
+    createStandardStamp(type, userName) {
+        const nowString = new Date().toISOString();
+        const dto = {
+            uuid: getRandomUuid(),
+            annotationType: "/Stamp",
+            pageId: null,
+            dateCreated: nowString,
+            dateModified: nowString,
+            author: userName || "unknown",
+            textContent: null,
+            rect: null,
+            matrix: null,
+            stampType: type,
+            stampSubject: null,
+            stampImageData: null,
+        };
+        return StampAnnotation.createFromDto(dto);
+    }
     createTempStampAnnotationAsync() {
         return __awaiter$6(this, void 0, void 0, function* () {
-            const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
+            const stamp = this.createStandardStamp(this._type, this._docService.userName);
             const renderResult = yield stamp.renderApStreamAsync();
             this._svgGroup.innerHTML = "";
             this._svgGroup.append(...renderResult.clipPaths);

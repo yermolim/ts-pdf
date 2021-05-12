@@ -298,6 +298,46 @@ export class AppearanceStreamRenderer {
     return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
   }
 
+  protected async drawImageAsync(imageStream: ImageStream): Promise<SVGGraphicsElement> {    
+    const url = await imageStream.getImageUrlAsync();
+    if (!url) {
+      throw new Error("Can't get image url from external image stream");
+    }
+
+    const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    image.onerror = e => {
+      console.log(`Loading external image stream failed: ${e}`);
+    };
+    image.setAttribute("href", url);
+    image.setAttribute("width", imageStream.Width + "");
+    image.setAttribute("height", imageStream.Height + "");   
+    const imageMatrix = new Mat3()
+      .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
+      .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
+      .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
+      .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
+      .multiply(this.state.matrix);
+    const imageMatrixString = imageMatrix.toFloatShortArray().join(" ");
+    image.setAttribute("transform", `matrix(${imageMatrixString})`);
+
+    const imageWrapper = this.createSvgElement();
+    imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+    imageWrapper.append(image);
+
+    // create a transparent image rect copy to simplify user interaction    
+    const clonedSvg = this.createSvgElement();
+    clonedSvg.classList.add("annotation-pick-helper");
+    const clonedRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    clonedRect.setAttribute("width", imageStream.Width + "");
+    clonedRect.setAttribute("height", imageStream.Height + "");   
+    clonedRect.setAttribute("fill", "transparent");
+    clonedRect.setAttribute("transform", `matrix(${imageMatrixString})`);
+    clonedSvg.append(clonedRect);
+    this._selectionCopies.push(clonedRect);
+
+    return imageWrapper;
+  }
+
   protected drawText(value: string): SVGTextElement {
     // TODO: implement
     throw new Error("Method is not implemented");
@@ -625,33 +665,11 @@ export class AppearanceStreamRenderer {
             // pop the matrix
             this.popState();
 
-          } else if (innerStream instanceof ImageStream) {   
-            const url = await innerStream.getImageUrlAsync();
-            if (!url) {              
-              throw new Error("Can't get image url from external image stream");
-            }
-
-            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            image.onerror = e => {
-              console.log(`Loading external image stream failed: ${e}`);
-            };
-            image.setAttribute("href", url);
-            image.setAttribute("width", innerStream.Width + "");
-            image.setAttribute("height", innerStream.Height + "");   
-            const imageMatrix = new Mat3()
-              .applyTranslation(-innerStream.Width / 2, -innerStream.Height / 2)
-              .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
-              .applyTranslation(innerStream.Width / 2, innerStream.Height / 2)
-              .applyScaling(1 / innerStream.Width, 1 / innerStream.Height)
-              .multiply(this.state.matrix);                     
-            image.setAttribute("transform", `matrix(${imageMatrix.toFloatShortArray().join(" ")})`);
-            
-            const imageWrapper = this.createSvgElement();
-            imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
-            imageWrapper.append(image);
-
+          } else if (innerStream instanceof ImageStream) {  
+            // render the image 
+            const image = await this.drawImageAsync(innerStream);
             svgElements.push({ 
-              element: imageWrapper, 
+              element: image, 
               blendMode: this.state.mixBlendMode || "normal" 
             });
           } else {            

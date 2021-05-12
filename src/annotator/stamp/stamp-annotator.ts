@@ -1,8 +1,9 @@
-import { getDistance, Mat3, Vec2 } from "../../common/math";
+import { getDistance, Vec2 } from "../../common/math";
+import { getRandomUuid } from "../../common/uuid";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { StampAnnotation, StampType, stampTypes } 
+import { StampAnnotation, StampAnnotationDto, StampType, stampTypes } 
   from "../../document/entities/annotations/markup/stamp-annotation";
   
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
@@ -117,13 +118,37 @@ export class StampAnnotator extends Annotator {
       clearable,
       saveable: false,
     }));
+  }  
+
+  protected createStandardStamp(type: StampType, userName: string): StampAnnotation {
+    const nowString = new Date().toISOString();
+    const dto: StampAnnotationDto = {
+      uuid: getRandomUuid(),
+      annotationType: "/Stamp",
+      pageId: null,
+
+      dateCreated: nowString,
+      dateModified: nowString,
+      author: userName || "unknown",
+
+      textContent: null,
+
+      rect: null,
+      matrix: null,
+
+      stampType: type,
+      stampSubject: null,
+      stampImageData: null,
+    };
+
+    return StampAnnotation.createFromDto(dto);
   }
   
   /**
    * create temporary stamp annotation to render in under the pointer
    */
   protected async createTempStampAnnotationAsync() {
-    const stamp = StampAnnotation.createStandard(this._type, this._docService.userName);
+    const stamp = this.createStandardStamp(this._type, this._docService.userName);
     const renderResult = await stamp.renderApStreamAsync();  
 
     this._svgGroup.innerHTML = "";

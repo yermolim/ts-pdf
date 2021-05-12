@@ -144,6 +144,9 @@ export class ImageStream extends PdfStream {
   get sMask(): ImageStream {
     return this._sMask;
   }
+  set sMask(value: ImageStream) {
+    this._sMask = value;
+  }
 
   protected _indexedColorSpace: IndexedColorSpaceArray;
   
