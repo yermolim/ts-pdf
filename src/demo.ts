@@ -1,7 +1,7 @@
-import { AnnotEventDetail, TsPdfViewer } from "./ts-pdf-viewer";
+import { AnnotEventDetail, TsPdfViewer, TsPdfViewerOptions } from "./ts-pdf-viewer";
 
 async function run(): Promise<void> {  
-  const viewer = new TsPdfViewer({
+  const options: TsPdfViewerOptions = {
     containerSelector: "#pdf-main-container", 
     workerSource: "assets/pdf.worker.min.js",
     userName: "viva",
@@ -12,7 +12,8 @@ async function run(): Promise<void> {
       }
       console.log(detail);
     },
-  });
+  };
+  const viewer = new TsPdfViewer(options);
   await viewer.openPdfAsync("demo.pdf");
   // await viewer.openPdfAsync("demo-annots.pdf");
   // await viewer.openPdfAsync("demo-annots2.pdf");

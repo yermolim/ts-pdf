@@ -39,16 +39,32 @@ export interface TsPdfViewerOptions {
 
   /**list of the file interaction buttons shown*/
   fileButtons?: FileButtons[];
-  /**action to execute instead of the default file open action*/
+  /**
+   * action to execute instead of the default file open action
+   * f.e. to open a custom dialog that allows the user to select a file from the database
+   */
   fileOpenAction?: () => void;
-  /**action to execute instead of the default file download action*/
+  /**
+   * action to execute instead of the default file download action
+   * f.e. to save the file bytes to the database instead of downloading it
+   */
   fileSaveAction?: () => void;
+  /**
+   * action to execute instead of the default file close action
+   * f.e. to discard all the changes made to the file
+   */
   fileCloseAction?: () => void;
 
-  /**action to execute on annotation change event */
+  /**
+   * action to execute on annotation change event 
+   * f.e. to save the changes to the database
+   */
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
   
-  /**number of pages that should be prerendered outside view */
+  /**
+   * number of pages that should be prerendered outside view 
+   * higher values can reduce performance and will increase memory use
+   */
   visibleAdjPages?: number;
   /**page preview canvas width in px */
   previewWidth?: number;
