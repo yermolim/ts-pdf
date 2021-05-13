@@ -13,6 +13,7 @@ A PDF.js-based PDF viewer written in typescript.
 
 ## Features
 <ul>
+    <li>opening and viewing PDF files</li>
     <li>adding and editing PDF annotations (supported annotation types are listed below)</li>
     <li>custom parsing and rendering for the supported annotation types</li>
     <li>annotation import/export to/from data-transfer objects that can be effortlessly serialized to JSON (useful for storing annotations in the separate database)</li>
@@ -24,7 +25,12 @@ A PDF.js-based PDF viewer written in typescript.
 </ul>
 
 ## How it works in a nutshell
-PDF file source data (decrypted if needed) is parsed using the custom parser written from scratch. Annotations of all the supported types are extracted from the source file. The resulting PDF file (without the supported annotations) is handled by the PDF.js worker, which is used to render the file contents and build a text layer. The extracted annotations are rendered to SVG on top of the pages by the custom PDF appearance stream renderer. User can modify or delete any supported annotation or add new annotations of the supported types by using provided UI. The annotations can be imported or exported at any time using corresponding methods. All changes are made can be saved to a new PDF file, which can be downloaded or returned to the caller as a byte array.
+PDF file source data (decrypted if needed) is parsed using the custom parser written from scratch. 
+Annotations of all the supported types are extracted from the source file. 
+The resulting PDF file (without the supported annotations) is handled by the PDF.js worker, which is used to render the file contents and build a text layer. 
+The extracted annotations are rendered to SVG on top of the pages by the custom PDF appearance stream renderer. 
+User can modify or delete any supported annotation or add new annotations of the supported types by using provided UI. The annotations can be imported or exported at any time using corresponding methods. 
+All changes are made can be saved to a new PDF file, which can be downloaded or returned to the caller as a byte array.
 
 ### Currently supported annotation types
 <ul>
@@ -41,7 +47,7 @@ PDF file source data (decrypted if needed) is parsed using the custom parser wri
     <li>Strikeout annotation</li>
     <li>Text annotation (only note icon)</li>
 </ul>
-#### Yet to be implemented
+### Yet to be implemented
 <ul>
     <li>Stamp annotation (support for custom stamps)</li>
     <li>Line annotation (support for text caption render)</li>
@@ -55,7 +61,7 @@ PDF file source data (decrypted if needed) is parsed using the custom parser wri
     <li>V2R3 (RC4 with 128-bit key)</li>
     <li>V4R4 (RC4 or AES with 128-bit key)</li>
 </ul>
-#### Yet to be implemented
+### Yet to be implemented
 <ul>
     <li>V5R5 (AES with 256-bit key)</li>
     <li>V5R6 (AES with 256-bit key, PDF 2.0)</li>
@@ -126,7 +132,8 @@ To apply a custom color scheme to the viewer, assign color values to the followi
 
 ### Solving Angular app compilation issue
 
-When using this module inside an Angular app you can face the problem that your project is not compiling because of 'SyntaxError: Unexpected token'. The cause of such behavior is that Angular 11.x and lower use Webpack v4.x that does not support fluent null-check syntax ('?.'), which is present in 'pdfjs-dist' build. The easy solution is to replace 
+When using this module inside an Angular app you can face the problem that your project is not compiling because of 'SyntaxError: Unexpected token'. The cause of such behavior is that Angular 11.x and lower use Webpack v4.x that does not support fluent null-check syntax ('?.'), which is present in 'pdfjs-dist' build. 
+The easy solution is to replace 
 ```json
 "main": "build/pdf.js" 
 ```
@@ -136,10 +143,27 @@ with
 ```
 inside 
 ```
-"/node_modules/pdfjs-dist/package.json".
+"/node_modules/pdfjs-dist/package.json"
 ```
 The other one is to make your own build of PDF.js.
 
+
+## TODO list
+<ul>
+    <li><del>add ink annotations support</del> added in 0.1.0</li>
+    <li><del>add geometric annotations (line, polyline, polygon, square, circle) support</del> added in 0.2.0</li>
+    <li><del>add text markup annotations (underline, strikeout, highlight, squiggly) support</del> added in 0.4.0</li>
+    <li><del>add text annotations (note) support</del> added in 0.4.0</li>
+    <li><del>add page rotation support</del> added in 0.5.0</li>
+    <li><del>add annotation blending modes support</del> added in 0.5.2</li>
+    <li>add custom stamp annotations support</li>
+    <li>add text caption support for line annotations</li>
+    <li>add free text annotations support</li>
+    <li>add tooltips to buttons</li>
+    <li>add localizations</li>
+    <li>add tests</li>
+    <li>optimize parser and renderer</li>
+</ul>
 
 ## Dependencies:
 <ul>
