@@ -132,7 +132,7 @@ export const styles = /*html*/`
     align-items: stretch;
     flex-grow: 0;
     flex-shrink: 0;
-    left: 20px;
+    left: calc(50% - 120px);
     top: 80px;
     width: 240px;
     height: 84px; 
@@ -143,8 +143,10 @@ export const styles = /*html*/`
     opacity: 0;
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+    z-index: 4;
   }
   .mobile #focused-annotation-panel {
+    left: 20px;
     width: 150px;
   }
   .annotation-focused #focused-annotation-panel {
