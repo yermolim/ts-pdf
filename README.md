@@ -47,7 +47,8 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
     <li>Strikeout annotation</li>
     <li>Text annotation (only note icon)</li>
 </ul>
-### Yet to be implemented
+
+#### Yet to be implemented
 <ul>
     <li>Stamp annotation (support for custom stamps)</li>
     <li>Line annotation (support for text caption render)</li>
@@ -61,7 +62,8 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
     <li>V2R3 (RC4 with 128-bit key)</li>
     <li>V4R4 (RC4 or AES with 128-bit key)</li>
 </ul>
-### Yet to be implemented
+
+#### Yet to be implemented
 <ul>
     <li>V5R5 (AES with 256-bit key)</li>
     <li>V5R6 (AES with 256-bit key, PDF 2.0)</li>
@@ -74,6 +76,7 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
     <li>JBIG2</li>
     <li>JPX</li>
 </ul>
+
 #### Not implemented yet
 <ul>
     <li>LZW</li>
