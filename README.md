@@ -161,7 +161,9 @@ The other one is to make your own build of PDF.js.
     <li>add free text annotations support</li>
     <li>add tooltips to buttons</li>
     <li>add localizations</li>
-    <li>add tests</li>
+    <li>write tests</li>
+    <li>add support for the rest of encryption algorithms</li>
+    <li>add support for the rest of encoding algorithms</li>
     <li>optimize parser and renderer</li>
 </ul>
 
