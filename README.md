@@ -91,7 +91,7 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
 
 ### Installation into your project
 ```
-npm install dots-animation
+npm install ts-pdf-viewer
 ```
 
 ### Running the simplest example
