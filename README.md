@@ -23,7 +23,7 @@ A PDF.js-based PDF viewer written in typescript.
     <li>using Shadow DOM to minimize conflicts with outer HTML</li>
 </ul>
 
-![](gifs/main.gif)
+<img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/main.gif" width="540" height="340">
 <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/mobile.gif" width="180" height="320">
 
 ## How it works in a nutshell
