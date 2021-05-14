@@ -24,7 +24,11 @@ A PDF.js-based PDF viewer written in typescript.
 </ul>
 
 <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/main.gif" width="540" height="340">
-<img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/mobile.gif" width="180" height="320">
+<p float="left">
+  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/mobile.gif" width="180" height="320">
+  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/mobile-annots.gif" width="180" height="320">
+  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/text.gif" width="180" height="320">
+</p>
 
 ## How it works in a nutshell
 PDF file source data (decrypted if needed) is parsed using the custom parser written from scratch. 
