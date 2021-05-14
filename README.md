@@ -24,7 +24,7 @@ A PDF.js-based PDF viewer written in typescript.
 </ul>
 
 ![](gifs/main.gif)
-[[https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/mobile.gif|width=200px]]
+<img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/69294cafc376fb57911a95bad32718eae9bbab6d/gifs/mobile.gif" width="360" height="640">
 
 ## How it works in a nutshell
 PDF file source data (decrypted if needed) is parsed using the custom parser written from scratch. 
