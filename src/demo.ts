@@ -4,7 +4,7 @@ async function run(): Promise<void> {
   const options: TsPdfViewerOptions = {
     containerSelector: "#pdf-main-container", 
     workerSource: "assets/pdf.worker.min.js",
-    userName: "viva",
+    userName: "yermolim",
     fileButtons: ["open", "close", "save"],
     annotChangeCallback: (detail: AnnotEventDetail) =>  {
       if (detail.type === "focus" || detail.type === "select") {

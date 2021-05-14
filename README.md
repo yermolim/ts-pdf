@@ -10,7 +10,6 @@
 </p>
 A PDF.js-based PDF viewer written in typescript.
 
-
 ## Features
 <ul>
     <li>opening and viewing PDF files</li>
@@ -23,6 +22,9 @@ A PDF.js-based PDF viewer written in typescript.
     <li>easy color scheme customization using CSS variables to override the default values</li>
     <li>using Shadow DOM to minimize conflicts with outer HTML</li>
 </ul>
+
+![](gifs/main.gif)
+![](gifs/mobile.gif)
 
 ## How it works in a nutshell
 PDF file source data (decrypted if needed) is parsed using the custom parser written from scratch. 
@@ -96,7 +98,7 @@ npm install ts-pdf-viewer
 
 ### Running the simplest example
 ```javascript
-import { TsPdfViewer, TsPdfViewerOptions } from "./ts-pdf-viewer";
+import { TsPdfViewer, TsPdfViewerOptions } from "ts-pdf-viewer";
 
 async function run(): Promise<void> {  
   const options: TsPdfViewerOptions = {
@@ -163,6 +165,8 @@ The other one is to make your own build of PDF.js.
     <li>add text caption support for line annotations</li>
     <li>add free text annotations support</li>
     <li>add tooltips to buttons</li>
+    <li>add keyboard shortcuts</li>
+    <li>add 'undo'/'redo'</li>
     <li>add localizations</li>
     <li>write tests</li>
     <li>add support for the rest of encryption algorithms</li>

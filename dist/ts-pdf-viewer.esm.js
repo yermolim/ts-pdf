@@ -21670,9 +21670,11 @@ class TsPdfViewer {
                 case "select":
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                         this._mainContainer.classList.add("annotation-selected");
+                        this._mainContainer.classList.add("annotation-focused");
                     }
                     else {
                         this._mainContainer.classList.remove("annotation-selected");
+                        this._mainContainer.classList.remove("annotation-focused");
                     }
                     break;
                 case "add":

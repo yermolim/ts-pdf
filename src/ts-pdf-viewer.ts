@@ -706,8 +706,10 @@ export class TsPdfViewer {
       case "select":      
         if (annotations?.length) {
           this._mainContainer.classList.add("annotation-selected");
+          this._mainContainer.classList.add("annotation-focused"); // for touch devices
         } else {
           this._mainContainer.classList.remove("annotation-selected");
+          this._mainContainer.classList.remove("annotation-focused"); // for touch devices
         }
         break;
       case "add":
