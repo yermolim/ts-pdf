@@ -8,13 +8,16 @@ import { styles } from "./assets/styles.html";
 import { clamp } from "./common/math";
 import { htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
+import { CustomStampCreationInfo } from "./common/drawing";
 
 import { ElementEventService } from "./services/element-event-service";
-import { DocumentService, annotChangeEvent, AnnotEvent, 
-  AnnotEventDetail, AnnotationDto } from "./services/document-service";
-import { AnnotationService } from "./services/annotation-service";
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
+import { DocumentService, annotChangeEvent, AnnotEvent, 
+  AnnotEventDetail, AnnotationDto } from "./services/document-service";
+import { customStampEvent, CustomStampEvent, CustomStampEventDetail, 
+  CustomStampService } from "./services/custom-stamp-service";
+import { AnnotationService } from "./services/annotation-service";
 
 import { Loader } from "./components/loader";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
@@ -61,6 +64,17 @@ export interface TsPdfViewerOptions {
    * f.e. to save the changes to the database
    */
   annotChangeCallback?: (detail: AnnotEventDetail) => void;
+
+  /**
+   * array of objects describing custom stamps
+   */
+  customStamps?: CustomStampCreationInfo[];
+  /**
+   * action to execute on custom stamp change event.
+   * fires when a new custom stamp is added or an old one is deleted.
+   * can be used for managing custom stamp library
+   */
+  customStampChangeCallback?: (detail: CustomStampEventDetail) => void;
   
   /**
    * number of pages that should be prerendered outside view 
@@ -74,7 +88,8 @@ export interface TsPdfViewerOptions {
   maxScale?: number;
 }
 
-export {AnnotationDto, AnnotEvent, AnnotEventDetail};
+export {AnnotationDto, AnnotEvent, AnnotEventDetail, 
+  CustomStampEvent, CustomStampEventDetail};
 
 export class TsPdfViewer {
   //#region private fields
@@ -86,6 +101,7 @@ export class TsPdfViewer {
   
   private readonly _eventService: ElementEventService;
   private readonly _pageService: PageService;
+  private readonly _customStampsService: CustomStampService;
 
   private readonly _loader: Loader;
   private readonly _viewer: Viewer;
@@ -98,6 +114,7 @@ export class TsPdfViewer {
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
   private _annotChangeCallback: (detail: AnnotEventDetail) => void;
+  private _customStampChangeCallback: (detail: CustomStampEventDetail) => void;
 
   private _mainContainerRObserver: ResizeObserver;
   private _panelsHidden: boolean;
@@ -137,6 +154,7 @@ export class TsPdfViewer {
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
     this._annotChangeCallback = options.annotChangeCallback;
+    this._customStampChangeCallback = options.customStampChangeCallback;
     
     const visibleAdjPages = options.visibleAdjPages || 0;
     const previewWidth = options.previewWidth || 100;
@@ -149,7 +167,10 @@ export class TsPdfViewer {
 
     this._eventService = new ElementEventService(this._mainContainer);
     this._pageService = new PageService(this._eventService,
-      {visibleAdjPages: visibleAdjPages});
+      {visibleAdjPages: visibleAdjPages});      
+
+    this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
+    this._customStampsService.addCustomStamps(options.customStamps);
 
     this._loader = new Loader();
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
@@ -166,6 +187,7 @@ export class TsPdfViewer {
     this._eventService.addListener(annotChangeEvent, this.onAnnotationChange);
     this._eventService.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
     this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
+    this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
     
     document.addEventListener("selectionchange", this.onTextSelectionChange); 
   }
@@ -189,21 +211,22 @@ export class TsPdfViewer {
   destroy() {
     this._annotChangeCallback = null;
 
-    this._eventService.destroy();
-
-    this._pdfLoadingTask?.destroy();
+    this._pdfLoadingTask?.destroy();    
 
     this._annotationService?.destroy();
 
     this._viewer.destroy();
     this._previewer.destroy();
     this._pageService.destroy();
-
+    
     if (this._pdfDocument) {
       this._pdfDocument.cleanup();
       this._pdfDocument.destroy();
     }  
     this._docService?.destroy();  
+    
+    this._customStampsService.destroy();
+    this._eventService.destroy();
 
     this._mainContainerRObserver?.disconnect();
     this._shadowRoot.innerHTML = "";
@@ -285,7 +308,8 @@ export class TsPdfViewer {
     await this.refreshPagesAsync();
 
     // create an annotation builder and set its mode to 'select'
-    this._annotationService = new AnnotationService(this._docService, this._pageService, this._viewer);
+    this._annotationService = new AnnotationService(this._docService, 
+      this._pageService, this._customStampsService, this._viewer);
     this.setAnnotationMode("select");
 
     this._mainContainer.classList.remove("disabled");
@@ -672,6 +696,13 @@ export class TsPdfViewer {
   
   private annotatorSave = () => {
     this._annotationService.annotator?.saveAnnotation();
+  };
+  
+  private onCustomStampChanged = (e: CustomStampEvent) => {
+    // execute change callback if present
+    if (this._customStampChangeCallback) {
+      this._customStampChangeCallback(e.detail);
+    }
   };
 
   private onAnnotationChange = (e: AnnotEvent) => {

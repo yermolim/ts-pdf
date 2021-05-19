@@ -16,9 +16,6 @@ export interface PenAnnotatorOptions {
 
 /**tool for adding ink (hand-drawn) annotations */
 export class PenAnnotator extends Annotator {
-  protected static lastColor: Quadruple;
-  protected static lastStrokeWidth: number;
-
   protected _annotationPenData: PenData;  
   protected _color: Quadruple;
   protected _strokeWidth: number;
@@ -28,11 +25,8 @@ export class PenAnnotator extends Annotator {
     super(docService, pageService, parent);
     this.init();
 
-    this._color = options?.color || PenAnnotator.lastColor || [0, 0, 0, 0.9];
-    PenAnnotator.lastColor = this._color;
-
-    this._strokeWidth = options?.strokeWidth || PenAnnotator.lastStrokeWidth || 3;
-    PenAnnotator.lastStrokeWidth = this._strokeWidth;
+    this._color = options?.color || [0, 0, 0, 0.9];
+    this._strokeWidth = options?.strokeWidth || 3;
   }
 
   destroy() {   

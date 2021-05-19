@@ -1,4 +1,5 @@
-import { AnnotEventDetail, TsPdfViewer, TsPdfViewerOptions } from "./ts-pdf-viewer";
+import { AnnotEventDetail, CustomStampEventDetail, 
+  TsPdfViewer, TsPdfViewerOptions } from "./ts-pdf-viewer";
 
 async function run(): Promise<void> {  
   const options: TsPdfViewerOptions = {
@@ -12,6 +13,9 @@ async function run(): Promise<void> {
       }
       console.log(detail);
     },
+    customStampChangeCallback: (detail: CustomStampEventDetail) => {
+      console.log(detail);
+    }
   };
   const viewer = new TsPdfViewer(options);
   await viewer.openPdfAsync("demo.pdf");
@@ -31,14 +35,6 @@ async function run(): Promise<void> {
   // await viewer.openPdfAsync("demo-v4r4-aesv2.pdf");
   // await viewer.openPdfAsync("demo-v5r5-aesv3.pdf");
   // await viewer.openPdfAsync("demo-v5r6-aesv3.pdf");
-
-  // setTimeout(() => {
-  //   viewer.closePdfAsync();
-  // }, 5000);
-  
-  // setTimeout(() => {
-  //   viewer.openPdfAsync("demo.pdf");
-  // }, 10000);
   
   // setTimeout(() => {
   // eslint-disable-next-line max-len

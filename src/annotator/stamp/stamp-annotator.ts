@@ -1,9 +1,10 @@
 import { getDistance, Vec2 } from "../../common/math";
 import { getRandomUuid } from "../../common/uuid";
+import { CustomStampCreationInfo, standardStampCreationInfos } from "../../common/drawing";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { StampAnnotation, StampAnnotationDto, StampType, stampTypes } 
+import { StampAnnotation, StampAnnotationDto } 
   from "../../document/entities/annotations/markup/stamp-annotation";
   
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
@@ -28,9 +29,9 @@ export const supportedStampTypes = [
 
 /**tool for adding rubber stamp annotations */
 export class StampAnnotator extends Annotator {
-  protected static lastType: StampType = "/Draft";
+  protected _type: string;
+  protected _creationInfo: CustomStampCreationInfo;
 
-  protected _type: StampType;
   protected _tempAnnotation: StampAnnotation;
   protected _pageId: number;
 
@@ -43,18 +44,14 @@ export class StampAnnotator extends Annotator {
    * @param type stamp type
    */
   constructor(docService: DocumentService, pageService: PageService, 
-    parent: HTMLDivElement, type?: string) {
+    parent: HTMLDivElement, type: string, creationInfo?: CustomStampCreationInfo) {
     super(docService, pageService, parent);
     
-    if (type) {
-      if (!(<string[]>Object.values(stampTypes)).includes(type)) {
-        throw new Error(`Unsupported stamp type: '${type}'`);
-      }
-      this._type = <StampType>type;
-      StampAnnotator.lastType = this._type;
-    } else {
-      this._type = StampAnnotator.lastType;
+    if (!type) {
+      throw new Error("Stamp type is not defined");
     }
+    this._type = type;
+    this._creationInfo = creationInfo;
 
     this.init();
   }
@@ -120,7 +117,8 @@ export class StampAnnotator extends Annotator {
     }));
   }  
 
-  protected createStandardStamp(type: StampType, userName: string): StampAnnotation {
+  protected createStandardStamp(type: string, 
+    userName?: string): StampAnnotation {
     const nowString = new Date().toISOString();
     const dto: StampAnnotationDto = {
       uuid: getRandomUuid(),
@@ -143,18 +141,57 @@ export class StampAnnotator extends Annotator {
 
     return StampAnnotation.createFromDto(dto);
   }
+
+  protected createCustomStamp(creationInfo: CustomStampCreationInfo,
+    userName?: string): StampAnnotation {
+    const nowString = new Date().toISOString();
+    const dto: StampAnnotationDto = {
+      uuid: getRandomUuid(),
+      annotationType: "/Stamp",
+      pageId: null,
+
+      dateCreated: nowString,
+      dateModified: nowString,
+      author: userName || "unknown",
+
+      textContent: null,
+
+      rect: creationInfo.rect,
+      bbox: creationInfo.bBox,
+      matrix: null,
+
+      stampType: creationInfo.type,
+      stampSubject: creationInfo.subject,
+      stampImageData: [...creationInfo.imageData],
+    };
+
+    return StampAnnotation.createFromDto(dto);
+  }
   
   /**
    * create temporary stamp annotation to render in under the pointer
    */
   protected async createTempStampAnnotationAsync() {
-    const stamp = this.createStandardStamp(this._type, this._docService.userName);
+    let stamp: StampAnnotation;
+    if (standardStampCreationInfos[this._type]) {
+      // stamp is standard
+      stamp = this.createStandardStamp(this._type, this._docService.userName);
+    } else if (this._creationInfo) {
+      // stamp is custom
+      stamp = this.createCustomStamp(this._creationInfo, this._docService.userName);
+    } else {
+      throw new Error(`Unsupported stamp type: ${this._type}`);
+    }
+
+    // render the newly created stamp
     const renderResult = await stamp.renderApStreamAsync();  
 
+    // append the render result to the annotator SVG
     this._svgGroup.innerHTML = "";
     this._svgGroup.append(...renderResult.clipPaths);
     this._svgGroup.append(...renderResult.elements.map(x => x.element));
 
+    // set the stamp to the corresponding property
     this._tempAnnotation = stamp;
   }
 

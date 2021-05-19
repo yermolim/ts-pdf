@@ -14,6 +14,16 @@ export declare type Hextuple = readonly [
 	g: number,
 	h: number
 ];
+export interface StampCreationInfo {
+	subject: string;
+	bBox: Quadruple;
+	rect: Quadruple;
+}
+export interface CustomStampCreationInfo extends StampCreationInfo {
+	imageData: Uint8Array;
+	type: string;
+	name: string;
+}
 export interface AnnotationDto {
 	annotationType: string;
 	uuid: string;
@@ -33,6 +43,13 @@ export interface AnnotEventDetail {
 export declare class AnnotEvent extends CustomEvent<AnnotEventDetail> {
 	constructor(detail: AnnotEventDetail);
 }
+export interface CustomStampEventDetail {
+	type: "add" | "delete";
+	stamp: CustomStampCreationInfo;
+}
+export declare class CustomStampEvent extends CustomEvent<CustomStampEventDetail> {
+	constructor(detail: CustomStampEventDetail);
+}
 export declare type FileButtons = "open" | "save" | "close";
 export interface TsPdfViewerOptions {
 	containerSelector: string;
@@ -43,6 +60,8 @@ export interface TsPdfViewerOptions {
 	fileSaveAction?: () => void;
 	fileCloseAction?: () => void;
 	annotChangeCallback?: (detail: AnnotEventDetail) => void;
+	customStamps?: CustomStampCreationInfo[];
+	customStampChangeCallback?: (detail: CustomStampEventDetail) => void;
 	visibleAdjPages?: number;
 	previewWidth?: number;
 	minScale?: number;
@@ -55,6 +74,7 @@ export declare class TsPdfViewer {
 	private readonly _mainContainer;
 	private readonly _eventService;
 	private readonly _pageService;
+	private readonly _customStampsService;
 	private readonly _loader;
 	private readonly _viewer;
 	private readonly _previewer;
@@ -64,6 +84,7 @@ export declare class TsPdfViewer {
 	private _fileSaveAction;
 	private _fileCloseAction;
 	private _annotChangeCallback;
+	private _customStampChangeCallback;
 	private _mainContainerRObserver;
 	private _panelsHidden;
 	private _fileInput;
@@ -108,6 +129,7 @@ export declare class TsPdfViewer {
 	private annotatorUndo;
 	private annotatorClear;
 	private annotatorSave;
+	private onCustomStampChanged;
 	private onAnnotationChange;
 	private onAnnotatorDataChanged;
 	private setAnnotationMode;

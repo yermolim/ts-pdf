@@ -232,13 +232,13 @@ export const mainHtml = /*html*/`
       <p id="focused-annotation-text" class="line-clamp"></p>
     </div>
 
-    <input id="open-file-input" type="file">
+    <input id="open-file-input" class="abs-hidden" type="file" accept="application/pdf">
   </div>
 `;
 
 //#region dialogs
 export const passwordDialogHtml =  /*html*/`
-  <div class="full-size-overlay password-dialog">
+  <div class="abs-full-size-overlay password-dialog">
     <div class="form">
       <input class="password-input" type="password" maxlength="127"/>
       <div class="buttons">
@@ -254,7 +254,7 @@ export const passwordDialogHtml =  /*html*/`
 `;
 
 export const textDialogHtml =  /*html*/`
-  <div class="full-size-overlay text-dialog">
+  <div class="abs-full-size-overlay text-dialog">
     <div class="form">
       <textarea class="text-input" maxlength="1024"></textarea>
       <div class="buttons">
@@ -279,6 +279,9 @@ export const stampContextButtonsHtml = /*html*/`
     <div class="panel-button stamp-draw-image disabled">
       <img src="${icon_pen}"/>
     </div>
+    <div class="panel-button stamp-delete disabled">
+      <img src="${icon_delete}"/>
+    </div>
   </div>
 `;
 
@@ -290,7 +293,7 @@ export const stampImageEditorHtml = /*html*/`
 //#endregion
 
 export const loaderHtml = /*html*/`
-  <div class="full-size-overlay">
+  <div class="abs-full-size-overlay">
     <div class="loader">
       <div></div>
       <div></div>

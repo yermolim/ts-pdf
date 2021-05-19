@@ -1,22 +1,25 @@
-import { Quadruple } from "../common/types";
-import { Vec2 } from "../common/math";
-import { htmlToElements } from "../common/dom";
-
 import { geometricIcons, lineTypeIcons, textIcons, 
   stampContextButtonsHtml } from "../assets/index.html";
 
+import { Quadruple } from "../common/types";
+import { Vec2 } from "../common/math";
+import { htmlToElements } from "../common/dom";
+import { CustomStampCreationInfo } from "../common/drawing";
+
 import { DocumentService } from "./document-service";
+import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";
+import { CustomStampService } from "./custom-stamp-service";
+
+import { Viewer } from "../components/viewer";
+import { ContextMenu } from "../components/context-menu";
 
 import { Annotator } from "../annotator/annotator";
 import { GeometricAnnotatorFactory, GeometricAnnotatorType, geometricAnnotatorTypes } 
   from "../annotator/geometric/geometric-annotator-factory";
 import { PenAnnotator } from "../annotator/pen/pen-annotator";
 import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-annotator";
-
-import { Viewer } from "../components/viewer";
-import { ContextMenu } from "../components/context-menu";
-import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";
-import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } from "../annotator/text/text-annotator-factory";
+import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } 
+  from "../annotator/text/text-annotator-factory";
 
 export type AnnotationServiceMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
@@ -31,8 +34,9 @@ export class AnnotationService {
   ];
   
   private readonly _docService: DocumentService;
-  private readonly _viewer: Viewer;
   private readonly _pageService: PageService;
+  private readonly _customStampService: CustomStampService;
+  private readonly _viewer: Viewer;
   
   private _contextMenu: ContextMenu;
   private _geometricFactory: GeometricAnnotatorFactory;
@@ -51,6 +55,7 @@ export class AnnotationService {
   private _strokeWidth = 3;
 
   private _stampType: string = supportedStampTypes[0].type;
+  private _stampCreationInfo: CustomStampCreationInfo;
 
   private _geometricCloudMode = false;
   private _geometricSubmode: GeometricAnnotatorType = geometricAnnotatorTypes[0];
@@ -62,12 +67,16 @@ export class AnnotationService {
     return this._annotator;
   }
 
-  constructor(docService: DocumentService, pageService: PageService, viewer: Viewer) {
+  constructor(docService: DocumentService, pageService: PageService, 
+    customStampService: CustomStampService, viewer: Viewer) {
     if (!docService) {
       throw new Error("Document service is not defined");
     }
     if (!pageService) {
       throw new Error("Page service is not defined");
+    }
+    if (!customStampService) {
+      throw new Error("Custom stamp service is not defined");
     }
     if (!viewer) {
       throw new Error("Viewer is not defined");
@@ -75,6 +84,7 @@ export class AnnotationService {
 
     this._docService = docService;
     this._pageService = pageService;
+    this._customStampService = customStampService;
     this._viewer = viewer;
 
     this.init();
@@ -133,7 +143,7 @@ export class AnnotationService {
         return;
       case "stamp":
         this._annotator = new StampAnnotator(this._docService, 
-          this._pageService, this._viewer.container, this._stampType);
+          this._pageService, this._viewer.container, this._stampType, this._stampCreationInfo);
         break;
       case "pen":
         this._annotator = new PenAnnotator(this._docService, 
@@ -185,7 +195,7 @@ export class AnnotationService {
         return [];
       case "stamp":
         return [
-          this.buildCustomStampPicker(),
+          this.buildCustomStampButtons(),
           this.buildStampTypePicker(),
         ];
       case "pen":
@@ -210,9 +220,22 @@ export class AnnotationService {
     }
   }  
 
-  private buildCustomStampPicker(): HTMLElement {    
-    const pickerDiv = htmlToElements(stampContextButtonsHtml)[0];
-    return pickerDiv;
+  private buildCustomStampButtons(): HTMLElement {    
+    const buttonsContainer = htmlToElements(stampContextButtonsHtml)[0];
+    buttonsContainer.querySelector(".stamp-load-image").addEventListener("click", () => {
+      this._customStampService.startLoadingImage();
+    });
+    buttonsContainer.querySelector(".stamp-draw-image").addEventListener("click", () => {
+      this._customStampService.startDrawing();
+    });
+    if (this._stampCreationInfo) {
+      const deleteButton = buttonsContainer.querySelector(".stamp-delete");
+      deleteButton.addEventListener("click", () => {
+        this._customStampService.removeCustomStamp(this._stampType);
+      });
+      deleteButton.classList.remove("disabled");
+    }
+    return buttonsContainer;
   }
 
   private buildStampTypePicker(): HTMLElement {
@@ -221,7 +244,7 @@ export class AnnotationService {
     // init a stamp type picker
     const pickerDiv = document.createElement("div");
     pickerDiv.classList.add("context-menu-content", "column");
-    stampTypes.forEach(x => {          
+    [...stampTypes, ...this._customStampService.getCustomStamps()].forEach(x => {          
       const item = document.createElement("div");
       item.classList.add("context-menu-stamp-select-button");
       if (x.type === this._stampType) {        
@@ -229,6 +252,12 @@ export class AnnotationService {
       }
       item.addEventListener("click", () => {
         this._stampType = x.type;
+        if (x["imageInfo"]) {
+          // custom stamp
+          this._stampCreationInfo = <CustomStampCreationInfo>x;
+        } else {
+          this._stampCreationInfo = null;
+        }
         this.setMode();
       });
       const stampName = document.createElement("div");
@@ -360,8 +389,9 @@ export class AnnotationService {
     div.append(slider);
 
     return div;
-  }
-  //#endregion
+  }  
   
   // TODO: add opacity slider
+
+  //#endregion
 }

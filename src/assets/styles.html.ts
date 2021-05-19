@@ -26,6 +26,11 @@ export const styles = /*html*/`
   .absolute {
     position: absolute;
   }
+  .abs-hidden {
+    position: absolute;
+    opacity: 0;
+    z-index: -10;
+  }
   .abs-stretch {
     position: absolute;
     left: 0;
@@ -564,7 +569,16 @@ export const styles = /*html*/`
     pointer-events: none;
   }
 
-  .full-size-overlay {
+  .abs-full-size-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--tspdf-color-secondary-tr-final);
+  }
+  
+  .fixed-full-size-overlay {
     position: absolute;
     left: 0;
     top: 0;
@@ -755,7 +769,8 @@ export const styles = /*html*/`
     font-size: 16px;
     color: var(--tspdf-color-fg-primary-final); 
   }
-  .context-menu-stamp-select-button:hover {
+  .context-menu-stamp-select-button:hover,
+  .context-menu-stamp-select-button.on {
     background-color: var(--tspdf-color-accent-final);
   }
   .context-menu-slider {
@@ -787,11 +802,6 @@ export const styles = /*html*/`
     background-color: var(--tspdf-color-accent-final);
   }
 
-  #open-file-input {
-    position: absolute;
-    opacity: 0;
-    z-index: -10;
-  }
   #button-open-file {
     pointer-events: auto !important;
   }
