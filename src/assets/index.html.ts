@@ -41,6 +41,7 @@ import icon_text_squiggly from "./icons/text-squiggly.png";
 import icon_text_strikeout from "./icons/text-strikeout.png";
 import icon_text_underline from "./icons/text-underline.png";
 
+//#region icons
 export const geometricIcons = {
   square: `<img src="${icon_square}"/>`,
   circle: `<img src="${icon_circle}"/>`,
@@ -64,8 +65,9 @@ export const lineTypeIcons = {
   straight: `<img src="${icon_straight}"/>`,
   cloudy: `<img src="${icon_cloudy}"/>`,
 } as const;
+//#endregion
 
-export const html = /*html*/`
+export const mainHtml = /*html*/`
   <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
@@ -234,38 +236,65 @@ export const html = /*html*/`
   </div>
 `;
 
+//#region dialogs
 export const passwordDialogHtml =  /*html*/`
+  <div class="full-size-overlay password-dialog">
     <div class="form">
-      <input id="password-input" type="password" maxlength="127"/>
+      <input class="password-input" type="password" maxlength="127"/>
       <div class="buttons">
-        <div id="password-ok" class="panel-button">
+        <div class="panel-button password-ok">
           <img src="${icon_ok}"/>
         </div>
-        <div id="password-cancel" class="panel-button">
+        <div class="panel-button password-cancel">
           <img src="${icon_close}"/>
         </div>
       </div>
     </div>
+  </div>
 `;
 
 export const textDialogHtml =  /*html*/`
+  <div class="full-size-overlay text-dialog">
     <div class="form">
-      <textarea id="text-input" maxlength="1024"></textarea>
+      <textarea class="text-input" maxlength="1024"></textarea>
       <div class="buttons">
-        <div id="text-ok" class="panel-button">
+        <div class="panel-button text-ok">
           <img src="${icon_ok}"/>
         </div>
-        <div id="text-cancel" class="panel-button">
+        <div class="panel-button text-cancel">
           <img src="${icon_close}"/>
         </div>
       </div>
     </div>
+  </div>
+`;
+//#endregion
+
+//#region stamps
+export const stampContextButtonsHtml = /*html*/`
+  <div class="context-menu-content row">
+    <div class="panel-button stamp-load-image disabled">
+      <img src="${icon_load}"/>
+    </div>
+    <div class="panel-button stamp-draw-image disabled">
+      <img src="${icon_pen}"/>
+    </div>
+  </div>
 `;
 
+export const stampImageLoaderHtml = /*html*/`
+`;
+
+export const stampImageEditorHtml = /*html*/`
+`;
+//#endregion
+
 export const loaderHtml = /*html*/`
+  <div class="full-size-overlay">
     <div class="loader">
       <div></div>
       <div></div>
       <div></div>
     </div>
+  </div>
 `;

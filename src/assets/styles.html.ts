@@ -573,7 +573,11 @@ export const styles = /*html*/`
     background: var(--tspdf-color-secondary-tr-final);
   }
 
-  #password-dialog .form {
+  .password-dialog {
+    z-index: 10;
+    pointer-events: all !important;
+  }
+  .password-dialog .form {
     position: absolute;
     display: flex;
     flex-direction: row;
@@ -588,7 +592,7 @@ export const styles = /*html*/`
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
-  #password-dialog input {
+  .password-dialog input {
     width: 220px;
     margin: 10px 0 10px 10px;
     padding: 5px;
@@ -598,12 +602,12 @@ export const styles = /*html*/`
     color: var(--tspdf-color-fg-primary-final);
     background-color: var(--tspdf-color-primary-final);
   }
-  #password-dialog input::placeholder {
+  .password-dialog input::placeholder {
     font-size: 14px;
     font-style: italic;
     color: var(--tspdf-color-fg-primary-final);
   }
-  #password-dialog .buttons {
+  .password-dialog .buttons {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -613,7 +617,10 @@ export const styles = /*html*/`
     width: 100px;
   } 
   
-  #text-dialog .form {
+  .text-dialog {
+    z-index: 9;
+  }
+  .text-dialog .form {
     box-sizing: border-box;
     position: absolute;
     display: flex;
@@ -630,7 +637,7 @@ export const styles = /*html*/`
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
-  #text-dialog textarea {
+  .text-dialog textarea {
     height: 100%;
     margin: 0 0 5px 0;
     padding: 5px;
@@ -641,12 +648,12 @@ export const styles = /*html*/`
     color: var(--tspdf-color-fg-primary-final);
     background-color: var(--tspdf-color-primary-final);
   }
-  #text-dialog textarea::placeholder {
+  .text-dialog textarea::placeholder {
     font-size: 14px;
     font-style: italic;
     color: var(--tspdf-color-fg-primary-final);
   }
-  #text-dialog .buttons {
+  .text-dialog .buttons {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -707,8 +714,8 @@ export const styles = /*html*/`
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    justify-content: stretch;
+    align-items: stretch;
     overflow-y: auto;
   }
   .context-menu-content {

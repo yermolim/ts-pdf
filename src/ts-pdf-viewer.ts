@@ -2,10 +2,11 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
-import { html, passwordDialogHtml, textDialogHtml } from "./assets/index.html";
+import { mainHtml, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
 import { clamp } from "./common/math";
+import { htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
 
 import { ElementEventService } from "./services/element-event-service";
@@ -143,7 +144,7 @@ export class TsPdfViewer {
     const maxScale = options.maxScale || 4;
 
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = styles + html;    
+    this._shadowRoot.innerHTML = styles + mainHtml;    
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
     this._eventService = new ElementEventService(this._mainContainer);
@@ -844,6 +845,9 @@ export class TsPdfViewer {
       // hide panels if pointer is far from the container edges
       if (!this._panelsHidden && !this._timers.hidePanels) {
         this._timers.hidePanels = setTimeout(() => {
+          if (!this._pdfDocument) {
+            return; // hide panels only if document is open
+          }
           this._mainContainer.classList.add("hide-panels");
           this._panelsHidden = true;
           this._timers.hidePanels = null;
@@ -865,35 +869,31 @@ export class TsPdfViewer {
   private async showPasswordDialogAsync(): Promise<string> {
     const passwordPromise = new Promise<string>((resolve, reject) => {
 
-      const dialogContainer = document.createElement("div");
-      dialogContainer.id = "password-dialog";
-      dialogContainer.classList.add("full-size-overlay");
-      dialogContainer.style.zIndex = "10";
-      dialogContainer.innerHTML = passwordDialogHtml;
-      this._mainContainer.append(dialogContainer);
+      const dialog = htmlToElements(passwordDialogHtml)[0];
+      this._mainContainer.append(dialog);
 
       let value = "";      
-      const input = this._shadowRoot.getElementById("password-input") as HTMLInputElement;
+      const input = dialog.querySelector(".password-input") as HTMLInputElement;
       input.placeholder = "Enter password...";
       input.addEventListener("change", () => value = input.value);
 
       const ok = () => {
-        dialogContainer.remove();
+        dialog.remove();
         resolve(value);
       };
       const cancel = () => {
-        dialogContainer.remove();
+        dialog.remove();
         resolve(null);
       };
 
-      dialogContainer.addEventListener("click", (e: Event) => {
-        if (e.target === dialogContainer) {
+      dialog.addEventListener("click", (e: Event) => {
+        if (e.target === dialog) {
           cancel();
         }
       });
       
-      this._shadowRoot.getElementById("password-ok").addEventListener("click", ok);
-      this._shadowRoot.getElementById("password-cancel").addEventListener("click", cancel);
+      dialog.querySelector(".password-ok").addEventListener("click", ok);
+      dialog.querySelector(".password-cancel").addEventListener("click", cancel);
     });
 
     return passwordPromise;

@@ -1,5 +1,4 @@
 import { Vec2 } from "./math";
-import { Octuple } from "./types";
 
 export interface TextSelectionInfo {
   text: string;

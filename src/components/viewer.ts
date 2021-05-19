@@ -1,6 +1,7 @@
 import { textDialogHtml } from "../assets/index.html";
 
 import { clamp, Vec2, getDistance } from "../common/math";
+import { htmlToElements } from "../common/dom";
 
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
@@ -112,19 +113,15 @@ export class Viewer {
       return;
     }
 
-    const dialogContainer = document.createElement("div");
-    dialogContainer.id = "text-dialog";
-    dialogContainer.classList.add("full-size-overlay");
-    dialogContainer.style.top = this._container.scrollTop + "px";
-    dialogContainer.style.left = this._container.scrollLeft + "px";
-    dialogContainer.style.zIndex = "9";
-    dialogContainer.innerHTML = textDialogHtml;
+    const dialog = htmlToElements(textDialogHtml)[0];
+    dialog.style.top = this._container.scrollTop + "px";
+    dialog.style.left = this._container.scrollLeft + "px";
 
-    this._container.append(dialogContainer);
+    this._container.append(dialog);
     this._container.classList.add("dialog-shown");
 
     let value = initialText || "";      
-    const input = dialogContainer.querySelector("#text-input") as HTMLTextAreaElement;
+    const input = dialog.querySelector(".text-input") as HTMLTextAreaElement;
     input.placeholder = "Enter text...";
     input.value = value;
     input.addEventListener("change", () => value = input.value);
@@ -138,13 +135,13 @@ export class Viewer {
         resolve(null);
       };
 
-      dialogContainer.addEventListener("click", (e: Event) => {
-        if (e.target === dialogContainer) {
+      dialog.addEventListener("click", (e: Event) => {
+        if (e.target === dialog) {
           cancel();
         }
       });      
-      dialogContainer.querySelector("#text-ok").addEventListener("click", ok);
-      dialogContainer.querySelector("#text-cancel").addEventListener("click", cancel);
+      dialog.querySelector(".text-ok").addEventListener("click", ok);
+      dialog.querySelector(".text-cancel").addEventListener("click", cancel);
       
       // save the dialog close callback to the viewer property
       this._dialogClose = () => resolve(null);
@@ -153,7 +150,7 @@ export class Viewer {
     const result = await textPromise;
 
     this._dialogClose = null;
-    dialogContainer.remove();
+    dialog.remove();
     this._container.classList.remove("dialog-shown");
     
     return result;

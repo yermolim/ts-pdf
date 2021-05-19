@@ -1,7 +1,9 @@
 import { Quadruple } from "../common/types";
 import { Vec2 } from "../common/math";
+import { htmlToElements } from "../common/dom";
 
-import { geometricIcons, lineTypeIcons, textIcons } from "../assets/index.html";
+import { geometricIcons, lineTypeIcons, textIcons, 
+  stampContextButtonsHtml } from "../assets/index.html";
 
 import { DocumentService } from "./document-service";
 
@@ -182,7 +184,10 @@ export class AnnotationService {
       case "select":
         return [];
       case "stamp":
-        return [this.buildStampTypePicker()];
+        return [
+          this.buildCustomStampPicker(),
+          this.buildStampTypePicker(),
+        ];
       case "pen":
         return [
           this.buildStrokeColorPicker(),
@@ -205,7 +210,12 @@ export class AnnotationService {
     }
   }  
 
-  private buildStampTypePicker(): HTMLDivElement {
+  private buildCustomStampPicker(): HTMLElement {    
+    const pickerDiv = htmlToElements(stampContextButtonsHtml)[0];
+    return pickerDiv;
+  }
+
+  private buildStampTypePicker(): HTMLElement {
     const stampTypes = supportedStampTypes;
 
     // init a stamp type picker
@@ -229,7 +239,7 @@ export class AnnotationService {
     return pickerDiv;
   }
   
-  private buildGeometricSubmodePicker(): HTMLDivElement {    
+  private buildGeometricSubmodePicker(): HTMLElement {    
     const submodePicker = document.createElement("div");
     submodePicker.classList.add("context-menu-content", "row");
     geometricAnnotatorTypes.forEach(x => {   
@@ -248,7 +258,7 @@ export class AnnotationService {
     return submodePicker;
   }
   
-  private buildTextSubmodePicker(): HTMLDivElement {
+  private buildTextSubmodePicker(): HTMLElement {
     const submodePicker = document.createElement("div");
     submodePicker.classList.add("context-menu-content", "row");
     textAnnotatorTypes.forEach(x => {   
@@ -273,7 +283,7 @@ export class AnnotationService {
     return submodePicker;
   }
 
-  private buildStrokeColorPicker(): HTMLDivElement {    
+  private buildStrokeColorPicker(): HTMLElement {    
     const colorPickerDiv = document.createElement("div");
     colorPickerDiv.classList.add("context-menu-content", "row");
     this._annotationColors.forEach(x => {          
@@ -295,7 +305,7 @@ export class AnnotationService {
     return colorPickerDiv;
   }
   
-  private buildStrokeWidthSlider(cloudButtons?: boolean): HTMLDivElement {
+  private buildStrokeWidthSlider(cloudButtons?: boolean): HTMLElement {
     const disableLineTypeButtons = !cloudButtons   
       || this._geometricSubmode === "polyline"
       || this._geometricSubmode === "line"

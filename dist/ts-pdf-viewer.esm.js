@@ -142,7 +142,7 @@ const lineTypeIcons = {
     straight: `<img src="${img$8}"/>`,
     cloudy: `<img src="${img$s}"/>`,
 };
-const html = `
+const mainHtml = `
   <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
@@ -311,37 +311,53 @@ const html = `
   </div>
 `;
 const passwordDialogHtml = `
+  <div class="full-size-overlay password-dialog">
     <div class="form">
-      <input id="password-input" type="password" maxlength="127"/>
+      <input class="password-input" type="password" maxlength="127"/>
       <div class="buttons">
-        <div id="password-ok" class="panel-button">
+        <div class="panel-button password-ok">
           <img src="${img$j}"/>
         </div>
-        <div id="password-cancel" class="panel-button">
+        <div class="panel-button password-cancel">
           <img src="${img$u}"/>
         </div>
       </div>
     </div>
+  </div>
 `;
 const textDialogHtml = `
+  <div class="full-size-overlay text-dialog">
     <div class="form">
-      <textarea id="text-input" maxlength="1024"></textarea>
+      <textarea class="text-input" maxlength="1024"></textarea>
       <div class="buttons">
-        <div id="text-ok" class="panel-button">
+        <div class="panel-button text-ok">
           <img src="${img$j}"/>
         </div>
-        <div id="text-cancel" class="panel-button">
+        <div class="panel-button text-cancel">
           <img src="${img$u}"/>
         </div>
       </div>
     </div>
+  </div>
+`;
+const stampContextButtonsHtml = `
+  <div class="context-menu-content row">
+    <div class="panel-button stamp-load-image disabled">
+      <img src="${img$l}"/>
+    </div>
+    <div class="panel-button stamp-draw-image disabled">
+      <img src="${img$i}"/>
+    </div>
+  </div>
 `;
 const loaderHtml = `
+  <div class="full-size-overlay">
     <div class="loader">
       <div></div>
       <div></div>
       <div></div>
     </div>
+  </div>
 `;
 
 const styles = `
@@ -917,7 +933,11 @@ const styles = `
     background: var(--tspdf-color-secondary-tr-final);
   }
 
-  #password-dialog .form {
+  .password-dialog {
+    z-index: 10;
+    pointer-events: all !important;
+  }
+  .password-dialog .form {
     position: absolute;
     display: flex;
     flex-direction: row;
@@ -932,7 +952,7 @@ const styles = `
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
-  #password-dialog input {
+  .password-dialog input {
     width: 220px;
     margin: 10px 0 10px 10px;
     padding: 5px;
@@ -942,12 +962,12 @@ const styles = `
     color: var(--tspdf-color-fg-primary-final);
     background-color: var(--tspdf-color-primary-final);
   }
-  #password-dialog input::placeholder {
+  .password-dialog input::placeholder {
     font-size: 14px;
     font-style: italic;
     color: var(--tspdf-color-fg-primary-final);
   }
-  #password-dialog .buttons {
+  .password-dialog .buttons {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -957,7 +977,10 @@ const styles = `
     width: 100px;
   } 
   
-  #text-dialog .form {
+  .text-dialog {
+    z-index: 9;
+  }
+  .text-dialog .form {
     box-sizing: border-box;
     position: absolute;
     display: flex;
@@ -974,7 +997,7 @@ const styles = `
     background: var(--tspdf-color-primary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
   }
-  #text-dialog textarea {
+  .text-dialog textarea {
     height: 100%;
     margin: 0 0 5px 0;
     padding: 5px;
@@ -985,12 +1008,12 @@ const styles = `
     color: var(--tspdf-color-fg-primary-final);
     background-color: var(--tspdf-color-primary-final);
   }
-  #text-dialog textarea::placeholder {
+  .text-dialog textarea::placeholder {
     font-size: 14px;
     font-style: italic;
     color: var(--tspdf-color-fg-primary-final);
   }
-  #text-dialog .buttons {
+  .text-dialog .buttons {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -1051,8 +1074,8 @@ const styles = `
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
+    justify-content: stretch;
+    align-items: stretch;
     overflow-y: auto;
   }
   .context-menu-content {
@@ -1906,6 +1929,18 @@ function vecMinMax(...values) {
 }
 function getDistance(x1, y1, x2, y2) {
     return Math.hypot(x2 - x1, y2 - y1);
+}
+
+function htmlToElements(html) {
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    const nodes = [];
+    template.content.childNodes.forEach(x => {
+        if (x instanceof HTMLElement) {
+            nodes.push(x);
+        }
+    });
+    return nodes;
 }
 
 function getNextNode(node) {
@@ -20465,7 +20500,10 @@ class AnnotationService {
             case "select":
                 return [];
             case "stamp":
-                return [this.buildStampTypePicker()];
+                return [
+                    this.buildCustomStampPicker(),
+                    this.buildStampTypePicker(),
+                ];
             case "pen":
                 return [
                     this.buildStrokeColorPicker(),
@@ -20485,6 +20523,10 @@ class AnnotationService {
             default:
                 throw new Error(`Invalid annotation mode: ${this._mode}`);
         }
+    }
+    buildCustomStampPicker() {
+        const pickerDiv = htmlToElements(stampContextButtonsHtml)[0];
+        return pickerDiv;
     }
     buildStampTypePicker() {
         const stampTypes = supportedStampTypes;
@@ -20624,24 +20666,20 @@ class AnnotationService {
 
 class Loader {
     constructor() {
-        const dialogContainer = document.createElement("div");
-        dialogContainer.id = "text-dialog";
-        dialogContainer.classList.add("full-size-overlay");
-        dialogContainer.innerHTML = loaderHtml;
-        this._container = dialogContainer;
+        this._loaderElement = htmlToElements(loaderHtml)[0];
     }
     show(parent, zIndex = 8) {
         if (this._isShown || !parent) {
             return;
         }
-        this._container.style.zIndex = zIndex + "";
-        this._container.style.top = parent.scrollTop + "px";
-        this._container.style.left = parent.scrollLeft + "px";
-        parent.append(this._container);
+        this._loaderElement.style.zIndex = zIndex + "";
+        this._loaderElement.style.top = parent.scrollTop + "px";
+        this._loaderElement.style.left = parent.scrollLeft + "px";
+        parent.append(this._loaderElement);
         this._isShown = true;
     }
     hide() {
-        this._container.remove();
+        this._loaderElement.remove();
         this._isShown = false;
     }
 }
@@ -20817,17 +20855,13 @@ class Viewer {
             if (this._dialogClose) {
                 return;
             }
-            const dialogContainer = document.createElement("div");
-            dialogContainer.id = "text-dialog";
-            dialogContainer.classList.add("full-size-overlay");
-            dialogContainer.style.top = this._container.scrollTop + "px";
-            dialogContainer.style.left = this._container.scrollLeft + "px";
-            dialogContainer.style.zIndex = "9";
-            dialogContainer.innerHTML = textDialogHtml;
-            this._container.append(dialogContainer);
+            const dialog = htmlToElements(textDialogHtml)[0];
+            dialog.style.top = this._container.scrollTop + "px";
+            dialog.style.left = this._container.scrollLeft + "px";
+            this._container.append(dialog);
             this._container.classList.add("dialog-shown");
             let value = initialText || "";
-            const input = dialogContainer.querySelector("#text-input");
+            const input = dialog.querySelector(".text-input");
             input.placeholder = "Enter text...";
             input.value = value;
             input.addEventListener("change", () => value = input.value);
@@ -20838,18 +20872,18 @@ class Viewer {
                 const cancel = () => {
                     resolve(null);
                 };
-                dialogContainer.addEventListener("click", (e) => {
-                    if (e.target === dialogContainer) {
+                dialog.addEventListener("click", (e) => {
+                    if (e.target === dialog) {
                         cancel();
                     }
                 });
-                dialogContainer.querySelector("#text-ok").addEventListener("click", ok);
-                dialogContainer.querySelector("#text-cancel").addEventListener("click", cancel);
+                dialog.querySelector(".text-ok").addEventListener("click", ok);
+                dialog.querySelector(".text-cancel").addEventListener("click", cancel);
                 this._dialogClose = () => resolve(null);
             });
             const result = yield textPromise;
             this._dialogClose = null;
-            dialogContainer.remove();
+            dialog.remove();
             this._container.classList.remove("dialog-shown");
             return result;
         });
@@ -21758,6 +21792,9 @@ class TsPdfViewer {
             if (Math.min(l, r, t, b) > 150) {
                 if (!this._panelsHidden && !this._timers.hidePanels) {
                     this._timers.hidePanels = setTimeout(() => {
+                        if (!this._pdfDocument) {
+                            return;
+                        }
                         this._mainContainer.classList.add("hide-panels");
                         this._panelsHidden = true;
                         this._timers.hidePanels = null;
@@ -21802,7 +21839,7 @@ class TsPdfViewer {
         const minScale = options.minScale || 0.25;
         const maxScale = options.maxScale || 4;
         this._shadowRoot = this._outerContainer.attachShadow({ mode: "open" });
-        this._shadowRoot.innerHTML = styles + html;
+        this._shadowRoot.innerHTML = styles + mainHtml;
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         this._eventService = new ElementEventService(this._mainContainer);
         this._pageService = new PageService(this._eventService, { visibleAdjPages: visibleAdjPages });
@@ -22132,31 +22169,27 @@ class TsPdfViewer {
     showPasswordDialogAsync() {
         return __awaiter(this, void 0, void 0, function* () {
             const passwordPromise = new Promise((resolve, reject) => {
-                const dialogContainer = document.createElement("div");
-                dialogContainer.id = "password-dialog";
-                dialogContainer.classList.add("full-size-overlay");
-                dialogContainer.style.zIndex = "10";
-                dialogContainer.innerHTML = passwordDialogHtml;
-                this._mainContainer.append(dialogContainer);
+                const dialog = htmlToElements(passwordDialogHtml)[0];
+                this._mainContainer.append(dialog);
                 let value = "";
-                const input = this._shadowRoot.getElementById("password-input");
+                const input = dialog.querySelector(".password-input");
                 input.placeholder = "Enter password...";
                 input.addEventListener("change", () => value = input.value);
                 const ok = () => {
-                    dialogContainer.remove();
+                    dialog.remove();
                     resolve(value);
                 };
                 const cancel = () => {
-                    dialogContainer.remove();
+                    dialog.remove();
                     resolve(null);
                 };
-                dialogContainer.addEventListener("click", (e) => {
-                    if (e.target === dialogContainer) {
+                dialog.addEventListener("click", (e) => {
+                    if (e.target === dialog) {
                         cancel();
                     }
                 });
-                this._shadowRoot.getElementById("password-ok").addEventListener("click", ok);
-                this._shadowRoot.getElementById("password-cancel").addEventListener("click", cancel);
+                dialog.querySelector(".password-ok").addEventListener("click", ok);
+                dialog.querySelector(".password-cancel").addEventListener("click", cancel);
             });
             return passwordPromise;
         });
