@@ -211,9 +211,11 @@ export class StampAnnotator extends Annotator {
     const offsetY = (oy - cy) / this._pageService.scale;
 
     // move temp stamp under the current pointer position
-    const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
-    this._svgGroup.setAttribute("transform",
-      `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
+    if (this._tempAnnotation) {
+      const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
+      this._svgGroup.setAttribute("transform",
+        `translate(${offsetX - (x2 - x1) / 2} ${offsetY - (y2 - y1) / 2})`);
+    }
 
     // get coords under the pointer relatively to the page under it 
     this.updatePointerCoords(cx, cy);

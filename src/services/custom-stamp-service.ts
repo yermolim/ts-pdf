@@ -245,13 +245,17 @@ export class CustomStampService {
     cancelButton.addEventListener("click", hide);
     okButton.addEventListener("click", () => {
       // create a stamp creation information and add it to inner collection
+      const imageDataArray = new Array<number>(imgData.length);
+      for (let i = 0; i < imgData.length; i++) {
+        imageDataArray[i] = imgData[i];
+      }
       const stamp: CustomStampCreationInfo = {
         type: "/" + getRandomUuid(),
         name: stampName,
         subject: stampSubject,
         rect: [0, 0, stampWidth, stampHeight],
         bBox: [0, 0, imageWidth, imageHeight],
-        imageData: imgData,
+        imageData: imageDataArray,
       };
       this.addCustomStamp(stamp);
       hide();

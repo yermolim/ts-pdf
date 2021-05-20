@@ -14,7 +14,6 @@ import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
 import { AnnotationDto } from "../annotation-dict";
-import { AppearanceStreamRenderer } from "../../../render/appearance-stream-renderer";
 
 export interface InkAnnotationDto extends AnnotationDto {
   inkList: number[][];

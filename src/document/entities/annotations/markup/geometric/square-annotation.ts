@@ -1,6 +1,6 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { buildCloudCurveFromPolyline } from "../../../../../common/drawing";
+import { buildCloudCurveFromPolyline, calcBBoxToRectMatrices } from "../../../../../common/drawing";
 
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
@@ -14,7 +14,6 @@ import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
-import { AppearanceStreamRenderer } from "../../../../render/appearance-stream-renderer";
 
 export interface SquareAnnotationDto extends GeometricAnnotationDto {  
   rectMargins: Quadruple;
@@ -230,9 +229,8 @@ export class SquareAnnotation extends GeometricAnnotation {
     }    
 
     // calculate matrices needed for drawing
-    const bBoxToRectMat = AppearanceStreamRenderer
-      .calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix)
-      .matAA;
+    const bBoxToRectMat = calcBBoxToRectMatrices(streamBbox, 
+      this.Rect, streamMatrix).matAA;
     const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
     const {r: rotation} = apStream.matrix.getTRS(); 
     const marginsRotationMat = new Mat3().applyRotation(rotation);  

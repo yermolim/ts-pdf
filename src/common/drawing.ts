@@ -1,5 +1,5 @@
-import { Vec2, mat3From4Vec2, Mat3, getDistance } from "./math";
-import { Quadruple } from "./types";
+import { Vec2, mat3From4Vec2, Mat3, getDistance, vecMinMax } from "./math";
+import { Hextuple, Quadruple } from "./types";
 
 /**width (in PDF page units) of the transparent lines rendered to simplify annotation selection */
 export const selectionStrokeWidth = 20;
@@ -2897,7 +2897,7 @@ export interface StandardStampCreationInfo extends StampCreationInfo {
 
 export interface CustomStampCreationInfo extends StampCreationInfo {
   /**image data as a byte array (4 bytes for each pixel: RGBA) */
-  imageData: Uint8ClampedArray | Uint8Array;
+  imageData: number[];
   /**stamp name to use in PDF file */
   type: string;
   /**stamp name to show in user interface */
@@ -3005,3 +3005,57 @@ export const standardStampCreationInfos = {
   },
 } as const;
 //#endregion
+
+/**
+ * calculate the transformation matrix between the stream bounding box and the specified AABB
+ * @param bBox source AABB in the page coordinate system
+ * @param rect target AABB coordinates in the page coordinate system
+ * @param matrix optional transformation from the source AABB to properly oriented BB
+ * @returns transformation matrices (matAA is the final matrix)
+ */
+export function calcBBoxToRectMatrices(bBox: Quadruple, rect: Quadruple, matrix?: Hextuple): 
+{matAP: Mat3; matA: Mat3; matAA: Mat3} {          
+  const matAP = new Mat3();
+  if (matrix) {
+    const [m0, m1, m3, m4, m6, m7] = matrix;
+    matAP.set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+  } 
+  const bBoxLL = new Vec2(bBox[0], bBox[1]);
+  const bBoxLR = new Vec2(bBox[2], bBox[1]);
+  const bBoxUR = new Vec2(bBox[2], bBox[3]);
+  const bBoxUL = new Vec2(bBox[0], bBox[3]);
+  /*
+    The appearance’s bounding box (specified by its BBox entry) is transformed, 
+    using Matrix, to produce a quadrilateral with arbitrary orientation. 
+    The transformed appearance box is the smallest upright rectangle 
+    that encompasses this quadrilateral.
+    */
+  const {min: appBoxMin, max: appBoxMax} = vecMinMax(
+    Vec2.applyMat3(bBoxLL, matAP),
+    Vec2.applyMat3(bBoxLR, matAP), 
+    Vec2.applyMat3(bBoxUR, matAP),
+    Vec2.applyMat3(bBoxUL, matAP), 
+  );
+    /*
+    A matrix A is computed that scales and translates the transformed appearance box 
+    to align with the edges of the annotation’s rectangle (specified by the Rect entry). 
+    A maps the lower-left corner (the corner with the smallest x and y coordinates) 
+    and the upper-right corner (the corner with the greatest x and y coordinates) 
+    of the transformed appearance box to the corresponding corners of the annotation’s rectangle
+    */   
+  const rectMin = new Vec2(rect[0], rect[1]);
+  const rectMax = new Vec2(rect[2], rect[3]);
+  const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
+  /*
+    Matrix is concatenated with A to form a matrix AA that maps from 
+    the appearance’s coordinate system to the annotation’s rectangle in default user space
+    */
+  const matAA = Mat3.fromMat3(matAP).multiply(matA);
+
+  // DEBUG
+  // console.log(matAP.toFloatShortArray());
+  // console.log(matA.toFloatShortArray());
+  // console.log(matAA.toFloatShortArray());    
+
+  return {matAP, matA, matAA};
+}

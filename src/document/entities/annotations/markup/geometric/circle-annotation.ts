@@ -2,7 +2,8 @@ import { Hextuple, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { bezierConstant, buildCloudCurveFromEllipse } from "../../../../../common/drawing";
+import { bezierConstant, buildCloudCurveFromEllipse, 
+  calcBBoxToRectMatrices } from "../../../../../common/drawing";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -14,7 +15,6 @@ import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
-import { AppearanceStreamRenderer } from "../../../../render/appearance-stream-renderer";
 
 export interface CircleAnnotationDto extends GeometricAnnotationDto {  
   rectMargins: Quadruple;
@@ -230,9 +230,8 @@ export class CircleAnnotation extends GeometricAnnotation {
     }  
     
     // calculate matrices needed for drawing
-    const bBoxToRectMat = AppearanceStreamRenderer
-      .calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix)
-      .matAA;
+    const bBoxToRectMat = calcBBoxToRectMatrices(streamBbox, 
+      this.Rect, streamMatrix).matAA;
     const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
     const {r: rotation} = apStream.matrix.getTRS(); 
     const marginsRotationMat = new Mat3().applyRotation(rotation);
