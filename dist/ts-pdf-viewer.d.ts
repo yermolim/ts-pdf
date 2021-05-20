@@ -37,7 +37,7 @@ export interface AnnotationDto {
 	matrix?: Hextuple;
 }
 export interface AnnotEventDetail {
-	type: "focus" | "select" | "add" | "edit" | "delete";
+	type: "focus" | "select" | "add" | "edit" | "delete" | "render";
 	annotations: AnnotationDto[];
 }
 export declare class AnnotEvent extends CustomEvent<AnnotEventDetail> {

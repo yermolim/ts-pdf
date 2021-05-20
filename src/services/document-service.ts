@@ -36,7 +36,7 @@ export interface AnnotFocusRequestEventDetail {
   annotation: AnnotationDict;
 }
 export interface AnnotEventDetail {
-  type: "focus" | "select" | "add" | "edit" | "delete";
+  type: "focus" | "select" | "add" | "edit" | "delete" | "render";
   annotations: AnnotationDto[];
 }
 
@@ -160,7 +160,10 @@ export class DocumentService {
   /**free the resources that can prevent garbage to be collected */
   destroy() {
     // clear onEditedAction to prevent memory leak
-    this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
+    this.getAllSupportedAnnotations().forEach(x => {
+      x.$onEditedAction = null;
+      x.$onRenderUpdatedAction = null;
+    });
 
     this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
     this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
@@ -277,7 +280,8 @@ export class DocumentService {
     }
 
     annotation.$pageId = page.id;
-    annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
+    annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+    annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
     const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);
@@ -399,13 +403,24 @@ export class DocumentService {
   }
   //#endregion
 
-  private getOnAnnotationEditAction(annotation: AnnotationDict): () => void {
+  private getOnAnnotEditAction(annotation: AnnotationDict): () => void {
     if (!annotation) {
       return null;
     }
 
     return () => this._eventService.dispatchEvent(new AnnotEvent({
       type: "edit",
+      annotations: [annotation.toDto()],
+    }));
+  }
+  
+  private getOnAnnotRenderUpdatedAction(annotation: AnnotationDict): () => void {
+    if (!annotation) {
+      return null;
+    }
+
+    return () => this._eventService.dispatchEvent(new AnnotEvent({
+      type: "render",
       annotations: [annotation.toDto()],
     }));
   }
@@ -590,7 +605,8 @@ export class DocumentService {
         if (annot) {
           annotations.push(annot);
           annot.$pageId = page.id;
-          annot.$onEditedAction = this.getOnAnnotationEditAction(annot);
+          annot.$onEditedAction = this.getOnAnnotEditAction(annot);
+          annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
 
           // DEBUG
           console.log(annot);

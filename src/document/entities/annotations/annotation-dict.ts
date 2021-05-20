@@ -63,6 +63,9 @@ export abstract class AnnotationDict extends PdfDict {
   $pageId: number;
   $translationEnabled: boolean;
 
+  /**optional action callback which is called on render update event */
+  $onRenderUpdatedAction: () => void;
+
   /**optional action callback which is called on 'pointer down' event */
   $onPointerDownAction: (e: PointerEvent) => void;  
   /**optional action callback which is called on 'pointer enter' event */
@@ -936,6 +939,10 @@ export abstract class AnnotationDict extends PdfDict {
     // render annotation content copy used for its transformation
     const copy = this.buildRenderContentCopy(contentRenderResult); 
     this._svgContentCopy = copy;
+
+    if (this.$onRenderUpdatedAction) {
+      this.$onRenderUpdatedAction();
+    }
   }
 
   //#endregion

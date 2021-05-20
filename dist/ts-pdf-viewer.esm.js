@@ -6502,15 +6502,19 @@ class ImageStream extends PdfStream {
                 else {
                     alpha = new Uint8Array(length).fill(255);
                 }
-                const data = new Uint8ClampedArray(length * 4);
+                const imageBytes = new Uint8ClampedArray(length * 4);
+                const colors = this.getRgbColors();
+                let j;
+                let k;
                 for (let i = 0; i < length; i++) {
-                    const [r, g, b] = this.getColor(i);
-                    data[i * 4] = r;
-                    data[i * 4 + 1] = g;
-                    data[i * 4 + 2] = b;
-                    data[i * 4 + 3] = alpha[i];
+                    j = i * 4;
+                    k = i * 3;
+                    imageBytes[j] = colors[k];
+                    imageBytes[j + 1] = colors[k + 1];
+                    imageBytes[j + 2] = colors[k + 2];
+                    imageBytes[j + 3] = alpha[i];
                 }
-                const imageData = new ImageData(data, this.Width, this.Height);
+                const imageData = new ImageData(imageBytes, this.Width, this.Height);
                 const urlPromise = new Promise((resolve, reject) => {
                     const canvas = document.createElement("canvas");
                     canvas.width = this.Width;
@@ -6755,7 +6759,7 @@ class ImageStream extends PdfStream {
             this._sMask = sMask.value;
         }
     }
-    getColor(index) {
+    getRgbColor(index) {
         var _a;
         const data = this.decodedStreamData;
         switch (this.ColorSpace) {
@@ -6781,6 +6785,60 @@ class ImageStream extends PdfStream {
             case colorSpaces.SPECIAL_INDEXED:
                 return ((_a = this._indexedColorSpace) === null || _a === void 0 ? void 0 : _a.getColor(index)) || [0, 0, 0];
         }
+    }
+    getRgbColors() {
+        var _a;
+        const data = this.decodedStreamData;
+        const pixels = this.Width * this.Height;
+        const length = pixels * 3;
+        const result = new Uint8ClampedArray(length);
+        let i;
+        let j;
+        let n;
+        switch (this.ColorSpace) {
+            case colorSpaces.GRAYSCALE:
+                let gray;
+                for (i = 0; i < pixels; i++) {
+                    gray = data[i];
+                    j = i * 3;
+                    result[j] = gray;
+                    result[j + 1] = gray;
+                    result[j + 2] = gray;
+                }
+                break;
+            case colorSpaces.RGB:
+                for (i = 0; i < length; i++) {
+                    result[i] = data[i];
+                }
+                break;
+            case colorSpaces.CMYK:
+                let c;
+                let m;
+                let y;
+                let k;
+                for (i = 0; i < pixels; i++) {
+                    j = i * 3;
+                    n = i * 4;
+                    c = data[n] / 255;
+                    m = data[n + 1] / 255;
+                    y = data[n + 2] / 255;
+                    k = data[n + 3] / 255;
+                    result[j] = 255 * (1 - c) * (1 - k);
+                    result[j + 1] = 255 * (1 - m) * (1 - k);
+                    result[j + 2] = 255 * (1 - y) * (1 - k);
+                }
+                break;
+            case colorSpaces.SPECIAL_INDEXED:
+                for (i = 0; i < pixels; i++) {
+                    const [r, g, b] = ((_a = this._indexedColorSpace) === null || _a === void 0 ? void 0 : _a.getColor(i)) || [0, 0, 0];
+                    j = i * 3;
+                    result[j] = r;
+                    result[j + 1] = g;
+                    result[j + 2] = b;
+                }
+                break;
+        }
+        return result;
     }
 }
 
@@ -12888,6 +12946,9 @@ class AnnotationDict extends PdfDict {
             this._renderedControls.append(rect, box, ...contentRenderResult.pickHelpers, ...handles);
             const copy = this.buildRenderContentCopy(contentRenderResult);
             this._svgContentCopy = copy;
+            if (this.$onRenderUpdatedAction) {
+                this.$onRenderUpdatedAction();
+            }
         });
     }
 }
@@ -18171,7 +18232,10 @@ class DocumentService {
         return !this._encryption || !!this._authResult;
     }
     destroy() {
-        this.getAllSupportedAnnotations().forEach(x => x.$onEditedAction = null);
+        this.getAllSupportedAnnotations().forEach(x => {
+            x.$onEditedAction = null;
+            x.$onRenderUpdatedAction = null;
+        });
         this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
         this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
@@ -18247,7 +18311,8 @@ class DocumentService {
             throw new Error(`Page with id ${pageId} is not found`);
         }
         annotation.$pageId = page.id;
-        annotation.$onEditedAction = this.getOnAnnotationEditAction(annotation);
+        annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+        annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
         const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
         if (pageAnnotations) {
             pageAnnotations.push(annotation);
@@ -18346,12 +18411,21 @@ class DocumentService {
         var _a;
         (_a = this.selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContent(text);
     }
-    getOnAnnotationEditAction(annotation) {
+    getOnAnnotEditAction(annotation) {
         if (!annotation) {
             return null;
         }
         return () => this._eventService.dispatchEvent(new AnnotEvent({
             type: "edit",
+            annotations: [annotation.toDto()],
+        }));
+    }
+    getOnAnnotRenderUpdatedAction(annotation) {
+        if (!annotation) {
+            return null;
+        }
+        return () => this._eventService.dispatchEvent(new AnnotEvent({
+            type: "render",
             annotations: [annotation.toDto()],
         }));
     }
@@ -18459,7 +18533,8 @@ class DocumentService {
                 if (annot) {
                     annotations.push(annot);
                     annot.$pageId = page.id;
-                    annot.$onEditedAction = this.getOnAnnotationEditAction(annot);
+                    annot.$onEditedAction = this.getOnAnnotEditAction(annot);
+                    annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
                     console.log(annot);
                 }
             }
@@ -22084,8 +22159,8 @@ class TsPdfViewer {
                     }
                     break;
                 case "add":
-                case "edit":
                 case "delete":
+                case "render":
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                         const pageIdSet = new Set(annotations.map(x => x.pageId));
                         this._pageService.renderSpecifiedPages(pageIdSet);

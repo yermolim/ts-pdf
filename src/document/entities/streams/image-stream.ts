@@ -284,15 +284,21 @@ export class ImageStream extends PdfStream {
         alpha = new Uint8Array(length).fill(255);
       }
       // fill data array with RGBA values
-      const data = new Uint8ClampedArray(length * 4);
+
+      const imageBytes = new Uint8ClampedArray(length * 4);
+      const colors = this.getRgbColors();
+      let j: number;
+      let k: number;
       for (let i = 0; i < length; i++) {
-        const [r, g, b] = this.getColor(i);
-        data[i * 4] = r;
-        data[i * 4 + 1] = g;
-        data[i * 4 + 2] = b;
-        data[i * 4 + 3] = alpha[i];
+        j = i * 4;
+        k = i * 3;
+        imageBytes[j] = colors[k];
+        imageBytes[j + 1] = colors[k + 1];
+        imageBytes[j + 2] = colors[k + 2];
+        imageBytes[j + 3] = alpha[i];
       }      
-      const imageData = new ImageData(data, this.Width, this.Height);
+      const imageData = new ImageData(imageBytes, this.Width, this.Height);
+
       // convert RGBA array to url using canvas
       const urlPromise = new Promise<string>((resolve, reject) => {
         const canvas = document.createElement("canvas");
@@ -312,10 +318,10 @@ export class ImageStream extends PdfStream {
         });
       });
       const imageUrl = await urlPromise; 
-      this._imageUrl = imageUrl;     
+      this._imageUrl = imageUrl; 
       return imageUrl;
     }
-
+    
     throw new Error(`Unsupported image filter type: ${this.Filter}`);
   }
 
@@ -587,7 +593,7 @@ export class ImageStream extends PdfStream {
     }
   }
   
-  protected getColor(index: number): [r: number, g: number, b: number] {
+  protected getRgbColor(index: number): [r: number, g: number, b: number] {
     const data = this.decodedStreamData;
     switch (this.ColorSpace) {
       case colorSpaces.GRAYSCALE:    
@@ -612,6 +618,66 @@ export class ImageStream extends PdfStream {
       case colorSpaces.SPECIAL_INDEXED:
         return this._indexedColorSpace?.getColor(index) || [0, 0, 0];
     }
+  }
+  
+  protected getRgbColors(): Uint8ClampedArray {
+    const data = this.decodedStreamData;
+    const pixels = this.Width * this.Height; 
+    const length = pixels * 3; 
+    const result = new Uint8ClampedArray(length);
+    let i: number;
+    let j: number;
+    let n: number;
+    switch (this.ColorSpace) {
+      case colorSpaces.GRAYSCALE:
+        let gray: number;
+        for (i = 0; i < pixels; i++) {
+          gray = data[i];
+          j = i * 3;
+
+          result[j] = gray;
+          result[j + 1] = gray;
+          result[j + 2] = gray;
+        }
+        break;
+
+      case colorSpaces.RGB:  
+        for (i = 0; i < length; i++) {
+          result[i] = data[i];
+        }
+        break;
+
+      case colorSpaces.CMYK: 
+        let c: number;
+        let m: number;
+        let y: number;
+        let k: number; 
+        for (i = 0; i < pixels; i++) {
+          j = i * 3;
+          n = i * 4;
+
+          c = data[n] / 255;
+          m = data[n + 1] / 255;   
+          y = data[n + 2] / 255;   
+          k = data[n + 3] / 255; 
+
+          result[j] = 255 * (1 - c) * (1 - k);
+          result[j + 1] = 255 * (1 - m) * (1 - k);
+          result[j + 2] = 255 * (1 - y) * (1 - k);
+        }
+        break;
+
+      case colorSpaces.SPECIAL_INDEXED: 
+        for (i = 0; i < pixels; i++) {
+          const [r, g, b] = this._indexedColorSpace?.getColor(i) || [0, 0, 0];
+          j = i * 3;
+          result[j] = r;
+          result[j + 1] = g;
+          result[j + 2] = b;
+        }
+        break;
+    }
+    return result;
   }
   
   // protected setStreamData(data: Uint8Array) {

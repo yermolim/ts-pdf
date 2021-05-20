@@ -747,13 +747,18 @@ export class TsPdfViewer {
         }
         break;
       case "add":
-      case "edit":
       case "delete":
-        // rerender changed pages
+      case "render":
+        // rerender affected pages
         if (annotations?.length) {
           const pageIdSet = new Set<number>(annotations.map(x => x.pageId));
           this._pageService.renderSpecifiedPages(pageIdSet);
         }
+        break;
+      case "edit":
+        // there is no need to rerender page on edit 
+        // because the annotation render may be still in process.
+        // so just wait for the 'render' event
         break;
     }
     
