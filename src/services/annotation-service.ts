@@ -244,7 +244,7 @@ export class AnnotationService {
     // init a stamp type picker
     const pickerDiv = document.createElement("div");
     pickerDiv.classList.add("context-menu-content", "column");
-    [...stampTypes, ...this._customStampService.getCustomStamps()].forEach(x => {          
+    [...stampTypes, ...this._customStampService.getCustomStamps()].forEach(x => {
       const item = document.createElement("div");
       item.classList.add("context-menu-stamp-select-button");
       if (x.type === this._stampType) {        
@@ -252,7 +252,7 @@ export class AnnotationService {
       }
       item.addEventListener("click", () => {
         this._stampType = x.type;
-        if (x["imageInfo"]) {
+        if (x["imageData"]) {
           // custom stamp
           this._stampCreationInfo = <CustomStampCreationInfo>x;
         } else {

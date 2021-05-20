@@ -20,7 +20,7 @@ export interface StampCreationInfo {
 	rect: Quadruple;
 }
 export interface CustomStampCreationInfo extends StampCreationInfo {
-	imageData: Uint8Array;
+	imageData: Uint8ClampedArray | Uint8Array;
 	type: string;
 	name: string;
 }

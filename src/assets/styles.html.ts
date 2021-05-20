@@ -675,6 +675,84 @@ export const styles = /*html*/`
     flex-grow: 1;
     flex-shrink: 1;
   } 
+  
+  .stamp-dialog {
+    z-index: 9;
+  }
+  .stamp-dialog .form {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    max-width: 720px;
+    max-height: 720px;
+    background: var(--tspdf-color-primary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+    transform-origin: center;
+    transform: translate(-50%, -50%)
+  }
+  .stamp-dialog .buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    height: 40px;
+  } 
+  .stamp-dialog .form-canvas-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+    flex-grow: 1;
+    flex-shrink: 1;
+  } 
+  .stamp-image-canvas {
+    outline: 0;
+    position: absolute;
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+  }
+  .stamp-dialog input {
+    width: 100%;
+    margin: 10px;
+    padding: 5px;
+    font-size: 16px;
+    outline: none;
+    border: none;
+    color: var(--tspdf-color-fg-primary-final);
+    background-color: var(--tspdf-color-primary-final);
+  }
+  .stamp-dialog input::placeholder {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--tspdf-color-fg-primary-final);
+  }
+  .stamp-input-row {    
+    display: flex;
+    flex-direction: row;
+    justify-content: stretch;
+    align-items: center;
+    height: 30px;
+    margin: 10px;
+  }
+  .stamp-input-row p {
+    margin: 0;   
+    padding: 0 10px;
+    font-family: sans-serif; 
+    font-size: 16px;
+    white-space: nowrap;
+    color: var(--tspdf-color-fg-secondary-final);
+  }
 
   .annotation-controls {
     cursor: pointer;

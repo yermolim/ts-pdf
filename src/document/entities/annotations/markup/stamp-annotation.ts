@@ -11,6 +11,7 @@ import { LiteralString } from "../../strings/literal-string";
 import { XFormStream } from "../../streams/x-form-stream";
 import { ImageStream } from "../../streams/image-stream";
 import { ResourceDict } from "../../appearance/resource-dict";
+import { DecodeParamsDict } from "../../encoding/decode-params-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
 import { AnnotationDto } from "../annotation-dict";
@@ -103,10 +104,10 @@ export class StampAnnotation extends MarkupAnnotation {
       apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
       
       annotation.Rect = rect;
+      annotation.Subj = LiteralString.fromString(subject);
       annotation.Contents = dto.textContent 
         ? LiteralString.fromString(dto.textContent) 
-        : LiteralString.fromString(subject);
-      annotation.Subj = LiteralString.fromString(subject);
+        : annotation.Subj;
       annotation.C = color;
       annotation.CA = 1; // opacity
     } else if (dto.stampImageData?.length && !(dto.stampImageData.length % 4)) {
@@ -114,33 +115,45 @@ export class StampAnnotation extends MarkupAnnotation {
       const data = new Uint8Array(dto.stampImageData);
 
       const stampMask = new ImageStream();
+      const stampMaskDecodeParams = new DecodeParamsDict();
+      stampMaskDecodeParams.setIntProp("/Predictor", 12);
+      stampMaskDecodeParams.setIntProp("/Colors", 1);
+      stampMaskDecodeParams.setIntProp("/BitsPerComponent", 8);
+      stampMaskDecodeParams.setIntProp("/Columns", dto.bbox[2]);
+      stampMask.DecodeParms = stampMaskDecodeParams;
       stampMask.Filter = "/FlateDecode";
       stampMask.BitsPerComponent = 8;
-      stampMask.Width = dto.rect[2];
-      stampMask.Height = dto.rect[3];
+      stampMask.Width = dto.bbox[2];
+      stampMask.Height = dto.bbox[3];
       stampMask.ColorSpace = colorSpaces.GRAYSCALE;
       stampMask.streamData = data.filter((v, i) => (i + 1) % 4 === 0); // take only alpha values
 
       const stampImage = new ImageStream();
+      const stampImageDecodeParams = new DecodeParamsDict();
+      stampImageDecodeParams.setIntProp("/Predictor", 12);
+      stampImageDecodeParams.setIntProp("/Colors", 3);
+      stampImageDecodeParams.setIntProp("/BitsPerComponent", 8);
+      stampImageDecodeParams.setIntProp("/Columns", dto.bbox[2]);
+      stampImage.DecodeParms = stampImageDecodeParams;
       stampImage.Filter = "/FlateDecode";
       stampImage.BitsPerComponent = 8;
-      stampImage.Width = dto.rect[2];
-      stampImage.Height = dto.rect[3];
+      stampImage.Width = dto.bbox[2];
+      stampImage.Height = dto.bbox[3];
       stampImage.ColorSpace = colorSpaces.RGB;
       stampImage.streamData = data.filter((v, i) => (i + 1) % 4 !== 0); // skip alpha values
       stampImage.sMask = stampMask;
       
       apStream.BBox = dto.bbox;
       apStream.Resources.setXObject("/Im", stampImage);
-      apStream.setTextStreamData("q /Im Do Q"); // TODO: check if matrix needed
+      apStream.setTextStreamData(`q ${dto.bbox[2]} 0 0 ${dto.bbox[3]} 0 0 cm /Im Do Q`);
       
       annotation.Rect = dto.rect;
-      annotation.Contents = dto.textContent 
-        ? LiteralString.fromString(dto.textContent) 
-        : LiteralString.fromString(dto.stampType);
       annotation.Subj = dto.stampSubject 
         ? LiteralString.fromString(dto.stampSubject) 
         : LiteralString.fromString(dto.stampType);
+      annotation.Contents = dto.textContent 
+        ? LiteralString.fromString(dto.textContent) 
+        : annotation.Subj;
     } else {
       throw new Error("Custom stamp has no valid image data");
     }

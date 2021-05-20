@@ -182,7 +182,7 @@ export class ImageStream extends PdfStream {
       bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Width));
     }
     if (this.Height) {
-      bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Height));
+      bytes.push(...encoder.encode("/Height "), ...encoder.encode(" " + this.Height));
     }
     if (this.ColorSpace) {
       if (this._indexedColorSpace) {

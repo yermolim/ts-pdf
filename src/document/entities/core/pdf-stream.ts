@@ -90,8 +90,12 @@ export abstract class PdfStream extends PdfObject {
     bytes.push(    
       ...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE,
       ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE,
-      ...streamData, ...keywordCodes.END_OF_LINE,
-      ...keywordCodes.STREAM_END, // ...keywordCodes.END_OF_LINE
+    );  
+    for (let i = 0; i < streamData.length; i++) {
+      bytes.push(streamData[i]);
+    }  
+    bytes.push(
+      ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END, // ...keywordCodes.END_OF_LINE
     );
 
     return new Uint8Array(bytes);
@@ -126,7 +130,7 @@ export abstract class PdfStream extends PdfObject {
       direction: "reverse", 
       minIndex: start, 
       maxIndex: end, 
-      closedOnly: true
+      closedOnly: true,
     });
     if (!streamEndIndex) {
       throw new Error("Object is not a stream");

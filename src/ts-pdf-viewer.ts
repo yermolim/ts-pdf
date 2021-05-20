@@ -170,7 +170,7 @@ export class TsPdfViewer {
       {visibleAdjPages: visibleAdjPages});      
 
     this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
-    this._customStampsService.addCustomStamps(options.customStamps);
+    this._customStampsService.importCustomStamps(options.customStamps);
 
     this._loader = new Loader();
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
@@ -699,6 +699,8 @@ export class TsPdfViewer {
   };
   
   private onCustomStampChanged = (e: CustomStampEvent) => {
+    this.setAnnotationMode("stamp");
+
     // execute change callback if present
     if (this._customStampChangeCallback) {
       this._customStampChangeCallback(e.detail);

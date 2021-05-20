@@ -344,7 +344,7 @@ const textDialogHtml = `
 `;
 const stampContextButtonsHtml = `
   <div class="context-menu-content row">
-    <div class="panel-button stamp-load-image disabled">
+    <div class="panel-button stamp-load-image">
       <img src="${img$l}"/>
     </div>
     <div class="panel-button stamp-draw-image disabled">
@@ -352,6 +352,37 @@ const stampContextButtonsHtml = `
     </div>
     <div class="panel-button stamp-delete disabled">
       <img src="${img$s}"/>
+    </div>
+  </div>
+`;
+const stampImageLoaderHtml = `
+  <div class="abs-full-size-overlay stamp-dialog">
+    <div class="form">
+      <div class="form-canvas-wrapper">
+        <canvas class="stamp-image-canvas"></canvas>
+      </div>
+      <div class="stamp-input-row">
+        <p>Stamp name:</p>
+        <input class="stamp-name-input" type="text" maxlength="128"/>
+      </div>
+      <div class="stamp-input-row">
+        <p>Stamp description:</p>
+        <input class="stamp-subject-input" type="text" maxlength="256"/>
+      </div>
+      <div class="stamp-input-row">
+        <p>Width:</p>
+        <input class="stamp-width-input" type="text" maxlength="4"/>
+        <p>Height:</p>
+        <input class="stamp-height-input" type="text" maxlength="4"/>
+      </div>
+      <div class="buttons">
+        <div class="panel-button stamp-ok">
+          <img src="${img$j}"/>
+        </div>
+        <div class="panel-button stamp-cancel">
+          <img src="${img$v}"/>
+        </div>
+      </div>
     </div>
   </div>
 `;
@@ -1040,6 +1071,84 @@ const styles = `
     flex-grow: 1;
     flex-shrink: 1;
   } 
+  
+  .stamp-dialog {
+    z-index: 9;
+  }
+  .stamp-dialog .form {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+    flex-grow: 0;
+    flex-shrink: 0;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    max-width: 720px;
+    max-height: 720px;
+    background: var(--tspdf-color-primary-tr-final);
+    box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
+    transform-origin: center;
+    transform: translate(-50%, -50%)
+  }
+  .stamp-dialog .buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    height: 40px;
+  } 
+  .stamp-dialog .form-canvas-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+    flex-grow: 1;
+    flex-shrink: 1;
+  } 
+  .stamp-image-canvas {
+    outline: 0;
+    position: absolute;
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+  }
+  .stamp-dialog input {
+    width: 100%;
+    margin: 10px;
+    padding: 5px;
+    font-size: 16px;
+    outline: none;
+    border: none;
+    color: var(--tspdf-color-fg-primary-final);
+    background-color: var(--tspdf-color-primary-final);
+  }
+  .stamp-dialog input::placeholder {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--tspdf-color-fg-primary-final);
+  }
+  .stamp-input-row {    
+    display: flex;
+    flex-direction: row;
+    justify-content: stretch;
+    align-items: center;
+    height: 30px;
+    margin: 10px;
+  }
+  .stamp-input-row p {
+    margin: 0;   
+    padding: 0 10px;
+    font-family: sans-serif; 
+    font-size: 16px;
+    white-space: nowrap;
+    color: var(--tspdf-color-fg-secondary-final);
+  }
 
   .annotation-controls {
     cursor: pointer;
@@ -4261,7 +4370,9 @@ class DataWriter {
         if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
             return;
         }
-        this._data.push(...bytes);
+        for (let i = 0; i < bytes.length; i++) {
+            this._data.push(bytes[i]);
+        }
         this._pointer += bytes.length;
     }
     writeIndirectObject(cryptInfo, obj) {
@@ -5508,7 +5619,7 @@ class FlateDecoder {
         const lineLen = columns * interval;
         const lineLen_filtered = lineLen + 1;
         if (!!(input.length % lineLen_filtered)) {
-            throw new Error("Data length doesn't match filter columns");
+            throw new Error(`Data length doesn't match filter columns: ${input.length} % ${lineLen_filtered}`);
         }
         const output = new Uint8Array(input.length / lineLen_filtered * lineLen);
         const previous = new Array(lineLen).fill(0);
@@ -5694,7 +5805,11 @@ class PdfStream extends PdfObject {
         if (this.DecodeParms) {
             bytes.push(...encoder.encode("/DecodeParms "), ...this.DecodeParms.toArray(cryptInfo));
         }
-        bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE, ...streamData, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END);
+        bytes.push(...keywordCodes.DICT_END, ...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_START, ...keywordCodes.END_OF_LINE);
+        for (let i = 0; i < streamData.length; i++) {
+            bytes.push(streamData[i]);
+        }
+        bytes.push(...keywordCodes.END_OF_LINE, ...keywordCodes.STREAM_END);
         return new Uint8Array(bytes);
     }
     setTextStreamData(text) {
@@ -5716,7 +5831,7 @@ class PdfStream extends PdfObject {
             direction: "reverse",
             minIndex: start,
             maxIndex: end,
-            closedOnly: true
+            closedOnly: true,
         });
         if (!streamEndIndex) {
             throw new Error("Object is not a stream");
@@ -6263,7 +6378,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6311,7 +6426,7 @@ class ImageStream extends PdfStream {
             bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Width));
         }
         if (this.Height) {
-            bytes.push(...encoder.encode("/Width "), ...encoder.encode(" " + this.Height));
+            bytes.push(...encoder.encode("/Height "), ...encoder.encode(" " + this.Height));
         }
         if (this.ColorSpace) {
             if (this._indexedColorSpace) {
@@ -6361,7 +6476,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -11022,7 +11137,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11127,7 +11242,7 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -11204,7 +11319,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -11252,7 +11367,7 @@ class AppearanceStreamRenderer {
         return { element: g, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawStreamAsync(stream) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -12008,7 +12123,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12290,7 +12405,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(viewBox) {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (!viewBox) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -12303,7 +12418,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -12753,7 +12868,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -14870,40 +14985,52 @@ class StampAnnotation extends MarkupAnnotation {
             apStream.Resources.setXObject("/Fm", stampForm);
             apStream.setTextStreamData(`q 1 0 0 -1 0 ${bBox[3]} cm ${colorString} 1 j 8.58 w /Fm Do Q`);
             annotation.Rect = rect;
+            annotation.Subj = LiteralString.fromString(subject);
             annotation.Contents = dto.textContent
                 ? LiteralString.fromString(dto.textContent)
-                : LiteralString.fromString(subject);
-            annotation.Subj = LiteralString.fromString(subject);
+                : annotation.Subj;
             annotation.C = color;
             annotation.CA = 1;
         }
         else if (((_a = dto.stampImageData) === null || _a === void 0 ? void 0 : _a.length) && !(dto.stampImageData.length % 4)) {
             const data = new Uint8Array(dto.stampImageData);
             const stampMask = new ImageStream();
+            const stampMaskDecodeParams = new DecodeParamsDict();
+            stampMaskDecodeParams.setIntProp("/Predictor", 12);
+            stampMaskDecodeParams.setIntProp("/Colors", 1);
+            stampMaskDecodeParams.setIntProp("/BitsPerComponent", 8);
+            stampMaskDecodeParams.setIntProp("/Columns", dto.bbox[2]);
+            stampMask.DecodeParms = stampMaskDecodeParams;
             stampMask.Filter = "/FlateDecode";
             stampMask.BitsPerComponent = 8;
-            stampMask.Width = dto.rect[2];
-            stampMask.Height = dto.rect[3];
+            stampMask.Width = dto.bbox[2];
+            stampMask.Height = dto.bbox[3];
             stampMask.ColorSpace = colorSpaces.GRAYSCALE;
             stampMask.streamData = data.filter((v, i) => (i + 1) % 4 === 0);
             const stampImage = new ImageStream();
+            const stampImageDecodeParams = new DecodeParamsDict();
+            stampImageDecodeParams.setIntProp("/Predictor", 12);
+            stampImageDecodeParams.setIntProp("/Colors", 3);
+            stampImageDecodeParams.setIntProp("/BitsPerComponent", 8);
+            stampImageDecodeParams.setIntProp("/Columns", dto.bbox[2]);
+            stampImage.DecodeParms = stampImageDecodeParams;
             stampImage.Filter = "/FlateDecode";
             stampImage.BitsPerComponent = 8;
-            stampImage.Width = dto.rect[2];
-            stampImage.Height = dto.rect[3];
+            stampImage.Width = dto.bbox[2];
+            stampImage.Height = dto.bbox[3];
             stampImage.ColorSpace = colorSpaces.RGB;
             stampImage.streamData = data.filter((v, i) => (i + 1) % 4 !== 0);
             stampImage.sMask = stampMask;
             apStream.BBox = dto.bbox;
             apStream.Resources.setXObject("/Im", stampImage);
-            apStream.setTextStreamData("q /Im Do Q");
+            apStream.setTextStreamData(`q ${dto.bbox[2]} 0 0 ${dto.bbox[3]} 0 0 cm /Im Do Q`);
             annotation.Rect = dto.rect;
-            annotation.Contents = dto.textContent
-                ? LiteralString.fromString(dto.textContent)
-                : LiteralString.fromString(dto.stampType);
             annotation.Subj = dto.stampSubject
                 ? LiteralString.fromString(dto.stampSubject)
                 : LiteralString.fromString(dto.stampType);
+            annotation.Contents = dto.textContent
+                ? LiteralString.fromString(dto.textContent)
+                : annotation.Subj;
         }
         else {
             throw new Error("Custom stamp has no valid image data");
@@ -18358,6 +18485,35 @@ class DocumentService {
     }
 }
 
+class Loader {
+    constructor() {
+        this._loaderElement = htmlToElements(loaderHtml)[0];
+    }
+    show(parent, zIndex = 8) {
+        if (this._isShown || !parent) {
+            return;
+        }
+        this._loaderElement.style.zIndex = zIndex + "";
+        this._loaderElement.style.top = parent.scrollTop + "px";
+        this._loaderElement.style.left = parent.scrollLeft + "px";
+        parent.append(this._loaderElement);
+        this._isShown = true;
+    }
+    hide() {
+        this._loaderElement.remove();
+        this._isShown = false;
+    }
+}
+
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const customStampEvent = "tspdf-customstampchange";
 class CustomStampEvent extends CustomEvent {
     constructor(detail) {
@@ -18367,6 +18523,15 @@ class CustomStampEvent extends CustomEvent {
 class CustomStampService {
     constructor(container, eventService) {
         this._customStampsByType = new Map();
+        this._loader = new Loader();
+        this.onFileInput = () => {
+            const files = this._fileInput.files;
+            if (files.length === 0) {
+                return;
+            }
+            this.openCreationFromImageOverlayAsync(files[0]);
+            this._fileInput.value = null;
+        };
         if (!container) {
             throw new Error("Container is not defined");
         }
@@ -18384,9 +18549,12 @@ class CustomStampService {
         this._container.append(this._fileInput);
     }
     destroy() {
+        var _a;
         this._fileInput.remove();
+        this._loader.hide();
+        (_a = this._overlay) === null || _a === void 0 ? void 0 : _a.remove();
     }
-    addCustomStamps(stamps) {
+    importCustomStamps(stamps) {
         if (stamps === null || stamps === void 0 ? void 0 : stamps.length) {
             stamps.forEach(x => {
                 this._customStampsByType.set(x.type, x);
@@ -18419,15 +18587,102 @@ class CustomStampService {
     }
     startDrawing() {
     }
-    onFileInput() {
-        const files = this._fileInput.files;
-        if (files.length === 0) {
-            return;
-        }
-        this.openCreationFromImageOverlay(files[0]);
-        this._fileInput.value = null;
-    }
-    openCreationFromImageOverlay(file) {
+    openCreationFromImageOverlayAsync(file) {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            this._loader.show(this._container, 10);
+            const imagePromise = new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(img);
+                };
+                img.onerror = (e) => {
+                    console.log(e);
+                    reject();
+                };
+                img.src = url;
+            });
+            let image;
+            try {
+                image = yield imagePromise;
+            }
+            catch (_a) {
+                this._loader.hide();
+                return;
+            }
+            const imageWidth = image.width;
+            const imageHeight = image.height;
+            const imageRatio = image.width / image.height;
+            const overlay = htmlToElements(stampImageLoaderHtml)[0];
+            const canvas = overlay.querySelector(".stamp-image-canvas");
+            const cancelButton = overlay.querySelector(".stamp-cancel");
+            const okButton = overlay.querySelector(".stamp-ok");
+            const nameInput = overlay.querySelector(".stamp-name-input");
+            const subjectInput = overlay.querySelector(".stamp-subject-input");
+            const widthInput = overlay.querySelector(".stamp-width-input");
+            const heightInput = overlay.querySelector(".stamp-height-input");
+            let stampName = "Custom stamp";
+            let stampSubject;
+            let stampWidth = 64;
+            let stampHeight = +(64 / imageRatio).toFixed();
+            nameInput.value = stampName;
+            widthInput.value = stampWidth + "";
+            heightInput.value = stampHeight + "";
+            this._overlay = overlay;
+            this._container.append(overlay);
+            canvas.width = imageWidth;
+            canvas.height = imageHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(image, 0, 0);
+            const imgData = ctx.getImageData(0, 0, image.width, image.height).data;
+            const validate = () => {
+                if (!stampName
+                    || (!stampHeight || isNaN(stampHeight))
+                    || (!stampWidth || isNaN(stampWidth))) {
+                    okButton.classList.add("disabled");
+                }
+                else {
+                    okButton.classList.remove("disabled");
+                }
+            };
+            nameInput.addEventListener("input", () => {
+                stampName = nameInput.value;
+                validate();
+            });
+            subjectInput.addEventListener("input", () => {
+                stampSubject = subjectInput.value;
+                validate();
+            });
+            widthInput.addEventListener("input", () => {
+                var _a;
+                stampWidth = +((_a = (+widthInput.value)) === null || _a === void 0 ? void 0 : _a.toFixed());
+                validate();
+            });
+            heightInput.addEventListener("input", () => {
+                var _a;
+                stampHeight = +((_a = (+heightInput.value)) === null || _a === void 0 ? void 0 : _a.toFixed());
+                validate();
+            });
+            const hide = () => {
+                overlay.remove();
+                this._overlay = null;
+            };
+            cancelButton.addEventListener("click", hide);
+            okButton.addEventListener("click", () => {
+                const stamp = {
+                    type: "/" + getRandomUuid(),
+                    name: stampName,
+                    subject: stampSubject,
+                    rect: [0, 0, stampWidth, stampHeight],
+                    bBox: [0, 0, imageWidth, imageHeight],
+                    imageData: imgData,
+                };
+                this.addCustomStamp(stamp);
+                hide();
+            });
+            this._loader.hide();
+        });
     }
 }
 
@@ -20665,7 +20920,7 @@ class AnnotationService {
             }
             item.addEventListener("click", () => {
                 this._stampType = x.type;
-                if (x["imageInfo"]) {
+                if (x["imageData"]) {
                     this._stampCreationInfo = x;
                 }
                 else {
@@ -20792,26 +21047,6 @@ class AnnotationService {
         });
         div.append(slider);
         return div;
-    }
-}
-
-class Loader {
-    constructor() {
-        this._loaderElement = htmlToElements(loaderHtml)[0];
-    }
-    show(parent, zIndex = 8) {
-        if (this._isShown || !parent) {
-            return;
-        }
-        this._loaderElement.style.zIndex = zIndex + "";
-        this._loaderElement.style.top = parent.scrollTop + "px";
-        this._loaderElement.style.left = parent.scrollLeft + "px";
-        parent.append(this._loaderElement);
-        this._isShown = true;
-    }
-    hide() {
-        this._loaderElement.remove();
-        this._isShown = false;
     }
 }
 
@@ -21802,6 +22037,7 @@ class TsPdfViewer {
             (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotation();
         };
         this.onCustomStampChanged = (e) => {
+            this.setAnnotationMode("stamp");
             if (this._customStampChangeCallback) {
                 this._customStampChangeCallback(e.detail);
             }
@@ -21981,7 +22217,7 @@ class TsPdfViewer {
         this._eventService = new ElementEventService(this._mainContainer);
         this._pageService = new PageService(this._eventService, { visibleAdjPages: visibleAdjPages });
         this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
-        this._customStampsService.addCustomStamps(options.customStamps);
+        this._customStampsService.importCustomStamps(options.customStamps);
         this._loader = new Loader();
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
         this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });

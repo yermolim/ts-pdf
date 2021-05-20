@@ -70,7 +70,7 @@ export class FlateDecoder {
     const lineLen_filtered = lineLen + 1;
 
     if (!!(input.length % lineLen_filtered)) {
-      throw new Error("Data length doesn't match filter columns");
+      throw new Error(`Data length doesn't match filter columns: ${input.length} % ${lineLen_filtered}`);
     }
 
     const output = new Uint8Array(input.length / lineLen_filtered * lineLen);

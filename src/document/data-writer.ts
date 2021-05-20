@@ -46,7 +46,9 @@ export class DataWriter {
     if (!bytes?.length) {
       return;
     }
-    this._data.push(...bytes);
+    for (let i = 0; i < bytes.length; i++) {
+      this._data.push(bytes[i]);
+    }
     this._pointer += bytes.length;
   }
   

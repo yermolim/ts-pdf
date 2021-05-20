@@ -2897,7 +2897,7 @@ export interface StandardStampCreationInfo extends StampCreationInfo {
 
 export interface CustomStampCreationInfo extends StampCreationInfo {
   /**image data as a byte array (4 bytes for each pixel: RGBA) */
-  imageData: Uint8Array;
+  imageData: Uint8ClampedArray | Uint8Array;
   /**stamp name to use in PDF file */
   type: string;
   /**stamp name to show in user interface */
