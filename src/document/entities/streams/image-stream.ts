@@ -679,12 +679,4 @@ export class ImageStream extends PdfStream {
     }
     return result;
   }
-  
-  // protected setStreamData(data: Uint8Array) {
-  //   // TODO: implement
-  // }
-  
-  // protected decodeStreamData() {    
-  //   this._decodedStreamData = new Uint8Array(this._streamData);
-  // }
 }
