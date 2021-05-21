@@ -69,6 +69,7 @@ export interface TsPdfViewerOptions {
    * array of objects describing custom stamps
    */
   customStamps?: CustomStampCreationInfo[];
+
   /**
    * action to execute on custom stamp change event.
    * fires when a new custom stamp is added or an old one is deleted.
@@ -361,15 +362,6 @@ export class TsPdfViewer {
   }
   
   /**
-   * export TsPdf annotations as data transfer objects
-   * @returns 
-   */
-  exportAnnotations(): AnnotationDto[] {
-    const dtos = this._docService?.serializeAnnotations(true);
-    return dtos;
-  }  
-  
-  /**
    * import previously exported serialized TsPdf annotations
    * @param json serialized annotation data transfer objects
    */
@@ -383,12 +375,56 @@ export class TsPdfViewer {
   }
   
   /**
+   * export TsPdf annotations as data transfer objects
+   * @returns 
+   */
+  exportAnnotations(): AnnotationDto[] {
+    const dtos = this._docService?.serializeAnnotations(true);
+    return dtos;
+  }  
+  
+  /**
    * export TsPdf annotations as a serialized array of data transfer objects
    * @returns 
    */
   exportAnnotationsToJson(): string {
     const dtos = this._docService?.serializeAnnotations(true);
     return JSON.stringify(dtos);
+  }
+
+  importCustomStamps(customStamps: CustomStampCreationInfo[]) {  
+    try {
+      this._customStampsService.importCustomStamps(customStamps);
+    } catch (e) {
+      console.log(`Error while importing custom stamps: ${e.message}`);      
+    }   
+  }
+  
+  importCustomStampsFromJson(json: string) { 
+    try {
+      const customStamps: CustomStampCreationInfo[] = JSON.parse(json); 
+      this._customStampsService.importCustomStamps(customStamps);
+    } catch (e) {
+      console.log(`Error while importing custom stamps: ${e.message}`);      
+    } 
+  }
+  
+  /**
+   * export TsPdf custom stamps
+   * @returns 
+   */
+  exportCustomStamps(): CustomStampCreationInfo[] {
+    const customStamps = this._customStampsService.getCustomStamps();
+    return customStamps;
+  }  
+  
+  /**
+   * export TsPdf custom stamps as a serialized array of the corresponding objects
+   * @returns 
+   */
+  exportCustomStampsToJson(): string {
+    const customStamps = this._customStampsService.getCustomStamps();
+    return JSON.stringify(customStamps);
   }
 
   /**

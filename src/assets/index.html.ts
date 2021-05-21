@@ -65,6 +65,13 @@ export const lineTypeIcons = {
   straight: `<img src="${icon_straight}"/>`,
   cloudy: `<img src="${icon_cloudy}"/>`,
 } as const;
+
+export const editIcons = {  
+  close: `<img src="${icon_close}"/>`,
+  ok: `<img src="${icon_ok}"/>`,
+  back: `<img src="${icon_back}"/>`,
+  delete: `<img src="${icon_delete}"/>`,
+} as const;
 //#endregion
 
 export const mainHtml = /*html*/`
@@ -289,7 +296,7 @@ export const stampImageLoaderHtml = /*html*/`
   <div class="abs-full-size-overlay stamp-dialog">
     <div class="form">
       <div class="form-canvas-wrapper">
-        <canvas class="stamp-image-canvas"></canvas>
+        <canvas class="abs-ratio-canvas"></canvas>
       </div>
       <div class="stamp-input-row">
         <p>Stamp name:</p>
@@ -321,7 +328,6 @@ export const stampDesignerHtml = /*html*/`
   <div class="abs-full-size-overlay stamp-dialog">
     <div class="form">
       <div class="form-canvas-wrapper">
-        <canvas class="stamp-image-canvas"></canvas>
       </div>
       <div class="stamp-input-row">
         <p>Stamp name:</p>
@@ -347,10 +353,6 @@ export const stampDesignerHtml = /*html*/`
       </div>
     </div>
   </div>
-`;
-
-export const stampImageEditorHtml = /*html*/`
-
 `;
 //#endregion
 

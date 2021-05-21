@@ -97,9 +97,13 @@ export declare class TsPdfViewer {
 	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
 	closePdfAsync(): Promise<void>;
 	importAnnotations(dtos: AnnotationDto[]): void;
-	exportAnnotations(): AnnotationDto[];
 	importAnnotationsFromJson(json: string): void;
+	exportAnnotations(): AnnotationDto[];
 	exportAnnotationsToJson(): string;
+	importCustomStamps(customStamps: CustomStampCreationInfo[]): void;
+	importCustomStampsFromJson(json: string): void;
+	exportCustomStamps(): CustomStampCreationInfo[];
+	exportCustomStampsToJson(): string;
 	getCurrentPdf(): Blob;
 	protected onTextSelectionChange: () => void;
 	private initMainContainerEventHandlers;

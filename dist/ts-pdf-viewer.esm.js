@@ -144,6 +144,12 @@ const lineTypeIcons = {
     straight: `<img src="${img$8}"/>`,
     cloudy: `<img src="${img$t}"/>`,
 };
+const editIcons = {
+    close: `<img src="${img$v}"/>`,
+    ok: `<img src="${img$j}"/>`,
+    back: `<img src="${img$A}"/>`,
+    delete: `<img src="${img$s}"/>`,
+};
 const mainHtml = `
   <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
@@ -359,7 +365,7 @@ const stampImageLoaderHtml = `
   <div class="abs-full-size-overlay stamp-dialog">
     <div class="form">
       <div class="form-canvas-wrapper">
-        <canvas class="stamp-image-canvas"></canvas>
+        <canvas class="abs-ratio-canvas"></canvas>
       </div>
       <div class="stamp-input-row">
         <p>Stamp name:</p>
@@ -390,7 +396,6 @@ const stampDesignerHtml = `
   <div class="abs-full-size-overlay stamp-dialog">
     <div class="form">
       <div class="form-canvas-wrapper">
-        <canvas class="stamp-image-canvas"></canvas>
       </div>
       <div class="stamp-input-row">
         <p>Stamp name:</p>
@@ -695,6 +700,8 @@ const styles = `
     user-select: none;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
+    flex-grow: 0;
     justify-content: center;
     align-items: center;
     width: 36px;
@@ -1003,6 +1010,7 @@ const styles = `
     width: 100%;
     height: 100%;
     background: var(--tspdf-color-secondary-tr-final);
+    touch-action: none;
   }
   
   .fixed-full-size-overlay {
@@ -1142,13 +1150,6 @@ const styles = `
     flex-grow: 1;
     flex-shrink: 1;
   } 
-  .stamp-image-canvas {
-    outline: 0;
-    position: absolute;
-    width: 100%;
-    height: auto;
-    max-height: 100%;
-  }
   .stamp-dialog input {
     width: 100%;
     margin: 10px;
@@ -1173,12 +1174,22 @@ const styles = `
     margin: 10px;
   }
   .stamp-input-row p {
+    user-select: none;
     margin: 0;   
     padding: 0 10px;
     font-family: sans-serif; 
     font-size: 16px;
     white-space: nowrap;
     color: var(--tspdf-color-fg-secondary-final);
+  }
+  
+  .abs-ratio-canvas {
+    outline: 0;
+    position: absolute;
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    border: 2px solid var(--tspdf-color-fg-secondary-final);
   }
 
   .annotation-controls {
@@ -18612,6 +18623,394 @@ class Loader {
     }
 }
 
+class ContextMenu {
+    constructor() {
+        this.onPointerDownOutside = (e) => {
+            if (!this._shown) {
+                return;
+            }
+            const target = e.composedPath()[0];
+            if (!target.closest("#context-menu")) {
+                this.hide();
+            }
+        };
+        this._container = document.createElement("div");
+        this._container.id = "context-menu";
+        this.hide();
+        document.addEventListener("pointerdown", this.onPointerDownOutside);
+    }
+    set content(value) {
+        var _a;
+        (_a = this._content) === null || _a === void 0 ? void 0 : _a.forEach(x => x.remove());
+        if (value === null || value === void 0 ? void 0 : value.length) {
+            value.forEach(x => this._container.append(x));
+            this._content = value;
+        }
+        else {
+            this._content = null;
+        }
+    }
+    get enabled() {
+        return this._enabled;
+    }
+    set enabled(value) {
+        this._enabled = !!value;
+    }
+    destroy() {
+        this.clear();
+        document.removeEventListener("pointerdown", this.onPointerDownOutside);
+    }
+    show(pointerPosition, parent) {
+        parent.append(this._container);
+        this._shown = true;
+        setTimeout(() => {
+            this.setContextMenuPosition(pointerPosition, parent);
+            this._container.style.opacity = "1";
+        }, 0);
+    }
+    hide() {
+        this._container.style.opacity = "0";
+        this._container.remove();
+        this._shown = false;
+    }
+    clear() {
+        this.hide();
+        this.content = null;
+    }
+    setContextMenuPosition(pointerPosition, parent) {
+        const menuDimension = new Vec2(this._container.offsetWidth, this._container.offsetHeight);
+        const menuPosition = new Vec2();
+        const parentRect = parent.getBoundingClientRect();
+        const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, pointerPosition.y - parentRect.y);
+        if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
+            menuPosition.x = relPointerPosition.x - menuDimension.x;
+        }
+        else {
+            menuPosition.x = relPointerPosition.x;
+        }
+        if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
+            menuPosition.y = relPointerPosition.y - menuDimension.y;
+        }
+        else {
+            menuPosition.y = relPointerPosition.y;
+        }
+        this._container.style.left = menuPosition.x + parent.scrollLeft + "px";
+        this._container.style.top = menuPosition.y + parent.scrollTop + "px";
+    }
+}
+
+class SmoothPath {
+    constructor(options) {
+        this._paths = [];
+        this._positionBuffer = [];
+        this._bufferSize = (options === null || options === void 0 ? void 0 : options.bufferSize) || SmoothPath._defaultBufferSize;
+        this._id = options === null || options === void 0 ? void 0 : options.id;
+    }
+    get id() {
+        return this._id;
+    }
+    get bufferSize() {
+        return this._bufferSize;
+    }
+    get paths() {
+        return this._paths.slice();
+    }
+    get pathCount() {
+        return this._paths.length;
+    }
+    endPath() {
+        if (this._currentPath && this._currentPath.positions.length > 1) {
+            this._paths.push(this._currentPath);
+        }
+        this._positionBuffer = null;
+        this._currentPath = null;
+        this._currentPathString = null;
+    }
+    addPosition(pos) {
+        this.appendPositionToBuffer(pos);
+        this.updateCurrentPath();
+    }
+    appendPositionToBuffer(pos) {
+        const buffer = this._positionBuffer;
+        buffer.push(pos);
+        this._positionBuffer = buffer
+            .slice(Math.max(0, buffer.length - this._bufferSize), buffer.length);
+    }
+    getAverageBufferPosition(offset) {
+        const len = this._positionBuffer.length;
+        if (len >= this._bufferSize) {
+            let totalX = 0;
+            let totalY = 0;
+            let pos;
+            let i;
+            let count = 0;
+            for (i = offset; i < len; i++) {
+                count++;
+                pos = this._positionBuffer[i];
+                totalX += pos.x;
+                totalY += pos.y;
+            }
+            return new Vec2(totalX / count, totalY / count);
+        }
+        return null;
+    }
+    updateCurrentPath() {
+        let pos = this.getAverageBufferPosition(0);
+        if (!pos) {
+            return null;
+        }
+        this._currentPathString += " L" + pos.x + " " + pos.y;
+        this._currentPath.positions.push(pos);
+        let tmpPath = "";
+        for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
+            pos = this.getAverageBufferPosition(offset);
+            tmpPath += " L" + pos.x + " " + pos.y;
+        }
+        return tmpPath;
+    }
+}
+SmoothPath._defaultBufferSize = 8;
+
+class CanvasSmoothPathEditor extends SmoothPath {
+    constructor(container, options) {
+        super(options);
+        this._strokeWidth = CanvasSmoothPathEditor._defaultStrokeWidth;
+        this._color = CanvasSmoothPathEditor._colors[0];
+        this._paths = [];
+        this.onContextMenu = (event) => {
+            if (this._contextMenu.enabled) {
+                event.preventDefault();
+                this._contextMenu.show(new Vec2(event.clientX, event.clientY), this._container);
+            }
+        };
+        this.onPointerDown = (e) => {
+            if (!e.isPrimary || e.button === 2) {
+                return;
+            }
+            const { clientX: clX, clientY: clY } = e;
+            const [caX, caY] = this.convertClientCoordsToCanvas(clX, clY);
+            this.newPath(new Vec2(caX, caY));
+            const target = e.target;
+            target.addEventListener("pointermove", this.onPointerMove);
+            target.addEventListener("pointerup", this.onPointerUp);
+            target.addEventListener("pointerout", this.onPointerUp);
+            target.setPointerCapture(e.pointerId);
+        };
+        this.onPointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const { clientX: clX, clientY: clY } = e;
+            const [caX, caY] = this.convertClientCoordsToCanvas(clX, clY);
+            this.addPosition(new Vec2(caX, caY));
+            this.refreshEditor();
+        };
+        this.onPointerUp = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onPointerMove);
+            target.removeEventListener("pointerup", this.onPointerUp);
+            target.removeEventListener("pointerout", this.onPointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this.endPath();
+            this.refreshEditor();
+        };
+        if (!container) {
+            throw new Error("Container is not defined");
+        }
+        if (!(options === null || options === void 0 ? void 0 : options.canvasWidth) || !options.canvasHeight) {
+            throw new Error("Canvas dimensions is not defined");
+        }
+        this._container = container;
+        this._canvas = document.createElement("canvas");
+        this._canvas.classList.add("abs-ratio-canvas");
+        this._canvas.width = options.canvasWidth;
+        this._canvas.height = options.canvasHeight;
+        this._canvas.addEventListener("pointerdown", this.onPointerDown);
+        this._contextMenu = new ContextMenu();
+        this.fillContextMenu();
+        this._container.append(this._canvas);
+        this._container.addEventListener("contextmenu", this.onContextMenu);
+    }
+    get canvas() {
+        return this._canvas;
+    }
+    get ctx() {
+        return this._canvas.getContext("2d");
+    }
+    get canvasSize() {
+        return [this._canvas.width, this._canvas.height];
+    }
+    set canvasSize(value) {
+        if (!value) {
+            return;
+        }
+        const [w, h] = value;
+        if (!w || !h) {
+            return;
+        }
+        if (w === this._canvas.width
+            && h === this._canvas.height) {
+            return;
+        }
+        this._canvas.width = w;
+        this._canvas.height = h;
+        this.refreshEditor();
+    }
+    get paths() {
+        return this._paths.slice();
+    }
+    destroy() {
+        this._canvas.remove();
+        this._container.removeEventListener("contextmenu", this.onContextMenu);
+        this._contextMenu.destroy();
+    }
+    getImageData() {
+        this.refreshEditor();
+        const imgData = this.ctx.getImageData(0, 0, this._canvas.width, this._canvas.height).data;
+        return imgData;
+    }
+    newPath(startPosition) {
+        const pathString = "M" + startPosition.x + " " + startPosition.y;
+        const path2d = new Path2D(pathString);
+        this._positionBuffer = [startPosition];
+        this._currentPath = {
+            strokeWidth: this._strokeWidth,
+            color: this._color,
+            path: path2d,
+            positions: [new Vec2(startPosition.x, startPosition.y)],
+        };
+        this._currentPathString = pathString;
+    }
+    removePath(path) {
+        if (!path) {
+            return;
+        }
+        this._paths = this._paths.filter(x => x.path !== path);
+        this.refreshEditor();
+    }
+    removeLastPath() {
+        this._paths.pop();
+        this.refreshEditor();
+    }
+    removeAllPaths() {
+        this._paths.length = 0;
+        this.refreshEditor();
+    }
+    updateCurrentPath() {
+        const tmpPath = super.updateCurrentPath();
+        if (tmpPath) {
+            this._currentPath.path = new Path2D(this._currentPathString + tmpPath);
+        }
+        return tmpPath;
+    }
+    refreshEditor() {
+        this.drawPaths();
+        this.fillContextMenu();
+    }
+    drawPaths() {
+        this.ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+        (this._currentPath
+            ? [...this._paths, this._currentPath]
+            : this._paths).forEach(x => {
+            const [r, g, b, a] = x.color;
+            this.ctx.strokeStyle = `rgba(${r * 255},${g * 255},${b * 255},${a})`;
+            this.ctx.lineWidth = x.strokeWidth;
+            this.ctx.lineCap = "round";
+            this.ctx.lineJoin = "round";
+            this.ctx.stroke(x.path);
+        });
+    }
+    convertClientCoordsToCanvas(clX, clY) {
+        const { top, left, width, height } = this._canvas.getBoundingClientRect();
+        const caHorRatio = width / this._canvas.width;
+        const caVertRatio = height / this._canvas.height;
+        const caX = (clX - left) / caHorRatio;
+        const caY = (clY - top) / caVertRatio;
+        return [caX, caY];
+    }
+    fillContextMenu() {
+        const cmContent = [
+            this.buildColorPicker(),
+            this.buildWidthSliderWithButtons(),
+        ];
+        this._contextMenu.content = cmContent;
+        this._contextMenu.enabled = true;
+    }
+    buildColorPicker() {
+        const colorPickerDiv = document.createElement("div");
+        colorPickerDiv.classList.add("context-menu-content", "row");
+        CanvasSmoothPathEditor._colors.forEach(x => {
+            const item = document.createElement("div");
+            item.classList.add("panel-button");
+            if (x === this._color) {
+                item.classList.add("on");
+            }
+            item.addEventListener("click", () => {
+                this._color = x;
+                this.fillContextMenu();
+            });
+            const colorIcon = document.createElement("div");
+            colorIcon.classList.add("context-menu-color-icon");
+            colorIcon.style.backgroundColor = `rgb(${x[0] * 255},${x[1] * 255},${x[2] * 255})`;
+            item.append(colorIcon);
+            colorPickerDiv.append(item);
+        });
+        return colorPickerDiv;
+    }
+    buildWidthSliderWithButtons() {
+        const div = document.createElement("div");
+        div.classList.add("context-menu-content", "row");
+        const undoButton = document.createElement("div");
+        undoButton.classList.add("panel-button");
+        if (!this.pathCount) {
+            undoButton.classList.add("disabled");
+        }
+        else {
+            undoButton.addEventListener("click", () => {
+                this.removeLastPath();
+            });
+        }
+        undoButton.innerHTML = editIcons.back;
+        div.append(undoButton);
+        const clearButton = document.createElement("div");
+        clearButton.classList.add("panel-button");
+        if (!this.pathCount) {
+            clearButton.classList.add("disabled");
+        }
+        else {
+            clearButton.addEventListener("click", () => {
+                this.removeAllPaths();
+            });
+        }
+        clearButton.innerHTML = editIcons.close;
+        div.append(clearButton);
+        const slider = document.createElement("input");
+        slider.setAttribute("type", "range");
+        slider.setAttribute("min", "1");
+        slider.setAttribute("max", "32");
+        slider.setAttribute("step", "1");
+        slider.setAttribute("value", this._strokeWidth + "");
+        slider.classList.add("context-menu-slider");
+        slider.addEventListener("change", () => {
+            this._strokeWidth = slider.valueAsNumber;
+        });
+        div.append(slider);
+        return div;
+    }
+}
+CanvasSmoothPathEditor._defaultStrokeWidth = 3;
+CanvasSmoothPathEditor._colors = [
+    [0, 0, 0, 1],
+    [0.804, 0, 0, 1],
+    [0, 0.804, 0, 1],
+    [0, 0, 0.804, 1],
+    [1, 0.5, 0, 1],
+    [1, 0.2, 1, 1],
+];
+
 var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -18723,7 +19122,7 @@ class CustomStampService {
             const imageHeight = image.height;
             const imageRatio = image.width / image.height;
             const overlay = htmlToElements(stampImageLoaderHtml)[0];
-            const canvas = overlay.querySelector(".stamp-image-canvas");
+            const canvas = overlay.querySelector("canvas");
             const cancelButton = overlay.querySelector(".stamp-cancel");
             const okButton = overlay.querySelector(".stamp-ok");
             const nameInput = overlay.querySelector(".stamp-name-input");
@@ -18731,7 +19130,7 @@ class CustomStampService {
             const widthInput = overlay.querySelector(".stamp-width-input");
             const heightInput = overlay.querySelector(".stamp-height-input");
             let stampName = "Custom stamp";
-            let stampSubject;
+            let stampSubject = "image stamp";
             let stampWidth = 64;
             let stampHeight = +(64 / imageRatio).toFixed();
             nameInput.value = stampName;
@@ -18800,7 +19199,7 @@ class CustomStampService {
         return __awaiter$7(this, void 0, void 0, function* () {
             this._loader.show(this._container, 10);
             const overlay = htmlToElements(stampDesignerHtml)[0];
-            const canvas = overlay.querySelector(".stamp-image-canvas");
+            const canvasContainer = overlay.querySelector(".form-canvas-wrapper");
             const cancelButton = overlay.querySelector(".stamp-cancel");
             const okButton = overlay.querySelector(".stamp-ok");
             const nameInput = overlay.querySelector(".stamp-name-input");
@@ -18808,19 +19207,21 @@ class CustomStampService {
             const widthInput = overlay.querySelector(".stamp-width-input");
             const heightInput = overlay.querySelector(".stamp-height-input");
             let stampName = "Custom stamp";
-            let stampSubject;
+            let stampSubject = "drawing stamp";
             let stampWidth = 64;
             let stampHeight = 64;
             nameInput.value = stampName;
             widthInput.value = stampWidth + "";
             heightInput.value = stampHeight + "";
+            const editor = new CanvasSmoothPathEditor(canvasContainer, {
+                canvasWidth: stampWidth,
+                canvasHeight: stampHeight,
+            });
             this._overlay = overlay;
             this._container.append(overlay);
             const updateCanvasSize = () => {
-                canvas.width = stampWidth;
-                canvas.height = stampHeight;
+                editor.canvasSize = [stampWidth, stampHeight];
             };
-            updateCanvasSize();
             const validate = () => {
                 if (!stampName
                     || (!stampHeight || isNaN(stampHeight))
@@ -18856,8 +19257,7 @@ class CustomStampService {
             };
             cancelButton.addEventListener("click", hide);
             okButton.addEventListener("click", () => {
-                const ctx = canvas.getContext("2d");
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                const imgData = editor.getImageData();
                 const imageDataArray = new Array(imgData.length);
                 for (let i = 0; i < imgData.length; i++) {
                     imageDataArray[i] = imgData[i];
@@ -18875,82 +19275,6 @@ class CustomStampService {
             });
             this._loader.hide();
         });
-    }
-}
-
-class ContextMenu {
-    constructor() {
-        this.onPointerDownOutside = (e) => {
-            if (!this._shown) {
-                return;
-            }
-            const target = e.composedPath()[0];
-            if (!target.closest("#context-menu")) {
-                this.hide();
-            }
-        };
-        this._container = document.createElement("div");
-        this._container.id = "context-menu";
-        this.hide();
-        document.addEventListener("pointerdown", this.onPointerDownOutside);
-    }
-    set content(value) {
-        var _a;
-        (_a = this._content) === null || _a === void 0 ? void 0 : _a.forEach(x => x.remove());
-        if (value === null || value === void 0 ? void 0 : value.length) {
-            value.forEach(x => this._container.append(x));
-            this._content = value;
-        }
-        else {
-            this._content = null;
-        }
-    }
-    get enabled() {
-        return this._enabled;
-    }
-    set enabled(value) {
-        this._enabled = !!value;
-    }
-    destroy() {
-        this.clear();
-        document.removeEventListener("pointerdown", this.onPointerDownOutside);
-    }
-    show(pointerPosition, parent) {
-        parent.append(this._container);
-        this._shown = true;
-        setTimeout(() => {
-            this.setContextMenuPosition(pointerPosition, parent);
-            this._container.style.opacity = "1";
-        }, 0);
-    }
-    hide() {
-        this._container.style.opacity = "0";
-        this._container.remove();
-        this._shown = false;
-    }
-    clear() {
-        this.hide();
-        this.content = null;
-    }
-    setContextMenuPosition(pointerPosition, parent) {
-        const menuDimension = new Vec2(this._container.offsetWidth, this._container.offsetHeight);
-        const menuPosition = new Vec2();
-        const parentRect = parent.getBoundingClientRect();
-        const relPointerPosition = new Vec2(pointerPosition.x - parentRect.x, pointerPosition.y - parentRect.y);
-        if (relPointerPosition.x + menuDimension.x > parentRect.width + parentRect.x) {
-            menuPosition.x = relPointerPosition.x - menuDimension.x;
-        }
-        else {
-            menuPosition.x = relPointerPosition.x;
-        }
-        if (relPointerPosition.y + menuDimension.y > parentRect.height + parentRect.y) {
-            menuPosition.y = relPointerPosition.y - menuDimension.y;
-        }
-        else {
-            menuPosition.y = relPointerPosition.y;
-        }
-        this._container.style.left = menuPosition.x + parent.scrollLeft + "px";
-        this._container.style.top = menuPosition.y + parent.scrollTop + "px";
     }
 }
 
@@ -19975,92 +20299,19 @@ class GeometricAnnotatorFactory {
     }
 }
 
-class SmoothPath {
-    constructor(options) {
-        this._paths = [];
-        this._positionBuffer = [];
-        this._options = Object.assign({}, SmoothPath.defaultOptions, options);
-    }
-    get id() {
-        return this._options.id;
-    }
-    get bufferSize() {
-        return this._options.bufferSize;
-    }
-    get strokeWidth() {
-        return this._options.strokeWidth;
-    }
-    get color() {
-        return this._options.color.slice();
-    }
-    get paths() {
-        return this._paths.slice();
-    }
-    get pathCount() {
-        return this._paths.length;
-    }
-    endPath() {
-        if (this._currentPath && this._currentPath.positions.length > 1) {
-            this._paths.push(this._currentPath);
-        }
-        this._positionBuffer = null;
-        this._currentPath = null;
-        this._currentPathString = null;
-    }
-    addPosition(pos) {
-        this.appendPositionToBuffer(pos);
-        this.updateCurrentPath();
-    }
-    appendPositionToBuffer(pos) {
-        const buffer = this._positionBuffer;
-        buffer.push(pos);
-        this._positionBuffer = buffer
-            .slice(Math.max(0, buffer.length - this._options.bufferSize), buffer.length);
-    }
-    getAverageBufferPosition(offset) {
-        const len = this._positionBuffer.length;
-        if (len >= this._options.bufferSize) {
-            let totalX = 0;
-            let totalY = 0;
-            let pos;
-            let i;
-            let count = 0;
-            for (i = offset; i < len; i++) {
-                count++;
-                pos = this._positionBuffer[i];
-                totalX += pos.x;
-                totalY += pos.y;
-            }
-            return new Vec2(totalX / count, totalY / count);
-        }
-        return null;
-    }
-    updateCurrentPath() {
-        let pos = this.getAverageBufferPosition(0);
-        if (!pos) {
-            return null;
-        }
-        this._currentPathString += " L" + pos.x + " " + pos.y;
-        this._currentPath.positions.push(pos);
-        let tmpPath = "";
-        for (let offset = 2; offset < this._positionBuffer.length; offset += 2) {
-            pos = this.getAverageBufferPosition(offset);
-            tmpPath += " L" + pos.x + " " + pos.y;
-        }
-        return tmpPath;
-    }
-}
-SmoothPath.defaultOptions = {
-    bufferSize: 8,
-    strokeWidth: 2,
-    color: [0, 0, 0, 0.5],
-};
-
 class SvgSmoothPath extends SmoothPath {
     constructor(options) {
         super(options);
         this._paths = [];
+        this._strokeWidth = (options === null || options === void 0 ? void 0 : options.strokeWidth) || SvgSmoothPath._defaultStrokeWidth;
+        this._color = (options === null || options === void 0 ? void 0 : options.color) || SvgSmoothPath._defaultColor;
         this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    }
+    get strokeWidth() {
+        return this._strokeWidth;
+    }
+    get color() {
+        return this._color;
     }
     get group() {
         return this._group;
@@ -20069,11 +20320,11 @@ class SvgSmoothPath extends SmoothPath {
         return this._paths.slice();
     }
     newPath(startPosition) {
-        const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-        path.setAttribute("stroke-width", this._options.strokeWidth + "");
+        path.setAttribute("stroke-width", this._strokeWidth + "");
         path.setAttribute("stroke-linecap", "round");
         path.setAttribute("stroke-linejoin", "round");
         const pathString = "M" + startPosition.x + " " + startPosition.y;
@@ -20102,6 +20353,8 @@ class SvgSmoothPath extends SmoothPath {
         return tmpPath;
     }
 }
+SvgSmoothPath._defaultStrokeWidth = 3;
+SvgSmoothPath._defaultColor = [0, 0, 0, 0.8];
 
 class PenAnnotator extends Annotator {
     constructor(docService, pageService, parent, options) {
@@ -22572,11 +22825,6 @@ class TsPdfViewer {
             console.log(`Error while importing annotations: ${e.message}`);
         }
     }
-    exportAnnotations() {
-        var _a;
-        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
-        return dtos;
-    }
     importAnnotationsFromJson(json) {
         var _a;
         try {
@@ -22587,10 +22835,40 @@ class TsPdfViewer {
             console.log(`Error while importing annotations: ${e.message}`);
         }
     }
+    exportAnnotations() {
+        var _a;
+        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
+        return dtos;
+    }
     exportAnnotationsToJson() {
         var _a;
         const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
         return JSON.stringify(dtos);
+    }
+    importCustomStamps(customStamps) {
+        try {
+            this._customStampsService.importCustomStamps(customStamps);
+        }
+        catch (e) {
+            console.log(`Error while importing custom stamps: ${e.message}`);
+        }
+    }
+    importCustomStampsFromJson(json) {
+        try {
+            const customStamps = JSON.parse(json);
+            this._customStampsService.importCustomStamps(customStamps);
+        }
+        catch (e) {
+            console.log(`Error while importing custom stamps: ${e.message}`);
+        }
+    }
+    exportCustomStamps() {
+        const customStamps = this._customStampsService.getCustomStamps();
+        return customStamps;
+    }
+    exportCustomStampsToJson() {
+        const customStamps = this._customStampsService.getCustomStamps();
+        return JSON.stringify(customStamps);
     }
     getCurrentPdf() {
         var _a;

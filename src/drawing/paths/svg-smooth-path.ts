@@ -1,8 +1,32 @@
 import { Vec2 } from "../../common/math";
-import { SmoothPath, SvgSmoothPathData, SmoothPathOptions } from "./smooth-path";
+import { Quadruple } from "../../common/types";
+import { SmoothPath, SmoothPathData, SmoothPathOptions } from "./smooth-path";
 
+export interface SvgSmoothPathData extends SmoothPathData {
+  path: SVGPathElement;
+}
+
+export interface SvgSmoothPathOptions extends SmoothPathOptions {
+  /**smoothing filter position buffer (higher values mean smoother lines but less performance) */
+  bufferSize?: number; 
+  strokeWidth?: number;  
+  color?: Quadruple;
+  id?: number;
+}
 
 export class SvgSmoothPath extends SmoothPath {
+  private static readonly _defaultStrokeWidth = 3;
+  private static readonly _defaultColor: Quadruple = [0, 0, 0, 0.8];
+
+  protected _strokeWidth: number;
+  get strokeWidth(): number {
+    return this._strokeWidth;
+  } 
+  protected _color: Quadruple;
+  get color(): Quadruple {
+    return this._color;
+  }
+  
   protected _group: SVGGraphicsElement;
   get group(): SVGGraphicsElement {
     return this._group;
@@ -14,17 +38,19 @@ export class SvgSmoothPath extends SmoothPath {
     return this._paths.slice();
   }
 
-  constructor(options?: SmoothPathOptions) {
+  constructor(options?: SvgSmoothPathOptions) {
     super(options);
+    this._strokeWidth = options?.strokeWidth || SvgSmoothPath._defaultStrokeWidth;
+    this._color = options?.color || SvgSmoothPath._defaultColor;
     this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   }
 
   newPath(startPosition: Vec2) {
-    const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
+    const [r, g, b, a] = this._color || [0, 0, 0, 1];
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-    path.setAttribute("stroke-width", this._options.strokeWidth + "");
+    path.setAttribute("stroke-width", this._strokeWidth + "");
     path.setAttribute("stroke-linecap", "round");    
     path.setAttribute("stroke-linejoin", "round");
 

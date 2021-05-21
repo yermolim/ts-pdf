@@ -268,6 +268,8 @@ export const styles = /*html*/`
     user-select: none;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
+    flex-grow: 0;
     justify-content: center;
     align-items: center;
     width: 36px;
@@ -576,6 +578,7 @@ export const styles = /*html*/`
     width: 100%;
     height: 100%;
     background: var(--tspdf-color-secondary-tr-final);
+    touch-action: none;
   }
   
   .fixed-full-size-overlay {
@@ -715,13 +718,6 @@ export const styles = /*html*/`
     flex-grow: 1;
     flex-shrink: 1;
   } 
-  .stamp-image-canvas {
-    outline: 0;
-    position: absolute;
-    width: 100%;
-    height: auto;
-    max-height: 100%;
-  }
   .stamp-dialog input {
     width: 100%;
     margin: 10px;
@@ -746,12 +742,22 @@ export const styles = /*html*/`
     margin: 10px;
   }
   .stamp-input-row p {
+    user-select: none;
     margin: 0;   
     padding: 0 10px;
     font-family: sans-serif; 
     font-size: 16px;
     white-space: nowrap;
     color: var(--tspdf-color-fg-secondary-final);
+  }
+  
+  .abs-ratio-canvas {
+    outline: 0;
+    position: absolute;
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    border: 2px solid var(--tspdf-color-fg-secondary-final);
   }
 
   .annotation-controls {

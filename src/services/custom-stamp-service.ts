@@ -7,6 +7,7 @@ import { CustomStampCreationInfo } from "../drawing/stamps";
 import { Loader } from "../components/loader";
 
 import { ElementEventService } from "./element-event-service";
+import { CanvasSmoothPathEditor } from "../drawing/paths/canvas-smooth-path-editor";
 
 //#region custom events
 export const customStampEvent = "tspdf-customstampchange" as const;
@@ -180,7 +181,7 @@ export class CustomStampService {
     const overlay = htmlToElements(stampImageLoaderHtml)[0];
 
     // select the overlay elements
-    const canvas = overlay.querySelector(".stamp-image-canvas") as HTMLCanvasElement;
+    const canvas = overlay.querySelector("canvas") as HTMLCanvasElement;
     const cancelButton = overlay.querySelector(".stamp-cancel");
     const okButton = overlay.querySelector(".stamp-ok");   
     const nameInput = overlay.querySelector(".stamp-name-input") as HTMLInputElement;   
@@ -191,7 +192,7 @@ export class CustomStampService {
     // declare the variables that will be used to create a stamp creation information
     // and set the default values
     let stampName = "Custom stamp";
-    let stampSubject: string;
+    let stampSubject = "image stamp";
     let stampWidth = 64;
     let stampHeight = +(64 / imageRatio).toFixed();
     nameInput.value = stampName;    
@@ -276,33 +277,37 @@ export class CustomStampService {
     const overlay = htmlToElements(stampDesignerHtml)[0];
 
     // select the overlay elements
-    const canvas = overlay.querySelector(".stamp-image-canvas") as HTMLCanvasElement;
-    const cancelButton = overlay.querySelector(".stamp-cancel");
-    const okButton = overlay.querySelector(".stamp-ok");   
+    const canvasContainer = overlay.querySelector(".form-canvas-wrapper") as HTMLElement;
+    const cancelButton = overlay.querySelector(".stamp-cancel") as HTMLDivElement;
+    const okButton = overlay.querySelector(".stamp-ok") as HTMLDivElement;   
     const nameInput = overlay.querySelector(".stamp-name-input") as HTMLInputElement;   
     const subjectInput = overlay.querySelector(".stamp-subject-input") as HTMLInputElement;   
     const widthInput = overlay.querySelector(".stamp-width-input") as HTMLInputElement;   
-    const heightInput = overlay.querySelector(".stamp-height-input") as HTMLInputElement; 
+    const heightInput = overlay.querySelector(".stamp-height-input") as HTMLInputElement;
 
     // declare the variables that will be used to create a stamp creation information
     // and set the default values
     let stampName = "Custom stamp";
-    let stampSubject: string;
+    let stampSubject = "drawing stamp";
     let stampWidth = 64;
     let stampHeight = 64;
     nameInput.value = stampName;    
     widthInput.value = stampWidth + "";
-    heightInput.value = stampHeight + "";    
+    heightInput.value = stampHeight + "";   
+     
+    // init drawing canvas
+    const editor = new CanvasSmoothPathEditor(canvasContainer, {
+      canvasWidth: stampWidth,
+      canvasHeight: stampHeight,
+    }); 
 
     // append the overlay to the parent container
     this._overlay = overlay;
     this._container.append(overlay);
 
     const updateCanvasSize = () => {
-      canvas.width = stampWidth;
-      canvas.height = stampHeight;
+      editor.canvasSize = [stampWidth, stampHeight];
     };
-    updateCanvasSize();
 
     // form validation
     const validate = () => {
@@ -341,8 +346,7 @@ export class CustomStampService {
     cancelButton.addEventListener("click", hide);
     okButton.addEventListener("click", () => {
       // get the image data
-      const ctx = canvas.getContext("2d");
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      const imgData = editor.getImageData();
       // create a stamp creation information and add it to inner collection
       const imageDataArray = new Array<number>(imgData.length);
       for (let i = 0; i < imgData.length; i++) {

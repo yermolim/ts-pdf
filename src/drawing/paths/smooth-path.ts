@@ -5,38 +5,23 @@ export interface SmoothPathData {
   positions: Vec2[];
 }
 
-export interface SvgSmoothPathData extends SmoothPathData {
-  path: SVGPathElement;
-}
-
 export interface SmoothPathOptions {
   /**smoothing filter position buffer (higher values mean smoother lines but less performance) */
-  bufferSize?: number; 
-  strokeWidth?: number;  
-  color?: Quadruple;
+  bufferSize?: number;
   id?: number;
 }
 
 /**a class used for drawing smooth SVG paths */
 export abstract class SmoothPath {
-  static readonly defaultOptions: SmoothPathOptions = {
-    bufferSize: 8, 
-    strokeWidth: 2,
-    color: [0, 0, 0, 0.5],
-  };  
+  private static readonly _defaultBufferSize = 8;  
 
-  protected _options: SmoothPathOptions;
+  protected readonly _id: number;
   get id(): number {
-    return this._options.id;
+    return this._id;
   }
+  protected readonly _bufferSize: number;
   get bufferSize(): number {
-    return this._options.bufferSize;
-  }
-  get strokeWidth(): number {
-    return this._options.strokeWidth;
-  } 
-  get color(): Quadruple {
-    return <Quadruple><unknown>this._options.color.slice();
+    return this._bufferSize;
   }
 
   protected _currentPath: SmoothPathData;
@@ -52,7 +37,8 @@ export abstract class SmoothPath {
   protected _currentPathString: string;
 
   constructor(options?: SmoothPathOptions) {
-    this._options = Object.assign({}, SmoothPath.defaultOptions, options);
+    this._bufferSize = options?.bufferSize || SmoothPath._defaultBufferSize;
+    this._id = options?.id;
   }
 
   endPath() {    
@@ -74,7 +60,7 @@ export abstract class SmoothPath {
     buffer.push(pos);
     // keep the buffer from oversizing
     this._positionBuffer = buffer
-      .slice(Math.max(0, buffer.length - this._options.bufferSize), buffer.length);
+      .slice(Math.max(0, buffer.length - this._bufferSize), buffer.length);
   }
 
   /**
@@ -84,7 +70,7 @@ export abstract class SmoothPath {
    */
   protected getAverageBufferPosition(offset: number): Vec2 {
     const len = this._positionBuffer.length;
-    if (len >= this._options.bufferSize) {
+    if (len >= this._bufferSize) {
       let totalX = 0;
       let totalY = 0;
       let pos: Vec2;
@@ -122,10 +108,4 @@ export abstract class SmoothPath {
     }    
     return tmpPath;
   }
-
-  abstract newPath(startPosition: Vec2): void;
-
-  abstract removePath(path: SVGPathElement): void;
-
-  abstract removeLastPath(): void;
 }
