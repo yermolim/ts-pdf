@@ -1,8 +1,8 @@
-import { stampImageLoaderHtml } from "../assets/index.html";
+import { stampDesignerHtml, stampImageLoaderHtml } from "../assets/index.html";
 
 import { htmlToElements } from "../common/dom";
-import { CustomStampCreationInfo } from "../common/drawing";
 import { getRandomUuid } from "../common/uuid";
+import { CustomStampCreationInfo } from "../drawing/stamps";
 
 import { Loader } from "../components/loader";
 
@@ -132,7 +132,7 @@ export class CustomStampService {
    * start the chain of creating a custom stamp from a pen drawing
    */
   startDrawing() {
-    
+    this.openDesignerOverlayAsync();
   }
 
   private onFileInput = () => {
@@ -141,11 +141,12 @@ export class CustomStampService {
       return;
     }
 
-    this.openCreationFromImageOverlayAsync(files[0]);
+    this.openImageLoaderOverlayAsync(files[0]);
     this._fileInput.value = null;
   };
 
-  private async openCreationFromImageOverlayAsync(file: File) {
+  // TODO: move to the separate class
+  private async openImageLoaderOverlayAsync(file: File) {
     // show loader while an image is being loaded
     this._loader.show(this._container, 10);
     
@@ -255,6 +256,104 @@ export class CustomStampService {
         subject: stampSubject,
         rect: [0, 0, stampWidth, stampHeight],
         bBox: [0, 0, imageWidth, imageHeight],
+        imageData: imageDataArray,
+      };
+      this.addCustomStamp(stamp);
+      hide();
+    });
+
+    this._loader.hide();
+  }
+  
+  // TODO: move to the separate class
+  private async openDesignerOverlayAsync() {
+    // show loader while an image is being loaded
+    this._loader.show(this._container, 10);
+    
+    // load the image
+
+    // build an overlay
+    const overlay = htmlToElements(stampDesignerHtml)[0];
+
+    // select the overlay elements
+    const canvas = overlay.querySelector(".stamp-image-canvas") as HTMLCanvasElement;
+    const cancelButton = overlay.querySelector(".stamp-cancel");
+    const okButton = overlay.querySelector(".stamp-ok");   
+    const nameInput = overlay.querySelector(".stamp-name-input") as HTMLInputElement;   
+    const subjectInput = overlay.querySelector(".stamp-subject-input") as HTMLInputElement;   
+    const widthInput = overlay.querySelector(".stamp-width-input") as HTMLInputElement;   
+    const heightInput = overlay.querySelector(".stamp-height-input") as HTMLInputElement; 
+
+    // declare the variables that will be used to create a stamp creation information
+    // and set the default values
+    let stampName = "Custom stamp";
+    let stampSubject: string;
+    let stampWidth = 64;
+    let stampHeight = 64;
+    nameInput.value = stampName;    
+    widthInput.value = stampWidth + "";
+    heightInput.value = stampHeight + "";    
+
+    // append the overlay to the parent container
+    this._overlay = overlay;
+    this._container.append(overlay);
+
+    const updateCanvasSize = () => {
+      canvas.width = stampWidth;
+      canvas.height = stampHeight;
+    };
+    updateCanvasSize();
+
+    // form validation
+    const validate = () => {
+      if (!stampName
+        || (!stampHeight || isNaN(stampHeight))
+        || (!stampWidth || isNaN(stampWidth))) {
+        okButton.classList.add("disabled");
+      } else {
+        updateCanvasSize();
+        okButton.classList.remove("disabled");
+      }
+    };    
+    nameInput.addEventListener("input", () => {
+      stampName = nameInput.value;
+      validate();
+    });
+    subjectInput.addEventListener("input", () => {
+      stampSubject = subjectInput.value;
+      validate();
+    });
+    widthInput.addEventListener("input", () => {
+      stampWidth = +(+widthInput.value)?.toFixed();
+      validate();
+    });
+    heightInput.addEventListener("input", () => {
+      stampHeight = +(+heightInput.value)?.toFixed();
+      validate();
+    });
+
+    // function to hide the overlay
+    const hide = () => {
+      overlay.remove();
+      this._overlay = null;
+    };
+
+    cancelButton.addEventListener("click", hide);
+    okButton.addEventListener("click", () => {
+      // get the image data
+      const ctx = canvas.getContext("2d");
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      // create a stamp creation information and add it to inner collection
+      const imageDataArray = new Array<number>(imgData.length);
+      for (let i = 0; i < imgData.length; i++) {
+        imageDataArray[i] = imgData[i];
+      }
+      const stamp: CustomStampCreationInfo = {
+        type: "/" + getRandomUuid(),
+        name: stampName,
+        subject: stampSubject,
+        rect: [0, 0, stampWidth, stampHeight],
+        bBox: [0, 0, stampWidth, stampHeight],
         imageData: imageDataArray,
       };
       this.addCustomStamp(stamp);

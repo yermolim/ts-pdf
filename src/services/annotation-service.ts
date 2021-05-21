@@ -4,7 +4,7 @@ import { geometricIcons, lineTypeIcons, textIcons,
 import { Quadruple } from "../common/types";
 import { Vec2 } from "../common/math";
 import { htmlToElements } from "../common/dom";
-import { CustomStampCreationInfo } from "../common/drawing";
+import { CustomStampCreationInfo } from "../drawing/stamps";
 
 import { DocumentService } from "./document-service";
 import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";

@@ -1,5 +1,5 @@
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { buildCloudCurveFromPolyline } from "../../../../../common/drawing";
+import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";

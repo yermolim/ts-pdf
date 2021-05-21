@@ -1,5 +1,5 @@
 import { StandardStampCreationInfo, standardStampCreationInfos } 
-  from "../../../../common/drawing";
+  from "../../../../drawing/stamps";
 
 import { CryptInfo } from "../../../common-interfaces";
 import { annotationTypes, colorSpaces } from "../../../const";

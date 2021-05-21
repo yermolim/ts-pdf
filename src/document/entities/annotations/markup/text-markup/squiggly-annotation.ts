@@ -1,4 +1,5 @@
 import { Vec2, vecMinMax } from "../../../../../common/math";
+import { buildSquigglyLine } from "../../../../../drawing/utils";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
@@ -11,7 +12,6 @@ import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { XFormStream } from "../../../streams/x-form-stream";
 import { TextMarkupAnnotation, TextMarkupAnnotationDto } from "./text-markup-annotation";
-import { buildSquigglyLine } from "../../../../../common/drawing";
 
 export class SquigglyAnnotation extends TextMarkupAnnotation {   
   static readonly squiggleSize = 6;

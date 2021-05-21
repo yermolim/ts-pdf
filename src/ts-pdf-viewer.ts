@@ -8,7 +8,7 @@ import { styles } from "./assets/styles.html";
 import { clamp } from "./common/math";
 import { htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
-import { CustomStampCreationInfo } from "./common/drawing";
+import { CustomStampCreationInfo } from "./drawing/stamps";
 
 import { ElementEventService } from "./services/element-event-service";
 import { PageService, currentPageChangeEvent, 
@@ -287,9 +287,10 @@ export class TsPdfViewer {
         return this.openPdfAsync(data);
       }
 
+      const dataWithoutAnnotations = docService.getDataWithoutSupportedAnnotations();
       this._pdfLoadingTask = getDocument({
         // get the pdf data with the supported annotations cut out
-        data: docService.getDataWithoutSupportedAnnotations(), 
+        data: dataWithoutAnnotations, 
         password,
       });
       this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;

@@ -1,6 +1,7 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { buildCloudCurveFromPolyline, calcBBoxToRectMatrices } from "../../../../../common/drawing";
+import { calcBBoxToRectMatrices } from "../../../../../drawing/utils";
+import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";

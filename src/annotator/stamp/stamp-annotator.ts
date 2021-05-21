@@ -1,6 +1,6 @@
 import { getDistance, Vec2 } from "../../common/math";
 import { getRandomUuid } from "../../common/uuid";
-import { CustomStampCreationInfo, standardStampCreationInfos } from "../../common/drawing";
+import { CustomStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";

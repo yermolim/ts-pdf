@@ -1,11 +1,13 @@
 import { Quadruple } from "../../common/types";
 import { Mat3, Vec2, vecMinMax } from "../../common/math";
-import { bezierConstant, buildCloudCurveFromEllipse } from "../../common/drawing";
 import { getRandomUuid } from "../../common/uuid";
+import { bezierConstant } from "../../drawing/utils";
+import { buildCloudCurveFromEllipse } from "../../drawing/clouds";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { CircleAnnotation, CircleAnnotationDto } from "../../document/entities/annotations/markup/geometric/circle-annotation";
+import { CircleAnnotation, CircleAnnotationDto } 
+  from "../../document/entities/annotations/markup/geometric/circle-annotation";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 

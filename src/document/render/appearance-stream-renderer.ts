@@ -1,6 +1,7 @@
-import { Quadruple, CssMixBlendMode } from "../../common/types";
+import { Quadruple } from "../../common/types";
 import { Mat3, Vec2 } from "../../common/math";
-import { calcBBoxToRectMatrices, selectionStrokeWidth } from "../../common/drawing";
+import { calcBBoxToRectMatrices, selectionStrokeWidth, 
+  CssMixBlendMode } from "../../drawing/utils";
 
 import { codes } from "../codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, valueTypes } from "../const";

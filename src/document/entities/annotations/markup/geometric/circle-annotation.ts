@@ -2,8 +2,8 @@ import { Hextuple, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { bezierConstant, buildCloudCurveFromEllipse, 
-  calcBBoxToRectMatrices } from "../../../../../common/drawing";
+import { bezierConstant, calcBBoxToRectMatrices } from "../../../../../drawing/utils";
+import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";

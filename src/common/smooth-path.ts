@@ -1,12 +1,12 @@
-import { Vec2 } from "../../common/math";
-import { Quadruple } from "../../common/types";
+import { Vec2 } from "./math";
+import { Quadruple } from "./types";
 
 interface PathData {
   path: SVGPathElement;
   positions: Vec2[];
 }
 
-export interface PenDataOptions {
+export interface SmoothPathOptions {
   /**smoothing filter position buffer (higher values mean smoother lines but less performance) */
   bufferSize?: number; 
   strokeWidth?: number;  
@@ -15,13 +15,13 @@ export interface PenDataOptions {
 }
 
 /**a class used for drawing smooth SVG paths */
-export class PenData {
-  static readonly defaultOptions: PenDataOptions = {
+export class SmoothPath {
+  static readonly defaultOptions: SmoothPathOptions = {
     bufferSize: 8, 
     strokeWidth: 2,
     color: [0, 0, 0, 0.5],
   };  
-  private _options: PenDataOptions;
+  private _options: SmoothPathOptions;
   get id(): number {
     return this._options.id;
   }
@@ -52,8 +52,8 @@ export class PenData {
   private _currentPath: PathData;
   private _currentPathString: string;
 
-  constructor(options?: PenDataOptions) {
-    this._options = Object.assign({}, PenData.defaultOptions, options);
+  constructor(options?: SmoothPathOptions) {
+    this._options = Object.assign({}, SmoothPath.defaultOptions, options);
     this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   }
 

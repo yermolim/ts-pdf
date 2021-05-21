@@ -223,6 +223,3 @@ export type Hextuple = readonly [a: number, b: number, d: number, e: number, g: 
 */
 export type Octuple = readonly [x1: number, y1: number, x2: number, y2: number,
   x3: number, y3: number, x4: number, y4: number];
-  
-export type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
-| "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";

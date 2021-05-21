@@ -7,7 +7,7 @@ import { PageService } from "../../services/page-service";
 import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
 
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
-import { PenData } from "./pen-data";
+import { SmoothPath } from "../../common/smooth-path";
 
 export interface PenAnnotatorOptions {
   strokeWidth?: number;  
@@ -16,7 +16,7 @@ export interface PenAnnotatorOptions {
 
 /**tool for adding ink (hand-drawn) annotations */
 export class PenAnnotator extends Annotator {
-  protected _annotationPenData: PenData;  
+  protected _annotationPathData: SmoothPath;  
   protected _color: Quadruple;
   protected _strokeWidth: number;
 
@@ -36,7 +36,7 @@ export class PenAnnotator extends Annotator {
 
   /**remove the last path from the temp path group */
   undo() {
-    this._annotationPenData?.removeLastPath();
+    this._annotationPathData?.removeLastPath();
     this.emitDataChanged();
   }
 
@@ -49,12 +49,12 @@ export class PenAnnotator extends Annotator {
    * save the current temp path as an ink annotation and append it to the page
    */
   saveAnnotation() {
-    if (!this._annotationPenData) {
+    if (!this._annotationPathData) {
       return;
     }
 
-    const pageId = this._annotationPenData.id;
-    const dto = this.buildAnnotationDto(this._annotationPenData);
+    const pageId = this._annotationPathData.id;
+    const dto = this.buildAnnotationDto(this._annotationPathData);
     const annotation = InkAnnotation.createFromDto(dto);
 
     // DEBUG
@@ -75,13 +75,13 @@ export class PenAnnotator extends Annotator {
    * adapt the Svg group positions to the current view box dimensions
    */
   protected refreshGroupPosition() {
-    if (!this._annotationPenData) {
+    if (!this._annotationPathData) {
       return;
     }
-    const page = this._pageService.renderedPages.find(x => x.id === this._annotationPenData.id);
+    const page = this._pageService.renderedPages.find(x => x.id === this._annotationPathData.id);
     if (!page) {
       // set scale to 0 to hide pen group if it's page is not rendered
-      this._annotationPenData.group.setAttribute("transform", "scale(0)");
+      this._annotationPathData.group.setAttribute("transform", "scale(0)");
       return;
     }
 
@@ -120,15 +120,15 @@ export class PenAnnotator extends Annotator {
       default:
         throw new Error(`Invalid rotation degree: ${rotation}`);
     }
-    this._annotationPenData.group.setAttribute("transform",
+    this._annotationPathData.group.setAttribute("transform",
       `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);      
   }
 
   /**clear the temp path group */
   protected removeTempPenData() {
-    if (this._annotationPenData) {
-      this._annotationPenData.group.remove();
-      this._annotationPenData = null;
+    if (this._annotationPathData) {
+      this._annotationPathData.group.remove();
+      this._annotationPathData = null;
       this.emitDataChanged();
     }    
   }
@@ -139,12 +139,12 @@ export class PenAnnotator extends Annotator {
    */
   protected resetTempPenData(pageId: number) {    
     this.removeTempPenData();    
-    this._annotationPenData = new PenData({
+    this._annotationPathData = new SmoothPath({
       id: pageId, 
       color: this._color,
       strokeWidth: this._strokeWidth,
     });
-    this._svgGroup.append(this._annotationPenData.group);
+    this._svgGroup.append(this._annotationPathData.group);
 
     // update pen group matrix to position the group properly
     this.refreshGroupPosition();
@@ -164,13 +164,13 @@ export class PenAnnotator extends Annotator {
     }
 
     const {pageX: px, pageY: py, pageId} = pageCoords;
-    if (!this._annotationPenData || pageId !== this._annotationPenData.id) {
+    if (!this._annotationPathData || pageId !== this._annotationPathData.id) {
       // the current page changed. reset the temp group
       this.resetTempPenData(pageId);
     }
 
     // create a new temp path
-    this._annotationPenData.newPath(new Vec2(px, py));
+    this._annotationPathData.newPath(new Vec2(px, py));
 
     const target = e.target as HTMLElement;
     target.addEventListener("pointermove", this.onPointerMove);
@@ -181,7 +181,7 @@ export class PenAnnotator extends Annotator {
   };
 
   protected onPointerMove = (e: PointerEvent) => {
-    if (!e.isPrimary || !this._annotationPenData) {
+    if (!e.isPrimary || !this._annotationPathData) {
       return;
     }
 
@@ -189,13 +189,13 @@ export class PenAnnotator extends Annotator {
     this.updatePointerCoords(cx, cy);
 
     const pageCoords = this._pointerCoordsInPageCS;
-    if (!pageCoords || pageCoords.pageId !== this._annotationPenData.id) {
+    if (!pageCoords || pageCoords.pageId !== this._annotationPathData.id) {
       // skip move if the pointer is outside of the starting page
       return;
     }
     
     // add the current pointer position to the current temp path
-    this._annotationPenData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
+    this._annotationPathData.addPosition(new Vec2(pageCoords.pageX, pageCoords.pageY));
   };
 
   protected onPointerUp = (e: PointerEvent) => {
@@ -209,12 +209,12 @@ export class PenAnnotator extends Annotator {
     target.removeEventListener("pointerout", this.onPointerUp);
     target.releasePointerCapture(e.pointerId);   
 
-    this._annotationPenData?.endPath();
+    this._annotationPathData?.endPath();
     this.emitDataChanged();
   };
 
   protected emitDataChanged() {
-    const count = this._annotationPenData?.pathCount || 0;
+    const count = this._annotationPathData?.pathCount || 0;
     this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
       annotatorType: "pen",
       elementCount: count,
@@ -224,7 +224,7 @@ export class PenAnnotator extends Annotator {
     }));
   }
 
-  protected buildAnnotationDto(data: PenData): InkAnnotationDto {
+  protected buildAnnotationDto(data: SmoothPath): InkAnnotationDto {
     const positions: Vec2[] = [];
     const inkList: number[][] = [];
     data.paths.forEach(path => {

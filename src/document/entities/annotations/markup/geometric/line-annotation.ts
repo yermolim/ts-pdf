@@ -1,5 +1,6 @@
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../../../common/math";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
+import { bezierConstant } from "../../../../../drawing/utils";
 
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, LineEndingType, 
@@ -16,7 +17,6 @@ import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
-import { bezierConstant } from "../../../../../common/drawing";
 
 interface BboxAndMatrix {
   bbox: [min: Vec2, max: Vec2];

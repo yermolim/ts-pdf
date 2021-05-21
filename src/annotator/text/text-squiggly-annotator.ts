@@ -1,4 +1,5 @@
-import { buildSquigglyLine } from "../../common/drawing";
+import { Vec2 } from "../../common/math";
+import { buildSquigglyLine } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -8,7 +9,6 @@ import { SquigglyAnnotation }
 
 import { TextAnnotatorOptions } from "./text-annotator";
 import { TextMarkupAnnotator } from "./text-markup-annotator";
-import { Vec2 } from "../../common/math";
 
 export class TextSquigglyAnnotator extends TextMarkupAnnotator {
 

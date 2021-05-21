@@ -1,6 +1,6 @@
 import { Hextuple, Quadruple } from "../../../common/types";
 import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../common/math";
-import { BBox } from "../../../common/drawing";
+import { BBox } from "../../../drawing/utils";
 import { getRandomUuid } from "../../../common/uuid";
 
 import { codes } from "../../codes";

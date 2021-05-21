@@ -1,11 +1,12 @@
 import { Quadruple } from "../../common/types";
 import { Vec2, vecMinMax } from "../../common/math";
-import { buildCloudCurveFromPolyline } from "../../common/drawing";
 import { getRandomUuid } from "../../common/uuid";
+import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { SquareAnnotationDto, SquareAnnotation } from "../../document/entities/annotations/markup/geometric/square-annotation";
+import { SquareAnnotationDto, SquareAnnotation } 
+  from "../../document/entities/annotations/markup/geometric/square-annotation";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 

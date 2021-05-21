@@ -1,5 +1,5 @@
 import { Mat3, Vec3 } from "../../common/math";
-import { CssMixBlendMode } from "../../common/types";
+import { CssMixBlendMode } from "../../drawing/utils";
 import { TextState } from "./text-state";
 
 export interface GraphicsStateParams {  

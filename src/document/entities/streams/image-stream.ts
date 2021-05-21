@@ -668,8 +668,11 @@ export class ImageStream extends PdfStream {
         break;
 
       case colorSpaces.SPECIAL_INDEXED: 
+        let r: number;
+        let g: number;
+        let b: number;
         for (i = 0; i < pixels; i++) {
-          const [r, g, b] = this._indexedColorSpace?.getColor(i) || [0, 0, 0];
+          [r, g, b] = this._indexedColorSpace?.getColor(i) || [0, 0, 0];
           j = i * 3;
           result[j] = r;
           result[j + 1] = g;

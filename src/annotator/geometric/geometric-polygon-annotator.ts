@@ -1,12 +1,13 @@
 import { getRandomUuid } from "../../common/uuid";
 import { Vec2 } from "../../common/math";
-import { buildCloudCurveFromPolyline } from "../../common/drawing";
+import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
-import { PolygonAnnotation, PolygonAnnotationDto } from "../../document/entities/annotations/markup/geometric/polygon-annotation";
+import { PolygonAnnotation, PolygonAnnotationDto } 
+  from "../../document/entities/annotations/markup/geometric/polygon-annotation";
 
 export class GeometricPolygonAnnotator extends GeometricAnnotator {  
   /**points in the page coordinate system */

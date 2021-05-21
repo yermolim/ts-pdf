@@ -276,7 +276,7 @@ export const stampContextButtonsHtml = /*html*/`
     <div class="panel-button stamp-load-image">
       <img src="${icon_load}"/>
     </div>
-    <div class="panel-button stamp-draw-image disabled">
+    <div class="panel-button stamp-draw-image">
       <img src="${icon_pen}"/>
     </div>
     <div class="panel-button stamp-delete disabled">
@@ -286,6 +286,38 @@ export const stampContextButtonsHtml = /*html*/`
 `;
 
 export const stampImageLoaderHtml = /*html*/`
+  <div class="abs-full-size-overlay stamp-dialog">
+    <div class="form">
+      <div class="form-canvas-wrapper">
+        <canvas class="stamp-image-canvas"></canvas>
+      </div>
+      <div class="stamp-input-row">
+        <p>Stamp name:</p>
+        <input class="stamp-name-input" type="text" maxlength="128"/>
+      </div>
+      <div class="stamp-input-row">
+        <p>Stamp description:</p>
+        <input class="stamp-subject-input" type="text" maxlength="256"/>
+      </div>
+      <div class="stamp-input-row">
+        <p>Width:</p>
+        <input class="stamp-width-input" type="text" maxlength="4"/>
+        <p>Height:</p>
+        <input class="stamp-height-input" type="text" maxlength="4"/>
+      </div>
+      <div class="buttons">
+        <div class="panel-button stamp-ok">
+          <img src="${icon_ok}"/>
+        </div>
+        <div class="panel-button stamp-cancel">
+          <img src="${icon_close}"/>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+export const stampDesignerHtml = /*html*/`
   <div class="abs-full-size-overlay stamp-dialog">
     <div class="form">
       <div class="form-canvas-wrapper">
