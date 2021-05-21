@@ -19980,7 +19980,6 @@ class SmoothPath {
         this._paths = [];
         this._positionBuffer = [];
         this._options = Object.assign({}, SmoothPath.defaultOptions, options);
-        this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
     }
     get id() {
         return this._options.id;
@@ -19994,29 +19993,11 @@ class SmoothPath {
     get color() {
         return this._options.color.slice();
     }
-    get group() {
-        return this._group;
-    }
     get paths() {
         return this._paths.slice();
     }
     get pathCount() {
         return this._paths.length;
-    }
-    newPath(startPosition) {
-        const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("fill", "none");
-        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
-        path.setAttribute("stroke-width", this._options.strokeWidth + "");
-        path.setAttribute("stroke-linecap", "round");
-        path.setAttribute("stroke-linejoin", "round");
-        const pathString = "M" + startPosition.x + " " + startPosition.y;
-        path.setAttribute("d", pathString);
-        this._positionBuffer = [startPosition];
-        this._currentPath = { path, positions: [new Vec2(startPosition.x, startPosition.y)] };
-        this._currentPathString = pathString;
-        this._group.append(path);
     }
     endPath() {
         if (this._currentPath && this._currentPath.positions.length > 1) {
@@ -20025,17 +20006,6 @@ class SmoothPath {
         this._positionBuffer = null;
         this._currentPath = null;
         this._currentPathString = null;
-    }
-    removePath(path) {
-        if (!path) {
-            return;
-        }
-        path.remove();
-        this._paths = this._paths.filter(x => x.path !== path);
-    }
-    removeLastPath() {
-        const pathData = this._paths.pop();
-        pathData === null || pathData === void 0 ? void 0 : pathData.path.remove();
     }
     addPosition(pos) {
         this.appendPositionToBuffer(pos);
@@ -20068,7 +20038,7 @@ class SmoothPath {
     updateCurrentPath() {
         let pos = this.getAverageBufferPosition(0);
         if (!pos) {
-            return;
+            return null;
         }
         this._currentPathString += " L" + pos.x + " " + pos.y;
         this._currentPath.positions.push(pos);
@@ -20077,7 +20047,7 @@ class SmoothPath {
             pos = this.getAverageBufferPosition(offset);
             tmpPath += " L" + pos.x + " " + pos.y;
         }
-        this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+        return tmpPath;
     }
 }
 SmoothPath.defaultOptions = {
@@ -20085,6 +20055,53 @@ SmoothPath.defaultOptions = {
     strokeWidth: 2,
     color: [0, 0, 0, 0.5],
 };
+
+class SvgSmoothPath extends SmoothPath {
+    constructor(options) {
+        super(options);
+        this._paths = [];
+        this._group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    }
+    get group() {
+        return this._group;
+    }
+    get paths() {
+        return this._paths.slice();
+    }
+    newPath(startPosition) {
+        const [r, g, b, a] = this._options.color || [0, 0, 0, 1];
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        path.setAttribute("stroke-width", this._options.strokeWidth + "");
+        path.setAttribute("stroke-linecap", "round");
+        path.setAttribute("stroke-linejoin", "round");
+        const pathString = "M" + startPosition.x + " " + startPosition.y;
+        path.setAttribute("d", pathString);
+        this._positionBuffer = [startPosition];
+        this._currentPath = { path, positions: [new Vec2(startPosition.x, startPosition.y)] };
+        this._currentPathString = pathString;
+        this._group.append(path);
+    }
+    removePath(path) {
+        if (!path) {
+            return;
+        }
+        path.remove();
+        this._paths = this._paths.filter(x => x.path !== path);
+    }
+    removeLastPath() {
+        const pathData = this._paths.pop();
+        pathData === null || pathData === void 0 ? void 0 : pathData.path.remove();
+    }
+    updateCurrentPath() {
+        const tmpPath = super.updateCurrentPath();
+        if (tmpPath) {
+            this._currentPath.path.setAttribute("d", this._currentPathString + tmpPath);
+        }
+        return tmpPath;
+    }
+}
 
 class PenAnnotator extends Annotator {
     constructor(docService, pageService, parent, options) {
@@ -20214,7 +20231,7 @@ class PenAnnotator extends Annotator {
     }
     resetTempPenData(pageId) {
         this.removeTempPenData();
-        this._annotationPathData = new SmoothPath({
+        this._annotationPathData = new SvgSmoothPath({
             id: pageId,
             color: this._color,
             strokeWidth: this._strokeWidth,

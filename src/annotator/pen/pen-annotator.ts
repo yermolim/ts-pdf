@@ -7,7 +7,7 @@ import { PageService } from "../../services/page-service";
 import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
 
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
-import { SmoothPath } from "../../common/smooth-path";
+import { SvgSmoothPath } from "../../drawing/paths/svg-smooth-path";
 
 export interface PenAnnotatorOptions {
   strokeWidth?: number;  
@@ -16,7 +16,7 @@ export interface PenAnnotatorOptions {
 
 /**tool for adding ink (hand-drawn) annotations */
 export class PenAnnotator extends Annotator {
-  protected _annotationPathData: SmoothPath;  
+  protected _annotationPathData: SvgSmoothPath;  
   protected _color: Quadruple;
   protected _strokeWidth: number;
 
@@ -139,7 +139,7 @@ export class PenAnnotator extends Annotator {
    */
   protected resetTempPenData(pageId: number) {    
     this.removeTempPenData();    
-    this._annotationPathData = new SmoothPath({
+    this._annotationPathData = new SvgSmoothPath({
       id: pageId, 
       color: this._color,
       strokeWidth: this._strokeWidth,
@@ -224,7 +224,7 @@ export class PenAnnotator extends Annotator {
     }));
   }
 
-  protected buildAnnotationDto(data: SmoothPath): InkAnnotationDto {
+  protected buildAnnotationDto(data: SvgSmoothPath): InkAnnotationDto {
     const positions: Vec2[] = [];
     const inkList: number[][] = [];
     data.paths.forEach(path => {
