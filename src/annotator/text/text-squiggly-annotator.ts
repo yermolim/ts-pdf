@@ -18,7 +18,7 @@ export class TextSquigglyAnnotator extends TextMarkupAnnotator {
     this.init();
   }
   
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._coordsByPageId.size) {
       return;
     }

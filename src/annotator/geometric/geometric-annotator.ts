@@ -109,5 +109,5 @@ export abstract class GeometricAnnotator extends Annotator {
   
   abstract clear(): void;
   
-  abstract saveAnnotation(): void;
+  abstract saveAnnotationAsync(): Promise<void>;
 }

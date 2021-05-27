@@ -36,7 +36,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     this.clearGroup();
   }
   
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._rect) {
       return;
     }
@@ -44,7 +44,6 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     const pageId = this._pageId;
     const dto = this.buildAnnotationDto();
     const annotation = SquareAnnotation.createFromDto(dto);
-
     // DEBUG
     // console.log(annotation);
 

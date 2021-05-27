@@ -217,7 +217,7 @@ export abstract class Annotator {
   
   abstract clear(): void; 
   
-  abstract saveAnnotation(): void;  
+  abstract saveAnnotationAsync(): Promise<void>;  
   
   protected abstract refreshGroupPosition(): void;
 }

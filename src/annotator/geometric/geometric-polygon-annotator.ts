@@ -38,7 +38,7 @@ export class GeometricPolygonAnnotator extends GeometricAnnotator {
     }
   }
   
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (this._points.length < 3) {
       // polygon can't contain less than 3 points
       return;
@@ -47,7 +47,6 @@ export class GeometricPolygonAnnotator extends GeometricAnnotator {
     const pageId = this._pageId;
     const dto = this.buildAnnotationDto();
     const annotation = PolygonAnnotation.createFromDto(dto);
-
     // DEBUG
     // console.log(annotation);
 

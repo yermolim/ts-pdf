@@ -34,7 +34,7 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
     this.clearGroup();
   }
   
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._vertices) {
       return;
     }
@@ -42,14 +42,12 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
     const pageId = this._pageId;
     const dto = this.buildAnnotationDto();
     const annotation = LineAnnotation.createFromDto(dto);
-
     // DEBUG
     // console.log(annotation);
 
     this._docService.appendAnnotationToPageAsync(pageId, annotation);
     
     this.clear();
-
   }
   
   protected init() {

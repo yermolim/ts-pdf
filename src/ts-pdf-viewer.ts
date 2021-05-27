@@ -733,7 +733,7 @@ export class TsPdfViewer {
   };
   
   private annotatorSave = () => {
-    this._annotationService.annotator?.saveAnnotation();
+    this._annotationService.annotator?.saveAnnotationAsync();
   };
   
   private onCustomStampChanged = (e: CustomStampEvent) => {

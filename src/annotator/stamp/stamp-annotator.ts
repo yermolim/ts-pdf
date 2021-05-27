@@ -82,7 +82,7 @@ export class StampAnnotator extends Annotator {
   }
 
   /**saves the current temp annotation to the document data */
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._pageId || !this._tempAnnotation) {
       return;
     }
@@ -264,7 +264,7 @@ export class StampAnnotator extends Annotator {
 
     // save the current temp stamp to the document data
     this._pageId = pageId;
-    this.saveAnnotation();
+    this.saveAnnotationAsync();
   };
 
   protected refreshGroupPosition() {

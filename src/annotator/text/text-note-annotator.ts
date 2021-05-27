@@ -50,26 +50,26 @@ export class TextNoteAnnotator extends TextAnnotator {
   }
 
   /**saves the current temp annotation to the document data */
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._pageId || !this._tempAnnotation) {
       return;
     }
     
     const initialText = this._tempAnnotation?.Contents?.literal;
-    this._viewer.showTextDialogAsync(initialText).then(text => {
-      if (text !== null) {
-        this._tempAnnotation.setTextContent(text);
 
-        // append the current temp annotation to the page
-        this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-    
-        this._addedAnnotations.push(this._tempAnnotation);
-        this.emitDataChanged(this._addedAnnotations.length, false, true, true);
-      }
+    const text = await this._viewer.showTextDialogAsync(initialText);
+    if (text !== null) {
+      this._tempAnnotation.setTextContent(text);
 
-      // create a new temp annotation
-      this.createTempNoteAnnotationAsync();
-    });
+      // append the current temp annotation to the page
+      this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+  
+      this._addedAnnotations.push(this._tempAnnotation);
+      this.emitDataChanged(this._addedAnnotations.length, false, true, true);
+    }
+
+    // create a new temp annotation
+    this.createTempNoteAnnotationAsync();
   }
   
   protected init() {
@@ -163,7 +163,7 @@ export class TextNoteAnnotator extends TextAnnotator {
 
     // save the current temp stamp to the document data
     this._pageId = pageId;
-    this.saveAnnotation();
+    this.saveAnnotationAsync();
   };
 
   protected refreshGroupPosition() {

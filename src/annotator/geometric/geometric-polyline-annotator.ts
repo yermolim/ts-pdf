@@ -37,7 +37,7 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
   }
   
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (this._points.length < 2) {
       // polyline can't contain less than 2 points
       return;
@@ -46,7 +46,6 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
     const pageId = this._pageId;
     const dto = this.buildAnnotationDto();
     const annotation = PolylineAnnotation.createFromDto(dto);
-
     // DEBUG
     // console.log(annotation);
 

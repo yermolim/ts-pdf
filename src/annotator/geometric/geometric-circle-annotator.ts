@@ -37,7 +37,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     this.clearGroup();
   }
   
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._rect) {
       return;
     }
@@ -45,7 +45,6 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     const pageId = this._pageId;
     const dto = this.buildAnnotationDto();
     const annotation = CircleAnnotation.createFromDto(dto);
-
     // DEBUG
     // console.log(annotation);
 

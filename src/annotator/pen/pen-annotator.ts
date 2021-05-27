@@ -48,7 +48,7 @@ export class PenAnnotator extends Annotator {
   /**
    * save the current temp path as an ink annotation and append it to the page
    */
-  saveAnnotation() {
+  async saveAnnotationAsync() {
     if (!this._annotationPathData) {
       return;
     }
@@ -56,13 +56,12 @@ export class PenAnnotator extends Annotator {
     const pageId = this._annotationPathData.id;
     const dto = this.buildAnnotationDto(this._annotationPathData);
     const annotation = InkAnnotation.createFromDto(dto);
-
     // DEBUG
     // console.log(annotation);
 
     this._docService.appendAnnotationToPageAsync(pageId, annotation);
     
-    this.removeTempPenData();
+    this.clear();
   }
   
   protected init() {

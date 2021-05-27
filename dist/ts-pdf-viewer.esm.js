@@ -6420,7 +6420,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6518,7 +6518,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$b(this, void 0, void 0, function* () {
+        return __awaiter$l(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -8390,7 +8390,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8478,7 +8478,7 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -8555,7 +8555,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -8603,7 +8603,7 @@ class AppearanceStreamRenderer {
         return { element: g, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawStreamAsync(stream) {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -9359,7 +9359,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -9641,7 +9641,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(viewBox) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (!viewBox) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -9654,7 +9654,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -10104,7 +10104,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$j(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -18139,7 +18139,7 @@ class AnnotationParseFactory {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -18301,7 +18301,7 @@ class DocumentService {
         return this._data.slice();
     }
     getDataWithoutSupportedAnnotationsAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const annotationMarkedToDelete = [];
             if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
@@ -18321,7 +18321,7 @@ class DocumentService {
         });
     }
     getDataWithUpdatedAnnotationsAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const updaterData = [];
             annotationMap.forEach((pageAnnotations, pageId) => {
@@ -18344,14 +18344,14 @@ class DocumentService {
         });
     }
     getPageAnnotationsAsync(pageId) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const annotations = annotationMap.get(pageId);
             return annotations || [];
         });
     }
     serializeAnnotationsAsync(addedOnly = false) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             const result = [];
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             annotationMap.forEach((v, k) => {
@@ -18365,7 +18365,7 @@ class DocumentService {
         });
     }
     appendAnnotationToPageAsync(pageId, annotation) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             if (!annotation) {
                 throw new Error("Annotation is not defined");
             }
@@ -18569,7 +18569,7 @@ class DocumentService {
     }
     parseSupportedAnnotationsAsync() {
         var _a;
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             this.checkAuthentication();
             if (!this._catalog) {
                 this.parsePageTree();
@@ -18601,7 +18601,6 @@ class DocumentService {
                         annot.$pageId = page.id;
                         annot.$onEditedAction = this.getOnAnnotEditAction(annot);
                         annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
-                        console.log(annot);
                     }
                 }
                 annotationMap.set(page.id, annotations);
@@ -18611,7 +18610,7 @@ class DocumentService {
         });
     }
     getSupportedAnnotationMapAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             this.checkAuthentication();
             if (this._supportedAnnotsByPageId) {
                 return this._supportedAnnotsByPageId;
@@ -18621,7 +18620,7 @@ class DocumentService {
         });
     }
     getAllSupportedAnnotationsAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             const result = [];
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             annotationMap.forEach((v, k) => {
@@ -19040,7 +19039,7 @@ CanvasSmoothPathEditor._colors = [
     [1, 0.2, 1, 1],
 ];
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -19124,7 +19123,7 @@ class CustomStampService {
         this.openDesignerOverlayAsync();
     }
     openImageLoaderOverlayAsync(file) {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$h(this, void 0, void 0, function* () {
             this._loader.show(this._container, 10);
             const imagePromise = new Promise((resolve, reject) => {
                 const url = URL.createObjectURL(file);
@@ -19225,7 +19224,7 @@ class CustomStampService {
         });
     }
     openDesignerOverlayAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$h(this, void 0, void 0, function* () {
             this._loader.show(this._container, 10);
             const overlay = htmlToElements(stampDesignerHtml)[0];
             const canvasContainer = overlay.querySelector(".form-canvas-wrapper");
@@ -19506,6 +19505,15 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
+var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GeometricLineAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -19570,15 +19578,17 @@ class GeometricLineAnnotator extends GeometricAnnotator {
         this._vertices = null;
         this.clearGroup();
     }
-    saveAnnotation() {
-        if (!this._vertices) {
-            return;
-        }
-        const pageId = this._pageId;
-        const dto = this.buildAnnotationDto();
-        const annotation = LineAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
-        this.clear();
+    saveAnnotationAsync() {
+        return __awaiter$g(this, void 0, void 0, function* () {
+            if (!this._vertices) {
+                return;
+            }
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto();
+            const annotation = LineAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            this.clear();
+        });
     }
     init() {
         super.init();
@@ -19667,6 +19677,15 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
     }
 }
 
+var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GeometricCircleAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -19731,15 +19750,17 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this._rect = null;
         this.clearGroup();
     }
-    saveAnnotation() {
-        if (!this._rect) {
-            return;
-        }
-        const pageId = this._pageId;
-        const dto = this.buildAnnotationDto();
-        const annotation = CircleAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
-        this.clear();
+    saveAnnotationAsync() {
+        return __awaiter$f(this, void 0, void 0, function* () {
+            if (!this._rect) {
+                return;
+            }
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto();
+            const annotation = CircleAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            this.clear();
+        });
     }
     init() {
         super.init();
@@ -19812,6 +19833,15 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
     }
 }
 
+var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GeometricPolygonAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -19883,15 +19913,17 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
             this.clearGroup();
         }
     }
-    saveAnnotation() {
-        if (this._points.length < 3) {
-            return;
-        }
-        const pageId = this._pageId;
-        const dto = this.buildAnnotationDto();
-        const annotation = PolygonAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
-        this.clear();
+    saveAnnotationAsync() {
+        return __awaiter$e(this, void 0, void 0, function* () {
+            if (this._points.length < 3) {
+                return;
+            }
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto();
+            const annotation = PolygonAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            this.clear();
+        });
     }
     init() {
         super.init();
@@ -19981,6 +20013,15 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
     }
 }
 
+var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GeometricPolylineAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -20052,15 +20093,17 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
             this.clearGroup();
         }
     }
-    saveAnnotation() {
-        if (this._points.length < 2) {
-            return;
-        }
-        const pageId = this._pageId;
-        const dto = this.buildAnnotationDto();
-        const annotation = PolylineAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
-        this.clear();
+    saveAnnotationAsync() {
+        return __awaiter$d(this, void 0, void 0, function* () {
+            if (this._points.length < 2) {
+                return;
+            }
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto();
+            const annotation = PolylineAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            this.clear();
+        });
     }
     init() {
         super.init();
@@ -20135,6 +20178,15 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
 }
 
+var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GeometricSquareAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -20199,15 +20251,17 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         this._rect = null;
         this.clearGroup();
     }
-    saveAnnotation() {
-        if (!this._rect) {
-            return;
-        }
-        const pageId = this._pageId;
-        const dto = this.buildAnnotationDto();
-        const annotation = SquareAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
-        this.clear();
+    saveAnnotationAsync() {
+        return __awaiter$c(this, void 0, void 0, function* () {
+            if (!this._rect) {
+                return;
+            }
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto();
+            const annotation = SquareAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            this.clear();
+        });
     }
     init() {
         super.init();
@@ -20385,6 +20439,15 @@ class SvgSmoothPath extends SmoothPath {
 SvgSmoothPath._defaultStrokeWidth = 3;
 SvgSmoothPath._defaultColor = [0, 0, 0, 0.8];
 
+var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PenAnnotator extends Annotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent);
@@ -20450,15 +20513,17 @@ class PenAnnotator extends Annotator {
     clear() {
         this.removeTempPenData();
     }
-    saveAnnotation() {
-        if (!this._annotationPathData) {
-            return;
-        }
-        const pageId = this._annotationPathData.id;
-        const dto = this.buildAnnotationDto(this._annotationPathData);
-        const annotation = InkAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
-        this.removeTempPenData();
+    saveAnnotationAsync() {
+        return __awaiter$b(this, void 0, void 0, function* () {
+            if (!this._annotationPathData) {
+                return;
+            }
+            const pageId = this._annotationPathData.id;
+            const dto = this.buildAnnotationDto(this._annotationPathData);
+            const annotation = InkAnnotation.createFromDto(dto);
+            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            this.clear();
+        });
     }
     init() {
         super.init();
@@ -20571,7 +20636,7 @@ class PenAnnotator extends Annotator {
     }
 }
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -20644,7 +20709,7 @@ class StampAnnotator extends Annotator {
                 this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI);
             }
             this._pageId = pageId;
-            this.saveAnnotation();
+            this.saveAnnotationAsync();
         };
         if (!type) {
             throw new Error("Stamp type is not defined");
@@ -20672,14 +20737,16 @@ class StampAnnotator extends Annotator {
             this.undo();
         }
     }
-    saveAnnotation() {
-        if (!this._pageId || !this._tempAnnotation) {
-            return;
-        }
-        this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-        this._addedAnnotations.push(this._tempAnnotation);
-        this.emitDataChanged(this._addedAnnotations.length, true, true);
-        this.createTempStampAnnotationAsync();
+    saveAnnotationAsync() {
+        return __awaiter$a(this, void 0, void 0, function* () {
+            if (!this._pageId || !this._tempAnnotation) {
+                return;
+            }
+            this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+            this._addedAnnotations.push(this._tempAnnotation);
+            this.emitDataChanged(this._addedAnnotations.length, true, true);
+            this.createTempStampAnnotationAsync();
+        });
     }
     init() {
         super.init();
@@ -20734,7 +20801,7 @@ class StampAnnotator extends Annotator {
         return StampAnnotation.createFromDto(dto);
     }
     createTempStampAnnotationAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             let stamp;
             if (standardStampCreationInfos[this._type]) {
                 stamp = this.createStandardStamp(this._type, this._docService.userName);
@@ -20906,21 +20973,32 @@ class TextMarkupAnnotator extends TextAnnotator {
     }
 }
 
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TextHighlightAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotation() {
-        if (!this._coordsByPageId.size) {
-            return;
-        }
-        const dtos = this.buildAnnotationDtos("/Highlight");
-        dtos.forEach(dto => {
-            const annotation = HighlightAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    saveAnnotationAsync() {
+        return __awaiter$9(this, void 0, void 0, function* () {
+            if (!this._coordsByPageId.size) {
+                return;
+            }
+            const dtos = this.buildAnnotationDtos("/Highlight");
+            dtos.forEach(dto => {
+                const annotation = HighlightAnnotation.createFromDto(dto);
+                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            });
+            this.clear();
         });
-        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -20941,21 +21019,32 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
     }
 }
 
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TextSquigglyAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotation() {
-        if (!this._coordsByPageId.size) {
-            return;
-        }
-        const dtos = this.buildAnnotationDtos("/Squiggly");
-        dtos.forEach(dto => {
-            const annotation = SquigglyAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    saveAnnotationAsync() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (!this._coordsByPageId.size) {
+                return;
+            }
+            const dtos = this.buildAnnotationDtos("/Squiggly");
+            dtos.forEach(dto => {
+                const annotation = SquigglyAnnotation.createFromDto(dto);
+                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            });
+            this.clear();
         });
-        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -20985,21 +21074,32 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
     }
 }
 
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TextStrikeoutAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotation() {
-        if (!this._coordsByPageId.size) {
-            return;
-        }
-        const dtos = this.buildAnnotationDtos("/Strikeout");
-        dtos.forEach(dto => {
-            const annotation = StrikeoutAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    saveAnnotationAsync() {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            if (!this._coordsByPageId.size) {
+                return;
+            }
+            const dtos = this.buildAnnotationDtos("/Strikeout");
+            dtos.forEach(dto => {
+                const annotation = StrikeoutAnnotation.createFromDto(dto);
+                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            });
+            this.clear();
         });
-        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -21034,21 +21134,32 @@ class TextStrikeoutAnnotator extends TextMarkupAnnotator {
     }
 }
 
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TextUnderlineAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotation() {
-        if (!this._coordsByPageId.size) {
-            return;
-        }
-        const dtos = this.buildAnnotationDtos("/Underline");
-        dtos.forEach(dto => {
-            const annotation = UnderlineAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    saveAnnotationAsync() {
+        return __awaiter$6(this, void 0, void 0, function* () {
+            if (!this._coordsByPageId.size) {
+                return;
+            }
+            const dtos = this.buildAnnotationDtos("/Underline");
+            dtos.forEach(dto => {
+                const annotation = UnderlineAnnotation.createFromDto(dto);
+                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            });
+            this.clear();
         });
-        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -21127,7 +21238,7 @@ class TextNoteAnnotator extends TextAnnotator {
                 this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI, new Vec2(pageX, pageY));
             }
             this._pageId = pageId;
-            this.saveAnnotation();
+            this.saveAnnotationAsync();
         };
         this._viewer = viewer;
         this.init();
@@ -21151,13 +21262,14 @@ class TextNoteAnnotator extends TextAnnotator {
             this.undo();
         }
     }
-    saveAnnotation() {
+    saveAnnotationAsync() {
         var _a, _b;
-        if (!this._pageId || !this._tempAnnotation) {
-            return;
-        }
-        const initialText = (_b = (_a = this._tempAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
-        this._viewer.showTextDialogAsync(initialText).then(text => {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            if (!this._pageId || !this._tempAnnotation) {
+                return;
+            }
+            const initialText = (_b = (_a = this._tempAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
+            const text = yield this._viewer.showTextDialogAsync(initialText);
             if (text !== null) {
                 this._tempAnnotation.setTextContent(text);
                 this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
@@ -22527,7 +22639,7 @@ class TsPdfViewer {
         };
         this.annotatorSave = () => {
             var _a;
-            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotation();
+            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotationAsync();
         };
         this.onCustomStampChanged = (e) => {
             this.setAnnotationMode("stamp");
