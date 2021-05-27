@@ -88,7 +88,7 @@ export class StampAnnotator extends Annotator {
     }
 
     // append the current temp annotation to the page
-    this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+    this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
 
     this._addedAnnotations.push(this._tempAnnotation);
     this.emitDataChanged(this._addedAnnotations.length, true, true);

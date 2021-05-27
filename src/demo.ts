@@ -11,7 +11,9 @@ async function run(): Promise<void> {
     userName: "yermolim",
     fileButtons: ["open", "close", "save"],
     annotChangeCallback: (detail: AnnotEventDetail) =>  {
-      if (detail.type === "focus" || detail.type === "select") {
+      if (detail.type === "focus" 
+        || detail.type === "select"
+        || detail.type === "render") {
         return;
       }
       console.log(detail);

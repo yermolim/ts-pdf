@@ -50,7 +50,7 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
     // DEBUG
     // console.log(annotation);
 
-    this._docService.appendAnnotationToPage(pageId, annotation);
+    this._docService.appendAnnotationToPageAsync(pageId, annotation);
     
     this.clear();
   }

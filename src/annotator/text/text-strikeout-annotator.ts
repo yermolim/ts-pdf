@@ -28,7 +28,7 @@ export class TextStrikeoutAnnotator extends TextMarkupAnnotator {
       const annotation = StrikeoutAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
-      this._docService.appendAnnotationToPage(dto.pageId, annotation);
+      this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
     });
     
     this.clear();

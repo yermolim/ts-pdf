@@ -288,7 +288,8 @@ export class TsPdfViewer {
         return this.openPdfAsync(data);
       }
 
-      const dataWithoutAnnotations = docService.getDataWithoutSupportedAnnotations();
+      const dataWithoutAnnotations = 
+        await docService.getDataWithoutSupportedAnnotationsAsync();
       this._pdfLoadingTask = getDocument({
         // get the pdf data with the supported annotations cut out
         data: dataWithoutAnnotations, 
@@ -378,8 +379,8 @@ export class TsPdfViewer {
    * export TsPdf annotations as data transfer objects
    * @returns 
    */
-  exportAnnotations(): AnnotationDto[] {
-    const dtos = this._docService?.serializeAnnotations(true);
+  async exportAnnotationsAsync(): Promise<AnnotationDto[]> {
+    const dtos = await this._docService?.serializeAnnotationsAsync(true);
     return dtos;
   }  
   
@@ -388,7 +389,7 @@ export class TsPdfViewer {
    * @returns 
    */
   exportAnnotationsToJson(): string {
-    const dtos = this._docService?.serializeAnnotations(true);
+    const dtos = this._docService?.serializeAnnotationsAsync(true);
     return JSON.stringify(dtos);
   }
 
@@ -431,8 +432,8 @@ export class TsPdfViewer {
    * get the current pdf file with baked TsPdf annotations as Blob
    * @returns 
    */
-  getCurrentPdf(): Blob {    
-    const data = this._docService?.getDataWithUpdatedAnnotations();
+  async getCurrentPdfAsync(): Promise<Blob> {    
+    const data = await this._docService?.getDataWithUpdatedAnnotationsAsync();
     if (!data?.length) {
       return null;
     }
@@ -520,7 +521,7 @@ export class TsPdfViewer {
     }
 
     if (fileButtons.includes("save")) {
-      saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClick);
+      saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClickAsync);
     } else {
       saveButton.remove();
     }
@@ -548,8 +549,8 @@ export class TsPdfViewer {
     this._shadowRoot.getElementById("open-file-input").click();
   };
 
-  private onSaveFileButtonClick = () => {
-    const blob = this.getCurrentPdf();
+  private onSaveFileButtonClickAsync = async () => {
+    const blob = await this.getCurrentPdfAsync();
     if (!blob) {
       return;
     }

@@ -27,7 +27,7 @@ export class TextHighlightAnnotator extends TextMarkupAnnotator {
       const annotation = HighlightAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
-      this._docService.appendAnnotationToPage(dto.pageId, annotation);
+      this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
     });
     
     this.clear();

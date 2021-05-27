@@ -6420,7 +6420,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6518,7 +6518,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -8390,7 +8390,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -8478,7 +8478,7 @@ class AppearanceStreamRenderer {
         return { endIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -8555,7 +8555,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -8603,7 +8603,7 @@ class AppearanceStreamRenderer {
         return { element: g, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawStreamAsync(stream) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -9359,7 +9359,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -9641,7 +9641,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(viewBox) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (!viewBox) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -9654,7 +9654,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -10104,7 +10104,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -18139,6 +18139,15 @@ class AnnotationParseFactory {
     }
 }
 
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
 const annotFocusRequestEvent = "tspdf-annotfocusrequest";
 const annotChangeEvent = "tspdf-annotchange";
@@ -18275,10 +18284,10 @@ class DocumentService {
         return !this._encryption || !!this._authResult;
     }
     destroy() {
-        this.getAllSupportedAnnotations().forEach(x => {
+        this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
             x.$onEditedAction = null;
             x.$onRenderUpdatedAction = null;
-        });
+        }));
         this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
         this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
@@ -18291,88 +18300,101 @@ class DocumentService {
     getPlainData() {
         return this._data.slice();
     }
-    getDataWithoutSupportedAnnotations() {
-        const annotationMap = this.getSupportedAnnotationMap();
-        const annotationMarkedToDelete = [];
-        if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
+    getDataWithoutSupportedAnnotationsAsync() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+            const annotationMarkedToDelete = [];
+            if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
+                annotationMap.forEach((v, k) => {
+                    const annotations = v.slice();
+                    annotations.forEach(x => {
+                        if (!x.deleted) {
+                            x.markAsDeleted(true);
+                            annotationMarkedToDelete.push(x);
+                        }
+                    });
+                });
+            }
+            const refined = this.getDataWithUpdatedAnnotationsAsync();
+            annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
+            return refined;
+        });
+    }
+    getDataWithUpdatedAnnotationsAsync() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+            const updaterData = [];
+            annotationMap.forEach((pageAnnotations, pageId) => {
+                const page = this._pageById.get(pageId);
+                if (page) {
+                    const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
+                    updaterData.push({
+                        page,
+                        allAnnotationIds,
+                        supportedAnnotations: pageAnnotations || [],
+                    });
+                }
+                else {
+                    console.log(`Page with id '${pageId}' not found`);
+                }
+            });
+            const updater = new DocumentDataUpdater(this._data, this._xrefs[0], this._referenceData, this._authResult);
+            const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
+            return updatedBytes;
+        });
+    }
+    getPageAnnotationsAsync(pageId) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+            const annotations = annotationMap.get(pageId);
+            return annotations || [];
+        });
+    }
+    serializeAnnotationsAsync(addedOnly = false) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const result = [];
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
             annotationMap.forEach((v, k) => {
-                const annotations = v.slice();
-                annotations.forEach(x => {
-                    if (!x.deleted) {
-                        x.markAsDeleted(true);
-                        annotationMarkedToDelete.push(x);
+                v.forEach(x => {
+                    if (!addedOnly || x.added) {
+                        result.push(x.toDto());
                     }
                 });
             });
-        }
-        const refined = this.getDataWithUpdatedAnnotations();
-        annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
-        return refined;
+            return result;
+        });
     }
-    getDataWithUpdatedAnnotations() {
-        const annotationMap = this.getSupportedAnnotationMap();
-        const updaterData = [];
-        annotationMap.forEach((pageAnnotations, pageId) => {
+    appendAnnotationToPageAsync(pageId, annotation) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (!annotation) {
+                throw new Error("Annotation is not defined");
+            }
             const page = this._pageById.get(pageId);
-            if (page) {
-                const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
-                updaterData.push({
-                    page,
-                    allAnnotationIds,
-                    supportedAnnotations: pageAnnotations || [],
-                });
+            if (!page) {
+                throw new Error(`Page with id ${pageId} is not found`);
+            }
+            annotation.$pageId = page.id;
+            annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+            annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+            const pageAnnotations = annotationMap.get(pageId);
+            if (pageAnnotations) {
+                pageAnnotations.push(annotation);
             }
             else {
-                console.log(`Page with id '${pageId}' not found`);
+                annotationMap.set(pageId, [annotation]);
             }
+            this._eventService.dispatchEvent(new AnnotEvent({
+                type: "add",
+                annotations: [annotation.toDto()],
+            }));
         });
-        const updater = new DocumentDataUpdater(this._data, this._xrefs[0], this._referenceData, this._authResult);
-        const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
-        return updatedBytes;
-    }
-    getPageAnnotations(pageId) {
-        const annotations = this.getSupportedAnnotationMap().get(pageId);
-        return annotations || [];
-    }
-    serializeAnnotations(addedOnly = false) {
-        const result = [];
-        this.getSupportedAnnotationMap().forEach((v, k) => {
-            v.forEach(x => {
-                if (!addedOnly || x.added) {
-                    result.push(x.toDto());
-                }
-            });
-        });
-        return result;
-    }
-    appendAnnotationToPage(pageId, annotation) {
-        if (!annotation) {
-            throw new Error("Annotation is not defined");
-        }
-        const page = this._pageById.get(pageId);
-        if (!page) {
-            throw new Error(`Page with id ${pageId} is not found`);
-        }
-        annotation.$pageId = page.id;
-        annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
-        annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
-        const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
-        if (pageAnnotations) {
-            pageAnnotations.push(annotation);
-        }
-        else {
-            this.getSupportedAnnotationMap().set(pageId, [annotation]);
-        }
-        this._eventService.dispatchEvent(new AnnotEvent({
-            type: "add",
-            annotations: [annotation.toDto()],
-        }));
     }
     appendSerializedAnnotations(dtos) {
         let annotation;
         for (const dto of dtos) {
             annotation = AnnotationParseFactory.ParseAnnotationFromDto(dto);
-            this.appendAnnotationToPage(dto.pageId, annotation);
+            this.appendAnnotationToPageAsync(dto.pageId, annotation);
         }
     }
     removeAnnotation(annotation) {
@@ -18545,61 +18567,68 @@ class DocumentService {
         pages.forEach(x => this._pageById.set(x.ref.id, x));
         console.log(this._pageById);
     }
-    parseSupportedAnnotations() {
+    parseSupportedAnnotationsAsync() {
         var _a;
-        this.checkAuthentication();
-        if (!this._catalog) {
-            this.parsePageTree();
-        }
-        const annotIdsByPageId = new Map();
-        const annotationMap = new Map();
-        for (const page of this._pages) {
-            const annotationIds = [];
-            if (Array.isArray(page.Annots)) {
-                annotationIds.push(...page.Annots);
+        return __awaiter$8(this, void 0, void 0, function* () {
+            this.checkAuthentication();
+            if (!this._catalog) {
+                this.parsePageTree();
             }
-            else if (page.Annots instanceof ObjectId) {
-                const parseInfo = this.getObjectParseInfo(page.Annots.id);
-                if (parseInfo) {
-                    const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
-                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
-                        annotationIds.push(...annotationRefs.value);
+            const annotIdsByPageId = new Map();
+            const annotationMap = new Map();
+            for (const page of this._pages) {
+                const annotationIds = [];
+                if (Array.isArray(page.Annots)) {
+                    annotationIds.push(...page.Annots);
+                }
+                else if (page.Annots instanceof ObjectId) {
+                    const parseInfo = this.getObjectParseInfo(page.Annots.id);
+                    if (parseInfo) {
+                        const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
+                        if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
+                            annotationIds.push(...annotationRefs.value);
+                        }
                     }
                 }
-            }
-            annotIdsByPageId.set(page.ref.id, annotationIds);
-            const annotations = [];
-            for (const objectId of annotationIds) {
-                const info = this.getObjectParseInfo(objectId.id);
-                info.rect = page.MediaBox;
-                const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
-                if (annot) {
-                    annotations.push(annot);
-                    annot.$pageId = page.id;
-                    annot.$onEditedAction = this.getOnAnnotEditAction(annot);
-                    annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
-                    console.log(annot);
+                annotIdsByPageId.set(page.ref.id, annotationIds);
+                const annotations = [];
+                for (const objectId of annotationIds) {
+                    const info = this.getObjectParseInfo(objectId.id);
+                    info.rect = page.MediaBox;
+                    const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+                    if (annot) {
+                        annotations.push(annot);
+                        annot.$pageId = page.id;
+                        annot.$onEditedAction = this.getOnAnnotEditAction(annot);
+                        annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
+                        console.log(annot);
+                    }
                 }
+                annotationMap.set(page.id, annotations);
             }
-            annotationMap.set(page.id, annotations);
-        }
-        this._annotIdsByPageId = annotIdsByPageId;
-        this._supportedAnnotsByPageId = annotationMap;
-    }
-    getSupportedAnnotationMap() {
-        this.checkAuthentication();
-        if (this._supportedAnnotsByPageId) {
-            return this._supportedAnnotsByPageId;
-        }
-        this.parseSupportedAnnotations();
-        return this._supportedAnnotsByPageId;
-    }
-    getAllSupportedAnnotations() {
-        const result = [];
-        this.getSupportedAnnotationMap().forEach((v, k) => {
-            result.push(...v);
+            this._annotIdsByPageId = annotIdsByPageId;
+            this._supportedAnnotsByPageId = annotationMap;
         });
-        return result;
+    }
+    getSupportedAnnotationMapAsync() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            this.checkAuthentication();
+            if (this._supportedAnnotsByPageId) {
+                return this._supportedAnnotsByPageId;
+            }
+            yield this.parseSupportedAnnotationsAsync();
+            return this._supportedAnnotsByPageId;
+        });
+    }
+    getAllSupportedAnnotationsAsync() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const result = [];
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+            annotationMap.forEach((v, k) => {
+                result.push(...v);
+            });
+            return result;
+        });
     }
 }
 
@@ -19548,7 +19577,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = LineAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPageAsync(pageId, annotation);
         this.clear();
     }
     init() {
@@ -19709,7 +19738,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = CircleAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPageAsync(pageId, annotation);
         this.clear();
     }
     init() {
@@ -19861,7 +19890,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = PolygonAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPageAsync(pageId, annotation);
         this.clear();
     }
     init() {
@@ -20030,7 +20059,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = PolylineAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPageAsync(pageId, annotation);
         this.clear();
     }
     init() {
@@ -20177,7 +20206,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         const pageId = this._pageId;
         const dto = this.buildAnnotationDto();
         const annotation = SquareAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPageAsync(pageId, annotation);
         this.clear();
     }
     init() {
@@ -20428,7 +20457,7 @@ class PenAnnotator extends Annotator {
         const pageId = this._annotationPathData.id;
         const dto = this.buildAnnotationDto(this._annotationPathData);
         const annotation = InkAnnotation.createFromDto(dto);
-        this._docService.appendAnnotationToPage(pageId, annotation);
+        this._docService.appendAnnotationToPageAsync(pageId, annotation);
         this.removeTempPenData();
     }
     init() {
@@ -20647,7 +20676,7 @@ class StampAnnotator extends Annotator {
         if (!this._pageId || !this._tempAnnotation) {
             return;
         }
-        this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+        this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
         this._addedAnnotations.push(this._tempAnnotation);
         this.emitDataChanged(this._addedAnnotations.length, true, true);
         this.createTempStampAnnotationAsync();
@@ -20889,7 +20918,7 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
         const dtos = this.buildAnnotationDtos("/Highlight");
         dtos.forEach(dto => {
             const annotation = HighlightAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
         });
         this.clear();
     }
@@ -20924,7 +20953,7 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
         const dtos = this.buildAnnotationDtos("/Squiggly");
         dtos.forEach(dto => {
             const annotation = SquigglyAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
         });
         this.clear();
     }
@@ -20968,7 +20997,7 @@ class TextStrikeoutAnnotator extends TextMarkupAnnotator {
         const dtos = this.buildAnnotationDtos("/Strikeout");
         dtos.forEach(dto => {
             const annotation = StrikeoutAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
         });
         this.clear();
     }
@@ -21017,7 +21046,7 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
         const dtos = this.buildAnnotationDtos("/Underline");
         dtos.forEach(dto => {
             const annotation = UnderlineAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPage(dto.pageId, annotation);
+            this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
         });
         this.clear();
     }
@@ -21131,7 +21160,7 @@ class TextNoteAnnotator extends TextAnnotator {
         this._viewer.showTextDialogAsync(initialText).then(text => {
             if (text !== null) {
                 this._tempAnnotation.setTextContent(text);
-                this._docService.appendAnnotationToPage(this._pageId, this._tempAnnotation);
+                this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
                 this._addedAnnotations.push(this._tempAnnotation);
                 this.emitDataChanged(this._addedAnnotations.length, false, true, true);
             }
@@ -22058,7 +22087,7 @@ class PageAnnotationView {
     renderAnnotationsAsync() {
         return __awaiter$2(this, void 0, void 0, function* () {
             this.clear();
-            const annotations = this._docService.getPageAnnotations(this._pageId) || [];
+            const annotations = (yield this._docService.getPageAnnotationsAsync(this._pageId)) || [];
             for (let i = 0; i < annotations.length || 0; i++) {
                 const annotation = annotations[i];
                 if (annotation.deleted) {
@@ -22423,13 +22452,13 @@ class TsPdfViewer {
         this.onOpenFileButtonClick = () => {
             this._shadowRoot.getElementById("open-file-input").click();
         };
-        this.onSaveFileButtonClick = () => {
-            const blob = this.getCurrentPdf();
+        this.onSaveFileButtonClickAsync = () => __awaiter(this, void 0, void 0, function* () {
+            const blob = yield this.getCurrentPdfAsync();
             if (!blob) {
                 return;
             }
             TsPdfViewer.downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
-        };
+        });
         this.onCloseFileButtonClick = () => {
             this.closePdfAsync();
         };
@@ -22771,7 +22800,7 @@ class TsPdfViewer {
                     yield this.closePdfAsync();
                     return this.openPdfAsync(data);
                 }
-                const dataWithoutAnnotations = docService.getDataWithoutSupportedAnnotations();
+                const dataWithoutAnnotations = yield docService.getDataWithoutSupportedAnnotationsAsync();
                 this._pdfLoadingTask = getDocument({
                     data: dataWithoutAnnotations,
                     password,
@@ -22835,14 +22864,16 @@ class TsPdfViewer {
             console.log(`Error while importing annotations: ${e.message}`);
         }
     }
-    exportAnnotations() {
+    exportAnnotationsAsync() {
         var _a;
-        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
-        return dtos;
+        return __awaiter(this, void 0, void 0, function* () {
+            const dtos = yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotationsAsync(true));
+            return dtos;
+        });
     }
     exportAnnotationsToJson() {
         var _a;
-        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotations(true);
+        const dtos = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotationsAsync(true);
         return JSON.stringify(dtos);
     }
     importCustomStamps(customStamps) {
@@ -22870,16 +22901,18 @@ class TsPdfViewer {
         const customStamps = this._customStampsService.getCustomStamps();
         return JSON.stringify(customStamps);
     }
-    getCurrentPdf() {
+    getCurrentPdfAsync() {
         var _a;
-        const data = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotations();
-        if (!(data === null || data === void 0 ? void 0 : data.length)) {
-            return null;
-        }
-        const blob = new Blob([data], {
-            type: "application/pdf",
+        return __awaiter(this, void 0, void 0, function* () {
+            const data = yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotationsAsync());
+            if (!(data === null || data === void 0 ? void 0 : data.length)) {
+                return null;
+            }
+            const blob = new Blob([data], {
+                type: "application/pdf",
+            });
+            return blob;
         });
-        return blob;
     }
     initMainContainerEventHandlers() {
         const mcResizeObserver = new ResizeObserver((entries) => {
@@ -22937,7 +22970,7 @@ class TsPdfViewer {
             openButton.remove();
         }
         if (fileButtons.includes("save")) {
-            saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClick);
+            saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClickAsync);
         }
         else {
             saveButton.remove();

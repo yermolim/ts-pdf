@@ -25,7 +25,7 @@ export class TextUnderlineAnnotator extends TextMarkupAnnotator {
       const annotation = UnderlineAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
-      this._docService.appendAnnotationToPage(dto.pageId, annotation);
+      this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
     });
     
     this.clear();

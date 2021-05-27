@@ -159,11 +159,11 @@ export class DocumentService {
 
   /**free the resources that can prevent garbage to be collected */
   destroy() {
-    // clear onEditedAction to prevent memory leak
-    this.getAllSupportedAnnotations().forEach(x => {
+    this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
+      // clear public actions to prevent memory leak
       x.$onEditedAction = null;
       x.$onRenderUpdatedAction = null;
-    });
+    }));
 
     this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
     this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
@@ -189,8 +189,8 @@ export class DocumentService {
    * get a PDF document byte array with all supported annotation being deleted to avoid duplication.
    * @returns
    */
-  getDataWithoutSupportedAnnotations(): Uint8Array {
-    const annotationMap = this.getSupportedAnnotationMap();
+  async getDataWithoutSupportedAnnotationsAsync(): Promise<Uint8Array> {
+    const annotationMap = await this.getSupportedAnnotationMapAsync();
     const annotationMarkedToDelete: AnnotationDict[] = [];
     if (annotationMap?.size) {
       annotationMap.forEach((v, k) => {
@@ -205,7 +205,7 @@ export class DocumentService {
       });
     }
 
-    const refined = this.getDataWithUpdatedAnnotations();
+    const refined = this.getDataWithUpdatedAnnotationsAsync();
 
     // remove redundant "isDeleted" flags
     annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
@@ -217,8 +217,8 @@ export class DocumentService {
    * apply all the changes made to the supported annotations and return the final document as a byte array
    * @returns 
    */
-  getDataWithUpdatedAnnotations(): Uint8Array {    
-    const annotationMap = this.getSupportedAnnotationMap();
+  async getDataWithUpdatedAnnotationsAsync(): Promise<Uint8Array> {    
+    const annotationMap = await this.getSupportedAnnotationMapAsync();
     const updaterData: PageWithAnnotations[] = [];
     annotationMap.forEach((pageAnnotations, pageId) => {
       const page = this._pageById.get(pageId);
@@ -242,8 +242,9 @@ export class DocumentService {
   }  
 
   /**get all aupported annotations for the specified page */
-  getPageAnnotations(pageId: number): AnnotationDict[] {     
-    const annotations = this.getSupportedAnnotationMap().get(pageId);
+  async getPageAnnotationsAsync(pageId: number): Promise<AnnotationDict[]> {  
+    const annotationMap = await this.getSupportedAnnotationMapAsync(); 
+    const annotations = annotationMap.get(pageId);
     return annotations || [];
   }
 
@@ -252,9 +253,10 @@ export class DocumentService {
    * @param addedOnly serialize only newly added annotations
    * @returns 
    */
-  serializeAnnotations(addedOnly = false): AnnotationDto[] {
+  async serializeAnnotationsAsync(addedOnly = false): Promise<AnnotationDto[]> {
     const result: AnnotationDto[] = [];
-    this.getSupportedAnnotationMap().forEach((v, k) => {
+    const annotationMap = await this.getSupportedAnnotationMapAsync(); 
+    annotationMap.forEach((v, k) => {
       v.forEach(x => {
         if (!addedOnly || x.added) {
           result.push(x.toDto());
@@ -269,7 +271,7 @@ export class DocumentService {
    * any annotation can be appended only to one page at a time.
    * appending an annotation to another page removes it from the first one
    */
-  appendAnnotationToPage(pageId: number, annotation: AnnotationDict) {
+  async appendAnnotationToPageAsync(pageId: number, annotation: AnnotationDict) {
     if (!annotation) {
       throw new Error("Annotation is not defined");
     }
@@ -282,11 +284,12 @@ export class DocumentService {
     annotation.$pageId = page.id;
     annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
     annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
-    const pageAnnotations = this.getSupportedAnnotationMap().get(pageId);
+    const annotationMap = await this.getSupportedAnnotationMapAsync();
+    const pageAnnotations = annotationMap.get(pageId);
     if (pageAnnotations) {
       pageAnnotations.push(annotation);
     } else {
-      this.getSupportedAnnotationMap().set(pageId, [annotation]);
+      annotationMap.set(pageId, [annotation]);
     }
 
     this._eventService.dispatchEvent(new AnnotEvent({   
@@ -303,7 +306,7 @@ export class DocumentService {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
       annotation = AnnotationParseFactory.ParseAnnotationFromDto(dto);
-      this.appendAnnotationToPage(dto.pageId, annotation);
+      this.appendAnnotationToPageAsync(dto.pageId, annotation);
     }
   }
 
@@ -568,7 +571,7 @@ export class DocumentService {
     console.log(this._pageById);
   }   
 
-  private parseSupportedAnnotations() {
+  private async parseSupportedAnnotationsAsync() {
     this.checkAuthentication();
 
     if (!this._catalog) {      
@@ -609,7 +612,7 @@ export class DocumentService {
           annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
 
           // DEBUG
-          console.log(annot);
+          // console.log(annot);
         }
       }
       
@@ -620,20 +623,21 @@ export class DocumentService {
     this._supportedAnnotsByPageId = annotationMap;
   }   
   
-  private getSupportedAnnotationMap(): Map<number, AnnotationDict[]> {
+  private async getSupportedAnnotationMapAsync(): Promise<Map<number, AnnotationDict[]>> {
     this.checkAuthentication();
 
     if (this._supportedAnnotsByPageId) {
       return this._supportedAnnotsByPageId;
     } 
 
-    this.parseSupportedAnnotations();
+    await this.parseSupportedAnnotationsAsync();
     return this._supportedAnnotsByPageId;
   } 
 
-  private getAllSupportedAnnotations(): AnnotationDict[] {
+  private async getAllSupportedAnnotationsAsync(): Promise<AnnotationDict[]> {
     const result: AnnotationDict[] = [];
-    this.getSupportedAnnotationMap().forEach((v, k) => {
+    const annotationMap = await this.getSupportedAnnotationMapAsync();
+    annotationMap.forEach((v, k) => {
       result.push(...v);
     });
     return result;
