@@ -568,7 +568,8 @@ export class DocumentService {
     this._pageById.clear();
     pages.forEach(x => this._pageById.set(x.ref.id, x));
 
-    console.log(this._pageById);
+    // DEBUG
+    // console.log(this._pageById);
   }   
 
   private async parseSupportedAnnotationsAsync() {
@@ -600,24 +601,32 @@ export class DocumentService {
       }
       annotIdsByPageId.set(page.ref.id, annotationIds);
 
-      const annotations: AnnotationDict[] = [];
+      const annotations: AnnotationDict[] = [];   
+      // fake async function to keep user interface responsible   
+      const processAnnotation = (objectId: ObjectId) => 
+        new Promise<AnnotationDict>((resolve, reject) => {
+          setTimeout(() => {          
+            const info = this.getObjectParseInfo(objectId.id);  
+            info.rect = page.MediaBox;
+            const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+            resolve(annot);
+          }, 0);
+        });
       for (const objectId of annotationIds) {
-        const info = this.getObjectParseInfo(objectId.id);  
-        info.rect = page.MediaBox;
-        const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+        const annot = await processAnnotation(objectId);
         if (annot) {
           annotations.push(annot);
           annot.$pageId = page.id;
           annot.$onEditedAction = this.getOnAnnotEditAction(annot);
           annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
-
-          // DEBUG
-          // console.log(annot);
         }
       }
       
       annotationMap.set(page.id, annotations);
     }
+
+    // DEBUG
+    // console.log(annotationMap);
 
     this._annotIdsByPageId = annotIdsByPageId;
     this._supportedAnnotsByPageId = annotationMap;

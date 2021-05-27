@@ -18565,7 +18565,6 @@ class DocumentService {
         this._pages = pages;
         this._pageById.clear();
         pages.forEach(x => this._pageById.set(x.ref.id, x));
-        console.log(this._pageById);
     }
     parseSupportedAnnotationsAsync() {
         var _a;
@@ -18592,10 +18591,16 @@ class DocumentService {
                 }
                 annotIdsByPageId.set(page.ref.id, annotationIds);
                 const annotations = [];
+                const processAnnotation = (objectId) => new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        const info = this.getObjectParseInfo(objectId.id);
+                        info.rect = page.MediaBox;
+                        const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+                        resolve(annot);
+                    }, 0);
+                });
                 for (const objectId of annotationIds) {
-                    const info = this.getObjectParseInfo(objectId.id);
-                    info.rect = page.MediaBox;
-                    const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+                    const annot = yield processAnnotation(objectId);
                     if (annot) {
                         annotations.push(annot);
                         annot.$pageId = page.id;
