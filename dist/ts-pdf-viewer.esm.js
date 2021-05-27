@@ -4394,26 +4394,30 @@ class ReferenceDataChange {
 
 class DataWriter {
     constructor(data) {
+        this._dataToAppend = [];
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
         }
-        this._data = [...data];
-        this._pointer = data.length;
         this._encoder = new TextEncoder();
+        this._sourceData = data.slice(0);
+        this._pointer = data.length;
         this.fixEof();
     }
     get offset() {
         return this._pointer;
     }
     getCurrentData() {
-        return new Uint8Array(this._data);
+        const result = new Uint8Array(this._sourceData.length + this._dataToAppend.length);
+        result.set(this._sourceData, 0);
+        result.set(this._dataToAppend, this._sourceData.length);
+        return result;
     }
     writeBytes(bytes) {
         if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
             return;
         }
         for (let i = 0; i < bytes.length; i++) {
-            this._data.push(bytes[i]);
+            this._dataToAppend.push(bytes[i]);
         }
         this._pointer += bytes.length;
     }
@@ -4453,13 +4457,13 @@ class DataWriter {
         this.writeBytes(eof);
     }
     fixEof() {
-        if (this._data[this._pointer - 1] !== codes.LINE_FEED) {
-            if (this._data[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
-                this._data.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
+        if (this._sourceData[this._pointer - 1] !== codes.LINE_FEED) {
+            if (this._sourceData[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
+                this._dataToAppend.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
                 this._pointer += 2;
             }
             else {
-                this._data.push(codes.LINE_FEED);
+                this._dataToAppend.push(codes.LINE_FEED);
                 this._pointer += 1;
             }
         }
@@ -22917,7 +22921,9 @@ class TsPdfViewer {
                     yield this.closePdfAsync();
                     return this.openPdfAsync(data);
                 }
+                const b = performance.now();
                 const dataWithoutAnnotations = yield docService.getDataWithoutSupportedAnnotationsAsync();
+                console.log("ANNOTATIONS REMOVED: " + (performance.now() - b));
                 this._pdfLoadingTask = getDocument({
                     data: dataWithoutAnnotations,
                     password,

@@ -2,10 +2,11 @@ import { codes, keywordCodes } from "./codes";
 import { CryptInfo, IEncodable } from "./common-interfaces";
 
 export class DataWriter {
-  private readonly _data: number[];  
+  private readonly _encoder: TextEncoder;
+  private readonly _sourceData: Uint8Array;  
+  private readonly _dataToAppend: number[] = [];
   private _pointer: number;
 
-  private _encoder: TextEncoder;
 
   /**
    * return the next byte position (the current last byte position + 1)
@@ -22,11 +23,10 @@ export class DataWriter {
     if (!data?.length) {
       throw new Error("Data is empty");
     }
-    this._data = [...data];
-    this._pointer = data.length;
 
     this._encoder = new TextEncoder();
-
+    this._sourceData = data.slice(0);
+    this._pointer = data.length;
     this.fixEof();
   }
 
@@ -35,7 +35,10 @@ export class DataWriter {
    * @returns a copy of the underlying data byte array in its current state
    */
   getCurrentData(): Uint8Array {
-    return new Uint8Array(this._data);
+    const result = new Uint8Array(this._sourceData.length + this._dataToAppend.length);
+    result.set(this._sourceData, 0);
+    result.set(this._dataToAppend, this._sourceData.length);
+    return result;
   }
 
   /**
@@ -47,7 +50,7 @@ export class DataWriter {
       return;
     }
     for (let i = 0; i < bytes.length; i++) {
-      this._data.push(bytes[i]);
+      this._dataToAppend.push(bytes[i]);
     }
     this._pointer += bytes.length;
   }
@@ -120,12 +123,12 @@ export class DataWriter {
    * append '\r\n' to the end of the current data if absent
    */
   private fixEof() {
-    if (this._data[this._pointer - 1] !== codes.LINE_FEED) {
-      if (this._data[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
-        this._data.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
+    if (this._sourceData[this._pointer - 1] !== codes.LINE_FEED) {
+      if (this._sourceData[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
+        this._dataToAppend.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
         this._pointer += 2;
       } else {        
-        this._data.push(codes.LINE_FEED);
+        this._dataToAppend.push(codes.LINE_FEED);
         this._pointer += 1;
       }
     }
