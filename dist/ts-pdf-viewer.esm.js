@@ -18319,7 +18319,7 @@ class DocumentService {
                     });
                 });
             }
-            const refined = this.getDataWithUpdatedAnnotationsAsync();
+            const refined = yield this.getDataWithUpdatedAnnotationsAsync();
             annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
             return refined;
         });
@@ -22921,9 +22921,7 @@ class TsPdfViewer {
                     yield this.closePdfAsync();
                     return this.openPdfAsync(data);
                 }
-                const b = performance.now();
                 const dataWithoutAnnotations = yield docService.getDataWithoutSupportedAnnotationsAsync();
-                console.log("ANNOTATIONS REMOVED: " + (performance.now() - b));
                 this._pdfLoadingTask = getDocument({
                     data: dataWithoutAnnotations,
                     password,

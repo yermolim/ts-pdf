@@ -17,6 +17,7 @@ import { HighlightAnnotation } from "./entities/annotations/markup/text-markup/h
 import { UnderlineAnnotation } from "./entities/annotations/markup/text-markup/underline-annotation";
 import { StrikeoutAnnotation } from "./entities/annotations/markup/text-markup/strikeout-annotation";
 import { SquigglyAnnotation } from "./entities/annotations/markup/text-markup/squiggly-annotation";
+import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
@@ -61,6 +62,8 @@ export class AnnotationParseFactory {
         break; 
       // case annotationTypes.FREE_TEXT:
       //   annot = FreeTextAnnotation.parse(info);
+      //   console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));        
+      //   console.log(annot);        
       //   break;
       default:
         break;

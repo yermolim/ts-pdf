@@ -205,7 +205,7 @@ export class DocumentService {
       });
     }
 
-    const refined = this.getDataWithUpdatedAnnotationsAsync();
+    const refined = await this.getDataWithUpdatedAnnotationsAsync();
 
     // remove redundant "isDeleted" flags
     annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
@@ -233,7 +233,7 @@ export class DocumentService {
         // throw new Error(`Page with id '${pageId}' not found`);
         console.log(`Page with id '${pageId}' not found`);
       }
-    });
+    });    
 
     const updater = new DocumentDataUpdater(this._data, this._xrefs[0],
       this._referenceData, this._authResult);

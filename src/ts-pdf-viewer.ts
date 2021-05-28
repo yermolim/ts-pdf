@@ -287,12 +287,9 @@ export class TsPdfViewer {
         return this.openPdfAsync(data);
       }
 
-      const b = performance.now();   
       // remove supported annotations from the data before supplying it to PDF.js
       const dataWithoutAnnotations = 
         await docService.getDataWithoutSupportedAnnotationsAsync();
-
-      console.log("ANNOTATIONS REMOVED: " + (performance.now() - b));
 
       this._pdfLoadingTask = getDocument({
         // get the pdf data with the supported annotations cut out
