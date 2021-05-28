@@ -1,6 +1,6 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { calcBBoxToRectMatrices } from "../../../../../drawing/utils";
+import { calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { codes } from "../../../../codes";
@@ -230,7 +230,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     }    
 
     // calculate matrices needed for drawing
-    const bBoxToRectMat = calcBBoxToRectMatrices(streamBbox, 
+    const bBoxToRectMat = calcPdfBBoxToRectMatrices(streamBbox, 
       this.Rect, streamMatrix).matAA;
     const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
     const {r: rotation} = apStream.matrix.getTRS(); 

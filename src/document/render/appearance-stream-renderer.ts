@@ -1,6 +1,6 @@
 import { Quadruple } from "../../common/types";
 import { Mat3, Vec2 } from "../../common/math";
-import { calcBBoxToRectMatrices, selectionStrokeWidth, 
+import { calcPdfBBoxToRectMatrices, selectionStrokeWidth, 
   CssMixBlendMode } from "../../drawing/utils";
 
 import { codes } from "../codes";
@@ -67,7 +67,7 @@ export class AppearanceStreamRenderer {
     this._stream = stream;
     this._objectName = objectName;
 
-    const {matAA} = calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
+    const {matAA} = calcPdfBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
 
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     clipPath.id = `clip0_${objectName}`;
@@ -287,11 +287,6 @@ export class AppearanceStreamRenderer {
     return imageWrapper;
   }
 
-  protected drawText(value: string): SVGTextElement {
-    // TODO: implement
-    throw new Error("Method is not implemented");
-  }
-
   protected drawTextGroup(parser: DataParser): SvgElementWithBlendMode {
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     let i = 0;
@@ -302,21 +297,46 @@ export class AppearanceStreamRenderer {
       switch (operator) {
         //#region Text state operators
         // TODO: implement operators
-        //#endregion
+        case "Tc": // character spacing ('{x} Tc', x = 0 is normal spacing)
+          break;
+        case "Tw": // word spacing ('{x} Tw', x = 0 is normal spacing)
+          break;
+        case "Tz": // horizontal scaling ('{x} Tz', x = 100 is normal scale)
+          break;
+        case "TL": // leading ('{x} TL', line height)
+          break;
+        case "Tf": // font and font size ('{font_name} {x} Tf')
+          break;
+        case "Tr": // rendering mode ('{x} Tf', x - integer from 0 to 7)
+          // 0 - fill, 1 - stroke, 2 - fill + stroke, 3 - none, 
+          // 4 - fill + clip, 5 - stroke + clip, 6 - fill + stroke + clip
+          // 7 - clip
+          break;
+        case "Ts": // rise
+          break;
+          //#endregion
 
         //#region Text positioning operators
         // TODO: implement operators
-        //#endregion
+        case "Td": // move to the start of the next line ('{tx} {ty} Td')
+          break;
+        case "TD": // '{-ty} TL {tx} {ty} Td'
+          break;
+        case "Tm": // text matrix ('{a} {b} {c} {d} {e} {f}')
+          break;
+        case "T*": // '0 TL Td'
+          break;
+          //#endregion
 
         //#region Text showing operators
         // TODO: implement operators
         case "Tj": // show string
           break;
-        case "'": // move to next line + show string
+        case "'": // move to next line + show string ('T* {string} Tj')
           break;
-        case "\"": // move to next line + show string with the specified spacings
+        case "\"": // move to next line + show string with the specified spacings ("{a} Tw {b} Tc {string} '")
           break;
-        case "TJ": // show array of strings
+        case "TJ": // show array of strings ('[({string}) {spacing} ...n]TJ')
           break;
           //#endregion
 

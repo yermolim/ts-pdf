@@ -52,7 +52,7 @@ export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): 
  * @param matrix optional transformation from the source AABB to properly oriented BB
  * @returns transformation matrices (matAA is the final matrix)
  */
-export function calcBBoxToRectMatrices(bBox: Quadruple, rect: Quadruple, matrix?: Hextuple): 
+export function calcPdfBBoxToRectMatrices(bBox: Quadruple, rect: Quadruple, matrix?: Hextuple): 
 {matAP: Mat3; matA: Mat3; matAA: Mat3} {          
   const matAP = new Mat3();
   if (matrix) {

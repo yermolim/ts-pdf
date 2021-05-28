@@ -16,6 +16,7 @@ export const freeTextIntents = {
 export type FreeTextIntent = typeof freeTextIntents[keyof typeof freeTextIntents];
 
 export class FreeTextAnnotation extends MarkupAnnotation {
+  //#region PDF props
   /**
    * (Required) The default appearance string that shall be used in formatting the text. 
    * The annotation dictionary’s AP entry, if present, shall take precedence over the DA entry
@@ -30,6 +31,11 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * (Optional; PDF 1.5+) A default style
    */
   DS: LiteralString;
+  /**
+   * (Optional; PDF 1.5) A rich text string
+   * to be used to generate the appearance of the annotation.
+   */
+  RC: LiteralString;
   /**
    * (Optional; meaningful only if IT is FreeTextCallout; PDF 1.6+) 
    * An array of four or six numbers specifying a callout line 
@@ -57,7 +63,12 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * defined by the pairs of coordinates (x1, y1)
    */
   LE: LineEndingType = lineEndingTypes.NONE;
+  //#endregion
   
+  private _defaultStyle: string;
+  private _rtStyle: string;
+  private _rtText: string;
+
   constructor() {
     super(annotationTypes.FREE_TEXT);
   }
@@ -69,7 +80,9 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     try {
       const pdfObject = new FreeTextAnnotation();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<FreeTextAnnotation>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;
@@ -89,6 +102,9 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     }
     if (this.DS) {
       bytes.push(...encoder.encode("/DS "), ...this.DS.toArray(cryptInfo));
+    }
+    if (this.RC) {
+      bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
     }
     if (this.CL) {
       bytes.push(...encoder.encode("/CL "), codes.L_BRACKET);
@@ -138,6 +154,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
         switch (name) {
           case "/DA":         
           case "/DS":            
+          case "/RC":            
             i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
             break;
 
@@ -192,6 +209,20 @@ export class FreeTextAnnotation extends MarkupAnnotation {
         break;
       }
     };
+
+    if (this.DS) {
+      this._defaultStyle = this.DS.literal;
+    }
+    if (this.RC) {
+      const domParser = new DOMParser();
+      const body = domParser.parseFromString(this.RC.literal, "text/xml")?.querySelector("body");
+      if (body) {
+        const style = body.getAttribute("style");
+        const p = body.querySelector("p");
+        this._rtStyle = style || "";
+        this._rtText = p?.textContent || ""; 
+      }
+    }
         
     if (!this.DA) {
       throw new Error("Not all required properties parsed");

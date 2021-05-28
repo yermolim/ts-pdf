@@ -8285,7 +8285,7 @@ function buildSquigglyLine(start, end, maxWaveSize) {
     }
     return resultPoints;
 }
-function calcBBoxToRectMatrices(bBox, rect, matrix) {
+function calcPdfBBoxToRectMatrices(bBox, rect, matrix) {
     const matAP = new Mat3();
     if (matrix) {
         const [m0, m1, m3, m4, m6, m7] = matrix;
@@ -8413,7 +8413,7 @@ class AppearanceStreamRenderer {
         }
         this._stream = stream;
         this._objectName = objectName;
-        const { matAA } = calcBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
+        const { matAA } = calcPdfBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
         const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
         clipPath.id = `clip0_${objectName}`;
         clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
@@ -8593,9 +8593,6 @@ class AppearanceStreamRenderer {
             this._selectionCopies.push(clonedRect);
             return imageWrapper;
         });
-    }
-    drawText(value) {
-        throw new Error("Method is not implemented");
     }
     drawTextGroup(parser) {
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -15952,7 +15949,7 @@ class SquareAnnotation extends GeometricAnnotation {
                 : strokeWidth / 2;
             this.RD || (this.RD = [defaultMargin, defaultMargin, defaultMargin, defaultMargin]);
         }
-        const bBoxToRectMat = calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix).matAA;
+        const bBoxToRectMat = calcPdfBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix).matAA;
         const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray();
         const { r: rotation } = apStream.matrix.getTRS();
         const marginsRotationMat = new Mat3().applyRotation(rotation);
@@ -16179,7 +16176,7 @@ class CircleAnnotation extends GeometricAnnotation {
                 : strokeWidth / 2;
             this.RD || (this.RD = [defaultMargin, defaultMargin, defaultMargin, defaultMargin]);
         }
-        const bBoxToRectMat = calcBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix).matAA;
+        const bBoxToRectMat = calcPdfBBoxToRectMatrices(streamBbox, this.Rect, streamMatrix).matAA;
         const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray();
         const { r: rotation } = apStream.matrix.getTRS();
         const marginsRotationMat = new Mat3().applyRotation(rotation);

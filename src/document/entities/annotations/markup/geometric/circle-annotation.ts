@@ -2,7 +2,7 @@ import { Hextuple, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { Mat3, Vec2 } from "../../../../../common/math";
-import { bezierConstant, calcBBoxToRectMatrices } from "../../../../../drawing/utils";
+import { bezierConstant, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 
 import { CryptInfo } from "../../../../common-interfaces";
@@ -230,7 +230,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     }  
     
     // calculate matrices needed for drawing
-    const bBoxToRectMat = calcBBoxToRectMatrices(streamBbox, 
+    const bBoxToRectMat = calcPdfBBoxToRectMatrices(streamBbox, 
       this.Rect, streamMatrix).matAA;
     const invMatArray = Mat3.invert(bBoxToRectMat).toFloatShortArray(); 
     const {r: rotation} = apStream.matrix.getTRS(); 
