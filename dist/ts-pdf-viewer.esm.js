@@ -2610,6 +2610,11 @@ const authEvents = {
     DOC_OPEN: "/DocOpen",
     EMBEDDED_OPEN: "/EFOpen",
 };
+const justificationTypes = {
+    LEFT: 0,
+    CENTER: 1,
+    RIGHT: 2,
+};
 const streamTypes = {
     XREF: "/XRef",
     OBJECT_STREAM: "/ObjStm",
@@ -2916,6 +2921,24 @@ const keywordCodes = {
     END_OF_LINE: [codes.CARRIAGE_RETURN, codes.LINE_FEED],
     TRUE: [codes.t, codes.r, codes.u, codes.e],
     FALSE: [codes.f, codes.a, codes.l, codes.s, codes.e],
+    CMAP_BEGIN: [codes.b, codes.e, codes.g, codes.i, codes.n,
+        codes.c, codes.m, codes.a, codes.p],
+    CMAP_END: [codes.e, codes.n, codes.d,
+        codes.c, codes.m, codes.a, codes.p],
+    CMAP_BEGIN_CODE_RANGE: [codes.b, codes.e, codes.g, codes.i, codes.n,
+        codes.c, codes.o, codes.d, codes.e, codes.s, codes.p, codes.a, codes.c, codes.e,
+        codes.r, codes.a, codes.n, codes.g, codes.e],
+    CMAP_END_CODE_RANGE: [codes.e, codes.n, codes.d,
+        codes.c, codes.o, codes.d, codes.e, codes.s, codes.p, codes.a, codes.c, codes.e,
+        codes.r, codes.a, codes.n, codes.g, codes.e],
+    CMAP_BEGIN_CHAR: [codes.b, codes.e, codes.g, codes.i, codes.n,
+        codes.b, codes.f, codes.c, codes.h, codes.a, codes.r],
+    CMAP_END_CHAR: [codes.e, codes.n, codes.d,
+        codes.b, codes.f, codes.c, codes.h, codes.a, codes.r],
+    CMAP_BEGIN_RANGE: [codes.b, codes.e, codes.g, codes.i, codes.n,
+        codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
+    CMAP_END_RANGE: [codes.e, codes.n, codes.d,
+        codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
 };
 const DELIMITER_CHARS = new Set([
     codes.PERCENT,
@@ -5833,7 +5856,7 @@ class PdfStream extends PdfObject {
     }
     get decodedStreamDataChars() {
         const decoder = new TextDecoder();
-        return decoder.decode(this._decodedStreamData);
+        return decoder.decode(this.decodedStreamData);
     }
     toArray(cryptInfo) {
         const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
@@ -6996,9 +7019,159 @@ class ObjectMapDict extends PdfDict {
     }
 }
 
+class UnicodeCmapStream extends PdfStream {
+    constructor(type = null) {
+        super(type);
+        this._codeRanges = [];
+        this._map = new Map();
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new UnicodeCmapStream();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        return superBytes;
+    }
+    hexBytesToUtfString(bytes) {
+        let result = "";
+        outer: for (let i = 0; i < bytes.length; i++) {
+            for (let j = 1; i + j <= bytes.length && j <= 4; j++) {
+                const sub = bytes.subarray(i, i + j);
+                if (this.isInsideAnyRange(sub)) {
+                    result += this._map.get(parseIntFromBytes(sub)) || "";
+                    continue outer;
+                }
+            }
+        }
+        return result;
+    }
+    isInsideAnyRange(bytes) {
+        outer: for (const range of this._codeRanges) {
+            if (bytes.length !== range.length) {
+                continue;
+            }
+            for (let i = 0; i < range.length; i++) {
+                if (bytes[i] < range.start[i]
+                    || bytes[i] > range.end[i]) {
+                    continue outer;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+    parseCodeRanges(parser) {
+        var _a, _b;
+        let i = 0;
+        const codeRangeStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true })) === null || _a === void 0 ? void 0 : _a.end;
+        if (!codeRangeStart) {
+            return;
+        }
+        i = codeRangeStart + 1;
+        const codeRangeEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_CODE_RANGE, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
+        while (i < codeRangeEnd - 1) {
+            const rangeStart = HexString.parse(parser, i);
+            i = rangeStart.end + 1;
+            const rangeEnd = HexString.parse(parser, i);
+            i = rangeEnd.end + 1;
+            this._codeRanges.push({
+                length: rangeStart.value.hex.length,
+                start: rangeStart.value.hex,
+                end: rangeEnd.value.hex,
+            });
+        }
+    }
+    parseCharMap(parser, decoder) {
+        var _a, _b;
+        let i = 0;
+        while (true) {
+            const charMapStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i })) === null || _a === void 0 ? void 0 : _a.end;
+            if (!charMapStart) {
+                break;
+            }
+            i = charMapStart + 1;
+            const charMapEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_CHAR, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
+            while (i < charMapEnd - 1) {
+                const hexKey = HexString.parse(parser, i);
+                i = hexKey.end + 1;
+                const unicodeValue = HexString.parse(parser, i);
+                i = unicodeValue.end + 1;
+                this._map.set(parseIntFromBytes(hexKey.value.hex), decoder.decode(unicodeValue.value.hex));
+            }
+        }
+    }
+    parseCharRangesMap(parser, decoder) {
+        var _a, _b;
+        let i = 0;
+        while (true) {
+            const rangeMapStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i })) === null || _a === void 0 ? void 0 : _a.end;
+            if (!rangeMapStart) {
+                break;
+            }
+            i = rangeMapStart + 1;
+            const rangeMapEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_RANGE, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
+            while (i < rangeMapEnd - 1) {
+                const keyRangeStart = HexString.parse(parser, i);
+                i = keyRangeStart.end + 1;
+                const keyRangeEnd = HexString.parse(parser, i);
+                i = keyRangeEnd.end + 1;
+                let key = parseIntFromBytes(keyRangeStart.value.hex);
+                const nextValueType = parser.getValueTypeAt(i, true);
+                if (nextValueType === valueTypes.ARRAY) {
+                    const valueArray = HexString.parseArray(parser, i);
+                    i = valueArray.end + 1;
+                    for (const value of valueArray.value) {
+                        this._map.set(key++, decoder.decode(value.hex));
+                    }
+                }
+                else {
+                    const startingValue = HexString.parse(parser, i);
+                    i = startingValue.end + 1;
+                    let startingUtf = parseIntFromBytes(startingValue.value.hex);
+                    while (key <= parseIntFromBytes(keyRangeEnd.value.hex)) {
+                        const hexStringUnpadded = (startingUtf++).toString(16);
+                        const padding = hexStringUnpadded.length % 2
+                            ? "0"
+                            : "";
+                        const hexString = padding + hexStringUnpadded;
+                        this._map.set(key++, decoder.decode(hexStringToBytes(hexString)));
+                    }
+                }
+            }
+        }
+    }
+    fillMap() {
+        this._codeRanges.length = 0;
+        this._map.clear();
+        const parser = new DataParser(this.decodedStreamData);
+        const decoder = new TextDecoder("utf-16be");
+        this.parseCodeRanges(parser);
+        this.parseCharMap(parser, decoder);
+        this.parseCharRangesMap(parser, decoder);
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        this.fillMap();
+    }
+}
+
 class FontDict extends PdfDict {
     constructor() {
         super(dictTypes.FONT);
+    }
+    get toUtfCmap() {
+        return this._toUtfCmap;
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -7054,12 +7227,9 @@ class FontDict extends PdfDict {
                     case "/Subtype":
                         const subtype = parser.parseNameAt(i, true);
                         if (subtype) {
-                            if (subtype.value === "/Type1" || subtype.value === "/TrueType") {
-                                this.Subtype = subtype.value;
-                                i = subtype.end + 1;
-                                break;
-                            }
-                            throw new Error(`Font type is not supported: ${subtype.value}`);
+                            this.Subtype = subtype.value;
+                            i = subtype.end + 1;
+                            break;
                         }
                         throw new Error("Can't parse /Subtype property value");
                     case "/BaseFont":
@@ -7077,6 +7247,16 @@ class FontDict extends PdfDict {
             else {
                 break;
             }
+        }
+        if (this.ToUnicode) {
+            const toUtfParseInfo = parseInfo.parseInfoGetter(this.ToUnicode.id);
+            const cmap = UnicodeCmapStream.parse(toUtfParseInfo);
+            this._toUtfCmap = cmap === null || cmap === void 0 ? void 0 : cmap.value;
+        }
+        if (this.Subtype !== "/Type1"
+            && this.Subtype !== "/TrueType"
+            && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
+            throw new Error(`Font type is not supported: ${this.Subtype}`);
         }
     }
 }
@@ -7607,7 +7787,7 @@ class ResourceDict extends PdfDict {
         this._edited = true;
     }
     getFont(name) {
-        return this._fontsMap.get(name);
+        return this._fontsMap.get("/Font" + name);
     }
     *getFonts() {
         for (const pair of this._fontsMap) {
@@ -8316,15 +8496,17 @@ class TextState {
     }
 }
 TextState.defaultParams = {
-    fontFamily: "helvetica, sans-serif",
+    matrix: new Mat3(),
+    leading: 12 * -1.2,
+    renderMode: textRenderModes.FILL,
+    fontFamily: "helvetica, arial, sans-serif",
     fontSize: "12px",
     lineHeight: "1",
     letterSpacing: "normal",
     wordSpacing: "normal",
-    textHorScale: 1,
-    textRenderMode: textRenderModes.FILL,
-    textVertAlign: "0",
-    textKnockOut: true,
+    horizontalScale: 1,
+    verticalAlign: "0",
+    knockOut: true,
 };
 
 class GraphicsState {
@@ -8455,8 +8637,26 @@ class AppearanceStreamRenderer {
                         }
                     }
                     else {
-                        throw new Error(`Invalid appearance stream array: 
-            ${parser.sliceChars(arrayBounds.start, arrayBounds.end)}`);
+                        let j = arrayBounds.contentStart;
+                        while (j < arrayBounds.contentEnd && j !== -1) {
+                            const nextArrayValueType = parser.getValueTypeAt(arrayBounds.contentStart, true);
+                            switch (nextArrayValueType) {
+                                case valueTypes.STRING_LITERAL:
+                                    const arrayLiteralResult = LiteralString.parse(parser, j);
+                                    parameters.push(arrayLiteralResult.value.literal);
+                                    j = arrayLiteralResult.end + 1;
+                                    break;
+                                case valueTypes.NUMBER:
+                                    const arrayNumberResult = parser.parseNumberAt(j, true);
+                                    parameters.push(arrayNumberResult.value);
+                                    j = arrayNumberResult.end + 1;
+                                    break;
+                                default:
+                                    console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
+                                    j = parser.findDelimiterIndex("straight", j);
+                                    break;
+                            }
+                        }
                     }
                     i = arrayBounds.end + 1;
                     break;
@@ -8479,7 +8679,7 @@ class AppearanceStreamRenderer {
                     throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
             }
         }
-        return { endIndex: i, parameters, operator };
+        return { nextIndex: i, parameters, operator };
     }
     renderAsync() {
         return __awaiter$k(this, void 0, void 0, function* () {
@@ -8507,6 +8707,164 @@ class AppearanceStreamRenderer {
             return null;
         }
         return this._graphicsStates.pop();
+    }
+    pushClipPath(clippingElement, nonzero) {
+        const lastCpIndex = this._clipPaths.length - 1;
+        const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+        clipPath.setAttribute("clip-rule", nonzero ? "nonzero" : "evenodd");
+        clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
+        clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
+        clipPath.append(clippingElement);
+        this._clipPaths.push(clipPath);
+        this.state.clipPath = clipPath;
+    }
+    tryApplyingStateOperator(operator, parameters) {
+        switch (operator) {
+            case "q":
+                this.pushState();
+                break;
+            case "Q":
+                this.popState();
+                break;
+            case "gs":
+                const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
+                if (!externalState) {
+                    throw new Error("External state specified in appearance stream not found");
+                }
+                const params = externalState.toParams();
+                Object.assign(this.state, params);
+                break;
+            case "cm":
+                const [m0, m1, m3, m4, m6, m7] = parameters;
+                const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+                this.state.matrix = matrix.multiply(this.state.matrix);
+                break;
+            case "w":
+                this.state.strokeWidth = +parameters[0] || 1;
+                break;
+            case "J":
+                switch (parameters[0]) {
+                    case lineCapStyles.ROUND:
+                        this.state.strokeLineCap = "round";
+                        break;
+                    case lineCapStyles.SQUARE:
+                        this.state.strokeLineCap = "square";
+                        break;
+                    case lineCapStyles.BUTT:
+                    default:
+                        this.state.strokeLineCap = "butt";
+                        break;
+                }
+                break;
+            case "j":
+                switch (parameters[0]) {
+                    case lineJoinStyles.BEVEL:
+                        this.state.strokeLineJoin = "bevel";
+                        break;
+                    case lineJoinStyles.ROUND:
+                        this.state.strokeLineJoin = "round";
+                        break;
+                    case lineJoinStyles.MITER:
+                    default:
+                        this.state.strokeLineJoin = "miter";
+                        break;
+                }
+                break;
+            case "M":
+                this.state.strokeMiterLimit = +parameters[0] || 10;
+                break;
+            case "d":
+                this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
+                this.state.strokeDashOffset = +parameters[2];
+                break;
+            case "CS":
+                switch (parameters[0]) {
+                    case colorSpaces.GRAYSCALE:
+                        this.state.strokeColorSpace = "grayscale";
+                        break;
+                    case colorSpaces.RGB:
+                        this.state.strokeColorSpace = "rgb";
+                        break;
+                    case colorSpaces.CMYK:
+                        this.state.strokeColorSpace = "cmyk";
+                        break;
+                    default:
+                        throw new Error("Unsupported color space in appearance stream");
+                }
+                break;
+            case "cs":
+                switch (parameters[0]) {
+                    case colorSpaces.GRAYSCALE:
+                        this.state.fillColorSpace = "grayscale";
+                        break;
+                    case colorSpaces.RGB:
+                        this.state.fillColorSpace = "rgb";
+                        break;
+                    case colorSpaces.CMYK:
+                        this.state.fillColorSpace = "cmyk";
+                        break;
+                    default:
+                        throw new Error("Unsupported color space in appearance stream");
+                }
+                break;
+            case "G":
+                this.state.strokeColorSpace = "grayscale";
+                this.state.setColor("stroke", ...parameters);
+                break;
+            case "g":
+                this.state.fillColorSpace = "grayscale";
+                this.state.setColor("fill", ...parameters);
+                break;
+            case "RG":
+                this.state.strokeColorSpace = "rgb";
+                this.state.setColor("stroke", ...parameters);
+                break;
+            case "rg":
+                this.state.fillColorSpace = "rgb";
+                this.state.setColor("fill", ...parameters);
+                break;
+            case "K":
+                this.state.strokeColorSpace = "cmyk";
+                this.state.setColor("stroke", ...parameters);
+                break;
+            case "k":
+                this.state.fillColorSpace = "cmyk";
+                this.state.setColor("fill", ...parameters);
+                break;
+            case "SC":
+                this.state.setColor("stroke", ...parameters);
+                break;
+            case "cs":
+                this.state.setColor("fill", ...parameters);
+                break;
+            case "ri":
+            case "i":
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+    decodeTextParam(textParam, resources) {
+        const textState = this.state.textState;
+        let text;
+        if (textParam instanceof Uint8Array) {
+            const fontDict = resources.getFont(textState.customFontName);
+            if (fontDict === null || fontDict === void 0 ? void 0 : fontDict.toUtfCmap) {
+                textState.fontFamily = fontDict.BaseFont
+                    ? `'${fontDict.BaseFont.substring(1)}', arial, sans-serif`
+                    : "arial, sans-serif";
+                text = fontDict.toUtfCmap.hexBytesToUtfString(textParam);
+            }
+            else {
+                text = new TextDecoder("utf-16be").decode(textParam) || "";
+                console.log(`Font dictionary named '${textState.customFontName}' is not found`);
+            }
+        }
+        else {
+            text = textParam + "";
+        }
+        return text;
     }
     createSvgElement() {
         const element = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -8594,14 +8952,236 @@ class AppearanceStreamRenderer {
             return imageWrapper;
         });
     }
-    drawTextGroup(parser) {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    drawText(textParam, resources) {
+        const textState = this.state.textState;
+        const text = this.decodeTextParam(textParam, resources);
+        if (!text) {
+            console.log(`Can't decode the stream text parameter: '${textParam}'`);
+            return null;
+        }
+        const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        svgText.setAttribute("transform", `matrix(${new Mat3()
+            .applyScaling(1, -1)
+            .applyScaling(textState.horizontalScale, 1)
+            .multiply(Mat3.multiply(textState.matrix, this.state.matrix))
+            .toFloatShortArray().join(" ")})`);
+        svgText.setAttribute("x", "0");
+        svgText.setAttribute("y", "0");
+        svgText.textContent = text;
+        svgText.style.fontFamily = textState.fontFamily;
+        svgText.style.fontSize = textState.fontSize;
+        svgText.style.lineHeight = textState.lineHeight;
+        svgText.style.letterSpacing = textState.letterSpacing;
+        svgText.style.wordSpacing = textState.wordSpacing;
+        svgText.style.verticalAlign = textState.verticalAlign;
+        svgText.style.whiteSpace = "pre";
+        let stroke;
+        let clip;
+        switch (textState.renderMode) {
+            case textRenderModes.FILL:
+            default:
+                svgText.style.fill = this.state.fill;
+                break;
+            case textRenderModes.STROKE:
+                svgText.style.fill = "none";
+                stroke = true;
+                break;
+            case textRenderModes.FILL_STROKE:
+                svgText.style.fill = this.state.fill;
+                stroke = true;
+                break;
+            case textRenderModes.INVISIBLE:
+                svgText.style.fill = "none";
+                break;
+            case textRenderModes.FILL_USE_AS_CLIP:
+                svgText.style.fill = this.state.fill;
+                clip = true;
+                break;
+            case textRenderModes.STROKE_USE_AS_CLIP:
+                svgText.style.fill = "none";
+                stroke = true;
+                clip = true;
+                break;
+            case textRenderModes.FILL_STROKE_USE_AS_CLIP:
+                svgText.style.fill = this.state.fill;
+                stroke = true;
+                clip = true;
+                break;
+            case textRenderModes.USE_AS_CLIP:
+                svgText.style.fill = "transparent";
+                clip = true;
+                break;
+        }
+        if (stroke) {
+            svgText.style.stroke = this.state.stroke;
+            svgText.style.strokeWidth = this.state.strokeWidth + "";
+            svgText.style.strokeMiterlimit = this.state.strokeMiterLimit + "";
+            svgText.style.strokeLinecap = this.state.strokeLineCap;
+            svgText.style.strokeLinejoin = this.state.strokeLineJoin;
+            if (this.state.strokeDashArray) {
+                svgText.style.strokeDasharray = this.state.strokeDashArray;
+            }
+            if (this.state.strokeDashOffset) {
+                svgText.style.strokeDashoffset = this.state.strokeDashOffset + "";
+            }
+        }
+        else {
+            svgText.style.stroke = "none";
+        }
+        if (clip) {
+            this.pushClipPath(svgText.cloneNode(), true);
+        }
+        return { element: svgText, blendMode: this.state.mixBlendMode || "normal" };
+    }
+    drawTextGroup(parser, resources) {
+        const svgElements = [];
+        const textState = this.state.textState;
+        const moveToTheNextLine = () => {
+            const leading = textState.leading || parseInt(textState.fontSize, 10) * -1.2;
+            if (leading) {
+                const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, 0, leading, 1);
+                textState.matrix = translationMatrix.multiply(textState.matrix);
+            }
+        };
         let i = 0;
         while (i !== -1) {
-            const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
-            i = parser.skipEmpty(endIndex + 1);
+            const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+            i = parser.skipEmpty(nextIndex);
+            switch (operator) {
+                case "Tc":
+                    textState.letterSpacing = !parameters[0]
+                        ? "normal"
+                        : parameters[0] + "px";
+                    break;
+                case "Tw":
+                    textState.wordSpacing = !parameters[0]
+                        ? "normal"
+                        : parameters[0] + "px";
+                    break;
+                case "Tz":
+                    textState.horizontalScale = !parameters[0]
+                        ? 1
+                        : +parameters[0] / 100;
+                    break;
+                case "TL":
+                    const leadingParam = parameters[0];
+                    if (leadingParam) {
+                        textState.leading = +leadingParam;
+                        textState.lineHeight = Math.abs(textState.leading) + "px";
+                    }
+                    else {
+                        textState.leading = parseInt(textState.fontSize, 10) * -1.2;
+                        textState.lineHeight = "1";
+                    }
+                    break;
+                case "Tf":
+                    textState.customFontName = parameters[0] || "";
+                    textState.fontSize = parameters[1] + "px";
+                    break;
+                case "Tr":
+                    switch (parameters[0]) {
+                        case 0:
+                        default:
+                            textState.renderMode = textRenderModes.FILL;
+                            break;
+                        case 1:
+                            textState.renderMode = textRenderModes.STROKE;
+                            break;
+                        case 2:
+                            textState.renderMode = textRenderModes.FILL_STROKE;
+                            break;
+                        case 3:
+                            textState.renderMode = textRenderModes.INVISIBLE;
+                            break;
+                        case 4:
+                            textState.renderMode = textRenderModes.FILL_USE_AS_CLIP;
+                            break;
+                        case 5:
+                            textState.renderMode = textRenderModes.STROKE_USE_AS_CLIP;
+                            break;
+                        case 6:
+                            textState.renderMode = textRenderModes.FILL_STROKE_USE_AS_CLIP;
+                            break;
+                        case 7:
+                            textState.renderMode = textRenderModes.USE_AS_CLIP;
+                            break;
+                    }
+                    break;
+                case "Ts":
+                    textState.verticalAlign = !parameters[0]
+                        ? "0"
+                        : +parameters[0] / 10 + "em";
+                    break;
+                case "Td":
+                    if (parameters.length > 1) {
+                        const [tx, ty] = parameters;
+                        const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
+                        textState.matrix = translationMatrix.multiply(textState.matrix);
+                    }
+                    break;
+                case "TD":
+                    if (parameters.length > 1) {
+                        const [tx, ty] = parameters;
+                        const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
+                        textState.matrix = translationMatrix.multiply(textState.matrix);
+                        if (ty) {
+                            textState.leading = -ty;
+                            textState.lineHeight = Math.abs(ty) + "px";
+                        }
+                        else {
+                            textState.leading = parseInt(textState.fontSize, 10) * -1.2;
+                            textState.lineHeight = "1";
+                        }
+                    }
+                    break;
+                case "Tm":
+                    if (parameters.length > 5) {
+                        const [m0, m1, m3, m4, m6, m7] = parameters;
+                        const transformationMatrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
+                        textState.matrix = transformationMatrix.multiply(textState.matrix);
+                    }
+                    break;
+                case "T*":
+                    moveToTheNextLine();
+                    break;
+                case "Tj":
+                    svgElements.push(this.drawText(parameters[0], resources));
+                    break;
+                case "'":
+                    moveToTheNextLine();
+                    svgElements.push(this.drawText(parameters[0], resources));
+                    break;
+                case "\"":
+                    const [a, b, c] = parameters;
+                    textState.wordSpacing = a
+                        ? "normal"
+                        : a + "px";
+                    textState.letterSpacing = b
+                        ? "normal"
+                        : b + "px";
+                    moveToTheNextLine();
+                    svgElements.push(this.drawText(c, resources));
+                    break;
+                case "TJ":
+                    for (const param of parameters) {
+                        if (typeof param === "string") {
+                            svgElements.push(this.drawText(param, resources));
+                        }
+                        else if (typeof param === "number") {
+                            const tx = (-param / 1000) * parseInt(textState.fontSize, 10);
+                            const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
+                            textState.matrix = transformationMatrix.multiply(textState.matrix);
+                        }
+                    }
+                    break;
+                default:
+                    const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
+                    if (!operatorIsGraphicState) {
+                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                    }
+            }
         }
-        return { element: g, blendMode: this.state.mixBlendMode || "normal" };
+        return svgElements.filter(x => x);
     }
     drawStreamAsync(stream) {
         return __awaiter$k(this, void 0, void 0, function* () {
@@ -8612,129 +9192,9 @@ class AppearanceStreamRenderer {
             let d = "";
             let i = 0;
             while (i !== -1) {
-                const { endIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
-                i = parser.skipEmpty(endIndex + 1);
+                const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+                i = parser.skipEmpty(nextIndex + 1);
                 switch (operator) {
-                    case "q":
-                        this.pushState();
-                        break;
-                    case "Q":
-                        this.popState();
-                        break;
-                    case "gs":
-                        const externalState = this._stream.Resources.getGraphicsState(`/ExtGState${parameters[0]}`);
-                        if (!externalState) {
-                            throw new Error("External state specified in appearance stream not found");
-                        }
-                        const params = externalState.toParams();
-                        Object.assign(this.state, params);
-                        break;
-                    case "cm":
-                        const [m0, m1, m3, m4, m6, m7] = parameters;
-                        const matrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-                        this.state.matrix = matrix.multiply(this.state.matrix);
-                        break;
-                    case "w":
-                        this.state.strokeWidth = +parameters[0] || 1;
-                        break;
-                    case "J":
-                        switch (parameters[0]) {
-                            case lineCapStyles.ROUND:
-                                this.state.strokeLineCap = "round";
-                                break;
-                            case lineCapStyles.SQUARE:
-                                this.state.strokeLineCap = "square";
-                                break;
-                            case lineCapStyles.BUTT:
-                            default:
-                                this.state.strokeLineCap = "butt";
-                                break;
-                        }
-                        break;
-                    case "j":
-                        switch (parameters[0]) {
-                            case lineJoinStyles.BEVEL:
-                                this.state.strokeLineJoin = "bevel";
-                                break;
-                            case lineJoinStyles.ROUND:
-                                this.state.strokeLineJoin = "round";
-                                break;
-                            case lineJoinStyles.MITER:
-                            default:
-                                this.state.strokeLineJoin = "miter";
-                                break;
-                        }
-                        break;
-                    case "M":
-                        this.state.strokeMiterLimit = +parameters[0] || 10;
-                        break;
-                    case "d":
-                        this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
-                        this.state.strokeDashOffset = +parameters[2];
-                        break;
-                    case "CS":
-                        switch (parameters[0]) {
-                            case colorSpaces.GRAYSCALE:
-                                this.state.strokeColorSpace = "grayscale";
-                                break;
-                            case colorSpaces.RGB:
-                                this.state.strokeColorSpace = "rgb";
-                                break;
-                            case colorSpaces.CMYK:
-                                this.state.strokeColorSpace = "cmyk";
-                                break;
-                            default:
-                                throw new Error("Unsupported color space in appearance stream");
-                        }
-                        break;
-                    case "cs":
-                        switch (parameters[0]) {
-                            case colorSpaces.GRAYSCALE:
-                                this.state.fillColorSpace = "grayscale";
-                                break;
-                            case colorSpaces.RGB:
-                                this.state.fillColorSpace = "rgb";
-                                break;
-                            case colorSpaces.CMYK:
-                                this.state.fillColorSpace = "cmyk";
-                                break;
-                            default:
-                                throw new Error("Unsupported color space in appearance stream");
-                        }
-                        break;
-                    case "G":
-                        this.state.strokeColorSpace = "grayscale";
-                        this.state.setColor("stroke", ...parameters);
-                        break;
-                    case "g":
-                        this.state.fillColorSpace = "grayscale";
-                        this.state.setColor("fill", ...parameters);
-                        break;
-                    case "RG":
-                        this.state.strokeColorSpace = "rgb";
-                        this.state.setColor("stroke", ...parameters);
-                        break;
-                    case "rg":
-                        this.state.fillColorSpace = "rgb";
-                        this.state.setColor("fill", ...parameters);
-                        break;
-                    case "K":
-                        this.state.strokeColorSpace = "cmyk";
-                        this.state.setColor("stroke", ...parameters);
-                        break;
-                    case "k":
-                        this.state.fillColorSpace = "cmyk";
-                        this.state.setColor("fill", ...parameters);
-                        break;
-                    case "SC":
-                        this.state.setColor("stroke", ...parameters);
-                        break;
-                    case "cs":
-                        this.state.setColor("fill", ...parameters);
-                        break;
-                    case "ri":
-                    case "i":
-                        break;
                     case "m":
                         const move = new Vec2(+parameters[0], +parameters[1]);
                         d += ` M ${move.x} ${move.y}`;
@@ -8814,14 +9274,7 @@ class AppearanceStreamRenderer {
                             }
                             const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
                             clippingPath.setAttribute("d", d);
-                            const lastCpIndex = this._clipPaths.length - 1;
-                            const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-                            clipPath.setAttribute("clip-rule", lastOperator === "W" ? "nonzero" : "evenodd");
-                            clipPath.setAttribute("clip-path", `url(#${this._clipPaths[lastCpIndex]})`);
-                            clipPath.id = `clip${lastCpIndex + 1}_${this._objectName}`;
-                            clipPath.append(clippingPath);
-                            this._clipPaths.push(clipPath);
-                            this.state.clipPath = clipPath;
+                            this.pushClipPath(clippingPath, lastOperator === "W");
                         }
                         d = "";
                         break;
@@ -8835,8 +9288,9 @@ class AppearanceStreamRenderer {
                             minIndex: i,
                         });
                         if (textObjectEnd) {
-                            const textGroup = this.drawTextGroup(new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)));
-                            svgElements.push(textGroup);
+                            const textParser = new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1));
+                            const textGroup = this.drawTextGroup(textParser, stream.Resources);
+                            svgElements.push(...textGroup);
                             i = parser.skipEmpty(textObjectEnd.end + 1);
                             break;
                         }
@@ -8867,7 +9321,10 @@ class AppearanceStreamRenderer {
                         }
                         break;
                     default:
-                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                        const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
+                        if (!operatorIsGraphicState) {
+                            throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                        }
                 }
                 lastOperator = operator;
             }
@@ -18050,6 +18507,159 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
 }
 SquigglyAnnotation.squiggleSize = 6;
 
+const freeTextIntents = {
+    PLAIN_TEXT: "/FreeText",
+    WITH_CALLOUT: "/FreeTextCallout",
+    CLICK_TO_TYPE: "/FreeTextTypeWriter",
+};
+class FreeTextAnnotation extends MarkupAnnotation {
+    constructor() {
+        super(annotationTypes.FREE_TEXT);
+        this.IT = freeTextIntents.PLAIN_TEXT;
+        this.LE = lineEndingTypes.NONE;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FreeTextAnnotation();
+            pdfObject.parseProps(parseInfo);
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.DA) {
+            bytes.push(...encoder.encode("/DA "), ...this.DA.toArray(cryptInfo));
+        }
+        if (this.Q) {
+            bytes.push(...encoder.encode("/Q "), ...encoder.encode(" " + this.Q));
+        }
+        if (this.DS) {
+            bytes.push(...encoder.encode("/DS "), ...this.DS.toArray(cryptInfo));
+        }
+        if (this.RC) {
+            bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
+        }
+        if (this.CL) {
+            bytes.push(...encoder.encode("/CL "), codes.L_BRACKET);
+            this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.IT) {
+            bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
+        }
+        if (this.RD) {
+            bytes.push(...encoder.encode("/RD "), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+        }
+        if (this.LE) {
+            bytes.push(...encoder.encode("/LE "), ...encoder.encode(this.LE));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    parseProps(parseInfo) {
+        var _a;
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/DA":
+                    case "/DS":
+                    case "/RC":
+                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/Q":
+                        const justification = parser.parseNumberAt(i, true);
+                        if (justification && Object.values(justificationTypes)
+                            .includes(justification.value)) {
+                            this.Q = justification.value;
+                            i = justification.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Q property value");
+                        }
+                        break;
+                    case "/LE":
+                        const lineEndingType = parser.parseNameAt(i, true);
+                        if (lineEndingType && Object.values(lineEndingTypes)
+                            .includes(lineEndingType.value)) {
+                            this.LE = lineEndingType.value;
+                            i = lineEndingType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    case "/CL":
+                    case "/RD":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    case "/IT":
+                        const intent = parser.parseNameAt(i, true);
+                        if (intent) {
+                            if (intent.value === "/FreeTextTypewriter") {
+                                this.IT = freeTextIntents.CLICK_TO_TYPE;
+                                i = intent.end + 1;
+                                break;
+                            }
+                            else if (Object.values(freeTextIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
+                            }
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (this.DS) {
+            this._defaultStyle = this.DS.literal;
+        }
+        if (this.RC) {
+            const domParser = new DOMParser();
+            const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
+            if (body) {
+                const style = body.getAttribute("style");
+                const p = body.querySelector("p");
+                this._rtStyle = style || "";
+                this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
+            }
+        }
+        if (!this.DA) {
+            throw new Error("Not all required properties parsed");
+        }
+    }
+}
+
 class AnnotationParseFactory {
     static ParseAnnotationFromInfo(info) {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
@@ -18090,6 +18700,9 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.UNDERLINE:
                 annot = UnderlineAnnotation.parse(info);
+                break;
+            case annotationTypes.FREE_TEXT:
+                annot = FreeTextAnnotation.parse(info);
                 break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;

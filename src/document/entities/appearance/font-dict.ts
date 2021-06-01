@@ -5,26 +5,45 @@ import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { codes } from "../../codes";
 
+import { UnicodeCmapStream } from "../streams/unicode-cmap-stream";
+
 export class FontDict extends PdfDict {
+  //#region PDF properties
   /** 
    * (Required) The type of font
    * */
   Subtype: string;
   /** 
    * (Required) The PostScript name of the font. 
+   * 
    * For Type 1 fonts, this is usually the value of the FontName entry in the font program. 
    * The Post-Script name of the font can be used to find the font’s definition 
    * in the consumer application or its environment. It is also the name that is used 
-   * when printing to a PostScript output device
+   * when printing to a PostScript output device.
+   * 
+   * Fore Type 0 fonts, this is an arbitrary name, 
+   * since there is no font program associated directly with a Type 0 font dictionary. 
+   * The conventions described here ensure maximum compatibility with existing Acrobat products.
+   * If the descendant is a Type 0 CIDFont, 
+   * this name should be the concatenation of the CIDFont’s BaseFont name, a hyphen, 
+   * and the CMap name given in the Encoding entry (or the CMapName entry in the CMap). 
+   * If the descendant is a Type 2 CIDFont, this name should be the same as the CIDFont’s BaseFontname. 
    * */
   BaseFont: string;
   /** 
+   * For Type 0 and TrueType: 
    * (Optional) A specification of the font’s character encoding 
    * if different from its built-in encoding. 
    * The value of Encoding is either the name of a predefined encoding 
    * (MacRomanEncoding, MacExpertEncoding, or WinAnsiEncoding) 
    * or an encoding dictionary that specifies differences from 
    * the font’s built-in encoding or from a specified predefined encoding
+   * 
+   * For Type 1: 
+   * (Required) The name of a predefined CMap, or a stream containing a CMap 
+   * that maps character codes to font numbers and CIDs. If the descendant is a Type 2 CIDFont 
+   * whose associated TrueType font program is not embedded in the PDF file, 
+   * the Encoding entry must be a predefined CMap name
    * */
   Encoding: string;
   /**
@@ -34,6 +53,12 @@ export class FontDict extends PdfDict {
   ToUnicode: ObjectId;
 
   // TODO: add remaining properties if needed
+  //#endregion
+
+  private _toUtfCmap: UnicodeCmapStream;
+  get toUtfCmap(): UnicodeCmapStream {
+    return this._toUtfCmap;
+  }
 
   constructor() {
     super(dictTypes.FONT);
@@ -89,6 +114,9 @@ export class FontDict extends PdfDict {
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
+    // DEBUG
+    // console.log(parser.sliceChars(start, end));  
+    
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
     let parseResult: ParseResult<string>;
@@ -101,16 +129,11 @@ export class FontDict extends PdfDict {
           case "/Subtype":
             const subtype = parser.parseNameAt(i, true);
             if (subtype) {
-              if (subtype.value === "/Type1" || subtype.value === "/TrueType") {
-                this.Subtype = subtype.value;
-                i = subtype.end + 1; 
-                break;        
-              }    
-              throw new Error(`Font type is not supported: ${subtype.value}`);
-              // TODO: add more font types support if needed
+              this.Subtype = subtype.value;
+              i = subtype.end + 1; 
+              break;        
             }
-            throw new Error("Can't parse /Subtype property value");
-          
+            throw new Error("Can't parse /Subtype property value");          
           case "/BaseFont":
           case "/Encoding":
             i = this.parseNameProp(name, parser, i);
@@ -130,5 +153,19 @@ export class FontDict extends PdfDict {
         break;
       }
     };
+
+    if (this.ToUnicode) {      
+      const toUtfParseInfo = parseInfo.parseInfoGetter(this.ToUnicode.id);
+      const cmap = UnicodeCmapStream.parse(toUtfParseInfo);
+      this._toUtfCmap = cmap?.value;
+    }
+
+    if (this.Subtype !== "/Type1" 
+      && this.Subtype !== "/TrueType"
+      && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
+      // TODO: add more supported types
+      // Type1, TTF, Type0 with simple 'to Unicode' CMap are supported
+      throw new Error(`Font type is not supported: ${this.Subtype}`);
+    }
   }
 }

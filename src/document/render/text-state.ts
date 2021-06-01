@@ -1,7 +1,19 @@
+import { Mat3 } from "../../common/math";
 import { TextRenderMode, textRenderModes } from "../const";
 
-export interface TextStateParams {  
+export interface TextStateParams {   
+  matrix?: Mat3;  
+  /**
+   * Name of a custom PDF font to be used
+   */
+  customFontName?: string;
+  leading?: number;
+  renderMode?: TextRenderMode;
+
   fontFamily?: string;
+  /**
+   * 1 PDF point = 1px?
+   */
   fontSize?: string;
   /**
    * 1 PDF unit = 1px?
@@ -18,38 +30,64 @@ export interface TextStateParams {
   /**
    * 100 PDF units = 1
    */
-  textHorScale?: number; // svg attr. transform="scale(n, 1)" | combine with matrix?
-  textRenderMode?: TextRenderMode;
+  horizontalScale?: number; // svg attr. transform="scale(n, 1)" | combine with matrix?
   /**
    * 1 PDF unit = 0.1em
    */
-  textVertAlign?: string;
-  textKnockOut?: boolean;
+  verticalAlign?: string;
+  knockOut?: boolean;
 }
 
 /**text state used in appearance streams */
 export class TextState {
   static readonly defaultParams: TextStateParams = {
-    fontFamily: "helvetica, sans-serif",
+    matrix: new Mat3(),
+    leading: 12 * -1.2,
+    renderMode: textRenderModes.FILL,
+    fontFamily: "helvetica, arial, sans-serif",
     fontSize: "12px",
     lineHeight: "1",
     letterSpacing: "normal",
     wordSpacing: "normal",
-    textHorScale: 1,
-    textRenderMode: textRenderModes.FILL,
-    textVertAlign: "0",
-    textKnockOut: true,
+    horizontalScale: 1,
+    verticalAlign: "0",
+    knockOut: true,
   };
 
-  fontFamily: string;
+  matrix: Mat3;
+  /**
+   * Name of a custom PDF font to be used
+   */
+  customFontName: string;
+  leading: number;
+  renderMode: TextRenderMode;
+
+  fontFamily: string;  
+  /**
+   * 1 PDF point = 1px?
+   */
   fontSize: string;
+  /**
+   * 1 PDF unit = 1px?
+   */
   lineHeight: string;
+  /**
+   * 1 PDF unit = 1px?
+   */
   letterSpacing: string;
+  /**
+   * 1 PDF unit = 1px?
+   */
   wordSpacing: string;
-  textHorScale: number;
-  textRenderMode: TextRenderMode;
-  textVertAlign: string;
-  textKnockOut: boolean;
+  /**
+   * 100 PDF units = 1
+   */
+  horizontalScale: number;
+  /**
+   * 1 PDF unit = 0.1em
+   */
+  verticalAlign: string;
+  knockOut: boolean;
 
   constructor(params?: TextStateParams) {
     Object.assign(this, TextState.defaultParams, params);

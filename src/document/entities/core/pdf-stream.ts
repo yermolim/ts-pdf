@@ -61,7 +61,7 @@ export abstract class PdfStream extends PdfObject {
    */
   get decodedStreamDataChars(): string {
     const decoder = new TextDecoder();
-    return decoder.decode(this._decodedStreamData);
+    return decoder.decode(this.decodedStreamData);
   }
   
   protected constructor(type: StreamType) {

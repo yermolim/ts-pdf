@@ -147,6 +147,25 @@ export const keywordCodes = {
 
   TRUE: [codes.t, codes.r, codes.u, codes.e],
   FALSE: [codes.f, codes.a, codes.l, codes.s, codes.e],
+
+  CMAP_BEGIN: [codes.b, codes.e, codes.g, codes.i, codes.n,
+    codes.c, codes.m, codes.a, codes.p],
+  CMAP_END: [codes.e, codes.n, codes.d,
+    codes.c, codes.m, codes.a, codes.p],
+  CMAP_BEGIN_CODE_RANGE: [codes.b, codes.e, codes.g, codes.i, codes.n,
+    codes.c, codes.o, codes.d, codes.e, codes.s, codes.p, codes.a, codes.c, codes.e,
+    codes.r, codes.a, codes.n, codes.g, codes.e],
+  CMAP_END_CODE_RANGE: [codes.e, codes.n, codes.d,
+    codes.c, codes.o, codes.d, codes.e, codes.s, codes.p, codes.a, codes.c, codes.e,
+    codes.r, codes.a, codes.n, codes.g, codes.e],
+  CMAP_BEGIN_CHAR: [codes.b, codes.e, codes.g, codes.i, codes.n,
+    codes.b, codes.f, codes.c, codes.h, codes.a, codes.r],
+  CMAP_END_CHAR: [codes.e, codes.n, codes.d,
+    codes.b, codes.f, codes.c, codes.h, codes.a, codes.r],
+  CMAP_BEGIN_RANGE: [codes.b, codes.e, codes.g, codes.i, codes.n,
+    codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
+  CMAP_END_RANGE: [codes.e, codes.n, codes.d,
+    codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
 } as const;
 
 /**

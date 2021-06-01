@@ -63,12 +63,12 @@ export class AnnotationParseFactory {
       case annotationTypes.UNDERLINE:
         annot = UnderlineAnnotation.parse(info);
         break; 
-      // case annotationTypes.FREE_TEXT:
-      //   annot = FreeTextAnnotation.parse(info);
-      //   // DEBUG
-      //   console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));        
-      //   console.log(annot);        
-      //   break;
+      case annotationTypes.FREE_TEXT:
+        annot = FreeTextAnnotation.parse(info);
+        // DEBUG
+        // console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));        
+        // console.log(annot);        
+        break;
       default:
         break;
     }

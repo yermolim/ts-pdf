@@ -157,7 +157,7 @@ export class ResourceDict extends PdfDict {
   }
   
   getFont(name: string): FontDict {
-    return this._fontsMap.get(name);
+    return this._fontsMap.get("/Font" + name);
   }
 
   *getFonts(): Iterable<[string, FontDict]> {
