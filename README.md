@@ -42,8 +42,8 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
 ### Currently supported annotation types
 <ul>
     <li>Ink annotation</li>
-    <li>Stamp annotation (only standard stamps)</li>
-    <li>Line annotation (without text captions)</li>
+    <li>Stamp annotation</li>
+    <li>Line annotation</li>
     <li>Square annotation</li>
     <li>Circle annotation</li>
     <li>Polygon annotation</li>
@@ -53,14 +53,13 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
     <li>Squiggly annotation</li>
     <li>Strikeout annotation</li>
     <li>Text annotation (only note icon)</li>
+    <li>Free text annotation (only render and base transformation)</li>
 </ul>
 
 #### Yet to be implemented
 <ul>
-    <li>Stamp annotation (support for custom stamps)</li>
-    <li>Line annotation (support for text caption render)</li>
     <li>Text annotation (support for all standard icon types)</li>
-    <li>Free text annotation</li>
+    <li>Free text annotation (support for adding new ones)</li>
 </ul>
 
 ### Currently supported PDF encryption algorithms
@@ -167,11 +166,13 @@ The other one is to make your own build of PDF.js.
     <li><del>add page rotation support</del> added in 0.5.0</li>
     <li><del>add annotation blending modes support</del> added in 0.5.2</li>
     <li><del>add custom stamp annotations support</del> added in 0.6.0</li>
-    <li>add text caption support for line annotations</li>
-    <li>add free text annotations support</li>
+    <li><del>optimize loading and saving files</del> some optimizations were made in 0.6.2</li>
+    <li><del>add text caption render for line annotations</del> added in 0.6.3</li>
+    <li>add free text annotations support (partial support added in 0.6.3)</li>
     <li>add tooltips to buttons</li>
     <li>add keyboard shortcuts</li>
     <li>add 'undo'/'redo'</li>
+    <li>add more options for line annotations</li>
     <li>add localizations</li>
     <li>write tests</li>
     <li>add support for the rest of encryption algorithms</li>
