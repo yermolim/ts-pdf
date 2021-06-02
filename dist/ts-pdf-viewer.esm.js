@@ -6221,7 +6221,7 @@ class XRefStream extends XRef {
     }
     get info() {
         var _a;
-        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Root;
+        return (_a = this._trailerStream) === null || _a === void 0 ? void 0 : _a.Info;
     }
     get encrypt() {
         var _a;
@@ -6235,7 +6235,7 @@ class XRefStream extends XRef {
         if (!(entries === null || entries === void 0 ? void 0 : entries.length) || !base) {
             return null;
         }
-        const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
+        const entriesSize = Math.max(...entries.map(x => x.id)) + 2;
         const size = Math.max(entriesSize, base.size);
         return XRefStream.create(entries, size, offset, base.root, base.offset, base.info, base.encrypt, base.id);
     }

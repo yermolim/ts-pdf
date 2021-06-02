@@ -24,7 +24,7 @@ export class XRefStream extends XRef {
   }
 
   get info(): ObjectId {
-    return this._trailerStream?.Root;
+    return this._trailerStream?.Info;
   }
 
   get encrypt(): ObjectId {
@@ -58,7 +58,9 @@ export class XRefStream extends XRef {
       return null;
     }
 
-    const entriesSize = Math.max(...entries.map(x => x.id)) + 1;
+    // size shall point to the next free id
+    // so +1 is to count the new xref id and another +1 to point to the next free value
+    const entriesSize = Math.max(...entries.map(x => x.id)) + 2;
     const size = Math.max(entriesSize, base.size);
 
     return XRefStream.create(entries, size, offset, base.root, 
