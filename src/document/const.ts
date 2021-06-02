@@ -173,6 +173,7 @@ export const dictTypes = {
   SOFT_MASK: "/Mask",
   GROUP: "/Group",
   FONT: "/Font",
+  ENCODING: "/Encoding",
   EMPTY: "",
 } as const;
 export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;

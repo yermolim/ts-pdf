@@ -2593,6 +2593,15 @@ export const pdfCharCodesByName: {[key: string]: charEncodingInfo} = {
     pdfCode: null,
     utfCode: 1109
   },
+  afii10104: {
+    name: "afii10104",
+    char: "ї",
+    stdCode: null,
+    macCode: null,
+    winCode: null,
+    pdfCode: null,
+    utfCode: 1111
+  },
   yicyrillic: {
     name: "yicyrillic",
     char: "ї",
@@ -3820,11 +3829,33 @@ export const pdfCharCodesByName: {[key: string]: charEncodingInfo} = {
   },
 } as const;
 
-export function getCharCodesMapByWinCode(): Map<number, charEncodingInfo> {
+export function getCharCodesMapByCode(encoding: "StandardEncoding" | "WinAnsiEncoding" 
+| "MacRomanEncoding" | "PDFDocEncoding" | "Utf-16"): Map<number, charEncodingInfo> {
   const map = new Map<number, charEncodingInfo>();
+  let prop: string;
+  switch (encoding) {
+    case "StandardEncoding":
+      prop = "stdCode";
+      break;
+    case "WinAnsiEncoding":
+      prop = "winCode";
+      break;
+    case "MacRomanEncoding":
+      prop = "macCode";
+      break;
+    case "PDFDocEncoding":
+      prop = "pdfCode";
+      break;
+    case "Utf-16":
+      prop = "utfCode";
+      break;
+    default:
+      console.log(`Unsupported encoding: '${encoding}'`);
+      return map;
+  }
   for (const [, info] of Object.entries(pdfCharCodesByName)) {
-    if (info.winCode) {
-      map.set(info.winCode, info);
+    if (info[prop]) {
+      map.set(info[prop], info);
     }
   }
   return map;

@@ -6,6 +6,7 @@ import { PdfDict } from "../core/pdf-dict";
 import { codes } from "../../codes";
 
 import { UnicodeCmapStream } from "../streams/unicode-cmap-stream";
+import { EncodingDict } from "./encoding-dict";
 
 export class FontDict extends PdfDict {
   //#region PDF properties
@@ -16,7 +17,7 @@ export class FontDict extends PdfDict {
   /** 
    * (Required) The PostScript name of the font. 
    * 
-   * For Type 1 fonts, this is usually the value of the FontName entry in the font program. 
+   * For Type 1 and TrueType fonts, this is usually the value of the FontName entry in the font program. 
    * The Post-Script name of the font can be used to find the font’s definition 
    * in the consumer application or its environment. It is also the name that is used 
    * when printing to a PostScript output device.
@@ -31,7 +32,7 @@ export class FontDict extends PdfDict {
    * */
   BaseFont: string;
   /** 
-   * For Type 0 and TrueType: 
+   * For Type 1 and TrueType: 
    * (Optional) A specification of the font’s character encoding 
    * if different from its built-in encoding. 
    * The value of Encoding is either the name of a predefined encoding 
@@ -39,7 +40,7 @@ export class FontDict extends PdfDict {
    * or an encoding dictionary that specifies differences from 
    * the font’s built-in encoding or from a specified predefined encoding
    * 
-   * For Type 1: 
+   * For Type 0: 
    * (Required) The name of a predefined CMap, or a stream containing a CMap 
    * that maps character codes to font numbers and CIDs. If the descendant is a Type 2 CIDFont 
    * whose associated TrueType font program is not embedded in the PDF file, 
@@ -51,11 +52,66 @@ export class FontDict extends PdfDict {
    * that maps character codes to Unicode values
    */
   ToUnicode: ObjectId;
+  /**
+   * For Type 1 and TrueType: 
+   * (Required except for the standard 14 fonts) 
+   * The first character code defined in the font’s Widths array. 
+   * Beginning with PDF 1.5, the special treatment given to the standard 14 fonts is deprecated. 
+   * Conforming writers should represent all fonts using a complete font descriptor. 
+   * For backwards capability, conforming readers shall still provide the special treatment 
+   * identified for the standard 14 fonts. 
+   */
+  FirstChar: number;
+  /**
+   * For Type 1 and TrueType: 
+   * (Optional; PDF1.2+) A stream containing a CMap file 
+   * that maps character codes to Unicode values
+   * (Required except for the standard 14 fonts) 
+   * The last character code defined in the font’s Widths array. 
+   * Beginning with PDF 1.5, the special treatment given to the standard 14 fonts is deprecated. 
+   * Conforming writers should represent all fonts using a complete font descriptor. 
+   * For backwards capability, conforming readers shall still provide the special treatment 
+   * identified for the standard 14 fonts. 
+   */
+  LastChar: number;
+  /**
+   * For Type 1 and TrueType: 
+   * (Required except for the standard 14 fonts; indirect reference preferred) 
+   * An array of (LastChar−FirstChar+ 1) widths, each element being the glyph width 
+   * for the character code that equals FirstChar plus the array index. 
+   * For character codes outside the range FirstChar to LastChar, the value of MissingWidth 
+   * from the FontDescriptor entry for this font shall be used. 
+   * The glyph widths shall be measured in units in which 1000 units correspond to 1 unit in text space. 
+   * These widths shall be consistent with the actual widths given in the font program. 
+   * Beginning with PDF 1.5, the special treatment given to the standard 14 fonts is deprecated. 
+   * Conforming writers should represent all fonts using a complete font descriptor. 
+   * For backwards capability, conforming readers shall still provide the special treatment 
+   * identified for the standard 14 fonts.
+   */
+  Widths: number[];
+  /**
+   * For Type 1 and TrueType: 
+   * (Required except for the standard 14 fonts; shall be an indirect reference) 
+   * A font descriptor describing the font’s metrics other than its glyph widths. 
+   * For the standard 14 fonts, the entries FirstChar, LastChar, Widths, and FontDescriptor 
+   * shall either all be present or all be absent. Ordinarily, these dictionary keys may be absent, 
+   * specifying them enables a standard font to be overridden. 
+   * Beginning with PDF 1.5, the special treatment given to the standard 14 fonts is deprecated. 
+   * Conforming writers should represent all fonts using a complete font descriptor. 
+   * For backwards capability, conforming readers shall still provide the special treatment 
+   * identified for the standard 14 fonts.
+   */
+  FontDescriptor: ObjectId;
 
   // TODO: add remaining properties if needed
   //#endregion
+  
+  protected _encoding: EncodingDict;
+  get encoding(): EncodingDict {
+    return this._encoding;
+  }
 
-  private _toUtfCmap: UnicodeCmapStream;
+  protected _toUtfCmap: UnicodeCmapStream;
   get toUtfCmap(): UnicodeCmapStream {
     return this._toUtfCmap;
   }
@@ -90,10 +146,29 @@ export class FontDict extends PdfDict {
       bytes.push(...encoder.encode("/BaseFont "), ...encoder.encode(" " + this.BaseFont));
     }
     if (this.Encoding) {
-      bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
+      if (this.Encoding instanceof ObjectId) {
+        bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
+      } else {
+        bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
+      }
     }
     if (this.ToUnicode) {
       bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
+    }
+    if (this.FirstChar) {
+      bytes.push(...encoder.encode("/FirstChar "), ...encoder.encode(" " + this.FirstChar));
+    }
+    if (this.LastChar) {
+      bytes.push(...encoder.encode("/LastChar "), ...encoder.encode(" " + this.LastChar));
+    }
+    if (this.Widths) {
+      bytes.push(...encoder.encode("/Widths "), codes.L_BRACKET);
+      this.Widths.forEach(x => bytes.push(...encoder.encode(" " + x)));
+      bytes.push(codes.R_BRACKET);
+    }
+    if (this.FontDescriptor) {
+      bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, 
+        ...this.FontDescriptor.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties if needed
@@ -151,6 +226,19 @@ export class FontDict extends PdfDict {
           case "/ToUnicode":
             i = this.parseRefProp(name, parser, i);
             break; 
+            
+          case "/FirstChar":
+          case "/LastChar":
+            i = this.parseNumberProp(name, parser, i, false);
+            break; 
+            
+          case "/Widths":
+            i = this.parseNumberArrayProp(name, parser, i, false);
+            break; 
+            
+          case "/FontDescriptor":
+            i = this.parseRefProp(name, parser, i);
+            break; 
 
           // TODO: add cases for remaining properties if needed
           default:
@@ -162,6 +250,12 @@ export class FontDict extends PdfDict {
         break;
       }
     };
+
+    if (this.Encoding && this.Encoding instanceof ObjectId) {
+      const encodingParseInfo = parseInfo.parseInfoGetter(this.Encoding.id);
+      const encodingDict = EncodingDict.parse(encodingParseInfo);
+      this._encoding = encodingDict?.value;
+    }
 
     if (this.ToUnicode) {      
       const toUtfParseInfo = parseInfo.parseInfoGetter(this.ToUnicode.id);

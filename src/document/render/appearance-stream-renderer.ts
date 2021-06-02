@@ -111,9 +111,8 @@ export class AppearanceStreamRenderer {
             const nextArrayValueType = parser.getValueTypeAt(j, true);
             switch (nextArrayValueType) {
               case valueTypes.STRING_LITERAL:
-                // TODO: implement decoding using font dict
                 const arrayLiteralResult = LiteralString.parse(parser, j);
-                parameters.push(arrayLiteralResult.value.literal);
+                parameters.push(arrayLiteralResult.value.bytes);
                 j = arrayLiteralResult.end + 1;
                 break;
               case valueTypes.NUMBER:
@@ -465,22 +464,33 @@ export class AppearanceStreamRenderer {
   protected decodeTextParam(textParam: OperatorParameter, 
     resources: ResourceDict): string {
     const textState = this.state.textState;
-    let text: string;
+    let text = "";
 
     if (textParam instanceof Uint8Array) {
       // text parameter is a hex string, non-ascii encoding.
       // try to get the font dict from the corresponding resources
       const fontDict = resources.getFont(textState.customFontName);
-      if (fontDict?.toUtfCmap) {
+      if (fontDict) {
         textState.fontFamily = fontDict.BaseFont
           ? `'${fontDict.BaseFont.substring(1)}', arial, sans-serif` // remove starting slash
           : "arial, sans-serif";
+      }
+
+      if (fontDict?.toUtfCmap) {
+        // 'to unicode' mapper found
         text = fontDict.toUtfCmap.hexBytesToUtfString(textParam);
+      } else if (fontDict?.encoding?.charMap) { 
+        // 'code to character' mappings found
+        const charMap = fontDict.encoding.charMap;
+        textParam.forEach(byte => text += charMap.get(byte) ?? " ");
       } else {
-        // 'to Unicode' mappings is not found in the resource dictionary.
+        // no mappings are found in the resource dictionary.
         // use the default text decoder as a fallback (though it might fail)
-        text = new TextDecoder("utf-16be").decode(textParam) || "";
-        console.log(`Font dictionary named '${textState.customFontName}' is not found`);
+        const decoder = textParam[0] === 254 && textParam[1] === 255 // UTF-16 Big Endian
+          ? new TextDecoder("utf-16be")
+          : new TextDecoder();
+        const literal = decoder.decode(textParam);
+        text = literal || "";
       }
     } else {
       // text parameter is a literal string in ascii encoding or a number
@@ -731,7 +741,7 @@ export class AppearanceStreamRenderer {
           break;
         case "TJ": // show array of strings ('[({string}) {spacing} ...n]TJ')
           for (const param of parameters) {
-            if (typeof param === "string") {
+            if (param instanceof Uint8Array) {
               svgElements.push(await this.drawTextAsync(param, resources));
             } else if (typeof param === "number") { 
               if (+(param.toFixed(0)))  {
