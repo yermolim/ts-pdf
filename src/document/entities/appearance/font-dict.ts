@@ -1,4 +1,4 @@
-import { dictTypes } from "../../const";
+import { dictTypes, valueTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
@@ -45,7 +45,7 @@ export class FontDict extends PdfDict {
    * whose associated TrueType font program is not embedded in the PDF file, 
    * the Encoding entry must be a predefined CMap name
    * */
-  Encoding: string;
+  Encoding: string | ObjectId;
   /**
    * (Optional; PDF1.2+) A stream containing a CMap file 
    * that maps character codes to Unicode values
@@ -133,10 +133,19 @@ export class FontDict extends PdfDict {
               i = subtype.end + 1; 
               break;        
             }
-            throw new Error("Can't parse /Subtype property value");          
+            throw new Error("Can't parse /Subtype property value");       
           case "/BaseFont":
-          case "/Encoding":
             i = this.parseNameProp(name, parser, i);
+            break;          
+          case "/Encoding":
+            const encodingPropType = parser.getValueTypeAt(i);
+            if (encodingPropType === valueTypes.NAME) {
+              i = this.parseNameProp(name, parser, i);
+            } else if (encodingPropType === valueTypes.REF) {              
+              i = this.parseRefProp(name, parser, i);
+            } else {
+              throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+            }
             break;
           
           case "/ToUnicode":

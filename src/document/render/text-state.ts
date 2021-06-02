@@ -3,6 +3,7 @@ import { TextRenderMode, textRenderModes } from "../const";
 
 export interface TextStateParams {   
   matrix?: Mat3;  
+  lineMatrix?: Mat3;  
   /**
    * Name of a custom PDF font to be used
    */
@@ -42,6 +43,7 @@ export interface TextStateParams {
 export class TextState {
   static readonly defaultParams: TextStateParams = {
     matrix: new Mat3(),
+    lineMatrix: new Mat3(),
     leading: 12 * -1.2,
     renderMode: textRenderModes.FILL,
     fontFamily: "helvetica, arial, sans-serif",
@@ -55,6 +57,7 @@ export class TextState {
   };
 
   matrix: Mat3;
+  lineMatrix: Mat3;
   /**
    * Name of a custom PDF font to be used
    */
@@ -133,25 +136,29 @@ export class TextState {
       ? "0"
       : value / 10 + "em"; 
   }
-
-  applyMatrix(matrix: Mat3) {
-    this.matrix = matrix.multiply(this.matrix);
+  
+  moveAlongPx(value: number) {
+    // TODO: add support for vertical text         
+    // TODO: implement the full formula. now the simplified one is used
+    const tx = value;
+    const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
+    this.matrix = transformationMatrix.multiply(this.matrix);
   }
 
-  applySpacing(value: number) {    
-    // TODO: test        
+  moveAlongPdfUnits(value: number) {
     // TODO: add support for vertical text         
     // TODO: implement the full formula. now the simplified one is used
     const tx = (-value / 1000) * parseInt(this.fontSize, 10);
     const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
-    this.applyMatrix(transformationMatrix);
+    this.matrix = transformationMatrix.multiply(this.matrix);
   }
   
-  nextLine() {
-    const leading = this.leading || parseInt(this.fontSize, 10) * -1.2;
-    if (leading) {            
-      const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, 0, leading, 1);
-      this.matrix = translationMatrix.multiply(this.matrix);
-    }
+  nextLine(tx?: number, ty?: number) {
+    tx ??= 0;
+    ty ??= this.leading || parseInt(this.fontSize, 10) * -1.2;
+
+    const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
+    this.lineMatrix = translationMatrix.multiply(this.lineMatrix);
+    this.matrix = this.lineMatrix.clone();
   }
 }

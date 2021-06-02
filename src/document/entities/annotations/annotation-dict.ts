@@ -369,7 +369,7 @@ export abstract class AnnotationDict extends PdfDict {
       uuid: this.$name,
       pageId: this.$pageId,
 
-      dateCreated: this["CreationDate"].date.toISOString() || new Date().toISOString(),
+      dateCreated: this["CreationDate"]?.date?.toISOString() || new Date().toISOString(),
       dateModified: this.M 
         ? this.M instanceof LiteralString
           ? this.M.literal

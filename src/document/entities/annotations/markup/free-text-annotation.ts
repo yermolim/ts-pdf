@@ -32,11 +32,6 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    */
   DS: LiteralString;
   /**
-   * (Optional; PDF 1.5) A rich text string
-   * to be used to generate the appearance of the annotation.
-   */
-  RC: LiteralString;
-  /**
    * (Optional; meaningful only if IT is FreeTextCallout; PDF 1.6+) 
    * An array of four or six numbers specifying a callout line 
    * attached to the free text annotation. Six numbers [x1y1x2y2x3y3] 
@@ -65,9 +60,9 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   LE: LineEndingType = lineEndingTypes.NONE;
   //#endregion
   
-  private _defaultStyle: string;
-  private _rtStyle: string;
-  private _rtText: string;
+  protected _defaultStyle: string;
+  protected _rtStyle: string;
+  protected _rtText: string;
 
   constructor() {
     super(annotationTypes.FREE_TEXT);

@@ -570,28 +570,30 @@ export class DataParser {
       return null;
     }
 
-    let i = start + 1;
-    let prevCode: number;
+    let i = start;
     let code: number;
+    let escaped = false;
     let opened = 0;
 
-    while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+    while (opened || code !== codes.R_PARENTHESE || escaped) {
       if (i > this._maxIndex) {
         return null;
       }
 
-      if (!isNaN(code)) {
-        prevCode = code;
-      }
-
       code = this.getCharCode(i++);
 
-      if (prevCode !== codes.BACKSLASH) {
+      if (!escaped) {
         if (code === codes.L_PARENTHESE) {
           opened += 1;
         } else if (opened && code === codes.R_PARENTHESE) {
           opened -= 1;
         }
+      }
+      
+      if (!escaped && code === codes.BACKSLASH) {
+        escaped = true;
+      } else {
+        escaped = false;
       }
     }
 

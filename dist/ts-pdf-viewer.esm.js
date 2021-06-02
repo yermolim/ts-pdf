@@ -3348,25 +3348,28 @@ class DataParser {
         if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
             return null;
         }
-        let i = start + 1;
-        let prevCode;
+        let i = start;
         let code;
+        let escaped = false;
         let opened = 0;
-        while (opened || code !== codes.R_PARENTHESE || prevCode === codes.BACKSLASH) {
+        while (opened || code !== codes.R_PARENTHESE || escaped) {
             if (i > this._maxIndex) {
                 return null;
             }
-            if (!isNaN(code)) {
-                prevCode = code;
-            }
             code = this.getCharCode(i++);
-            if (prevCode !== codes.BACKSLASH) {
+            if (!escaped) {
                 if (code === codes.L_PARENTHESE) {
                     opened += 1;
                 }
                 else if (opened && code === codes.R_PARENTHESE) {
                     opened -= 1;
                 }
+            }
+            if (!escaped && code === codes.BACKSLASH) {
+                escaped = true;
+            }
+            else {
+                escaped = false;
             }
         }
         return { start, end: i - 1 };
@@ -7233,8 +7236,19 @@ class FontDict extends PdfDict {
                         }
                         throw new Error("Can't parse /Subtype property value");
                     case "/BaseFont":
-                    case "/Encoding":
                         i = this.parseNameProp(name, parser, i);
+                        break;
+                    case "/Encoding":
+                        const encodingPropType = parser.getValueTypeAt(i);
+                        if (encodingPropType === valueTypes.NAME) {
+                            i = this.parseNameProp(name, parser, i);
+                        }
+                        else if (encodingPropType === valueTypes.REF) {
+                            i = this.parseRefProp(name, parser, i);
+                        }
+                        else {
+                            throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+                        }
                         break;
                     case "/ToUnicode":
                         i = this.parseRefProp(name, parser, i);
@@ -8527,24 +8541,27 @@ class TextState {
             ? "0"
             : value / 10 + "em";
     }
-    applyMatrix(matrix) {
-        this.matrix = matrix.multiply(this.matrix);
+    moveAlongPx(value) {
+        const tx = value;
+        const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
+        this.matrix = transformationMatrix.multiply(this.matrix);
     }
-    applySpacing(value) {
+    moveAlongPdfUnits(value) {
         const tx = (-value / 1000) * parseInt(this.fontSize, 10);
         const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
-        this.applyMatrix(transformationMatrix);
+        this.matrix = transformationMatrix.multiply(this.matrix);
     }
-    nextLine() {
-        const leading = this.leading || parseInt(this.fontSize, 10) * -1.2;
-        if (leading) {
-            const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, 0, leading, 1);
-            this.matrix = translationMatrix.multiply(this.matrix);
-        }
+    nextLine(tx, ty) {
+        tx !== null && tx !== void 0 ? tx : (tx = 0);
+        ty !== null && ty !== void 0 ? ty : (ty = this.leading || parseInt(this.fontSize, 10) * -1.2);
+        const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
+        this.lineMatrix = translationMatrix.multiply(this.lineMatrix);
+        this.matrix = this.lineMatrix.clone();
     }
 }
 TextState.defaultParams = {
     matrix: new Mat3(),
+    lineMatrix: new Mat3(),
     leading: 12 * -1.2,
     renderMode: textRenderModes.FILL,
     fontFamily: "helvetica, arial, sans-serif",
@@ -8671,39 +8688,26 @@ class AppearanceStreamRenderer {
                     break;
                 case valueTypes.ARRAY:
                     const arrayBounds = parser.getArrayBoundsAt(i);
-                    const numberArrayResult = parser.parseNumberArrayAt(i, true);
-                    if (numberArrayResult) {
-                        const dashArray = numberArrayResult.value;
-                        if (dashArray.length === 2) {
-                            parameters.push(...dashArray);
-                        }
-                        else if (dashArray.length === 1) {
-                            parameters.push(dashArray[0], 0);
-                        }
-                        else {
-                            parameters.push(3, 0);
-                        }
-                    }
-                    else {
-                        let j = arrayBounds.contentStart;
-                        while (j < arrayBounds.contentEnd && j !== -1) {
-                            const nextArrayValueType = parser.getValueTypeAt(arrayBounds.contentStart, true);
-                            switch (nextArrayValueType) {
-                                case valueTypes.STRING_LITERAL:
-                                    const arrayLiteralResult = LiteralString.parse(parser, j);
-                                    parameters.push(arrayLiteralResult.value.literal);
-                                    j = arrayLiteralResult.end + 1;
-                                    break;
-                                case valueTypes.NUMBER:
-                                    const arrayNumberResult = parser.parseNumberAt(j, true);
-                                    parameters.push(arrayNumberResult.value);
-                                    j = arrayNumberResult.end + 1;
-                                    break;
-                                default:
-                                    console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
-                                    j = parser.findDelimiterIndex("straight", j);
-                                    break;
-                            }
+                    let j = arrayBounds.start + 1;
+                    while (j < arrayBounds.end - 1 && j !== -1) {
+                        const nextArrayValueType = parser.getValueTypeAt(j, true);
+                        switch (nextArrayValueType) {
+                            case valueTypes.STRING_LITERAL:
+                                const arrayLiteralResult = LiteralString.parse(parser, j);
+                                parameters.push(arrayLiteralResult.value.literal);
+                                j = arrayLiteralResult.end + 1;
+                                break;
+                            case valueTypes.NUMBER:
+                                const arrayNumberResult = parser.parseNumberAt(j, true);
+                                parameters.push(arrayNumberResult.value);
+                                j = arrayNumberResult.end + 1;
+                                break;
+                            default:
+                                console.log(parser.sliceChars(arrayBounds.start + 1, arrayBounds.end - 1));
+                                console.log(parser.sliceChars(j, j + 10));
+                                console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
+                                j = parser.findDelimiterIndex("straight", j + 1);
+                                break;
                         }
                     }
                     i = arrayBounds.end + 1;
@@ -8822,8 +8826,23 @@ class AppearanceStreamRenderer {
                 this.state.strokeMiterLimit = +parameters[0] || 10;
                 break;
             case "d":
-                this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
-                this.state.strokeDashOffset = +parameters[2];
+                let a = 3;
+                let b = 0;
+                let c = 0;
+                if (parameters.length === 3) {
+                    a = +parameters[0];
+                    b = +parameters[1];
+                    c = +parameters[2];
+                }
+                else if (parameters.length === 2) {
+                    a = +parameters[0];
+                    c = +parameters[1];
+                }
+                else if (parameters.length === 1) {
+                    c = +parameters[0];
+                }
+                this.state.strokeDashArray = `${a} ${b}`;
+                this.state.strokeDashOffset = c;
                 break;
             case "CS":
                 switch (parameters[0]) {
@@ -8939,23 +8958,22 @@ class AppearanceStreamRenderer {
             case "Td":
                 if (parameters.length > 1) {
                     const [tx, ty] = parameters;
-                    const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
-                    this.state.textState.applyMatrix(translationMatrix);
+                    this.state.textState.nextLine(tx, ty);
                 }
                 break;
             case "TD":
                 if (parameters.length > 1) {
                     const [tx, ty] = parameters;
-                    const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
-                    this.state.textState.matrix = translationMatrix.multiply(this.state.textState.matrix);
                     this.state.textState.setLeading(-ty);
+                    this.state.textState.nextLine(tx, ty);
                 }
                 break;
             case "Tm":
                 if (parameters.length > 5) {
                     const [tm0, tm1, tm3, tm4, tm6, tm7] = parameters;
                     const transformationMatrix = new Mat3().set(tm0, tm1, 0, tm3, tm4, 0, tm6, tm7, 1);
-                    this.state.textState.applyMatrix(transformationMatrix);
+                    this.state.textState.matrix = transformationMatrix;
+                    this.state.textState.lineMatrix = transformationMatrix.clone();
                 }
                 break;
             case "T*":
@@ -9073,127 +9091,153 @@ class AppearanceStreamRenderer {
             return imageWrapper;
         });
     }
-    drawText(textParam, resources) {
-        const textState = this.state.textState;
-        const text = this.decodeTextParam(textParam, resources);
-        if (!text) {
-            console.log(`Can't decode the stream text parameter: '${textParam}'`);
-            return null;
-        }
-        const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        svgText.setAttribute("transform", `matrix(${new Mat3()
-            .applyScaling(1, -1)
-            .applyScaling(textState.horizontalScale, 1)
-            .multiply(Mat3.multiply(textState.matrix, this.state.matrix))
-            .toFloatShortArray().join(" ")})`);
-        svgText.setAttribute("x", "0");
-        svgText.setAttribute("y", "0");
-        svgText.textContent = text;
-        svgText.style.fontFamily = textState.fontFamily;
-        svgText.style.fontSize = textState.fontSize;
-        svgText.style.lineHeight = textState.lineHeight;
-        svgText.style.letterSpacing = textState.letterSpacing;
-        svgText.style.wordSpacing = textState.wordSpacing;
-        svgText.style.verticalAlign = textState.verticalAlign;
-        svgText.style.whiteSpace = "pre";
-        let stroke;
-        let clip;
-        switch (textState.renderMode) {
-            case textRenderModes.FILL:
-            default:
-                svgText.style.fill = this.state.fill;
-                break;
-            case textRenderModes.STROKE:
-                svgText.style.fill = "none";
-                stroke = true;
-                break;
-            case textRenderModes.FILL_STROKE:
-                svgText.style.fill = this.state.fill;
-                stroke = true;
-                break;
-            case textRenderModes.INVISIBLE:
-                svgText.style.fill = "none";
-                break;
-            case textRenderModes.FILL_USE_AS_CLIP:
-                svgText.style.fill = this.state.fill;
-                clip = true;
-                break;
-            case textRenderModes.STROKE_USE_AS_CLIP:
-                svgText.style.fill = "none";
-                stroke = true;
-                clip = true;
-                break;
-            case textRenderModes.FILL_STROKE_USE_AS_CLIP:
-                svgText.style.fill = this.state.fill;
-                stroke = true;
-                clip = true;
-                break;
-            case textRenderModes.USE_AS_CLIP:
-                svgText.style.fill = "transparent";
-                clip = true;
-                break;
-        }
-        if (stroke) {
-            svgText.style.stroke = this.state.stroke;
-            svgText.style.strokeWidth = this.state.strokeWidth + "";
-            svgText.style.strokeMiterlimit = this.state.strokeMiterLimit + "";
-            svgText.style.strokeLinecap = this.state.strokeLineCap;
-            svgText.style.strokeLinejoin = this.state.strokeLineJoin;
-            if (this.state.strokeDashArray) {
-                svgText.style.strokeDasharray = this.state.strokeDashArray;
+    drawTextAsync(textParam, resources) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const textState = this.state.textState;
+            const text = this.decodeTextParam(textParam, resources);
+            if (!text) {
+                console.log(`Can't decode the stream text parameter: '${textParam}'`);
+                return null;
             }
-            if (this.state.strokeDashOffset) {
-                svgText.style.strokeDashoffset = this.state.strokeDashOffset + "";
-            }
-        }
-        else {
-            svgText.style.stroke = "none";
-        }
-        if (clip) {
-            this.pushClipPath(svgText.cloneNode(), true);
-        }
-        return { element: svgText, blendMode: this.state.mixBlendMode || "normal" };
-    }
-    drawTextGroup(parser, resources) {
-        const svgElements = [];
-        const textState = this.state.textState;
-        let i = 0;
-        while (i !== -1) {
-            const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
-            i = parser.skipEmpty(nextIndex);
-            switch (operator) {
-                case "Tj":
-                    svgElements.push(this.drawText(parameters[0], resources));
-                    break;
-                case "'":
-                    textState.nextLine();
-                    svgElements.push(this.drawText(parameters[0], resources));
-                    break;
-                case "\"":
-                    const [a, b, c] = parameters;
-                    textState.setWordSpacing(+a);
-                    textState.setLetterSpacing(+b);
-                    textState.nextLine();
-                    svgElements.push(this.drawText(c, resources));
-                    break;
-                case "TJ":
-                    for (const param of parameters) {
-                        if (typeof param === "string") {
-                            svgElements.push(this.drawText(param, resources));
-                        }
-                        else if (typeof param === "number") {
-                            textState.applySpacing(param);
-                        }
-                    }
-                    break;
+            const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            svgText.setAttribute("transform", `matrix(${new Mat3()
+                .applyScaling(1, -1)
+                .applyScaling(textState.horizontalScale, 1)
+                .multiply(Mat3.multiply(textState.matrix, this.state.matrix))
+                .toFloatShortArray().join(" ")})`);
+            svgText.setAttribute("x", "0");
+            svgText.setAttribute("y", "0");
+            svgText.textContent = text;
+            svgText.style.fontFamily = textState.fontFamily;
+            svgText.style.fontSize = textState.fontSize;
+            svgText.style.lineHeight = textState.lineHeight;
+            svgText.style.letterSpacing = textState.letterSpacing;
+            svgText.style.wordSpacing = textState.wordSpacing;
+            svgText.style.verticalAlign = textState.verticalAlign;
+            svgText.style.whiteSpace = "pre";
+            let stroke;
+            let clip;
+            switch (textState.renderMode) {
+                case textRenderModes.FILL:
                 default:
-                    const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
-                    if (!operatorIsGraphicState) {
-                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
-                    }
+                    svgText.style.fill = this.state.fill;
+                    break;
+                case textRenderModes.STROKE:
+                    svgText.style.fill = "none";
+                    stroke = true;
+                    break;
+                case textRenderModes.FILL_STROKE:
+                    svgText.style.fill = this.state.fill;
+                    stroke = true;
+                    break;
+                case textRenderModes.INVISIBLE:
+                    svgText.style.fill = "none";
+                    break;
+                case textRenderModes.FILL_USE_AS_CLIP:
+                    svgText.style.fill = this.state.fill;
+                    clip = true;
+                    break;
+                case textRenderModes.STROKE_USE_AS_CLIP:
+                    svgText.style.fill = "none";
+                    stroke = true;
+                    clip = true;
+                    break;
+                case textRenderModes.FILL_STROKE_USE_AS_CLIP:
+                    svgText.style.fill = this.state.fill;
+                    stroke = true;
+                    clip = true;
+                    break;
+                case textRenderModes.USE_AS_CLIP:
+                    svgText.style.fill = "transparent";
+                    clip = true;
+                    break;
             }
-        }
-        return svgElements.filter(x => x);
+            if (stroke) {
+                svgText.style.stroke = this.state.stroke;
+                svgText.style.strokeWidth = this.state.strokeWidth + "";
+                svgText.style.strokeMiterlimit = this.state.strokeMiterLimit + "";
+                svgText.style.strokeLinecap = this.state.strokeLineCap;
+                svgText.style.strokeLinejoin = this.state.strokeLineJoin;
+                if (this.state.strokeDashArray) {
+                    svgText.style.strokeDasharray = this.state.strokeDashArray;
+                }
+                if (this.state.strokeDashOffset) {
+                    svgText.style.strokeDashoffset = this.state.strokeDashOffset + "";
+                }
+            }
+            else {
+                svgText.style.stroke = "none";
+            }
+            if (clip) {
+                this.pushClipPath(svgText.cloneNode(), true);
+            }
+            yield new Promise((resolve, reject) => {
+                const tempContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                tempContainer.classList.add("annotation-content-element");
+                tempContainer.setAttribute("viewBox", "0 0 100 100");
+                tempContainer.style.width = "100px";
+                tempContainer.style.height = "100px";
+                tempContainer.style.zIndex = "-99";
+                tempContainer.style.position = "fixed";
+                tempContainer.style.left = "0";
+                tempContainer.style.top = "0";
+                tempContainer.append(svgText);
+                document.body.append(tempContainer);
+                setTimeout(() => {
+                    const width = svgText.getBBox().width;
+                    this.state.textState.moveAlongPx(width);
+                    svgText.remove();
+                    tempContainer.remove();
+                    resolve(true);
+                }, 0);
+            });
+            return { element: svgText, blendMode: this.state.mixBlendMode || "normal" };
+        });
+    }
+    drawTextGroupAsync(parser, resources) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const svgElements = [];
+            const textState = this.state.textState;
+            let i = 0;
+            while (i !== -1) {
+                const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+                i = parser.skipEmpty(nextIndex);
+                switch (operator) {
+                    case "Tj":
+                        svgElements.push(yield this.drawTextAsync(parameters[0], resources));
+                        break;
+                    case "'":
+                        textState.nextLine();
+                        svgElements.push(yield this.drawTextAsync(parameters[0], resources));
+                        break;
+                    case "\"":
+                        const [a, b, c] = parameters;
+                        textState.setWordSpacing(+a);
+                        textState.setLetterSpacing(+b);
+                        textState.nextLine();
+                        svgElements.push(yield this.drawTextAsync(c, resources));
+                        break;
+                    case "TJ":
+                        for (const param of parameters) {
+                            if (typeof param === "string") {
+                                svgElements.push(yield this.drawTextAsync(param, resources));
+                            }
+                            else if (typeof param === "number") {
+                                if (+(param.toFixed(0))) {
+                                    textState.moveAlongPdfUnits(param);
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
+                        if (!operatorIsGraphicState) {
+                            throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                        }
+                }
+            }
+            return svgElements.filter(x => x);
+        });
     }
     drawStreamAsync(stream) {
         return __awaiter$k(this, void 0, void 0, function* () {
@@ -9301,7 +9345,7 @@ class AppearanceStreamRenderer {
                         });
                         if (textObjectEnd) {
                             const textParser = new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1));
-                            const textGroup = this.drawTextGroup(textParser, stream.Resources);
+                            const textGroup = yield this.drawTextGroupAsync(textParser, stream.Resources);
                             svgElements.push(...textGroup);
                             i = parser.skipEmpty(textObjectEnd.end + 1);
                             break;
@@ -10158,21 +10202,21 @@ class AnnotationDict extends PdfDict {
         this.applyCommonTransform(mat);
     }
     toDto() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d, _e;
         return {
             annotationType: "/Ink",
             uuid: this.$name,
             pageId: this.$pageId,
-            dateCreated: this["CreationDate"].date.toISOString() || new Date().toISOString(),
+            dateCreated: ((_b = (_a = this["CreationDate"]) === null || _a === void 0 ? void 0 : _a.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || new Date().toISOString(),
             dateModified: this.M
                 ? this.M instanceof LiteralString
                     ? this.M.literal
                     : this.M.date.toISOString()
                 : new Date().toISOString(),
-            author: (_a = this["T"]) === null || _a === void 0 ? void 0 : _a.literal,
-            textContent: (_b = this.Contents) === null || _b === void 0 ? void 0 : _b.literal,
+            author: (_c = this["T"]) === null || _c === void 0 ? void 0 : _c.literal,
+            textContent: (_d = this.Contents) === null || _d === void 0 ? void 0 : _d.literal,
             rect: this.Rect,
-            matrix: (_c = this.apStream) === null || _c === void 0 ? void 0 : _c.Matrix,
+            matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
         };
     }
     setTextContent(text) {
@@ -17488,6 +17532,7 @@ class LineAnnotation extends GeometricAnnotation {
         };
     }
     parseProps(parseInfo) {
+        var _a;
         super.parseProps(parseInfo);
         const { parser, bounds } = parseInfo;
         const start = bounds.contentStart || bounds.start;
@@ -17586,6 +17631,16 @@ class LineAnnotation extends GeometricAnnotation {
             }
             else {
                 break;
+            }
+        }
+        if (this.RC) {
+            const domParser = new DOMParser();
+            const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
+            if (body) {
+                const style = body.getAttribute("style");
+                const p = body.querySelector("p");
+                this._rtStyle = style || "";
+                this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
             }
         }
     }

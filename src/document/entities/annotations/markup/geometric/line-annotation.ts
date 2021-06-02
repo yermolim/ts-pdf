@@ -127,7 +127,9 @@ export class LineAnnotation extends GeometricAnnotation {
   Measure: MeasureDict;
   //#endregion
 
-  protected _scaleHandleActive: "start" | "end";
+  protected _scaleHandleActive: "start" | "end";  
+  protected _rtStyle: string;
+  protected _rtText: string;
   
   constructor() {
     super(annotationTypes.LINE);
@@ -391,6 +393,17 @@ export class LineAnnotation extends GeometricAnnotation {
         break;
       }
     };
+    
+    if (this.RC) {
+      const domParser = new DOMParser();
+      const body = domParser.parseFromString(this.RC.literal, "text/xml")?.querySelector("body");
+      if (body) {
+        const style = body.getAttribute("style");
+        const p = body.querySelector("p");
+        this._rtStyle = style || "";
+        this._rtText = p?.textContent || ""; 
+      }
+    }
   }
 
   /**

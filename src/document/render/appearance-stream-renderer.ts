@@ -105,39 +105,28 @@ export class AppearanceStreamRenderer {
           i = nameResult.end + 1;
           break;
         case valueTypes.ARRAY:
-          const arrayBounds = parser.getArrayBoundsAt(i);
-          const numberArrayResult = parser.parseNumberArrayAt(i, true);
-          if (numberArrayResult) {
-            // result is a number array, so it's a dash pattern
-            const dashArray = numberArrayResult.value;
-            if (dashArray.length === 2) {
-              parameters.push(...dashArray);
-            } else if (dashArray.length === 1) {
-              parameters.push(dashArray[0], 0);
-            } else {
-              parameters.push(3, 0);
-            }
-          } else {    
-            // result is not a number array, so it's a complex array
-            let j = arrayBounds.contentStart;
-            while(j < arrayBounds.contentEnd && j !== -1) {
-              const nextArrayValueType = parser.getValueTypeAt(arrayBounds.contentStart, true);
-              switch (nextArrayValueType) {
-                case valueTypes.STRING_LITERAL:
-                  const arrayLiteralResult = LiteralString.parse(parser, j);
-                  parameters.push(arrayLiteralResult.value.literal);
-                  j = arrayLiteralResult.end + 1;
-                  break;
-                case valueTypes.NUMBER:
-                  const arrayNumberResult = parser.parseNumberAt(j, true);
-                  parameters.push(arrayNumberResult.value);
-                  j = arrayNumberResult.end + 1;
-                  break;
-                default:
-                  console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`); 
-                  j = parser.findDelimiterIndex("straight", j);                  
-                  break;
-              }
+          const arrayBounds = parser.getArrayBoundsAt(i);          
+          let j = arrayBounds.start + 1;
+          while(j < arrayBounds.end - 1 && j !== -1) {
+            const nextArrayValueType = parser.getValueTypeAt(j, true);
+            switch (nextArrayValueType) {
+              case valueTypes.STRING_LITERAL:
+                // TODO: implement decoding using font dict
+                const arrayLiteralResult = LiteralString.parse(parser, j);
+                parameters.push(arrayLiteralResult.value.literal);
+                j = arrayLiteralResult.end + 1;
+                break;
+              case valueTypes.NUMBER:
+                const arrayNumberResult = parser.parseNumberAt(j, true);
+                parameters.push(arrayNumberResult.value);
+                j = arrayNumberResult.end + 1;
+                break;
+              default:
+                console.log(parser.sliceChars(arrayBounds.start + 1, arrayBounds.end - 1));
+                console.log(parser.sliceChars(j, j + 10));
+                console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`); 
+                j = parser.findDelimiterIndex("straight", j + 1);                  
+                break;
             }
           }
           i = arrayBounds.end + 1;
@@ -295,8 +284,22 @@ export class AppearanceStreamRenderer {
         this.state.strokeMiterLimit = +parameters[0] || 10;
         break;
       case "d": // set stroke dash array
-        this.state.strokeDashArray = `${parameters[0]} ${parameters[1]}`;
-        this.state.strokeDashOffset = +parameters[2];
+        // TODO: test
+        let a = 3;
+        let b = 0;
+        let c = 0;
+        if (parameters.length === 3) {
+          a = +parameters[0];
+          b = +parameters[1];
+          c = +parameters[2];
+        } else if (parameters.length === 2) {
+          a = +parameters[0];
+          c = +parameters[1];
+        } else if (parameters.length === 1) {
+          c = +parameters[0];
+        }
+        this.state.strokeDashArray = `${a} ${b}`;
+        this.state.strokeDashOffset = c;
         break;
       //#endregion
       //#region Color state operators
@@ -425,23 +428,24 @@ export class AppearanceStreamRenderer {
       case "Td": // move to the start of the next line ('{tx} {ty} Td')
         if (parameters.length > 1) {
           const [tx, ty] = <number[]>parameters;
-          const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
-          this.state.textState.applyMatrix(translationMatrix);
+          this.state.textState.nextLine(tx, ty);
         }
         break;
       case "TD": // '{tx} {ty} TD' same as '{-ty} TL {tx} {ty} Td'
         if (parameters.length > 1) {
           const [tx, ty] = <number[]>parameters;
-          const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
-          this.state.textState.matrix = translationMatrix.multiply(this.state.textState.matrix);
           this.state.textState.setLeading(-ty);
+          this.state.textState.nextLine(tx, ty);
         }
         break;
       case "Tm": // text matrix ('{a} {b} {c} {d} {e} {f} Tm')
         if (parameters.length > 5) {
           const [tm0, tm1, tm3, tm4, tm6, tm7] = <number[]>parameters;
+          // The matrix specified by the operands shall not be concatenated onto the current text matrix, 
+          // but shall replace it.
           const transformationMatrix = new Mat3().set(tm0, tm1, 0, tm3, tm4, 0, tm6, tm7, 1);
-          this.state.textState.applyMatrix(transformationMatrix);
+          this.state.textState.matrix = transformationMatrix;
+          this.state.textState.lineMatrix = transformationMatrix.clone();
         }
         break;
       case "T*": // same as '0 {currentLeading} Td'
@@ -585,8 +589,8 @@ export class AppearanceStreamRenderer {
     return imageWrapper;
   }
 
-  protected drawText(textParam: OperatorParameter, 
-    resources: ResourceDict): SvgElementWithBlendMode {
+  protected async drawTextAsync(textParam: OperatorParameter, 
+    resources: ResourceDict): Promise<SvgElementWithBlendMode> {
     const textState = this.state.textState;
     const text = this.decodeTextParam(textParam, resources);
 
@@ -600,7 +604,7 @@ export class AppearanceStreamRenderer {
       new Mat3()
         .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
         .applyScaling(textState.horizontalScale, 1) // apply horizontal scaling
-        .multiply(Mat3.multiply(textState.matrix,this.state.matrix))      
+        .multiply(Mat3.multiply(textState.matrix, this.state.matrix))      
         .toFloatShortArray().join(" ")})`);
     svgText.setAttribute("x", "0");
     svgText.setAttribute("y", "0");
@@ -672,10 +676,33 @@ export class AppearanceStreamRenderer {
       this.pushClipPath(svgText.cloneNode() as SVGGElement, true);
     }
 
+    // TODO: find more elegant solution to get real text element width
+    await new Promise((resolve, reject) => {
+      const tempContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      tempContainer.classList.add("annotation-content-element");
+      tempContainer.setAttribute("viewBox", "0 0 100 100");
+      tempContainer.style.width = "100px";
+      tempContainer.style.height = "100px";
+      tempContainer.style.zIndex = "-99";
+      tempContainer.style.position = "fixed";
+      tempContainer.style.left = "0";
+      tempContainer.style.top = "0";
+      tempContainer.append(svgText);
+      document.body.append(tempContainer);
+      setTimeout(() => {
+        const width = svgText.getBBox().width;
+        this.state.textState.moveAlongPx(width);
+        svgText.remove();
+        tempContainer.remove();
+        resolve(true);
+      }, 0);
+    });
+
     return {element: svgText, blendMode: this.state.mixBlendMode || "normal"};
   }
 
-  protected drawTextGroup(parser: DataParser, resources: ResourceDict): SvgElementWithBlendMode[] {
+  protected async drawTextGroupAsync(parser: DataParser, 
+    resources: ResourceDict): Promise<SvgElementWithBlendMode[]> {
     const svgElements: SvgElementWithBlendMode[] = [];
     
     const textState = this.state.textState;
@@ -688,11 +715,11 @@ export class AppearanceStreamRenderer {
       switch (operator) {
         //#region Text showing operators
         case "Tj": // show string ('{string} Tj')
-          svgElements.push(this.drawText(parameters[0], resources));
+          svgElements.push(await this.drawTextAsync(parameters[0], resources));
           break;
         case "'": // move to next line + show string ("{string} '" same as 'T* {string} Tj')
           textState.nextLine();
-          svgElements.push(this.drawText(parameters[0], resources));
+          svgElements.push(await this.drawTextAsync(parameters[0], resources));
           break;
         case "\"": // move to next line + show string with the specified spacings 
           // ('{a} {b} {c}' same as "{a} Tw {b} Tc {c} '")
@@ -700,14 +727,16 @@ export class AppearanceStreamRenderer {
           textState.setWordSpacing(+a);
           textState.setLetterSpacing(+b);
           textState.nextLine();
-          svgElements.push(this.drawText(c, resources));
+          svgElements.push(await this.drawTextAsync(c, resources));
           break;
         case "TJ": // show array of strings ('[({string}) {spacing} ...n]TJ')
           for (const param of parameters) {
             if (typeof param === "string") {
-              svgElements.push(this.drawText(param, resources));
-            } else if (typeof param === "number") {              
-              textState.applySpacing(param);
+              svgElements.push(await this.drawTextAsync(param, resources));
+            } else if (typeof param === "number") { 
+              if (+(param.toFixed(0)))  {
+                textState.moveAlongPdfUnits(param);
+              }
             }
           }
           break;
@@ -842,7 +871,7 @@ export class AppearanceStreamRenderer {
           });
           if (textObjectEnd) {     
             const textParser = new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)); 
-            const textGroup = this.drawTextGroup(textParser, stream.Resources);
+            const textGroup = await this.drawTextGroupAsync(textParser, stream.Resources);
             svgElements.push(...textGroup);
             i = parser.skipEmpty(textObjectEnd.end + 1);
             break;
