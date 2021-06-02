@@ -407,33 +407,41 @@ export class LineAnnotation extends GeometricAnnotation {
     const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
     const halfStrokeWidth = strokeWidth / 2;
 
-    let marginLeader = 0;    
-    // calculate leader line margin if leader lines are used
-    // (affects only top and bottom margins)
-    if (this.LL) {        
-      marginLeader = Math.max( 
-        Math.max(Math.abs(this.LL), Math.abs(this.LLE || 0))+ (this.LLO || 0),
-        halfStrokeWidth,
-      );
-    }
-
-    let marginEnding = 0;
+    let marginMin = 0;
     // calculate ending margin if any other line ending type except 'none' is used
     if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
       const endingSizeInner = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, 
         LineAnnotation.lineEndingMinimalSize);
       // '+ strokeWidth' is used to include the ending figure stroke width
       const endingSize = endingSizeInner + strokeWidth;
-      marginEnding = endingSize / 2;
+      marginMin = endingSize / 2;
+    } else {
+      marginMin = halfStrokeWidth;
     }
+
+    // calculate the margin from the control points side of the line
+    const marginFront = Math.max(
+      Math.abs(this.LL || 0) + (this.LLO || 0) + halfStrokeWidth,
+      marginMin,
+    );
+    // calculate the margin from the opposite side of the line
+    const marginBack = Math.max(
+      (this.LLE || 0) + halfStrokeWidth,
+      marginMin,
+    );
+    const height = marginFront + marginBack;
      
     // calculate final margins
-    const marginSide = Math.max(marginEnding, halfStrokeWidth);
-    const marginNonLateral = Math.max(marginEnding, marginLeader, halfStrokeWidth);
-    const xMin = 0 - marginSide;
-    const yMin = 0 - marginNonLateral;
-    const xMax = length + marginSide;
-    const yMax = 0 + marginNonLateral;
+    const top = this.LL < 0
+      ? marginMin // annotation is under control points
+      : height; // annotation is above control points (or at the same line)
+    const bottom = this.LL < 0
+      ? height // annotation is under control points
+      : marginMin; // annotation is above control points (or at the same line)
+    const xMin = -marginMin;
+    const yMin = -bottom;
+    const xMax = length + marginMin;
+    const yMax = top;
     const bbox: [min: Vec2, max: Vec2] = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
     
     const xAlignedStart = new Vec2();
@@ -601,8 +609,15 @@ export class LineAnnotation extends GeometricAnnotation {
     
     const matrixInv = Mat3.invert(data.matrix);
     // calculate start and end position coordinates before transformation
-    const apStart = new Vec2(this.L[0], this.L[1]).applyMat3(matrixInv).truncate();
-    const apEnd = new Vec2(this.L[2], this.L[3]).applyMat3(matrixInv).truncate();
+    const apStart = new Vec2(this.L[0], this.L[1])
+      .applyMat3(matrixInv)
+      .truncate();
+    const apEnd = new Vec2(this.L[2], this.L[3])
+      .applyMat3(matrixInv)
+      .truncate();
+    const offsetY = (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
+    apStart.y += offsetY;
+    apEnd.y += offsetY;
 
     // push the graphics state onto the stack
     let streamTextData = `q ${colorString} /GS0 gs`;

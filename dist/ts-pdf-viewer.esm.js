@@ -17597,22 +17597,28 @@ class LineAnnotation extends GeometricAnnotation {
         const length = Vec2.substract(end, start).getMagnitude();
         const strokeWidth = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1;
         const halfStrokeWidth = strokeWidth / 2;
-        let marginLeader = 0;
-        if (this.LL) {
-            marginLeader = Math.max(Math.max(Math.abs(this.LL), Math.abs(this.LLE || 0)) + (this.LLO || 0), halfStrokeWidth);
-        }
-        let marginEnding = 0;
+        let marginMin = 0;
         if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
             const endingSizeInner = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
             const endingSize = endingSizeInner + strokeWidth;
-            marginEnding = endingSize / 2;
+            marginMin = endingSize / 2;
         }
-        const marginSide = Math.max(marginEnding, halfStrokeWidth);
-        const marginNonLateral = Math.max(marginEnding, marginLeader, halfStrokeWidth);
-        const xMin = 0 - marginSide;
-        const yMin = 0 - marginNonLateral;
-        const xMax = length + marginSide;
-        const yMax = 0 + marginNonLateral;
+        else {
+            marginMin = halfStrokeWidth;
+        }
+        const marginFront = Math.max(Math.abs(this.LL || 0) + (this.LLO || 0) + halfStrokeWidth, marginMin);
+        const marginBack = Math.max((this.LLE || 0) + halfStrokeWidth, marginMin);
+        const height = marginFront + marginBack;
+        const top = this.LL < 0
+            ? marginMin
+            : height;
+        const bottom = this.LL < 0
+            ? height
+            : marginMin;
+        const xMin = -marginMin;
+        const yMin = -bottom;
+        const xMax = length + marginMin;
+        const yMax = top;
         const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(length, 0);
@@ -17769,8 +17775,15 @@ class LineAnnotation extends GeometricAnnotation {
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
         const matrixInv = Mat3.invert(data.matrix);
-        const apStart = new Vec2(this.L[0], this.L[1]).applyMat3(matrixInv).truncate();
-        const apEnd = new Vec2(this.L[2], this.L[3]).applyMat3(matrixInv).truncate();
+        const apStart = new Vec2(this.L[0], this.L[1])
+            .applyMat3(matrixInv)
+            .truncate();
+        const apEnd = new Vec2(this.L[2], this.L[3])
+            .applyMat3(matrixInv)
+            .truncate();
+        const offsetY = (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
+        apStart.y += offsetY;
+        apEnd.y += offsetY;
         let streamTextData = `q ${colorString} /GS0 gs`;
         streamTextData += `\n${apStart.x} ${apStart.y} m`;
         streamTextData += `\n${apEnd.x} ${apEnd.y} l`;
