@@ -67,7 +67,7 @@ export class AnnotationParseFactory {
         annot = FreeTextAnnotation.parse(info);
         // DEBUG
         // console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));        
-        // console.log(annot);        
+        // console.log(annot);
         break;
       default:
         break;

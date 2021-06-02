@@ -100,4 +100,58 @@ export class TextState {
     }
     return copy;
   }
+
+  setWordSpacing(value: number) {
+    this.wordSpacing = !value
+      ? "normal"
+      : value + "px";
+  }
+  setLetterSpacing(value: number) {
+    this.letterSpacing = !value
+      ? "normal"
+      : value + "px";
+  }
+  setScale(value: number) {    
+    this.horizontalScale = !value
+      ? 1
+      : value / 100;
+  }
+  setLeading(value: number) {    
+    if (value) {
+      this.leading = value;
+      this.lineHeight = Math.abs(this.leading) + "px";
+    } else {
+      this.leading = parseInt(this.fontSize, 10) * -1.2;
+      this.lineHeight = "1";
+    }
+  }
+  setFontSize(value: number) {    
+    this.fontSize = (value || 12) + "px";
+  }
+  setVerticalAlign(value: number) {    
+    this.verticalAlign = !value
+      ? "0"
+      : value / 10 + "em"; 
+  }
+
+  applyMatrix(matrix: Mat3) {
+    this.matrix = matrix.multiply(this.matrix);
+  }
+
+  applySpacing(value: number) {    
+    // TODO: test        
+    // TODO: add support for vertical text         
+    // TODO: implement the full formula. now the simplified one is used
+    const tx = (-value / 1000) * parseInt(this.fontSize, 10);
+    const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
+    this.applyMatrix(transformationMatrix);
+  }
+  
+  nextLine() {
+    const leading = this.leading || parseInt(this.fontSize, 10) * -1.2;
+    if (leading) {            
+      const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, 0, leading, 1);
+      this.matrix = translationMatrix.multiply(this.matrix);
+    }
+  }
 }

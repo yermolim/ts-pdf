@@ -26,7 +26,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    * (Optional; PDF 1.4+) A code specifying the form of quadding (justification) 
    * that shall be used in displaying the annotation’s text
    */
-  Q: JustificationType;
+  Q: JustificationType = justificationTypes.LEFT;
   /**
    * (Optional; PDF 1.5+) A default style
    */

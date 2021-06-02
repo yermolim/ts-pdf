@@ -367,6 +367,87 @@ export class AppearanceStreamRenderer {
         // do nothing
         break;
         //#endregion
+        
+      //#region Text state operators
+      case "Tc": // character spacing ('{x} Tc', x = 0 is normal spacing)
+        this.state.textState.setLetterSpacing(+parameters[0]);
+        break;
+      case "Tw": // word spacing ('{x} Tw', x = 0 is normal spacing)
+        this.state.textState.setWordSpacing(+parameters[0]);
+        break;
+      case "Tz": // horizontal scaling ('{x} Tz', x = 100 is normal scale)
+        this.state.textState.setScale(+parameters[0]);
+        break;
+      case "TL": // leading ('{x} TL', line height)
+        this.state.textState.setLeading(+parameters[0]);
+        break;
+      case "Tf": // font and font size ('{font_name} {x} Tf')
+        this.state.textState.customFontName = parameters[0] as string || "";
+        this.state.textState.setFontSize(+parameters[1]);
+        break;
+      case "Tr": // rendering mode ('{x} Tf', x - integer from 0 to 7)
+        // 0 - fill, 1 - stroke, 2 - fill + stroke, 3 - none, 
+        // 4 - fill + clip, 5 - stroke + clip, 6 - fill + stroke + clip
+        // 7 - clip
+        switch (parameters[0]) {
+          case 0:
+          default:
+            this.state.textState.renderMode = textRenderModes.FILL;
+            break;
+          case 1: 
+            this.state.textState.renderMode = textRenderModes.STROKE;
+            break;
+          case 2:
+            this.state.textState.renderMode = textRenderModes.FILL_STROKE;
+            break;
+          case 3:
+            this.state.textState.renderMode = textRenderModes.INVISIBLE;
+            break;
+          case 4:
+            this.state.textState.renderMode = textRenderModes.FILL_USE_AS_CLIP;
+            break;
+          case 5: 
+            this.state.textState.renderMode = textRenderModes.STROKE_USE_AS_CLIP;
+            break;
+          case 6:
+            this.state.textState.renderMode = textRenderModes.FILL_STROKE_USE_AS_CLIP;
+            break;
+          case 7:
+            this.state.textState.renderMode = textRenderModes.USE_AS_CLIP;
+            break;
+        }
+        break;
+      case "Ts": // rise
+        this.state.textState.setVerticalAlign(+parameters[0]);
+        break;
+        //#endregion
+      //#region Text positioning operators
+      case "Td": // move to the start of the next line ('{tx} {ty} Td')
+        if (parameters.length > 1) {
+          const [tx, ty] = <number[]>parameters;
+          const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
+          this.state.textState.applyMatrix(translationMatrix);
+        }
+        break;
+      case "TD": // '{tx} {ty} TD' same as '{-ty} TL {tx} {ty} Td'
+        if (parameters.length > 1) {
+          const [tx, ty] = <number[]>parameters;
+          const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
+          this.state.textState.matrix = translationMatrix.multiply(this.state.textState.matrix);
+          this.state.textState.setLeading(-ty);
+        }
+        break;
+      case "Tm": // text matrix ('{a} {b} {c} {d} {e} {f} Tm')
+        if (parameters.length > 5) {
+          const [tm0, tm1, tm3, tm4, tm6, tm7] = <number[]>parameters;
+          const transformationMatrix = new Mat3().set(tm0, tm1, 0, tm3, tm4, 0, tm6, tm7, 1);
+          this.state.textState.applyMatrix(transformationMatrix);
+        }
+        break;
+      case "T*": // same as '0 {currentLeading} Td'
+        this.state.textState.nextLine();
+        break;
+        //#endregion
 
       default:
         // the operator is not related to graphic states
@@ -599,141 +680,26 @@ export class AppearanceStreamRenderer {
     
     const textState = this.state.textState;
 
-    const moveToTheNextLine = () => {
-      const leading = textState.leading || parseInt(textState.fontSize, 10) * -1.2;
-      if (leading) {            
-        const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, 0, leading, 1);
-        textState.matrix = translationMatrix.multiply(textState.matrix);
-      }
-    };
-
     let i = 0;
     while (i !== -1) {
       const {nextIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
       i = parser.skipEmpty(nextIndex);
         
       switch (operator) {
-        //#region Text state operators
-        case "Tc": // character spacing ('{x} Tc', x = 0 is normal spacing)
-          textState.letterSpacing = !parameters[0]
-            ? "normal"
-            : parameters[0] + "px";
-          break;
-        case "Tw": // word spacing ('{x} Tw', x = 0 is normal spacing)
-          textState.wordSpacing = !parameters[0]
-            ? "normal"
-            : parameters[0] + "px";
-          break;
-        case "Tz": // horizontal scaling ('{x} Tz', x = 100 is normal scale)
-          textState.horizontalScale = !parameters[0]
-            ? 1
-            : +parameters[0] / 100;
-          break;
-        case "TL": // leading ('{x} TL', line height)
-          const leadingParam = parameters[0];
-          if (leadingParam) {
-            textState.leading = +leadingParam;
-            textState.lineHeight = Math.abs(textState.leading) + "px";
-          } else {
-            textState.leading = parseInt(textState.fontSize, 10) * -1.2;
-            textState.lineHeight = "1";
-          }
-          break;
-        case "Tf": // font and font size ('{font_name} {x} Tf')
-          textState.customFontName = parameters[0] as string || "";
-          textState.fontSize = parameters[1] + "px";
-          break;
-        case "Tr": // rendering mode ('{x} Tf', x - integer from 0 to 7)
-          // 0 - fill, 1 - stroke, 2 - fill + stroke, 3 - none, 
-          // 4 - fill + clip, 5 - stroke + clip, 6 - fill + stroke + clip
-          // 7 - clip
-          switch (parameters[0]) {
-            case 0:
-            default:
-              textState.renderMode = textRenderModes.FILL;
-              break;
-            case 1: 
-              textState.renderMode = textRenderModes.STROKE;
-              break;
-            case 2:
-              textState.renderMode = textRenderModes.FILL_STROKE;
-              break;
-            case 3:
-              textState.renderMode = textRenderModes.INVISIBLE;
-              break;
-            case 4:
-              textState.renderMode = textRenderModes.FILL_USE_AS_CLIP;
-              break;
-            case 5: 
-              textState.renderMode = textRenderModes.STROKE_USE_AS_CLIP;
-              break;
-            case 6:
-              textState.renderMode = textRenderModes.FILL_STROKE_USE_AS_CLIP;
-              break;
-            case 7:
-              textState.renderMode = textRenderModes.USE_AS_CLIP;
-              break;
-          }
-          break;
-        case "Ts": // rise
-          textState.verticalAlign = !parameters[0]
-            ? "0"
-            : +parameters[0] / 10 + "em"; 
-          break;
-          //#endregion
-
-        //#region Text positioning operators
-        case "Td": // move to the start of the next line ('{tx} {ty} Td')
-          if (parameters.length > 1) {
-            const [tx, ty] = <number[]>parameters;
-            const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
-            textState.matrix = translationMatrix.multiply(textState.matrix);
-          }
-          break;
-        case "TD": // '{tx} {ty} TD' same as '{-ty} TL {tx} {ty} Td'
-          if (parameters.length > 1) {
-            const [tx, ty] = <number[]>parameters;
-            const translationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, ty, 1);
-            textState.matrix = translationMatrix.multiply(textState.matrix);
-            if (ty) {
-              textState.leading = -ty;
-              textState.lineHeight = Math.abs(ty) + "px";
-            } else {
-              textState.leading = parseInt(textState.fontSize, 10) * -1.2;
-              textState.lineHeight = "1";
-            }
-          }
-          break;
-        case "Tm": // text matrix ('{a} {b} {c} {d} {e} {f} Tm')
-          if (parameters.length > 5) {
-            const [m0, m1, m3, m4, m6, m7] = <number[]>parameters;
-            const transformationMatrix = new Mat3().set(m0, m1, 0, m3, m4, 0, m6, m7, 1);
-            textState.matrix = transformationMatrix.multiply(textState.matrix);
-          }
-          break;
-        case "T*": // same as '0 {currentLeading} Td'
-          moveToTheNextLine();
-          break;
-          //#endregion
-
         //#region Text showing operators
         case "Tj": // show string ('{string} Tj')
           svgElements.push(this.drawText(parameters[0], resources));
           break;
         case "'": // move to next line + show string ("{string} '" same as 'T* {string} Tj')
-          moveToTheNextLine();
+          textState.nextLine();
           svgElements.push(this.drawText(parameters[0], resources));
           break;
         case "\"": // move to next line + show string with the specified spacings 
           // ('{a} {b} {c}' same as "{a} Tw {b} Tc {c} '")
           const [a, b, c] = parameters;
-          textState.wordSpacing = a
-            ? "normal"
-            : a + "px";
-          textState.letterSpacing = b
-            ? "normal"
-            : b + "px";
-          moveToTheNextLine();
+          textState.setWordSpacing(+a);
+          textState.setLetterSpacing(+b);
+          textState.nextLine();
           svgElements.push(this.drawText(c, resources));
           break;
         case "TJ": // show array of strings ('[({string}) {spacing} ...n]TJ')
@@ -741,11 +707,7 @@ export class AppearanceStreamRenderer {
             if (typeof param === "string") {
               svgElements.push(this.drawText(param, resources));
             } else if (typeof param === "number") {              
-              // TODO: add support for vertical text         
-              // TODO: implement the full formula. now the simplified one is used
-              const tx = (-param / 1000) * parseInt(textState.fontSize, 10);
-              const transformationMatrix = new Mat3().set(1, 0, 0, 0, 1, 0, tx, 0, 1);
-              textState.matrix = transformationMatrix.multiply(textState.matrix);
+              textState.applySpacing(param);
             }
           }
           break;
