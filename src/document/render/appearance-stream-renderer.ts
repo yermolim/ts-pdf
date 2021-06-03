@@ -121,8 +121,6 @@ export class AppearanceStreamRenderer {
                 j = arrayNumberResult.end + 1;
                 break;
               default:
-                console.log(parser.sliceChars(arrayBounds.start + 1, arrayBounds.end - 1));
-                console.log(parser.sliceChars(j, j + 10));
                 console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`); 
                 j = parser.findDelimiterIndex("straight", j + 1);                  
                 break;
@@ -626,45 +624,46 @@ export class AppearanceStreamRenderer {
     svgText.style.wordSpacing = textState.wordSpacing;
     svgText.style.verticalAlign = textState.verticalAlign;
     svgText.style.whiteSpace = "pre";
+    svgText.style.userSelect = "none";
 
+    let fill: string;
     let stroke: boolean;
     let clip: boolean;
     
     switch (textState.renderMode) {
       case textRenderModes.FILL:
       default:
-        svgText.style.fill = this.state.fill;
+        fill = this.state.fill;
         break;
-      case textRenderModes.STROKE: 
-        svgText.style.fill = "none";
+      case textRenderModes.STROKE:
         stroke = true;
         break;
       case textRenderModes.FILL_STROKE:
-        svgText.style.fill = this.state.fill;
+        fill = this.state.fill;
         stroke = true;
         break;
       case textRenderModes.INVISIBLE:
-        svgText.style.fill = "none";
         break;
       case textRenderModes.FILL_USE_AS_CLIP:
-        svgText.style.fill = this.state.fill;
+        fill = this.state.fill;
         clip = true;
         break;
-      case textRenderModes.STROKE_USE_AS_CLIP: 
-        svgText.style.fill = "none";
+      case textRenderModes.STROKE_USE_AS_CLIP:
         stroke = true;
         clip = true;
         break;
       case textRenderModes.FILL_STROKE_USE_AS_CLIP:
-        svgText.style.fill = this.state.fill;
+        fill = this.state.fill;
         stroke = true;
         clip = true;
         break;
       case textRenderModes.USE_AS_CLIP:
-        svgText.style.fill = "transparent";
+        fill = "transparent";
         clip = true;
         break;
     }
+
+    svgText.style.fill = fill || "none";
 
     if (stroke) {      
       svgText.style.stroke = this.state.stroke;
@@ -707,6 +706,19 @@ export class AppearanceStreamRenderer {
         resolve(true);
       }, 0);
     });
+    
+    // create a transparent text copy with large stroke width to simplify user interaction    
+    const clonedSvg = this.createSvgElement();
+    clonedSvg.classList.add("annotation-pick-helper");
+    const clonedPath = svgText.cloneNode(true) as SVGPathElement;
+    const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
+      ? selectionStrokeWidth
+      : this.state.strokeWidth;
+    clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
+    clonedPath.setAttribute("stroke", "transparent");
+    clonedPath.setAttribute("fill", fill ? "transparent" : "none");
+    clonedSvg.append(clonedPath);
+    this._selectionCopies.push(clonedPath);
 
     return {element: svgText, blendMode: this.state.mixBlendMode || "normal"};
   }
