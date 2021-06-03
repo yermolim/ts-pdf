@@ -1,6 +1,7 @@
 import { CryptInfo, IEncodable, Reference } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 import { DateString } from "../strings/date-string";
+import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "./object-id";
 
@@ -144,6 +145,11 @@ export abstract class PdfObject implements IEncodable {
 
   protected parseLiteralProp(propName: string, parser: DataParser, index: number, cryptInfo?: CryptInfo): number {
     const parsed = LiteralString.parse(parser, index, cryptInfo);
+    return this.setParsedProp(propName, parsed);
+  }
+  
+  protected parseHexProp(propName: string, parser: DataParser, index: number, cryptInfo?: CryptInfo): number {
+    const parsed = HexString.parse(parser, index, cryptInfo);
     return this.setParsedProp(propName, parsed);
   }
 

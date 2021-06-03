@@ -173,6 +173,7 @@ export const dictTypes = {
   SOFT_MASK: "/Mask",
   GROUP: "/Group",
   FONT: "/Font",
+  FONT_DESCRIPTOR: "/FontDescriptor",
   ENCODING: "/Encoding",
   EMPTY: "",
 } as const;

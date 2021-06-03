@@ -117,3 +117,24 @@ export function hexStringToBytes(hexString: string): Uint8Array {
   } 
   return bytes;
 }
+
+//#region bit functions
+export function getBit(n: number, bitPosition: number) {
+  return (n & (1 << bitPosition)) === 0 ? 0 : 1;
+}
+
+export function setBit(n: number, bitPosition: number) {
+  return n | (1 << bitPosition);
+}
+
+export function clearBit(n: number, bitPosition: number) {
+  const mask = ~(1 << bitPosition);
+  return n & mask;
+}
+
+export function updateBit(n: number, bitPosition: number, bitValue: boolean) {
+  const bitValueNormalized = bitValue ? 1 : 0;
+  const clearMask = ~(1 << bitPosition);
+  return (n & clearMask) | (bitValueNormalized << bitPosition);
+}
+//#endregion

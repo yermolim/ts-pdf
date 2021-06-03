@@ -13,6 +13,7 @@ import { XFormStream } from "../entities/streams/x-form-stream";
 import { HexString } from "../entities/strings/hex-string";
 import { LiteralString } from "../entities/strings/literal-string";
 import { ResourceDict } from "../entities/appearance/resource-dict";
+import { FontDict } from "../entities/appearance/font-dict";
 
 import { GraphicsState, GraphicsStateParams } from "./graphics-state";
 
@@ -459,43 +460,49 @@ export class AppearanceStreamRenderer {
     return true;
   }  
 
-  protected decodeTextParam(textParam: OperatorParameter, 
-    resources: ResourceDict): string {
-    const textState = this.state.textState;
-    let text = "";
-
-    if (textParam instanceof Uint8Array) {
-      // text parameter is a hex string, non-ascii encoding.
-      // try to get the font dict from the corresponding resources
-      const fontDict = resources.getFont(textState.customFontName);
-      if (fontDict) {
-        textState.fontFamily = fontDict.BaseFont
-          ? `'${fontDict.BaseFont.substring(1)}', arial, sans-serif` // remove starting slash
-          : "arial, sans-serif";
-      }
-
-      if (fontDict?.toUtfCmap) {
-        // 'to unicode' mapper found
-        text = fontDict.toUtfCmap.hexBytesToUtfString(textParam);
-      } else if (fontDict?.encoding?.charMap) { 
-        // 'code to character' mappings found
-        const charMap = fontDict.encoding.charMap;
-        textParam.forEach(byte => text += charMap.get(byte) ?? " ");
-      } else {
-        // no mappings are found in the resource dictionary.
-        // use the default text decoder as a fallback (though it might fail)
-        const decoder = textParam[0] === 254 && textParam[1] === 255 // UTF-16 Big Endian
-          ? new TextDecoder("utf-16be")
-          : new TextDecoder();
-        const literal = decoder.decode(textParam);
-        text = literal || "";
-      }
-    } else {
-      // text parameter is a literal string in ascii encoding or a number
-      text = textParam + "";
+  protected setTextStateFont(fontDict: FontDict) { 
+    const state = this.state.textState;
+    
+    if (!fontDict) {      
+      state.fontFamily = "arial, sans-serif";
+      return;
     }
 
-    return text;
+    let fallbackFont: string;
+    if (fontDict.isMonospace) {
+      fallbackFont = "courier, monospace";
+    } else if (fontDict.isScript) {
+      fallbackFont = "cursive";
+    } else if (fontDict.isSerif) {
+      fallbackFont = "times new roman, serif";
+    } else {        
+      fallbackFont = "arial, sans-serif";
+    }
+    
+    const baseFont = fontDict.BaseFont?.substring(1).toLowerCase();
+    if (!baseFont) {      
+      state.fontFamily = fallbackFont;
+      return;
+    }
+
+    if (baseFont.includes("times")) {        
+      state.fontFamily = "times new roman, serif";
+    } else if (baseFont.includes("arial")) {        
+      state.fontFamily = "arial, sans-serif";
+    } else if (baseFont.includes("courier")) {        
+      state.fontFamily = "courier new, monospace";
+    } else {
+      state.fontFamily = `${baseFont}, ${fallbackFont}`;
+    }
+  }
+
+  protected decodeTextParam(textParam: OperatorParameter, 
+    fontDict: FontDict): string {
+    if (textParam instanceof Uint8Array) {
+      return fontDict.decodeText(textParam);
+    } 
+    // text parameter is a literal string in ascii encoding or a number
+    return textParam + "";
   }
 
   protected createSvgElement(): SVGGraphicsElement {
@@ -599,8 +606,10 @@ export class AppearanceStreamRenderer {
 
   protected async drawTextAsync(textParam: OperatorParameter, 
     resources: ResourceDict): Promise<SvgElementWithBlendMode> {
-    const textState = this.state.textState;
-    const text = this.decodeTextParam(textParam, resources);
+    const textState = this.state.textState;    
+    const fontDict = resources.getFont(textState.customFontName);
+    const text = this.decodeTextParam(textParam, fontDict);
+    this.setTextStateFont(fontDict);
 
     if (!text) {
       console.log(`Can't decode the stream text parameter: '${textParam}'`);
@@ -714,9 +723,9 @@ export class AppearanceStreamRenderer {
     const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
       ? selectionStrokeWidth
       : this.state.strokeWidth;
-    clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-    clonedPath.setAttribute("stroke", "transparent");
-    clonedPath.setAttribute("fill", fill ? "transparent" : "none");
+    clonedPath.style.strokeWidth = clonedPathStrokeWidth + "";
+    clonedPath.style.stroke = "transparent";
+    clonedPath.style.fill = fill ? "transparent" : "none";
     clonedSvg.append(clonedPath);
     this._selectionCopies.push(clonedPath);
 

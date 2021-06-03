@@ -2640,6 +2640,7 @@ const dictTypes = {
     SOFT_MASK: "/Mask",
     GROUP: "/Group",
     FONT: "/Font",
+    FONT_DESCRIPTOR: "/FontDescriptor",
     ENCODING: "/Encoding",
     EMPTY: "",
 };
@@ -3930,6 +3931,9 @@ function hexStringToBytes(hexString) {
     }
     return bytes;
 }
+function getBit(n, bitPosition) {
+    return (n & (1 << bitPosition)) === 0 ? 0 : 1;
+}
 
 class XRefEntry {
     constructor(type, id, generation, byteOffset, nextFreeId, streamId, streamIndex) {
@@ -4638,6 +4642,77 @@ class DateString {
     }
 }
 
+class HexString {
+    constructor(literal, hex, bytes) {
+        this._literal = literal;
+        this._hex = hex;
+        this._bytes = bytes;
+    }
+    get literal() {
+        return this._literal;
+    }
+    get hex() {
+        return this._hex.slice();
+    }
+    get bytes() {
+        return this._bytes.slice();
+    }
+    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
+        const bounds = parser.getHexBounds(start, skipEmpty);
+        if (!bounds) {
+            return null;
+        }
+        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const hex = HexString.fromBytes(bytes);
+        return { value: hex, start: bounds.start, end: bounds.end };
+    }
+    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
+            }
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    static fromBytes(bytes) {
+        const literal = new TextDecoder().decode(bytes);
+        const hex = hexStringToBytes(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromHexBytes(hex) {
+        let literal = "";
+        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    static fromString(literal) {
+        const hex = hexStringToBytes(literal);
+        const bytes = new TextEncoder().encode(literal);
+        return new HexString(literal, hex, bytes);
+    }
+    ;
+    toArray(cryptInfo) {
+        return new Uint8Array([
+            ...keywordCodes.STR_HEX_START,
+            ...this._bytes,
+            ...keywordCodes.STR_HEX_END,
+        ]);
+    }
+}
+
 class LiteralString {
     constructor(literal, bytes) {
         this._literal = literal;
@@ -4867,6 +4942,10 @@ class PdfObject {
         const parsed = LiteralString.parse(parser, index, cryptInfo);
         return this.setParsedProp(propName, parsed);
     }
+    parseHexProp(propName, parser, index, cryptInfo) {
+        const parsed = HexString.parse(parser, index, cryptInfo);
+        return this.setParsedProp(propName, parsed);
+    }
     setParsedProp(propName, parsed) {
         if (!parsed) {
             throw new Error(`Can't parse ${propName} property value`);
@@ -5071,77 +5150,6 @@ class DecodeParamsDict extends PdfDict {
                 break;
             }
         }
-    }
-}
-
-class HexString {
-    constructor(literal, hex, bytes) {
-        this._literal = literal;
-        this._hex = hex;
-        this._bytes = bytes;
-    }
-    get literal() {
-        return this._literal;
-    }
-    get hex() {
-        return this._hex.slice();
-    }
-    get bytes() {
-        return this._bytes.slice();
-    }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        const bounds = parser.getHexBounds(start, skipEmpty);
-        if (!bounds) {
-            return null;
-        }
-        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        const hex = HexString.fromBytes(bytes);
-        return { value: hex, start: bounds.start, end: bounds.end };
-    }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
-            if (!current) {
-                break;
-            }
-            hexes.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    static fromBytes(bytes) {
-        const literal = new TextDecoder().decode(bytes);
-        const hex = hexStringToBytes(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromHexBytes(hex) {
-        let literal = "";
-        hex.forEach(x => literal += x.toString(16).padStart(2, "0"));
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    static fromString(literal) {
-        const hex = hexStringToBytes(literal);
-        const bytes = new TextEncoder().encode(literal);
-        return new HexString(literal, hex, bytes);
-    }
-    ;
-    toArray(cryptInfo) {
-        return new Uint8Array([
-            ...keywordCodes.STR_HEX_START,
-            ...this._bytes,
-            ...keywordCodes.STR_HEX_END,
-        ]);
     }
 }
 
@@ -11143,6 +11151,179 @@ class EncodingDict extends PdfDict {
     }
 }
 
+class FontDescriptorDict extends PdfDict {
+    constructor() {
+        super(dictTypes.FONT_DESCRIPTOR);
+        this.StemH = 0;
+        this.Leading = 0;
+        this.AvgWidth = 0;
+        this.MaxWidth = 0;
+        this.MissingWidth = 0;
+        this.XHeight = 0;
+    }
+    static parse(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FontDescriptorDict();
+            pdfObject.parseProps(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
+    }
+    toArray(cryptInfo) {
+        const superBytes = super.toArray(cryptInfo);
+        const encoder = new TextEncoder();
+        const bytes = [];
+        if (this.FontName) {
+            bytes.push(...encoder.encode("/FontName "), ...encoder.encode(" " + this.FontName));
+        }
+        if (this.FontFamily) {
+            bytes.push(...encoder.encode("/FontFamily "), codes.WHITESPACE, ...this.FontFamily.toArray(cryptInfo));
+        }
+        if (this.FontStretch) {
+            bytes.push(...encoder.encode("/FontStretch "), ...encoder.encode(" " + this.FontStretch));
+        }
+        if (this.FontWeight) {
+            bytes.push(...encoder.encode("/FontWeight "), ...encoder.encode(" " + this.FontWeight));
+        }
+        if (this.Flags) {
+            bytes.push(...encoder.encode("/Flags "), ...encoder.encode(" " + this.Flags));
+        }
+        if (this.FontBBox) {
+            bytes.push(...encoder.encode("/FontBBox "), codes.L_BRACKET);
+            this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
+        }
+        if (this.ItalicAngle) {
+            bytes.push(...encoder.encode("/ItalicAngle "), ...encoder.encode(" " + this.ItalicAngle));
+        }
+        if (this.Ascent) {
+            bytes.push(...encoder.encode("/Ascent "), ...encoder.encode(" " + this.Ascent));
+        }
+        if (this.Descent) {
+            bytes.push(...encoder.encode("/Descent "), ...encoder.encode(" " + this.Descent));
+        }
+        if (this.CapHeight) {
+            bytes.push(...encoder.encode("/CapHeight "), ...encoder.encode(" " + this.CapHeight));
+        }
+        if (this.StemV) {
+            bytes.push(...encoder.encode("/StemV "), ...encoder.encode(" " + this.StemV));
+        }
+        if (this.StemH) {
+            bytes.push(...encoder.encode("/StemV "), ...encoder.encode(" " + this.StemH));
+        }
+        if (this.Leading) {
+            bytes.push(...encoder.encode("/Leading "), ...encoder.encode(" " + this.Leading));
+        }
+        if (this.AvgWidth) {
+            bytes.push(...encoder.encode("/AvgWidth "), ...encoder.encode(" " + this.AvgWidth));
+        }
+        if (this.MaxWidth) {
+            bytes.push(...encoder.encode("/MaxWidth "), ...encoder.encode(" " + this.MaxWidth));
+        }
+        if (this.MissingWidth) {
+            bytes.push(...encoder.encode("/MissingWidth "), ...encoder.encode(" " + this.MissingWidth));
+        }
+        if (this.XHeight) {
+            bytes.push(...encoder.encode("/XHeight "), ...encoder.encode(" " + this.XHeight));
+        }
+        if (this.CharSet) {
+            bytes.push(...encoder.encode("/CharSet "), codes.WHITESPACE, ...this.CharSet.toArray(cryptInfo));
+        }
+        if (this.FontFile) {
+            bytes.push(...encoder.encode("/FontFile "), codes.WHITESPACE, ...this.FontFile.toArray(cryptInfo));
+        }
+        if (this.FontFile2) {
+            bytes.push(...encoder.encode("/FontFile2 "), codes.WHITESPACE, ...this.FontFile2.toArray(cryptInfo));
+        }
+        if (this.FontFile3) {
+            bytes.push(...encoder.encode("/FontFile3 "), codes.WHITESPACE, ...this.FontFile3.toArray(cryptInfo));
+        }
+        const totalBytes = [
+            ...superBytes.subarray(0, 2),
+            ...bytes,
+            ...superBytes.subarray(2, superBytes.length)
+        ];
+        return new Uint8Array(totalBytes);
+    }
+    parseProps(parseInfo) {
+        super.parseProps(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = parser.skipToNextName(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = parser.parseNameAt(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/FontName":
+                    case "/FontStretch":
+                        i = this.parseNameProp(name, parser, i);
+                        break;
+                    case "/FontFile":
+                    case "/FontFile2":
+                    case "/FontFile3":
+                        i = this.parseRefProp(name, parser, i);
+                        break;
+                    case "/Flags":
+                        i = this.parseNumberProp(name, parser, i, false);
+                        break;
+                    case "/FontWeight":
+                    case "/ItalicAngle":
+                    case "/Ascent":
+                    case "/Descent":
+                    case "/Leading":
+                    case "/CapHeight":
+                    case "/XHeight":
+                    case "/StemV":
+                    case "/StemH":
+                    case "/AvgWidth":
+                    case "/MaxWidth":
+                    case "/MissingWidth":
+                        i = this.parseNumberProp(name, parser, i, true);
+                        break;
+                    case "/FontBBox":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
+                    case "/CharSet":
+                    case "/FontFamily":
+                        const propType = parser.getValueTypeAt(i);
+                        if (propType === valueTypes.STRING_HEX) {
+                            i = this.parseHexProp(name, parser, i);
+                        }
+                        else if (propType === valueTypes.STRING_LITERAL) {
+                            i = this.parseLiteralProp(name, parser, i);
+                        }
+                        else {
+                            throw new Error(`Unsupported '${name}' property value type: '${propType}'`);
+                        }
+                        break;
+                    default:
+                        i = parser.skipToNextName(i, end - 1);
+                        break;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.FontName
+            || (!this.Flags && this.Flags !== 0)
+            || (!this.ItalicAngle && this.ItalicAngle !== 0)) {
+            throw new Error("Not all required properties parsed");
+        }
+    }
+}
+
 class FontDict extends PdfDict {
     constructor() {
         super(dictTypes.FONT);
@@ -11152,6 +11333,54 @@ class FontDict extends PdfDict {
     }
     get toUtfCmap() {
         return this._toUtfCmap;
+    }
+    get descriptor() {
+        return this._descriptor;
+    }
+    set descriptor(value) {
+        this._descriptor = value;
+        this.FontDescriptor = value.ref
+            ? new ObjectId(value.ref.id, value.ref.generation)
+            : null;
+    }
+    get descriptorId() {
+        var _a;
+        if (!this.FontDescriptor && ((_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.ref)) {
+            this.FontDescriptor = new ObjectId(this._descriptor.ref.id, this._descriptor.ref.generation);
+        }
+        return this.FontDescriptor;
+    }
+    get isMonospace() {
+        var _a;
+        if (!this._descriptor) {
+            return false;
+        }
+        const flags = (_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.Flags;
+        return !!getBit(flags, 0);
+    }
+    get isSerif() {
+        var _a;
+        if (!this._descriptor) {
+            return false;
+        }
+        const flags = (_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.Flags;
+        return !!getBit(flags, 1);
+    }
+    get isScript() {
+        var _a;
+        if (!this._descriptor) {
+            return false;
+        }
+        const flags = (_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.Flags;
+        return !!getBit(flags, 3);
+    }
+    get isItalic() {
+        var _a;
+        if (!this._descriptor) {
+            return false;
+        }
+        const flags = (_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.Flags;
+        return !!getBit(flags, 6);
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -11195,12 +11424,33 @@ class FontDict extends PdfDict {
             bytes.push(...encoder.encode("/LastChar "), ...encoder.encode(" " + this.LastChar));
         }
         if (this.Widths) {
-            bytes.push(...encoder.encode("/Widths "), codes.L_BRACKET);
-            this.Widths.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            if (this.Widths instanceof ObjectId) {
+                bytes.push(...encoder.encode("/Widths "), codes.WHITESPACE, ...this.Widths.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...encoder.encode("/Widths "), codes.L_BRACKET);
+                this.Widths.forEach(x => bytes.push(...encoder.encode(" " + x)));
+                bytes.push(codes.R_BRACKET);
+            }
+        }
+        if (this.descriptorId) {
+            bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, ...this.descriptorId.toArray(cryptInfo));
+        }
+        if (this.Resources) {
+            bytes.push(...encoder.encode("/Resources "), ...this.Resources);
+        }
+        if (this.CharProcs) {
+            bytes.push(...encoder.encode("/CharProcs "), ...this.CharProcs);
+        }
+        if (this.FontBBox) {
+            bytes.push(...encoder.encode("/FontBBox "), codes.L_BRACKET);
+            this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
             bytes.push(codes.R_BRACKET);
         }
-        if (this.FontDescriptor) {
-            bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, ...this.FontDescriptor.toArray(cryptInfo));
+        if (this.FontMatrix) {
+            bytes.push(...encoder.encode("/FontMatrix "), codes.L_BRACKET);
+            this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
+            bytes.push(codes.R_BRACKET);
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -11208,6 +11458,23 @@ class FontDict extends PdfDict {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    decodeText(bytes) {
+        var _a;
+        if (this.toUtfCmap) {
+            return this.toUtfCmap.hexBytesToUtfString(bytes);
+        }
+        if ((_a = this.encoding) === null || _a === void 0 ? void 0 : _a.charMap) {
+            const charMap = this.encoding.charMap;
+            let text = "";
+            bytes.forEach(byte => { var _a; return text += (_a = charMap.get(byte)) !== null && _a !== void 0 ? _a : " "; });
+            return text;
+        }
+        const decoder = bytes[0] === 254 && bytes[1] === 255
+            ? new TextDecoder("utf-16be")
+            : new TextDecoder();
+        const literal = decoder.decode(bytes);
+        return literal || "";
     }
     parseProps(parseInfo) {
         super.parseProps(parseInfo);
@@ -11253,12 +11520,47 @@ class FontDict extends PdfDict {
                     case "/LastChar":
                         i = this.parseNumberProp(name, parser, i, false);
                         break;
+                    case "/FontBBox":
+                    case "/FontMatrix":
+                        i = this.parseNumberArrayProp(name, parser, i, true);
+                        break;
                     case "/Widths":
-                        i = this.parseNumberArrayProp(name, parser, i, false);
+                        const widthPropType = parser.getValueTypeAt(i);
+                        if (widthPropType === valueTypes.ARRAY) {
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                        }
+                        else if (widthPropType === valueTypes.REF) {
+                            i = this.parseRefProp(name, parser, i);
+                        }
+                        else {
+                            throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+                        }
                         break;
                     case "/FontDescriptor":
                         i = this.parseRefProp(name, parser, i);
                         break;
+                    case "/Resources":
+                    case "/CharProcs":
+                        const excludedEntryType = parser.getValueTypeAt(i);
+                        if (excludedEntryType === valueTypes.REF) {
+                            const excludedDictId = ObjectId.parseRef(parser, i);
+                            if (excludedDictId && parseInfo.parseInfoGetter) {
+                                this[name.slice(1)] = parser.sliceCharCodes(excludedDictId.start, excludedDictId.end);
+                                i = excludedDictId.end + 1;
+                                break;
+                            }
+                            throw new Error(`Can't parse ${name} value reference`);
+                        }
+                        else if (excludedEntryType === valueTypes.DICTIONARY) {
+                            const excludedDictBounds = parser.getDictBoundsAt(i);
+                            if (excludedDictBounds) {
+                                this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
+                                i = excludedDictBounds.end + 1;
+                                break;
+                            }
+                            throw new Error(`Can't parse ${name} dictionary bounds`);
+                        }
+                        throw new Error(`Unsupported ${name} property value type: ${excludedEntryType}`);
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
@@ -11278,10 +11580,26 @@ class FontDict extends PdfDict {
             const cmap = UnicodeCmapStream.parse(toUtfParseInfo);
             this._toUtfCmap = cmap === null || cmap === void 0 ? void 0 : cmap.value;
         }
+        if (this.FontDescriptor) {
+            const descriptorParseInfo = parseInfo.parseInfoGetter(this.FontDescriptor.id);
+            const descriptor = FontDescriptorDict.parse(descriptorParseInfo);
+            this._descriptor = descriptor === null || descriptor === void 0 ? void 0 : descriptor.value;
+        }
         if (this.Subtype !== "/Type1"
+            && this.Subtype !== "/Type3"
             && this.Subtype !== "/TrueType"
             && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
             throw new Error(`Font type is not supported: ${this.Subtype}`);
+        }
+        if (this.Subtype === "/Type3"
+            && (!this.FontBBox
+                || !this.FontMatrix
+                || !this.Encoding
+                || !this.FirstChar
+                || !this.LastChar
+                || !this.Widths
+                || !this.CharProcs)) {
+            throw new Error("Not all required properties parsed");
         }
     }
 }
@@ -11759,6 +12077,20 @@ class ResourceDict extends PdfDict {
             }
             bytes.push(...keywordCodes.DICT_END);
         }
+        if (this._fontsMap.size) {
+            bytes.push(...encoder.encode("/Font "));
+            bytes.push(...keywordCodes.DICT_START);
+            for (const [name, fontDict] of this._fontsMap) {
+                bytes.push(...encoder.encode(name.slice(5)), codes.WHITESPACE);
+                if (fontDict.ref) {
+                    bytes.push(...ObjectId.fromRef(fontDict.ref).toArray(cryptInfo));
+                }
+                else {
+                    bytes.push(...fontDict.toArray(cryptInfo));
+                }
+            }
+            bytes.push(...keywordCodes.DICT_END);
+        }
         if (this._xObjectsMap.size) {
             bytes.push(...encoder.encode("/XObject "), ...keywordCodes.DICT_START);
             for (const [name, xObject] of this._xObjectsMap) {
@@ -11779,9 +12111,6 @@ class ResourceDict extends PdfDict {
         }
         if (this.Shading) {
             bytes.push(...encoder.encode("/Shading "), ...this.Shading.toArray(cryptInfo));
-        }
-        if (this.Font) {
-            bytes.push(...encoder.encode("/Font "), ...this.Font.toArray(cryptInfo));
         }
         if (this.Properties) {
             bytes.push(...encoder.encode("/Properties "), ...this.Properties.toArray(cryptInfo));
@@ -11819,6 +12148,10 @@ class ResourceDict extends PdfDict {
             yield pair;
         }
         return;
+    }
+    setFont(name, font) {
+        this._fontsMap.set(`/Font${name}`, font);
+        this._edited = true;
     }
     getXObject(name) {
         return this._xObjectsMap.get(name);
@@ -12993,36 +13326,49 @@ class AppearanceStreamRenderer {
         }
         return true;
     }
-    decodeTextParam(textParam, resources) {
+    setTextStateFont(fontDict) {
         var _a;
-        const textState = this.state.textState;
-        let text = "";
-        if (textParam instanceof Uint8Array) {
-            const fontDict = resources.getFont(textState.customFontName);
-            if (fontDict) {
-                textState.fontFamily = fontDict.BaseFont
-                    ? `'${fontDict.BaseFont.substring(1)}', arial, sans-serif`
-                    : "arial, sans-serif";
-            }
-            if (fontDict === null || fontDict === void 0 ? void 0 : fontDict.toUtfCmap) {
-                text = fontDict.toUtfCmap.hexBytesToUtfString(textParam);
-            }
-            else if ((_a = fontDict === null || fontDict === void 0 ? void 0 : fontDict.encoding) === null || _a === void 0 ? void 0 : _a.charMap) {
-                const charMap = fontDict.encoding.charMap;
-                textParam.forEach(byte => { var _a; return text += (_a = charMap.get(byte)) !== null && _a !== void 0 ? _a : " "; });
-            }
-            else {
-                const decoder = textParam[0] === 254 && textParam[1] === 255
-                    ? new TextDecoder("utf-16be")
-                    : new TextDecoder();
-                const literal = decoder.decode(textParam);
-                text = literal || "";
-            }
+        const state = this.state.textState;
+        if (!fontDict) {
+            state.fontFamily = "arial, sans-serif";
+            return;
+        }
+        let fallbackFont;
+        if (fontDict.isMonospace) {
+            fallbackFont = "courier, monospace";
+        }
+        else if (fontDict.isScript) {
+            fallbackFont = "cursive";
+        }
+        else if (fontDict.isSerif) {
+            fallbackFont = "times new roman, serif";
         }
         else {
-            text = textParam + "";
+            fallbackFont = "arial, sans-serif";
         }
-        return text;
+        const baseFont = (_a = fontDict.BaseFont) === null || _a === void 0 ? void 0 : _a.substring(1).toLowerCase();
+        if (!baseFont) {
+            state.fontFamily = fallbackFont;
+            return;
+        }
+        if (baseFont.includes("times")) {
+            state.fontFamily = "times new roman, serif";
+        }
+        else if (baseFont.includes("arial")) {
+            state.fontFamily = "arial, sans-serif";
+        }
+        else if (baseFont.includes("courier")) {
+            state.fontFamily = "courier new, monospace";
+        }
+        else {
+            state.fontFamily = `${baseFont}, ${fallbackFont}`;
+        }
+    }
+    decodeTextParam(textParam, fontDict) {
+        if (textParam instanceof Uint8Array) {
+            return fontDict.decodeText(textParam);
+        }
+        return textParam + "";
     }
     createSvgElement() {
         const element = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -13113,7 +13459,9 @@ class AppearanceStreamRenderer {
     drawTextAsync(textParam, resources) {
         return __awaiter$k(this, void 0, void 0, function* () {
             const textState = this.state.textState;
-            const text = this.decodeTextParam(textParam, resources);
+            const fontDict = resources.getFont(textState.customFontName);
+            const text = this.decodeTextParam(textParam, fontDict);
+            this.setTextStateFont(fontDict);
             if (!text) {
                 console.log(`Can't decode the stream text parameter: '${textParam}'`);
                 return null;
@@ -13216,9 +13564,9 @@ class AppearanceStreamRenderer {
             const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
                 ? selectionStrokeWidth
                 : this.state.strokeWidth;
-            clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
-            clonedPath.setAttribute("stroke", "transparent");
-            clonedPath.setAttribute("fill", fill ? "transparent" : "none");
+            clonedPath.style.strokeWidth = clonedPathStrokeWidth + "";
+            clonedPath.style.stroke = "transparent";
+            clonedPath.style.fill = fill ? "transparent" : "none";
             clonedSvg.append(clonedPath);
             this._selectionCopies.push(clonedPath);
             return { element: svgText, blendMode: this.state.mixBlendMode || "normal" };
@@ -22799,7 +23147,6 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.LINE:
                 annot = LineAnnotation.parse(info);
-                console.log(annot);
                 break;
             case annotationTypes.HIGHLIGHT:
                 annot = HighlightAnnotation.parse(info);
@@ -22815,7 +23162,6 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.FREE_TEXT:
                 annot = FreeTextAnnotation.parse(info);
-                console.log(annot);
                 break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;

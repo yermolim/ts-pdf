@@ -32,7 +32,7 @@ export class PageDict extends PdfDict {
    * Omitting the entry entirely indicates that the resources are to be inherited 
    * from an ancestor node in the page tree
    */
-  Resources: Uint8Array;
+  Resources: Uint8Array; // don't parse, just keep an unchanged byte array
   /**
    * (Required; inheritable) A rectangle , expressed in default user space units, 
    * that shall define the boundaries of the physical medium 

@@ -99,6 +99,20 @@ export class ResourceDict extends PdfDict {
       }
       bytes.push(...keywordCodes.DICT_END);
     }
+    if (this._fontsMap.size) {      
+      // TODO: test if it can be not an indirect reference
+      bytes.push(...encoder.encode("/Font "));    
+      bytes.push(...keywordCodes.DICT_START);
+      for (const [name, fontDict] of this._fontsMap) {
+        bytes.push(...encoder.encode(name.slice(5)), codes.WHITESPACE); // remove '/Font' prefix
+        if (fontDict.ref) {          
+          bytes.push(...ObjectId.fromRef(fontDict.ref).toArray(cryptInfo));
+        } else {
+          bytes.push(...fontDict.toArray(cryptInfo));
+        }
+      }
+      bytes.push(...keywordCodes.DICT_END);
+    }
     if (this._xObjectsMap.size) {
       bytes.push(...encoder.encode("/XObject "), ...keywordCodes.DICT_START);
       for (const [name, xObject] of this._xObjectsMap) {
@@ -121,9 +135,6 @@ export class ResourceDict extends PdfDict {
     if (this.Shading) {
       bytes.push(...encoder.encode("/Shading "), ...this.Shading.toArray(cryptInfo));
     }
-    if (this.Font) {
-      bytes.push(...encoder.encode("/Font "), ...this.Font.toArray(cryptInfo));
-    }
     if (this.Properties) {
       bytes.push(...encoder.encode("/Properties "), ...this.Properties.toArray(cryptInfo));
     }
@@ -143,14 +154,12 @@ export class ResourceDict extends PdfDict {
   getGraphicsState(name: string): GraphicsStateDict {
     return this._gsMap.get(name);
   }
-
   *getGraphicsStates(): Iterable<[string, GraphicsStateDict]> {
     for (const pair of this._gsMap) {
       yield pair;
     }
     return;
   }
-
   setGraphicsState(name: string, state: GraphicsStateDict) {
     this._gsMap.set(`/ExtGState${name}`, state);
     this._edited = true;
@@ -159,25 +168,26 @@ export class ResourceDict extends PdfDict {
   getFont(name: string): FontDict {
     return this._fontsMap.get("/Font" + name);
   }
-
   *getFonts(): Iterable<[string, FontDict]> {
     for (const pair of this._fontsMap) {
       yield pair;
     }
     return;
+  }  
+  setFont(name: string, font: FontDict) {
+    this._fontsMap.set(`/Font${name}`, font);
+    this._edited = true;
   }
   
   getXObject(name: string): PdfStream {
     return this._xObjectsMap.get(name);
   }
-
   *getXObjects(): Iterable<[string, PdfStream]> {
     for (const pair of this._xObjectsMap) {
       yield pair;
     }
     return;
-  }
-  
+  }  
   setXObject(name: string, xObject: PdfStream) {
     this._xObjectsMap.set(`/XObject${name}`, xObject);
     this._edited = true;
