@@ -1,4 +1,4 @@
-import { Mat3, Vec3 } from "../../common/math";
+import { Mat3, Vec3 } from "mathador";
 import { CssMixBlendMode } from "../../drawing/utils";
 import { TextState } from "./text-state";
 

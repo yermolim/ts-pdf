@@ -1,4 +1,4 @@
-import { Mat3 } from "../../common/math";
+import { Mat3 } from "mathador";
 import { TextRenderMode, textRenderModes } from "../const";
 
 export interface TextStateParams {   

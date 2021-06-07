@@ -1,4 +1,4 @@
-import { Vec2, vecMinMax } from "../../../../../common/math";
+import { Vec2 } from "mathador";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
@@ -50,7 +50,7 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
       for (let i = 0; i < dto.quadPoints.length; i += 2) {
         vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
       }
-      const {min, max} = vecMinMax(...vectors);
+      const {min, max} = Vec2.minMax(...vectors);
       annotation.Rect = [min.x, min.y, max.x, max.y];
     }
     annotation.C = dto.color.slice(0, 3);

@@ -1,5 +1,5 @@
 import { getRandomUuid } from "../../common/uuid";
-import { Vec2 } from "../../common/math";
+import { Vec2 } from "mathador";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";

@@ -1,7 +1,7 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
-import { Mat3, Vec2 } from "../../../../../common/math";
+import { Mat3, Vec2 } from "mathador";
 import { bezierConstant, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 

@@ -1,4 +1,4 @@
-import { Vec2, mat3From4Vec2, Mat3, getDistance, vecMinMax } from "../common/math";
+import { Vec2, Mat3 } from "mathador";
 import { Hextuple, Quadruple } from "../common/types";
   
 export type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
@@ -30,7 +30,7 @@ export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): 
   const zeroVec = new Vec2();
   const lengthVec = new Vec2(lineLength, 0);
   // get the matrix to transform the 'cloudy' line to the same position the source line has
-  const matrix = mat3From4Vec2(zeroVec, lengthVec, start, end);    
+  const matrix = Mat3.from4Vec2(zeroVec, lengthVec, start, end);    
   
   const waveCount = Math.ceil(lineLength / maxWaveSize);
   const waveSize = lineLength / waveCount;
@@ -69,7 +69,7 @@ export function calcPdfBBoxToRectMatrices(bBox: Quadruple, rect: Quadruple, matr
     The transformed appearance box is the smallest upright rectangle 
     that encompasses this quadrilateral.
     */
-  const {min: appBoxMin, max: appBoxMax} = vecMinMax(
+  const {min: appBoxMin, max: appBoxMax} = Vec2.minMax(
     Vec2.applyMat3(bBoxLL, matAP),
     Vec2.applyMat3(bBoxLR, matAP), 
     Vec2.applyMat3(bBoxUR, matAP),
@@ -84,7 +84,7 @@ export function calcPdfBBoxToRectMatrices(bBox: Quadruple, rect: Quadruple, matr
     */   
   const rectMin = new Vec2(rect[0], rect[1]);
   const rectMax = new Vec2(rect[2], rect[3]);
-  const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
+  const matA = Mat3.from4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
   /*
     Matrix is concatenated with A to form a matrix AA that maps from 
     the appearance’s coordinate system to the annotation’s rectangle in default user space

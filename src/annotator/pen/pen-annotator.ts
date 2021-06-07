@@ -1,4 +1,4 @@
-import { Vec2, vecMinMax } from "../../common/math";
+import { Vec2 } from "mathador";
 import { Quadruple } from "../../common/types";
 import { getRandomUuid } from "../../common/uuid";
 
@@ -235,7 +235,7 @@ export class PenAnnotator extends Annotator {
       inkList.push(ink);
     });
     const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(...positions);  
+      Vec2.minMax(...positions);  
     const halfW = data.strokeWidth / 2; 
     const rect: Quadruple = [
       newRectMin.x - halfW, 

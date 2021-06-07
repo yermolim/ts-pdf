@@ -1,5 +1,5 @@
 import { Quadruple } from "../../common/types";
-import { Vec2 } from "../../common/math";
+import { Vec2 } from "mathador";
 import { getRandomUuid } from "../../common/uuid";
 
 import { PageService } from "../../services/page-service";

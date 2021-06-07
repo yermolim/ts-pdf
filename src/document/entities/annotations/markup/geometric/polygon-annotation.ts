@@ -1,4 +1,4 @@
-import { Mat3, Vec2 } from "../../../../../common/math";
+import { Mat3, Vec2 } from "mathador";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";

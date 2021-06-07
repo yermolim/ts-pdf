@@ -1,5 +1,5 @@
 import { Hextuple, Quadruple } from "../../../common/types";
-import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../common/math";
+import { Mat3, Vec2 } from "mathador";
 import { BBox } from "../../../drawing/utils";
 import { getRandomUuid } from "../../../common/uuid";
 
@@ -627,11 +627,11 @@ export abstract class AnnotationDict extends PdfDict {
         this.apStream.transformedBBox;  
       // compare it with the Rect
       const {min: boxMin, max: boxMax} = 
-        vecMinMax(apTrBoxLL, apTrBoxLR, apTrBoxUR, apTrBoxUL);
+        Vec2.minMax(apTrBoxLL, apTrBoxLR, apTrBoxUR, apTrBoxUL);
       const rectMin = new Vec2(this.Rect[0], this.Rect[1]);
       const rectMax = new Vec2(this.Rect[2], this.Rect[3]);    
       // transform the appearance stream bounding box to match the Rect scale and position
-      const mat = mat3From4Vec2(boxMin, boxMax, rectMin, rectMax, true);
+      const mat = Mat3.from4Vec2(boxMin, boxMax, rectMin, rectMax, true);
       bBoxLL = apTrBoxLL.applyMat3(mat);
       bBoxLR = apTrBoxLR.applyMat3(mat);
       bBoxUR = apTrBoxUR.applyMat3(mat);
@@ -716,7 +716,7 @@ export abstract class AnnotationDict extends PdfDict {
 
     // get an axis-aligned bounding box and assign it to the Rect property
     const {min: newRectMin, max: newRectMax} = 
-      vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
+      Vec2.minMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
     dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
   }  
   

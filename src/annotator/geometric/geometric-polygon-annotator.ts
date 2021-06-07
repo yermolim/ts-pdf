@@ -1,5 +1,5 @@
 import { getRandomUuid } from "../../common/uuid";
-import { Vec2 } from "../../common/math";
+import { Vec2 } from "mathador";
 import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
 import { PageService } from "../../services/page-service";

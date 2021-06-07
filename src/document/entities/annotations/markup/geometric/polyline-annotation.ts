@@ -1,4 +1,4 @@
-import { Mat3, Vec2 } from "../../../../../common/math";
+import { Mat3, Vec2 } from "mathador";
 
 import { codes } from "../../../../codes";
 import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles } from "../../../../const";

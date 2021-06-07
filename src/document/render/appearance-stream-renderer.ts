@@ -1,5 +1,5 @@
 import { Quadruple } from "../../common/types";
-import { Mat3, Vec2 } from "../../common/math";
+import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices, selectionStrokeWidth, 
   CssMixBlendMode } from "../../drawing/utils";
 

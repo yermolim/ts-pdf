@@ -1,4 +1,4 @@
-import { Vec2 } from "../../common/math";
+import { Vec2 } from "mathador";
 import { Quadruple } from "../../common/types";
 import { SmoothPath, SmoothPathData, SmoothPathOptions } from "./smooth-path";
 

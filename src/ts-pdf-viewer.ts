@@ -5,7 +5,7 @@ import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/displ
 import { mainHtml, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { clamp } from "./common/math";
+import { clamp } from "mathador";
 import { htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
 import { CustomStampCreationInfo } from "./drawing/stamps";

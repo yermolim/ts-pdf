@@ -1,6 +1,6 @@
 import { textDialogHtml } from "../assets/index.html";
 
-import { clamp, Vec2, getDistance } from "../common/math";
+import { clamp, Vec2, getDistance2D } from "mathador";
 import { htmlToElements } from "../common/dom";
 
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
@@ -339,7 +339,7 @@ export class Viewer {
     const a = event.touches[0];
     const b = event.touches[1];    
     this._pinchInfo.active = true;
-    this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
+    this._pinchInfo.lastDist = getDistance2D(a.clientX, a.clientY, b.clientX, b.clientY);
 
     const onTouchMove = (moveEvent: TouchEvent) => {
       if (moveEvent.touches.length !== 2) {
@@ -348,7 +348,7 @@ export class Viewer {
 
       const mA = moveEvent.touches[0];
       const mB = moveEvent.touches[1];    
-      const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+      const dist = getDistance2D(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
       const delta = dist - this._pinchInfo.lastDist;
       const factor = Math.floor(delta / this._pinchInfo.minDist);  
 

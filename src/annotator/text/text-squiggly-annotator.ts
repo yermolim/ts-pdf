@@ -1,4 +1,4 @@
-import { Vec2 } from "../../common/math";
+import { Vec2 } from "mathador";
 import { buildSquigglyLine } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";

@@ -1,4 +1,4 @@
-import { getDistance, Vec2 } from "../../common/math";
+import { getDistance2D, Vec2 } from "mathador";
 import { getRandomUuid } from "../../common/uuid";
 import { CustomStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
 
@@ -235,7 +235,7 @@ export class StampAnnotator extends Annotator {
       if (longTap) {
         const downX = this._lastPointerDownInfo?.clientX || 0;
         const downY = this._lastPointerDownInfo?.clientY || 0;
-        const displacement = Math.abs(getDistance(cx, cy, downX, downY));
+        const displacement = Math.abs(getDistance2D(cx, cy, downX, downY));
         // 7.5px seems to be the default Chrome (v.89) displacement limit for firing 'contextmenu' event
         const displaced = displacement > 7.5;
         if (!displaced) {

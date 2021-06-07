@@ -1,4 +1,4 @@
-import { clamp } from "../common/math";
+import { clamp } from "mathador";
 
 import { ElementEventService } from "./element-event-service";
 import { PageView } from "../components/pages/page-view";

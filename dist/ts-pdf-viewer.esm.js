@@ -39,6 +39,7 @@
  */
 
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
+import { Vec2, clamp, Mat3, Vec3, getDistance2D } from 'mathador';
 import Pako from 'pako';
 import { v4 } from 'uuid';
 import CryptoES from 'crypto-es';
@@ -1519,583 +1520,6 @@ const styles = `
   }
 </style>
 `;
-
-function clamp(v, min, max) {
-    return Math.max(min, Math.min(v, max));
-}
-class Vec2 {
-    constructor(x = 0, y = 0) {
-        this.length = 2;
-        this.x = x;
-        this.y = y;
-    }
-    static multiplyByScalar(v, s) {
-        return new Vec2(v.x * s, v.y * s);
-    }
-    static addScalar(v, s) {
-        return new Vec2(v.x + s, v.y + s);
-    }
-    static normalize(v) {
-        return new Vec2().setFromVec2(v).normalize();
-    }
-    static add(v1, v2) {
-        return new Vec2(v1.x + v2.x, v1.y + v2.y);
-    }
-    static substract(v1, v2) {
-        return new Vec2(v1.x - v2.x, v1.y - v2.y);
-    }
-    static dotProduct(v1, v2) {
-        return v1.x * v2.x + v1.y * v2.y;
-    }
-    static applyMat3(v, m) {
-        return v.clone().applyMat3(m);
-    }
-    static lerp(v1, v2, t) {
-        return v1.clone().lerp(v2, t);
-    }
-    static rotate(v, center, theta) {
-        return v.clone().rotate(center, theta);
-    }
-    static equals(v1, v2, precision = 6) {
-        return v1.equals(v2);
-    }
-    static getDistance(v1, v2) {
-        const x = v2.x - v1.x;
-        const y = v2.y - v1.y;
-        return Math.sqrt(x * x + y * y);
-    }
-    clone() {
-        return new Vec2(this.x, this.y);
-    }
-    set(x, y) {
-        this.x = x;
-        this.y = y;
-        return this;
-    }
-    setFromVec2(vec2) {
-        this.x = vec2.x;
-        this.y = vec2.y;
-        return this;
-    }
-    multiplyByScalar(s) {
-        this.x *= s;
-        this.y *= s;
-        return this;
-    }
-    addScalar(s) {
-        this.x += s;
-        this.y += s;
-        return this;
-    }
-    getMagnitude() {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
-    }
-    normalize() {
-        const m = this.getMagnitude();
-        if (m) {
-            this.x /= m;
-            this.y /= m;
-        }
-        return this;
-    }
-    add(v) {
-        this.x += v.x;
-        this.y += v.y;
-        return this;
-    }
-    substract(v) {
-        this.x -= v.x;
-        this.y -= v.y;
-        return this;
-    }
-    dotProduct(v) {
-        return Vec2.dotProduct(this, v);
-    }
-    applyMat3(m) {
-        if (m.length !== 9) {
-            throw new Error("Matrix must contain 9 elements");
-        }
-        const { x, y } = this;
-        const [x_x, x_y, , y_x, y_y, , z_x, z_y,] = m;
-        this.x = x * x_x + y * y_x + z_x;
-        this.y = x * x_y + y * y_y + z_y;
-        return this;
-    }
-    lerp(v, t) {
-        this.x += t * (v.x - this.x);
-        this.y += t * (v.y - this.y);
-        return this;
-    }
-    rotate(center, theta) {
-        const s = Math.sin(theta);
-        const c = Math.cos(theta);
-        const x = this.x - center.x;
-        const y = this.y - center.y;
-        this.x = x * c - y * s + center.x;
-        this.y = x * s + y * c + center.y;
-        return this;
-    }
-    equals(v, precision = 6) {
-        return +this.x.toFixed(precision) === +v.x.toFixed(precision)
-            && +this.y.toFixed(precision) === +v.y.toFixed(precision);
-    }
-    truncate(decimalDigits = 5) {
-        this.x = +this.x.toFixed(decimalDigits);
-        this.y = +this.y.toFixed(decimalDigits);
-        return this;
-    }
-    toArray() {
-        return [this.x, this.y];
-    }
-    toIntArray() {
-        return new Int32Array(this);
-    }
-    toFloatArray() {
-        return new Float32Array(this);
-    }
-    *[Symbol.iterator]() {
-        yield this.x;
-        yield this.y;
-    }
-}
-class Vec3 {
-    constructor(x = 0, y = 0, z = 0) {
-        this.length = 3;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-    static multiplyByScalar(v, s) {
-        return new Vec3(v.x * s, v.y * s, v.z * s);
-    }
-    static addScalar(v, s) {
-        return new Vec3(v.x + s, v.y + s, v.z + s);
-    }
-    static normalize(v) {
-        return new Vec3().setFromVec3(v).normalize();
-    }
-    static add(v1, v2) {
-        return new Vec3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
-    }
-    static substract(v1, v2) {
-        return new Vec3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
-    }
-    static dotProduct(v1, v2) {
-        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-    }
-    static crossProduct(v1, v2) {
-        return new Vec3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x);
-    }
-    static onVector(v1, v2) {
-        return v1.clone().onVector(v2);
-    }
-    static onPlane(v, planeNormal) {
-        return v.clone().onPlane(planeNormal);
-    }
-    static applyMat3(v, m) {
-        return v.clone().applyMat3(m);
-    }
-    static lerp(v1, v2, t) {
-        return v1.clone().lerp(v2, t);
-    }
-    static equals(v1, v2, precision = 6) {
-        if (!v1) {
-            return false;
-        }
-        return v1.equals(v2, precision);
-    }
-    static getDistance(v1, v2) {
-        const x = v2.x - v1.x;
-        const y = v2.y - v1.y;
-        const z = v2.z - v1.z;
-        return Math.sqrt(x * x + y * y + z * z);
-    }
-    static getAngle(v1, v2) {
-        return v1.getAngle(v2);
-    }
-    clone() {
-        return new Vec3(this.x, this.y, this.z);
-    }
-    set(x, y, z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        return this;
-    }
-    setFromVec3(v) {
-        this.x = v.x;
-        this.y = v.y;
-        this.z = v.z;
-        return this;
-    }
-    multiplyByScalar(s) {
-        this.x *= s;
-        this.y *= s;
-        this.z *= s;
-        return this;
-    }
-    addScalar(s) {
-        this.x += s;
-        this.y += s;
-        this.z += s;
-        return this;
-    }
-    getMagnitude() {
-        return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-    }
-    getAngle(v) {
-        const d = this.getMagnitude() * v.getMagnitude();
-        if (!d) {
-            return Math.PI / 2;
-        }
-        const cos = this.dotProduct(v) / d;
-        return Math.acos(clamp(cos, -1, 1));
-    }
-    normalize() {
-        const m = this.getMagnitude();
-        if (m) {
-            this.x /= m;
-            this.y /= m;
-            this.z /= m;
-        }
-        return this;
-    }
-    add(v) {
-        this.x += v.x;
-        this.y += v.y;
-        this.z += v.z;
-        return this;
-    }
-    substract(v) {
-        this.x -= v.x;
-        this.y -= v.y;
-        this.z -= v.z;
-        return this;
-    }
-    dotProduct(v) {
-        return Vec3.dotProduct(this, v);
-    }
-    crossProduct(v) {
-        this.x = this.y * v.z - this.z * v.y;
-        this.y = this.z * v.x - this.x * v.z;
-        this.z = this.x * v.y - this.y * v.x;
-        return this;
-    }
-    onVector(v) {
-        const magnitude = this.getMagnitude();
-        if (!magnitude) {
-            return this.set(0, 0, 0);
-        }
-        return v.clone().multiplyByScalar(v.clone().dotProduct(this) / (magnitude * magnitude));
-    }
-    onPlane(planeNormal) {
-        return this.substract(this.clone().onVector(planeNormal));
-    }
-    applyMat3(m) {
-        if (m.length !== 9) {
-            throw new Error("Matrix must contain 9 elements");
-        }
-        const { x, y, z } = this;
-        const [x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z] = m;
-        this.x = x * x_x + y * y_x + z * z_x;
-        this.y = x * x_y + y * y_y + z * z_y;
-        this.z = x * x_z + y * y_z + z * z_z;
-        return this;
-    }
-    lerp(v, t) {
-        this.x += t * (v.x - this.x);
-        this.y += t * (v.y - this.y);
-        this.z += t * (v.z - this.z);
-        return this;
-    }
-    equals(v, precision = 6) {
-        if (!v) {
-            return false;
-        }
-        return +this.x.toFixed(precision) === +v.x.toFixed(precision)
-            && +this.y.toFixed(precision) === +v.y.toFixed(precision)
-            && +this.z.toFixed(precision) === +v.z.toFixed(precision);
-    }
-    toArray() {
-        return [this.x, this.y, this.z];
-    }
-    toIntArray() {
-        return new Int32Array(this);
-    }
-    toFloatArray() {
-        return new Float32Array(this);
-    }
-    *[Symbol.iterator]() {
-        yield this.x;
-        yield this.y;
-        yield this.z;
-    }
-}
-class Mat3 {
-    constructor() {
-        this.length = 9;
-        this._matrix = new Array(this.length);
-        this._matrix[0] = 1;
-        this._matrix[1] = 0;
-        this._matrix[2] = 0;
-        this._matrix[3] = 0;
-        this._matrix[4] = 1;
-        this._matrix[5] = 0;
-        this._matrix[6] = 0;
-        this._matrix[7] = 0;
-        this._matrix[8] = 1;
-    }
-    get x_x() {
-        return this._matrix[0];
-    }
-    get x_y() {
-        return this._matrix[1];
-    }
-    get x_z() {
-        return this._matrix[2];
-    }
-    get y_x() {
-        return this._matrix[3];
-    }
-    get y_y() {
-        return this._matrix[4];
-    }
-    get y_z() {
-        return this._matrix[5];
-    }
-    get z_x() {
-        return this._matrix[6];
-    }
-    get z_y() {
-        return this._matrix[7];
-    }
-    get z_z() {
-        return this._matrix[8];
-    }
-    static fromMat3(m) {
-        return new Mat3().setFromMat3(m);
-    }
-    static multiply(m1, m2) {
-        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = m1._matrix;
-        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m2._matrix;
-        const m = new Mat3();
-        m.set(a11 * b11 + a12 * b21 + a13 * b31, a11 * b12 + a12 * b22 + a13 * b32, a11 * b13 + a12 * b23 + a13 * b33, a21 * b11 + a22 * b21 + a23 * b31, a21 * b12 + a22 * b22 + a23 * b32, a21 * b13 + a22 * b23 + a23 * b33, a31 * b11 + a32 * b21 + a33 * b31, a31 * b12 + a32 * b22 + a33 * b32, a31 * b13 + a32 * b23 + a33 * b33);
-        return m;
-    }
-    static multiplyScalar(m, s) {
-        const res = new Mat3();
-        for (let i = 0; i < this.length; i++) {
-            res._matrix[i] = m._matrix[i] * s;
-        }
-        return res;
-    }
-    static transpose(m) {
-        const res = new Mat3();
-        res.set(m.x_x, m.y_x, m.z_x, m.x_y, m.y_y, m.z_y, m.x_z, m.y_z, m.z_z);
-        return res;
-    }
-    static invert(m) {
-        const mTemp = new Mat3();
-        mTemp.set(m.y_y * m.z_z - m.z_y * m.y_z, m.y_x * m.z_z - m.z_x * m.y_z, m.y_x * m.z_y - m.z_x * m.y_y, m.x_y * m.z_z - m.z_y * m.x_z, m.x_x * m.z_z - m.z_x * m.x_z, m.x_x * m.z_y - m.z_x * m.x_y, m.x_y * m.y_z - m.y_y * m.x_z, m.x_x * m.y_z - m.y_x * m.x_z, m.x_x * m.y_y - m.y_x * m.x_y);
-        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
-        const det = m.x_x * mTemp.x_x + m.x_y * mTemp.x_y + m.x_z * mTemp.x_z;
-        const inversed = new Mat3();
-        if (!det) {
-            inversed.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
-        else {
-            const detInv = 1 / det;
-            inversed.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
-        }
-        return inversed;
-    }
-    static buildScale(x, y = undefined) {
-        y !== null && y !== void 0 ? y : (y = x);
-        return new Mat3().set(x, 0, 0, 0, y, 0, 0, 0, 1);
-    }
-    static buildRotation(theta) {
-        const c = Math.cos(theta);
-        const s = Math.sin(theta);
-        return new Mat3().set(c, -s, 0, s, c, 0, 0, 0, 1);
-    }
-    static buildTranslate(x, y) {
-        return new Mat3().set(1, 0, 0, 0, 1, 0, x, y, 1);
-    }
-    static equals(m1, m2, precision = 6) {
-        return m1.equals(m2, precision);
-    }
-    clone() {
-        return new Mat3().set(this.x_x, this.x_y, this.x_z, this.y_x, this.y_y, this.y_z, this.z_x, this.z_y, this.z_z);
-    }
-    set(x_x, x_y, x_z, y_x, y_y, y_z, z_x, z_y, z_z) {
-        this._matrix[0] = x_x;
-        this._matrix[1] = x_y;
-        this._matrix[2] = x_z;
-        this._matrix[3] = y_x;
-        this._matrix[4] = y_y;
-        this._matrix[5] = y_z;
-        this._matrix[6] = z_x;
-        this._matrix[7] = z_y;
-        this._matrix[8] = z_z;
-        return this;
-    }
-    reset() {
-        this._matrix[0] = 1;
-        this._matrix[1] = 0;
-        this._matrix[2] = 0;
-        this._matrix[3] = 0;
-        this._matrix[4] = 1;
-        this._matrix[5] = 0;
-        this._matrix[6] = 0;
-        this._matrix[7] = 0;
-        this._matrix[8] = 1;
-        return this;
-    }
-    setFromMat3(m) {
-        for (let i = 0; i < this.length; i++) {
-            this._matrix[i] = m._matrix[i];
-        }
-        return this;
-    }
-    multiply(m) {
-        const [a11, a12, a13, a21, a22, a23, a31, a32, a33] = this._matrix;
-        const [b11, b12, b13, b21, b22, b23, b31, b32, b33] = m._matrix;
-        this._matrix[0] = a11 * b11 + a12 * b21 + a13 * b31;
-        this._matrix[1] = a11 * b12 + a12 * b22 + a13 * b32;
-        this._matrix[2] = a11 * b13 + a12 * b23 + a13 * b33;
-        this._matrix[3] = a21 * b11 + a22 * b21 + a23 * b31;
-        this._matrix[4] = a21 * b12 + a22 * b22 + a23 * b32;
-        this._matrix[5] = a21 * b13 + a22 * b23 + a23 * b33;
-        this._matrix[6] = a31 * b11 + a32 * b21 + a33 * b31;
-        this._matrix[7] = a31 * b12 + a32 * b22 + a33 * b32;
-        this._matrix[8] = a31 * b13 + a32 * b23 + a33 * b33;
-        return this;
-    }
-    multiplyScalar(s) {
-        for (let i = 0; i < this.length; i++) {
-            this._matrix[i] *= s;
-        }
-        return this;
-    }
-    transpose() {
-        const temp = new Mat3().setFromMat3(this);
-        this.set(temp.x_x, temp.y_x, temp.z_x, temp.x_y, temp.y_y, temp.z_y, temp.x_z, temp.y_z, temp.z_z);
-        return this;
-    }
-    invert() {
-        const mTemp = new Mat3();
-        mTemp.set(this.y_y * this.z_z - this.z_y * this.y_z, this.y_x * this.z_z - this.z_x * this.y_z, this.y_x * this.z_y - this.z_x * this.y_y, this.x_y * this.z_z - this.z_y * this.x_z, this.x_x * this.z_z - this.z_x * this.x_z, this.x_x * this.z_y - this.z_x * this.x_y, this.x_y * this.y_z - this.y_y * this.x_z, this.x_x * this.y_z - this.y_x * this.x_z, this.x_x * this.y_y - this.y_x * this.x_y);
-        mTemp.set(mTemp.x_x, -mTemp.x_y, mTemp.x_z, -mTemp.y_x, mTemp.y_y, -mTemp.y_z, mTemp.z_x, -mTemp.z_y, mTemp.z_z);
-        const det = this.x_x * mTemp.x_x + this.x_y * mTemp.x_y + this.x_z * mTemp.x_z;
-        if (!det) {
-            this.set(0, 0, 0, 0, 0, 0, 0, 0, 0);
-        }
-        else {
-            const detInv = 1 / det;
-            this.set(detInv * mTemp.x_x, detInv * mTemp.y_x, detInv * mTemp.z_x, detInv * mTemp.x_y, detInv * mTemp.y_y, detInv * mTemp.z_y, detInv * mTemp.x_z, detInv * mTemp.y_z, detInv * mTemp.z_z);
-        }
-        return this;
-    }
-    getDeterminant() {
-        const [a, b, c, d, e, f, g, h, i] = this._matrix;
-        return a * e * i - a * f * h + b * f * g - b * d * i + c * d * h - c * e * g;
-    }
-    getTRS() {
-        const t = new Vec2(this.z_x, this.z_y);
-        const s_x = Math.sqrt(this.x_x * this.x_x + this.x_y * this.x_y);
-        const s_y = Math.sqrt(this.y_x * this.y_x + this.y_y * this.y_y);
-        const s = new Vec2(s_x, s_y);
-        const sign = Math.atan(-this.x_y / this.x_x);
-        const angle = Math.acos(this.x_x / s_x);
-        let r;
-        if ((angle > Math.PI / 2 && sign > 0)
-            || (angle < Math.PI / 2 && sign < 0)) {
-            r = 2 * Math.PI - angle;
-        }
-        else {
-            r = angle;
-        }
-        return { t, r, s };
-    }
-    equals(m, precision = 6) {
-        for (let i = 0; i < this.length; i++) {
-            if (+this._matrix[i].toFixed(precision) !== +m._matrix[i].toFixed(precision)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    applyScaling(x, y = undefined) {
-        const m = Mat3.buildScale(x, y);
-        return this.multiply(m);
-    }
-    applyTranslation(x, y) {
-        const m = Mat3.buildTranslate(x, y);
-        return this.multiply(m);
-    }
-    applyRotation(theta) {
-        const m = Mat3.buildRotation(theta);
-        return this.multiply(m);
-    }
-    toArray() {
-        return this._matrix.slice();
-    }
-    toIntArray() {
-        return new Int32Array(this);
-    }
-    toIntShortArray() {
-        return new Int32Array([
-            this._matrix[0],
-            this._matrix[1],
-            this._matrix[3],
-            this._matrix[4],
-            this._matrix[6],
-            this._matrix[7],
-        ]);
-    }
-    toFloatArray() {
-        return new Float32Array(this);
-    }
-    toFloatShortArray() {
-        return new Float32Array([
-            +(this._matrix[0].toFixed(5)),
-            +(this._matrix[1].toFixed(5)),
-            +(this._matrix[3].toFixed(5)),
-            +(this._matrix[4].toFixed(5)),
-            +(this._matrix[6].toFixed(5)),
-            +(this._matrix[7].toFixed(5)),
-        ]);
-    }
-    *[Symbol.iterator]() {
-        for (let i = 0; i < 9; i++) {
-            yield this._matrix[i];
-        }
-    }
-}
-function mat3From4Vec2(aMin, aMax, bMin, bMax, noRotation = false) {
-    const mat = new Mat3();
-    mat.applyTranslation(-aMin.x, -aMin.y);
-    const aLen = Vec2.substract(aMax, aMin).getMagnitude();
-    const bLen = Vec2.substract(bMax, bMin).getMagnitude();
-    const scale = bLen / aLen;
-    mat.applyScaling(scale);
-    if (!noRotation) {
-        const aTheta = Math.atan2(aMax.y - aMin.y, aMax.x - aMin.x);
-        const bTheta = Math.atan2(bMax.y - bMin.y, bMax.x - bMin.x);
-        const rotation = aTheta - bTheta;
-        mat.applyRotation(rotation);
-    }
-    mat.applyTranslation(bMin.x, bMin.y);
-    return mat;
-}
-function vecMinMax(...values) {
-    const min = new Vec2(Math.min(...values.map(x => x.x)), Math.min(...values.map(x => x.y)));
-    const max = new Vec2(Math.max(...values.map(x => x.x)), Math.max(...values.map(x => x.y)));
-    return { min, max };
-}
-function getDistance(x1, y1, x2, y2) {
-    return Math.hypot(x2 - x1, y2 - y1);
-}
 
 function htmlToElements(html) {
     const template = document.createElement("template");
@@ -12814,7 +12238,7 @@ function buildSquigglyLine(start, end, maxWaveSize) {
     const resultPoints = [start.clone()];
     const zeroVec = new Vec2();
     const lengthVec = new Vec2(lineLength, 0);
-    const matrix = mat3From4Vec2(zeroVec, lengthVec, start, end);
+    const matrix = Mat3.from4Vec2(zeroVec, lengthVec, start, end);
     const waveCount = Math.ceil(lineLength / maxWaveSize);
     const waveSize = lineLength / waveCount;
     const halfWaveSize = waveSize / 2;
@@ -12833,10 +12257,10 @@ function calcPdfBBoxToRectMatrices(bBox, rect, matrix) {
     const bBoxLR = new Vec2(bBox[2], bBox[1]);
     const bBoxUR = new Vec2(bBox[2], bBox[3]);
     const bBoxUL = new Vec2(bBox[0], bBox[3]);
-    const { min: appBoxMin, max: appBoxMax } = vecMinMax(Vec2.applyMat3(bBoxLL, matAP), Vec2.applyMat3(bBoxLR, matAP), Vec2.applyMat3(bBoxUR, matAP), Vec2.applyMat3(bBoxUL, matAP));
+    const { min: appBoxMin, max: appBoxMax } = Vec2.minMax(Vec2.applyMat3(bBoxLL, matAP), Vec2.applyMat3(bBoxLR, matAP), Vec2.applyMat3(bBoxUR, matAP), Vec2.applyMat3(bBoxUL, matAP));
     const rectMin = new Vec2(rect[0], rect[1]);
     const rectMax = new Vec2(rect[2], rect[3]);
-    const matA = mat3From4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
+    const matA = Mat3.from4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
     const matAA = Mat3.fromMat3(matAP).multiply(matA);
     return { matAP, matA, matAA };
 }
@@ -14807,10 +14231,10 @@ class AnnotationDict extends PdfDict {
         }
         else if (this.apStream) {
             const { ll: apTrBoxLL, lr: apTrBoxLR, ur: apTrBoxUR, ul: apTrBoxUL } = this.apStream.transformedBBox;
-            const { min: boxMin, max: boxMax } = vecMinMax(apTrBoxLL, apTrBoxLR, apTrBoxUR, apTrBoxUL);
+            const { min: boxMin, max: boxMax } = Vec2.minMax(apTrBoxLL, apTrBoxLR, apTrBoxUR, apTrBoxUL);
             const rectMin = new Vec2(this.Rect[0], this.Rect[1]);
             const rectMax = new Vec2(this.Rect[2], this.Rect[3]);
-            const mat = mat3From4Vec2(boxMin, boxMax, rectMin, rectMax, true);
+            const mat = Mat3.from4Vec2(boxMin, boxMax, rectMin, rectMax, true);
             bBoxLL = apTrBoxLL.applyMat3(mat);
             bBoxLR = apTrBoxLR.applyMat3(mat);
             bBoxUR = apTrBoxUR.applyMat3(mat);
@@ -14861,7 +14285,7 @@ class AnnotationDict extends PdfDict {
         bBox.lr.applyMat3(matrix);
         bBox.ur.applyMat3(matrix);
         bBox.ul.applyMat3(matrix);
-        const { min: newRectMin, max: newRectMax } = vecMinMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
+        const { min: newRectMin, max: newRectMax } = Vec2.minMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
         dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
     applyCommonTransform(matrix) {
@@ -20583,7 +20007,7 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
             continue;
         }
         lengthVec.set(lineLength, 0);
-        const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
+        const matrix = Mat3.from4Vec2(zeroVec, lengthVec, lineStart, lineEnd);
         arcCount = Math.ceil(lineLength / maxArcSize);
         arcSize = lineLength / arcCount;
         halfArcSize = arcSize / 2;
@@ -20620,7 +20044,7 @@ function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
         while (distance < maxSegmentLength) {
             angle += 0.25 / 180 * Math.PI;
             next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
-            distance += getDistance(current.x, current.y, next.x, next.y);
+            distance += getDistance2D(current.x, current.y, next.x, next.y);
             current.setFromVec2(next);
         }
         points.push(current.clone().applyMat3(matrix).truncate(2));
@@ -21767,7 +21191,7 @@ class LineAnnotation extends GeometricAnnotation {
                 startTemp = start.clone();
                 endTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
             }
-            this._tempTransformationMatrix = mat3From4Vec2(start, end, startTemp, endTemp);
+            this._tempTransformationMatrix = Mat3.from4Vec2(start, end, startTemp, endTemp);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
         this.onLineEndHandlePointerUp = (e) => {
@@ -22055,13 +21479,13 @@ class LineAnnotation extends GeometricAnnotation {
         const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(length, 0);
-        const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
         const localBox = this.getLocalBB();
         localBox.ll.set(bbox[0].x, bbox[0].y).applyMat3(matrix);
         localBox.lr.set(bbox[1].x, bbox[0].y).applyMat3(matrix);
         localBox.ur.set(bbox[1].x, bbox[1].y).applyMat3(matrix);
         localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
-        const { min: rectMin, max: rectMax } = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+        const { min: rectMin, max: rectMax } = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
         this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
         return { bbox, matrix };
     }
@@ -22369,7 +21793,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
             for (let i = 0; i < dto.quadPoints.length; i += 2) {
                 vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
             }
-            const { min, max } = vecMinMax(...vectors);
+            const { min, max } = Vec2.minMax(...vectors);
             annotation.Rect = [min.x, min.y, max.x, max.y];
         }
         annotation.C = dto.color.slice(0, 3);
@@ -22527,7 +21951,7 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
             for (let i = 0; i < dto.quadPoints.length; i += 2) {
                 vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
             }
-            const { min, max } = vecMinMax(...vectors);
+            const { min, max } = Vec2.minMax(...vectors);
             const margin = dto.strokeWidth
                 ? dto.strokeWidth / 2
                 : 1;
@@ -22681,7 +22105,7 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
             for (let i = 0; i < dto.quadPoints.length; i += 2) {
                 vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
             }
-            const { min, max } = vecMinMax(...vectors);
+            const { min, max } = Vec2.minMax(...vectors);
             annotation.Rect = [min.x, min.y, max.x, max.y];
         }
         annotation.C = dto.color.slice(0, 3);
@@ -22840,7 +22264,7 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
             for (let i = 0; i < dto.quadPoints.length; i += 2) {
                 vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
             }
-            const { min, max } = vecMinMax(...vectors);
+            const { min, max } = Vec2.minMax(...vectors);
             const margin = this.squiggleSize / 2 + (dto.strokeWidth || 2) / 2;
             annotation.Rect = [min.x - margin, min.y - margin, max.x + margin, max.y + margin];
         }
@@ -24718,7 +24142,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
         const end = new Vec2(max.x, max.y);
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(Vec2.substract(end, start).getMagnitude(), 0);
-        const mat = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        const mat = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
@@ -24800,7 +24224,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
                 return;
             }
             const { pageX: px, pageY: py } = pageCoords;
-            const { min, max } = vecMinMax(this._down, new Vec2(px, py));
+            const { min, max } = Vec2.minMax(this._down, new Vec2(px, py));
             this.redrawCircle(min, max);
         };
         this.onPointerUp = (e) => {
@@ -25301,7 +24725,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
                 return;
             }
             const { pageX: px, pageY: py } = pageCoords;
-            const { min, max } = vecMinMax(this._down, new Vec2(px, py));
+            const { min, max } = Vec2.minMax(this._down, new Vec2(px, py));
             this.redrawRect(min, max);
         };
         this.onPointerUp = (e) => {
@@ -25686,7 +25110,7 @@ class PenAnnotator extends Annotator {
             });
             inkList.push(ink);
         });
-        const { min: newRectMin, max: newRectMax } = vecMinMax(...positions);
+        const { min: newRectMin, max: newRectMax } = Vec2.minMax(...positions);
         const halfW = data.strokeWidth / 2;
         const rect = [
             newRectMin.x - halfW,
@@ -25769,7 +25193,7 @@ class StampAnnotator extends Annotator {
                 if (longTap) {
                     const downX = ((_b = this._lastPointerDownInfo) === null || _b === void 0 ? void 0 : _b.clientX) || 0;
                     const downY = ((_c = this._lastPointerDownInfo) === null || _c === void 0 ? void 0 : _c.clientY) || 0;
-                    const displacement = Math.abs(getDistance(cx, cy, downX, downY));
+                    const displacement = Math.abs(getDistance2D(cx, cy, downX, downY));
                     const displaced = displacement > 7.5;
                     if (!displaced) {
                         return;
@@ -26297,7 +25721,7 @@ class TextNoteAnnotator extends TextAnnotator {
                 if (longTap) {
                     const downX = ((_b = this._lastPointerDownInfo) === null || _b === void 0 ? void 0 : _b.clientX) || 0;
                     const downY = ((_c = this._lastPointerDownInfo) === null || _c === void 0 ? void 0 : _c.clientY) || 0;
-                    const displacement = Math.abs(getDistance(cx, cy, downX, downY));
+                    const displacement = Math.abs(getDistance2D(cx, cy, downX, downY));
                     const displaced = displacement > 7.5;
                     if (!displaced) {
                         return;
@@ -26820,14 +26244,14 @@ class Viewer {
             const a = event.touches[0];
             const b = event.touches[1];
             this._pinchInfo.active = true;
-            this._pinchInfo.lastDist = getDistance(a.clientX, a.clientY, b.clientX, b.clientY);
+            this._pinchInfo.lastDist = getDistance2D(a.clientX, a.clientY, b.clientX, b.clientY);
             const onTouchMove = (moveEvent) => {
                 if (moveEvent.touches.length !== 2) {
                     return;
                 }
                 const mA = moveEvent.touches[0];
                 const mB = moveEvent.touches[1];
-                const dist = getDistance(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
+                const dist = getDistance2D(mA.clientX, mA.clientY, mB.clientX, mB.clientY);
                 const delta = dist - this._pinchInfo.lastDist;
                 const factor = Math.floor(delta / this._pinchInfo.minDist);
                 if (factor) {

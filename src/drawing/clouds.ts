@@ -1,4 +1,4 @@
-import { Vec2, mat3From4Vec2, Mat3, getDistance } from "../common/math";
+import { Vec2, Mat3, getDistance2D } from "mathador";
 
 /**tuple representing cubic bezier curve data (two control points and the end of the curve) */
 type CurveData = [control1: Vec2, control2: Vec2, end: Vec2];
@@ -49,7 +49,7 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
 
     lengthVec.set(lineLength, 0);
     // get the matrix to transform the 'cloudy' line to the same position the source line has
-    const matrix = mat3From4Vec2(zeroVec, lengthVec, lineStart, lineEnd);    
+    const matrix = Mat3.from4Vec2(zeroVec, lengthVec, lineStart, lineEnd);    
 
     arcCount = Math.ceil(lineLength / maxArcSize);
     arcSize = lineLength / arcCount;
@@ -100,7 +100,7 @@ export function buildCloudCurveFromEllipse(rx: number, ry: number, maxArcSize: n
     while (distance < maxSegmentLength) {
       angle += 0.25 / 180 * Math.PI;
       next.set(rx * Math.cos(angle) + center.x, ry * Math.sin(angle) + center.y);
-      distance += getDistance(current.x, current.y, next.x, next.y);
+      distance += getDistance2D(current.x, current.y, next.x, next.y);
       current.setFromVec2(next);
     }
     points.push(current.clone().applyMat3(matrix).truncate(2));

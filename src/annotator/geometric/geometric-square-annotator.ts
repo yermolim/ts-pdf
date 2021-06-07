@@ -1,5 +1,5 @@
 import { Quadruple } from "../../common/types";
-import { Vec2, vecMinMax } from "../../common/math";
+import { Vec2 } from "mathador";
 import { getRandomUuid } from "../../common/uuid";
 import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
@@ -158,7 +158,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     }
 
     const {pageX: px, pageY: py} = pageCoords;
-    const {min, max} = vecMinMax(this._down, new Vec2(px, py));
+    const {min, max} = Vec2.minMax(this._down, new Vec2(px, py));
         
     this.redrawRect(min, max);
   };

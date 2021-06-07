@@ -1,4 +1,4 @@
-import { Mat3, mat3From4Vec2, Vec2, vecMinMax } from "../../../../../common/math";
+import { Mat3, Vec2 } from "mathador";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
 import { bezierConstant } from "../../../../../drawing/utils";
 
@@ -459,7 +459,7 @@ export class LineAnnotation extends GeometricAnnotation {
     
     const xAlignedStart = new Vec2();
     const xAlignedEnd = new Vec2(length, 0);
-    const matrix = mat3From4Vec2(xAlignedStart, xAlignedEnd, start, end);        
+    const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);        
 
     // update the non axis-aligned bounding-box
     const localBox =  this.getLocalBB();
@@ -469,7 +469,7 @@ export class LineAnnotation extends GeometricAnnotation {
     localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
 
     // update the Rect (AABB)
-    const {min: rectMin, max: rectMax} = vecMinMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+    const {min: rectMin, max: rectMax} = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
     this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
 
     return {bbox, matrix};
@@ -770,7 +770,7 @@ export class LineAnnotation extends GeometricAnnotation {
       endTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
     }    
     // set the temp transformation matrix
-    this._tempTransformationMatrix = mat3From4Vec2(start, end, startTemp, endTemp);
+    this._tempTransformationMatrix = Mat3.from4Vec2(start, end, startTemp, endTemp);
     
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopy.setAttribute("transform", 

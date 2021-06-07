@@ -1,6 +1,6 @@
 import { editIcons } from "../../assets/index.html";
 
-import { Vec2 } from "../../common/math";
+import { Vec2 } from "mathador";
 import { Quadruple } from "../../common/types";
 
 import { ContextMenu } from "../../components/context-menu";

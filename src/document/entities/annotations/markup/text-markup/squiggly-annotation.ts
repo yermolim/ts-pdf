@@ -1,4 +1,4 @@
-import { Vec2, vecMinMax } from "../../../../../common/math";
+import { Vec2 } from "mathador";
 import { buildSquigglyLine } from "../../../../../drawing/utils";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
@@ -53,7 +53,7 @@ export class SquigglyAnnotation extends TextMarkupAnnotation {
       for (let i = 0; i < dto.quadPoints.length; i += 2) {
         vectors.push(new Vec2(dto.quadPoints[i], dto.quadPoints[i + 1]));
       }
-      const {min, max} = vecMinMax(...vectors);
+      const {min, max} = Vec2.minMax(...vectors);
       const margin = this.squiggleSize / 2 + (dto.strokeWidth || 2) / 2;
       annotation.Rect = [min.x - margin, min.y - margin, max.x + margin, max.y + margin];
     }
