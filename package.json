@@ -1,16 +1,16 @@
 {
-  "name": "ts-pdf-viewer",
+  "name": "ts-pdf",
   "version": "0.6.3",
   "description": "PDF.js-based PDF viewer",
-  "module": "dist/ts-pdf-viewer.esm.js",
-  "types": "dist/ts-pdf-viewer.d.ts",
+  "module": "dist/ts-pdf.esm.js",
+  "types": "dist/ts-pdf.d.ts",
   "scripts": {
     "test": "karma start",
     "copycsstotsc": "copyfiles -f ./src/*.css ./tsc/src",
     "copypngtotsc": "copyfiles -f ./src/assets/icons/*.png ./tsc/src/assets/icons && copyfiles -f ./src/assets/assets.d.ts ./tsc/src",
     "buildts": "tsc && npm run copypngtotsc",
     "buildru": "rollup -c",
-    "bundletypes": "dts-bundle-generator -o dist/ts-pdf-viewer.d.ts src/ts-pdf-viewer.ts",
+    "bundletypes": "dts-bundle-generator -o dist/ts-pdf.d.ts src/ts-pdf.ts",
     "copypdfjsworker": "copyfiles -f ./node_modules/pdfjs-dist/build/pdf.worker.min.js ./demo/assets/",
     "copypdfjsviewerstyles": "copyfiles -f ./node_modules/pdfjs-dist/web/pdf_viewer.css ./demo/",
     "build": "npm run buildts && npm run buildru && npm run bundletypes && npm run copypdfjsworker",
@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yermolim/ts-pdf-viewer.git"
+    "url": "git+https://github.com/yermolim/ts-pdf.git"
   },
   "keywords": [
     "web",
@@ -32,9 +32,9 @@
   "author": "Volodymyr Yermolenko <yermolim@gmail.com> (https://github.com/yermolim)",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/yermolim/ts-pdf-viewer/issues"
+    "url": "https://github.com/yermolim/ts-pdf/issues"
   },
-  "homepage": "https://github.com/yermolim/ts-pdf-viewer#readme",
+  "homepage": "https://github.com/yermolim/ts-pdf#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^19.0.0",
     "@rollup/plugin-image": "^2.0.6",

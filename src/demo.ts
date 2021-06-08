@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/quotes */
 
 import { AnnotEventDetail, CustomStampEventDetail, 
-  TsPdfViewer, TsPdfViewerOptions } from "./ts-pdf-viewer";
+  TsPdfViewer, TsPdfViewerOptions } from "./ts-pdf";
 
 async function run(): Promise<void> {  
   const options: TsPdfViewerOptions = {

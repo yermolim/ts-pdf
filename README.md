@@ -1,14 +1,14 @@
-# ts-pdf-viewer
+# ts-pdf
 <p align="left">
-    <a href="https://www.npmjs.com/package/ts-pdf-viewer">
-      <img src="https://img.shields.io/npm/v/ts-pdf-viewer" alt="Npm">
+    <a href="https://www.npmjs.com/package/ts-pdf">
+      <img src="https://img.shields.io/npm/v/ts-pdf" alt="Npm">
     </a>
-    <a href="https://github.com/yermolim/ts-pdf-viewer/blob/master/LICENSE">
-      <img src="https://img.shields.io/badge/license-Apache-blue.svg?style=flat-round" alt="License">
+    <a href="https://github.com/yermolim/ts-pdf/blob/master/LICENSE">
+      <img src="https://img.shields.io/badge/license-AGPL-blue.svg?style=flat-round" alt="License">
     </a>
     <br>
 </p>
-A PDF.js-based PDF viewer written in typescript.
+A PDF.js-based PDF viewer written in TypeScript.
 
 ## Features
 <ul>
@@ -23,12 +23,12 @@ A PDF.js-based PDF viewer written in typescript.
     <li>using Shadow DOM to minimize conflicts with outer HTML</li>
 </ul>
 
-<img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/main/gifs/main.gif" width="540" height="340">
+<img src="https://raw.githubusercontent.com/yermolim/ts-pdf/main/gifs/main.gif" width="540" height="340">
 <p float="left">
-  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/main/gifs/mobile.gif" 
+  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf/main/gifs/mobile.gif" 
   width="180" height="320">
-  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/main/gifs/mobile-annots.gif" width="180" height="320">
-  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf-viewer/main/gifs/text.gif" width="180" height="320">
+  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf/main/gifs/mobile-annots.gif" width="180" height="320">
+  <img src="https://raw.githubusercontent.com/yermolim/ts-pdf/main/gifs/text.gif" width="180" height="320">
 </p>
 
 ## How it works in a nutshell
@@ -97,12 +97,12 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
 
 ### Installation into your project
 ```
-npm install ts-pdf-viewer
+npm install ts-pdf
 ```
 
 ### Running the simplest example
 ```javascript
-import { TsPdfViewer, TsPdfViewerOptions } from "ts-pdf-viewer";
+import { TsPdfViewer, TsPdfViewerOptions } from "ts-pdf";
 
 async function run(): Promise<void> {  
   const options: TsPdfViewerOptions = {
@@ -180,7 +180,7 @@ The other one is to make your own build of PDF.js.
     <li>optimize parser and renderer</li>
 </ul>
 
-## Dependencies:
+## External dependencies:
 <ul>
     <li><a href="https://github.com/mozilla/pdfjs-dist">PDF.js<a></li>
     <li><a href="https://github.com/entronad/crypto-es">CryptoES<a></li>

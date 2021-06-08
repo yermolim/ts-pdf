@@ -9,11 +9,11 @@ import externals from "rollup-plugin-node-externals";
 export default [
   // main build
   {
-    input: "tsc/src/ts-pdf-viewer.js",
+    input: "tsc/src/ts-pdf.js",
     output: [
-      { file: "dist/ts-pdf-viewer.esm.js", format: "esm" },
+      { file: "dist/ts-pdf.esm.js", format: "esm" },
       // TODO: configure terser to prevent imports from shadowing variables
-      // { file: "dist/ts-pdf-viewer.esm.min.js", format: "esm", plugins: [terser()] },
+      // { file: "dist/ts-pdf.esm.min.js", format: "esm", plugins: [terser()] },
     ],
     plugins: [
       license({
