@@ -30,7 +30,7 @@
     "pdfjs"
   ],
   "author": "Volodymyr Yermolenko <yermolim@gmail.com> (https://github.com/yermolim)",
-  "license": "Apache-2.0",
+  "license": "AGPL",
   "bugs": {
     "url": "https://github.com/yermolim/ts-pdf/issues"
   },
