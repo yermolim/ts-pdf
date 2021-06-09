@@ -99,6 +99,7 @@ export class ResourceDict extends PdfDict {
       }
       bytes.push(...keywordCodes.DICT_END);
     }
+
     if (this._fontsMap.size) {      
       // TODO: test if it can be not an indirect reference
       bytes.push(...encoder.encode("/Font "));    
@@ -113,6 +114,7 @@ export class ResourceDict extends PdfDict {
       }
       bytes.push(...keywordCodes.DICT_END);
     }
+
     if (this._xObjectsMap.size) {
       bytes.push(...encoder.encode("/XObject "), ...keywordCodes.DICT_START);
       for (const [name, xObject] of this._xObjectsMap) {

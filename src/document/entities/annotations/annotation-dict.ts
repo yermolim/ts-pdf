@@ -155,7 +155,8 @@ export abstract class AnnotationDict extends PdfDict {
   //#region edit-related properties
   /**the current annotation bounding box (unlike Rect property, not necessarily axis-aligned) */
   protected _bBox: BBox;
-  
+
+  protected _transformationPromise: Promise<void>;  
   protected _transformationTimer: number; 
   protected _tempX: number;
   protected _tempY: number;
@@ -197,6 +198,10 @@ export abstract class AnnotationDict extends PdfDict {
       controls: this._renderedControls,
       content: this._renderedContent,
     };
+  }  
+  
+  get strokeWidth(): number {
+    return this.BS?.W ?? this.Border?.width ?? 1;
   }
   //#endregion
 
@@ -330,13 +335,13 @@ export abstract class AnnotationDict extends PdfDict {
    * move the annotation to the specified coords relative to the page
    * @param point target point corrdiantes in the page coordinate system 
    */
-  moveTo(point: Vec2) {
+  async moveToAsync(point: Vec2) {
     const width = this.Rect[2] - this.Rect[0];
     const height = this.Rect[3] - this.Rect[1];
     const x = point.x - width / 2;
     const y = point.y - height / 2;
     const mat = Mat3.buildTranslate(x, y);
-    this.applyCommonTransform(mat);
+    await this.applyCommonTransformAsync(mat);
   }
 
   /**
@@ -344,7 +349,7 @@ export abstract class AnnotationDict extends PdfDict {
    * @param angle angle in radians
    * @param center point to rotate around (if not specified, the annotation center is used)
    */
-  rotateBy(angle: number, center?: Vec2) {   
+  async rotateByAsync(angle: number, center?: Vec2) {   
     if (!center) {
       const [x0, y0, x1, y1] = this.Rect; 
       center = new Vec2(
@@ -356,7 +361,7 @@ export abstract class AnnotationDict extends PdfDict {
       .applyTranslation(-center.x, -center.y)
       .applyRotation(angle)
       .applyTranslation(center.x, center.y);
-    this.applyCommonTransform(mat);
+    await this.applyCommonTransformAsync(mat);
   }
 
   /**
@@ -720,7 +725,7 @@ export abstract class AnnotationDict extends PdfDict {
     dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
   }  
   
-  protected applyCommonTransform(matrix: Mat3) {
+  protected async applyCommonTransformAsync(matrix: Mat3) {
     // transform bounding boxes
     this.applyRectTransform(matrix);
     
@@ -739,22 +744,32 @@ export abstract class AnnotationDict extends PdfDict {
   /**
    * reset the svg element copy used for transformation purposes
    */
-  protected applyTempTransform() {
+  protected async applyTempTransformAsync() {
     if (this._transformationTimer) {
       clearTimeout(this._transformationTimer);
       this._transformationTimer = null;
       return;
     }
 
-    // reset and remove the copy from DOM
-    this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
-    this._svgContentCopy.remove();
+    if (this._transformationPromise) {
+      await this._transformationPromise;
+    }
 
-    // transform the annotation
-    this.applyCommonTransform(this._tempTransformationMatrix);
+    this._transformationPromise = new Promise<void>(async resolve => {
+      // reset and remove the copy from DOM
+      this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+      this._svgContentCopy.remove();
 
-    // reset the temp matrix
-    this._tempTransformationMatrix.reset();
+      // transform the annotation
+      await this.applyCommonTransformAsync(this._tempTransformationMatrix);
+
+      // reset the temp matrix
+      this._tempTransformationMatrix.reset();
+
+      resolve();
+    });
+
+    await this._transformationPromise;
   }
   //#endregion
 
@@ -1015,7 +1030,7 @@ export abstract class AnnotationDict extends PdfDict {
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onTranslationPointerUp = (e: PointerEvent) => {
+  protected onTranslationPointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -1026,8 +1041,8 @@ export abstract class AnnotationDict extends PdfDict {
     document.removeEventListener("pointerout", this.onTranslationPointerUp);
 
     // transform the annotation
-    this.applyTempTransform();
-    this.updateRenderAsync();
+    await this.applyTempTransformAsync();
+    await this.updateRenderAsync();
   };
   //#endregion
   
@@ -1080,7 +1095,7 @@ export abstract class AnnotationDict extends PdfDict {
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onRotationHandlePointerUp = (e: PointerEvent) => {
+  protected onRotationHandlePointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -1091,8 +1106,8 @@ export abstract class AnnotationDict extends PdfDict {
     document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
     
     // transform the annotation
-    this.applyTempTransform();
-    this.updateRenderAsync();
+    await this.applyTempTransformAsync();
+    await this.updateRenderAsync();
   };
   //#endregion
   
@@ -1196,7 +1211,7 @@ export abstract class AnnotationDict extends PdfDict {
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onScaleHandlePointerUp = (e: PointerEvent) => {
+  protected onScaleHandlePointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -1207,8 +1222,8 @@ export abstract class AnnotationDict extends PdfDict {
     document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
     
     // transform the annotation
-    this.applyTempTransform();
-    this.updateRenderAsync();
+    await this.applyTempTransformAsync();
+    await this.updateRenderAsync();
   };
   //#endregion
 

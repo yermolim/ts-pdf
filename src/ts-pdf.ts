@@ -355,9 +355,9 @@ export class TsPdfViewer {
    * import previously exported TsPdf annotations
    * @param dtos annotation data transfer objects
    */
-  importAnnotations(dtos: AnnotationDto[]) {
+  async importAnnotationsAsync(dtos: AnnotationDto[]) {
     try {
-      this._docService?.appendSerializedAnnotations(dtos);
+      await this._docService?.appendSerializedAnnotationsAsync(dtos);
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }
@@ -367,10 +367,10 @@ export class TsPdfViewer {
    * import previously exported serialized TsPdf annotations
    * @param json serialized annotation data transfer objects
    */
-  importAnnotationsFromJson(json: string) {
+  async importAnnotationsFromJsonAsync(json: string) {
     try {
       const dtos: AnnotationDto[] = JSON.parse(json);
-      this._docService?.appendSerializedAnnotations(dtos);
+      await this._docService?.appendSerializedAnnotationsAsync(dtos);
     } catch (e) {
       console.log(`Error while importing annotations: ${e.message}`);      
     }
@@ -389,8 +389,8 @@ export class TsPdfViewer {
    * export TsPdf annotations as a serialized array of data transfer objects
    * @returns 
    */
-  exportAnnotationsToJson(): string {
-    const dtos = this._docService?.serializeAnnotationsAsync(true);
+  async exportAnnotationsToJsonAsync(): Promise<string> {
+    const dtos = await this._docService?.serializeAnnotationsAsync(true);
     return JSON.stringify(dtos);
   }
 

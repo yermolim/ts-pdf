@@ -87,7 +87,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     const color = this.getColorRect();
 
     return {
-      annotationType: "/Square",
+      annotationType: "/Polygon",
       uuid: this.$name,
       pageId: this.$pageId,
 
@@ -123,7 +123,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     // bake the current annotation rotation into its appearance stream
     // works perfectly with PDF-XChange annotations
     // TODO: test with annotations created not in PDF-XChange
-    this.bakeRotation();   
+    this.bakeRotationAsync();   
   }
   
   protected generateApStream() {
@@ -154,7 +154,7 @@ export class PolygonAnnotation extends PolyAnnotation {
 
     // set stroke style options
     const opacity = this.CA || 1;
-    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeWidth = this.strokeWidth;
     const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
     const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();
@@ -209,7 +209,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     this.apStream = apStream;
   }
   
-  protected applyCommonTransform(matrix: Mat3) {  
+  protected async applyCommonTransformAsync(matrix: Mat3) {  
     const dict = <PolygonAnnotation>this._proxy || this;
 
     // transform current Vertices
@@ -267,7 +267,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     dict.M = DateString.fromDate(new Date());
   }
   
-  protected bakeRotation() {    
+  protected async bakeRotationAsync() {    
     const angle = this.getCurrentRotation();
     const centerX = (this.Rect[0] + this.Rect[2]) / 2;
     const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -278,6 +278,6 @@ export class PolygonAnnotation extends PolyAnnotation {
       .applyRotation(angle)
       .applyTranslation(centerX, centerY);
 
-    this.applyCommonTransform(matrix);
+    await this.applyCommonTransformAsync(matrix);
   }
 }

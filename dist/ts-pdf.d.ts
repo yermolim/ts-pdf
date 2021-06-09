@@ -96,10 +96,10 @@ export declare class TsPdfViewer {
 	destroy(): void;
 	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
 	closePdfAsync(): Promise<void>;
-	importAnnotations(dtos: AnnotationDto[]): void;
-	importAnnotationsFromJson(json: string): void;
+	importAnnotationsAsync(dtos: AnnotationDto[]): Promise<void>;
+	importAnnotationsFromJsonAsync(json: string): Promise<void>;
 	exportAnnotationsAsync(): Promise<AnnotationDto[]>;
-	exportAnnotationsToJson(): string;
+	exportAnnotationsToJsonAsync(): Promise<string>;
 	importCustomStamps(customStamps: CustomStampCreationInfo[]): void;
 	importCustomStampsFromJson(json: string): void;
 	exportCustomStamps(): CustomStampCreationInfo[];

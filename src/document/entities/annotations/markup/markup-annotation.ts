@@ -72,7 +72,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
    * that shall be associated with the annotation
    */
   ExData: ExDataDict;
-  
+
   protected constructor(subType: AnnotationType) {
     super(subType);
   }

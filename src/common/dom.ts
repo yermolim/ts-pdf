@@ -15,3 +15,24 @@ export function htmlToElements(html: string): HTMLElement[] {
   });
   return nodes;
 }
+
+/**
+ * wrap callback with setTimeout inside Promise<T>
+ * @param callback 
+ * @returns 
+ */
+export async function promisify<T>(callback: () => T): Promise<T> {
+  return new Promise<T>(resolve => {
+    setTimeout(() => {
+      const result = callback();
+      resolve(result);
+    }, 0);
+  });
+}
+
+/**
+ * calls empty setTimeout to force DOM refresh
+ */
+export async function runEmptyTimeout() {
+  await promisify(() => undefined);
+}

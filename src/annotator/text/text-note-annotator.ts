@@ -120,7 +120,7 @@ export class TextNoteAnnotator extends TextAnnotator {
     this.updatePointerCoords(cx, cy);
   };
 
-  protected onPointerUp = (e: PointerEvent) => {
+  protected onPointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary || e.button === 2) {
       // the event source is the non-primary touch or the RMB. ignore that
       return;
@@ -155,15 +155,15 @@ export class TextNoteAnnotator extends TextAnnotator {
     const {pageId, pageX, pageY, pageRotation} = this._pointerCoordsInPageCS;
     // translate the stamp to the pointer position
     const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
-    this._tempAnnotation.moveTo(new Vec2(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4));
+    await this._tempAnnotation.moveToAsync(new Vec2(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4));
     // rotate the current annotation according to the page rotation
     if (pageRotation) {
-      this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI, new Vec2(pageX, pageY));
+      await this._tempAnnotation.rotateByAsync(-pageRotation / 180 * Math.PI, new Vec2(pageX, pageY));
     }
 
     // save the current temp stamp to the document data
     this._pageId = pageId;
-    this.saveAnnotationAsync();
+    await this.saveAnnotationAsync();
   };
 
   protected refreshGroupPosition() {

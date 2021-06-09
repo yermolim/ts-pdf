@@ -47,7 +47,7 @@ export class TextState {
     leading: 12 * -1.2,
     renderMode: textRenderModes.FILL,
     fontFamily: "helvetica, arial, sans-serif",
-    fontSize: "12px",
+    fontSize: "10px",
     lineHeight: "1",
     letterSpacing: "normal",
     wordSpacing: "normal",

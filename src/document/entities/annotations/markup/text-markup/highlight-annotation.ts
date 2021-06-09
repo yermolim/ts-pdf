@@ -173,7 +173,7 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
 
     // set stroke style options
     const opacity = this.CA || 1;
-    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeWidth = this.strokeWidth;
     const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
     const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();

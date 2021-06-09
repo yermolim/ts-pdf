@@ -302,10 +302,10 @@ export class DocumentService {
    * append annotations described using the passed data-transfer objects
    * @param dtos previously exported data-transfer objects
    */
-  appendSerializedAnnotations(dtos: AnnotationDto[]) {
+  async appendSerializedAnnotationsAsync(dtos: AnnotationDto[]) {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
-      annotation = AnnotationParseFactory.ParseAnnotationFromDto(dto);
+      annotation = await AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto);
       this.appendAnnotationToPageAsync(dto.pageId, annotation);
     }
   }

@@ -210,7 +210,7 @@ export class SquareAnnotation extends GeometricAnnotation {
 
     // set stroke style options
     const opacity = this.CA || 1;
-    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeWidth = this.strokeWidth;
     const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
     const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();
@@ -303,7 +303,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     this.apStream = apStream;
   }
   
-  protected applyCommonTransform(matrix: Mat3) {    
+  protected async applyCommonTransformAsync(matrix: Mat3) {    
     // transform bounding boxes
     this.applyRectTransform(matrix);
 

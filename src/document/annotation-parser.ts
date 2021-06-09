@@ -76,7 +76,7 @@ export class AnnotationParseFactory {
     return annot?.value;;
   }
 
-  static ParseAnnotationFromDto(dto: AnnotationDto): AnnotationDict {
+  static async ParseAnnotationFromDtoAsync(dto: AnnotationDto): Promise<AnnotationDict> {
     let annotation: AnnotationDict;
     switch (dto.annotationType) {
       case "/Stamp":
@@ -101,7 +101,7 @@ export class AnnotationParseFactory {
         annotation = PolylineAnnotation.createFromDto(dto as PolylineAnnotationDto);
         break;
       case "/Line":        
-        annotation = LineAnnotation.createFromDto(dto as LineAnnotationDto);
+        annotation = await LineAnnotation.createFromDtoAsync(dto as LineAnnotationDto);
         break;
       case "/Highlight":        
         annotation = HighlightAnnotation.createFromDto(dto as TextMarkupAnnotationDto);

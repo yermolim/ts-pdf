@@ -221,7 +221,7 @@ export class StampAnnotator extends Annotator {
     this.updatePointerCoords(cx, cy);
   };
 
-  protected onPointerUp = (e: PointerEvent) => {
+  protected onPointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary || e.button === 2) {
       // the event source is the non-primary touch or the RMB. ignore that
       return;
@@ -256,15 +256,15 @@ export class StampAnnotator extends Annotator {
     const {pageId, pageX, pageY, pageRotation} = this._pointerCoordsInPageCS;
 
     // translate the stamp to the pointer position
-    this._tempAnnotation.moveTo(new Vec2(pageX, pageY));
+    await this._tempAnnotation.moveToAsync(new Vec2(pageX, pageY));
     // rotate the current annotation according to the page rotation
     if (pageRotation) {      
-      this._tempAnnotation.rotateBy(-pageRotation / 180 * Math.PI);
+      await this._tempAnnotation.rotateByAsync(-pageRotation / 180 * Math.PI);
     }
 
     // save the current temp stamp to the document data
     this._pageId = pageId;
-    this.saveAnnotationAsync();
+    await this.saveAnnotationAsync();
   };
 
   protected refreshGroupPosition() {

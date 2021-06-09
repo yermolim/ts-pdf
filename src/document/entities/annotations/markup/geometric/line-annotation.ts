@@ -1,4 +1,5 @@
 import { Mat3, Vec2 } from "mathador";
+import { runEmptyTimeout } from "../../../../../common/dom";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
 import { bezierConstant } from "../../../../../drawing/utils";
 
@@ -17,6 +18,20 @@ import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
+
+interface TextLineData {
+  text: string;
+  rect: Quadruple;
+  relativeRect: Quadruple;
+}
+
+interface TextData {
+  width: number;
+  height: number;
+  rect: Quadruple;
+  relativeRect: Quadruple;
+  lines: TextLineData[];
+}
 
 interface BboxAndMatrix {
   bbox: [min: Vec2, max: Vec2];
@@ -130,12 +145,19 @@ export class LineAnnotation extends GeometricAnnotation {
   protected _scaleHandleActive: "start" | "end";  
   protected _rtStyle: string;
   protected _rtText: string;
+
+  protected _textData: TextData;
+
+  /** Y-axis offset from control points to the actual line drawn */
+  get offsetY(): number {
+    return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
+  }
   
   constructor() {
     super(annotationTypes.LINE);
   }  
   
-  static createFromDto(dto: LineAnnotationDto): LineAnnotation {
+  static async createFromDtoAsync(dto: LineAnnotationDto): Promise<LineAnnotation> {
     if (dto.annotationType !== "/Line") {
       throw new Error("Invalid annotation type");
     }
@@ -170,7 +192,7 @@ export class LineAnnotation extends GeometricAnnotation {
     annotation.CP = dto.captionPosition || captionPositions.INLINE;
     annotation.CO = dto.captionOffset || [0, 0];
  
-    annotation.generateApStream();
+    await annotation.generateApStreamAsync();
 
     const proxy = new Proxy<LineAnnotation>(annotation, annotation.onChange);
     annotation._proxy = proxy;
@@ -253,7 +275,7 @@ export class LineAnnotation extends GeometricAnnotation {
     const color = this.getColorRect();
 
     return {
-      annotationType: "/Square",
+      annotationType: "/Line",
       uuid: this.$name,
       pageId: this.$pageId,
 
@@ -406,18 +428,154 @@ export class LineAnnotation extends GeometricAnnotation {
     }
   }
 
+  protected async updateTextDataAsync(maxWidth: number): Promise<TextData> {
+    const text = this.Contents?.literal;
+    // const text = "Lorem-Ipsum is simply\ndummy, text of the printing, and typesetting industry.";
+    
+    if (text) {
+      const pTemp = document.createElement("p");
+      // apply default text styling
+      // TODO: add support for custom styling using 'this._rtStyle' prop or smth else
+      pTemp.style.color = "black";
+      pTemp.style.fontSize = "9px";
+      pTemp.style.fontFamily = "arial";
+      pTemp.style.fontWeight = "normal";
+      pTemp.style.fontStyle = "normal";
+      pTemp.style.lineHeight = "normal";
+      pTemp.style.overflowWrap = "normal";
+      pTemp.style.textAlign = "center";
+      pTemp.style.textDecoration = "none";
+      pTemp.style.verticalAlign = "top";
+      pTemp.style.whiteSpace = "pre-wrap";
+      pTemp.style.wordBreak = "normal";
+
+      // apply specific styling to the paragraph to hide it from the page;
+      pTemp.style.position = "fixed";
+      pTemp.style.left = "0";
+      pTemp.style.top = "0";
+      pTemp.style.margin = "0";
+      pTemp.style.padding = "0";
+      pTemp.style.maxWidth = maxWidth.toFixed() + "px";
+      pTemp.style.zIndex = "100"; // pTemp.style.visibility = "hidden";    
+      // pTemp.style.transform = "scale(0.1)";
+      pTemp.style.transformOrigin = "top left";
+
+      // add the paragraph to DOM
+      document.body.append(pTemp);
+      
+      // detect wrapped lines
+      // TODO: improve detecting logic
+      const words = text.split(/([- \n\r])/u); //[-./\\()"',;<>~!@#$%^&*|+=[\]{}`~?: ] 
+      const lines: string[] = [];
+      let currentLineText = "";
+      let previousHeight = 0;
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        pTemp.textContent += word;        
+        await runEmptyTimeout(); // allow DOM to redraw to recalculate dimensions
+        const currentHeight = pTemp.offsetHeight;
+        previousHeight ||= currentHeight;
+        if (currentHeight > previousHeight) {
+          // line break triggered
+          lines.push(currentLineText);
+          currentLineText = word;
+          previousHeight = currentHeight;
+        } else {
+          currentLineText += word;
+        }
+      }
+      lines.push(currentLineText);
+
+      // clear the paragraph
+      pTemp.innerHTML = "";
+
+      // create temp span for each line to get line positions
+      const lineSpans: HTMLSpanElement[] = [];
+      for (const line of lines) {
+        const lineSpan = document.createElement("span");
+        lineSpan.style.position = "relative";
+        lineSpan.textContent = line;
+        lineSpans.push(lineSpan);
+        pTemp.append(lineSpan);
+      }      
+      await runEmptyTimeout(); // allow DOM to redraw to recalculate dimensions
+
+      const textWidth = pTemp.offsetWidth;
+      const textHeight = pTemp.offsetHeight;
+      
+      // calculate the text pivot point depending on caption position
+      const pivotPoint = this.CP === captionPositions.INLINE
+        ? new Vec2(textWidth / 2, textHeight / 2) // pivot point is at the text center
+        : new Vec2(textWidth / 2, -this.strokeWidth); // pivot point is at the text bottom with a margin
+
+      // calculate dimensions for each line
+      const lineData: TextLineData[] = [];
+      for (let i = 0; i < lines.length; i++) {
+        const {x, y, width, height} = lineSpans[i].getBoundingClientRect();
+        // line dimensions in PDF CS 
+        // (Y-axis is flipped, bottom-left corner is 0,0)
+        const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
+        const lineTopRightPdf = new Vec2(x + width, textHeight - y);
+        const lineRect: Quadruple = [
+          lineBottomLeftPdf.x, lineBottomLeftPdf.y,
+          lineTopRightPdf.x, lineTopRightPdf.y
+        ];
+        // line dimensions relative to annotation text pivot point 
+        // (Y-axis is flipped, pivot point is 0,0)
+        const lineBottomLeftPdfRel = Vec2.substract(lineBottomLeftPdf, pivotPoint);
+        const lineTopRightPdfRel = Vec2.substract(lineTopRightPdf, pivotPoint);
+        const lineRelativeRect: Quadruple = [
+          lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
+          lineTopRightPdfRel.x, lineTopRightPdfRel.y
+        ];
+        lineData.push({
+          text: lines[i],
+          rect: lineRect,
+          relativeRect: lineRelativeRect,
+        });
+      }
+
+      // calculate dimensions for the whole text
+      // text dimensions in PDF CS 
+      // (Y-axis is flipped, bottom-left corner is 0,0)
+      const textRect: Quadruple = [0, 0, textWidth, textHeight];
+      // text dimensions relative to annotation text pivot point 
+      // (Y-axis is flipped, pivot point is 0,0)
+      const textRelativeRect: Quadruple = [
+        0 - pivotPoint.x, 0 - pivotPoint.y,
+        textWidth - pivotPoint.x, textHeight - pivotPoint.y
+      ];
+      const textData: TextData = {
+        width: textWidth,
+        height: textHeight,
+        rect: textRect,
+        relativeRect: textRelativeRect,
+        lines: lineData,
+      };
+
+      // remove the temp paragraph from DOM 
+      pTemp.remove();
+
+      this._textData = textData;
+    } else {
+      this._textData = null;
+    }
+
+    return this._textData;
+  }
+
   /**
    * actualize the 'Rect' property content using the current 'L' property value
    * @returns 
    */
-  protected updateRect(): BboxAndMatrix {
+  protected async updateRectAsync(): Promise<BboxAndMatrix> {
     const [x1, y1, x2, y2] = this.L;
     const start = new Vec2(x1, y1);
     const end = new Vec2(x2, y2);
 
     // calculate the data for updating bounding boxes
     const length = Vec2.substract(end, start).getMagnitude();
-    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeWidth = this.strokeWidth;
     const halfStrokeWidth = strokeWidth / 2;
 
     let marginMin = 0;
@@ -431,6 +589,12 @@ export class LineAnnotation extends GeometricAnnotation {
     } else {
       marginMin = halfStrokeWidth;
     }
+
+    const textMargin = 4 * marginMin;
+    const textMaxWidth = length > textMargin
+      ? length - textMargin
+      : length;
+    const textData = await this.updateTextDataAsync(textMaxWidth);
 
     // calculate the margin from the control points side of the line
     const marginFront = Math.max(
@@ -451,10 +615,20 @@ export class LineAnnotation extends GeometricAnnotation {
     const bottom = this.LL < 0
       ? height // annotation is under control points
       : marginMin; // annotation is above control points (or at the same line)
-    const xMin = -marginMin;
-    const yMin = -bottom;
-    const xMax = length + marginMin;
-    const yMax = top;
+
+    let xMin = -marginMin;
+    let yMin = -bottom;
+    let xMax = length + marginMin;
+    let yMax = top;
+    // adjust margins to fit text if present 
+    if (textData) {
+      const offsetY = this.offsetY;
+      const [textXMin, textYMin, textXMax, textYMax] = textData.relativeRect;
+      xMin = Math.min(xMin, textXMin + length / 2);
+      yMin = Math.min(yMin, textYMin + offsetY);
+      xMax = Math.max(xMax, textXMax + length / 2);
+      yMax = Math.max(yMax, textYMax + offsetY);
+    }
     const bbox: [min: Vec2, max: Vec2] = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
     
     const xAlignedStart = new Vec2();
@@ -469,14 +643,46 @@ export class LineAnnotation extends GeometricAnnotation {
     localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
 
     // update the Rect (AABB)
-    const {min: rectMin, max: rectMax} = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+    const {min: rectMin, max: rectMax} = 
+      Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
     this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
 
     return {bbox, matrix};
   }
+  
+  protected getLineStreamText(start: Vec2, end: Vec2): string {
+    let lineStream = "";
 
-  protected getLineEndingStreamText(point: Vec2, type: LineEndingType, side: "left" | "right"): string {
-    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    // draw line itself
+    lineStream += `\n${start.x} ${start.y} m`;
+    lineStream += `\n${end.x} ${end.y} l`;
+    lineStream += "\nS";    
+
+    // draw leader lines
+    if (this.LL) {
+      if (this.LL > 0) {
+        lineStream += `\n${start.x} ${start.y - Math.abs(this.LL)} m`;
+        lineStream += `\n${start.x} ${start.y + this.LLE} l`;
+        lineStream += "\nS";
+        lineStream += `\n${end.x} ${end.y - Math.abs(this.LL)} m`;
+        lineStream += `\n${end.x} ${end.y + this.LLE} l`;
+        lineStream += "\nS";
+      } else {
+        lineStream += `\n${start.x} ${start.y + Math.abs(this.LL)} m`;
+        lineStream += `\n${start.x} ${start.y - this.LLE} l`;
+        lineStream += "\nS";
+        lineStream += `\n${end.x} ${end.y + Math.abs(this.LL)} m`;
+        lineStream += `\n${end.x} ${end.y - this.LLE} l`;
+        lineStream += "\nS";
+      }
+    }
+
+    return lineStream;
+  }
+
+  protected getLineEndingStreamText(point: Vec2, type: LineEndingType, 
+    side: "left" | "right"): string {
+    const strokeWidth = this.strokeWidth;
     const size = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, 
       LineAnnotation.lineEndingMinimalSize);
 
@@ -576,13 +782,41 @@ export class LineAnnotation extends GeometricAnnotation {
     }
   }
 
-  protected generateApStream() {
+  protected async getTextStreamTextAsync(start: Vec2, end: Vec2): Promise<string> {
+    if (!this._textData) {
+      return "";
+    }
+
+    const lineCenter = Vec2.add(start, end).multiplyByScalar(0.5);
+    
+    const [xMin, yMin, xMax, yMax] = this._textData.relativeRect;
+    // the text corner coordinates in annotation-local CS
+    const topLeftLCS = new Vec2(xMin, yMin).add(lineCenter);
+    const bottomRightLCS = new Vec2(xMax, yMax).add(lineCenter);
+
+    // DEBUG
+    // draw text background rect      
+    const textBgRectStream = 
+      "\nq 1 g 1 G" // push the graphics state onto the stack
+      + `\n${topLeftLCS.x} ${topLeftLCS.y} m`
+      + `\n${topLeftLCS.x} ${bottomRightLCS.y} l`
+      + `\n${bottomRightLCS.x} ${bottomRightLCS.y} l`
+      + `\n${bottomRightLCS.x} ${topLeftLCS.y} l`
+      + "\nf"
+      + "\nQ"; // pop the graphics state back from the stack
+
+    // TODO: implement drawing text
+      
+    return textBgRectStream;
+  }
+
+  protected async generateApStreamAsync() {
     if (!this.L) {
       return;
     }
 
     // update Rect and get the bounding box and the matrix for the stream
-    const data = this.updateRect();
+    const data = await this.updateRectAsync();
 
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
@@ -607,7 +841,7 @@ export class LineAnnotation extends GeometricAnnotation {
 
     // set stroke style options
     const opacity = this.CA || 1;
-    const strokeWidth = this.BS?.W ?? this.Border?.width ?? 1;
+    const strokeWidth = this.strokeWidth;
     const strokeDash = this.BS?.D[0] ?? this.Border?.dash ?? 3;
     const strokeGap = this.BS?.D[1] ?? this.Border?.gap ?? 0;
     const gs = new GraphicsStateDict();
@@ -628,46 +862,21 @@ export class LineAnnotation extends GeometricAnnotation {
     const apEnd = new Vec2(this.L[2], this.L[3])
       .applyMat3(matrixInv)
       .truncate();
-    const offsetY = (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
+    const offsetY = this.offsetY;
     apStart.y += offsetY;
-    apEnd.y += offsetY;
-
-    // push the graphics state onto the stack
-    let streamTextData = `q ${colorString} /GS0 gs`;
-
-    // draw line itself
-    streamTextData += `\n${apStart.x} ${apStart.y} m`;
-    streamTextData += `\n${apEnd.x} ${apEnd.y} l`;
-    streamTextData += "\nS";    
-
-    // draw leader lines
-    if (this.LL) {
-      if (this.LL > 0) {
-        streamTextData += `\n${apStart.x} ${apStart.y - Math.abs(this.LL)} m`;
-        streamTextData += `\n${apStart.x} ${apStart.y + this.LLE} l`;
-        streamTextData += "\nS";
-        streamTextData += `\n${apEnd.x} ${apEnd.y - Math.abs(this.LL)} m`;
-        streamTextData += `\n${apEnd.x} ${apEnd.y + this.LLE} l`;
-        streamTextData += "\nS";
-      } else {
-        streamTextData += `\n${apStart.x} ${apStart.y + Math.abs(this.LL)} m`;
-        streamTextData += `\n${apStart.x} ${apStart.y - this.LLE} l`;
-        streamTextData += "\nS";
-        streamTextData += `\n${apEnd.x} ${apEnd.y + Math.abs(this.LL)} m`;
-        streamTextData += `\n${apEnd.x} ${apEnd.y - this.LLE} l`;
-        streamTextData += "\nS";
-      }
-    }
+    apEnd.y += offsetY;    
     
-    // draw line endings
+    const lineStream = this.getLineStreamText(apStart, apEnd);
     const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], "left");
     const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], "right");
-    streamTextData += leftEnding + rightEnding;    
-
-    // TODO: implement line text render
-
-    // pop the graphics state back from the stack
-    streamTextData += "\nQ";
+    const textStream = await this.getTextStreamTextAsync(apStart, apEnd);
+    const streamTextData = 
+      `q ${colorString} /GS0 gs` // push the graphics state onto the stack
+      + lineStream // draw line itself with leader lines
+      + leftEnding // draw line left ending 
+      + rightEnding // draw line right ending
+      + textStream // draw text if present
+      + "\nQ"; // pop the graphics state back from the stack
 
     apStream.Resources = new ResourceDict();
     apStream.Resources.setGraphicsState("/GS0", gs);
@@ -676,7 +885,7 @@ export class LineAnnotation extends GeometricAnnotation {
     this.apStream = apStream;
   }
 
-  protected applyCommonTransform(matrix: Mat3) {  
+  protected async applyCommonTransformAsync(matrix: Mat3) {  
     const dict = <LineAnnotation>this._proxy || this;
 
     // transform the segment end points    
@@ -686,7 +895,7 @@ export class LineAnnotation extends GeometricAnnotation {
     dict.L = [start.x, start.y, end.x, end.y];
 
     // rebuild the appearance stream instead of transforming it to get rid of line distorsions
-    dict.generateApStream();
+    await dict.generateApStreamAsync();
 
     dict.M = DateString.fromDate(new Date());
   }
@@ -777,7 +986,7 @@ export class LineAnnotation extends GeometricAnnotation {
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
   };
   
-  protected onLineEndHandlePointerUp = (e: PointerEvent) => {
+  protected onLineEndHandlePointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -788,8 +997,8 @@ export class LineAnnotation extends GeometricAnnotation {
     document.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
     
     // transform the annotation
-    this.applyTempTransform();
-    this.updateRenderAsync();
+    await this.applyTempTransformAsync();
+    await this.updateRenderAsync();
   };
   //#endregion
 }

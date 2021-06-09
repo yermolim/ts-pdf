@@ -1,4 +1,4 @@
-# ts-pdf
+# ts-pdf 📄
 <p align="left">
     <a href="https://www.npmjs.com/package/ts-pdf">
       <img src="https://img.shields.io/npm/v/ts-pdf" alt="Npm">

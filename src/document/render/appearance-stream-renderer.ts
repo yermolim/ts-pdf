@@ -74,9 +74,22 @@ export class AppearanceStreamRenderer {
 
     const {matAA} = calcPdfBBoxToRectMatrices(stream.BBox, rect, stream.Matrix);
 
+    const [xMin, yMin, xMax, yMax] = stream.BBox;
+    const clipBottomLeft = new Vec2(xMin, yMin).applyMat3(matAA);
+    const clipBottomRight = new Vec2(xMax, yMin).applyMat3(matAA);
+    const clipTopRight = new Vec2(xMax, yMax).applyMat3(matAA);
+    const clipTopLeft = new Vec2(xMin, yMax).applyMat3(matAA);
+
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     clipPath.id = `clip0_${objectName}`;
-    clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
+    // clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
+    clipPath.innerHTML = "<path d=\""
+      + `M${clipBottomLeft.x},${clipBottomLeft.y} `
+      + `L${clipBottomRight.x},${clipBottomRight.y} `
+      + `L${clipTopRight.x},${clipTopRight.y} `
+      + `L${clipTopLeft.x},${clipTopLeft.y} `
+      + "z"
+      + "\"/>";
     
     this._clipPaths.push(clipPath);
     this._graphicsStates.push(new GraphicsState({matrix: matAA, clipPath}));
