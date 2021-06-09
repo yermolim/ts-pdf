@@ -167,7 +167,7 @@ The other one is to make your own build of PDF.js.
     <li><del>add annotation blending modes support</del> added in 0.5.2</li>
     <li><del>add custom stamp annotations support</del> added in 0.6.0</li>
     <li><del>optimize loading and saving files</del> some optimizations were made in 0.6.2</li>
-    <li><del>add text caption render for line annotations</del> added in 0.6.3</li>
+    <li><del>add text caption support for line annotations</del> added in 0.6.6</li>
     <li>add free text annotations support (partial support added in 0.6.3)</li>
     <li>add tooltips to buttons</li>
     <li>add keyboard shortcuts</li>
