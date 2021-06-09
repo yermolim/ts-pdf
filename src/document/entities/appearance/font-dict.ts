@@ -178,10 +178,17 @@ export class FontDict extends PdfDict {
   get encoding(): EncodingDict {
     return this._encoding;
   }
-
-  protected _toUtfCmap: UnicodeCmapStream;
-  get toUtfCmap(): UnicodeCmapStream {
-    return this._toUtfCmap;
+  set encoding(value: EncodingDict) {
+    this._encoding = value;
+    this.Encoding = value.ref
+      ? new ObjectId(value.ref.id, value.ref.generation)
+      : null;
+  }
+  get encodingValue(): ObjectId | string {  
+    if (!this.Encoding && this._encoding?.ref) {
+      this.Encoding = new ObjectId(this._encoding.ref.id, this._encoding.ref.generation);
+    }
+    return this.Encoding;
   }
   
   protected _descriptor: FontDescriptorDict;
@@ -194,11 +201,16 @@ export class FontDict extends PdfDict {
       ? new ObjectId(value.ref.id, value.ref.generation)
       : null;
   }
-  get descriptorId(): ObjectId {  
+  get descriptorValue(): ObjectId {  
     if (!this.FontDescriptor && this._descriptor?.ref) {
       this.FontDescriptor = new ObjectId(this._descriptor.ref.id, this._descriptor.ref.generation);
     }
     return this.FontDescriptor;
+  }
+
+  protected _toUtfCmap: UnicodeCmapStream;
+  get toUtfCmap(): UnicodeCmapStream {
+    return this._toUtfCmap;
   }
 
   /** 'true' if the current font has same width for all chars ('font-family: monospace;'), 
@@ -240,6 +252,11 @@ export class FontDict extends PdfDict {
   constructor() {
     super(dictTypes.FONT);
   }
+
+  static newFontMap(): Map<string, FontDict> {
+    const map = new Map<string, FontDict>();
+    return map;
+  }
   
   static parse(parseInfo: ParseInfo): ParseResult<FontDict> {    
     if (!parseInfo) {
@@ -248,7 +265,9 @@ export class FontDict extends PdfDict {
     try {
       const pdfObject = new FontDict();
       pdfObject.parseProps(parseInfo);
-      return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      const proxy = new Proxy<FontDict>(pdfObject, pdfObject.onChange);
+      pdfObject._proxy = proxy;
+      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
       return null;
@@ -265,13 +284,6 @@ export class FontDict extends PdfDict {
     }
     if (this.BaseFont) {
       bytes.push(...encoder.encode("/BaseFont "), ...encoder.encode(" " + this.BaseFont));
-    }
-    if (this.Encoding) {
-      if (this.Encoding instanceof ObjectId) {
-        bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
-      } else {
-        bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
-      }
     }
     if (this.ToUnicode) {
       bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
@@ -291,10 +303,18 @@ export class FontDict extends PdfDict {
         bytes.push(codes.R_BRACKET);
       }
     }
+    
+    if (this.Encoding || this.encodingValue) {
+      if (this.Encoding instanceof ObjectId) {
+        bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
+      } else {
+        bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
+      }
+    }
 
-    if (this.descriptorId) {
+    if (this.descriptorValue) {
       bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, 
-        ...this.descriptorId.toArray(cryptInfo));
+        ...this.descriptorValue.toArray(cryptInfo));
     }
 
     if (this.Resources) {

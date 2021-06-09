@@ -28,7 +28,10 @@ export class DocumentDataUpdater {
   private readonly _writer: DataWriter; 
 
   private readonly _stringCryptor: IDataCryptor;        
-  private readonly _streamCryptor: IDataCryptor;     
+  private readonly _streamCryptor: IDataCryptor;   
+  
+  /**ids of objects that have already been written to the data earlier during this update */
+  private _writtenIds = new Set<number>();
 
   /**
    * 
@@ -150,6 +153,12 @@ export class DocumentDataUpdater {
   
   /**add a new PDF object to the document */
   private writeIndirectObject(obj: PdfObject): UsedReference {
+    if (this._writtenIds.has(obj.id)) {
+      // the object with this id has already been written to the data earlier during this update
+      // ignore the object to prevent duplicating
+      return this._changeData.getUsedRef(obj.id);
+    }
+
     const newRef = this._changeData.takeFreeRef(this._writer.offset, true);
     const newObjCryptInfo: CryptInfo = {
       ref: newRef,
@@ -158,6 +167,8 @@ export class DocumentDataUpdater {
     };
     this._writer.writeIndirectObject(newObjCryptInfo, obj);
     obj.ref = newRef;
+
+    this._writtenIds.add(newRef.id);
     return newRef;
   }
 
@@ -216,6 +227,19 @@ export class DocumentDataUpdater {
           this.writeImageXObject(xObj);
         } else if (xObj instanceof XFormStream) {
           this.writeFormXObject(xObj);
+        }
+      });
+      [...resources.getFonts()].forEach(([name, font]) => {
+        if (font.encoding && this.isNew(font.encoding)) {
+          this.writeIndirectObject(font.encoding);
+        }
+        if (font.descriptor && this.isNew(font.descriptor)) {
+          this.writeIndirectObject(font.descriptor);
+        }
+        if (this.isNew(font)) {
+          this.writeIndirectObject(font);
+        } else if (font.edited) {
+          this.writeUpdatedIndirectObject(font);
         }
       });
     }

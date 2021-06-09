@@ -1,6 +1,8 @@
 import { annotationTypes } from "./const";
 import { ParseInfo, ParseResult } from "./data-parser";
 
+import { FontDict } from "./entities/appearance/font-dict";
+
 import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
 import { StampAnnotation, StampAnnotationDto } from "./entities/annotations/markup/stamp-annotation";
 import { TextAnnotation, TextAnnotationDto } from "./entities/annotations/markup/text-annotation";
@@ -20,7 +22,8 @@ import { SquigglyAnnotation } from "./entities/annotations/markup/text-markup/sq
 import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
 
 export class AnnotationParseFactory {
-  static ParseAnnotationFromInfo(info: ParseInfo): AnnotationDict {
+  static ParseAnnotationFromInfo(info: ParseInfo, 
+    fontMap?: Map<string, FontDict>): AnnotationDict {
     const annotationType = info.parser.parseDictSubtype(info.bounds);
     let annot: ParseResult<AnnotationDict>;
     switch (annotationType) {
@@ -46,7 +49,7 @@ export class AnnotationParseFactory {
         annot = PolylineAnnotation.parse(info);
         break;
       case annotationTypes.LINE:
-        annot = LineAnnotation.parse(info);
+        annot = LineAnnotation.parse(info, fontMap);
         // DEBUG
         // console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));
         console.log(annot);
@@ -76,7 +79,8 @@ export class AnnotationParseFactory {
     return annot?.value;;
   }
 
-  static async ParseAnnotationFromDtoAsync(dto: AnnotationDto): Promise<AnnotationDict> {
+  static async ParseAnnotationFromDtoAsync(dto: AnnotationDto, 
+    fontMap?: Map<string, FontDict>): Promise<AnnotationDict> {
     let annotation: AnnotationDict;
     switch (dto.annotationType) {
       case "/Stamp":
@@ -101,7 +105,7 @@ export class AnnotationParseFactory {
         annotation = PolylineAnnotation.createFromDto(dto as PolylineAnnotationDto);
         break;
       case "/Line":        
-        annotation = await LineAnnotation.createFromDtoAsync(dto as LineAnnotationDto);
+        annotation = await LineAnnotation.createFromDtoAsync(dto as LineAnnotationDto, fontMap);
         break;
       case "/Highlight":        
         annotation = HighlightAnnotation.createFromDto(dto as TextMarkupAnnotationDto);

@@ -18,6 +18,7 @@ import { XRef } from "../document/entities/x-refs/x-ref";
 import { CatalogDict } from "../document/entities/structure/catalog-dict";
 import { PageDict } from "../document/entities/structure/page-dict";
 import { PageTreeDict } from "../document/entities/structure/page-tree-dict";
+import { FontDict } from "../document/entities/appearance/font-dict";
 
 import { AnnotationParseFactory } from "../document/annotation-parser";
 import { AnnotationDict, AnnotationDto } from "../document/entities/annotations/annotation-dict";
@@ -103,6 +104,11 @@ export class DocumentService {
     return this._selectedAnnotation;
   }
 
+  private _fontMap: Map<string, FontDict>;
+  get fontMap(): Map<string, FontDict> {
+    return this._fontMap;
+  }
+
   /**max PDF object id + 1 */
   get size(): number {
     if (this._xrefs?.length) {
@@ -152,6 +158,8 @@ export class DocumentService {
     // console.log(this._encryption);
 
     this._userName = userName;
+
+    this._fontMap = FontDict.newFontMap();
     
     this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
     this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);

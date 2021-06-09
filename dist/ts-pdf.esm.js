@@ -3787,6 +3787,9 @@ class ReferenceDataChange {
     get size() {
         return this._size;
     }
+    getUsedRef(id) {
+        return this._usedMap.get(id);
+    }
     takeFreeRef(byteOffset, forceNew = false) {
         let ref;
         if (!forceNew && this._freeLinkedList.length > 1) {
@@ -10779,8 +10782,18 @@ class FontDict extends PdfDict {
     get encoding() {
         return this._encoding;
     }
-    get toUtfCmap() {
-        return this._toUtfCmap;
+    set encoding(value) {
+        this._encoding = value;
+        this.Encoding = value.ref
+            ? new ObjectId(value.ref.id, value.ref.generation)
+            : null;
+    }
+    get encodingValue() {
+        var _a;
+        if (!this.Encoding && ((_a = this._encoding) === null || _a === void 0 ? void 0 : _a.ref)) {
+            this.Encoding = new ObjectId(this._encoding.ref.id, this._encoding.ref.generation);
+        }
+        return this.Encoding;
     }
     get descriptor() {
         return this._descriptor;
@@ -10791,12 +10804,15 @@ class FontDict extends PdfDict {
             ? new ObjectId(value.ref.id, value.ref.generation)
             : null;
     }
-    get descriptorId() {
+    get descriptorValue() {
         var _a;
         if (!this.FontDescriptor && ((_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.ref)) {
             this.FontDescriptor = new ObjectId(this._descriptor.ref.id, this._descriptor.ref.generation);
         }
         return this.FontDescriptor;
+    }
+    get toUtfCmap() {
+        return this._toUtfCmap;
     }
     get isMonospace() {
         var _a;
@@ -10830,6 +10846,10 @@ class FontDict extends PdfDict {
         const flags = (_a = this._descriptor) === null || _a === void 0 ? void 0 : _a.Flags;
         return !!getBit(flags, 6);
     }
+    static newFontMap() {
+        const map = new Map();
+        return map;
+    }
     static parse(parseInfo) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -10837,7 +10857,9 @@ class FontDict extends PdfDict {
         try {
             const pdfObject = new FontDict();
             pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            const proxy = new Proxy(pdfObject, pdfObject.onChange);
+            pdfObject._proxy = proxy;
+            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
         }
         catch (e) {
             console.log(e.message);
@@ -10853,14 +10875,6 @@ class FontDict extends PdfDict {
         }
         if (this.BaseFont) {
             bytes.push(...encoder.encode("/BaseFont "), ...encoder.encode(" " + this.BaseFont));
-        }
-        if (this.Encoding) {
-            if (this.Encoding instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
-            }
-            else {
-                bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
-            }
         }
         if (this.ToUnicode) {
             bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
@@ -10881,8 +10895,16 @@ class FontDict extends PdfDict {
                 bytes.push(codes.R_BRACKET);
             }
         }
-        if (this.descriptorId) {
-            bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, ...this.descriptorId.toArray(cryptInfo));
+        if (this.Encoding || this.encodingValue) {
+            if (this.Encoding instanceof ObjectId) {
+                bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
+            }
+            else {
+                bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
+            }
+        }
+        if (this.descriptorValue) {
+            bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, ...this.descriptorValue.toArray(cryptInfo));
         }
         if (this.Resources) {
             bytes.push(...encoder.encode("/Resources "), ...this.Resources);
@@ -14673,6 +14695,7 @@ class MarkupAnnotation extends AnnotationDict {
 
 class DocumentDataUpdater {
     constructor(sourceBytes, lastXref, referenceData, authResult) {
+        this._writtenIds = new Set();
         this.writeImageXObject = (obj) => {
             const sMask = obj.sMask;
             if (this.isNew(sMask)) {
@@ -14769,6 +14792,9 @@ class DocumentDataUpdater {
         return !obj.ref || !this._changeData.isUsedInSource(obj.id);
     }
     writeIndirectObject(obj) {
+        if (this._writtenIds.has(obj.id)) {
+            return this._changeData.getUsedRef(obj.id);
+        }
         const newRef = this._changeData.takeFreeRef(this._writer.offset, true);
         const newObjCryptInfo = {
             ref: newRef,
@@ -14777,6 +14803,7 @@ class DocumentDataUpdater {
         };
         this._writer.writeIndirectObject(newObjCryptInfo, obj);
         obj.ref = newRef;
+        this._writtenIds.add(newRef.id);
         return newRef;
     }
     writeUpdatedIndirectObject(obj) {
@@ -14803,6 +14830,20 @@ class DocumentDataUpdater {
                 }
                 else if (xObj instanceof XFormStream) {
                     this.writeFormXObject(xObj);
+                }
+            });
+            [...resources.getFonts()].forEach(([name, font]) => {
+                if (font.encoding && this.isNew(font.encoding)) {
+                    this.writeIndirectObject(font.encoding);
+                }
+                if (font.descriptor && this.isNew(font.descriptor)) {
+                    this.writeIndirectObject(font.descriptor);
+                }
+                if (this.isNew(font)) {
+                    this.writeIndirectObject(font);
+                }
+                else if (font.edited) {
+                    this.writeUpdatedIndirectObject(font);
                 }
             });
         }
@@ -21332,7 +21373,7 @@ class LineAnnotation extends GeometricAnnotation {
     get offsetY() {
         return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
     }
-    static createFromDtoAsync(dto) {
+    static createFromDtoAsync(dto, fontMap) {
         return __awaiter$k(this, void 0, void 0, function* () {
             if (dto.annotationType !== "/Line") {
                 throw new Error("Invalid annotation type");
@@ -21371,7 +21412,7 @@ class LineAnnotation extends GeometricAnnotation {
             return proxy;
         });
     }
-    static parse(parseInfo) {
+    static parse(parseInfo, fontMap) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
         }
@@ -22831,7 +22872,7 @@ var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class AnnotationParseFactory {
-    static ParseAnnotationFromInfo(info) {
+    static ParseAnnotationFromInfo(info, fontMap) {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
         let annot;
         switch (annotationType) {
@@ -22857,7 +22898,7 @@ class AnnotationParseFactory {
                 annot = PolylineAnnotation.parse(info);
                 break;
             case annotationTypes.LINE:
-                annot = LineAnnotation.parse(info);
+                annot = LineAnnotation.parse(info, fontMap);
                 console.log(annot);
                 break;
             case annotationTypes.HIGHLIGHT:
@@ -22879,7 +22920,7 @@ class AnnotationParseFactory {
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;
     }
-    static ParseAnnotationFromDtoAsync(dto) {
+    static ParseAnnotationFromDtoAsync(dto, fontMap) {
         return __awaiter$j(this, void 0, void 0, function* () {
             let annotation;
             switch (dto.annotationType) {
@@ -22905,7 +22946,7 @@ class AnnotationParseFactory {
                     annotation = PolylineAnnotation.createFromDto(dto);
                     break;
                 case "/Line":
-                    annotation = yield LineAnnotation.createFromDtoAsync(dto);
+                    annotation = yield LineAnnotation.createFromDtoAsync(dto, fontMap);
                     break;
                 case "/Highlight":
                     annotation = HighlightAnnotation.createFromDto(dto);
@@ -23041,6 +23082,7 @@ class DocumentService {
         this._referenceData = new ReferenceData(xrefs);
         this.parseEncryption();
         this._userName = userName;
+        this._fontMap = FontDict.newFontMap();
         this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
         this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
     }
@@ -23055,6 +23097,9 @@ class DocumentService {
     }
     get selectedAnnotation() {
         return this._selectedAnnotation;
+    }
+    get fontMap() {
+        return this._fontMap;
     }
     get size() {
         var _a;
@@ -24380,7 +24425,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
             }
             const pageId = this._pageId;
             const dto = this.buildAnnotationDto();
-            const annotation = yield LineAnnotation.createFromDtoAsync(dto);
+            const annotation = yield LineAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
             this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });

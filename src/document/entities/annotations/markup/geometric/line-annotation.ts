@@ -15,6 +15,7 @@ import { LiteralString } from "../../../strings/literal-string";
 import { XFormStream } from "../../../streams/x-form-stream";
 import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
+import { FontDict } from "../../../appearance/font-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
@@ -157,7 +158,8 @@ export class LineAnnotation extends GeometricAnnotation {
     super(annotationTypes.LINE);
   }  
   
-  static async createFromDtoAsync(dto: LineAnnotationDto): Promise<LineAnnotation> {
+  static async createFromDtoAsync(dto: LineAnnotationDto, 
+    fontMap: Map<string, FontDict>): Promise<LineAnnotation> {
     if (dto.annotationType !== "/Line") {
       throw new Error("Invalid annotation type");
     }
@@ -200,7 +202,8 @@ export class LineAnnotation extends GeometricAnnotation {
     return proxy;
   }
 
-  static parse(parseInfo: ParseInfo): ParseResult<LineAnnotation> {  
+  static parse(parseInfo: ParseInfo, 
+    fontMap: Map<string, FontDict>): ParseResult<LineAnnotation> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 

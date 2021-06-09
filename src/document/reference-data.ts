@@ -213,6 +213,10 @@ export class ReferenceDataChange {
     this._usedMap = new Map<number, UsedReference>();
   }
 
+  getUsedRef(id: number): UsedReference {
+    return this._usedMap.get(id);
+  }
+
   /**
    * get a free reference and set it as used at the specified offset value
    * @param byteOffset 
