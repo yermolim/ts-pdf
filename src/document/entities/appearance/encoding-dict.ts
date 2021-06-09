@@ -32,9 +32,17 @@ export class EncodingDict extends PdfDict {
   protected _charMap: Map<number, string>;
   get charMap(): Map<number, string> {
     if (!this._charMap) {
-      this.refreshCharMap();
+      this.refreshCharMaps();
     }
     return this._charMap;
+  }
+
+  protected _codeMap: Map<string, number>;
+  get codeMap(): Map<string, number> {
+    if (!this._codeMap) {
+      this.refreshCharMaps();
+    }
+    return this._codeMap;
   }
 
   constructor() {
@@ -143,7 +151,7 @@ export class EncodingDict extends PdfDict {
     };
   }
 
-  protected refreshCharMap() {
+  protected refreshCharMaps() {
     if (this.Differences) {
       if (typeof this.Differences[0] !== "number") {
         throw new Error("First element of encoding difference array must be a number");
@@ -167,8 +175,10 @@ export class EncodingDict extends PdfDict {
 
       // simplify and save the map
       this._charMap = new Map<number, string>();
+      this._codeMap = new Map<string, number>();
       charInfoMap.forEach((v, k) => {
         this.charMap.set(k, v.char);
+        this._codeMap.set(v.char, k);
       });
     }
   }

@@ -1827,15 +1827,6 @@ export const pdfCharCodesByName: {[key: string]: charEncodingInfo} = {
     pdfCode: 47,
     utfCode: 47
   },
-  space: {
-    name: "space",
-    char: " ",
-    stdCode: 32,
-    macCode: 32,
-    winCode: 32,
-    pdfCode: 32,
-    utfCode: 32
-  },
   sterling: {
     name: "sterling",
     char: "£",
@@ -3820,6 +3811,15 @@ export const pdfCharCodesByName: {[key: string]: charEncodingInfo} = {
   },
   ".notdef": { // replace with whitespace
     name: ".notdef",
+    char: " ",
+    stdCode: 32,
+    macCode: 32,
+    winCode: 32,
+    pdfCode: 32,
+    utfCode: 32
+  },
+  space: {
+    name: "space",
     char: " ",
     stdCode: 32,
     macCode: 32,

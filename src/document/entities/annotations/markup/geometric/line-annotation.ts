@@ -149,6 +149,8 @@ export class LineAnnotation extends GeometricAnnotation {
 
   protected _textData: TextData;
 
+  protected _fontMap: Map<string, FontDict>;
+
   /** Y-axis offset from control points to the actual line drawn */
   get offsetY(): number {
     return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
@@ -194,6 +196,7 @@ export class LineAnnotation extends GeometricAnnotation {
     annotation.CP = dto.captionPosition || captionPositions.INLINE;
     annotation.CO = dto.captionOffset || [0, 0];
  
+    annotation._fontMap = fontMap;
     await annotation.generateApStreamAsync();
 
     const proxy = new Proxy<LineAnnotation>(annotation, annotation.onChange);
@@ -210,6 +213,7 @@ export class LineAnnotation extends GeometricAnnotation {
     try {
       const pdfObject = new LineAnnotation();
       pdfObject.parseProps(parseInfo);
+      pdfObject._fontMap = fontMap;
       const proxy = new Proxy<LineAnnotation>(pdfObject, pdfObject.onChange);
       pdfObject._proxy = proxy;
       return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
@@ -433,7 +437,7 @@ export class LineAnnotation extends GeometricAnnotation {
 
   protected async updateTextDataAsync(maxWidth: number): Promise<TextData> {
     const text = this.Contents?.literal;
-    // const text = "Lorem-Ipsum is simply\ndummy, text of the printing, and typesetting industry.";
+    // const text = "Lorem-Ipsum is simply\ndummy, text of the печати, and typesetting industry.";
     
     if (text) {
       const pTemp = document.createElement("p");
@@ -458,9 +462,9 @@ export class LineAnnotation extends GeometricAnnotation {
       pTemp.style.top = "0";
       pTemp.style.margin = "0";
       pTemp.style.padding = "0";
-      pTemp.style.maxWidth = maxWidth.toFixed() + "px";
-      pTemp.style.zIndex = "100"; // pTemp.style.visibility = "hidden";    
-      // pTemp.style.transform = "scale(0.1)";
+      pTemp.style.maxWidth = maxWidth.toFixed() + "px";       
+      pTemp.style.visibility = "hidden"; // DEBUG pTemp.style.zIndex = "100"; 
+      pTemp.style.transform = "scale(0.1)";
       pTemp.style.transformOrigin = "top left";
 
       // add the paragraph to DOM
@@ -514,7 +518,11 @@ export class LineAnnotation extends GeometricAnnotation {
       // calculate dimensions for each line
       const lineData: TextLineData[] = [];
       for (let i = 0; i < lines.length; i++) {
-        const {x, y, width, height} = lineSpans[i].getBoundingClientRect();
+        const span = lineSpans[i];
+        const x = span.offsetLeft;
+        const y = span.offsetTop;
+        const width = span.offsetWidth;
+        const height = span.offsetHeight;
         // line dimensions in PDF CS 
         // (Y-axis is flipped, bottom-left corner is 0,0)
         const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
@@ -557,7 +565,7 @@ export class LineAnnotation extends GeometricAnnotation {
       };
 
       // remove the temp paragraph from DOM 
-      pTemp.remove();
+      // pTemp.remove();
 
       this._textData = textData;
     } else {
@@ -684,8 +692,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }
 
   protected getLineEndingStreamText(point: Vec2, type: LineEndingType, 
-    side: "left" | "right"): string {
-    const strokeWidth = this.strokeWidth;
+    strokeWidth: number, side: "left" | "right"): string {
     const size = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, 
       LineAnnotation.lineEndingMinimalSize);
 
@@ -785,14 +792,11 @@ export class LineAnnotation extends GeometricAnnotation {
     }
   }
 
-  protected async getTextStreamTextAsync(start: Vec2, end: Vec2): Promise<string> {
-    if (!this._textData) {
-      return "";
-    }
-
+  protected async getTextStreamTextAsync(start: Vec2, end: Vec2, 
+    textData: TextData, codeMap: Map<string, number>, fontName: string): Promise<string> {
     const lineCenter = Vec2.add(start, end).multiplyByScalar(0.5);
     
-    const [xMin, yMin, xMax, yMax] = this._textData.relativeRect;
+    const [xMin, yMin, xMax, yMax] = textData.relativeRect;
     // the text corner coordinates in annotation-local CS
     const topLeftLCS = new Vec2(xMin, yMin).add(lineCenter);
     const bottomRightLCS = new Vec2(xMax, yMax).add(lineCenter);
@@ -800,7 +804,7 @@ export class LineAnnotation extends GeometricAnnotation {
     // DEBUG
     // draw text background rect      
     const textBgRectStream = 
-      "\nq 1 g 1 G" // push the graphics state onto the stack
+      "\nq 1 g 1 G" // push the graphics state onto the stack and set bg color
       + `\n${topLeftLCS.x} ${topLeftLCS.y} m`
       + `\n${topLeftLCS.x} ${bottomRightLCS.y} l`
       + `\n${bottomRightLCS.x} ${bottomRightLCS.y} l`
@@ -809,8 +813,28 @@ export class LineAnnotation extends GeometricAnnotation {
       + "\nQ"; // pop the graphics state back from the stack
 
     // TODO: implement drawing text
+    let textStream = "\nq 0 g 0 G"; // push the graphics state onto the stack and set text color
+    const fontSize = 9;
+    for (const line of textData.lines) {
+      if (!line.text) {
+        continue;
+      }      
+      const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(lineCenter);
+      let lineHex = "";
+      for (const char of line.text) {
+        const code = codeMap.get(char);
+        if (code) {
+          lineHex += code.toString(16).padStart(2, "0");
+        }
+      }
+      textStream += `\nBT 0 Tc 0 Tw 100 Tz ${fontName} ${fontSize} Tf 0 Tr`;
+      textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
+      textStream += `\n<${lineHex}> Tj`;
+      textStream += "\nET";
+    };
+    textStream += "\nQ"; // pop the graphics state back from the stack
       
-    return textBgRectStream;
+    return textBgRectStream + textStream;
   }
 
   protected async generateApStreamAsync() {
@@ -826,6 +850,7 @@ export class LineAnnotation extends GeometricAnnotation {
     apStream.LastModified = DateString.fromDate(new Date());
     apStream.BBox = [data.bbox[0].x, data.bbox[0].y, data.bbox[1].x, data.bbox[1].y];
     apStream.Matrix = <Hextuple><any>data.matrix.toFloatShortArray();
+    apStream.Resources = new ResourceDict();
 
     // set color
     let colorString: string;
@@ -856,6 +881,7 @@ export class LineAnnotation extends GeometricAnnotation {
     gs.D = [[strokeDash, strokeGap], 0];
     gs.LC = lineCapStyles.SQUARE;
     gs.LJ = lineJoinStyles.MITER;
+    apStream.Resources.setGraphicsState("/GS0", gs);
     
     const matrixInv = Mat3.invert(data.matrix);
     // calculate start and end position coordinates before transformation
@@ -870,9 +896,27 @@ export class LineAnnotation extends GeometricAnnotation {
     apEnd.y += offsetY;    
     
     const lineStream = this.getLineStreamText(apStart, apEnd);
-    const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], "left");
-    const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], "right");
-    const textStream = await this.getTextStreamTextAsync(apStart, apEnd);
+    const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], strokeWidth, "left");
+    const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], strokeWidth, "right");
+
+    let textStream: string;
+    if (this._textData) {  
+      // TODO: add other fonts
+      const fontFamily = "arial";
+      const font = this._fontMap?.get(fontFamily);
+      const codeMap = font.encoding?.codeMap;
+      if (!font || !codeMap) {
+        throw new Error(`Font not found in the font map: '${fontFamily}'`);
+      }
+
+      const fontName = "/tspdfF0";
+      apStream.Resources.setFont(fontName, font);
+      textStream = await this.getTextStreamTextAsync(apStart, apEnd, 
+        this._textData, codeMap, fontName);
+    } else {
+      textStream = "";
+    }
+
     const streamTextData = 
       `q ${colorString} /GS0 gs` // push the graphics state onto the stack
       + lineStream // draw line itself with leader lines
@@ -880,9 +924,6 @@ export class LineAnnotation extends GeometricAnnotation {
       + rightEnding // draw line right ending
       + textStream // draw text if present
       + "\nQ"; // pop the graphics state back from the stack
-
-    apStream.Resources = new ResourceDict();
-    apStream.Resources.setGraphicsState("/GS0", gs);
     apStream.setTextStreamData(streamTextData);    
 
     this.apStream = apStream;

@@ -8579,15 +8579,6 @@ const pdfCharCodesByName = {
         pdfCode: 47,
         utfCode: 47
     },
-    space: {
-        name: "space",
-        char: " ",
-        stdCode: 32,
-        macCode: 32,
-        winCode: 32,
-        pdfCode: 32,
-        utfCode: 32
-    },
     sterling: {
         name: "sterling",
         char: "£",
@@ -10577,6 +10568,15 @@ const pdfCharCodesByName = {
         pdfCode: 32,
         utfCode: 32
     },
+    space: {
+        name: "space",
+        char: " ",
+        stdCode: 32,
+        macCode: 32,
+        winCode: 32,
+        pdfCode: 32,
+        utfCode: 32
+    },
 };
 function getCharCodesMapByCode(encoding) {
     const map = new Map();
@@ -10615,9 +10615,15 @@ class EncodingDict extends PdfDict {
     }
     get charMap() {
         if (!this._charMap) {
-            this.refreshCharMap();
+            this.refreshCharMaps();
         }
         return this._charMap;
+    }
+    get codeMap() {
+        if (!this._codeMap) {
+            this.refreshCharMaps();
+        }
+        return this._codeMap;
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -10708,7 +10714,7 @@ class EncodingDict extends PdfDict {
             }
         }
     }
-    refreshCharMap() {
+    refreshCharMaps() {
         if (this.Differences) {
             if (typeof this.Differences[0] !== "number") {
                 throw new Error("First element of encoding difference array must be a number");
@@ -10726,8 +10732,10 @@ class EncodingDict extends PdfDict {
                 }
             }
             this._charMap = new Map();
+            this._codeMap = new Map();
             charInfoMap.forEach((v, k) => {
                 this.charMap.set(k, v.char);
+                this._codeMap.set(v.char, k);
             });
         }
     }
@@ -21749,6 +21757,7 @@ class LineAnnotation extends GeometricAnnotation {
             annotation.Cap = dto.caption;
             annotation.CP = dto.captionPosition || captionPositions.INLINE;
             annotation.CO = dto.captionOffset || [0, 0];
+            annotation._fontMap = fontMap;
             yield annotation.generateApStreamAsync();
             const proxy = new Proxy(annotation, annotation.onChange);
             annotation._proxy = proxy;
@@ -21763,6 +21772,7 @@ class LineAnnotation extends GeometricAnnotation {
         try {
             const pdfObject = new LineAnnotation();
             pdfObject.parseProps(parseInfo);
+            pdfObject._fontMap = fontMap;
             const proxy = new Proxy(pdfObject, pdfObject.onChange);
             pdfObject._proxy = proxy;
             return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
@@ -21984,7 +21994,8 @@ class LineAnnotation extends GeometricAnnotation {
                 pTemp.style.margin = "0";
                 pTemp.style.padding = "0";
                 pTemp.style.maxWidth = maxWidth.toFixed() + "px";
-                pTemp.style.zIndex = "100";
+                pTemp.style.visibility = "hidden";
+                pTemp.style.transform = "scale(0.1)";
                 pTemp.style.transformOrigin = "top left";
                 document.body.append(pTemp);
                 const words = text.split(/([- \n\r])/u);
@@ -22024,7 +22035,11 @@ class LineAnnotation extends GeometricAnnotation {
                     : new Vec2(textWidth / 2, -this.strokeWidth);
                 const lineData = [];
                 for (let i = 0; i < lines.length; i++) {
-                    const { x, y, width, height } = lineSpans[i].getBoundingClientRect();
+                    const span = lineSpans[i];
+                    const x = span.offsetLeft;
+                    const y = span.offsetTop;
+                    const width = span.offsetWidth;
+                    const height = span.offsetHeight;
                     const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
                     const lineTopRightPdf = new Vec2(x + width, textHeight - y);
                     const lineRect = [
@@ -22055,7 +22070,6 @@ class LineAnnotation extends GeometricAnnotation {
                     relativeRect: textRelativeRect,
                     lines: lineData,
                 };
-                pTemp.remove();
                 this._textData = textData;
             }
             else {
@@ -22146,8 +22160,7 @@ class LineAnnotation extends GeometricAnnotation {
         }
         return lineStream;
     }
-    getLineEndingStreamText(point, type, side) {
-        const strokeWidth = this.strokeWidth;
+    getLineEndingStreamText(point, type, strokeWidth, side) {
         const size = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
         let text = "";
         switch (type) {
@@ -22247,13 +22260,10 @@ class LineAnnotation extends GeometricAnnotation {
                 return "";
         }
     }
-    getTextStreamTextAsync(start, end) {
+    getTextStreamTextAsync(start, end, textData, codeMap, fontName) {
         return __awaiter$k(this, void 0, void 0, function* () {
-            if (!this._textData) {
-                return "";
-            }
             const lineCenter = Vec2.add(start, end).multiplyByScalar(0.5);
-            const [xMin, yMin, xMax, yMax] = this._textData.relativeRect;
+            const [xMin, yMin, xMax, yMax] = textData.relativeRect;
             const topLeftLCS = new Vec2(xMin, yMin).add(lineCenter);
             const bottomRightLCS = new Vec2(xMax, yMax).add(lineCenter);
             const textBgRectStream = "\nq 1 g 1 G"
@@ -22263,11 +22273,31 @@ class LineAnnotation extends GeometricAnnotation {
                 + `\n${bottomRightLCS.x} ${topLeftLCS.y} l`
                 + "\nf"
                 + "\nQ";
-            return textBgRectStream;
+            let textStream = "\nq 0 g 0 G";
+            const fontSize = 9;
+            for (const line of textData.lines) {
+                if (!line.text) {
+                    continue;
+                }
+                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(lineCenter);
+                let lineHex = "";
+                for (const char of line.text) {
+                    const code = codeMap.get(char);
+                    if (code) {
+                        lineHex += code.toString(16).padStart(2, "0");
+                    }
+                }
+                textStream += `\nBT 0 Tc 0 Tw 100 Tz ${fontName} ${fontSize} Tf 0 Tr`;
+                textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
+                textStream += `\n<${lineHex}> Tj`;
+                textStream += "\nET";
+            }
+            textStream += "\nQ";
+            return textBgRectStream + textStream;
         });
     }
     generateApStreamAsync() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         return __awaiter$k(this, void 0, void 0, function* () {
             if (!this.L) {
                 return;
@@ -22278,6 +22308,7 @@ class LineAnnotation extends GeometricAnnotation {
             apStream.LastModified = DateString.fromDate(new Date());
             apStream.BBox = [data.bbox[0].x, data.bbox[0].y, data.bbox[1].x, data.bbox[1].y];
             apStream.Matrix = data.matrix.toFloatShortArray();
+            apStream.Resources = new ResourceDict();
             let colorString;
             if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
                 colorString = "0 G 0 g";
@@ -22307,6 +22338,7 @@ class LineAnnotation extends GeometricAnnotation {
             gs.D = [[strokeDash, strokeGap], 0];
             gs.LC = lineCapStyles.SQUARE;
             gs.LJ = lineJoinStyles.MITER;
+            apStream.Resources.setGraphicsState("/GS0", gs);
             const matrixInv = Mat3.invert(data.matrix);
             const apStart = new Vec2(this.L[0], this.L[1])
                 .applyMat3(matrixInv)
@@ -22318,17 +22350,29 @@ class LineAnnotation extends GeometricAnnotation {
             apStart.y += offsetY;
             apEnd.y += offsetY;
             const lineStream = this.getLineStreamText(apStart, apEnd);
-            const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], "left");
-            const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], "right");
-            const textStream = yield this.getTextStreamTextAsync(apStart, apEnd);
+            const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], strokeWidth, "left");
+            const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], strokeWidth, "right");
+            let textStream;
+            if (this._textData) {
+                const fontFamily = "arial";
+                const font = (_k = this._fontMap) === null || _k === void 0 ? void 0 : _k.get(fontFamily);
+                const codeMap = (_l = font.encoding) === null || _l === void 0 ? void 0 : _l.codeMap;
+                if (!font || !codeMap) {
+                    throw new Error(`Font not found in the font map: '${fontFamily}'`);
+                }
+                const fontName = "/tspdfF0";
+                apStream.Resources.setFont(fontName, font);
+                textStream = yield this.getTextStreamTextAsync(apStart, apEnd, this._textData, codeMap, fontName);
+            }
+            else {
+                textStream = "";
+            }
             const streamTextData = `q ${colorString} /GS0 gs`
                 + lineStream
                 + leftEnding
                 + rightEnding
                 + textStream
                 + "\nQ";
-            apStream.Resources = new ResourceDict();
-            apStream.Resources.setGraphicsState("/GS0", gs);
             apStream.setTextStreamData(streamTextData);
             this.apStream = apStream;
         });
@@ -23571,7 +23615,7 @@ class DocumentService {
         return __awaiter$i(this, void 0, void 0, function* () {
             let annotation;
             for (const dto of dtos) {
-                annotation = yield AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto);
+                annotation = yield AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto, this._fontMap);
                 this.appendAnnotationToPageAsync(dto.pageId, annotation);
             }
         });
@@ -23774,7 +23818,7 @@ class DocumentService {
                     setTimeout(() => {
                         const info = this.getObjectParseInfo(objectId.id);
                         info.rect = page.MediaBox;
-                        const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+                        const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info, this._fontMap);
                         resolve(annot);
                     }, 0);
                 });

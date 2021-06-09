@@ -23,7 +23,7 @@ import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-anno
 
 export class AnnotationParseFactory {
   static ParseAnnotationFromInfo(info: ParseInfo, 
-    fontMap?: Map<string, FontDict>): AnnotationDict {
+    fontMap: Map<string, FontDict>): AnnotationDict {
     const annotationType = info.parser.parseDictSubtype(info.bounds);
     let annot: ParseResult<AnnotationDict>;
     switch (annotationType) {
@@ -80,7 +80,7 @@ export class AnnotationParseFactory {
   }
 
   static async ParseAnnotationFromDtoAsync(dto: AnnotationDto, 
-    fontMap?: Map<string, FontDict>): Promise<AnnotationDict> {
+    fontMap: Map<string, FontDict>): Promise<AnnotationDict> {
     let annotation: AnnotationDict;
     switch (dto.annotationType) {
       case "/Stamp":

@@ -313,7 +313,7 @@ export class DocumentService {
   async appendSerializedAnnotationsAsync(dtos: AnnotationDto[]) {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
-      annotation = await AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto);
+      annotation = await AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto, this._fontMap);
       this.appendAnnotationToPageAsync(dto.pageId, annotation);
     }
   }
@@ -616,7 +616,7 @@ export class DocumentService {
           setTimeout(() => {          
             const info = this.getObjectParseInfo(objectId.id);  
             info.rect = page.MediaBox;
-            const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info);
+            const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info, this._fontMap);
             resolve(annot);
           }, 0);
         });
