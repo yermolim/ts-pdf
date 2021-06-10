@@ -1208,18 +1208,23 @@ const styles = `
   } 
   .mode-annotation .annotation-controls.selected .annotation-rect,
   .mode-annotation .annotation-controls.selected .annotation-bbox {
-    stroke: var(--tspdf-color-secondary-tr-final);
+    stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
-    stroke: var(--tspdf-color-fg-accent-final);
+    stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
-  .mode-annotation .annotation-controls.selected .annotation-handle-scale,
-  .mode-annotation .annotation-controls.selected .annotation-handle-rotation {
+  .mode-annotation .annotation-controls.selected .annotation-handle,
+  .mode-annotation .annotation-controls.selected .annotation-handle {
     r: 8;
-    fill: var(--tspdf-color-primary-final);
     cursor: pointer;
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.scale {
+    fill: rgba(0, 0, 0, 0.75);
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
+    fill: rgba(50, 100, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
@@ -1229,7 +1234,7 @@ const styles = `
     r: 25;
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator .dashed {
-    stroke: var(--tspdf-color-secondary-tr-final);
+    stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }
 
@@ -1521,7 +1526,7 @@ const styles = `
 </style>
 `;
 
-var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1542,7 +1547,7 @@ function htmlToElements(html) {
     return nodes;
 }
 function promisify(callback) {
-    return __awaiter$t(this, void 0, void 0, function* () {
+    return __awaiter$u(this, void 0, void 0, function* () {
         return new Promise(resolve => {
             setTimeout(() => {
                 const result = callback();
@@ -1552,7 +1557,7 @@ function promisify(callback) {
     });
 }
 function runEmptyTimeout() {
-    return __awaiter$t(this, void 0, void 0, function* () {
+    return __awaiter$u(this, void 0, void 0, function* () {
         yield promisify(() => undefined);
     });
 }
@@ -2367,6 +2372,8 @@ const cyrillicEncodingDifferences = [
     "/afii10096",
     "/afii10097"
 ];
+const lineEndingMultiplier = 3;
+const lineEndingMinimalSize = 10;
 
 const codes = {
     NULL: 0,
@@ -6041,7 +6048,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6139,7 +6146,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -12616,10 +12623,6 @@ class XFormStream extends PdfStream {
     }
 }
 
-function getRandomUuid() {
-    return v4();
-}
-
 const selectionStrokeWidth = 20;
 const bezierConstant = 0.551915;
 function buildSquigglyLine(start, end, maxWaveSize) {
@@ -12661,6 +12664,10 @@ function calcPdfBBoxToRectMatrices(bBox, rect, matrix) {
     const matA = Mat3.from4Vec2(appBoxMin, appBoxMax, rectMin, rectMax);
     const matAA = Mat3.fromMat3(matAP).multiply(matA);
     return { matAP, matA, matAA };
+}
+
+function getRandomUuid() {
+    return v4();
 }
 
 class TextState {
@@ -12807,7 +12814,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12909,7 +12916,7 @@ class AppearanceStreamRenderer {
         return { nextIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -13254,7 +13261,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -13290,7 +13297,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextAsync(textParam, resources) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const textState = this.state.textState;
             const fontDict = resources.getFont(textState.customFontName);
             const text = this.decodeTextParam(textParam, fontDict);
@@ -13406,7 +13413,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextGroupAsync(parser, resources) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const svgElements = [];
             const textState = this.state.textState;
             let i = 0;
@@ -13451,7 +13458,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawStreamAsync(stream) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -14084,7 +14091,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -14145,7 +14152,7 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onTranslationPointerUp = (e) => __awaiter$q(this, void 0, void 0, function* () {
+        this.onTranslationPointerUp = (e) => __awaiter$r(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -14184,7 +14191,7 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(centerX, centerY);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onRotationHandlePointerUp = (e) => __awaiter$q(this, void 0, void 0, function* () {
+        this.onRotationHandlePointerUp = (e) => __awaiter$r(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -14263,7 +14270,7 @@ class AnnotationDict extends PdfDict {
             this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onScaleHandlePointerUp = (e) => __awaiter$q(this, void 0, void 0, function* () {
+        this.onScaleHandlePointerUp = (e) => __awaiter$r(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -14370,7 +14377,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(viewBox) {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!viewBox) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -14383,7 +14390,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -14398,7 +14405,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     moveToAsync(point) {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             const width = this.Rect[2] - this.Rect[0];
             const height = this.Rect[3] - this.Rect[1];
             const x = point.x - width / 2;
@@ -14408,7 +14415,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!center) {
                 const [x0, y0, x1, y1] = this.Rect;
                 center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
@@ -14706,7 +14713,7 @@ class AnnotationDict extends PdfDict {
         dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
     applyCommonTransformAsync(matrix) {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             this.applyRectTransform(matrix);
             const dict = this._proxy || this;
             const stream = dict.apStream;
@@ -14718,7 +14725,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -14727,7 +14734,7 @@ class AnnotationDict extends PdfDict {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$q(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$r(this, void 0, void 0, function* () {
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 this._svgContentCopy.remove();
                 yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
@@ -14803,7 +14810,7 @@ class AnnotationDict extends PdfDict {
         const handles = [];
         ["ll", "lr", "ur", "ul"].forEach(x => {
             const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            handle.classList.add("annotation-handle-scale");
+            handle.classList.add("annotation-handle", "scale");
             handle.setAttribute("data-handle-name", x);
             handle.setAttribute("cx", bBox[x].x + "");
             handle.setAttribute("cy", bBox[x].y + "");
@@ -14835,7 +14842,7 @@ class AnnotationDict extends PdfDict {
         rotationGroupLine.setAttribute("x2", handleCenter.x + "");
         rotationGroupLine.setAttribute("y2", handleCenter.y + "");
         const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        centerRectHandle.classList.add("annotation-handle-rotation");
+        centerRectHandle.classList.add("annotation-handle", "rotation");
         centerRectHandle.setAttribute("data-handle-name", "center");
         centerRectHandle.setAttribute("cx", handleCenter.x + "");
         centerRectHandle.setAttribute("cy", handleCenter.y + "");
@@ -14848,7 +14855,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -14875,6 +14882,15 @@ class AnnotationDict extends PdfDict {
     }
 }
 
+var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const markupAnnotationReplyTypes = {
     REPLY: "/R",
     GROUP: "/Group",
@@ -15042,6 +15058,224 @@ class MarkupAnnotation extends AnnotationDict {
         }
         const color = [r, g, b, a];
         return color;
+    }
+    updateTextDataAsync(options) {
+        var _a;
+        return __awaiter$q(this, void 0, void 0, function* () {
+            const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
+            if (text) {
+                const pTemp = document.createElement("p");
+                pTemp.style.color = "black";
+                pTemp.style.fontSize = options.fontSize + "px";
+                pTemp.style.fontFamily = "arial";
+                pTemp.style.fontWeight = "normal";
+                pTemp.style.fontStyle = "normal";
+                pTemp.style.lineHeight = "normal";
+                pTemp.style.overflowWrap = "normal";
+                pTemp.style.textAlign = options.textAlign;
+                pTemp.style.textDecoration = "none";
+                pTemp.style.verticalAlign = "top";
+                pTemp.style.whiteSpace = "pre-wrap";
+                pTemp.style.wordBreak = "normal";
+                pTemp.style.position = "fixed";
+                pTemp.style.left = "0";
+                pTemp.style.top = "0";
+                pTemp.style.margin = "0";
+                pTemp.style.padding = "0";
+                pTemp.style.maxWidth = options.maxWidth.toFixed() + "px";
+                pTemp.style.visibility = "hidden";
+                pTemp.style.transform = "scale(0.1)";
+                pTemp.style.transformOrigin = "top left";
+                document.body.append(pTemp);
+                const words = text.split(/([- \n\r])/u);
+                const lines = [];
+                let currentLineText = "";
+                let previousHeight = 0;
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    pTemp.textContent += word;
+                    yield runEmptyTimeout();
+                    const currentHeight = pTemp.offsetHeight;
+                    previousHeight || (previousHeight = currentHeight);
+                    if (currentHeight > previousHeight) {
+                        lines.push(currentLineText);
+                        currentLineText = word;
+                        previousHeight = currentHeight;
+                    }
+                    else {
+                        currentLineText += word;
+                    }
+                }
+                lines.push(currentLineText);
+                pTemp.innerHTML = "";
+                const lineSpans = [];
+                for (const line of lines) {
+                    const lineSpan = document.createElement("span");
+                    lineSpan.style.position = "relative";
+                    lineSpan.textContent = line;
+                    lineSpans.push(lineSpan);
+                    pTemp.append(lineSpan);
+                }
+                yield runEmptyTimeout();
+                const textWidth = pTemp.offsetWidth;
+                const textHeight = pTemp.offsetHeight;
+                let pivotPoint;
+                switch (options.pivotPoint) {
+                    case "top-left":
+                        pivotPoint = new Vec2(0, textHeight);
+                        break;
+                    case "bottom-margin":
+                        pivotPoint = new Vec2(textWidth / 2, -this.strokeWidth);
+                        break;
+                    case "center":
+                    default:
+                        pivotPoint = new Vec2(textWidth / 2, textHeight / 2);
+                        break;
+                }
+                const lineData = [];
+                for (let i = 0; i < lines.length; i++) {
+                    const span = lineSpans[i];
+                    const x = span.offsetLeft;
+                    const y = span.offsetTop;
+                    const width = span.offsetWidth;
+                    const height = span.offsetHeight;
+                    const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
+                    const lineTopRightPdf = new Vec2(x + width, textHeight - y);
+                    const lineRect = [
+                        lineBottomLeftPdf.x, lineBottomLeftPdf.y,
+                        lineTopRightPdf.x, lineTopRightPdf.y
+                    ];
+                    const lineBottomLeftPdfRel = Vec2.substract(lineBottomLeftPdf, pivotPoint);
+                    const lineTopRightPdfRel = Vec2.substract(lineTopRightPdf, pivotPoint);
+                    const lineRelativeRect = [
+                        lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
+                        lineTopRightPdfRel.x, lineTopRightPdfRel.y
+                    ];
+                    lineData.push({
+                        text: lines[i],
+                        rect: lineRect,
+                        relativeRect: lineRelativeRect,
+                    });
+                }
+                const textRect = [0, 0, textWidth, textHeight];
+                const textRelativeRect = [
+                    0 - pivotPoint.x, 0 - pivotPoint.y,
+                    textWidth - pivotPoint.x, textHeight - pivotPoint.y
+                ];
+                const textData = {
+                    width: textWidth,
+                    height: textHeight,
+                    rect: textRect,
+                    relativeRect: textRelativeRect,
+                    lines: lineData,
+                };
+                this._textData = textData;
+            }
+            else {
+                this._textData = null;
+            }
+            return this._textData;
+        });
+    }
+    getLineEndingStreamText(point, type, strokeWidth, side) {
+        const size = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+        let text = "";
+        switch (type) {
+            case lineEndingTypes.ARROW_OPEN:
+                if (side === "left") {
+                    text += `\n${point.x + size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x + size} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x - size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x - size} ${point.y - size / 2} l`;
+                }
+                text += "\nS";
+                return text;
+            case lineEndingTypes.ARROW_OPEN_R:
+                if (side === "left") {
+                    text += `\n${point.x} ${point.y + size / 2} m`;
+                    text += `\n${point.x + size} ${point.y} l`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x} ${point.y + size / 2} m`;
+                    text += `\n${point.x - size} ${point.y} l`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                }
+                text += "\nS";
+                return text;
+            case lineEndingTypes.ARROW_CLOSED:
+                if (side === "left") {
+                    text += `\n${point.x + size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x + size} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x - size} ${point.y + size / 2} m`;
+                    text += `\n${point.x} ${point.y} l`;
+                    text += `\n${point.x - size} ${point.y - size / 2} l`;
+                }
+                text += "\ns";
+                return text;
+            case lineEndingTypes.ARROW_CLOSED_R:
+                if (side === "left") {
+                    text += `\n${point.x + size} ${point.y} m`;
+                    text += `\n${point.x} ${point.y + size / 2} l`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                }
+                else {
+                    text += `\n${point.x - size} ${point.y} m`;
+                    text += `\n${point.x} ${point.y - size / 2} l`;
+                    text += `\n${point.x} ${point.y + size / 2} l`;
+                }
+                text += "\ns";
+                return text;
+            case lineEndingTypes.BUTT:
+                text += `\n${point.x} ${point.y + size / 2} m`;
+                text += `\n${point.x} ${point.y - size / 2} l`;
+                text += "\nS";
+                return text;
+            case lineEndingTypes.SLASH:
+                text += `\n${point.x + size / 2} ${point.y + size / 2} m`;
+                text += `\n${point.x - size / 2} ${point.y - size / 2} l`;
+                text += "\nS";
+                return text;
+            case lineEndingTypes.DIAMOND:
+                text += `\n${point.x} ${point.y + size / 2} m`;
+                text += `\n${point.x + size / 2} ${point.y} l`;
+                text += `\n${point.x} ${point.y - size / 2} l`;
+                text += `\n${point.x - size / 2} ${point.y} l`;
+                text += "\ns";
+                return text;
+            case lineEndingTypes.SQUARE:
+                text += `\n${point.x - size / 2} ${point.y + size / 2} m`;
+                text += `\n${point.x + size / 2} ${point.y + size / 2} l`;
+                text += `\n${point.x + size / 2} ${point.y - size / 2} l`;
+                text += `\n${point.x - size / 2} ${point.y - size / 2} l`;
+                text += "\ns";
+                return text;
+            case lineEndingTypes.CIRCLE:
+                const c = bezierConstant;
+                const r = size / 2;
+                const cw = c * r;
+                const xmin = point.x - r;
+                const ymin = point.y - r;
+                const xmax = point.x + r;
+                const ymax = point.y + r;
+                text += `\n${point.x} ${ymax} m`;
+                text += `\n${point.x + cw} ${ymax} ${xmax} ${point.y + cw} ${xmax} ${point.y} c`;
+                text += `\n${xmax} ${point.y - cw} ${point.x + cw} ${ymin} ${point.x} ${ymin} c`;
+                text += `\n${point.x - cw} ${ymin} ${xmin} ${point.y - cw} ${xmin} ${point.y} c`;
+                text += `\n${xmin} ${point.y + cw} ${point.x - cw} ${ymax} ${point.x} ${ymax} c`;
+                text += "\nS";
+                return text;
+            case lineEndingTypes.NONE:
+            default:
+                return "";
+        }
     }
 }
 
@@ -21970,114 +22204,6 @@ class LineAnnotation extends GeometricAnnotation {
             }
         }
     }
-    updateTextDataAsync(maxWidth) {
-        var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
-            const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
-            if (text) {
-                const pTemp = document.createElement("p");
-                pTemp.style.color = "black";
-                pTemp.style.fontSize = "9px";
-                pTemp.style.fontFamily = "arial";
-                pTemp.style.fontWeight = "normal";
-                pTemp.style.fontStyle = "normal";
-                pTemp.style.lineHeight = "normal";
-                pTemp.style.overflowWrap = "normal";
-                pTemp.style.textAlign = "center";
-                pTemp.style.textDecoration = "none";
-                pTemp.style.verticalAlign = "top";
-                pTemp.style.whiteSpace = "pre-wrap";
-                pTemp.style.wordBreak = "normal";
-                pTemp.style.position = "fixed";
-                pTemp.style.left = "0";
-                pTemp.style.top = "0";
-                pTemp.style.margin = "0";
-                pTemp.style.padding = "0";
-                pTemp.style.maxWidth = maxWidth.toFixed() + "px";
-                pTemp.style.visibility = "hidden";
-                pTemp.style.transform = "scale(0.1)";
-                pTemp.style.transformOrigin = "top left";
-                document.body.append(pTemp);
-                const words = text.split(/([- \n\r])/u);
-                const lines = [];
-                let currentLineText = "";
-                let previousHeight = 0;
-                for (let i = 0; i < words.length; i++) {
-                    const word = words[i];
-                    pTemp.textContent += word;
-                    yield runEmptyTimeout();
-                    const currentHeight = pTemp.offsetHeight;
-                    previousHeight || (previousHeight = currentHeight);
-                    if (currentHeight > previousHeight) {
-                        lines.push(currentLineText);
-                        currentLineText = word;
-                        previousHeight = currentHeight;
-                    }
-                    else {
-                        currentLineText += word;
-                    }
-                }
-                lines.push(currentLineText);
-                pTemp.innerHTML = "";
-                const lineSpans = [];
-                for (const line of lines) {
-                    const lineSpan = document.createElement("span");
-                    lineSpan.style.position = "relative";
-                    lineSpan.textContent = line;
-                    lineSpans.push(lineSpan);
-                    pTemp.append(lineSpan);
-                }
-                yield runEmptyTimeout();
-                const textWidth = pTemp.offsetWidth;
-                const textHeight = pTemp.offsetHeight;
-                const pivotPoint = this.CP === captionPositions.INLINE
-                    ? new Vec2(textWidth / 2, textHeight / 2)
-                    : new Vec2(textWidth / 2, -this.strokeWidth);
-                const lineData = [];
-                for (let i = 0; i < lines.length; i++) {
-                    const span = lineSpans[i];
-                    const x = span.offsetLeft;
-                    const y = span.offsetTop;
-                    const width = span.offsetWidth;
-                    const height = span.offsetHeight;
-                    const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
-                    const lineTopRightPdf = new Vec2(x + width, textHeight - y);
-                    const lineRect = [
-                        lineBottomLeftPdf.x, lineBottomLeftPdf.y,
-                        lineTopRightPdf.x, lineTopRightPdf.y
-                    ];
-                    const lineBottomLeftPdfRel = Vec2.substract(lineBottomLeftPdf, pivotPoint);
-                    const lineTopRightPdfRel = Vec2.substract(lineTopRightPdf, pivotPoint);
-                    const lineRelativeRect = [
-                        lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
-                        lineTopRightPdfRel.x, lineTopRightPdfRel.y
-                    ];
-                    lineData.push({
-                        text: lines[i],
-                        rect: lineRect,
-                        relativeRect: lineRelativeRect,
-                    });
-                }
-                const textRect = [0, 0, textWidth, textHeight];
-                const textRelativeRect = [
-                    0 - pivotPoint.x, 0 - pivotPoint.y,
-                    textWidth - pivotPoint.x, textHeight - pivotPoint.y
-                ];
-                const textData = {
-                    width: textWidth,
-                    height: textHeight,
-                    rect: textRect,
-                    relativeRect: textRelativeRect,
-                    lines: lineData,
-                };
-                this._textData = textData;
-            }
-            else {
-                this._textData = null;
-            }
-            return this._textData;
-        });
-    }
     updateRectAsync() {
         return __awaiter$k(this, void 0, void 0, function* () {
             const [x1, y1, x2, y2] = this.L;
@@ -22088,7 +22214,7 @@ class LineAnnotation extends GeometricAnnotation {
             const halfStrokeWidth = strokeWidth / 2;
             let marginMin = 0;
             if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
-                const endingSizeInner = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
+                const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
                 const endingSize = endingSizeInner + strokeWidth;
                 marginMin = endingSize / 2;
             }
@@ -22099,7 +22225,14 @@ class LineAnnotation extends GeometricAnnotation {
             const textMaxWidth = length > textMargin
                 ? length - textMargin
                 : length;
-            const textData = yield this.updateTextDataAsync(textMaxWidth);
+            const textData = yield this.updateTextDataAsync({
+                maxWidth: textMaxWidth,
+                fontSize: 9,
+                textAlign: "center",
+                pivotPoint: this.CP === captionPositions.INLINE
+                    ? "center"
+                    : "bottom-margin",
+            });
             const marginFront = Math.max(Math.abs(this.LL || 0) + (this.LLO || 0) + halfStrokeWidth, marginMin);
             const marginBack = Math.max((this.LLE || 0) + halfStrokeWidth, marginMin);
             const height = marginFront + marginBack;
@@ -22159,106 +22292,6 @@ class LineAnnotation extends GeometricAnnotation {
             }
         }
         return lineStream;
-    }
-    getLineEndingStreamText(point, type, strokeWidth, side) {
-        const size = Math.max(strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
-        let text = "";
-        switch (type) {
-            case lineEndingTypes.ARROW_OPEN:
-                if (side === "left") {
-                    text += `\n${point.x + size} ${point.y + size / 2} m`;
-                    text += `\n${point.x} ${point.y} l`;
-                    text += `\n${point.x + size} ${point.y - size / 2} l`;
-                }
-                else {
-                    text += `\n${point.x - size} ${point.y + size / 2} m`;
-                    text += `\n${point.x} ${point.y} l`;
-                    text += `\n${point.x - size} ${point.y - size / 2} l`;
-                }
-                text += "\nS";
-                return text;
-            case lineEndingTypes.ARROW_OPEN_R:
-                if (side === "left") {
-                    text += `\n${point.x} ${point.y + size / 2} m`;
-                    text += `\n${point.x + size} ${point.y} l`;
-                    text += `\n${point.x} ${point.y - size / 2} l`;
-                }
-                else {
-                    text += `\n${point.x} ${point.y + size / 2} m`;
-                    text += `\n${point.x - size} ${point.y} l`;
-                    text += `\n${point.x} ${point.y - size / 2} l`;
-                }
-                text += "\nS";
-                return text;
-            case lineEndingTypes.ARROW_CLOSED:
-                if (side === "left") {
-                    text += `\n${point.x + size} ${point.y + size / 2} m`;
-                    text += `\n${point.x} ${point.y} l`;
-                    text += `\n${point.x + size} ${point.y - size / 2} l`;
-                }
-                else {
-                    text += `\n${point.x - size} ${point.y + size / 2} m`;
-                    text += `\n${point.x} ${point.y} l`;
-                    text += `\n${point.x - size} ${point.y - size / 2} l`;
-                }
-                text += "\ns";
-                return text;
-            case lineEndingTypes.ARROW_CLOSED_R:
-                if (side === "left") {
-                    text += `\n${point.x + size} ${point.y} m`;
-                    text += `\n${point.x} ${point.y + size / 2} l`;
-                    text += `\n${point.x} ${point.y - size / 2} l`;
-                }
-                else {
-                    text += `\n${point.x - size} ${point.y} m`;
-                    text += `\n${point.x} ${point.y - size / 2} l`;
-                    text += `\n${point.x} ${point.y + size / 2} l`;
-                }
-                text += "\ns";
-                return text;
-            case lineEndingTypes.BUTT:
-                text += `\n${point.x} ${point.y + size / 2} m`;
-                text += `\n${point.x} ${point.y - size / 2} l`;
-                text += "\nS";
-                return text;
-            case lineEndingTypes.SLASH:
-                text += `\n${point.x + size / 2} ${point.y + size / 2} m`;
-                text += `\n${point.x - size / 2} ${point.y - size / 2} l`;
-                text += "\nS";
-                return text;
-            case lineEndingTypes.DIAMOND:
-                text += `\n${point.x} ${point.y + size / 2} m`;
-                text += `\n${point.x + size / 2} ${point.y} l`;
-                text += `\n${point.x} ${point.y - size / 2} l`;
-                text += `\n${point.x - size / 2} ${point.y} l`;
-                text += "\ns";
-                return text;
-            case lineEndingTypes.SQUARE:
-                text += `\n${point.x - size / 2} ${point.y + size / 2} m`;
-                text += `\n${point.x + size / 2} ${point.y + size / 2} l`;
-                text += `\n${point.x + size / 2} ${point.y - size / 2} l`;
-                text += `\n${point.x - size / 2} ${point.y - size / 2} l`;
-                text += "\ns";
-                return text;
-            case lineEndingTypes.CIRCLE:
-                const c = bezierConstant;
-                const r = size / 2;
-                const cw = c * r;
-                const xmin = point.x - r;
-                const ymin = point.y - r;
-                const xmax = point.x + r;
-                const ymax = point.y + r;
-                text += `\n${point.x} ${ymax} m`;
-                text += `\n${point.x + cw} ${ymax} ${xmax} ${point.y + cw} ${xmax} ${point.y} c`;
-                text += `\n${xmax} ${point.y - cw} ${point.x + cw} ${ymin} ${point.x} ${ymin} c`;
-                text += `\n${point.x - cw} ${ymin} ${xmin} ${point.y - cw} ${xmin} ${point.y} c`;
-                text += `\n${xmin} ${point.y + cw} ${point.x - cw} ${ymax} ${point.x} ${ymax} c`;
-                text += "\nS";
-                return text;
-            case lineEndingTypes.NONE:
-            default:
-                return "";
-        }
     }
     getTextStreamTextAsync(start, end, textData, codeMap, fontName) {
         return __awaiter$k(this, void 0, void 0, function* () {
@@ -22393,13 +22426,13 @@ class LineAnnotation extends GeometricAnnotation {
     }
     renderLineEndHandles() {
         const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        startHandle.classList.add("annotation-handle-scale");
+        startHandle.classList.add("annotation-handle", "scale");
         startHandle.setAttribute("data-handle-name", "start");
         startHandle.setAttribute("cx", this.L[0] + "");
         startHandle.setAttribute("cy", this.L[1] + "");
         startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
         const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        endHandle.classList.add("annotation-handle-scale");
+        endHandle.classList.add("annotation-handle", "scale");
         endHandle.setAttribute("data-handle-name", "end");
         endHandle.setAttribute("cx", this.L[2] + "");
         endHandle.setAttribute("cy", this.L[3] + "");
@@ -22407,8 +22440,6 @@ class LineAnnotation extends GeometricAnnotation {
         return [startHandle, endHandle];
     }
 }
-LineAnnotation.lineEndingMultiplier = 3;
-LineAnnotation.lineEndingMinimalSize = 10;
 
 class TextMarkupAnnotation extends MarkupAnnotation {
     constructor(type) {
@@ -23108,13 +23139,14 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.IT = freeTextIntents.PLAIN_TEXT;
         this.LE = lineEndingTypes.NONE;
     }
-    static parse(parseInfo) {
+    static parse(parseInfo, fontMap) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
         }
         try {
             const pdfObject = new FreeTextAnnotation();
             pdfObject.parseProps(parseInfo);
+            pdfObject._fontMap = fontMap;
             const proxy = new Proxy(pdfObject, pdfObject.onChange);
             pdfObject._proxy = proxy;
             return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
@@ -23248,6 +23280,91 @@ class FreeTextAnnotation extends MarkupAnnotation {
             throw new Error("Not all required properties parsed");
         }
     }
+    renderHandles() {
+        const stream = this.apStream;
+        const { matAA: mat } = calcPdfBBoxToRectMatrices(stream.BBox, this.Rect, stream.Matrix);
+        return [
+            ...this.renderTextBoxCornerHandles(mat),
+            ...this.renderCalloutHandles(mat),
+            this.renderRotationHandle()
+        ];
+    }
+    renderTextBoxCornerHandles(mat) {
+        const stroke = this.strokeWidth;
+        const halfStroke = stroke / 2;
+        const [apXMin, apYMin, apXMax, apYMax] = this.apStream.BBox;
+        const [mLeft, mBottom, mRight, mTop] = this.RD || [halfStroke, halfStroke, halfStroke, halfStroke];
+        const apBL = new Vec2(apXMin + mLeft, apYMin + mBottom);
+        const apTR = new Vec2(apXMax - mRight, apYMax - mTop);
+        const apBR = new Vec2(apTR.x, apBL.y);
+        const apTL = new Vec2(apBL.x, apTR.y);
+        const pBL = Vec2.applyMat3(apBL, mat);
+        const pTR = Vec2.applyMat3(apTR, mat);
+        const pBR = Vec2.applyMat3(apBR, mat);
+        const pTL = Vec2.applyMat3(apTL, mat);
+        const cornerMap = new Map();
+        cornerMap.set("tb-bl", pBL);
+        cornerMap.set("tb-br", pTR);
+        cornerMap.set("tb-tr", pBR);
+        cornerMap.set("tb-tl", pTL);
+        const handles = [];
+        ["tb-bl", "tb-br", "tb-tr", "tb-tl"].forEach(x => {
+            const { x: cx, y: cy } = cornerMap.get(x);
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            handle.classList.add("annotation-handle", "scale");
+            handle.setAttribute("data-handle-name", x);
+            handle.setAttribute("cx", cx + "");
+            handle.setAttribute("cy", cy + "");
+            handles.push(handle);
+        });
+        return handles;
+    }
+    renderCalloutHandles(mat) {
+        const cl = this.CL;
+        if (!(cl === null || cl === void 0 ? void 0 : cl.length)) {
+            return [];
+        }
+        let apCoBase;
+        let apCoPointer;
+        let apCoKnee;
+        if (cl.length === 6) {
+            apCoBase = new Vec2(cl[4], cl[5]);
+            apCoKnee = new Vec2(cl[2], cl[3]);
+            apCoPointer = new Vec2(cl[0], cl[1]);
+        }
+        else if (cl.length === 4) {
+            apCoBase = new Vec2(cl[2], cl[3]);
+            apCoPointer = new Vec2(cl[0], cl[1]);
+        }
+        else {
+            throw new Error(`Invalid callout array length: ${cl.length}`);
+        }
+        const handles = [];
+        if (apCoKnee) {
+            const pCoKnee = Vec2.applyMat3(apCoKnee, mat);
+            const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            kneeHandle.classList.add("annotation-handle", "scale");
+            kneeHandle.setAttribute("data-handle-name", "co-knee");
+            kneeHandle.setAttribute("cx", pCoKnee.x + "");
+            kneeHandle.setAttribute("cy", pCoKnee.y + "");
+            handles.push(kneeHandle);
+        }
+        const pCoBase = Vec2.applyMat3(apCoBase, mat);
+        const baseHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        baseHandle.classList.add("annotation-handle", "scale");
+        baseHandle.setAttribute("data-handle-name", "co-base");
+        baseHandle.setAttribute("cx", pCoBase.x + "");
+        baseHandle.setAttribute("cy", pCoBase.y + "");
+        handles.push(baseHandle);
+        const pCoPointer = Vec2.applyMat3(apCoPointer, mat);
+        const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        pointerHandle.classList.add("annotation-handle", "scale");
+        pointerHandle.setAttribute("data-handle-name", "co-pointer");
+        pointerHandle.setAttribute("cx", pCoPointer.x + "");
+        pointerHandle.setAttribute("cy", pCoPointer.y + "");
+        handles.push(pointerHandle);
+        return handles;
+    }
 }
 
 var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -23287,7 +23404,6 @@ class AnnotationParseFactory {
                 break;
             case annotationTypes.LINE:
                 annot = LineAnnotation.parse(info, fontMap);
-                console.log(annot);
                 break;
             case annotationTypes.HIGHLIGHT:
                 annot = HighlightAnnotation.parse(info);
@@ -23302,7 +23418,7 @@ class AnnotationParseFactory {
                 annot = UnderlineAnnotation.parse(info);
                 break;
             case annotationTypes.FREE_TEXT:
-                annot = FreeTextAnnotation.parse(info);
+                annot = FreeTextAnnotation.parse(info, fontMap);
                 console.log(annot);
                 break;
         }
@@ -24875,7 +24991,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
         path.setAttribute("stroke-width", this._strokeWidth + "");
         path.setAttribute("stroke-linecap", "square");
         let pathString = `M ${xAlignedStart.x},${xAlignedStart.y} L ${xAlignedEnd.x},${xAlignedEnd.y}`;
-        const arrowSize = Math.max(this._strokeWidth * LineAnnotation.lineEndingMultiplier, LineAnnotation.lineEndingMinimalSize);
+        const arrowSize = Math.max(this._strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
         pathString += ` M ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y + arrowSize / 2}`;
         pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
         pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;

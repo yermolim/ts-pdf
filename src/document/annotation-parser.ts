@@ -52,7 +52,7 @@ export class AnnotationParseFactory {
         annot = LineAnnotation.parse(info, fontMap);
         // DEBUG
         // console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));
-        console.log(annot);
+        // console.log(annot);
         break;
       case annotationTypes.HIGHLIGHT:
         annot = HighlightAnnotation.parse(info);
@@ -67,7 +67,7 @@ export class AnnotationParseFactory {
         annot = UnderlineAnnotation.parse(info);
         break; 
       case annotationTypes.FREE_TEXT:
-        annot = FreeTextAnnotation.parse(info);
+        annot = FreeTextAnnotation.parse(info, fontMap);
         // DEBUG
         // console.log(info.parser.sliceChars(info.bounds.start, info.bounds.end));
         console.log(annot);

@@ -63,6 +63,8 @@
     /* Advanced Options */    
     "forceConsistentCasingInFileNames": true, /* Disallow inconsistently-cased references to the same file. */    
     "skipLibCheck": false,
+
+    "noImplicitOverride": false
   },
   "exclude": ["node_modules", "dist", "tsc", "demo", "coverage", "src/_temp"]
 }

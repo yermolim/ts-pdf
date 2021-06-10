@@ -701,3 +701,8 @@ export const cyrillicEncodingDifferences = [
   "/afii10096",
   "/afii10097"
 ] as const;
+
+
+/**defines how many times the line ending size is larger than the line width */
+export const lineEndingMultiplier = 3;
+export const lineEndingMinimalSize = 10;

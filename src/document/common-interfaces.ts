@@ -1,3 +1,4 @@
+import { Quadruple } from "../common/types";
 import { CryptVersion, CryptRevision, CryptMethod } from "./const";
 
 /**interface for the PDF ObjectId-like objects  */
@@ -85,3 +86,26 @@ export interface IStream {
    */
   getByteRange?(start: number, end: number): Uint8Array;
 }
+
+//#region text data
+export interface TextLineData {
+  text: string;
+  rect: Quadruple;
+  relativeRect: Quadruple;
+}
+
+export interface TextData {
+  width: number;
+  height: number;
+  rect: Quadruple;
+  relativeRect: Quadruple;
+  lines: TextLineData[];
+}
+
+export interface TextDataOptions {
+  maxWidth: number;
+  fontSize: number;
+  textAlign: "left" | "center" | "right";
+  pivotPoint: "top-left" | "center" | "bottom-margin";
+}
+//#endregion

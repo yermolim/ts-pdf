@@ -867,7 +867,7 @@ export abstract class AnnotationDict extends PdfDict {
     const handles: SVGGraphicsElement[] = [];
     ["ll", "lr", "ur", "ul"].forEach(x => {
       const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      handle.classList.add("annotation-handle-scale");
+      handle.classList.add("annotation-handle", "scale");
       handle.setAttribute("data-handle-name", x);
       handle.setAttribute("cx", bBox[x].x + "");
       handle.setAttribute("cy", bBox[x].y + ""); 
@@ -906,7 +906,7 @@ export abstract class AnnotationDict extends PdfDict {
     rotationGroupLine.setAttribute("y2", handleCenter.y + "");
     
     const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    centerRectHandle.classList.add("annotation-handle-rotation");
+    centerRectHandle.classList.add("annotation-handle", "rotation");
     centerRectHandle.setAttribute("data-handle-name", "center");
     centerRectHandle.setAttribute("cx", handleCenter.x + "");
     centerRectHandle.setAttribute("cy", handleCenter.y + "");

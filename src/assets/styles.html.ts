@@ -775,18 +775,23 @@ export const styles = /*html*/`
   } 
   .mode-annotation .annotation-controls.selected .annotation-rect,
   .mode-annotation .annotation-controls.selected .annotation-bbox {
-    stroke: var(--tspdf-color-secondary-tr-final);
+    stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
-    stroke: var(--tspdf-color-fg-accent-final);
+    stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
-  .mode-annotation .annotation-controls.selected .annotation-handle-scale,
-  .mode-annotation .annotation-controls.selected .annotation-handle-rotation {
+  .mode-annotation .annotation-controls.selected .annotation-handle,
+  .mode-annotation .annotation-controls.selected .annotation-handle {
     r: 8;
-    fill: var(--tspdf-color-primary-final);
     cursor: pointer;
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.scale {
+    fill: rgba(0, 0, 0, 0.75);
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
+    fill: rgba(50, 100, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
@@ -796,7 +801,7 @@ export const styles = /*html*/`
     r: 25;
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator .dashed {
-    stroke: var(--tspdf-color-secondary-tr-final);
+    stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }
 

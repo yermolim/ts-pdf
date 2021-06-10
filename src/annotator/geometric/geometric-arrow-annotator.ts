@@ -3,9 +3,10 @@ import { getRandomUuid } from "../../common/uuid";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { LineAnnotation, LineAnnotationDto, 
-  lineIntents } from "../../document/entities/annotations/markup/geometric/line-annotation";
-import { lineEndingTypes } from "../../document/const";
+import { LineAnnotationDto, lineIntents } 
+  from "../../document/entities/annotations/markup/geometric/line-annotation";
+import { lineEndingMinimalSize, lineEndingMultiplier, 
+  lineEndingTypes } from "../../document/const";
 
 import { GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";
@@ -37,8 +38,8 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     // draw a line
     let pathString = `M ${xAlignedStart.x},${xAlignedStart.y} L ${xAlignedEnd.x},${xAlignedEnd.y}`;
     // draw an arrow
-    const arrowSize = Math.max(this._strokeWidth * LineAnnotation.lineEndingMultiplier, 
-      LineAnnotation.lineEndingMinimalSize);
+    const arrowSize = Math.max(this._strokeWidth * lineEndingMultiplier, 
+      lineEndingMinimalSize);
     pathString += ` M ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y + arrowSize / 2}`;
     pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
     pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;

@@ -1,11 +1,18 @@
+import { Mat3, Vec2 } from "mathador";
+
 import { Quadruple } from "../../../../common/types";
+import { calcPdfBBoxToRectMatrices } from "../../../../drawing/utils";
+
 import { codes } from "../../../codes";
 import { annotationTypes, JustificationType, 
   justificationTypes, 
   LineEndingType, lineEndingTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
+
 import { LiteralString } from "../../strings/literal-string";
+import { FontDict } from "../../appearance/font-dict";
+
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const freeTextIntents = {
@@ -63,18 +70,22 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   protected _defaultStyle: string;
   protected _rtStyle: string;
   protected _rtText: string;
+  
+  protected _fontMap: Map<string, FontDict>;
 
   constructor() {
     super(annotationTypes.FREE_TEXT);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<FreeTextAnnotation> {
+  static parse(parseInfo: ParseInfo, 
+    fontMap: Map<string, FontDict>): ParseResult<FreeTextAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new FreeTextAnnotation();
       pdfObject.parseProps(parseInfo);
+      pdfObject._fontMap = fontMap;
       const proxy = new Proxy<FreeTextAnnotation>(pdfObject, pdfObject.onChange);
       pdfObject._proxy = proxy;
       return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
@@ -223,4 +234,115 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       throw new Error("Not all required properties parsed");
     }
   }
+  
+  //#region overriding handles
+  protected renderHandles(): SVGGraphicsElement[] {  
+    const stream = this.apStream; 
+    const {matAA: mat} = calcPdfBBoxToRectMatrices(stream.BBox, this.Rect, stream.Matrix);
+
+    return [
+      ...this.renderTextBoxCornerHandles(mat), 
+      ...this.renderCalloutHandles(mat), 
+      this.renderRotationHandle()
+    ];
+  } 
+  
+  protected renderTextBoxCornerHandles(mat: Mat3): SVGGraphicsElement[] {
+    const stroke = this.strokeWidth;
+    const halfStroke = stroke / 2;
+
+    // AP stream bounding box
+    const [apXMin, apYMin, apXMax, apYMax] = this.apStream.BBox;
+    // text box margins relative to AP stream bounding box
+    const [mLeft, mBottom, mRight, mTop] = this.RD || [halfStroke, halfStroke, halfStroke, halfStroke];
+    // text box corners in untransformed stream CS
+    const apBL = new Vec2(apXMin + mLeft, apYMin + mBottom);
+    const apTR = new Vec2(apXMax - mRight, apYMax - mTop);
+    const apBR = new Vec2(apTR.x, apBL.y);
+    const apTL = new Vec2(apBL.x, apTR.y);
+    // text box corners in page CS
+    const pBL = Vec2.applyMat3(apBL, mat);
+    const pTR = Vec2.applyMat3(apTR, mat);
+    const pBR = Vec2.applyMat3(apBR, mat);
+    const pTL = Vec2.applyMat3(apTL, mat);
+
+    const cornerMap = new Map<string, Vec2>();
+    cornerMap.set("tb-bl", pBL);
+    cornerMap.set("tb-br", pTR);
+    cornerMap.set("tb-tr", pBR);
+    cornerMap.set("tb-tl", pTL);
+
+    const handles: SVGGraphicsElement[] = [];
+    ["tb-bl", "tb-br", "tb-tr", "tb-tl"].forEach(x => {
+      const {x: cx, y: cy} = cornerMap.get(x);
+      const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      handle.classList.add("annotation-handle", "scale");
+      handle.setAttribute("data-handle-name", x);
+      handle.setAttribute("cx", cx + "");
+      handle.setAttribute("cy", cy + ""); 
+      // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
+      handles.push(handle);   
+    });
+
+    return handles;
+  } 
+  
+  protected renderCalloutHandles(mat: Mat3): SVGGraphicsElement[] {
+    const cl = this.CL;
+    if (!cl?.length) {
+      return [];
+    }
+
+    // callout points in untransformed stream CS
+    let apCoBase: Vec2;
+    let apCoPointer: Vec2;
+    let apCoKnee: Vec2;
+    if (cl.length === 6) {
+      apCoBase = new Vec2(cl[4], cl[5]);
+      apCoKnee = new Vec2(cl[2], cl[3]);
+      apCoPointer = new Vec2(cl[0], cl[1]);
+    } else if (cl.length === 4) {
+      apCoBase = new Vec2(cl[2], cl[3]);
+      apCoPointer = new Vec2(cl[0], cl[1]);
+    } else {
+      throw new Error(`Invalid callout array length: ${cl.length}`);
+    }
+
+    const handles: SVGGraphicsElement[] = [];
+
+    if (apCoKnee) {
+      // callout knee point in page CS
+      const pCoKnee = Vec2.applyMat3(apCoKnee, mat);
+      const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      kneeHandle.classList.add("annotation-handle", "scale");
+      kneeHandle.setAttribute("data-handle-name", "co-knee");
+      kneeHandle.setAttribute("cx", pCoKnee.x + "");
+      kneeHandle.setAttribute("cy", pCoKnee.y + ""); 
+      // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
+      handles.push(kneeHandle);   
+    }
+
+    // callout base point in page CS
+    const pCoBase = Vec2.applyMat3(apCoBase, mat);
+    const baseHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    baseHandle.classList.add("annotation-handle", "scale");
+    baseHandle.setAttribute("data-handle-name", "co-base");
+    baseHandle.setAttribute("cx", pCoBase.x + "");
+    baseHandle.setAttribute("cy", pCoBase.y + ""); 
+    // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
+    handles.push(baseHandle); 
+
+    // callout pointer point in page CS
+    const pCoPointer = Vec2.applyMat3(apCoPointer, mat);
+    const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    pointerHandle.classList.add("annotation-handle", "scale");
+    pointerHandle.setAttribute("data-handle-name", "co-pointer");
+    pointerHandle.setAttribute("cx", pCoPointer.x + "");
+    pointerHandle.setAttribute("cy", pCoPointer.y + ""); 
+    // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
+    handles.push(pointerHandle);
+
+    return handles;
+  } 
+  //#endregion
 }
