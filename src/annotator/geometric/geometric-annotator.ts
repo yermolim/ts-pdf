@@ -28,12 +28,12 @@ export abstract class GeometricAnnotator extends Annotator {
     this._cloudMode = options?.cloudMode || false;
   }
   
-  destroy() {
+  override destroy() {
     this.clearGroup();
     super.destroy();
   }
 
-  protected init() {
+  protected override init() {
     super.init();
   }
   
@@ -105,9 +105,9 @@ export abstract class GeometricAnnotator extends Annotator {
       `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
   }
   
-  abstract undo(): void;
+  abstract override undo(): void;
   
-  abstract clear(): void;
+  abstract override clear(): void;
   
-  abstract saveAnnotationAsync(): Promise<void>;
+  abstract override saveAnnotationAsync(): Promise<void>;
 }

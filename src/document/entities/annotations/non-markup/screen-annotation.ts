@@ -9,7 +9,7 @@ export class ScreenAnnotation extends AnnotationDict {
     super(annotationTypes.SCREEN);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

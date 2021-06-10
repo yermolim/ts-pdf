@@ -9,7 +9,7 @@ export class RichMediaAnnotation extends AnnotationDict {
     super(annotationTypes.RICH_MEDIA);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

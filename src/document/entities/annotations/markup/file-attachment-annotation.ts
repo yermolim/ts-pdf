@@ -23,7 +23,7 @@ export class FileAttachmentAnnotation extends MarkupAnnotation {
     super(annotationTypes.FILE_ATTACHMENT);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

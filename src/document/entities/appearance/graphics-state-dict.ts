@@ -132,7 +132,7 @@ export class GraphicsStateDict extends PdfDict {
     }
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -325,7 +325,7 @@ export class GraphicsStateDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

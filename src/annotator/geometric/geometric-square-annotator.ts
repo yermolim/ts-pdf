@@ -23,7 +23,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     this.init();
   }
 
-  destroy() {
+  override destroy() {
     super.destroy();
   }  
   
@@ -52,7 +52,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
     this.clear();
   }
   
-  protected init() {
+  protected override init() {
     super.init();
 
     this._overlay.addEventListener("pointerdown", 

@@ -164,7 +164,7 @@ export class PageDict extends PdfDict {
     }
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -290,7 +290,7 @@ export class PageDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

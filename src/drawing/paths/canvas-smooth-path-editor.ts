@@ -63,9 +63,9 @@ export class CanvasSmoothPathEditor extends SmoothPath {
   protected _strokeWidth = CanvasSmoothPathEditor._defaultStrokeWidth;
   protected _color = CanvasSmoothPathEditor._colors[0];
   
-  protected _currentPath: CanvasSmoothPathData;
-  protected _paths: CanvasSmoothPathData[] = []; 
-  get paths(): CanvasSmoothPathData[] {
+  protected override _currentPath: CanvasSmoothPathData;
+  protected override _paths: CanvasSmoothPathData[] = []; 
+  override get paths(): CanvasSmoothPathData[] {
     return this._paths.slice();
   }
 
@@ -137,7 +137,7 @@ export class CanvasSmoothPathEditor extends SmoothPath {
     this.refreshEditor();
   }
 
-  protected updateCurrentPath(): string {
+  protected override updateCurrentPath(): string {
     const tmpPath = super.updateCurrentPath();
     if (tmpPath) {
       // Set the complete current path coordinates

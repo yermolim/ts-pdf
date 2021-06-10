@@ -78,12 +78,12 @@ export class PolygonAnnotation extends PolyAnnotation {
     }
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     return superBytes;
   } 
   
-  toDto(): PolygonAnnotationDto {
+  override toDto(): PolygonAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -117,7 +117,7 @@ export class PolygonAnnotation extends PolyAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     
     // bake the current annotation rotation into its appearance stream
@@ -209,7 +209,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     this.apStream = apStream;
   }
   
-  protected async applyCommonTransformAsync(matrix: Mat3) {  
+  protected override async applyCommonTransformAsync(matrix: Mat3) {  
     const dict = <PolygonAnnotation>this._proxy || this;
 
     // transform current Vertices

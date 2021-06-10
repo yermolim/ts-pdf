@@ -23,7 +23,7 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
     super(docService, pageService, parent, options);
   }
 
-  destroy() {
+  override destroy() {
     this._docService.eventService.removeListener(textSelectionChangeEvent,
       this.onTextSelectionChange);
     this.clearGroup();
@@ -40,7 +40,7 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
     this.clearGroup();
   }
 
-  protected init() {
+  protected override init() {
     super.init();
     this._docService.eventService.addListener(textSelectionChangeEvent,
       this.onTextSelectionChange);

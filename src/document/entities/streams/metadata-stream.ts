@@ -13,7 +13,7 @@ export class MetadataStream extends TextStream {
     super(streamTypes.METADATA_STREAM);
   }  
 
-  static parse(parseInfo: ParseInfo): ParseResult<MetadataStream> { 
+  static override parse(parseInfo: ParseInfo): ParseResult<MetadataStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -27,7 +27,7 @@ export class MetadataStream extends TextStream {
     }
   }
 
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -46,7 +46,7 @@ export class MetadataStream extends TextStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

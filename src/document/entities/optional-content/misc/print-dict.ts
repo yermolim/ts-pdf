@@ -15,7 +15,7 @@ export class PrintDict extends PdfDict {
     super(null);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

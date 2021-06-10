@@ -9,7 +9,7 @@ export class ProjectionAnnotation extends MarkupAnnotation {
     super(annotationTypes.PROJECTION);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

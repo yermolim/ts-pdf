@@ -24,7 +24,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     this.init();
   }
 
-  destroy() {
+  override destroy() {
     super.destroy();
   }  
   
@@ -53,7 +53,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     this.clear();
   }  
   
-  protected init() {
+  protected override init() {
     super.init();
     
     this._overlay.addEventListener("pointerdown", 

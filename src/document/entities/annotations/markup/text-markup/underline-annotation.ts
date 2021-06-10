@@ -85,12 +85,12 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
     }
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     return superBytes;
   }
   
-  toDto(): TextMarkupAnnotationDto {
+  override toDto(): TextMarkupAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -123,7 +123,7 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     // const {parser, bounds} = parseInfo;
     // const start = bounds.contentStart || bounds.start;

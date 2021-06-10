@@ -24,7 +24,7 @@ export class TextNoteAnnotator extends TextAnnotator {
     this.init();
   }
 
-  destroy() {    
+  override destroy() {    
     this.emitDataChanged(0);
     this._tempAnnotation = null;
     super.destroy();
@@ -72,7 +72,7 @@ export class TextNoteAnnotator extends TextAnnotator {
     this.createTempNoteAnnotationAsync();
   }
   
-  protected init() {
+  protected override init() {
     super.init();
 
     this._overlay.addEventListener("pointermove", 

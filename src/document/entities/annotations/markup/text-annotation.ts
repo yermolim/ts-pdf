@@ -212,7 +212,7 @@ export class TextAnnotation extends MarkupAnnotation {
     }
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -237,7 +237,7 @@ export class TextAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
   
-  toDto(): TextAnnotationDto {
+  override toDto(): TextAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -269,7 +269,7 @@ export class TextAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -331,7 +331,7 @@ export class TextAnnotation extends MarkupAnnotation {
   }
   
   // disable handles
-  protected renderHandles(): SVGGraphicsElement[] {   
+  protected override renderHandles(): SVGGraphicsElement[] {   
     return [];
   } 
 }

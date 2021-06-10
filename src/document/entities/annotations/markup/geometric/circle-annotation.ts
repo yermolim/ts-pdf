@@ -92,7 +92,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     }
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -114,7 +114,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     return new Uint8Array(totalBytes);
   }
   
-  toDto(): CircleAnnotationDto {
+  override toDto(): CircleAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -147,7 +147,7 @@ export class CircleAnnotation extends GeometricAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -313,7 +313,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     this.apStream = apStream;
   }
   
-  protected async applyCommonTransformAsync(matrix: Mat3) {    
+  protected override async applyCommonTransformAsync(matrix: Mat3) {    
     // transform bounding boxes
     this.applyRectTransform(matrix);
 

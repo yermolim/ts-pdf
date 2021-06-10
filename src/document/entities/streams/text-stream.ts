@@ -28,7 +28,7 @@ export class TextStream extends PdfStream {
     return null;
   }
 
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);
     return superBytes;
   }
@@ -36,7 +36,7 @@ export class TextStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     
   }

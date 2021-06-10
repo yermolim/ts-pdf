@@ -29,7 +29,7 @@ export class PenAnnotator extends Annotator {
     this._strokeWidth = options?.strokeWidth || 3;
   }
 
-  destroy() {   
+  override destroy() {   
     this.removeTempPenData();
     super.destroy();
   }
@@ -64,7 +64,7 @@ export class PenAnnotator extends Annotator {
     this.clear();
   }
   
-  protected init() {
+  protected override init() {
     super.init();    
     this._overlay.addEventListener("pointerdown", 
       this.onPointerDown);

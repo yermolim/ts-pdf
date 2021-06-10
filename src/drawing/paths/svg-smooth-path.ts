@@ -32,9 +32,9 @@ export class SvgSmoothPath extends SmoothPath {
     return this._group;
   }
   
-  protected _currentPath: SvgSmoothPathData;
-  protected _paths: SvgSmoothPathData[] = []; 
-  get paths(): SvgSmoothPathData[] {
+  protected override _currentPath: SvgSmoothPathData;
+  protected override _paths: SvgSmoothPathData[] = []; 
+  override get paths(): SvgSmoothPathData[] {
     return this._paths.slice();
   }
 
@@ -76,7 +76,7 @@ export class SvgSmoothPath extends SmoothPath {
     pathData?.path.remove();
   }
 
-  protected updateCurrentPath(): string {
+  protected override updateCurrentPath(): string {
     const tmpPath = super.updateCurrentPath();
     if (tmpPath) {
       // Set the complete current path coordinates

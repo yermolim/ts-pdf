@@ -28,7 +28,7 @@ export class OcGroupDict extends PdfDict {
     super(dictTypes.OPTIONAL_CONTENT_GROUP);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

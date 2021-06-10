@@ -17,7 +17,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     super(docService, pageService, parent, options || {});
   }
    
-  protected redrawLine(min: Vec2, max: Vec2) {
+  protected override redrawLine(min: Vec2, max: Vec2) {
     this._svgGroup.innerHTML = "";
 
     const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -50,7 +50,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     this._svgGroup.append(path);
   }
   
-  protected buildAnnotationDto(): LineAnnotationDto {
+  protected override buildAnnotationDto(): LineAnnotationDto {
     const nowString = new Date().toISOString();
     const dto: LineAnnotationDto = {
       uuid: getRandomUuid(),

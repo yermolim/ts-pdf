@@ -95,7 +95,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     }
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -143,7 +143,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -236,7 +236,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   }
   
   //#region overriding handles
-  protected renderHandles(): SVGGraphicsElement[] {  
+  protected override renderHandles(): SVGGraphicsElement[] {  
     const stream = this.apStream; 
     const {matAA: mat} = calcPdfBBoxToRectMatrices(stream.BBox, this.Rect, stream.Matrix);
 

@@ -9,7 +9,7 @@ export class WatermarkAnnotation extends AnnotationDict {
     super(annotationTypes.WATERMARK);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

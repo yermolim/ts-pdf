@@ -9,7 +9,7 @@ export class WidgetAnnotation extends AnnotationDict {
     super(annotationTypes.WIDGET);
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

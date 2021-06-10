@@ -203,7 +203,7 @@ export class LineAnnotation extends GeometricAnnotation {
     }
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -258,7 +258,7 @@ export class LineAnnotation extends GeometricAnnotation {
     return new Uint8Array(totalBytes);
   }    
     
-  toDto(): LineAnnotationDto {
+  override toDto(): LineAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -299,7 +299,7 @@ export class LineAnnotation extends GeometricAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -675,7 +675,7 @@ export class LineAnnotation extends GeometricAnnotation {
     this.apStream = apStream;
   }
 
-  protected async applyCommonTransformAsync(matrix: Mat3) {  
+  protected override async applyCommonTransformAsync(matrix: Mat3) {  
     const dict = <LineAnnotation>this._proxy || this;
 
     // transform the segment end points    
@@ -691,7 +691,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }
   
   //#region overriding handles
-  protected renderHandles(): SVGGraphicsElement[] {   
+  protected override renderHandles(): SVGGraphicsElement[] {   
     return [...this.renderLineEndHandles(), this.renderRotationHandle()];
   } 
   

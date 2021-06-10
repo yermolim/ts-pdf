@@ -84,7 +84,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     }
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -102,7 +102,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     return new Uint8Array(totalBytes);
   } 
     
-  toDto(): PolylineAnnotationDto {
+  override toDto(): PolylineAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -137,7 +137,7 @@ export class PolylineAnnotation extends PolyAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -247,7 +247,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     this.apStream = apStream;
   }
   
-  protected async applyCommonTransformAsync(matrix: Mat3) {  
+  protected override async applyCommonTransformAsync(matrix: Mat3) {  
     const dict = <PolylineAnnotation>this._proxy || this;
 
     // transform current Vertices

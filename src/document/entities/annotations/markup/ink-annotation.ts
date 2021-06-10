@@ -86,7 +86,7 @@ export class InkAnnotation extends MarkupAnnotation {
     }
   }
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     const superBytes = super.toArray(cryptInfo);  
     const encoder = new TextEncoder();  
     const bytes: number[] = [];  
@@ -108,7 +108,7 @@ export class InkAnnotation extends MarkupAnnotation {
     return new Uint8Array(totalBytes);
   }
 
-  toDto(): InkAnnotationDto {
+  override toDto(): InkAnnotationDto {
     const color = this.getColorRect();
 
     return {
@@ -140,7 +140,7 @@ export class InkAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParseInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -255,7 +255,7 @@ export class InkAnnotation extends MarkupAnnotation {
     this.apStream = apStream;
   }  
   
-  protected async applyCommonTransformAsync(matrix: Mat3) {
+  protected override async applyCommonTransformAsync(matrix: Mat3) {
     const dict = <InkAnnotation>this._proxy || this;
 
     // transform current InkList and Rect

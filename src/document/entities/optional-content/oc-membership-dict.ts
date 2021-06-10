@@ -26,7 +26,7 @@ export class OcMembershipDict extends PdfDict {
     super(dictTypes.OPTIONAL_CONTENT_MD);
   }  
   
-  toArray(cryptInfo?: CryptInfo): Uint8Array {
+  override toArray(cryptInfo?: CryptInfo): Uint8Array {
     // TODO: implement
     return new Uint8Array();
   }

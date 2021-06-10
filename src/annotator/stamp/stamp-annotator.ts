@@ -56,7 +56,7 @@ export class StampAnnotator extends Annotator {
     this.init();
   }
 
-  destroy() {    
+  override destroy() {    
     this.emitDataChanged(0, false, false);
     this._tempAnnotation = null;
     super.destroy();
@@ -97,7 +97,7 @@ export class StampAnnotator extends Annotator {
     this.createTempStampAnnotationAsync();
   }
   
-  protected init() {
+  protected override init() {
     super.init();
 
     this._overlay.addEventListener("pointermove", 
