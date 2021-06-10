@@ -177,8 +177,8 @@ export class FontDescriptorDict extends PdfDict {
       this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
       bytes.push(codes.R_BRACKET);
     }
-    if (this.ItalicAngle) {
-      bytes.push(...encoder.encode("/ItalicAngle "), ...encoder.encode(" " + this.ItalicAngle));
+    if (this.ItalicAngle || this.ItalicAngle === 0) {
+      bytes.push(...encoder.encode("/ItalicAngle "), ...encoder.encode(" " + (this.ItalicAngle)));
     }
     if (this.Ascent) {
       bytes.push(...encoder.encode("/Ascent "), ...encoder.encode(" " + this.Ascent));
