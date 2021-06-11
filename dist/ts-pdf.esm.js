@@ -2679,29 +2679,6 @@ class DataParser {
         }
         return xrefIndex;
     }
-    findCharIndex(charCode, direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (arr[i] === charCode) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (arr[i] === charCode) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
     findSubarrayIndex(sub, options) {
         var _a, _b, _c;
         const arr = this._data;
@@ -2743,9 +2720,54 @@ class DataParser {
         }
         return null;
     }
+    findCharIndex(charCode, direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (arr[i] === charCode) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (arr[i] === charCode) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
     findNewLineIndex(direction = true, start) {
-        let lineBreakIndex = this.findCharIndexByFilter(isNewLineChar, direction, start);
-        if (lineBreakIndex === -1) {
+        let lineBreakIndex;
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isNewLineChar(arr[i])) {
+                    lineBreakIndex = i;
+                    break;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isNewLineChar(arr[i])) {
+                    lineBreakIndex = i;
+                    break;
+                }
+            }
+        }
+        if (lineBreakIndex === undefined) {
             return -1;
         }
         if (direction) {
@@ -2764,22 +2786,142 @@ class DataParser {
         }
     }
     findSpaceIndex(direction = true, start) {
-        return this.findCharIndexByFilter(isSpaceChar, direction, start);
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     findNonSpaceIndex(direction = true, start) {
-        return this.findCharIndexByFilter(isNotSpaceChar, direction, start);
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isNotSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isNotSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     findDelimiterIndex(direction = true, start) {
-        return this.findCharIndexByFilter(isDelimiterChar, direction, start);
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     findNonDelimiterIndex(direction = true, start) {
-        return this.findCharIndexByFilter(isNotDelimiterChar, direction, start);
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isNotDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isNotDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     findIrregularIndex(direction = true, start) {
-        return this.findCharIndexByFilter(isNotRegularChar, direction, start);
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isNotRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isNotRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     findRegularIndex(direction = true, start) {
-        return this.findCharIndexByFilter(isRegularChar, direction, start);
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     getValueTypeAt(start, skipEmpty = true) {
         if (skipEmpty) {
@@ -3345,29 +3487,6 @@ class DataParser {
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
-    findCharIndexByFilter(filter, direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (filter(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (filter(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
 }
 
 class LinkedListNode {
@@ -3832,19 +3951,19 @@ class XRefEntry {
         while (i < bytes.length) {
             const firstIndexBytes = [];
             let firstIndexDigit = bytes[i++];
-            while (XRefEntry.digitChars.has(firstIndexDigit)) {
+            while (isDigit(firstIndexDigit)) {
                 firstIndexBytes.push(firstIndexDigit);
                 firstIndexDigit = bytes[i++];
             }
             let firstIndex = parseInt(firstIndexBytes.map(x => String.fromCharCode(x)).join(""), 10);
             const countBytes = [];
             let countDigit = bytes[i++];
-            while (XRefEntry.digitChars.has(countDigit)) {
+            while (isDigit(countDigit)) {
                 countBytes.push(countDigit);
                 countDigit = bytes[i++];
             }
             const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10);
-            while (!XRefEntry.digitChars.has(bytes[i])) {
+            while (!isDigit(bytes[i])) {
                 i++;
             }
             for (j = 0; j < count; j++) {
@@ -4084,18 +4203,6 @@ class XRefEntry {
         return groups;
     }
 }
-XRefEntry.digitChars = new Set([
-    codes.D_0,
-    codes.D_1,
-    codes.D_2,
-    codes.D_3,
-    codes.D_4,
-    codes.D_5,
-    codes.D_6,
-    codes.D_7,
-    codes.D_8,
-    codes.D_9,
-]);
 
 class ReferenceDataChange {
     constructor(refData) {
@@ -14273,7 +14380,7 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
             this._moved = true;
         };
-        this.onTranslationPointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
+        this.onTranslationPointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -14282,8 +14389,8 @@ class AnnotationDict extends PdfDict {
             target.removeEventListener("pointerup", this.onTranslationPointerUp);
             target.removeEventListener("pointerout", this.onTranslationPointerUp);
             target.releasePointerCapture(e.pointerId);
-            yield this.applyTempTransformAsync();
-        });
+            this.applyTempTransformAsync();
+        };
         this.onRotationHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -14317,7 +14424,7 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
             this._moved = true;
         };
-        this.onRotationHandlePointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
+        this.onRotationHandlePointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -14326,8 +14433,8 @@ class AnnotationDict extends PdfDict {
             target.removeEventListener("pointerup", this.onRotationHandlePointerUp);
             target.removeEventListener("pointerout", this.onRotationHandlePointerUp);
             target.releasePointerCapture(e.pointerId);
-            yield this.applyTempTransformAsync();
-        });
+            this.applyTempTransformAsync();
+        };
         this.onScaleHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -14400,7 +14507,7 @@ class AnnotationDict extends PdfDict {
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
             this._moved = true;
         };
-        this.onScaleHandlePointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
+        this.onScaleHandlePointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -14409,8 +14516,8 @@ class AnnotationDict extends PdfDict {
             target.removeEventListener("pointerup", this.onScaleHandlePointerUp);
             target.removeEventListener("pointerout", this.onScaleHandlePointerUp);
             target.releasePointerCapture(e.pointerId);
-            yield this.applyTempTransformAsync();
-        });
+            this.applyTempTransformAsync();
+        };
         this.Subtype = subType;
     }
     get apStream() {
@@ -14516,7 +14623,12 @@ class AnnotationDict extends PdfDict {
             if (!this._renderedControls) {
                 this._renderedControls = this.renderControls();
             }
-            yield this.updateRenderAsync();
+            yield new Promise((resolve, reject) => {
+                setTimeout(() => __awaiter$s(this, void 0, void 0, function* () {
+                    yield this.updateRenderAsync();
+                    resolve();
+                }), 0);
+            });
             return this.lastRenderResult;
         });
     }
@@ -22029,7 +22141,7 @@ class LineAnnotation extends GeometricAnnotation {
             this._svgTemp.set("none", "blue", this.strokeWidth, [startTemp, endTemp]);
             this._moved = true;
         };
-        this.onLineEndHandlePointerUp = (e) => __awaiter$l(this, void 0, void 0, function* () {
+        this.onLineEndHandlePointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -22039,8 +22151,8 @@ class LineAnnotation extends GeometricAnnotation {
             target.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
             target.releasePointerCapture(e.pointerId);
             this._svgTemp.remove();
-            yield this.applyTempTransformAsync();
-        });
+            this.applyTempTransformAsync();
+        };
     }
     get offsetY() {
         return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
@@ -23255,7 +23367,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             this._svgTemp.set("lightblue", "blue", this.strokeWidth, [points.bl, points.br, points.tr, points.tl], true);
             this._moved = true;
         };
-        this.onTextBoxCornerHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+        this.onTextBoxCornerHandlePointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -23268,8 +23380,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
             if (this._moved) {
                 this.updateStream(this._pointsTemp);
             }
-        });
-        this.onSideHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+        };
+        this.onSideHandlePointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -23305,7 +23417,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                     return;
             }
             this.updateStream(points);
-        });
+        };
         this.onCalloutHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -23344,7 +23456,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 : [this._pointsTemp.cob, this._pointsTemp.cop]);
             this._moved = true;
         };
-        this.onCalloutHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+        this.onCalloutHandlePointerUp = (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -23357,7 +23469,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             if (this._moved) {
                 this.updateStream(this._pointsTemp);
             }
-        });
+        };
     }
     get pointsStreamCS() {
         const stroke = this.strokeWidth;
@@ -28026,6 +28138,7 @@ class PageAnnotationView {
         });
     }
     renderAnnotationsAsync() {
+        var _a, _b;
         return __awaiter$2(this, void 0, void 0, function* () {
             this.clear();
             const annotations = (yield this._docService.getPageAnnotationsAsync(this._pageId)) || [];
@@ -28055,9 +28168,9 @@ class PageAnnotationView {
                 }
                 this._rendered.add(annotation);
                 this._svg.append(renderResult.controls);
-                this._container.append(renderResult.content);
+                (_a = this._container) === null || _a === void 0 ? void 0 : _a.append(renderResult.content);
             }
-            this._container.append(this._svg);
+            (_b = this._container) === null || _b === void 0 ? void 0 : _b.append(this._svg);
             return true;
         });
     }

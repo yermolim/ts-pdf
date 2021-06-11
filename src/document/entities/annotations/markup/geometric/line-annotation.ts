@@ -805,7 +805,7 @@ export class LineAnnotation extends GeometricAnnotation {
     this._moved = true;
   };
   
-  protected onLineEndHandlePointerUp = async (e: PointerEvent) => {
+  protected onLineEndHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -818,7 +818,7 @@ export class LineAnnotation extends GeometricAnnotation {
     target.releasePointerCapture(e.pointerId);
     
     this._svgTemp.remove();    
-    await this.applyTempTransformAsync();
+    this.applyTempTransformAsync();
   };
   //#endregion
 }

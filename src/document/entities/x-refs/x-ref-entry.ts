@@ -1,24 +1,11 @@
 import { parseIntFromBytes, int8ToBytes, 
   int16ToBytes, int32ToBytes } from "../../../common/byte";
-import { codes } from "../../char-codes";
+import { codes, isDigit } from "../../char-codes";
 import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../const";
 import { Reference } from "../../common-interfaces";
 
 /**PDF cross-reference section entry */
 export class XRefEntry implements Reference {
-  static readonly digitChars = new Set<number>([
-    codes.D_0,
-    codes.D_1,
-    codes.D_2,
-    codes.D_3,
-    codes.D_4,
-    codes.D_5,
-    codes.D_6,
-    codes.D_7,
-    codes.D_8,
-    codes.D_9,
-  ]);
-
   /**
    * 
    * @param type 
@@ -48,7 +35,7 @@ export class XRefEntry implements Reference {
     while (i < bytes.length) {
       const firstIndexBytes: number[] = [];
       let firstIndexDigit = bytes[i++];
-      while (XRefEntry.digitChars.has(firstIndexDigit)) {
+      while (isDigit(firstIndexDigit)) {
         firstIndexBytes.push(firstIndexDigit);
         firstIndexDigit = bytes[i++];
       }
@@ -56,13 +43,13 @@ export class XRefEntry implements Reference {
       
       const countBytes: number[] = [];
       let countDigit = bytes[i++];
-      while (XRefEntry.digitChars.has(countDigit)) {
+      while (isDigit(countDigit)) {
         countBytes.push(countDigit);
         countDigit = bytes[i++];
       }
       const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10); 
 
-      while (!XRefEntry.digitChars.has(bytes[i])) {
+      while (!isDigit(bytes[i])) {
         i++;
       }
       

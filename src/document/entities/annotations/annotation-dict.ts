@@ -308,7 +308,13 @@ export abstract class AnnotationDict extends PdfDict {
       this._renderedControls = this.renderControls();
     }
 
-    await this.updateRenderAsync(); 
+    // wrap render into a fake promise to keep interface responsible between render calls
+    await new Promise<void>((resolve, reject) => {
+      setTimeout(async () => {        
+        await this.updateRenderAsync(); 
+        resolve();          
+      }, 0);
+    });
 
     return this.lastRenderResult;
   }  
@@ -1056,7 +1062,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._moved = true;
   };
   
-  protected onTranslationPointerUp = async (e: PointerEvent) => {
+  protected onTranslationPointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -1068,7 +1074,7 @@ export abstract class AnnotationDict extends PdfDict {
     target.removeEventListener("pointerout", this.onTranslationPointerUp);
     target.releasePointerCapture(e.pointerId); 
 
-    await this.applyTempTransformAsync();
+    this.applyTempTransformAsync();
   };
   //#endregion
   
@@ -1127,7 +1133,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._moved = true;
   };
   
-  protected onRotationHandlePointerUp = async (e: PointerEvent) => {
+  protected onRotationHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -1139,7 +1145,7 @@ export abstract class AnnotationDict extends PdfDict {
     target.removeEventListener("pointerout", this.onRotationHandlePointerUp);
     target.releasePointerCapture(e.pointerId);     
     
-    await this.applyTempTransformAsync();
+    this.applyTempTransformAsync();
   };
   //#endregion
   
@@ -1247,7 +1253,7 @@ export abstract class AnnotationDict extends PdfDict {
     this._moved = true;
   };
   
-  protected onScaleHandlePointerUp = async (e: PointerEvent) => {
+  protected onScaleHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -1259,7 +1265,7 @@ export abstract class AnnotationDict extends PdfDict {
     target.removeEventListener("pointerout", this.onScaleHandlePointerUp);
     target.releasePointerCapture(e.pointerId); 
     
-    await this.applyTempTransformAsync();
+    this.applyTempTransformAsync();
   };
   //#endregion
 

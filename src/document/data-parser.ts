@@ -107,39 +107,7 @@ export class DataParser {
     return xrefIndex;
   }
 
-  //#region search methods  
-  /**
-   * find the nearest specified char index
-   * @param charCode sought char code
-   * @param direction search direction
-   * @param start starting index
-   */
-  findCharIndex(charCode: number, direction = true, 
-    start?: number): number {    
-
-    const arr = this._data;
-    let i = isNaN(start)
-      ? direction
-        ? 0
-        : this._maxIndex
-      : start; 
-      
-    if (direction) {        
-      for (i; i <= this._maxIndex; i++) {
-        if (arr[i] === charCode) {
-          return i;
-        }
-      }    
-    } else {        
-      for (i; i >= 0; i--) {
-        if (arr[i] === charCode) {
-          return i;
-        }
-      }
-    }
-    
-    return -1; 
-  }
+  //#region search methods
 
   /**
    * find the indices of the first occurence of the subarray in the data
@@ -195,7 +163,40 @@ export class DataParser {
 
     return null;
   }
-  
+
+  /**
+   * find the nearest specified char index
+   * @param charCode sought char code
+   * @param direction search direction
+   * @param start starting index
+   */
+  findCharIndex(charCode: number, direction = true, 
+    start?: number): number {    
+
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (arr[i] === charCode) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (arr[i] === charCode) {
+          return i;
+        }
+      }
+    }
+
+    return -1; 
+  }
+
   /**
    * find the nearest char index after or before EOL
    * @param direction search direction
@@ -204,9 +205,32 @@ export class DataParser {
   findNewLineIndex(direction = true, 
     start?: number): number {
 
-    let lineBreakIndex = this.findCharIndexByFilter(isNewLineChar, direction, start); 
+    let lineBreakIndex: number;     
+
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
       
-    if (lineBreakIndex === -1) {
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isNewLineChar(arr[i])) {
+          lineBreakIndex = i;
+          break;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isNewLineChar(arr[i])) {
+          lineBreakIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (lineBreakIndex === undefined) {
       return -1;
     }
 
@@ -232,8 +256,29 @@ export class DataParser {
    */
   findSpaceIndex(direction = true, 
     start?: number): number {
+
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isSpaceChar(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isSpaceChar(arr[i])) {
+          return i;
+        }
+      }
+    }
     
-    return this.findCharIndexByFilter(isSpaceChar, direction, start);  
+    return -1;
   }
 
   /**
@@ -242,9 +287,30 @@ export class DataParser {
    * @param start starting index
    */
   findNonSpaceIndex(direction = true, 
-    start?: number): number {    
+    start?: number): number {
+
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isNotSpaceChar(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isNotSpaceChar(arr[i])) {
+          return i;
+        }
+      }
+    }
     
-    return this.findCharIndexByFilter(isNotSpaceChar, direction, start);  
+    return -1;
   }
   
   /**
@@ -254,8 +320,29 @@ export class DataParser {
    */
   findDelimiterIndex(direction = true, 
     start?: number): number {
+
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isDelimiterChar(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isDelimiterChar(arr[i])) {
+          return i;
+        }
+      }
+    }
     
-    return this.findCharIndexByFilter(isDelimiterChar, direction, start);  
+    return -1; 
   }
   
   /**
@@ -265,8 +352,29 @@ export class DataParser {
    */
   findNonDelimiterIndex(direction = true, 
     start?: number): number {
+      
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isNotDelimiterChar(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isNotDelimiterChar(arr[i])) {
+          return i;
+        }
+      }
+    }
     
-    return this.findCharIndexByFilter(isNotDelimiterChar, direction, start);  
+    return -1;
   }
 
   /**
@@ -277,7 +385,28 @@ export class DataParser {
   findIrregularIndex(direction = true, 
     start?: number): number {
     
-    return this.findCharIndexByFilter(isNotRegularChar, direction, start);  
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isNotRegularChar(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isNotRegularChar(arr[i])) {
+          return i;
+        }
+      }
+    }
+    
+    return -1;
   }
 
   /**
@@ -288,7 +417,28 @@ export class DataParser {
   findRegularIndex(direction = true, 
     start?: number): number {
 
-    return this.findCharIndexByFilter(isRegularChar, direction, start);
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (isRegularChar(arr[i])) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (isRegularChar(arr[i])) {
+          return i;
+        }
+      }
+    }
+    
+    return -1;
   }
   //#endregion
 
@@ -983,33 +1133,4 @@ export class DataParser {
   isOutside(index: number): boolean {
     return (index < 0 || index > this._maxIndex);
   }
-
-  //#region private search methods
-  private findCharIndexByFilter(filter: (value: number) => boolean, 
-    direction = true, start?: number): number {
-
-    const arr = this._data;
-    let i = isNaN(start)
-      ? direction
-        ? 0
-        : this._maxIndex
-      : start; 
-      
-    if (direction) {        
-      for (i; i <= this._maxIndex; i++) {
-        if (filter(arr[i])) {
-          return i;
-        }
-      }    
-    } else {        
-      for (i; i >= 0; i--) {
-        if (filter(arr[i])) {
-          return i;
-        }
-      }
-    }
-    
-    return -1; 
-  }
-  //#endregion
 }

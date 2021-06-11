@@ -112,10 +112,10 @@ export class PageAnnotationView {
 
       this._rendered.add(annotation);
       this._svg.append(renderResult.controls);
-      this._container.append(renderResult.content);
+      this._container?.append(renderResult.content);
     }
 
-    this._container.append(this._svg);
+    this._container?.append(this._svg);
     return true;
   }
 

@@ -801,7 +801,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     this._moved = true;
   };
   
-  protected onTextBoxCornerHandlePointerUp = async (e: PointerEvent) => {
+  protected onTextBoxCornerHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -864,7 +864,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     return handles;
   } 
   
-  protected onSideHandlePointerUp = async (e: PointerEvent) => {
+  protected onSideHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
@@ -961,7 +961,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     this._moved = true;
   };
   
-  protected onCalloutHandlePointerUp = async (e: PointerEvent) => {
+  protected onCalloutHandlePointerUp = (e: PointerEvent) => {
     if (!e.isPrimary) {
       // it's a secondary touch action
       return;
