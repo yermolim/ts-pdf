@@ -295,7 +295,7 @@ export class AnnotationService {
       item.classList.add("panel-button");
       
       // TODO: remove after implementing all the annotators
-      if (x === "freeText" || x === "freeTextCallout") {
+      if (x === "freeTextCallout") {
         item.classList.add("disabled");
       }
 

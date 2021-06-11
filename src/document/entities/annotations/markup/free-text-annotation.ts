@@ -237,7 +237,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   
   static async createFromDtoAsync(dto: FreeTextAnnotationDto, 
     fontMap: Map<string, FontDict>): Promise<FreeTextAnnotation> {
-    if (dto.annotationType !== "/Line") {
+    if (dto.annotationType !== "/FreeText") {
       throw new Error("Invalid annotation type");
     }
 

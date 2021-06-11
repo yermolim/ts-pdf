@@ -11,6 +11,7 @@ import { TextSquigglyAnnotator } from "./text-squiggly-annotator";
 import { TextStrikeoutAnnotator } from "./text-strikeout-annotator";
 import { TextUnderlineAnnotator } from "./text-underline-annotator";
 import { TextNoteAnnotator } from "./text-note-annotator";
+import { FreeTextAnnotator } from "./free-text-annotator";
 
 export const textAnnotatorTypes = ["highlight", "strikeout", "squiggly", "underline", 
   "note", "freeText", "freeTextCallout"] as const;
@@ -53,8 +54,7 @@ export class TextAnnotatorFactory {
       case "note":
         return new TextNoteAnnotator(docService, pageService, viewer, combinedOptions);
       case "freeText":
-        return null;
-        // return new TextFreeAnnotator(docService, pageService, parent, combinedOptions);
+        return new FreeTextAnnotator(docService, pageService, viewer, combinedOptions);
       case "freeTextCallout":
         return null;
         // return new TextFreeCalloutAnnotator(docService, pageService, parent, combinedOptions);

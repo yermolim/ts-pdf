@@ -12,9 +12,8 @@ import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
 export class TextNoteAnnotator extends TextAnnotator {
   protected readonly _viewer: Viewer;
 
-  protected _tempAnnotation: TextAnnotation;
   protected _pageId: number;
-
+  protected _tempAnnotation: TextAnnotation;
   protected _addedAnnotations: TextAnnotation[] = [];
 
   constructor(docService: DocumentService, pageService: PageService, 

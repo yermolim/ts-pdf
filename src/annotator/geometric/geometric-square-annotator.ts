@@ -1,5 +1,6 @@
-import { Quadruple } from "../../common/types";
 import { Vec2 } from "mathador";
+
+import { Quadruple } from "../../common/types";
 import { getRandomUuid } from "../../common/uuid";
 import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
 
