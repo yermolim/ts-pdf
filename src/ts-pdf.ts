@@ -109,6 +109,8 @@ export class TsPdfViewer {
   private readonly _viewer: Viewer;
   private readonly _previewer: Previewer;  
 
+  private _fileName: string; 
+
   private _docService: DocumentService;  
   private _annotationService: AnnotationService;
 
@@ -222,7 +224,8 @@ export class TsPdfViewer {
     document.removeEventListener("selectionchange", this.onTextSelectionChange); 
   }
   
-  async openPdfAsync(src: string | Blob | Uint8Array): Promise<void> {
+  async openPdfAsync(src: string | Blob | Uint8Array, 
+    fileName?: string): Promise<void> {
     this._loader.show(this._mainContainer);
     
     // close the currently opened file if present
@@ -294,6 +297,7 @@ export class TsPdfViewer {
     // update viewer state
     this._pdfDocument = doc;
     this._docService = docService;
+    this._fileName = fileName;
 
     // load pages from the document
     await this.refreshPagesAsync();
@@ -333,6 +337,8 @@ export class TsPdfViewer {
       
       this._docService?.destroy();
       this._docService = null;
+
+      this._fileName = null;
     }
 
     await this.refreshPagesAsync();
@@ -528,7 +534,7 @@ export class TsPdfViewer {
       return;
     }
 
-    this.openPdfAsync(files[0]);    
+    this.openPdfAsync(files[0], files[0].name);    
 
     this._fileInput.value = null;
   };
@@ -546,7 +552,7 @@ export class TsPdfViewer {
     // DEBUG
     // this.openPdfAsync(blob);
 
-    downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
+    downloadFile(blob, this._fileName || `file_${new Date().toISOString()}.pdf`);
   };
   
   private onCloseFileButtonClick = () => {

@@ -1,6 +1,6 @@
 import { Mat3, Vec2 } from "mathador";
 
-import { Hextuple, Quadruple } from "../../../../common/types";
+import { Double, Hextuple, Quadruple } from "../../../../common/types";
 import { TempSvgPath } from "../../../../common/dom";
 import { calcPdfBBoxToRectMatrices, VecMinMax } from "../../../../drawing/utils";
 
@@ -11,13 +11,15 @@ import { annotationTypes, JustificationType, justificationTypes,
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
-import { LiteralString } from "../../strings/literal-string";
 import { DateString } from "../../strings/date-string";
+import { LiteralString } from "../../strings/literal-string";
 import { XFormStream } from "../../streams/x-form-stream";
+import { BorderStyleDict } from "../../appearance/border-style-dict";
+import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 import { FontDict } from "../../appearance/font-dict";
 import { ResourceDict } from "../../appearance/resource-dict";
-import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
+import { AnnotationDto } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export const freeTextIntents = {
@@ -52,6 +54,46 @@ export interface FreeTextAnnotPoints {
   cok?: Vec2;
   /**callout pointer point*/
   cop?: Vec2;
+}
+
+export interface FreeTextAnnotPointsDto {
+  /**text box bottom-left corner */
+  bl: Double; 
+  /**text box top-right corner */
+  tr: Double;
+  /**text box bottom-right corner */
+  br: Double;
+  /**text box top-left corner */
+  tl: Double;
+
+  /**text box left edge center */
+  l: Double;
+  /**text box top edge center */
+  t: Double; 
+  /**text box right edge center */
+  r: Double;
+  /**text box bottom edge center */
+  b: Double;
+
+  /**callout base point*/
+  cob?: Double;
+  /**callout knee point*/
+  cok?: Double;
+  /**callout pointer point*/
+  cop?: Double;
+}
+
+export interface FreeTextAnnotationDto extends AnnotationDto {  
+  /**annotation key points in page CS */
+  points: FreeTextAnnotPointsDto;
+  
+  color: Quadruple;
+  strokeWidth: number;
+  strokeDashGap?: Double;
+
+  intent?: FreeTextIntent;
+  justification?: JustificationType;
+  calloutEndingType?: LineEndingType;
 }
 
 export class FreeTextAnnotation extends MarkupAnnotation {
@@ -191,6 +233,60 @@ export class FreeTextAnnotation extends MarkupAnnotation {
 
   constructor() {
     super(annotationTypes.FREE_TEXT);
+  }  
+  
+  static async createFromDtoAsync(dto: FreeTextAnnotationDto, 
+    fontMap: Map<string, FontDict>): Promise<FreeTextAnnotation> {
+    if (dto.annotationType !== "/Line") {
+      throw new Error("Invalid annotation type");
+    }
+
+    const bs = new BorderStyleDict();
+    bs.W = dto.strokeWidth;
+    if (dto.strokeDashGap) {
+      bs.D = dto.strokeDashGap;
+    }
+    
+    const annotation = new FreeTextAnnotation();
+    annotation.$name = dto.uuid;
+    annotation.NM = LiteralString.fromString(dto.uuid);
+    annotation.T = LiteralString.fromString(dto.author);
+    annotation.M = DateString.fromDate(new Date(dto.dateModified));
+    annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+    annotation.Contents = dto.textContent 
+      ? LiteralString.fromString(dto.textContent) 
+      : null;
+      
+    annotation.Rect = dto.rect;
+    annotation.C = dto.color.slice(0, 3);
+    annotation.CA = dto.color[3];
+    annotation.BS = bs;
+    annotation.IT = dto.intent || freeTextIntents.PLAIN_TEXT;
+    annotation.LE = dto.calloutEndingType || lineEndingTypes.NONE;
+    annotation.Q = dto.justification || justificationTypes.LEFT;
+ 
+    annotation._fontMap = fontMap;
+    
+    const {bl, tr, br, tl, l, t, r, b, cob, cok, cop} = dto.points;
+    const points: FreeTextAnnotPoints = {
+      bl: new Vec2(bl[0], bl[1]), 
+      tr: new Vec2(tr[0], tr[1]),
+      br: new Vec2(br[0], br[1]),
+      tl: new Vec2(tl[0], tl[1]),    
+      l: new Vec2(l[0], l[1]),
+      t: new Vec2(t[0], t[1]), 
+      r: new Vec2(r[0], r[1]),
+      b: new Vec2(b[0], b[1]),    
+      cob: cob ? new Vec2(cob[0], cob[1]) : null,
+      cok: cok ? new Vec2(cok[0], cok[1]) : null,
+      cop: cop ? new Vec2(cop[0], cop[1]) : null,
+    };
+    await annotation.generateApStreamAsync(points);
+
+    const proxy = new Proxy<FreeTextAnnotation>(annotation, annotation.onChange);
+    annotation._proxy = proxy;
+    annotation._added = true;
+    return proxy;
   }
   
   static parse(parseInfo: ParseInfo, 
@@ -254,6 +350,58 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       ...bytes, 
       ...superBytes.subarray(2, superBytes.length)];
     return new Uint8Array(totalBytes);
+  }
+  
+  /**
+   * serialize the annotation to a data transfer object
+   * @returns 
+   */
+  override toDto(): FreeTextAnnotationDto {
+    const color = this.getColorRect();
+    const {bl, tr, br, tl, l, t, r, b, cob, cok, cop} = this.pointsPageCS;
+    const points: FreeTextAnnotPointsDto = {
+      bl: <Double><any>bl.truncate().toFloatArray(), 
+      tr: <Double><any>tr.truncate().toFloatArray(),
+      br: <Double><any>br.truncate().toFloatArray(),
+      tl: <Double><any>tl.truncate().toFloatArray(),   
+      l: <Double><any>l.truncate().toFloatArray(),
+      t: <Double><any>t.truncate().toFloatArray(), 
+      r: <Double><any>r.truncate().toFloatArray(),
+      b: <Double><any>b.truncate().toFloatArray(),    
+      cob: cob ? <Double><any>cob.truncate().toFloatArray() : null,
+      cok: cok ? <Double><any>cok.truncate().toFloatArray() : null,
+      cop: cop ? <Double><any>cop.truncate().toFloatArray() : null,
+    };
+
+    return {
+      annotationType: "/FreeText",
+      uuid: this.$name,
+      pageId: this.$pageId,
+
+      dateCreated: this["CreationDate"]?.date?.toISOString() || new Date().toISOString(),
+      dateModified: this.M 
+        ? this.M instanceof LiteralString
+          ? this.M.literal
+          : this.M.date.toISOString()
+        : new Date().toISOString(),
+      author: this["T"]?.literal,
+
+      textContent: this.Contents?.literal,
+
+      rect: this.Rect,
+      bbox: this.apStream?.BBox,
+      matrix: this.apStream?.Matrix,
+
+      points,
+
+      color,
+      strokeWidth: this.BS?.W ?? this.Border?.width ?? 1,
+      strokeDashGap: this.BS?.D ?? [3, 0],
+
+      intent: this.IT,
+      justification: this.Q,
+      calloutEndingType: this.LE,
+    };
   }
   
   override setTextContent(text: string) {
@@ -552,10 +700,18 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     }
 
     const fontSize = 12;
+    let textAlign: "left" | "center" | "right";
+    if (this.Q) {
+      textAlign = this.Q === justificationTypes.CENTER
+        ? "center"
+        : "right";
+    } else {
+      textAlign = "left";
+    }
     const textData = await this.updateTextDataAsync({
       maxWidth: textMaxWidth, // prevent text to intersect with border
       fontSize,
-      textAlign: "left",
+      textAlign: textAlign,
       pivotPoint: "top-left",
     });
 

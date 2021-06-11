@@ -19,6 +19,7 @@ import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { FontDict } from "../../../appearance/font-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { MeasureDict } from "../../../appearance/measure-dict";
+
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 
 export const lineIntents = {

@@ -78,6 +78,7 @@ export declare class TsPdfViewer {
 	private readonly _loader;
 	private readonly _viewer;
 	private readonly _previewer;
+	private _fileName;
 	private _docService;
 	private _annotationService;
 	private _fileOpenAction;
@@ -93,7 +94,7 @@ export declare class TsPdfViewer {
 	private _timers;
 	constructor(options: TsPdfViewerOptions);
 	destroy(): void;
-	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
+	openPdfAsync(src: string | Blob | Uint8Array, fileName?: string): Promise<void>;
 	closePdfAsync(): Promise<void>;
 	importAnnotationsAsync(dtos: AnnotationDto[]): Promise<void>;
 	importAnnotationsFromJsonAsync(json: string): Promise<void>;

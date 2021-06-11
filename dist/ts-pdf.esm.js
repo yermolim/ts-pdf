@@ -23537,6 +23537,54 @@ class FreeTextAnnotation extends MarkupAnnotation {
         }
         return marginMin;
     }
+    static createFromDtoAsync(dto, fontMap) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            if (dto.annotationType !== "/Line") {
+                throw new Error("Invalid annotation type");
+            }
+            const bs = new BorderStyleDict();
+            bs.W = dto.strokeWidth;
+            if (dto.strokeDashGap) {
+                bs.D = dto.strokeDashGap;
+            }
+            const annotation = new FreeTextAnnotation();
+            annotation.$name = dto.uuid;
+            annotation.NM = LiteralString.fromString(dto.uuid);
+            annotation.T = LiteralString.fromString(dto.author);
+            annotation.M = DateString.fromDate(new Date(dto.dateModified));
+            annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+            annotation.Contents = dto.textContent
+                ? LiteralString.fromString(dto.textContent)
+                : null;
+            annotation.Rect = dto.rect;
+            annotation.C = dto.color.slice(0, 3);
+            annotation.CA = dto.color[3];
+            annotation.BS = bs;
+            annotation.IT = dto.intent || freeTextIntents.PLAIN_TEXT;
+            annotation.LE = dto.calloutEndingType || lineEndingTypes.NONE;
+            annotation.Q = dto.justification || justificationTypes.LEFT;
+            annotation._fontMap = fontMap;
+            const { bl, tr, br, tl, l, t, r, b, cob, cok, cop } = dto.points;
+            const points = {
+                bl: new Vec2(bl[0], bl[1]),
+                tr: new Vec2(tr[0], tr[1]),
+                br: new Vec2(br[0], br[1]),
+                tl: new Vec2(tl[0], tl[1]),
+                l: new Vec2(l[0], l[1]),
+                t: new Vec2(t[0], t[1]),
+                r: new Vec2(r[0], r[1]),
+                b: new Vec2(b[0], b[1]),
+                cob: cob ? new Vec2(cob[0], cob[1]) : null,
+                cok: cok ? new Vec2(cok[0], cok[1]) : null,
+                cop: cop ? new Vec2(cop[0], cop[1]) : null,
+            };
+            yield annotation.generateApStreamAsync(points);
+            const proxy = new Proxy(annotation, annotation.onChange);
+            annotation._proxy = proxy;
+            annotation._added = true;
+            return proxy;
+        });
+    }
     static parse(parseInfo, fontMap) {
         if (!parseInfo) {
             throw new Error("Parsing information not passed");
@@ -23590,6 +23638,47 @@ class FreeTextAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    toDto() {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        const color = this.getColorRect();
+        const { bl, tr, br, tl, l, t, r, b, cob, cok, cop } = this.pointsPageCS;
+        const points = {
+            bl: bl.truncate().toFloatArray(),
+            tr: tr.truncate().toFloatArray(),
+            br: br.truncate().toFloatArray(),
+            tl: tl.truncate().toFloatArray(),
+            l: l.truncate().toFloatArray(),
+            t: t.truncate().toFloatArray(),
+            r: r.truncate().toFloatArray(),
+            b: b.truncate().toFloatArray(),
+            cob: cob ? cob.truncate().toFloatArray() : null,
+            cok: cok ? cok.truncate().toFloatArray() : null,
+            cop: cop ? cop.truncate().toFloatArray() : null,
+        };
+        return {
+            annotationType: "/FreeText",
+            uuid: this.$name,
+            pageId: this.$pageId,
+            dateCreated: ((_b = (_a = this["CreationDate"]) === null || _a === void 0 ? void 0 : _a.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || new Date().toISOString(),
+            dateModified: this.M
+                ? this.M instanceof LiteralString
+                    ? this.M.literal
+                    : this.M.date.toISOString()
+                : new Date().toISOString(),
+            author: (_c = this["T"]) === null || _c === void 0 ? void 0 : _c.literal,
+            textContent: (_d = this.Contents) === null || _d === void 0 ? void 0 : _d.literal,
+            rect: this.Rect,
+            bbox: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.BBox,
+            matrix: (_f = this.apStream) === null || _f === void 0 ? void 0 : _f.Matrix,
+            points,
+            color,
+            strokeWidth: (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.W) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.width) !== null && _k !== void 0 ? _k : 1,
+            strokeDashGap: (_m = (_l = this.BS) === null || _l === void 0 ? void 0 : _l.D) !== null && _m !== void 0 ? _m : [3, 0],
+            intent: this.IT,
+            justification: this.Q,
+            calloutEndingType: this.LE,
+        };
     }
     setTextContent(text) {
         super.setTextContent(text);
@@ -23801,10 +23890,19 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 return "";
             }
             const fontSize = 12;
+            let textAlign;
+            if (this.Q) {
+                textAlign = this.Q === justificationTypes.CENTER
+                    ? "center"
+                    : "right";
+            }
+            else {
+                textAlign = "left";
+            }
             const textData = yield this.updateTextDataAsync({
                 maxWidth: textMaxWidth,
                 fontSize,
-                textAlign: "left",
+                textAlign: textAlign,
                 pivotPoint: "top-left",
             });
             if (!textData) {
@@ -28500,7 +28598,7 @@ class TsPdfViewer {
             if (files.length === 0) {
                 return;
             }
-            this.openPdfAsync(files[0]);
+            this.openPdfAsync(files[0], files[0].name);
             this._fileInput.value = null;
         };
         this.onOpenFileButtonClick = () => {
@@ -28511,7 +28609,7 @@ class TsPdfViewer {
             if (!blob) {
                 return;
             }
-            downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
+            downloadFile(blob, this._fileName || `file_${new Date().toISOString()}.pdf`);
         });
         this.onCloseFileButtonClick = () => {
             this.closePdfAsync();
@@ -28798,7 +28896,7 @@ class TsPdfViewer {
         this._shadowRoot.innerHTML = "";
         document.removeEventListener("selectionchange", this.onTextSelectionChange);
     }
-    openPdfAsync(src) {
+    openPdfAsync(src, fileName) {
         return __awaiter(this, void 0, void 0, function* () {
             this._loader.show(this._mainContainer);
             yield this.closePdfAsync();
@@ -28859,6 +28957,7 @@ class TsPdfViewer {
             }
             this._pdfDocument = doc;
             this._docService = docService;
+            this._fileName = fileName;
             yield this.refreshPagesAsync();
             this._annotationService = new AnnotationService(this._docService, this._pageService, this._customStampsService, this._viewer);
             this.setAnnotationMode("select");
@@ -28885,6 +28984,7 @@ class TsPdfViewer {
                 (_a = this._annotationService) === null || _a === void 0 ? void 0 : _a.destroy();
                 (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
                 this._docService = null;
+                this._fileName = null;
             }
             yield this.refreshPagesAsync();
         });
