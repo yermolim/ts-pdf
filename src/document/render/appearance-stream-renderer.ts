@@ -135,7 +135,7 @@ export class AppearanceStreamRenderer {
                 break;
               default:
                 console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`); 
-                j = parser.findDelimiterIndex("straight", j + 1);                  
+                j = parser.findDelimiterIndex(true, j + 1);                  
                 break;
             }
           }

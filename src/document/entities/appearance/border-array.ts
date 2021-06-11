@@ -25,7 +25,7 @@ export class BorderArray {
   static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<BorderArray> {
     if (skipEmpty) {
-      start = parser.findNonSpaceIndex("straight", start);
+      start = parser.findNonSpaceIndex(true, start);
     }
     if (start < 0 || start > parser.maxIndex 
       || parser.getCharCode(start) !== codes.L_BRACKET) {
@@ -47,7 +47,7 @@ export class BorderArray {
       return null;
     }
 
-    const next = parser.findNonSpaceIndex("straight", width.end + 1);
+    const next = parser.findNonSpaceIndex(true, width.end + 1);
     if (!next) {
       return null;
     } else if (parser.getCharCode(next) === codes.R_BRACKET) {
@@ -69,12 +69,12 @@ export class BorderArray {
         return null;
       }   
 
-      const dashEnd = parser.findNonSpaceIndex("straight", gap.end + 1);
+      const dashEnd = parser.findNonSpaceIndex(true, gap.end + 1);
       if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
         return null;
       }
 
-      const arrayEnd = parser.findNonSpaceIndex("straight", dashEnd + 1);
+      const arrayEnd = parser.findNonSpaceIndex(true, dashEnd + 1);
       if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
         return null;
       }

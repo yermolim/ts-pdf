@@ -169,6 +169,14 @@ export const keywordCodes = {
 } as const;
 
 /**
+ * Each line is terminated by an end-of-line (EOL) marker
+ */
+export const EOL = [
+  codes.CARRIAGE_RETURN, 
+  codes.LINE_FEED,
+] as const;
+
+/**
  * The delimiter  characters (, ), <, >, [, ], {, }, /,  and  %  are  special.  
  * They delimit syntactic entities such as strings, arrays, names, and comments.  
  * Any of these characters terminates the entity preceding it and is not included in the entity. 
@@ -214,14 +222,6 @@ export const DIGIT_CHARS = new Set<number>([
 ]);
 
 /**
- * Each line is terminated by an end-of-line (EOL) marker
- */
-export const EOL = [
-  codes.CARRIAGE_RETURN, 
-  codes.LINE_FEED,
-] as const;
-
-/**
  * check if the char is not a space char or a delimiter char
  * @param code char code
  * @returns 
@@ -233,6 +233,38 @@ export function isRegularChar(code: number): boolean {
   return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
 
+/**
+ * check if the char is a space char or a delimiter char
+ * @param code char code
+ * @returns 
+ */
+export function isNotRegularChar(code: number): boolean {
+  if (isNaN(code)) {
+    return true;
+  }
+  return DELIMITER_CHARS.has(code) || SPACE_CHARS.has(code);
+}
+
 export function isDigit(code: number): boolean {
   return DIGIT_CHARS.has(code);
+}
+
+export function isNewLineChar(code: number): boolean {
+  return code === codes.CARRIAGE_RETURN || code === codes.LINE_FEED;
+}
+
+export function isSpaceChar(code: number): boolean {
+  return SPACE_CHARS.has(code);
+}
+
+export function isNotSpaceChar(code: number): boolean {
+  return !SPACE_CHARS.has(code);
+}
+
+export function isDelimiterChar(code: number): boolean {
+  return DELIMITER_CHARS.has(code);
+}
+
+export function isNotDelimiterChar(code: number): boolean {
+  return !DELIMITER_CHARS.has(code);
 }

@@ -2620,8 +2620,29 @@ function isRegularChar(code) {
     }
     return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
 }
+function isNotRegularChar(code) {
+    if (isNaN(code)) {
+        return true;
+    }
+    return DELIMITER_CHARS.has(code) || SPACE_CHARS.has(code);
+}
 function isDigit(code) {
     return DIGIT_CHARS.has(code);
+}
+function isNewLineChar(code) {
+    return code === codes.CARRIAGE_RETURN || code === codes.LINE_FEED;
+}
+function isSpaceChar(code) {
+    return SPACE_CHARS.has(code);
+}
+function isNotSpaceChar(code) {
+    return !SPACE_CHARS.has(code);
+}
+function isDelimiterChar(code) {
+    return DELIMITER_CHARS.has(code);
+}
+function isNotDelimiterChar(code) {
+    return !DELIMITER_CHARS.has(code);
 }
 
 class DataParser {
@@ -2648,7 +2669,7 @@ class DataParser {
         return version.toFixed(1);
     }
     getLastXrefIndex() {
-        const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this.maxIndex, direction: "reverse" });
+        const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this.maxIndex, direction: false });
         if (!xrefStartIndex) {
             return null;
         }
@@ -2658,21 +2679,44 @@ class DataParser {
         }
         return xrefIndex;
     }
+    findCharIndex(charCode, direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (arr[i] === charCode) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (arr[i] === charCode) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
     findSubarrayIndex(sub, options) {
-        var _a, _b;
+        var _a, _b, _c;
         const arr = this._data;
         if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
             return null;
         }
-        const direction = (options === null || options === void 0 ? void 0 : options.direction) || "straight";
-        const minIndex = Math.max(Math.min((_a = options === null || options === void 0 ? void 0 : options.minIndex) !== null && _a !== void 0 ? _a : 0, this._maxIndex), 0);
-        const maxIndex = Math.max(Math.min((_b = options === null || options === void 0 ? void 0 : options.maxIndex) !== null && _b !== void 0 ? _b : this._maxIndex, this._maxIndex), 0);
+        const direction = (_a = options === null || options === void 0 ? void 0 : options.direction) !== null && _a !== void 0 ? _a : true;
+        const minIndex = Math.max(Math.min((_b = options === null || options === void 0 ? void 0 : options.minIndex) !== null && _b !== void 0 ? _b : 0, this._maxIndex), 0);
+        const maxIndex = Math.max(Math.min((_c = options === null || options === void 0 ? void 0 : options.maxIndex) !== null && _c !== void 0 ? _c : this._maxIndex, this._maxIndex), 0);
         const allowOpened = !(options === null || options === void 0 ? void 0 : options.closedOnly);
-        let i = direction === "straight"
+        let i = direction
             ? minIndex
             : maxIndex;
         let j;
-        if (direction === "straight") {
+        if (direction) {
             outer_loop: for (i; i <= maxIndex; i++) {
                 for (j = 0; j < sub.length; j++) {
                     if (arr[i + j] !== sub[j]) {
@@ -2699,15 +2743,12 @@ class DataParser {
         }
         return null;
     }
-    findCharIndex(charCode, direction = "straight", start) {
-        return this.findSingleCharIndex((value) => charCode === value, direction, start);
-    }
-    findNewLineIndex(direction = "straight", start) {
-        let lineBreakIndex = this.findSingleCharIndex((value) => value === codes.CARRIAGE_RETURN || value === codes.LINE_FEED, direction, start);
+    findNewLineIndex(direction = true, start) {
+        let lineBreakIndex = this.findCharIndexByFilter(isNewLineChar, direction, start);
         if (lineBreakIndex === -1) {
             return -1;
         }
-        if (direction === "straight") {
+        if (direction) {
             if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN
                 && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
                 lineBreakIndex++;
@@ -2722,23 +2763,23 @@ class DataParser {
             return Math.max(lineBreakIndex - 1, 0);
         }
     }
-    findSpaceIndex(direction = "straight", start) {
-        return this.findSingleCharIndex((value) => SPACE_CHARS.has(value), direction, start);
+    findSpaceIndex(direction = true, start) {
+        return this.findCharIndexByFilter(isSpaceChar, direction, start);
     }
-    findNonSpaceIndex(direction = "straight", start) {
-        return this.findSingleCharIndex((value) => !SPACE_CHARS.has(value), direction, start);
+    findNonSpaceIndex(direction = true, start) {
+        return this.findCharIndexByFilter(isNotSpaceChar, direction, start);
     }
-    findDelimiterIndex(direction = "straight", start) {
-        return this.findSingleCharIndex((value) => DELIMITER_CHARS.has(value), direction, start);
+    findDelimiterIndex(direction = true, start) {
+        return this.findCharIndexByFilter(isDelimiterChar, direction, start);
     }
-    findNonDelimiterIndex(direction = "straight", start) {
-        return this.findSingleCharIndex((value) => !DELIMITER_CHARS.has(value), direction, start);
+    findNonDelimiterIndex(direction = true, start) {
+        return this.findCharIndexByFilter(isNotDelimiterChar, direction, start);
     }
-    findIrregularIndex(direction = "straight", start) {
-        return this.findSingleCharIndex((value) => !isRegularChar(value), direction, start);
+    findIrregularIndex(direction = true, start) {
+        return this.findCharIndexByFilter(isNotRegularChar, direction, start);
     }
-    findRegularIndex(direction = "straight", start) {
-        return this.findSingleCharIndex((value) => isRegularChar(value), direction, start);
+    findRegularIndex(direction = true, start) {
+        return this.findCharIndexByFilter(isRegularChar, direction, start);
     }
     getValueTypeAt(start, skipEmpty = true) {
         if (skipEmpty) {
@@ -2777,9 +2818,9 @@ class DataParser {
             case codes.D_7:
             case codes.D_8:
             case codes.D_9:
-                const nextDelimIndex = this.findDelimiterIndex("straight", i + 1);
+                const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
                 if (nextDelimIndex !== -1) {
-                    const refEndIndex = this.findCharIndex(codes.R, "reverse", nextDelimIndex - 1);
+                    const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
                     if (refEndIndex !== -1 && refEndIndex > i && !isRegularChar(arr[refEndIndex + 1])) {
                         return valueTypes.REF;
                     }
@@ -2830,7 +2871,7 @@ class DataParser {
         if (!objStartIndex) {
             return null;
         }
-        let contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
+        let contentStart = this.findNonSpaceIndex(true, objStartIndex.end + 1);
         if (contentStart === -1) {
             return null;
         }
@@ -2838,7 +2879,7 @@ class DataParser {
         if (!objEndIndex) {
             return null;
         }
-        let contentEnd = this.findNonSpaceIndex("reverse", objEndIndex.start - 1);
+        let contentEnd = this.findNonSpaceIndex(false, objEndIndex.start - 1);
         if (this.getCharCode(contentStart) === codes.LESS
             && this.getCharCode(contentStart + 1) === codes.LESS
             && this.getCharCode(contentEnd - 1) === codes.GREATER
@@ -2864,7 +2905,7 @@ class DataParser {
         if (!xrefStart) {
             return null;
         }
-        const contentStart = this.findNonSpaceIndex("straight", xrefStart.end + 1);
+        const contentStart = this.findNonSpaceIndex(true, xrefStart.end + 1);
         if (contentStart === -1) {
             return null;
         }
@@ -2872,7 +2913,7 @@ class DataParser {
         if (!xrefEnd) {
             return null;
         }
-        const contentEnd = this.findNonSpaceIndex("reverse", xrefEnd.start - 1);
+        const contentEnd = this.findNonSpaceIndex(false, xrefEnd.start - 1);
         if (contentEnd < contentStart) {
             return null;
         }
@@ -2892,7 +2933,7 @@ class DataParser {
             || this._data[start + 1] !== codes.LESS) {
             return null;
         }
-        const contentStart = this.findNonSpaceIndex("straight", start + 2);
+        const contentStart = this.findNonSpaceIndex(true, start + 2);
         if (contentStart === -1) {
             return null;
         }
@@ -2931,7 +2972,7 @@ class DataParser {
             }
         }
         const end = i - 1;
-        const contentEnd = this.findNonSpaceIndex("reverse", end - 2);
+        const contentEnd = this.findNonSpaceIndex(false, end - 2);
         if (contentEnd < contentStart) {
             return {
                 start,
@@ -2977,7 +3018,7 @@ class DataParser {
         if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
             return null;
         }
-        const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
+        const end = this.findCharIndex(codes.GREATER, true, start + 1);
         if (end === -1) {
             return null;
         }
@@ -3034,7 +3075,7 @@ class DataParser {
             numberStr += "0.";
             value = this._data[++i];
         }
-        while (DIGIT_CHARS.has(value)
+        while (isDigit(value)
             || (float && value === codes.DOT)) {
             numberStr += String.fromCharCode(value);
             value = this._data[++i];
@@ -3088,7 +3129,7 @@ class DataParser {
         if (this.isOutside(start)) {
             return null;
         }
-        const nearestDelimiter = this.findDelimiterIndex("straight", start);
+        const nearestDelimiter = this.findDelimiterIndex(true, start);
         const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {
             minIndex: start,
             maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
@@ -3213,16 +3254,16 @@ class DataParser {
         return type.value;
     }
     skipEmpty(start) {
-        let index = this.findNonSpaceIndex("straight", start);
+        let index = this.findNonSpaceIndex(true, start);
         if (index === -1) {
             return -1;
         }
         if (this._data[index] === codes.PERCENT) {
-            const afterComment = this.findNewLineIndex("straight", index + 1);
+            const afterComment = this.findNewLineIndex(true, index + 1);
             if (afterComment === -1) {
                 return -1;
             }
-            index = this.findNonSpaceIndex("straight", afterComment);
+            index = this.findNonSpaceIndex(true, afterComment);
         }
         return index;
     }
@@ -3304,14 +3345,14 @@ class DataParser {
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
-    findSingleCharIndex(filter, direction = "straight", start) {
+    findCharIndexByFilter(filter, direction = true, start) {
         const arr = this._data;
         let i = isNaN(start)
-            ? direction === "straight"
+            ? direction
                 ? 0
                 : this._maxIndex
             : start;
-        if (direction === "straight") {
+        if (direction) {
             for (i; i <= this._maxIndex; i++) {
                 if (filter(arr[i])) {
                     return i;
@@ -3791,19 +3832,19 @@ class XRefEntry {
         while (i < bytes.length) {
             const firstIndexBytes = [];
             let firstIndexDigit = bytes[i++];
-            while (DIGIT_CHARS.has(firstIndexDigit)) {
+            while (XRefEntry.digitChars.has(firstIndexDigit)) {
                 firstIndexBytes.push(firstIndexDigit);
                 firstIndexDigit = bytes[i++];
             }
             let firstIndex = parseInt(firstIndexBytes.map(x => String.fromCharCode(x)).join(""), 10);
             const countBytes = [];
             let countDigit = bytes[i++];
-            while (DIGIT_CHARS.has(countDigit)) {
+            while (XRefEntry.digitChars.has(countDigit)) {
                 countBytes.push(countDigit);
                 countDigit = bytes[i++];
             }
             const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10);
-            while (!DIGIT_CHARS.has(bytes[i])) {
+            while (!XRefEntry.digitChars.has(bytes[i])) {
                 i++;
             }
             for (j = 0; j < count; j++) {
@@ -4043,6 +4084,18 @@ class XRefEntry {
         return groups;
     }
 }
+XRefEntry.digitChars = new Set([
+    codes.D_0,
+    codes.D_1,
+    codes.D_2,
+    codes.D_3,
+    codes.D_4,
+    codes.D_5,
+    codes.D_6,
+    codes.D_7,
+    codes.D_8,
+    codes.D_9,
+]);
 
 class ReferenceDataChange {
     constructor(refData) {
@@ -4152,7 +4205,7 @@ class ObjectId {
     }
     static parse(parser, start, skipEmpty = true) {
         if (skipEmpty) {
-            start = parser.findRegularIndex("straight", start);
+            start = parser.findRegularIndex(true, start);
         }
         if (start < 0 || start > parser.maxIndex) {
             return null;
@@ -4238,7 +4291,7 @@ class DateString {
         if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
             return null;
         }
-        const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+        const end = parser.findCharIndex(codes.R_PARENTHESE, true, start);
         if (end === -1) {
             return null;
         }
@@ -5553,7 +5606,7 @@ class PdfStream extends PdfObject {
         this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
         this._sourceBytes = parser.sliceCharCodes(start, end);
         const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
-            direction: "reverse",
+            direction: false,
             minIndex: start,
             maxIndex: end,
             closedOnly: true,
@@ -5562,7 +5615,7 @@ class PdfStream extends PdfObject {
             throw new Error("Object is not a stream");
         }
         const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
-            direction: "reverse",
+            direction: false,
             minIndex: start,
             maxIndex: streamEndIndex.start - 1,
             closedOnly: true
@@ -5664,8 +5717,8 @@ class PdfStream extends PdfObject {
                 break;
             }
         }
-        const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
-        const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
+        const streamStart = parser.findNewLineIndex(true, streamStartIndex.end + 1);
+        const streamEnd = parser.findNewLineIndex(false, streamEndIndex.start - 1);
         const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
         const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
             ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
@@ -6008,7 +6061,7 @@ class IndexedColorSpaceArray {
         const { parser, bounds, cryptInfo } = parseInfo;
         let i;
         if (skipEmpty) {
-            i = parser.findNonSpaceIndex("straight", bounds.start);
+            i = parser.findNonSpaceIndex(true, bounds.start);
         }
         const start = i;
         if (i < 0 || i > parser.maxIndex
@@ -12089,7 +12142,7 @@ class ResourceDict extends PdfDict {
                 }
                 const stream = streamParseInfo.parser
                     .findSubarrayIndex(keywordCodes.FORM, {
-                    direction: "straight",
+                    direction: true,
                     minIndex: streamParseInfo.bounds.start,
                     maxIndex: streamParseInfo.bounds.end,
                 })
@@ -12952,7 +13005,7 @@ class AppearanceStreamRenderer {
                                 break;
                             default:
                                 console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
-                                j = parser.findDelimiterIndex("straight", j + 1);
+                                j = parser.findDelimiterIndex(true, j + 1);
                                 break;
                         }
                     }
@@ -13525,18 +13578,13 @@ class AppearanceStreamRenderer {
         return __awaiter$t(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
-            let a = 0;
-            let b = 0;
             const lastCoord = new Vec2();
             let lastOperator;
             let d = "";
             let i = 0;
             while (i !== -1) {
-                const ap = performance.now();
                 const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
                 i = parser.skipEmpty(nextIndex + 1);
-                a += performance.now() - ap;
-                const bp = performance.now();
                 switch (operator) {
                     case "m":
                         const move = new Vec2(+parameters[0], +parameters[1]);
@@ -13670,10 +13718,7 @@ class AppearanceStreamRenderer {
                         }
                 }
                 lastOperator = operator;
-                b += performance.now() - bp;
             }
-            console.log(a);
-            console.log(b);
             return svgElements;
         });
     }
@@ -14101,7 +14146,7 @@ class BorderArray {
     }
     static parse(parser, start, skipEmpty = true) {
         if (skipEmpty) {
-            start = parser.findNonSpaceIndex("straight", start);
+            start = parser.findNonSpaceIndex(true, start);
         }
         if (start < 0 || start > parser.maxIndex
             || parser.getCharCode(start) !== codes.L_BRACKET) {
@@ -14119,7 +14164,7 @@ class BorderArray {
         if (!width || isNaN(width.value)) {
             return null;
         }
-        const next = parser.findNonSpaceIndex("straight", width.end + 1);
+        const next = parser.findNonSpaceIndex(true, width.end + 1);
         if (!next) {
             return null;
         }
@@ -14139,11 +14184,11 @@ class BorderArray {
             if (!gap || isNaN(gap.value)) {
                 return null;
             }
-            const dashEnd = parser.findNonSpaceIndex("straight", gap.end + 1);
+            const dashEnd = parser.findNonSpaceIndex(true, gap.end + 1);
             if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
                 return null;
             }
-            const arrayEnd = parser.findNonSpaceIndex("straight", dashEnd + 1);
+            const arrayEnd = parser.findNonSpaceIndex(true, dashEnd + 1);
             if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
                 return null;
             }

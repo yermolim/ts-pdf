@@ -57,17 +57,17 @@ function findSubarrayIndex(sub, options) {
 
   const {direction, minIndex, maxIndex, closedOnly} = options;
   
-  direction = direction || "straight";
+  direction = direction ?? true;
   minIndex = Math.max(Math.min(minIndex ?? 0, maxBytesIndex), 0);
   maxIndex = Math.max(Math.min(maxIndex ?? maxBytesIndex, maxBytesIndex), 0);
   const allowOpened = !closedOnly;
 
-  let i = direction === "straight"
+  let i = direction
     ? minIndex
     : maxIndex; 
 
   let j; 
-  if (direction === "straight") { 
+  if (direction) { 
     outer_loop:
     for (i; i <= maxIndex; i++) {
       for (j = 0; j < sub.length; j++) {

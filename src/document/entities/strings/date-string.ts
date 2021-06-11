@@ -30,7 +30,7 @@ export class DateString implements IEncodable {
       return null;
     }
 
-    const end = parser.findCharIndex(codes.R_PARENTHESE, "straight", start);
+    const end = parser.findCharIndex(codes.R_PARENTHESE, true, start);
     if (end === -1) {
       return null;
     }

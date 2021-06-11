@@ -1,13 +1,14 @@
 import { Quadruple } from "../common/types";
-import { codes, keywordCodes, isRegularChar,
-  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./char-codes";
+import { codes, keywordCodes,
+  isRegularChar, isDigit, isNewLineChar, 
+  isSpaceChar, isNotSpaceChar, isDelimiterChar, 
+  isNotDelimiterChar, isNotRegularChar } from "./char-codes";
 import { ObjectType, ValueType, valueTypes } from "./const";
 import { CryptInfo } from "./common-interfaces";
 
-export type SearchDirection = "straight" | "reverse";
-
 export interface SearchOptions {
-  direction?: SearchDirection; 
+  /**'true' - straight, 'false' - reverse */
+  direction?: boolean; 
   /**search start index, inclusive */
   minIndex?: number;
   /**search end index, inclusive */
@@ -93,7 +94,7 @@ export class DataParser {
    */
   getLastXrefIndex(): ParseResult<number> {
     const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, 
-      {maxIndex: this.maxIndex, direction: "reverse"});
+      {maxIndex: this.maxIndex, direction: false});
     if (!xrefStartIndex) {
       return null;
     }
@@ -106,7 +107,40 @@ export class DataParser {
     return xrefIndex;
   }
 
-  //#region search methods
+  //#region search methods  
+  /**
+   * find the nearest specified char index
+   * @param charCode sought char code
+   * @param direction search direction
+   * @param start starting index
+   */
+  findCharIndex(charCode: number, direction = true, 
+    start?: number): number {    
+
+    const arr = this._data;
+    let i = isNaN(start)
+      ? direction
+        ? 0
+        : this._maxIndex
+      : start; 
+      
+    if (direction) {        
+      for (i; i <= this._maxIndex; i++) {
+        if (arr[i] === charCode) {
+          return i;
+        }
+      }    
+    } else {        
+      for (i; i >= 0; i--) {
+        if (arr[i] === charCode) {
+          return i;
+        }
+      }
+    }
+    
+    return -1; 
+  }
+
   /**
    * find the indices of the first occurence of the subarray in the data
    * @param sub sought subarray
@@ -122,17 +156,17 @@ export class DataParser {
       return null;
     }
 
-    const direction = options?.direction || "straight";
+    const direction = options?.direction ?? true;
     const minIndex = Math.max(Math.min(options?.minIndex ?? 0, this._maxIndex), 0);
     const maxIndex = Math.max(Math.min(options?.maxIndex ?? this._maxIndex, this._maxIndex), 0);
     const allowOpened = !options?.closedOnly;
 
-    let i = direction === "straight"
+    let i = direction
       ? minIndex
       : maxIndex; 
 
     let j: number; 
-    if (direction === "straight") { 
+    if (direction) { 
       outer_loop:
       for (i; i <= maxIndex; i++) {
         for (j = 0; j < sub.length; j++) {
@@ -163,35 +197,20 @@ export class DataParser {
   }
   
   /**
-   * find the nearest specified char index
-   * @param charCode sought char code
-   * @param direction search direction
-   * @param start starting index
-   */
-  findCharIndex(charCode: number, direction: "straight" | "reverse" = "straight", 
-    start?: number): number {
-    
-    return this.findSingleCharIndex((value) => charCode === value,
-      direction, start);  
-  }
-  
-  /**
    * find the nearest char index after or before EOL
    * @param direction search direction
    * @param start starting index
    */
-  findNewLineIndex(direction: "straight" | "reverse" = "straight", 
+  findNewLineIndex(direction = true, 
     start?: number): number {
 
-    let lineBreakIndex = this.findSingleCharIndex(
-      (value) => value === codes.CARRIAGE_RETURN || value === codes.LINE_FEED,
-      direction, start); 
+    let lineBreakIndex = this.findCharIndexByFilter(isNewLineChar, direction, start); 
       
     if (lineBreakIndex === -1) {
       return -1;
     }
 
-    if (direction === "straight") {  
+    if (direction) {  
       if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN 
         && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
         lineBreakIndex++;
@@ -211,11 +230,10 @@ export class DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findSpaceIndex(direction: "straight" | "reverse" = "straight", 
+  findSpaceIndex(direction = true, 
     start?: number): number {
     
-    return this.findSingleCharIndex((value) => SPACE_CHARS.has(value),
-      direction, start);  
+    return this.findCharIndexByFilter(isSpaceChar, direction, start);  
   }
 
   /**
@@ -223,11 +241,10 @@ export class DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findNonSpaceIndex(direction: "straight" | "reverse" = "straight", 
+  findNonSpaceIndex(direction = true, 
     start?: number): number {    
     
-    return this.findSingleCharIndex((value) => !SPACE_CHARS.has(value),
-      direction, start);  
+    return this.findCharIndexByFilter(isNotSpaceChar, direction, start);  
   }
   
   /**
@@ -235,11 +252,10 @@ export class DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findDelimiterIndex(direction: "straight" | "reverse" = "straight", 
+  findDelimiterIndex(direction = true, 
     start?: number): number {
     
-    return this.findSingleCharIndex((value) => DELIMITER_CHARS.has(value),
-      direction, start);  
+    return this.findCharIndexByFilter(isDelimiterChar, direction, start);  
   }
   
   /**
@@ -247,11 +263,10 @@ export class DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findNonDelimiterIndex(direction: "straight" | "reverse" = "straight", 
+  findNonDelimiterIndex(direction = true, 
     start?: number): number {
     
-    return this.findSingleCharIndex((value) => !DELIMITER_CHARS.has(value),
-      direction, start);  
+    return this.findCharIndexByFilter(isNotDelimiterChar, direction, start);  
   }
 
   /**
@@ -259,11 +274,10 @@ export class DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findIrregularIndex(direction: "straight" | "reverse" = "straight", 
+  findIrregularIndex(direction = true, 
     start?: number): number {
     
-    return this.findSingleCharIndex((value) => !isRegularChar(value),
-      direction, start);  
+    return this.findCharIndexByFilter(isNotRegularChar, direction, start);  
   }
 
   /**
@@ -271,11 +285,10 @@ export class DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findRegularIndex(direction: "straight" | "reverse" = "straight", 
+  findRegularIndex(direction = true, 
     start?: number): number {
 
-    return this.findSingleCharIndex((value) => isRegularChar(value),
-      direction, start);
+    return this.findCharIndexByFilter(isRegularChar, direction, start);
   }
   //#endregion
 
@@ -324,9 +337,9 @@ export class DataParser {
       case codes.D_7:
       case codes.D_8:
       case codes.D_9:
-        const nextDelimIndex = this.findDelimiterIndex("straight", i + 1);
+        const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
         if (nextDelimIndex !== -1) {
-          const refEndIndex = this.findCharIndex(codes.R, "reverse", nextDelimIndex - 1);
+          const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
           if (refEndIndex !== -1 && refEndIndex > i && !isRegularChar(arr[refEndIndex + 1])) {
             return valueTypes.REF;
           }
@@ -381,7 +394,7 @@ export class DataParser {
       return null;
     }      
 
-    let contentStart = this.findNonSpaceIndex("straight", objStartIndex.end + 1);
+    let contentStart = this.findNonSpaceIndex(true, objStartIndex.end + 1);
     if (contentStart === -1){
       return null;
     }    
@@ -390,7 +403,7 @@ export class DataParser {
     if (!objEndIndex) {
       return null;
     }
-    let contentEnd = this.findNonSpaceIndex("reverse", objEndIndex.start - 1);
+    let contentEnd = this.findNonSpaceIndex(false, objEndIndex.start - 1);
 
     if (this.getCharCode(contentStart) === codes.LESS
       && this.getCharCode(contentStart + 1) === codes.LESS
@@ -422,7 +435,7 @@ export class DataParser {
     if (!xrefStart) {
       return null;
     }     
-    const contentStart = this.findNonSpaceIndex("straight", xrefStart.end + 1);
+    const contentStart = this.findNonSpaceIndex(true, xrefStart.end + 1);
     if (contentStart === -1){
       return null;
     }   
@@ -431,7 +444,7 @@ export class DataParser {
     if (!xrefEnd) {
       return null;
     } 
-    const contentEnd = this.findNonSpaceIndex("reverse", xrefEnd.start - 1);
+    const contentEnd = this.findNonSpaceIndex(false, xrefEnd.start - 1);
 
     if (contentEnd < contentStart) {
       // should be only possible in an empty xref, which is not allowed
@@ -456,7 +469,7 @@ export class DataParser {
       return null;
     }
      
-    const contentStart = this.findNonSpaceIndex("straight", start + 2);
+    const contentStart = this.findNonSpaceIndex(true, start + 2);
     if (contentStart === -1){
       return null;
     }  
@@ -502,7 +515,7 @@ export class DataParser {
     }
     const end = i - 1;
  
-    const contentEnd = this.findNonSpaceIndex("reverse", end - 2);
+    const contentEnd = this.findNonSpaceIndex(false, end - 2);
     if (contentEnd < contentStart) {
       // should be possible only in an empty dict
       return {
@@ -554,7 +567,7 @@ export class DataParser {
       return null;
     }
 
-    const end = this.findCharIndex(codes.GREATER, "straight", start + 1);
+    const end = this.findCharIndex(codes.GREATER, true, start + 1);
     if (end === -1) {
       return null;
     }
@@ -619,7 +632,7 @@ export class DataParser {
       numberStr += "0.";
       value = this._data[++i];
     }
-    while (DIGIT_CHARS.has(value)
+    while (isDigit(value)
       || (float && value === codes.DOT)) {
       numberStr += String.fromCharCode(value);
       value = this._data[++i];
@@ -684,7 +697,7 @@ export class DataParser {
       return null;
     }
 
-    const nearestDelimiter = this.findDelimiterIndex("straight", start);
+    const nearestDelimiter = this.findDelimiterIndex(true, start);
 
     const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {
       minIndex: start, 
@@ -852,17 +865,17 @@ export class DataParser {
    * @returns first non-space char index (-1 if not found till the end of the data)
    */
   skipEmpty(start: number): number {
-    let index = this.findNonSpaceIndex("straight", start);
+    let index = this.findNonSpaceIndex(true, start);
     if (index === -1) {
       return -1;
     }
     if (this._data[index] === codes.PERCENT) {
       // it's a comment. skip it
-      const afterComment = this.findNewLineIndex("straight", index + 1);
+      const afterComment = this.findNewLineIndex(true, index + 1);
       if (afterComment === -1) {
         return -1;
       }
-      index = this.findNonSpaceIndex("straight", afterComment);
+      index = this.findNonSpaceIndex(true, afterComment);
     }
     return index;
   }
@@ -929,14 +942,6 @@ export class DataParser {
       }
       i++;
     }
-
-    // naive logic
-    // for (let i = start; i <= max; i++) {
-    //   // TODO: add a check if slash is inside a literal string
-    //   if (this._data[i] === codes.SLASH) {
-    //     return i;
-    //   }
-    // }
     return -1;
   }
   //#endregion
@@ -979,18 +984,18 @@ export class DataParser {
     return (index < 0 || index > this._maxIndex);
   }
 
-  //#region private search methods  
-  private findSingleCharIndex(filter: (value: number) => boolean, 
-    direction: "straight" | "reverse" = "straight", start?: number): number {
+  //#region private search methods
+  private findCharIndexByFilter(filter: (value: number) => boolean, 
+    direction = true, start?: number): number {
 
     const arr = this._data;
     let i = isNaN(start)
-      ? direction === "straight"
+      ? direction
         ? 0
         : this._maxIndex
       : start; 
       
-    if (direction === "straight") {        
+    if (direction) {        
       for (i; i <= this._maxIndex; i++) {
         if (filter(arr[i])) {
           return i;

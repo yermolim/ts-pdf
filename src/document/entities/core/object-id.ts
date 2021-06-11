@@ -30,7 +30,7 @@ export class ObjectId implements Reference, IEncodable {
   static parse(parser: DataParser, start: number, 
     skipEmpty = true): ParseResult<ObjectId> {  
     if (skipEmpty) {
-      start = parser.findRegularIndex("straight", start);
+      start = parser.findRegularIndex(true, start);
     }
     if (start < 0 || start > parser.maxIndex) {
       return null;

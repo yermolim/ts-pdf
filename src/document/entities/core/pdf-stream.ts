@@ -127,7 +127,7 @@ export abstract class PdfStream extends PdfObject {
     this._sourceBytes = parser.sliceCharCodes(start, end);
 
     const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, { 
-      direction: "reverse", 
+      direction: false, 
       minIndex: start, 
       maxIndex: end, 
       closedOnly: true,
@@ -136,7 +136,7 @@ export abstract class PdfStream extends PdfObject {
       throw new Error("Object is not a stream");
     }   
     const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
-      direction: "reverse", 
+      direction: false, 
       minIndex: start,
       maxIndex: streamEndIndex.start - 1, 
       closedOnly: true
@@ -242,8 +242,8 @@ export abstract class PdfStream extends PdfObject {
       }
     };
     
-    const streamStart = parser.findNewLineIndex("straight", streamStartIndex.end + 1);
-    const streamEnd = parser.findNewLineIndex("reverse", streamEndIndex.start - 1);
+    const streamStart = parser.findNewLineIndex(true, streamStartIndex.end + 1);
+    const streamEnd = parser.findNewLineIndex(false, streamEndIndex.start - 1);
     const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
     const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
       ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)

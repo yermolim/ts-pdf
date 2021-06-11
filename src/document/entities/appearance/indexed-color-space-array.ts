@@ -47,7 +47,7 @@ export class IndexedColorSpaceArray implements IEncodable {
 
     let i: number;
     if (skipEmpty) {
-      i = parser.findNonSpaceIndex("straight", bounds.start);
+      i = parser.findNonSpaceIndex(true, bounds.start);
     }
     const start = i;
     if (i < 0 || i > parser.maxIndex 

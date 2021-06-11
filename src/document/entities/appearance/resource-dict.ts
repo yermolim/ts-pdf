@@ -227,7 +227,7 @@ export class ResourceDict extends PdfDict {
         }
         const stream = streamParseInfo.parser
           .findSubarrayIndex(keywordCodes.FORM, {
-            direction: "straight",
+            direction: true,
             minIndex: streamParseInfo.bounds.start,
             maxIndex: streamParseInfo.bounds.end,
           })
