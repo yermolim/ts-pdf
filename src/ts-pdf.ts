@@ -2,11 +2,12 @@
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
+import { clamp } from "mathador";
+
 import { mainHtml, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { clamp } from "mathador";
-import { htmlToElements } from "./common/dom";
+import { downloadFile, htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
 import { CustomStampCreationInfo } from "./drawing/stamps";
 
@@ -191,20 +192,6 @@ export class TsPdfViewer {
     this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
     
     document.addEventListener("selectionchange", this.onTextSelectionChange); 
-  }
-
-  /**create a temp download link and click on it */
-  private static downloadFile(blob: Blob, name?: string) {
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.setAttribute("download", name);
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
 
   //#region public API
@@ -559,7 +546,7 @@ export class TsPdfViewer {
     // DEBUG
     // this.openPdfAsync(blob);
 
-    TsPdfViewer.downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
+    downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
   };
   
   private onCloseFileButtonClick = () => {

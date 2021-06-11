@@ -4,7 +4,7 @@ import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../codes";
+import { codes } from "../../char-codes";
 import { SoftMaskDict } from "./soft-mask.dict";
 import { GraphicsStateParams } from "../../render/graphics-state";
 

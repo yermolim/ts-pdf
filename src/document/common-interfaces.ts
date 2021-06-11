@@ -1,11 +1,24 @@
 import { Quadruple } from "../common/types";
 import { CryptVersion, CryptRevision, CryptMethod } from "./const";
 
+//#region PDF object references
 /**interface for the PDF ObjectId-like objects  */
 export interface Reference {  
   id: number;
   generation: number;
 }
+
+export interface UsedReference extends Reference {
+  byteOffset: number;
+  compressed?: boolean;
+  streamId?: number;
+  streamIndex?: number;
+}
+
+export interface FreeReference extends Reference {
+  nextFreeId: number;
+}
+//#endregion
 
 /**options used during the PDF objects encryption/decryption */
 export interface CryptOptions {

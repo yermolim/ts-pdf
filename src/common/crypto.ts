@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 import CryptoES from "crypto-es";
 // import * as CryptoJs from "crypto-js";
-import { bytesToInt32Array, hexStringToBytes, int32ArrayToBytes } from "./byte-functions";
+import { bytesToInt32Array, hexStringToBytes, int32ArrayToBytes } from "./byte";
 
 export function bytesToWordArray(data: Uint8Array): CryptoES.lib.WordArray {
   // return CryptoES.lib.WordArray.create(Array.from(bytesToInt32Array(data)));

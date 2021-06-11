@@ -1,17 +1,20 @@
 import { Quadruple } from "../../../common/types";
+import { getBit } from "../../../common/byte";
+
 import { cyrillicEncodingDifferences, dictTypes, valueTypes } from "../../const";
-import { getBit } from "../../byte-functions";
+import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
+
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../codes";
-
 import { UnicodeCmapStream } from "../streams/unicode-cmap-stream";
+
 import { EncodingDict } from "./encoding-dict";
 import { FontDescriptorDict } from "./font-descriptor-dict";
 
 export class FontDict extends PdfDict {
+
   //#region PDF properties
   /** 
    * (Required) The type of font
@@ -174,6 +177,13 @@ export class FontDict extends PdfDict {
   // TODO: add remaining properties if needed
   //#endregion
   
+  /**property for saving internal font name */
+  protected _name: string;
+  /**internal ts-viewer font name */
+  get name(): string {
+    return this._name;
+  }
+
   protected _encoding: EncodingDict;
   get encoding(): EncodingDict {
     return this._encoding;
@@ -319,6 +329,7 @@ export class FontDict extends PdfDict {
       656, 718, 879, 722, 556, 572, 531, 364, 583, 556, 668, 458, 558, 558, 437, 583, 
       687, 552, 556, 541, 556, 500, 458, 500, 822, 500, 572, 520, 802, 822, 625, 718, 
       520, 510, 750, 541,];
+    font._name = "/tspdfFarial";
 
     return font;
   }  
@@ -355,6 +366,7 @@ export class FontDict extends PdfDict {
       868, 889, 614, 761, 531, 547, 878, 555, 479, 532, 479, 345, 558, 497, 688, 422, 540, 
       540, 463, 510, 676, 534, 527, 520, 525, 422, 387, 452, 624, 433, 541, 468, 728, 749, 
       536, 666, 469, 442, 721, 474,];
+    font._name = "/tspdfFcalibri";
 
     return font;
   }
@@ -392,6 +404,7 @@ export class FontDict extends PdfDict {
       920, 630, 488, 541, 522, 446, 558, 487, 713, 458, 589, 589, 540, 559, 672, 588, 
       530, 566, 556, 440, 511, 503, 685, 483, 569, 530, 800, 800, 617, 748, 
       514, 470, 767, 530,];
+    font._name = "/tspdfFcambria";
 
     return font;
   }
@@ -431,6 +444,7 @@ export class FontDict extends PdfDict {
       600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 
       600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 
       600, 600, 600, 600,];
+    font._name = "/tspdfFcourier";
 
     return font;
   }
@@ -468,6 +482,7 @@ export class FontDict extends PdfDict {
       973, 666, 443, 508, 472, 410, 508, 443, 690, 395, 535, 535, 485, 499, 632, 535, 
       500, 535, 500, 443, 437, 500, 647, 500, 535, 502, 770, 770, 517, 671, 
       456, 429, 747, 459,];
+    font._name = "/tspdfFtnr";
 
     return font;
   }
@@ -504,6 +519,7 @@ export class FontDict extends PdfDict {
       835, 904, 783, 920, 680, 701, 881, 706, 600, 614, 594, 471, 621, 595, 797, 524, 640, 
       640, 591, 620, 696, 637, 606, 637, 623, 534, 496, 591, 840, 591, 644, 605, 875, 887, 
       640, 794, 570, 546, 838, 599,];
+    font._name = "/tspdfFverdana";
 
     return font;
   }

@@ -1,4 +1,4 @@
-import { codes } from "../../codes";
+import { codes } from "../../char-codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { ColorSpace, colorSpaces, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";

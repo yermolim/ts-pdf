@@ -1,8 +1,10 @@
 /* eslint-disable no-bitwise */
-import { arraysEqual, findSubarrayIndex, int32ToBytes, xorBytes } from "../byte-functions";
+import { arraysEqual, findSubarrayIndex, int32ToBytes, xorBytes } from "../../common/byte";
+import { md5, rc4, bytesToWordArray, wordArrayToBytes } from "../../common/crypto";
+
 import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../const";
-import { md5, rc4, bytesToWordArray, wordArrayToBytes } from "../crypto";
 import { CryptOptions, AuthenticationResult, IDataCryptor } from "../common-interfaces";
+
 import { AESV2DataCryptor } from "./aesv2-data-cryptor";
 import { AESV3DataCryptor } from "./aesv3-data-cryptor";
 import { IdentityDataCryptor } from "./identity-data-cryptor";

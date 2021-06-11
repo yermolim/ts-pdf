@@ -1,12 +1,12 @@
 import { Mat3, Vec2 } from "mathador";
+import { VecMinMax } from "../../../../../drawing/utils";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
-import { bezierConstant } from "../../../../../drawing/utils";
 
-import { codes } from "../../../../codes";
+import { codes } from "../../../../char-codes";
 import { annotationTypes, lineCapStyles, 
   lineEndingMinimalSize, lineEndingMultiplier, LineEndingType, 
   lineEndingTypes, lineJoinStyles, valueTypes } from "../../../../const";
-import { CryptInfo, TextData } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
   
 import { ObjectId } from "../../../core/object-id";
@@ -19,11 +19,6 @@ import { FontDict } from "../../../appearance/font-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
-
-interface BboxAndMatrix {
-  bbox: [min: Vec2, max: Vec2];
-  matrix: Mat3;
-}
 
 export const lineIntents = {
   ARROW: "/LineArrow",
@@ -134,6 +129,25 @@ export class LineAnnotation extends GeometricAnnotation {
   /** Y-axis offset from control points to the actual line drawn */
   get offsetY(): number {
     return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
+  }
+  
+  /**minimal margin needed to be added for correct annotation content rendering */
+  get minMargin(): number {
+    const strokeWidth = this.strokeWidth;
+    const halfStrokeWidth = strokeWidth / 2;
+    let marginMin = 0;
+    // calculate ending margin if any other line ending type except 'none' is used
+    if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
+      const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, 
+        lineEndingMinimalSize);
+      // '+ strokeWidth' is used to include the ending figure stroke width
+      const endingSize = endingSizeInner + strokeWidth;
+      marginMin = endingSize / 2;
+    } else {
+      marginMin = halfStrokeWidth;
+    }
+
+    return marginMin;
   }
   
   constructor() {
@@ -295,6 +309,12 @@ export class LineAnnotation extends GeometricAnnotation {
       strokeDashGap: this.BS?.D ?? [3, 0],
     };
   } 
+
+  override setTextContent(text: string) {
+    super.setTextContent(text);
+    const dict = <LineAnnotation>this._proxy;
+    dict.generateApStreamAsync().then(() => dict.updateRenderAsync());
+  }
   
   /**
    * fill public properties from data using info/parser if available
@@ -415,31 +435,29 @@ export class LineAnnotation extends GeometricAnnotation {
     }
   }
 
-  /**
-   * actualize the 'Rect' property content using the current 'L' property value
-   * @returns 
-   */
-  protected async updateRectAsync(): Promise<BboxAndMatrix> {
-    const [x1, y1, x2, y2] = this.L;
-    const start = new Vec2(x1, y1);
-    const end = new Vec2(x2, y2);
+  protected override async applyCommonTransformAsync(matrix: Mat3) {  
+    const dict = <LineAnnotation>this._proxy || this;
 
-    // calculate the data for updating bounding boxes
-    const length = Vec2.substract(end, start).getMagnitude();
+    // transform the segment end points    
+    const [x1, y1, x2, y2] = dict.L;
+    const start = new Vec2(x1, y1).applyMat3(matrix);
+    const end = new Vec2(x2, y2).applyMat3(matrix);
+    dict.L = [start.x, start.y, end.x, end.y];
+
+    // rebuild the appearance stream instead of transforming it to get rid of line distorsions
+    await dict.generateApStreamAsync();
+
+    dict.M = DateString.fromDate(new Date());
+  }
+
+  //#region generating appearance stream
+  protected async calculateStreamBboxAsync(): Promise<VecMinMax> {
+    const [x1, y1, x2, y2] = this.L;
+    const length = new Vec2(x2 - x1, y2 - y1).getMagnitude(); 
+
     const strokeWidth = this.strokeWidth;
     const halfStrokeWidth = strokeWidth / 2;
-
-    let marginMin = 0;
-    // calculate ending margin if any other line ending type except 'none' is used
-    if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
-      const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, 
-        lineEndingMinimalSize);
-      // '+ strokeWidth' is used to include the ending figure stroke width
-      const endingSize = endingSizeInner + strokeWidth;
-      marginMin = endingSize / 2;
-    } else {
-      marginMin = halfStrokeWidth;
-    }
+    const marginMin = this.minMargin;
 
     const textMargin = 4 * marginMin;
     const textMaxWidth = length > textMargin
@@ -488,11 +506,34 @@ export class LineAnnotation extends GeometricAnnotation {
       yMax = Math.max(yMax, textYMax + offsetY);
     }
     const bbox: [min: Vec2, max: Vec2] = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
-    
+
+    return bbox;
+  }
+
+  /**
+   * get transformation matrix from stream CS to page CS
+   * @returns 
+   */
+  protected calculateStreamMatrix(): Mat3 {
+    const [x1, y1, x2, y2] = this.L;
+    const start = new Vec2(x1, y1);
+    const end = new Vec2(x2, y2);
+
+    // calculate the data for updating bounding boxes
+    const length = Vec2.substract(end, start).getMagnitude();    
     const xAlignedStart = new Vec2();
     const xAlignedEnd = new Vec2(length, 0);
-    const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);        
+    const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
 
+    return matrix;
+  }
+ 
+  /**
+   * actualize the 'Rect' property content
+   * @param bbox bounding box in stream CS
+   * @param matrix transformation matrix
+   */
+  protected updateRect(bbox: VecMinMax, matrix: Mat3) {
     // update the non axis-aligned bounding-box
     const localBox =  this.getLocalBB();
     localBox.ll.set(bbox[0].x, bbox[0].y).applyMat3(matrix);
@@ -504,11 +545,30 @@ export class LineAnnotation extends GeometricAnnotation {
     const {min: rectMin, max: rectMax} = 
       Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
     this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
-
-    return {bbox, matrix};
   }
-  
-  protected getLineStreamText(start: Vec2, end: Vec2): string {
+
+  /**
+   * 
+   * @param matrix transformation matrix from stream CS to page CS
+   * @returns 
+   */
+  protected getLineEndsStreamCoords(matrix: Mat3): VecMinMax {
+    const matrixInv = Mat3.invert(matrix);
+    // calculate start and end position coordinates before transformation
+    const apStart = new Vec2(this.L[0], this.L[1])
+      .applyMat3(matrixInv)
+      .truncate();
+    const apEnd = new Vec2(this.L[2], this.L[3])
+      .applyMat3(matrixInv)
+      .truncate();
+    const offsetY = this.offsetY;
+    apStart.y += offsetY;
+    apEnd.y += offsetY;
+    
+    return [apStart, apEnd];
+  }
+   
+  protected getLineStreamPart(start: Vec2, end: Vec2): string {
     let lineStream = "";
 
     // draw line itself
@@ -538,42 +598,42 @@ export class LineAnnotation extends GeometricAnnotation {
     return lineStream;
   }
 
-  protected async getTextStreamTextAsync(start: Vec2, end: Vec2, 
-    textData: TextData, codeMap: Map<string, number>, fontName: string): Promise<string> {
-    const lineCenter = Vec2.add(start, end).multiplyByScalar(0.5);
+  protected async getTextStreamPartAsync(pivotPoint: Vec2, font: FontDict): Promise<string> {
+    const textData = this._textData;
+    if (!textData) {
+      return "";
+    }
     
     const [xMin, yMin, xMax, yMax] = textData.relativeRect;
     // the text corner coordinates in annotation-local CS
-    const topLeftLCS = new Vec2(xMin, yMin).add(lineCenter);
-    const bottomRightLCS = new Vec2(xMax, yMax).add(lineCenter);
+    const bottomLeftLCS = new Vec2(xMin, yMin).add(pivotPoint);
+    const topRightLCS = new Vec2(xMax, yMax).add(pivotPoint);
 
-    // DEBUG
-    // draw text background rect      
+    // draw text background rect
     const textBgRectStream = 
       "\nq 1 g 1 G" // push the graphics state onto the stack and set bg color
-      + `\n${topLeftLCS.x} ${topLeftLCS.y} m`
-      + `\n${topLeftLCS.x} ${bottomRightLCS.y} l`
-      + `\n${bottomRightLCS.x} ${bottomRightLCS.y} l`
-      + `\n${bottomRightLCS.x} ${topLeftLCS.y} l`
+      + `\n${bottomLeftLCS.x} ${bottomLeftLCS.y} m`
+      + `\n${bottomLeftLCS.x} ${topRightLCS.y} l`
+      + `\n${topRightLCS.x} ${topRightLCS.y} l`
+      + `\n${topRightLCS.x} ${bottomLeftLCS.y} l`
       + "\nf"
       + "\nQ"; // pop the graphics state back from the stack
 
-    // TODO: implement drawing text
     let textStream = "\nq 0 g 0 G"; // push the graphics state onto the stack and set text color
     const fontSize = 9;
     for (const line of textData.lines) {
       if (!line.text) {
         continue;
       }      
-      const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(lineCenter);
+      const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(pivotPoint);
       let lineHex = "";
       for (const char of line.text) {
-        const code = codeMap.get(char);
+        const code = font.encoding.codeMap.get(char);
         if (code) {
           lineHex += code.toString(16).padStart(2, "0");
         }
       }
-      textStream += `\nBT 0 Tc 0 Tw 100 Tz ${fontName} ${fontSize} Tf 0 Tr`;
+      textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
       textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
       textStream += `\n<${lineHex}> Tj`;
       textStream += "\nET";
@@ -588,30 +648,16 @@ export class LineAnnotation extends GeometricAnnotation {
       return;
     }
 
-    // update Rect and get the bounding box and the matrix for the stream
-    const data = await this.updateRectAsync();
+    const bbox = await this.calculateStreamBboxAsync();
+    const matrix = this.calculateStreamMatrix();
+    this.updateRect(bbox, matrix);
 
     const apStream = new XFormStream();
     apStream.Filter = "/FlateDecode";
     apStream.LastModified = DateString.fromDate(new Date());
-    apStream.BBox = [data.bbox[0].x, data.bbox[0].y, data.bbox[1].x, data.bbox[1].y];
-    apStream.Matrix = <Hextuple><any>data.matrix.toFloatShortArray();
+    apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
+    apStream.Matrix = <Hextuple><any>matrix.toFloatShortArray();
     apStream.Resources = new ResourceDict();
-
-    // set color
-    let colorString: string;
-    if (!this.C?.length) {
-      colorString = "0 G 0 g";
-    } else if (this.C.length < 3) {
-      const g = this.C[0];
-      colorString = `${g} G ${g} g`;
-    } else if (this.C.length === 3) {
-      const [r, g, b] = this.C;      
-      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-    } else {      
-      const [c, m, y, k] = this.C;      
-      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-    }
 
     // set stroke style options
     const opacity = this.CA || 1;
@@ -628,67 +674,39 @@ export class LineAnnotation extends GeometricAnnotation {
     gs.LC = lineCapStyles.SQUARE;
     gs.LJ = lineJoinStyles.MITER;
     apStream.Resources.setGraphicsState("/GS0", gs);
-    
-    const matrixInv = Mat3.invert(data.matrix);
-    // calculate start and end position coordinates before transformation
-    const apStart = new Vec2(this.L[0], this.L[1])
-      .applyMat3(matrixInv)
-      .truncate();
-    const apEnd = new Vec2(this.L[2], this.L[3])
-      .applyMat3(matrixInv)
-      .truncate();
-    const offsetY = this.offsetY;
-    apStart.y += offsetY;
-    apEnd.y += offsetY;    
-    
-    const lineStream = this.getLineStreamText(apStart, apEnd);
-    const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], strokeWidth, "left");
-    const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], strokeWidth, "right");
 
-    let textStream: string;
-    if (this._textData) {  
-      // TODO: add other fonts
-      const fontFamily = "arial";
-      const font = this._fontMap?.get(fontFamily);
-      const codeMap = font.encoding?.codeMap;
-      if (!font || !codeMap) {
-        throw new Error(`Font not found in the font map: '${fontFamily}'`);
-      }
-
-      const fontName = "/tspdfF0";
-      apStream.Resources.setFont(fontName, font);
-      textStream = await this.getTextStreamTextAsync(apStart, apEnd, 
-        this._textData, codeMap, fontName);
-    } else {
-      textStream = "";
+    // set font
+    // TODO: implement font selection
+    const fontFamily = "arial";
+    const font = this._fontMap?.get(fontFamily);
+    if (!font || !font.encoding?.codeMap) {
+      throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
     }
+    apStream.Resources.setFont(font.name, font);
+     
+    const colorString = this.getColorString();
+    const [apStart, apEnd] = this.getLineEndsStreamCoords(matrix);  
 
+    // get stream parts   
+    const lineStreamPart = this.getLineStreamPart(apStart, apEnd);
+    const leftEndingStreamPart = this.getLineEndingStreamPart(apStart, this.LE[0], strokeWidth, "left");
+    const rightEndingStreamPart = this.getLineEndingStreamPart(apEnd, this.LE[1], strokeWidth, "right");
+    const textStreamPart = await this.getTextStreamPartAsync(
+      Vec2.add(apStart, apEnd).multiplyByScalar(0.5), font);
+
+    // combine stream parts
     const streamTextData = 
       `q ${colorString} /GS0 gs` // push the graphics state onto the stack
-      + lineStream // draw line itself with leader lines
-      + leftEnding // draw line left ending 
-      + rightEnding // draw line right ending
-      + textStream // draw text if present
+      + lineStreamPart // draw line itself with leader lines
+      + leftEndingStreamPart // draw line left ending 
+      + rightEndingStreamPart // draw line right ending
+      + textStreamPart // draw text if present
       + "\nQ"; // pop the graphics state back from the stack
     apStream.setTextStreamData(streamTextData);    
 
     this.apStream = apStream;
   }
-
-  protected override async applyCommonTransformAsync(matrix: Mat3) {  
-    const dict = <LineAnnotation>this._proxy || this;
-
-    // transform the segment end points    
-    const [x1, y1, x2, y2] = dict.L;
-    const start = new Vec2(x1, y1).applyMat3(matrix);
-    const end = new Vec2(x2, y2).applyMat3(matrix);
-    dict.L = [start.x, start.y, end.x, end.y];
-
-    // rebuild the appearance stream instead of transforming it to get rid of line distorsions
-    await dict.generateApStreamAsync();
-
-    dict.M = DateString.fromDate(new Date());
-  }
+  //#endregion
   
   //#region overriding handles
   protected override renderHandles(): SVGGraphicsElement[] {   

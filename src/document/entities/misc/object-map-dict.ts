@@ -3,7 +3,7 @@ import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../codes";
+import { codes } from "../../char-codes";
 
 export class ObjectMapDict extends PdfDict {
   protected readonly _objectIdMap = new Map<string, ObjectId>();

@@ -1526,7 +1526,7 @@ const styles = `
 </style>
 `;
 
-var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$v = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1547,7 +1547,7 @@ function htmlToElements(html) {
     return nodes;
 }
 function promisify(callback) {
-    return __awaiter$u(this, void 0, void 0, function* () {
+    return __awaiter$v(this, void 0, void 0, function* () {
         return new Promise(resolve => {
             setTimeout(() => {
                 const result = callback();
@@ -1557,9 +1557,19 @@ function promisify(callback) {
     });
 }
 function runEmptyTimeout() {
-    return __awaiter$u(this, void 0, void 0, function* () {
+    return __awaiter$v(this, void 0, void 0, function* () {
         yield promisify(() => undefined);
     });
+}
+function downloadFile(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("download", name);
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 function getNextNode(node) {
@@ -3433,6 +3443,206 @@ class LinkedList {
     }
 }
 
+class ReferenceData {
+    constructor(xrefs) {
+        var _a;
+        const allFreeEntries = [];
+        const allNormalEntries = [];
+        const allCompressedEntries = [];
+        let maxId = 0;
+        xrefs.forEach(x => {
+            for (const entry of x.getEntries()) {
+                switch (entry.type) {
+                    case xRefEntryTypes.FREE:
+                        allFreeEntries.push(entry);
+                        break;
+                    case xRefEntryTypes.NORMAL:
+                        allNormalEntries.push(entry);
+                        break;
+                    case xRefEntryTypes.COMPRESSED:
+                        allCompressedEntries.push(entry);
+                        break;
+                    default:
+                        continue;
+                }
+                if (entry.id > maxId) {
+                    maxId = entry.id;
+                }
+            }
+        });
+        this.size = maxId + 1;
+        const zeroFreeRef = {
+            id: 0,
+            generation: maxGeneration,
+            nextFreeId: 0,
+        };
+        const freeLinkedList = new LinkedList(zeroFreeRef);
+        const freeOutsideListMap = new Map();
+        const freeMap = new Map();
+        let zeroFound = false;
+        for (const entry of allFreeEntries) {
+            if (!zeroFound && entry.id === 0) {
+                zeroFound = true;
+                zeroFreeRef.nextFreeId = entry.nextFreeId;
+                continue;
+            }
+            const valueFromMap = freeMap.get(entry.id);
+            if (!valueFromMap || valueFromMap.generation < entry.generation) {
+                freeMap.set(entry.id, {
+                    id: entry.id,
+                    generation: entry.generation,
+                    nextFreeId: entry.nextFreeId
+                });
+            }
+        }
+        let nextId = zeroFreeRef.nextFreeId;
+        let next;
+        while (nextId) {
+            next = freeMap.get(nextId);
+            freeMap.delete(nextId);
+            freeLinkedList.push(next);
+            nextId = next.nextFreeId;
+        }
+        [...freeMap].forEach(x => {
+            const value = x[1];
+            if (value.generation === maxGeneration && value.nextFreeId === 0) {
+                freeOutsideListMap.set(value.id, value);
+            }
+        });
+        this.freeLinkedList = freeLinkedList;
+        this.freeOutsideListMap = freeOutsideListMap;
+        const normalRefs = new Map();
+        for (const entry of allNormalEntries) {
+            if (this.isFreed(entry)) {
+                continue;
+            }
+            const valueFromMap = normalRefs.get(entry.id);
+            if (valueFromMap && valueFromMap.generation >= entry.generation) {
+                continue;
+            }
+            normalRefs.set(entry.id, {
+                id: entry.id,
+                generation: entry.generation,
+                byteOffset: entry.byteOffset,
+            });
+        }
+        for (const entry of allCompressedEntries) {
+            if (this.isFreed(entry)) {
+                continue;
+            }
+            const valueFromMap = normalRefs.get(entry.id);
+            if (valueFromMap) {
+                continue;
+            }
+            const offset = (_a = normalRefs.get(entry.streamId)) === null || _a === void 0 ? void 0 : _a.byteOffset;
+            if (offset) {
+                normalRefs.set(entry.id, {
+                    id: entry.id,
+                    generation: entry.generation,
+                    byteOffset: offset,
+                    compressed: true,
+                    streamId: entry.streamId,
+                    streamIndex: entry.streamIndex,
+                });
+            }
+        }
+        this.usedMap = normalRefs;
+    }
+    getOffset(id) {
+        var _a;
+        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
+    }
+    getGeneration(id) {
+        var _a;
+        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
+    }
+    isFreed(ref) {
+        return this.freeOutsideListMap.has(ref.id)
+            || this.freeLinkedList.has(ref, (a, b) => a.id === b.id && a.generation < b.generation);
+    }
+    isUsed(id) {
+        return this.usedMap.has(id);
+    }
+}
+
+class DataWriter {
+    constructor(data) {
+        this._dataToAppend = [];
+        if (!(data === null || data === void 0 ? void 0 : data.length)) {
+            throw new Error("Data is empty");
+        }
+        this._encoder = new TextEncoder();
+        this._sourceData = data.slice(0);
+        this._pointer = data.length;
+        this.fixEof();
+    }
+    get offset() {
+        return this._pointer;
+    }
+    getCurrentData() {
+        const result = new Uint8Array(this._sourceData.length + this._dataToAppend.length);
+        result.set(this._sourceData, 0);
+        result.set(this._dataToAppend, this._sourceData.length);
+        return result;
+    }
+    writeBytes(bytes) {
+        if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
+            return;
+        }
+        for (let i = 0; i < bytes.length; i++) {
+            this._dataToAppend.push(bytes[i]);
+        }
+        this._pointer += bytes.length;
+    }
+    writeIndirectObject(cryptInfo, obj) {
+        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !obj) {
+            return;
+        }
+        const objBytes = [
+            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
+            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+            ...obj.toArray(cryptInfo), ...keywordCodes.END_OF_LINE,
+            ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
+        ];
+        this.writeBytes(objBytes);
+    }
+    writeIndirectArray(cryptInfo, objs) {
+        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !objs) {
+            return;
+        }
+        const objBytes = [
+            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
+            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+            codes.L_BRACKET,
+        ];
+        for (const obj of objs) {
+            objBytes.push(codes.WHITESPACE, ...obj.toArray(cryptInfo));
+        }
+        objBytes.push(codes.R_BRACKET, ...keywordCodes.END_OF_LINE, ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE);
+        this.writeBytes(objBytes);
+    }
+    writeEof(xrefOffset) {
+        const eof = [
+            ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
+            ...this._encoder.encode(xrefOffset + ""), ...keywordCodes.END_OF_LINE,
+            ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE
+        ];
+        this.writeBytes(eof);
+    }
+    fixEof() {
+        if (this._sourceData[this._pointer - 1] !== codes.LINE_FEED) {
+            if (this._sourceData[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
+                this._dataToAppend.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
+                this._pointer += 2;
+            }
+            else {
+                this._dataToAppend.push(codes.LINE_FEED);
+                this._pointer += 1;
+            }
+        }
+    }
+}
+
 function parseIntFromBytes(bytes) {
     if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
         return 0;
@@ -3790,127 +4000,6 @@ class XRefEntry {
     }
 }
 
-class ReferenceData {
-    constructor(xrefs) {
-        var _a;
-        const allFreeEntries = [];
-        const allNormalEntries = [];
-        const allCompressedEntries = [];
-        let maxId = 0;
-        xrefs.forEach(x => {
-            for (const entry of x.getEntries()) {
-                switch (entry.type) {
-                    case xRefEntryTypes.FREE:
-                        allFreeEntries.push(entry);
-                        break;
-                    case xRefEntryTypes.NORMAL:
-                        allNormalEntries.push(entry);
-                        break;
-                    case xRefEntryTypes.COMPRESSED:
-                        allCompressedEntries.push(entry);
-                        break;
-                    default:
-                        continue;
-                }
-                if (entry.id > maxId) {
-                    maxId = entry.id;
-                }
-            }
-        });
-        this.size = maxId + 1;
-        const zeroFreeRef = {
-            id: 0,
-            generation: maxGeneration,
-            nextFreeId: 0,
-        };
-        const freeLinkedList = new LinkedList(zeroFreeRef);
-        const freeOutsideListMap = new Map();
-        const freeMap = new Map();
-        let zeroFound = false;
-        for (const entry of allFreeEntries) {
-            if (!zeroFound && entry.id === 0) {
-                zeroFound = true;
-                zeroFreeRef.nextFreeId = entry.nextFreeId;
-                continue;
-            }
-            const valueFromMap = freeMap.get(entry.id);
-            if (!valueFromMap || valueFromMap.generation < entry.generation) {
-                freeMap.set(entry.id, {
-                    id: entry.id,
-                    generation: entry.generation,
-                    nextFreeId: entry.nextFreeId
-                });
-            }
-        }
-        let nextId = zeroFreeRef.nextFreeId;
-        let next;
-        while (nextId) {
-            next = freeMap.get(nextId);
-            freeMap.delete(nextId);
-            freeLinkedList.push(next);
-            nextId = next.nextFreeId;
-        }
-        [...freeMap].forEach(x => {
-            const value = x[1];
-            if (value.generation === maxGeneration && value.nextFreeId === 0) {
-                freeOutsideListMap.set(value.id, value);
-            }
-        });
-        this.freeLinkedList = freeLinkedList;
-        this.freeOutsideListMap = freeOutsideListMap;
-        const normalRefs = new Map();
-        for (const entry of allNormalEntries) {
-            if (this.isFreed(entry)) {
-                continue;
-            }
-            const valueFromMap = normalRefs.get(entry.id);
-            if (valueFromMap && valueFromMap.generation >= entry.generation) {
-                continue;
-            }
-            normalRefs.set(entry.id, {
-                id: entry.id,
-                generation: entry.generation,
-                byteOffset: entry.byteOffset,
-            });
-        }
-        for (const entry of allCompressedEntries) {
-            if (this.isFreed(entry)) {
-                continue;
-            }
-            const valueFromMap = normalRefs.get(entry.id);
-            if (valueFromMap) {
-                continue;
-            }
-            const offset = (_a = normalRefs.get(entry.streamId)) === null || _a === void 0 ? void 0 : _a.byteOffset;
-            if (offset) {
-                normalRefs.set(entry.id, {
-                    id: entry.id,
-                    generation: entry.generation,
-                    byteOffset: offset,
-                    compressed: true,
-                    streamId: entry.streamId,
-                    streamIndex: entry.streamIndex,
-                });
-            }
-        }
-        this.usedMap = normalRefs;
-    }
-    getOffset(id) {
-        var _a;
-        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
-    }
-    getGeneration(id) {
-        var _a;
-        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
-    }
-    isFreed(ref) {
-        return this.freeOutsideListMap.has(ref.id)
-            || this.freeLinkedList.has(ref, (a, b) => a.id === b.id && a.generation < b.generation);
-    }
-    isUsed(id) {
-        return this.usedMap.has(id);
-    }
-}
 class ReferenceDataChange {
     constructor(refData) {
         this._refData = refData;
@@ -4009,84 +4098,6 @@ class ReferenceDataChange {
     }
     isUsedInSource(id) {
         return this._refData.isUsed(id);
-    }
-}
-
-class DataWriter {
-    constructor(data) {
-        this._dataToAppend = [];
-        if (!(data === null || data === void 0 ? void 0 : data.length)) {
-            throw new Error("Data is empty");
-        }
-        this._encoder = new TextEncoder();
-        this._sourceData = data.slice(0);
-        this._pointer = data.length;
-        this.fixEof();
-    }
-    get offset() {
-        return this._pointer;
-    }
-    getCurrentData() {
-        const result = new Uint8Array(this._sourceData.length + this._dataToAppend.length);
-        result.set(this._sourceData, 0);
-        result.set(this._dataToAppend, this._sourceData.length);
-        return result;
-    }
-    writeBytes(bytes) {
-        if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
-            return;
-        }
-        for (let i = 0; i < bytes.length; i++) {
-            this._dataToAppend.push(bytes[i]);
-        }
-        this._pointer += bytes.length;
-    }
-    writeIndirectObject(cryptInfo, obj) {
-        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !obj) {
-            return;
-        }
-        const objBytes = [
-            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
-            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-            ...obj.toArray(cryptInfo), ...keywordCodes.END_OF_LINE,
-            ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
-        ];
-        this.writeBytes(objBytes);
-    }
-    writeIndirectArray(cryptInfo, objs) {
-        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !objs) {
-            return;
-        }
-        const objBytes = [
-            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
-            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-            codes.L_BRACKET,
-        ];
-        for (const obj of objs) {
-            objBytes.push(codes.WHITESPACE, ...obj.toArray(cryptInfo));
-        }
-        objBytes.push(codes.R_BRACKET, ...keywordCodes.END_OF_LINE, ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE);
-        this.writeBytes(objBytes);
-    }
-    writeEof(xrefOffset) {
-        const eof = [
-            ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
-            ...this._encoder.encode(xrefOffset + ""), ...keywordCodes.END_OF_LINE,
-            ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE
-        ];
-        this.writeBytes(eof);
-    }
-    fixEof() {
-        if (this._sourceData[this._pointer - 1] !== codes.LINE_FEED) {
-            if (this._sourceData[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
-                this._dataToAppend.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
-                this._pointer += 2;
-            }
-            else {
-                this._dataToAppend.push(codes.LINE_FEED);
-                this._pointer += 1;
-            }
-        }
     }
 }
 
@@ -6048,7 +6059,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6146,7 +6157,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$t(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -10925,6 +10936,9 @@ class FontDict extends PdfDict {
     constructor() {
         super(dictTypes.FONT);
     }
+    get name() {
+        return this._name;
+    }
     get encoding() {
         return this._encoding;
     }
@@ -11053,6 +11067,7 @@ class FontDict extends PdfDict {
             656, 718, 879, 722, 556, 572, 531, 364, 583, 556, 668, 458, 558, 558, 437, 583,
             687, 552, 556, 541, 556, 500, 458, 500, 822, 500, 572, 520, 802, 822, 625, 718,
             520, 510, 750, 541,];
+        font._name = "/tspdfFarial";
         return font;
     }
     static createCalibriFont(encoding) {
@@ -11086,6 +11101,7 @@ class FontDict extends PdfDict {
             868, 889, 614, 761, 531, 547, 878, 555, 479, 532, 479, 345, 558, 497, 688, 422, 540,
             540, 463, 510, 676, 534, 527, 520, 525, 422, 387, 452, 624, 433, 541, 468, 728, 749,
             536, 666, 469, 442, 721, 474,];
+        font._name = "/tspdfFcalibri";
         return font;
     }
     static createCambriaFont(encoding) {
@@ -11120,6 +11136,7 @@ class FontDict extends PdfDict {
             920, 630, 488, 541, 522, 446, 558, 487, 713, 458, 589, 589, 540, 559, 672, 588,
             530, 566, 556, 440, 511, 503, 685, 483, 569, 530, 800, 800, 617, 748,
             514, 470, 767, 530,];
+        font._name = "/tspdfFcambria";
         return font;
     }
     static createCourierFont(encoding) {
@@ -11156,6 +11173,7 @@ class FontDict extends PdfDict {
             600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600,
             600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600, 600,
             600, 600, 600, 600,];
+        font._name = "/tspdfFcourier";
         return font;
     }
     static createTnrFont(encoding) {
@@ -11190,6 +11208,7 @@ class FontDict extends PdfDict {
             973, 666, 443, 508, 472, 410, 508, 443, 690, 395, 535, 535, 485, 499, 632, 535,
             500, 535, 500, 443, 437, 500, 647, 500, 535, 502, 770, 770, 517, 671,
             456, 429, 747, 459,];
+        font._name = "/tspdfFtnr";
         return font;
     }
     static createVerdanaFont(encoding) {
@@ -11223,6 +11242,7 @@ class FontDict extends PdfDict {
             835, 904, 783, 920, 680, 701, 881, 706, 600, 614, 594, 471, 621, 595, 797, 524, 640,
             640, 591, 620, 696, 637, 606, 637, 623, 534, 496, 591, 840, 591, 644, 605, 875, 887,
             640, 794, 570, 546, 838, 599,];
+        font._name = "/tspdfFverdana";
         return font;
     }
     toArray(cryptInfo) {
@@ -12814,7 +12834,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12916,7 +12936,7 @@ class AppearanceStreamRenderer {
         return { nextIndex: i, parameters, operator };
     }
     renderAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -13261,7 +13281,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -13297,7 +13317,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextAsync(textParam, resources) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             const textState = this.state.textState;
             const fontDict = resources.getFont(textState.customFontName);
             const text = this.decodeTextParam(textParam, fontDict);
@@ -13413,7 +13433,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextGroupAsync(parser, resources) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             const svgElements = [];
             const textState = this.state.textState;
             let i = 0;
@@ -13458,7 +13478,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawStreamAsync(stream) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -14091,7 +14111,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -14152,7 +14172,7 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onTranslationPointerUp = (e) => __awaiter$r(this, void 0, void 0, function* () {
+        this.onTranslationPointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -14191,7 +14211,7 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(centerX, centerY);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onRotationHandlePointerUp = (e) => __awaiter$r(this, void 0, void 0, function* () {
+        this.onRotationHandlePointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -14270,7 +14290,7 @@ class AnnotationDict extends PdfDict {
             this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onScaleHandlePointerUp = (e) => __awaiter$r(this, void 0, void 0, function* () {
+        this.onScaleHandlePointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -14377,7 +14397,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(viewBox) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (!viewBox) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -14390,7 +14410,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -14405,7 +14425,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     moveToAsync(point) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const width = this.Rect[2] - this.Rect[0];
             const height = this.Rect[3] - this.Rect[1];
             const x = point.x - width / 2;
@@ -14415,7 +14435,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (!center) {
                 const [x0, y0, x1, y1] = this.Rect;
                 center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
@@ -14636,6 +14656,26 @@ class AnnotationDict extends PdfDict {
         }
         this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
     }
+    getColorString() {
+        var _a;
+        let colorString;
+        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
+            colorString = "0 G 0 g";
+        }
+        else if (this.C.length < 3) {
+            const g = this.C[0];
+            colorString = `${g} G ${g} g`;
+        }
+        else if (this.C.length === 3) {
+            const [r, g, b] = this.C;
+            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+        }
+        else {
+            const [c, m, y, k] = this.C;
+            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+        }
+        return colorString;
+    }
     getCurrentRotation() {
         var _a;
         const matrix = (_a = this.apStream) === null || _a === void 0 ? void 0 : _a.matrix;
@@ -14713,7 +14753,7 @@ class AnnotationDict extends PdfDict {
         dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
     applyCommonTransformAsync(matrix) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             this.applyRectTransform(matrix);
             const dict = this._proxy || this;
             const stream = dict.apStream;
@@ -14725,7 +14765,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -14734,7 +14774,7 @@ class AnnotationDict extends PdfDict {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$r(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$s(this, void 0, void 0, function* () {
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 this._svgContentCopy.remove();
                 yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
@@ -14855,7 +14895,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -14882,7 +14922,7 @@ class AnnotationDict extends PdfDict {
     }
 }
 
-var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -15061,7 +15101,7 @@ class MarkupAnnotation extends AnnotationDict {
     }
     updateTextDataAsync(options) {
         var _a;
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
             if (text) {
                 const pTemp = document.createElement("p");
@@ -15177,7 +15217,7 @@ class MarkupAnnotation extends AnnotationDict {
             return this._textData;
         });
     }
-    getLineEndingStreamText(point, type, strokeWidth, side) {
+    getLineEndingStreamPart(point, type, strokeWidth, side) {
         const size = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
         let text = "";
         switch (type) {
@@ -15279,7 +15319,7 @@ class MarkupAnnotation extends AnnotationDict {
     }
 }
 
-class DocumentDataUpdater {
+class DataUpdater {
     constructor(sourceBytes, lastXref, referenceData, authResult) {
         this._writtenIds = new Set();
         this.writeImageXObject = (obj) => {
@@ -20405,7 +20445,7 @@ class TextAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -20555,31 +20595,15 @@ class InkAnnotation extends MarkupAnnotation {
         this.bakeRotationAsync();
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
-        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
+        const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+        const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -20589,6 +20613,7 @@ class InkAnnotation extends MarkupAnnotation {
         gs.LJ = lineJoinStyles.ROUND;
         gs.LC = lineCapStyles.ROUND;
         gs.D = [[strokeDash, strokeGap], 0];
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         let px;
         let py;
@@ -20611,7 +20636,7 @@ class InkAnnotation extends MarkupAnnotation {
     }
     applyCommonTransformAsync(matrix) {
         var _a, _b, _c, _d;
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$q(this, void 0, void 0, function* () {
             const dict = this._proxy || this;
             let x;
             let y;
@@ -20659,7 +20684,7 @@ class InkAnnotation extends MarkupAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$q(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -20796,7 +20821,7 @@ class GeometricAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -20922,7 +20947,7 @@ class SquareAnnotation extends GeometricAnnotation {
         }
     }
     generateApStream(bbox, matrix) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
@@ -20934,26 +20959,10 @@ class SquareAnnotation extends GeometricAnnotation {
             ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
             : [1, 0, 0, 1, 0, 0];
         apStream.Matrix = streamMatrix;
-        let colorString;
-        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
-        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
+        const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+        const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -20984,6 +20993,7 @@ class SquareAnnotation extends GeometricAnnotation {
         const trBoxLR = Vec2.applyMat3(boxLR, bBoxToRectMat).add(marginLR);
         const trBoxUR = Vec2.applyMat3(boxUR, bBoxToRectMat).add(marginUR);
         const trBoxUL = Vec2.applyMat3(boxUL, bBoxToRectMat).add(marginUL);
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
         if (this._cloud) {
@@ -21018,7 +21028,7 @@ class SquareAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
     applyCommonTransformAsync(matrix) {
-        return __awaiter$o(this, void 0, void 0, function* () {
+        return __awaiter$p(this, void 0, void 0, function* () {
             this.applyRectTransform(matrix);
             const dict = this._proxy || this;
             const stream = dict.apStream;
@@ -21032,7 +21042,7 @@ class SquareAnnotation extends GeometricAnnotation {
 }
 SquareAnnotation.cloudArcSize = 20;
 
-var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21158,7 +21168,7 @@ class CircleAnnotation extends GeometricAnnotation {
         }
     }
     generateApStream(bbox, matrix) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const apStream = new XFormStream();
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
@@ -21170,26 +21180,10 @@ class CircleAnnotation extends GeometricAnnotation {
             ? [matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]]
             : [1, 0, 0, 1, 0, 0];
         apStream.Matrix = streamMatrix;
-        let colorString;
-        if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
-        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
+        const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+        const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -21229,6 +21223,7 @@ class CircleAnnotation extends GeometricAnnotation {
         const trBoxBottom = Vec2.add(trBoxLL, trBoxLR).multiplyByScalar(0.5);
         const rx = Vec2.substract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
         const ry = Vec2.substract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
         if (this._cloud) {
@@ -21265,7 +21260,7 @@ class CircleAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
     applyCommonTransformAsync(matrix) {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             this.applyRectTransform(matrix);
             const dict = this._proxy || this;
             const stream = dict.apStream;
@@ -21382,7 +21377,7 @@ class PolyAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21477,7 +21472,7 @@ class PolygonAnnotation extends PolyAnnotation {
         this.bakeRotationAsync();
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!((_a = this.Vertices) === null || _a === void 0 ? void 0 : _a.length) || this.Vertices.length < 6) {
             return;
         }
@@ -21485,26 +21480,10 @@ class PolygonAnnotation extends PolyAnnotation {
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.D[0]) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.dash) !== null && _f !== void 0 ? _f : 3;
-        const strokeGap = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[1]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.gap) !== null && _k !== void 0 ? _k : 0;
+        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
+        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -21512,6 +21491,7 @@ class PolygonAnnotation extends PolyAnnotation {
         gs.ca = opacity;
         gs.LW = strokeWidth;
         gs.D = [[strokeDash, strokeGap], 0];
+        const colorString = this.getColorString();
         const list = this.Vertices;
         let streamTextData = `q ${colorString} /GS0 gs`;
         if (this.IT === polyIntents.CLOUD) {
@@ -21550,7 +21530,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
     applyCommonTransformAsync(matrix) {
         var _a, _b, _c, _d;
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$n(this, void 0, void 0, function* () {
             const dict = this._proxy || this;
             let x;
             let y;
@@ -21600,7 +21580,7 @@ class PolygonAnnotation extends PolyAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$n(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -21614,7 +21594,7 @@ class PolygonAnnotation extends PolyAnnotation {
 }
 PolygonAnnotation.cloudArcSize = 20;
 
-var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21757,7 +21737,7 @@ class PolylineAnnotation extends PolyAnnotation {
         this.bakeRotationAsync();
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!((_a = this.Vertices) === null || _a === void 0 ? void 0 : _a.length) || this.Vertices.length < 4) {
             return;
         }
@@ -21765,26 +21745,10 @@ class PolylineAnnotation extends PolyAnnotation {
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.D[0]) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.dash) !== null && _f !== void 0 ? _f : 3;
-        const strokeGap = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[1]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.gap) !== null && _k !== void 0 ? _k : 0;
+        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
+        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -21794,6 +21758,7 @@ class PolylineAnnotation extends PolyAnnotation {
         gs.D = [[strokeDash, strokeGap], 0];
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
+        const colorString = this.getColorString();
         const list = this.Vertices;
         let streamTextData = `q ${colorString} /GS0 gs`;
         let px;
@@ -21813,7 +21778,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
     applyCommonTransformAsync(matrix) {
         var _a, _b, _c, _d;
-        return __awaiter$l(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const dict = this._proxy || this;
             let x;
             let y;
@@ -21860,7 +21825,7 @@ class PolylineAnnotation extends PolyAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$l(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -21873,7 +21838,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21945,7 +21910,7 @@ class LineAnnotation extends GeometricAnnotation {
             this._tempTransformationMatrix = Mat3.from4Vec2(start, end, startTemp, endTemp);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
         };
-        this.onLineEndHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+        this.onLineEndHandlePointerUp = (e) => __awaiter$l(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -21959,8 +21924,22 @@ class LineAnnotation extends GeometricAnnotation {
     get offsetY() {
         return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
     }
+    get minMargin() {
+        const strokeWidth = this.strokeWidth;
+        const halfStrokeWidth = strokeWidth / 2;
+        let marginMin = 0;
+        if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
+            const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+            const endingSize = endingSizeInner + strokeWidth;
+            marginMin = endingSize / 2;
+        }
+        else {
+            marginMin = halfStrokeWidth;
+        }
+        return marginMin;
+    }
     static createFromDtoAsync(dto, fontMap) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$l(this, void 0, void 0, function* () {
             if (dto.annotationType !== "/Line") {
                 throw new Error("Invalid annotation type");
             }
@@ -22091,6 +22070,11 @@ class LineAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
+    setTextContent(text) {
+        super.setTextContent(text);
+        const dict = this._proxy;
+        dict.generateApStreamAsync().then(() => dict.updateRenderAsync());
+    }
     parseProps(parseInfo) {
         var _a;
         super.parseProps(parseInfo);
@@ -22204,23 +22188,24 @@ class LineAnnotation extends GeometricAnnotation {
             }
         }
     }
-    updateRectAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+    applyCommonTransformAsync(matrix) {
+        return __awaiter$l(this, void 0, void 0, function* () {
+            const dict = this._proxy || this;
+            const [x1, y1, x2, y2] = dict.L;
+            const start = new Vec2(x1, y1).applyMat3(matrix);
+            const end = new Vec2(x2, y2).applyMat3(matrix);
+            dict.L = [start.x, start.y, end.x, end.y];
+            yield dict.generateApStreamAsync();
+            dict.M = DateString.fromDate(new Date());
+        });
+    }
+    calculateStreamBboxAsync() {
+        return __awaiter$l(this, void 0, void 0, function* () {
             const [x1, y1, x2, y2] = this.L;
-            const start = new Vec2(x1, y1);
-            const end = new Vec2(x2, y2);
-            const length = Vec2.substract(end, start).getMagnitude();
+            const length = new Vec2(x2 - x1, y2 - y1).getMagnitude();
             const strokeWidth = this.strokeWidth;
             const halfStrokeWidth = strokeWidth / 2;
-            let marginMin = 0;
-            if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
-                const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
-                const endingSize = endingSizeInner + strokeWidth;
-                marginMin = endingSize / 2;
-            }
-            else {
-                marginMin = halfStrokeWidth;
-            }
+            const marginMin = this.minMargin;
             const textMargin = 4 * marginMin;
             const textMaxWidth = length > textMargin
                 ? length - textMargin
@@ -22255,20 +22240,42 @@ class LineAnnotation extends GeometricAnnotation {
                 yMax = Math.max(yMax, textYMax + offsetY);
             }
             const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
-            const xAlignedStart = new Vec2();
-            const xAlignedEnd = new Vec2(length, 0);
-            const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
-            const localBox = this.getLocalBB();
-            localBox.ll.set(bbox[0].x, bbox[0].y).applyMat3(matrix);
-            localBox.lr.set(bbox[1].x, bbox[0].y).applyMat3(matrix);
-            localBox.ur.set(bbox[1].x, bbox[1].y).applyMat3(matrix);
-            localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
-            const { min: rectMin, max: rectMax } = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
-            this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
-            return { bbox, matrix };
+            return bbox;
         });
     }
-    getLineStreamText(start, end) {
+    calculateStreamMatrix() {
+        const [x1, y1, x2, y2] = this.L;
+        const start = new Vec2(x1, y1);
+        const end = new Vec2(x2, y2);
+        const length = Vec2.substract(end, start).getMagnitude();
+        const xAlignedStart = new Vec2();
+        const xAlignedEnd = new Vec2(length, 0);
+        const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        return matrix;
+    }
+    updateRect(bbox, matrix) {
+        const localBox = this.getLocalBB();
+        localBox.ll.set(bbox[0].x, bbox[0].y).applyMat3(matrix);
+        localBox.lr.set(bbox[1].x, bbox[0].y).applyMat3(matrix);
+        localBox.ur.set(bbox[1].x, bbox[1].y).applyMat3(matrix);
+        localBox.ul.set(bbox[0].x, bbox[1].y).applyMat3(matrix);
+        const { min: rectMin, max: rectMax } = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+        this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
+    }
+    getLineEndsStreamCoords(matrix) {
+        const matrixInv = Mat3.invert(matrix);
+        const apStart = new Vec2(this.L[0], this.L[1])
+            .applyMat3(matrixInv)
+            .truncate();
+        const apEnd = new Vec2(this.L[2], this.L[3])
+            .applyMat3(matrixInv)
+            .truncate();
+        const offsetY = this.offsetY;
+        apStart.y += offsetY;
+        apEnd.y += offsetY;
+        return [apStart, apEnd];
+    }
+    getLineStreamPart(start, end) {
         let lineStream = "";
         lineStream += `\n${start.x} ${start.y} m`;
         lineStream += `\n${end.x} ${end.y} l`;
@@ -22293,17 +22300,20 @@ class LineAnnotation extends GeometricAnnotation {
         }
         return lineStream;
     }
-    getTextStreamTextAsync(start, end, textData, codeMap, fontName) {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            const lineCenter = Vec2.add(start, end).multiplyByScalar(0.5);
+    getTextStreamPartAsync(pivotPoint, font) {
+        return __awaiter$l(this, void 0, void 0, function* () {
+            const textData = this._textData;
+            if (!textData) {
+                return "";
+            }
             const [xMin, yMin, xMax, yMax] = textData.relativeRect;
-            const topLeftLCS = new Vec2(xMin, yMin).add(lineCenter);
-            const bottomRightLCS = new Vec2(xMax, yMax).add(lineCenter);
+            const bottomLeftLCS = new Vec2(xMin, yMin).add(pivotPoint);
+            const topRightLCS = new Vec2(xMax, yMax).add(pivotPoint);
             const textBgRectStream = "\nq 1 g 1 G"
-                + `\n${topLeftLCS.x} ${topLeftLCS.y} m`
-                + `\n${topLeftLCS.x} ${bottomRightLCS.y} l`
-                + `\n${bottomRightLCS.x} ${bottomRightLCS.y} l`
-                + `\n${bottomRightLCS.x} ${topLeftLCS.y} l`
+                + `\n${bottomLeftLCS.x} ${bottomLeftLCS.y} m`
+                + `\n${bottomLeftLCS.x} ${topRightLCS.y} l`
+                + `\n${topRightLCS.x} ${topRightLCS.y} l`
+                + `\n${topRightLCS.x} ${bottomLeftLCS.y} l`
                 + "\nf"
                 + "\nQ";
             let textStream = "\nq 0 g 0 G";
@@ -22312,15 +22322,15 @@ class LineAnnotation extends GeometricAnnotation {
                 if (!line.text) {
                     continue;
                 }
-                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(lineCenter);
+                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(pivotPoint);
                 let lineHex = "";
                 for (const char of line.text) {
-                    const code = codeMap.get(char);
+                    const code = font.encoding.codeMap.get(char);
                     if (code) {
                         lineHex += code.toString(16).padStart(2, "0");
                     }
                 }
-                textStream += `\nBT 0 Tc 0 Tw 100 Tz ${fontName} ${fontSize} Tf 0 Tr`;
+                textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
                 textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
                 textStream += `\n<${lineHex}> Tj`;
                 textStream += "\nET";
@@ -22330,38 +22340,24 @@ class LineAnnotation extends GeometricAnnotation {
         });
     }
     generateApStreamAsync() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
-        return __awaiter$k(this, void 0, void 0, function* () {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        return __awaiter$l(this, void 0, void 0, function* () {
             if (!this.L) {
                 return;
             }
-            const data = yield this.updateRectAsync();
+            const bbox = yield this.calculateStreamBboxAsync();
+            const matrix = this.calculateStreamMatrix();
+            this.updateRect(bbox, matrix);
             const apStream = new XFormStream();
             apStream.Filter = "/FlateDecode";
             apStream.LastModified = DateString.fromDate(new Date());
-            apStream.BBox = [data.bbox[0].x, data.bbox[0].y, data.bbox[1].x, data.bbox[1].y];
-            apStream.Matrix = data.matrix.toFloatShortArray();
+            apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
+            apStream.Matrix = matrix.toFloatShortArray();
             apStream.Resources = new ResourceDict();
-            let colorString;
-            if (!((_a = this.C) === null || _a === void 0 ? void 0 : _a.length)) {
-                colorString = "0 G 0 g";
-            }
-            else if (this.C.length < 3) {
-                const g = this.C[0];
-                colorString = `${g} G ${g} g`;
-            }
-            else if (this.C.length === 3) {
-                const [r, g, b] = this.C;
-                colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-            }
-            else {
-                const [c, m, y, k] = this.C;
-                colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-            }
             const opacity = this.CA || 1;
             const strokeWidth = this.strokeWidth;
-            const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
-            const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
+            const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+            const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
             const gs = new GraphicsStateDict();
             gs.AIS = true;
             gs.BM = "/Normal";
@@ -22372,53 +22368,26 @@ class LineAnnotation extends GeometricAnnotation {
             gs.LC = lineCapStyles.SQUARE;
             gs.LJ = lineJoinStyles.MITER;
             apStream.Resources.setGraphicsState("/GS0", gs);
-            const matrixInv = Mat3.invert(data.matrix);
-            const apStart = new Vec2(this.L[0], this.L[1])
-                .applyMat3(matrixInv)
-                .truncate();
-            const apEnd = new Vec2(this.L[2], this.L[3])
-                .applyMat3(matrixInv)
-                .truncate();
-            const offsetY = this.offsetY;
-            apStart.y += offsetY;
-            apEnd.y += offsetY;
-            const lineStream = this.getLineStreamText(apStart, apEnd);
-            const leftEnding = this.getLineEndingStreamText(apStart, this.LE[0], strokeWidth, "left");
-            const rightEnding = this.getLineEndingStreamText(apEnd, this.LE[1], strokeWidth, "right");
-            let textStream;
-            if (this._textData) {
-                const fontFamily = "arial";
-                const font = (_k = this._fontMap) === null || _k === void 0 ? void 0 : _k.get(fontFamily);
-                const codeMap = (_l = font.encoding) === null || _l === void 0 ? void 0 : _l.codeMap;
-                if (!font || !codeMap) {
-                    throw new Error(`Font not found in the font map: '${fontFamily}'`);
-                }
-                const fontName = "/tspdfF0";
-                apStream.Resources.setFont(fontName, font);
-                textStream = yield this.getTextStreamTextAsync(apStart, apEnd, this._textData, codeMap, fontName);
+            const fontFamily = "arial";
+            const font = (_j = this._fontMap) === null || _j === void 0 ? void 0 : _j.get(fontFamily);
+            if (!font || !((_k = font.encoding) === null || _k === void 0 ? void 0 : _k.codeMap)) {
+                throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
             }
-            else {
-                textStream = "";
-            }
+            apStream.Resources.setFont(font.name, font);
+            const colorString = this.getColorString();
+            const [apStart, apEnd] = this.getLineEndsStreamCoords(matrix);
+            const lineStreamPart = this.getLineStreamPart(apStart, apEnd);
+            const leftEndingStreamPart = this.getLineEndingStreamPart(apStart, this.LE[0], strokeWidth, "left");
+            const rightEndingStreamPart = this.getLineEndingStreamPart(apEnd, this.LE[1], strokeWidth, "right");
+            const textStreamPart = yield this.getTextStreamPartAsync(Vec2.add(apStart, apEnd).multiplyByScalar(0.5), font);
             const streamTextData = `q ${colorString} /GS0 gs`
-                + lineStream
-                + leftEnding
-                + rightEnding
-                + textStream
+                + lineStreamPart
+                + leftEndingStreamPart
+                + rightEndingStreamPart
+                + textStreamPart
                 + "\nQ";
             apStream.setTextStreamData(streamTextData);
             this.apStream = apStream;
-        });
-    }
-    applyCommonTransformAsync(matrix) {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
-            const [x1, y1, x2, y2] = dict.L;
-            const start = new Vec2(x1, y1).applyMat3(matrix);
-            const end = new Vec2(x2, y2).applyMat3(matrix);
-            dict.L = [start.x, start.y, end.x, end.y];
-            yield dict.generateApStreamAsync();
-            dict.M = DateString.fromDate(new Date());
         });
     }
     renderHandles() {
@@ -22592,7 +22561,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         super.parseProps(parseInfo);
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
             return;
         }
@@ -22600,26 +22569,10 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.D[0]) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.dash) !== null && _f !== void 0 ? _f : 3;
-        const strokeGap = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[1]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.gap) !== null && _k !== void 0 ? _k : 0;
+        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
+        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -22630,6 +22583,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         gs.LJ = lineJoinStyles.MITER;
         gs.D = [[strokeDash, strokeGap], 0];
         gs.BM = blendModes.MULTIPLY;
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         const bottomLeft = new Vec2();
         const bottomRight = new Vec2();
@@ -22753,7 +22707,7 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         super.parseProps(parseInfo);
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
             return;
         }
@@ -22761,26 +22715,10 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.D[0]) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.dash) !== null && _f !== void 0 ? _f : 3;
-        const strokeGap = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[1]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.gap) !== null && _k !== void 0 ? _k : 0;
+        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
+        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -22790,6 +22728,7 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
         gs.D = [[strokeDash, strokeGap], 0];
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         const bottomLeft = new Vec2();
         const bottomRight = new Vec2();
@@ -22904,7 +22843,7 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         super.parseProps(parseInfo);
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
             return;
         }
@@ -22912,26 +22851,10 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.D[0]) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.dash) !== null && _f !== void 0 ? _f : 3;
-        const strokeGap = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[1]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.gap) !== null && _k !== void 0 ? _k : 0;
+        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
+        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -22941,6 +22864,7 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
         gs.D = [[strokeDash, strokeGap], 0];
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         const bottomLeft = new Vec2();
         const bottomRight = new Vec2();
@@ -23064,7 +22988,7 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         super.parseProps(parseInfo);
     }
     generateApStream() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         if (!((_a = this.QuadPoints) === null || _a === void 0 ? void 0 : _a.length) || this.QuadPoints.length % 8) {
             return;
         }
@@ -23072,26 +22996,10 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         apStream.Filter = "/FlateDecode";
         apStream.LastModified = DateString.fromDate(new Date());
         apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
-        let colorString;
-        if (!((_b = this.C) === null || _b === void 0 ? void 0 : _b.length)) {
-            colorString = "0 G 0 g";
-        }
-        else if (this.C.length < 3) {
-            const g = this.C[0];
-            colorString = `${g} G ${g} g`;
-        }
-        else if (this.C.length === 3) {
-            const [r, g, b] = this.C;
-            colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-        }
-        else {
-            const [c, m, y, k] = this.C;
-            colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-        }
         const opacity = this.CA || 1;
         const strokeWidth = this.strokeWidth;
-        const strokeDash = (_f = (_d = (_c = this.BS) === null || _c === void 0 ? void 0 : _c.D[0]) !== null && _d !== void 0 ? _d : (_e = this.Border) === null || _e === void 0 ? void 0 : _e.dash) !== null && _f !== void 0 ? _f : 3;
-        const strokeGap = (_k = (_h = (_g = this.BS) === null || _g === void 0 ? void 0 : _g.D[1]) !== null && _h !== void 0 ? _h : (_j = this.Border) === null || _j === void 0 ? void 0 : _j.gap) !== null && _k !== void 0 ? _k : 0;
+        const strokeDash = (_e = (_c = (_b = this.BS) === null || _b === void 0 ? void 0 : _b.D[0]) !== null && _c !== void 0 ? _c : (_d = this.Border) === null || _d === void 0 ? void 0 : _d.dash) !== null && _e !== void 0 ? _e : 3;
+        const strokeGap = (_j = (_g = (_f = this.BS) === null || _f === void 0 ? void 0 : _f.D[1]) !== null && _g !== void 0 ? _g : (_h = this.Border) === null || _h === void 0 ? void 0 : _h.gap) !== null && _j !== void 0 ? _j : 0;
         const gs = new GraphicsStateDict();
         gs.AIS = true;
         gs.BM = "/Normal";
@@ -23101,6 +23009,7 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         gs.LC = lineCapStyles.SQUARE;
         gs.LJ = lineJoinStyles.MITER;
         gs.D = [[strokeDash, strokeGap], 0];
+        const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         const bottomLeft = new Vec2();
         const bottomRight = new Vec2();
@@ -23127,6 +23036,15 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
 }
 SquigglyAnnotation.squiggleSize = 6;
 
+var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const freeTextIntents = {
     PLAIN_TEXT: "/FreeText",
     WITH_CALLOUT: "/FreeTextCallout",
@@ -23138,6 +23056,72 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.Q = justificationTypes.LEFT;
         this.IT = freeTextIntents.PLAIN_TEXT;
         this.LE = lineEndingTypes.NONE;
+    }
+    get pointsStreamCS() {
+        const stroke = this.strokeWidth;
+        const halfStroke = stroke / 2;
+        const [apXMin, apYMin, apXMax, apYMax] = this.apStream.BBox;
+        const [mLeft, mBottom, mRight, mTop] = this.RD || [halfStroke, halfStroke, halfStroke, halfStroke];
+        const apBL = new Vec2(apXMin + mLeft, apYMin + mBottom);
+        const apTR = new Vec2(apXMax - mRight, apYMax - mTop);
+        const apBR = new Vec2(apTR.x, apBL.y);
+        const apTL = new Vec2(apBL.x, apTR.y);
+        const apL = Vec2.add(apBL, apTL).multiplyByScalar(0.5);
+        const apT = Vec2.add(apTL, apTR).multiplyByScalar(0.5);
+        const apR = Vec2.add(apBR, apTR).multiplyByScalar(0.5);
+        const apB = Vec2.add(apBL, apBR).multiplyByScalar(0.5);
+        const cl = this.CL;
+        let apCoBase;
+        let apCoPointer;
+        let apCoKnee;
+        if (cl) {
+            if (cl.length === 6) {
+                apCoBase = new Vec2(cl[4], cl[5]);
+                apCoKnee = new Vec2(cl[2], cl[3]);
+                apCoPointer = new Vec2(cl[0], cl[1]);
+            }
+            else if (cl.length === 4) {
+                apCoBase = new Vec2(cl[2], cl[3]);
+                apCoPointer = new Vec2(cl[0], cl[1]);
+            }
+        }
+        return {
+            bl: apBL, tr: apTR, br: apBR, tl: apTL,
+            l: apL, t: apT, r: apR, b: apB,
+            cob: apCoBase, cok: apCoKnee, cop: apCoPointer,
+        };
+    }
+    get pointsPageCS() {
+        const points = this.pointsStreamCS;
+        const { matAA: mat } = calcPdfBBoxToRectMatrices(this.apStream.BBox, this.Rect, this.apStream.Matrix);
+        return {
+            bl: points.bl.applyMat3(mat),
+            tr: points.tr.applyMat3(mat),
+            br: points.br.applyMat3(mat),
+            tl: points.tl.applyMat3(mat),
+            l: points.l.applyMat3(mat),
+            t: points.t.applyMat3(mat),
+            r: points.r.applyMat3(mat),
+            b: points.b.applyMat3(mat),
+            cob: points.cob ? points.cob.applyMat3(mat) : null,
+            cok: points.cok ? points.cok.applyMat3(mat) : null,
+            cop: points.cop ? points.cop.applyMat3(mat) : null,
+        };
+    }
+    get minMargin() {
+        var _a;
+        const strokeWidth = this.strokeWidth;
+        const halfStrokeWidth = strokeWidth / 2;
+        let marginMin;
+        if (((_a = this.CL) === null || _a === void 0 ? void 0 : _a.length) && this.LE && this.LE !== lineEndingTypes.NONE) {
+            const endingSizeWoStroke = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+            const endingSize = endingSizeWoStroke + strokeWidth;
+            marginMin = endingSize / 2;
+        }
+        else {
+            marginMin = halfStrokeWidth;
+        }
+        return marginMin;
     }
     static parse(parseInfo, fontMap) {
         if (!parseInfo) {
@@ -23192,6 +23176,11 @@ class FreeTextAnnotation extends MarkupAnnotation {
             ...superBytes.subarray(2, superBytes.length)
         ];
         return new Uint8Array(totalBytes);
+    }
+    setTextContent(text) {
+        super.setTextContent(text);
+        const dict = this._proxy;
+        dict.generateApStreamAsync(this.pointsPageCS).then(() => dict.updateRenderAsync());
     }
     parseProps(parseInfo) {
         var _a;
@@ -23280,28 +23269,205 @@ class FreeTextAnnotation extends MarkupAnnotation {
             throw new Error("Not all required properties parsed");
         }
     }
+    calculateStreamMatrix(tbTopLeftPage, tbTopRightPage) {
+        const length = Vec2.substract(tbTopRightPage, tbTopLeftPage).getMagnitude();
+        const alignedTL = new Vec2();
+        const alignedTR = new Vec2(length, 0);
+        const matrix = Mat3.from4Vec2(alignedTL, alignedTR, tbTopLeftPage, tbTopRightPage);
+        return matrix;
+    }
+    calculateStreamBbox(pPoints, matrixStreamToPage) {
+        const { bl: pBL, tr: pTR, br: pBR, tl: pTL, l: pL, t: pT, r: pR, b: pB, cob: pCoBase, cok: pCoKnee, cop: pCoPointer } = pPoints;
+        const minMargin = this.minMargin;
+        const matrixPageToStream = Mat3.invert(matrixStreamToPage);
+        const sBL = Vec2.applyMat3(pBL, matrixPageToStream);
+        const sTR = Vec2.applyMat3(pTR, matrixPageToStream);
+        const sBR = Vec2.applyMat3(pBR, matrixPageToStream);
+        const sTL = Vec2.applyMat3(pTL, matrixPageToStream);
+        const sL = Vec2.applyMat3(pL, matrixPageToStream);
+        const sT = Vec2.applyMat3(pT, matrixPageToStream);
+        const sR = Vec2.applyMat3(pR, matrixPageToStream);
+        const sB = Vec2.applyMat3(pB, matrixPageToStream);
+        const sCoBase = pCoBase ? Vec2.applyMat3(pCoBase, matrixPageToStream) : null;
+        const sCoKnee = pCoKnee ? Vec2.applyMat3(pCoKnee, matrixPageToStream) : null;
+        const sCoPointer = pCoPointer ? Vec2.applyMat3(pCoPointer, matrixPageToStream) : null;
+        const { min: boxMinNoMargin, max: boxMaxNoMargin } = Vec2.minMax(sBL, sTR, sBR, sTL, sCoKnee, sCoPointer);
+        const boxMin = new Vec2(boxMinNoMargin.x - minMargin, boxMinNoMargin.y - minMargin);
+        const boxMax = new Vec2(boxMaxNoMargin.x + minMargin, boxMaxNoMargin.y + minMargin);
+        return {
+            bbox: [boxMin, boxMax],
+            points: {
+                bl: sBL,
+                tr: sTR,
+                br: sBR,
+                tl: sTL,
+                l: sL,
+                t: sT,
+                r: sR,
+                b: sB,
+                cob: sCoBase,
+                cok: sCoKnee,
+                cop: sCoPointer,
+            },
+        };
+    }
+    updateAnnotCoords(sPoints, matrixStreamToPage, bbox) {
+        const { bl: sBL, tr: sTR, cob: sCoBase, cok: sCoKnee, cop: sCoPointer } = sPoints;
+        const [boxMin, boxMax] = bbox;
+        const localBox = this.getLocalBB();
+        localBox.ll.set(boxMin.x, boxMin.y).applyMat3(matrixStreamToPage);
+        localBox.lr.set(boxMax.x, boxMin.y).applyMat3(matrixStreamToPage);
+        localBox.ur.set(boxMax.x, boxMax.y).applyMat3(matrixStreamToPage);
+        localBox.ul.set(boxMin.x, boxMax.y).applyMat3(matrixStreamToPage);
+        const { min: rectMin, max: rectMax } = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
+        this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
+        if (sCoPointer && sCoBase) {
+            if (sCoKnee) {
+                this.CL = [sCoPointer.x, sCoPointer.y, sCoKnee.x, sCoKnee.y, sCoBase.x, sCoBase.y];
+            }
+            else {
+                this.CL = [sCoPointer.x, sCoPointer.y, sCoBase.x, sCoBase.y];
+            }
+            this.IT = freeTextIntents.WITH_CALLOUT;
+        }
+        else {
+            this.CL = undefined;
+            this.IT = freeTextIntents.PLAIN_TEXT;
+        }
+        this.RD = [
+            sBL.x - boxMin.x,
+            sBL.y - boxMin.y,
+            boxMax.x - sTR.x,
+            boxMax.y - sTR.y,
+        ];
+    }
+    getColorString() {
+        return "1 G 1 0 0 rg";
+    }
+    getCalloutStreamPart(sPoints) {
+        let calloutStream = "";
+        if (sPoints.cop && sPoints.cob) {
+            calloutStream += `\n${sPoints.cob.x} ${sPoints.cob.y} m`;
+            if (sPoints.cok) {
+                calloutStream += `\n${sPoints.cok.x} ${sPoints.cok.x} l`;
+            }
+            calloutStream += `\n${sPoints.cop.x} ${sPoints.cop.y} l`;
+            calloutStream += "\nS";
+            const coEnds = sPoints.cok
+                ? [sPoints.cok, sPoints.cop]
+                : [sPoints.cob, sPoints.cop];
+            const [coStart, coEnd] = coEnds;
+            const coStartAligned = new Vec2(0, 0);
+            const coEndAligned = new Vec2(Vec2.substract(coEnd, coStart).getMagnitude());
+            const coMat = Mat3.from4Vec2(coStartAligned, coEndAligned, coStart, coEnd);
+            const calloutPointerStream = this.getLineEndingStreamPart(coEndAligned, this.LE, this.strokeWidth, "right");
+            calloutStream += `\nq ${coMat.toFloatShortArray().join(" ")} cm`;
+            calloutStream += calloutPointerStream;
+            calloutStream += "\nQ";
+        }
+        return calloutStream;
+    }
+    getTextStreamPartAsync(sPoints, font) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const textMaxWidth = sPoints.br.x - sPoints.bl.x - this.strokeWidth;
+            if (textMaxWidth <= 0) {
+                return "";
+            }
+            const textData = yield this.updateTextDataAsync({
+                maxWidth: textMaxWidth,
+                fontSize: 12,
+                textAlign: "center",
+                pivotPoint: "top-left",
+            });
+            if (!textData) {
+                return "";
+            }
+            let textStream = "\nq 0 g 0 G";
+            const fontSize = 9;
+            const codeMap = font.encoding.codeMap;
+            for (const line of textData.lines) {
+                if (!line.text) {
+                    continue;
+                }
+                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(sPoints.tl);
+                let lineHex = "";
+                for (const char of line.text) {
+                    const code = codeMap.get(char);
+                    if (code) {
+                        lineHex += code.toString(16).padStart(2, "0");
+                    }
+                }
+                textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
+                textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
+                textStream += `\n<${lineHex}> Tj`;
+                textStream += "\nET";
+            }
+            textStream += "\nQ";
+            return textStream;
+        });
+    }
+    generateApStreamAsync(pPoints) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        return __awaiter$k(this, void 0, void 0, function* () {
+            if (!pPoints) {
+                throw new Error("No key annotation point coordinates passed");
+            }
+            const matrix = this.calculateStreamMatrix(pPoints.tl, pPoints.tr);
+            const { bbox, points: sPoints } = this.calculateStreamBbox(pPoints, matrix);
+            this.updateAnnotCoords(sPoints, matrix, bbox);
+            const apStream = new XFormStream();
+            apStream.Filter = "/FlateDecode";
+            apStream.LastModified = DateString.fromDate(new Date());
+            apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
+            apStream.Matrix = matrix.toFloatShortArray();
+            apStream.Resources = new ResourceDict();
+            const opacity = this.CA || 1;
+            const strokeWidth = this.strokeWidth;
+            const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+            const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
+            const gs = new GraphicsStateDict();
+            gs.AIS = true;
+            gs.BM = "/Normal";
+            gs.CA = opacity;
+            gs.ca = opacity;
+            gs.LW = strokeWidth;
+            gs.D = [[strokeDash, strokeGap], 0];
+            gs.LC = lineCapStyles.SQUARE;
+            gs.LJ = lineJoinStyles.MITER;
+            apStream.Resources.setGraphicsState("/GS0", gs);
+            const fontFamily = "arial";
+            const font = (_j = this._fontMap) === null || _j === void 0 ? void 0 : _j.get(fontFamily);
+            if (!font || !((_k = font.encoding) === null || _k === void 0 ? void 0 : _k.codeMap)) {
+                throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
+            }
+            apStream.Resources.setFont(font.name, font);
+            const colorString = this.getColorString();
+            const calloutStreamPart = this.getCalloutStreamPart(sPoints);
+            const textBoxStreamPart = `\n${sPoints.bl.x} ${sPoints.bl.y} m`
+                + `\n${sPoints.br.x} ${sPoints.br.y} l`
+                + `\n${sPoints.tr.x} ${sPoints.tr.y} m`
+                + `\n${sPoints.tl.x} ${sPoints.tl.y} m`
+                + "\nb";
+            const textStreamPart = yield this.getTextStreamPartAsync(sPoints, font);
+            const streamTextData = `q ${colorString} /GS0 gs`
+                + calloutStreamPart
+                + textBoxStreamPart
+                + textStreamPart
+                + "\nQ";
+            apStream.setTextStreamData(streamTextData);
+            this.apStream = apStream;
+        });
+    }
     renderHandles() {
-        const stream = this.apStream;
-        const { matAA: mat } = calcPdfBBoxToRectMatrices(stream.BBox, this.Rect, stream.Matrix);
+        const points = this.pointsPageCS;
         return [
-            ...this.renderTextBoxCornerHandles(mat),
-            ...this.renderCalloutHandles(mat),
+            ...this.renderTextBoxCornerHandles(points),
+            ...this.renderCalloutHandles(points),
             this.renderRotationHandle()
         ];
     }
-    renderTextBoxCornerHandles(mat) {
-        const stroke = this.strokeWidth;
-        const halfStroke = stroke / 2;
-        const [apXMin, apYMin, apXMax, apYMax] = this.apStream.BBox;
-        const [mLeft, mBottom, mRight, mTop] = this.RD || [halfStroke, halfStroke, halfStroke, halfStroke];
-        const apBL = new Vec2(apXMin + mLeft, apYMin + mBottom);
-        const apTR = new Vec2(apXMax - mRight, apYMax - mTop);
-        const apBR = new Vec2(apTR.x, apBL.y);
-        const apTL = new Vec2(apBL.x, apTR.y);
-        const pBL = Vec2.applyMat3(apBL, mat);
-        const pTR = Vec2.applyMat3(apTR, mat);
-        const pBR = Vec2.applyMat3(apBR, mat);
-        const pTL = Vec2.applyMat3(apTL, mat);
+    renderTextBoxCornerHandles(points) {
+        const { bl: pBL, br: pBR, tr: pTR, tl: pTL } = points;
         const cornerMap = new Map();
         cornerMap.set("tb-bl", pBL);
         cornerMap.set("tb-br", pTR);
@@ -23319,29 +23485,10 @@ class FreeTextAnnotation extends MarkupAnnotation {
         });
         return handles;
     }
-    renderCalloutHandles(mat) {
-        const cl = this.CL;
-        if (!(cl === null || cl === void 0 ? void 0 : cl.length)) {
-            return [];
-        }
-        let apCoBase;
-        let apCoPointer;
-        let apCoKnee;
-        if (cl.length === 6) {
-            apCoBase = new Vec2(cl[4], cl[5]);
-            apCoKnee = new Vec2(cl[2], cl[3]);
-            apCoPointer = new Vec2(cl[0], cl[1]);
-        }
-        else if (cl.length === 4) {
-            apCoBase = new Vec2(cl[2], cl[3]);
-            apCoPointer = new Vec2(cl[0], cl[1]);
-        }
-        else {
-            throw new Error(`Invalid callout array length: ${cl.length}`);
-        }
+    renderCalloutHandles(points) {
+        const { cob: pCoBase, cok: pCoKnee, cop: pCoPointer } = points;
         const handles = [];
-        if (apCoKnee) {
-            const pCoKnee = Vec2.applyMat3(apCoKnee, mat);
+        if (pCoKnee) {
             const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
             kneeHandle.classList.add("annotation-handle", "scale");
             kneeHandle.setAttribute("data-handle-name", "co-knee");
@@ -23349,20 +23496,22 @@ class FreeTextAnnotation extends MarkupAnnotation {
             kneeHandle.setAttribute("cy", pCoKnee.y + "");
             handles.push(kneeHandle);
         }
-        const pCoBase = Vec2.applyMat3(apCoBase, mat);
-        const baseHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        baseHandle.classList.add("annotation-handle", "scale");
-        baseHandle.setAttribute("data-handle-name", "co-base");
-        baseHandle.setAttribute("cx", pCoBase.x + "");
-        baseHandle.setAttribute("cy", pCoBase.y + "");
-        handles.push(baseHandle);
-        const pCoPointer = Vec2.applyMat3(apCoPointer, mat);
-        const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        pointerHandle.classList.add("annotation-handle", "scale");
-        pointerHandle.setAttribute("data-handle-name", "co-pointer");
-        pointerHandle.setAttribute("cx", pCoPointer.x + "");
-        pointerHandle.setAttribute("cy", pCoPointer.y + "");
-        handles.push(pointerHandle);
+        if (pCoBase) {
+            const baseHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            baseHandle.classList.add("annotation-handle", "scale");
+            baseHandle.setAttribute("data-handle-name", "co-base");
+            baseHandle.setAttribute("cx", pCoBase.x + "");
+            baseHandle.setAttribute("cy", pCoBase.y + "");
+            handles.push(baseHandle);
+        }
+        if (pCoPointer) {
+            const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            pointerHandle.classList.add("annotation-handle", "scale");
+            pointerHandle.setAttribute("data-handle-name", "co-pointer");
+            pointerHandle.setAttribute("cx", pCoPointer.x + "");
+            pointerHandle.setAttribute("cy", pCoPointer.y + "");
+            handles.push(pointerHandle);
+        }
         return handles;
     }
 }
@@ -23376,7 +23525,7 @@ var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-class AnnotationParseFactory {
+class AnnotationParser {
     static ParseAnnotationFromInfo(info, fontMap) {
         const annotationType = info.parser.parseDictSubtype(info.bounds);
         let annot;
@@ -23675,7 +23824,7 @@ class DocumentService {
                     console.log(`Page with id '${pageId}' not found`);
                 }
             });
-            const updater = new DocumentDataUpdater(this._data, this._xrefs[0], this._referenceData, this._authResult);
+            const updater = new DataUpdater(this._data, this._xrefs[0], this._referenceData, this._authResult);
             const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
             return updatedBytes;
         });
@@ -23731,7 +23880,7 @@ class DocumentService {
         return __awaiter$i(this, void 0, void 0, function* () {
             let annotation;
             for (const dto of dtos) {
-                annotation = yield AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto, this._fontMap);
+                annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
                 this.appendAnnotationToPageAsync(dto.pageId, annotation);
             }
         });
@@ -23934,7 +24083,7 @@ class DocumentService {
                     setTimeout(() => {
                         const info = this.getObjectParseInfo(objectId.id);
                         info.rect = page.MediaBox;
-                        const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info, this._fontMap);
+                        const annot = AnnotationParser.ParseAnnotationFromInfo(info, this._fontMap);
                         resolve(annot);
                     }, 0);
                 });
@@ -27913,7 +28062,7 @@ class TsPdfViewer {
             if (!blob) {
                 return;
             }
-            TsPdfViewer.downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
+            downloadFile(blob, `file_${new Date().toISOString()}.pdf`);
         });
         this.onCloseFileButtonClick = () => {
             this.closePdfAsync();
@@ -28180,16 +28329,6 @@ class TsPdfViewer {
         this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
         this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
         document.addEventListener("selectionchange", this.onTextSelectionChange);
-    }
-    static downloadFile(blob, name) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("download", name);
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
     destroy() {
         var _a, _b, _c, _d;

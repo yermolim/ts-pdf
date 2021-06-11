@@ -4,7 +4,7 @@ import { Quadruple } from "../../../../common/types";
 import { runEmptyTimeout } from "../../../../common/dom";
 import { bezierConstant } from "../../../../drawing/utils";
 
-import { codes } from "../../../codes";
+import { codes } from "../../../char-codes";
 import { AnnotationType, lineEndingMinimalSize, lineEndingMultiplier, 
   LineEndingType, lineEndingTypes, valueTypes } from "../../../const";
 import { CryptInfo, TextData, TextDataOptions, TextLineData } from "../../../common-interfaces";
@@ -412,7 +412,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     return this._textData;
   }
   
-  protected getLineEndingStreamText(point: Vec2, type: LineEndingType, 
+  protected getLineEndingStreamPart(point: Vec2, type: LineEndingType, 
     strokeWidth: number, side: "left" | "right"): string {
     const size = Math.max(strokeWidth * lineEndingMultiplier, 
       lineEndingMinimalSize);

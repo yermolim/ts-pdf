@@ -60,7 +60,7 @@ export function bytesToInt32Array(bytes: Uint8Array, le = false): Int32Array {
   return result;
 }
 
-/**apply eXclusive OR operator with the number value to every byte in the array*/
+/**apply exclusive OR operator with the number value to every byte in the array*/
 export function xorBytes(bytes: Uint8Array, n: number): Uint8Array {
   const result = new Uint8Array(bytes.length);
   for (let i = 0; i < bytes.length; i++){

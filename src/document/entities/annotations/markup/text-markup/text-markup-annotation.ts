@@ -1,6 +1,6 @@
 import { Double, Octuple, Quadruple } from "../../../../../common/types";
 
-import { codes } from "../../../../codes";
+import { codes } from "../../../../char-codes";
 import { AnnotationType } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";

@@ -1,6 +1,6 @@
 import { Quadruple } from "../common/types";
 import { codes, keywordCodes, isRegularChar,
-  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./codes";
+  DELIMITER_CHARS, SPACE_CHARS, DIGIT_CHARS, isDigit } from "./char-codes";
 import { ObjectType, ValueType, valueTypes } from "./const";
 import { CryptInfo } from "./common-interfaces";
 

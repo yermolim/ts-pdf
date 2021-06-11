@@ -2,7 +2,7 @@ import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../const";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
-import { codes } from "../../codes";
+import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { IndexedColorSpaceArray } from "../appearance/indexed-color-space-array";

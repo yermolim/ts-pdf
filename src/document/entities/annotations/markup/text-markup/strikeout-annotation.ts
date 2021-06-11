@@ -156,21 +156,6 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
     apStream.LastModified = DateString.fromDate(new Date());
     apStream.BBox = [this.Rect[0], this.Rect[1], this.Rect[2], this.Rect[3]];
 
-    // set color
-    let colorString: string;
-    if (!this.C?.length) {
-      colorString = "0 G 0 g";
-    } else if (this.C.length < 3) {
-      const g = this.C[0];
-      colorString = `${g} G ${g} g`;
-    } else if (this.C.length === 3) {
-      const [r, g, b] = this.C;      
-      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-    } else {      
-      const [c, m, y, k] = this.C;      
-      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-    }
-
     // set stroke style options
     const opacity = this.CA || 1;
     const strokeWidth = this.strokeWidth;
@@ -185,6 +170,9 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
     gs.LC = lineCapStyles.SQUARE;
     gs.LJ = lineJoinStyles.MITER;
     gs.D = [[strokeDash, strokeGap], 0];
+
+    // get color
+    const colorString = this.getColorString();
     
     // push the graphics state onto the stack
     let streamTextData = `q ${colorString} /GS0 gs`;

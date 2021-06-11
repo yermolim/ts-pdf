@@ -1,4 +1,4 @@
-import { keywordCodes } from "./codes";
+import { keywordCodes } from "./char-codes";
 import { DataParser } from "./data-parser";
 
 import { ObjectId } from "./entities/core/object-id";

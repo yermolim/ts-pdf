@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { BBox } from "../../../drawing/utils";
 import { getRandomUuid } from "../../../common/uuid";
 
-import { codes } from "../../codes";
+import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
@@ -606,7 +606,24 @@ export abstract class AnnotationDict extends PdfDict {
 
   //#region protected render methods
 
-  //#region common methods used for rendering purposes
+  //#region common methods used for rendering purposes  
+  protected getColorString(): string {
+    let colorString: string;
+    if (!this.C?.length) {
+      colorString = "0 G 0 g";
+    } else if (this.C.length < 3) {
+      const g = this.C[0];
+      colorString = `${g} G ${g} g`;
+    } else if (this.C.length === 3) {
+      const [r, g, b] = this.C;      
+      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
+    } else {      
+      const [c, m, y, k] = this.C;      
+      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
+    }
+    return colorString;
+  }
+
   protected getCurrentRotation(): number {
     // TODO: try to implement getting rotation without using AP (if possible)
     const matrix = this.apStream?.matrix;

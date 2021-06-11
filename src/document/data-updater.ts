@@ -1,6 +1,7 @@
-import { AuthenticationResult, CryptInfo, IDataCryptor } from "./common-interfaces";
-import { ReferenceData, ReferenceDataChange, UsedReference } from "./reference-data";
+import { AuthenticationResult, CryptInfo, IDataCryptor, UsedReference } from "./common-interfaces";
 import { DataWriter } from "./data-writer";
+import { ReferenceData } from "./reference-data";
+import { ReferenceDataChange } from "./reference-data-change";
 
 import { ObjectId } from "./entities/core/object-id";
 import { PdfObject } from "./entities/core/pdf-object";
@@ -14,14 +15,14 @@ import { PageDict } from "./entities/structure/page-dict";
 import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
 
-export interface PageWithAnnotations {
+export interface PageUpdateInfo {
   page: PageDict;
   allAnnotationIds: ObjectId[];
   supportedAnnotations: AnnotationDict[];
 }
 
 /**the class that encapsulates the logic related to PDF document update */
-export class DocumentDataUpdater {
+export class DataUpdater {
   private readonly _lastXref: XRef;
   private readonly _refData: ReferenceData;
   private readonly _changeData: ReferenceDataChange;      
@@ -56,7 +57,7 @@ export class DocumentDataUpdater {
    * @param data array of objects with every page and its annotations
    * @returns updated PDF document byte array
    */
-  getDataWithUpdatedAnnotations(data: PageWithAnnotations[]): Uint8Array {  
+  getDataWithUpdatedAnnotations(data: PageUpdateInfo[]): Uint8Array {  
     for (const {page, supportedAnnotations: annotations, allAnnotationIds: refArray} of data) {
       if (!annotations?.length) {
         // no annotations, so no changes made

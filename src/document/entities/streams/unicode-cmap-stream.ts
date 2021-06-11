@@ -1,10 +1,11 @@
+import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
 import { StreamType, valueTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
+import { keywordCodes } from "../../char-codes";
+
 import { PdfStream } from "../core/pdf-stream";
-import { keywordCodes } from "../../codes";
 import { HexString } from "../strings/hex-string";
-import { hexStringToBytes, parseIntFromBytes } from "../../byte-functions";
 
 interface CmapCodeRange {
   length: number;

@@ -1,7 +1,7 @@
 import { dictTypes, valueTypes } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
-import { codes } from "../../codes";
-import { getCharCodesMapByCode, pdfCharCodesByName } from "../../text-encodings";
+import { codes } from "../../char-codes";
+import { getCharCodesMapByCode, pdfCharCodesByName } from "../../char-encodings";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
 import { PdfDict } from "../core/pdf-dict";

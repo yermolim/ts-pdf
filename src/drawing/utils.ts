@@ -105,3 +105,5 @@ export interface BBox {
   ur: Vec2; 
   ul: Vec2;
 }
+
+export type VecMinMax = readonly [min: Vec2, max: Vec2];

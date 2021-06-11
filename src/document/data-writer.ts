@@ -1,4 +1,4 @@
-import { codes, keywordCodes } from "./codes";
+import { codes, keywordCodes } from "./char-codes";
 import { CryptInfo, IEncodable } from "./common-interfaces";
 
 export class DataWriter {

@@ -5,7 +5,7 @@ import { AuthenticationResult } from "../document/common-interfaces";
 
 import { DataParser, ParseInfo } from "../document/data-parser";
 import { ReferenceData } from "../document/reference-data";
-import { DocumentDataUpdater, PageWithAnnotations } from "../document/document-data-updater";
+import { DataUpdater, PageUpdateInfo } from "../document/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
 
 import { ObjectId } from "../document/entities/core/object-id";
@@ -20,7 +20,7 @@ import { PageDict } from "../document/entities/structure/page-dict";
 import { PageTreeDict } from "../document/entities/structure/page-tree-dict";
 import { FontDict } from "../document/entities/appearance/font-dict";
 
-import { AnnotationParseFactory } from "../document/annotation-parser";
+import { AnnotationParser } from "../document/annotation-parser";
 import { AnnotationDict, AnnotationDto } from "../document/entities/annotations/annotation-dict";
 
 export { AnnotationDto };
@@ -227,7 +227,7 @@ export class DocumentService {
    */
   async getDataWithUpdatedAnnotationsAsync(): Promise<Uint8Array> {    
     const annotationMap = await this.getSupportedAnnotationMapAsync();
-    const updaterData: PageWithAnnotations[] = [];
+    const updaterData: PageUpdateInfo[] = [];
     annotationMap.forEach((pageAnnotations, pageId) => {
       const page = this._pageById.get(pageId);
       if (page) {
@@ -243,7 +243,7 @@ export class DocumentService {
       }
     });    
 
-    const updater = new DocumentDataUpdater(this._data, this._xrefs[0],
+    const updater = new DataUpdater(this._data, this._xrefs[0],
       this._referenceData, this._authResult);
     const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
     return updatedBytes;
@@ -313,7 +313,7 @@ export class DocumentService {
   async appendSerializedAnnotationsAsync(dtos: AnnotationDto[]) {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
-      annotation = await AnnotationParseFactory.ParseAnnotationFromDtoAsync(dto, this._fontMap);
+      annotation = await AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
       this.appendAnnotationToPageAsync(dto.pageId, annotation);
     }
   }
@@ -616,7 +616,7 @@ export class DocumentService {
           setTimeout(() => {          
             const info = this.getObjectParseInfo(objectId.id);  
             info.rect = page.MediaBox;
-            const annot = AnnotationParseFactory.ParseAnnotationFromInfo(info, this._fontMap);
+            const annot = AnnotationParser.ParseAnnotationFromInfo(info, this._fontMap);
             resolve(annot);
           }, 0);
         });

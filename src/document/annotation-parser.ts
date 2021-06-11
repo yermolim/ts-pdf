@@ -21,7 +21,8 @@ import { StrikeoutAnnotation } from "./entities/annotations/markup/text-markup/s
 import { SquigglyAnnotation } from "./entities/annotations/markup/text-markup/squiggly-annotation";
 import { FreeTextAnnotation } from "./entities/annotations/markup/free-text-annotation";
 
-export class AnnotationParseFactory {
+export class AnnotationParser {
+
   static ParseAnnotationFromInfo(info: ParseInfo, 
     fontMap: Map<string, FontDict>): AnnotationDict {
     const annotationType = info.parser.parseDictSubtype(info.bounds);

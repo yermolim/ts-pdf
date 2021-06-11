@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices, selectionStrokeWidth, 
   CssMixBlendMode } from "../../drawing/utils";
 
-import { codes } from "../codes";
+import { codes } from "../char-codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../const";
 
 import { DataParser } from "../data-parser";
@@ -82,7 +82,6 @@ export class AppearanceStreamRenderer {
 
     const clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     clipPath.id = `clip0_${objectName}`;
-    // clipPath.innerHTML = `<rect x="${rect[0]}" y="${rect[1]}" width="${rect[2] - rect[0]}" height="${rect[3] - rect[1]}" />`;
     clipPath.innerHTML = "<path d=\""
       + `M${clipBottomLeft.x},${clipBottomLeft.y} `
       + `L${clipBottomRight.x},${clipBottomRight.y} `

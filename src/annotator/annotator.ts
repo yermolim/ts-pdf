@@ -1,9 +1,14 @@
 import { TextSelectionInfo } from "../common/text-selection";
-import { PointerDownInfo } from "../common/types";
 
 import { DocumentService } from "../services/document-service";
 import { PageCoords, PageService, PagesRenderedEvent, pagesRenderedEvent } 
   from "../services/page-service";
+  
+interface PointerDownInfo {
+  timestamp: number;
+  clientX: number;
+  clientY: number;
+}
 
 //#region custom events
 export const annotatorTypes = ["geom", "pen", "stamp", "text"] as const;

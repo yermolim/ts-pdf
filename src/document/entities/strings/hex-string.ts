@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
-import { hexStringToBytes } from "../../byte-functions";
-import { keywordCodes } from "../../codes";
+import { hexStringToBytes } from "../../../common/byte";
+import { keywordCodes } from "../../char-codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 

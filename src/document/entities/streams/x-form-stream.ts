@@ -2,7 +2,7 @@ import { Mat3, Vec2 } from "mathador";
 import { Hextuple, Quadruple } from "../../../common/types";
 import { BBox } from "../../../drawing/utils";
 
-import { codes } from "../../codes";
+import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
 import { streamTypes, valueTypes } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";

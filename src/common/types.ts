@@ -1,9 +1,3 @@
-export interface PointerDownInfo {
-  timestamp: number;
-  clientX: number;
-  clientY: number;
-}
-
 export class LinkedListNode<T> {
   data: T;
   next: LinkedListNode<T>;

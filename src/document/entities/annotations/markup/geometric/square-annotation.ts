@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
-import { codes } from "../../../../codes";
+import { codes } from "../../../../char-codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
@@ -193,21 +193,6 @@ export class SquareAnnotation extends GeometricAnnotation {
       : [1 ,0, 0, 1, 0, 0];
     apStream.Matrix = streamMatrix;
 
-    // set color
-    let colorString: string;
-    if (!this.C?.length) {
-      colorString = "0 G 0 g";
-    } else if (this.C.length < 3) {
-      const g = this.C[0];
-      colorString = `${g} G ${g} g`;
-    } else if (this.C.length === 3) {
-      const [r, g, b] = this.C;      
-      colorString = `${r} ${g} ${b} RG ${r} ${g} ${b} rg`;
-    } else {      
-      const [c, m, y, k] = this.C;      
-      colorString = `${c} ${m} ${y} ${k} K ${c} ${m} ${y} ${k} k`;
-    }
-
     // set stroke style options
     const opacity = this.CA || 1;
     const strokeWidth = this.strokeWidth;
@@ -256,6 +241,9 @@ export class SquareAnnotation extends GeometricAnnotation {
     const trBoxLR = Vec2.applyMat3(boxLR, bBoxToRectMat).add(marginLR);
     const trBoxUR = Vec2.applyMat3(boxUR, bBoxToRectMat).add(marginUR);
     const trBoxUL = Vec2.applyMat3(boxUL, bBoxToRectMat).add(marginUL);  
+
+    // get color
+    const colorString = this.getColorString();
 
     // push the graphics state onto the stack
     let streamTextData = `q ${colorString} /GS0 gs`; 

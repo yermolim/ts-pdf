@@ -92,7 +92,6 @@ export declare class TsPdfViewer {
 	private _pdfDocument;
 	private _timers;
 	constructor(options: TsPdfViewerOptions);
-	private static downloadFile;
 	destroy(): void;
 	openPdfAsync(src: string | Blob | Uint8Array): Promise<void>;
 	closePdfAsync(): Promise<void>;

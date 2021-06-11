@@ -36,3 +36,17 @@ export async function promisify<T>(callback: () => T): Promise<T> {
 export async function runEmptyTimeout() {
   await promisify(() => undefined);
 }
+
+/**create a temp download link and click on it */
+export function downloadFile(blob: Blob, name?: string) {
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.setAttribute("download", name);
+  link.href = url;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}

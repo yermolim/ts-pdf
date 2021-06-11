@@ -1,5 +1,5 @@
-import { int32ToBytes } from "../byte-functions";
-import { md5, rc4, wordArrayToBytes } from "../crypto";
+import { int32ToBytes } from "../../common/byte";
+import { md5, rc4, wordArrayToBytes } from "../../common/crypto";
 import { IDataCryptor, Reference } from "../common-interfaces";
 
 export class RC4DataCryptor implements IDataCryptor {
