@@ -13525,13 +13525,18 @@ class AppearanceStreamRenderer {
         return __awaiter$t(this, void 0, void 0, function* () {
             const parser = new DataParser(stream.decodedStreamData);
             const svgElements = [];
+            let a = 0;
+            let b = 0;
             const lastCoord = new Vec2();
             let lastOperator;
             let d = "";
             let i = 0;
             while (i !== -1) {
+                const ap = performance.now();
                 const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
                 i = parser.skipEmpty(nextIndex + 1);
+                a += performance.now() - ap;
+                const bp = performance.now();
                 switch (operator) {
                     case "m":
                         const move = new Vec2(+parameters[0], +parameters[1]);
@@ -13665,7 +13670,10 @@ class AppearanceStreamRenderer {
                         }
                 }
                 lastOperator = operator;
+                b += performance.now() - bp;
             }
+            console.log(a);
+            console.log(b);
             return svgElements;
         });
     }
@@ -14833,16 +14841,16 @@ class AnnotationDict extends PdfDict {
                 yield this._transformationPromise;
             }
             this._transformationPromise = new Promise((resolve) => __awaiter$s(this, void 0, void 0, function* () {
-                this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 this._svgContentCopy.remove();
+                this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
                     yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
+                    yield this.updateRenderAsync();
                 }
                 this._tempTransformationMatrix.reset();
                 resolve();
             }));
             yield this._transformationPromise;
-            yield this.updateRenderAsync();
         });
     }
     renderAppearance() {

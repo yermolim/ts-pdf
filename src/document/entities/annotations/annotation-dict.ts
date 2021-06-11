@@ -775,12 +775,13 @@ export abstract class AnnotationDict extends PdfDict {
 
     this._transformationPromise = new Promise<void>(async resolve => {
       // reset and remove the copy from DOM
-      this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
       this._svgContentCopy.remove();
+      this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
 
       if (this._moved) {
         // transform the annotation
         await this.applyCommonTransformAsync(this._tempTransformationMatrix);
+        await this.updateRenderAsync();
       }
 
       // reset the temp matrix
@@ -790,7 +791,6 @@ export abstract class AnnotationDict extends PdfDict {
     });
 
     await this._transformationPromise;
-    await this.updateRenderAsync();
   }
   //#endregion
 
@@ -959,8 +959,7 @@ export abstract class AnnotationDict extends PdfDict {
       this._renderedBox = null;
       this._svgContentCopy = null;
       return null;
-    }    
-
+    }
     // convert the appearance render result to a structured html div
     const content = this.buildRenderedContentStructure(contentRenderResult);
     this._renderedContent = content;
