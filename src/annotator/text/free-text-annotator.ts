@@ -162,7 +162,7 @@ export class FreeTextAnnotator extends TextAnnotator {
     target.releasePointerCapture(e.pointerId); 
     
     if (this._rect) {
-      this.emitDataChanged(2, true, true);
+      this.saveAnnotationAsync();
     }
   };
 
@@ -227,29 +227,18 @@ export class FreeTextAnnotator extends TextAnnotator {
     const bm = margin;
 
     const [xmin, ymin, xmax, ymax] = this._rect;
-
-    if (xmax - xmin - rm - lm <= 0
-      || ymax - ymin - tm - bm <= 0) {
-      // rect has zero or negative size
-      return null;
-    }
-
-    const tbXMin = xmin + lm;
-    const tbYMin = ymin + bm;
-    const tbXMax = xmax - rm;
-    const tbYMax = ymax - tm;
-    const horCenterX = (tbXMin + tbXMax) / 2;
-    const vertCenterY = (tbYMin + tbYMax) / 2;
+    const horCenterX = (xmin + xmax) / 2;
+    const vertCenterY = (ymin + ymax) / 2;
 
     const points: FreeTextAnnotPointsDto = {
-      bl: [tbXMin, tbYMin], 
-      tr: [tbXMax, tbYMax],
-      br: [tbXMax, tbYMin],
-      tl: [tbXMin, tbYMax],    
-      l: [tbXMin, vertCenterY],
-      t: [horCenterX, tbYMax], 
-      r: [tbXMax, vertCenterY],
-      b: [horCenterX, tbYMin],
+      bl: [xmin, ymin], 
+      tr: [xmax, ymax],
+      br: [xmax, ymin],
+      tl: [xmin, ymax],    
+      l: [xmin, vertCenterY],
+      t: [horCenterX, ymax], 
+      r: [xmax, vertCenterY],
+      b: [horCenterX, ymin],
     };
 
     const nowString = new Date().toISOString();
