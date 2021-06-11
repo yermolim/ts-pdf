@@ -1193,6 +1193,9 @@ const styles = `
     border: 2px solid var(--tspdf-color-fg-secondary-final);
   }
 
+  .annotation-temp-copy {
+    opacity: 0.2;
+  }  
   .annotation-controls {
     cursor: pointer;
   }     
@@ -1206,7 +1209,10 @@ const styles = `
   .mode-annotation .annotation-controls.selected {
     cursor: grab;
   } 
-  .mode-annotation .annotation-controls.selected .annotation-rect,
+  .mode-annotation .annotation-controls.selected .annotation-rect {
+    stroke: rgba(80, 80, 80, 0.5);
+    stroke-dasharray: 3 3;
+  }
   .mode-annotation .annotation-controls.selected .annotation-bbox {
     stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
@@ -1215,16 +1221,22 @@ const styles = `
     stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
-  .mode-annotation .annotation-controls.selected .annotation-handle,
   .mode-annotation .annotation-controls.selected .annotation-handle {
     r: 8;
     cursor: pointer;
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.helper {
+    r: 4;
+    fill: rgba(200, 200, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.scale {
     fill: rgba(0, 0, 0, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
     fill: rgba(50, 100, 50, 0.75);
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.translation {
+    fill: rgba(100, 100, 200, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
@@ -1570,6 +1582,38 @@ function downloadFile(blob, name) {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+class TempSvgPath {
+    constructor() {
+        this._path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    }
+    get path() {
+        return this._path;
+    }
+    set(fill, stroke, w, points, close = false) {
+        let d = "";
+        if ((points === null || points === void 0 ? void 0 : points.length) > 1) {
+            d += `M${points[0].x},${points[0].y} `;
+            for (let i = 1; i < points.length; i++) {
+                d += `L${points[i].x},${points[i].y} `;
+            }
+            if (close) {
+                d += "Z";
+            }
+        }
+        this._path.classList.add("annotation-temp-copy");
+        this._path.setAttribute("d", d);
+        this._path.style.fill = fill;
+        this._path.style.stroke = stroke;
+        this._path.style.strokeWidth = w + "";
+    }
+    insertAfter(element) {
+        element.after(this._path);
+    }
+    remove() {
+        this._path.setAttribute("d", "");
+        this._path.remove();
+    }
 }
 
 function getNextNode(node) {
@@ -14154,13 +14198,16 @@ class AnnotationDict extends PdfDict {
             if (!this.$translationEnabled || !e.isPrimary) {
                 return;
             }
-            document.addEventListener("pointerup", this.onTranslationPointerUp);
-            document.addEventListener("pointerout", this.onTranslationPointerUp);
+            const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onTranslationPointerUp);
+            target.addEventListener("pointerout", this.onTranslationPointerUp);
+            this._moved = false;
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._renderedControls.after(this._svgContentCopy);
                 this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
-                document.addEventListener("pointermove", this.onTranslationPointerMove);
+                target.addEventListener("pointermove", this.onTranslationPointerMove);
             }, 200);
         };
         this.onTranslationPointerMove = (e) => {
@@ -14171,27 +14218,32 @@ class AnnotationDict extends PdfDict {
             this._tempTransformationMatrix.reset()
                 .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+            this._moved = true;
         };
         this.onTranslationPointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
-            document.removeEventListener("pointermove", this.onTranslationPointerMove);
-            document.removeEventListener("pointerup", this.onTranslationPointerUp);
-            document.removeEventListener("pointerout", this.onTranslationPointerUp);
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onTranslationPointerMove);
+            target.removeEventListener("pointerup", this.onTranslationPointerUp);
+            target.removeEventListener("pointerout", this.onTranslationPointerUp);
+            target.releasePointerCapture(e.pointerId);
             yield this.applyTempTransformAsync();
-            yield this.updateRenderAsync();
         });
         this.onRotationHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
             }
-            document.addEventListener("pointerup", this.onRotationHandlePointerUp);
-            document.addEventListener("pointerout", this.onRotationHandlePointerUp);
+            const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onRotationHandlePointerUp);
+            target.addEventListener("pointerout", this.onRotationHandlePointerUp);
+            this._moved = false;
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._renderedControls.after(this._svgContentCopy);
-                document.addEventListener("pointermove", this.onRotationHandlePointerMove);
+                target.addEventListener("pointermove", this.onRotationHandlePointerMove);
             }, 200);
             e.stopPropagation();
         };
@@ -14210,24 +14262,27 @@ class AnnotationDict extends PdfDict {
                 .applyRotation(angle)
                 .applyTranslation(centerX, centerY);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+            this._moved = true;
         };
         this.onRotationHandlePointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
-            document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
-            document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
-            document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onRotationHandlePointerMove);
+            target.removeEventListener("pointerup", this.onRotationHandlePointerUp);
+            target.removeEventListener("pointerout", this.onRotationHandlePointerUp);
+            target.releasePointerCapture(e.pointerId);
             yield this.applyTempTransformAsync();
-            yield this.updateRenderAsync();
         });
         this.onScaleHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
             }
-            document.addEventListener("pointerup", this.onScaleHandlePointerUp);
-            document.addEventListener("pointerout", this.onScaleHandlePointerUp);
             const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onScaleHandlePointerUp);
+            target.addEventListener("pointerout", this.onScaleHandlePointerUp);
             const { ll, lr, ur, ul } = this.getLocalBB();
             const handleName = target.dataset["handleName"];
             switch (handleName) {
@@ -14256,10 +14311,11 @@ class AnnotationDict extends PdfDict {
             }
             this._tempX = this._tempVecX.getMagnitude();
             this._tempY = this._tempVecY.getMagnitude();
+            this._moved = false;
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
                 this._renderedControls.after(this._svgContentCopy);
-                document.addEventListener("pointermove", this.onScaleHandlePointerMove);
+                target.addEventListener("pointermove", this.onScaleHandlePointerMove);
             }, 200);
             e.stopPropagation();
         };
@@ -14289,16 +14345,18 @@ class AnnotationDict extends PdfDict {
             const translation = this._tempStartPoint.clone().substract(this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));
             this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+            this._moved = true;
         };
         this.onScaleHandlePointerUp = (e) => __awaiter$s(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
-            document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
-            document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
-            document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onScaleHandlePointerMove);
+            target.removeEventListener("pointerup", this.onScaleHandlePointerUp);
+            target.removeEventListener("pointerout", this.onScaleHandlePointerUp);
+            target.releasePointerCapture(e.pointerId);
             yield this.applyTempTransformAsync();
-            yield this.updateRenderAsync();
         });
         this.Subtype = subType;
     }
@@ -14777,11 +14835,14 @@ class AnnotationDict extends PdfDict {
             this._transformationPromise = new Promise((resolve) => __awaiter$s(this, void 0, void 0, function* () {
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 this._svgContentCopy.remove();
-                yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
+                if (this._moved) {
+                    yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
+                }
                 this._tempTransformationMatrix.reset();
                 resolve();
             }));
             yield this._transformationPromise;
+            yield this.updateRenderAsync();
         });
     }
     renderAppearance() {
@@ -14842,7 +14903,7 @@ class AnnotationDict extends PdfDict {
         contentRenderResult.elements.forEach(x => {
             copy.append(x.element.cloneNode(true));
         });
-        copy.setAttribute("opacity", "0.2");
+        copy.classList.add("annotation-temp-copy");
         return copy;
     }
     renderScaleHandles() {
@@ -15209,6 +15270,7 @@ class MarkupAnnotation extends AnnotationDict {
                     relativeRect: textRelativeRect,
                     lines: lineData,
                 };
+                pTemp.remove();
                 this._textData = textData;
             }
             else {
@@ -21866,14 +21928,16 @@ class LineAnnotation extends GeometricAnnotation {
         this.Cap = false;
         this.CP = captionPositions.INLINE;
         this.CO = [0, 0];
+        this._svgTemp = new TempSvgPath();
         this.onLineEndHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
             }
-            document.addEventListener("pointerup", this.onLineEndHandlePointerUp);
-            document.addEventListener("pointerout", this.onLineEndHandlePointerUp);
             const target = e.target;
-            const handleName = target.dataset["handleName"];
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onLineEndHandlePointerUp);
+            target.addEventListener("pointerout", this.onLineEndHandlePointerUp);
+            const handleName = target.dataset.handleName;
             switch (handleName) {
                 case "start":
                     this._scaleHandleActive = "start";
@@ -21884,10 +21948,11 @@ class LineAnnotation extends GeometricAnnotation {
                 default:
                     throw new Error(`Invalid handle name: ${handleName}`);
             }
+            this._moved = false;
             this._transformationTimer = setTimeout(() => {
                 this._transformationTimer = null;
-                this._renderedControls.after(this._svgContentCopy);
-                document.addEventListener("pointermove", this.onLineEndHandlePointerMove);
+                this._svgTemp.insertAfter(this._renderedControls);
+                target.addEventListener("pointermove", this.onLineEndHandlePointerMove);
             }, 200);
             e.stopPropagation();
         };
@@ -21908,17 +21973,20 @@ class LineAnnotation extends GeometricAnnotation {
                 endTemp = this.convertClientCoordsToPage(e.clientX, e.clientY);
             }
             this._tempTransformationMatrix = Mat3.from4Vec2(start, end, startTemp, endTemp);
-            this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+            this._svgTemp.set("none", "blue", this.strokeWidth, [startTemp, endTemp]);
+            this._moved = true;
         };
         this.onLineEndHandlePointerUp = (e) => __awaiter$l(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
-            document.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
-            document.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
-            document.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
+            target.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
+            target.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this._svgTemp.remove();
             yield this.applyTempTransformAsync();
-            yield this.updateRenderAsync();
         });
     }
     get offsetY() {
@@ -22072,8 +22140,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
     setTextContent(text) {
         super.setTextContent(text);
-        const dict = this._proxy;
-        dict.generateApStreamAsync().then(() => dict.updateRenderAsync());
+        this.updateStream();
     }
     parseProps(parseInfo) {
         var _a;
@@ -22197,6 +22264,13 @@ class LineAnnotation extends GeometricAnnotation {
             dict.L = [start.x, start.y, end.x, end.y];
             yield dict.generateApStreamAsync();
             dict.M = DateString.fromDate(new Date());
+        });
+    }
+    updateStream() {
+        return __awaiter$l(this, void 0, void 0, function* () {
+            const dict = this._proxy || this;
+            yield dict.generateApStreamAsync();
+            yield dict.updateRenderAsync();
         });
     }
     calculateStreamBboxAsync() {
@@ -23056,6 +23130,181 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.Q = justificationTypes.LEFT;
         this.IT = freeTextIntents.PLAIN_TEXT;
         this.LE = lineEndingTypes.NONE;
+        this._svgTemp = new TempSvgPath();
+        this.onTextBoxCornerHandlePointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onTextBoxCornerHandlePointerUp);
+            target.addEventListener("pointerout", this.onTextBoxCornerHandlePointerUp);
+            this._pointsTemp = this.pointsPageCS;
+            this._moved = false;
+            this._transformationTimer = setTimeout(() => {
+                this._transformationTimer = null;
+                this._svgTemp.insertAfter(this._renderedControls);
+                target.addEventListener("pointermove", this.onTextBoxCornerHandlePointerMove);
+            }, 200);
+            e.stopPropagation();
+        };
+        this.onTextBoxCornerHandlePointerMove = (e) => {
+            var _a;
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            const handleName = target.dataset.handleName;
+            const points = this._pointsTemp;
+            const p = this.convertClientCoordsToPage(e.clientX, e.clientY);
+            const horLength = Vec2.substract(points.br, points.bl).getMagnitude();
+            const vertLength = Vec2.substract(points.tl, points.bl).getMagnitude();
+            const matToAligned = Mat3.from4Vec2(points.bl, points.br, new Vec2(), new Vec2(horLength, 0));
+            let oppositeP;
+            switch (handleName) {
+                case "tb-bl":
+                    oppositeP = points.tr;
+                    break;
+                case "tb-br":
+                    oppositeP = points.tl;
+                    break;
+                case "tb-tr":
+                    oppositeP = points.bl;
+                    break;
+                case "tb-tl":
+                    oppositeP = points.br;
+                    break;
+                default:
+                    return;
+            }
+            const pAligned = Vec2.applyMat3(p, matToAligned);
+            const oppositePAligned = Vec2.applyMat3(oppositeP, matToAligned);
+            const transformedHorLength = Math.abs(pAligned.x - oppositePAligned.x);
+            const transformedVertLength = Math.abs(pAligned.y - oppositePAligned.y);
+            const scaleX = transformedHorLength / horLength;
+            const scaleY = transformedVertLength / vertLength;
+            const { r: rotation } = matToAligned.getTRS();
+            const mat = new Mat3()
+                .applyTranslation(-oppositeP.x, -oppositeP.y)
+                .applyRotation(rotation)
+                .applyScaling(scaleX, scaleY)
+                .applyRotation(-rotation)
+                .applyTranslation(oppositeP.x, oppositeP.y);
+            points.bl.applyMat3(mat);
+            points.br.applyMat3(mat);
+            points.tr.applyMat3(mat);
+            points.tl.applyMat3(mat);
+            points.l.applyMat3(mat);
+            points.t.applyMat3(mat);
+            points.r.applyMat3(mat);
+            points.b.applyMat3(mat);
+            (_a = points.cob) === null || _a === void 0 ? void 0 : _a.applyMat3(mat);
+            this._svgTemp.set("lightblue", "blue", this.strokeWidth, [points.bl, points.br, points.tr, points.tl], true);
+            this._moved = true;
+        };
+        this.onTextBoxCornerHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onTextBoxCornerHandlePointerMove);
+            target.removeEventListener("pointerup", this.onTextBoxCornerHandlePointerUp);
+            target.removeEventListener("pointerout", this.onTextBoxCornerHandlePointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this._svgTemp.remove();
+            if (this._moved) {
+                this.updateStream(this._pointsTemp);
+            }
+        });
+        this.onSideHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            const handleName = target.dataset.handleName;
+            const points = this.pointsPageCS;
+            switch (handleName) {
+                case "co-pivot-l":
+                    if (Vec2.equals(points.cob, points.l)) {
+                        return;
+                    }
+                    points.cob.setFromVec2(points.l);
+                    break;
+                case "co-pivot-t":
+                    if (Vec2.equals(points.cob, points.t)) {
+                        return;
+                    }
+                    points.cob.setFromVec2(points.t);
+                    break;
+                case "co-pivot-r":
+                    if (Vec2.equals(points.cob, points.r)) {
+                        return;
+                    }
+                    points.cob.setFromVec2(points.r);
+                    break;
+                case "co-pivot-b":
+                    if (Vec2.equals(points.cob, points.b)) {
+                        return;
+                    }
+                    points.cob.setFromVec2(points.b);
+                    break;
+                default:
+                    return;
+            }
+            this.updateStream(points);
+        });
+        this.onCalloutHandlePointerDown = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointerup", this.onCalloutHandlePointerUp);
+            target.addEventListener("pointerout", this.onCalloutHandlePointerUp);
+            this._pointsTemp = this.pointsPageCS;
+            this._moved = false;
+            this._transformationTimer = setTimeout(() => {
+                this._transformationTimer = null;
+                this._svgTemp.insertAfter(this._renderedControls);
+                target.addEventListener("pointermove", this.onCalloutHandlePointerMove);
+            }, 200);
+            e.stopPropagation();
+        };
+        this.onCalloutHandlePointerMove = (e) => {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            const handleName = target.dataset.handleName;
+            switch (handleName) {
+                case "co-knee":
+                    this._pointsTemp.cok.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
+                    break;
+                case "co-pointer":
+                    this._pointsTemp.cop.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
+                    break;
+                default:
+                    return;
+            }
+            this._svgTemp.set("none", "blue", this.strokeWidth, this._pointsTemp.cok
+                ? [this._pointsTemp.cob, this._pointsTemp.cok, this._pointsTemp.cop]
+                : [this._pointsTemp.cob, this._pointsTemp.cop]);
+            this._moved = true;
+        };
+        this.onCalloutHandlePointerUp = (e) => __awaiter$k(this, void 0, void 0, function* () {
+            if (!e.isPrimary) {
+                return;
+            }
+            const target = e.target;
+            target.removeEventListener("pointermove", this.onCalloutHandlePointerMove);
+            target.removeEventListener("pointerup", this.onCalloutHandlePointerUp);
+            target.removeEventListener("pointerout", this.onCalloutHandlePointerUp);
+            target.releasePointerCapture(e.pointerId);
+            this._svgTemp.remove();
+            if (this._moved) {
+                this.updateStream(this._pointsTemp);
+            }
+        });
     }
     get pointsStreamCS() {
         const stroke = this.strokeWidth;
@@ -23179,8 +23428,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
     setTextContent(text) {
         super.setTextContent(text);
-        const dict = this._proxy;
-        dict.generateApStreamAsync(this.pointsPageCS).then(() => dict.updateRenderAsync());
+        this.updateStream();
     }
     parseProps(parseInfo) {
         var _a;
@@ -23268,6 +23516,9 @@ class FreeTextAnnotation extends MarkupAnnotation {
         if (!this.DA) {
             throw new Error("Not all required properties parsed");
         }
+        if (!this.C || (this.C[0] === 1 && this.C[1] === 1 && this.C[2] === 1)) {
+            this.C = [1, 0, 0];
+        }
     }
     calculateStreamMatrix(tbTopLeftPage, tbTopRightPage) {
         const length = Vec2.substract(tbTopRightPage, tbTopLeftPage).getMagnitude();
@@ -23280,18 +23531,19 @@ class FreeTextAnnotation extends MarkupAnnotation {
         const { bl: pBL, tr: pTR, br: pBR, tl: pTL, l: pL, t: pT, r: pR, b: pB, cob: pCoBase, cok: pCoKnee, cop: pCoPointer } = pPoints;
         const minMargin = this.minMargin;
         const matrixPageToStream = Mat3.invert(matrixStreamToPage);
-        const sBL = Vec2.applyMat3(pBL, matrixPageToStream);
-        const sTR = Vec2.applyMat3(pTR, matrixPageToStream);
-        const sBR = Vec2.applyMat3(pBR, matrixPageToStream);
-        const sTL = Vec2.applyMat3(pTL, matrixPageToStream);
-        const sL = Vec2.applyMat3(pL, matrixPageToStream);
-        const sT = Vec2.applyMat3(pT, matrixPageToStream);
-        const sR = Vec2.applyMat3(pR, matrixPageToStream);
-        const sB = Vec2.applyMat3(pB, matrixPageToStream);
-        const sCoBase = pCoBase ? Vec2.applyMat3(pCoBase, matrixPageToStream) : null;
-        const sCoKnee = pCoKnee ? Vec2.applyMat3(pCoKnee, matrixPageToStream) : null;
-        const sCoPointer = pCoPointer ? Vec2.applyMat3(pCoPointer, matrixPageToStream) : null;
-        const { min: boxMinNoMargin, max: boxMaxNoMargin } = Vec2.minMax(sBL, sTR, sBR, sTL, sCoKnee, sCoPointer);
+        const sBL = Vec2.applyMat3(pBL, matrixPageToStream).truncate();
+        const sTR = Vec2.applyMat3(pTR, matrixPageToStream).truncate();
+        const sBR = Vec2.applyMat3(pBR, matrixPageToStream).truncate();
+        const sTL = Vec2.applyMat3(pTL, matrixPageToStream).truncate();
+        const sL = Vec2.applyMat3(pL, matrixPageToStream).truncate();
+        const sT = Vec2.applyMat3(pT, matrixPageToStream).truncate();
+        const sR = Vec2.applyMat3(pR, matrixPageToStream).truncate();
+        const sB = Vec2.applyMat3(pB, matrixPageToStream).truncate();
+        const sCoBase = pCoBase ? Vec2.applyMat3(pCoBase, matrixPageToStream).truncate() : null;
+        const sCoKnee = pCoKnee ? Vec2.applyMat3(pCoKnee, matrixPageToStream).truncate() : null;
+        const sCoPointer = pCoPointer ? Vec2.applyMat3(pCoPointer, matrixPageToStream).truncate() : null;
+        const actualPoints = [sBL, sTR, sBR, sTL, sCoKnee, sCoPointer].filter(x => x);
+        const { min: boxMinNoMargin, max: boxMaxNoMargin } = Vec2.minMax(...actualPoints);
         const boxMin = new Vec2(boxMinNoMargin.x - minMargin, boxMinNoMargin.y - minMargin);
         const boxMax = new Vec2(boxMaxNoMargin.x + minMargin, boxMaxNoMargin.y + minMargin);
         return {
@@ -23315,10 +23567,10 @@ class FreeTextAnnotation extends MarkupAnnotation {
         const { bl: sBL, tr: sTR, cob: sCoBase, cok: sCoKnee, cop: sCoPointer } = sPoints;
         const [boxMin, boxMax] = bbox;
         const localBox = this.getLocalBB();
-        localBox.ll.set(boxMin.x, boxMin.y).applyMat3(matrixStreamToPage);
-        localBox.lr.set(boxMax.x, boxMin.y).applyMat3(matrixStreamToPage);
-        localBox.ur.set(boxMax.x, boxMax.y).applyMat3(matrixStreamToPage);
-        localBox.ul.set(boxMin.x, boxMax.y).applyMat3(matrixStreamToPage);
+        localBox.ll.set(boxMin.x, boxMin.y).applyMat3(matrixStreamToPage).truncate();
+        localBox.lr.set(boxMax.x, boxMin.y).applyMat3(matrixStreamToPage).truncate();
+        localBox.ur.set(boxMax.x, boxMax.y).applyMat3(matrixStreamToPage).truncate();
+        localBox.ul.set(boxMin.x, boxMax.y).applyMat3(matrixStreamToPage).truncate();
         const { min: rectMin, max: rectMax } = Vec2.minMax(localBox.ll, localBox.lr, localBox.ur, localBox.ul);
         this.Rect = [rectMin.x, rectMin.y, rectMax.x, rectMax.y];
         if (sCoPointer && sCoBase) {
@@ -23342,14 +23594,15 @@ class FreeTextAnnotation extends MarkupAnnotation {
         ];
     }
     getColorString() {
-        return "1 G 1 0 0 rg";
+        const [r, g, b] = this.getColorRect();
+        return `${r} ${g} ${b} RG 1 g`;
     }
     getCalloutStreamPart(sPoints) {
         let calloutStream = "";
         if (sPoints.cop && sPoints.cob) {
             calloutStream += `\n${sPoints.cob.x} ${sPoints.cob.y} m`;
             if (sPoints.cok) {
-                calloutStream += `\n${sPoints.cok.x} ${sPoints.cok.x} l`;
+                calloutStream += `\n${sPoints.cok.x} ${sPoints.cok.y} l`;
             }
             calloutStream += `\n${sPoints.cop.x} ${sPoints.cop.y} l`;
             calloutStream += "\nS";
@@ -23361,7 +23614,15 @@ class FreeTextAnnotation extends MarkupAnnotation {
             const coEndAligned = new Vec2(Vec2.substract(coEnd, coStart).getMagnitude());
             const coMat = Mat3.from4Vec2(coStartAligned, coEndAligned, coStart, coEnd);
             const calloutPointerStream = this.getLineEndingStreamPart(coEndAligned, this.LE, this.strokeWidth, "right");
-            calloutStream += `\nq ${coMat.toFloatShortArray().join(" ")} cm`;
+            const coMatShort = coMat.toFloatShortArray();
+            calloutStream += "\nq "
+                + `${coMatShort[0].toFixed(5)} `
+                + `${coMatShort[1].toFixed(5)} `
+                + `${coMatShort[2].toFixed(5)} `
+                + `${coMatShort[3].toFixed(5)} `
+                + `${coMatShort[4].toFixed(5)} `
+                + `${coMatShort[5].toFixed(5)} `
+                + "cm";
             calloutStream += calloutPointerStream;
             calloutStream += "\nQ";
         }
@@ -23369,27 +23630,31 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
     getTextStreamPartAsync(sPoints, font) {
         return __awaiter$k(this, void 0, void 0, function* () {
-            const textMaxWidth = sPoints.br.x - sPoints.bl.x - this.strokeWidth;
+            const w = this.strokeWidth;
+            const textMaxWidth = sPoints.br.x - sPoints.bl.x - 2 * w;
             if (textMaxWidth <= 0) {
                 return "";
             }
+            const fontSize = 12;
             const textData = yield this.updateTextDataAsync({
                 maxWidth: textMaxWidth,
-                fontSize: 12,
-                textAlign: "center",
+                fontSize,
+                textAlign: "left",
                 pivotPoint: "top-left",
             });
             if (!textData) {
                 return "";
             }
             let textStream = "\nq 0 g 0 G";
-            const fontSize = 9;
             const codeMap = font.encoding.codeMap;
             for (const line of textData.lines) {
                 if (!line.text) {
                     continue;
                 }
-                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(sPoints.tl);
+                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1])
+                    .add(sPoints.tl)
+                    .add(new Vec2(w, -w))
+                    .truncate();
                 let lineHex = "";
                 for (const char of line.text) {
                     const code = codeMap.get(char);
@@ -23445,8 +23710,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
             const calloutStreamPart = this.getCalloutStreamPart(sPoints);
             const textBoxStreamPart = `\n${sPoints.bl.x} ${sPoints.bl.y} m`
                 + `\n${sPoints.br.x} ${sPoints.br.y} l`
-                + `\n${sPoints.tr.x} ${sPoints.tr.y} m`
-                + `\n${sPoints.tl.x} ${sPoints.tl.y} m`
+                + `\n${sPoints.tr.x} ${sPoints.tr.y} l`
+                + `\n${sPoints.tl.x} ${sPoints.tl.y} l`
                 + "\nb";
             const textStreamPart = yield this.getTextStreamPartAsync(sPoints, font);
             const streamTextData = `q ${colorString} /GS0 gs`
@@ -23456,6 +23721,13 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 + "\nQ";
             apStream.setTextStreamData(streamTextData);
             this.apStream = apStream;
+        });
+    }
+    updateStream(points) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const dict = this._proxy || this;
+            yield dict.generateApStreamAsync(points || dict.pointsPageCS);
+            yield dict.updateRenderAsync();
         });
     }
     renderHandles() {
@@ -23470,8 +23742,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
         const { bl: pBL, br: pBR, tr: pTR, tl: pTL } = points;
         const cornerMap = new Map();
         cornerMap.set("tb-bl", pBL);
-        cornerMap.set("tb-br", pTR);
-        cornerMap.set("tb-tr", pBR);
+        cornerMap.set("tb-br", pBR);
+        cornerMap.set("tb-tr", pTR);
         cornerMap.set("tb-tl", pTL);
         const handles = [];
         ["tb-bl", "tb-br", "tb-tr", "tb-tl"].forEach(x => {
@@ -23481,37 +23753,44 @@ class FreeTextAnnotation extends MarkupAnnotation {
             handle.setAttribute("data-handle-name", x);
             handle.setAttribute("cx", cx + "");
             handle.setAttribute("cy", cy + "");
+            handle.addEventListener("pointerdown", this.onTextBoxCornerHandlePointerDown);
             handles.push(handle);
         });
         return handles;
     }
     renderCalloutHandles(points) {
-        const { cob: pCoBase, cok: pCoKnee, cop: pCoPointer } = points;
         const handles = [];
-        if (pCoKnee) {
+        if (!points.cop) {
+            return handles;
+        }
+        ["l", "t", "r", "b"].forEach(x => {
+            const side = points[x];
+            const sideHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            sideHandle.classList.add("annotation-handle", "helper");
+            sideHandle.setAttribute("data-handle-name", `co-pivot-${x}`);
+            sideHandle.setAttribute("cx", side.x + "");
+            sideHandle.setAttribute("cy", side.y + "");
+            sideHandle.addEventListener("pointerdown", this.onSideHandlePointerUp);
+            handles.push(sideHandle);
+        });
+        if (points.cok) {
+            const pCoKnee = points.cok;
             const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            kneeHandle.classList.add("annotation-handle", "scale");
+            kneeHandle.classList.add("annotation-handle", "translation");
             kneeHandle.setAttribute("data-handle-name", "co-knee");
             kneeHandle.setAttribute("cx", pCoKnee.x + "");
             kneeHandle.setAttribute("cy", pCoKnee.y + "");
+            kneeHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
             handles.push(kneeHandle);
         }
-        if (pCoBase) {
-            const baseHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            baseHandle.classList.add("annotation-handle", "scale");
-            baseHandle.setAttribute("data-handle-name", "co-base");
-            baseHandle.setAttribute("cx", pCoBase.x + "");
-            baseHandle.setAttribute("cy", pCoBase.y + "");
-            handles.push(baseHandle);
-        }
-        if (pCoPointer) {
-            const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            pointerHandle.classList.add("annotation-handle", "scale");
-            pointerHandle.setAttribute("data-handle-name", "co-pointer");
-            pointerHandle.setAttribute("cx", pCoPointer.x + "");
-            pointerHandle.setAttribute("cy", pCoPointer.y + "");
-            handles.push(pointerHandle);
-        }
+        const pCoPointer = points.cop;
+        const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        pointerHandle.classList.add("annotation-handle", "translation");
+        pointerHandle.setAttribute("data-handle-name", "co-pointer");
+        pointerHandle.setAttribute("cx", pCoPointer.x + "");
+        pointerHandle.setAttribute("cy", pCoPointer.y + "");
+        pointerHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
+        handles.push(pointerHandle);
         return handles;
     }
 }
@@ -24124,26 +24403,6 @@ class DocumentService {
     }
 }
 
-class Loader {
-    constructor() {
-        this._loaderElement = htmlToElements(loaderHtml)[0];
-    }
-    show(parent, zIndex = 8) {
-        if (this._isShown || !parent) {
-            return;
-        }
-        this._loaderElement.style.zIndex = zIndex + "";
-        this._loaderElement.style.top = parent.scrollTop + "px";
-        this._loaderElement.style.left = parent.scrollLeft + "px";
-        parent.append(this._loaderElement);
-        this._isShown = true;
-    }
-    hide() {
-        this._loaderElement.remove();
-        this._isShown = false;
-    }
-}
-
 class ContextMenu {
     constructor() {
         this.onPointerDownOutside = (e) => {
@@ -24531,6 +24790,26 @@ CanvasSmoothPathEditor._colors = [
     [1, 0.5, 0, 1],
     [1, 0.2, 1, 1],
 ];
+
+class Loader {
+    constructor() {
+        this._loaderElement = htmlToElements(loaderHtml)[0];
+    }
+    show(parent, zIndex = 8) {
+        if (this._isShown || !parent) {
+            return;
+        }
+        this._loaderElement.style.zIndex = zIndex + "";
+        this._loaderElement.style.top = parent.scrollTop + "px";
+        this._loaderElement.style.left = parent.scrollLeft + "px";
+        parent.append(this._loaderElement);
+        this._isShown = true;
+    }
+    hide() {
+        this._loaderElement.remove();
+        this._isShown = false;
+    }
+}
 
 var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -27191,11 +27470,11 @@ class Viewer {
         this.onScroll = (e) => {
             this.renderVisible();
         };
-        this.onPointerDownScroll = (event) => {
+        this.onPointerDownScroll = (e) => {
             if (this._mode !== "hand") {
                 return;
             }
-            const { clientX, clientY } = event;
+            const { clientX, clientY } = e;
             this._pointerInfo.downPos = new Vec2(clientX, clientY);
             this._pointerInfo.downScroll = new Vec2(this._container.scrollLeft, this._container.scrollTop);
             const onPointerMove = (moveEvent) => {
@@ -27208,13 +27487,17 @@ class Viewer {
             const onPointerUp = (upEvent) => {
                 this._pointerInfo.downPos = null;
                 this._pointerInfo.downScroll = null;
-                document.removeEventListener("pointermove", onPointerMove);
-                document.removeEventListener("pointerup", onPointerUp);
-                document.removeEventListener("pointerout", onPointerUp);
+                const upTarget = upEvent.target;
+                upTarget.removeEventListener("pointermove", onPointerMove);
+                upTarget.removeEventListener("pointerup", onPointerUp);
+                upTarget.removeEventListener("pointerout", onPointerUp);
+                upTarget.releasePointerCapture(upEvent.pointerId);
             };
-            document.addEventListener("pointermove", onPointerMove);
-            document.addEventListener("pointerup", onPointerUp);
-            document.addEventListener("pointerout", onPointerUp);
+            const target = e.target;
+            target.setPointerCapture(e.pointerId);
+            target.addEventListener("pointermove", onPointerMove);
+            target.addEventListener("pointerup", onPointerUp);
+            target.addEventListener("pointerout", onPointerUp);
         };
         this.onWheelZoom = (event) => {
             if (!event.ctrlKey) {

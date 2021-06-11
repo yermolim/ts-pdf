@@ -2,12 +2,13 @@ import { stampDesignerHtml, stampImageLoaderHtml } from "../assets/index.html";
 
 import { htmlToElements } from "../common/dom";
 import { getRandomUuid } from "../common/uuid";
+
 import { CustomStampCreationInfo } from "../drawing/stamps";
+import { CanvasSmoothPathEditor } from "../drawing/paths/canvas-smooth-path-editor";
 
 import { Loader } from "../components/loader";
 
 import { ElementEventService } from "./element-event-service";
-import { CanvasSmoothPathEditor } from "../drawing/paths/canvas-smooth-path-editor";
 
 //#region custom events
 export const customStampEvent = "tspdf-customstampchange" as const;

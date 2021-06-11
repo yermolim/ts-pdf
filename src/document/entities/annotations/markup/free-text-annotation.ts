@@ -1,12 +1,12 @@
 import { Mat3, Vec2 } from "mathador";
 
 import { Hextuple, Quadruple } from "../../../../common/types";
+import { TempSvgPath } from "../../../../common/dom";
 import { calcPdfBBoxToRectMatrices, VecMinMax } from "../../../../drawing/utils";
 
 import { codes } from "../../../char-codes";
 import { annotationTypes, JustificationType, justificationTypes, 
-  lineCapStyles, 
-  lineEndingMinimalSize, lineEndingMultiplier, 
+  lineCapStyles, lineEndingMinimalSize, lineEndingMultiplier, 
   LineEndingType, lineEndingTypes, lineJoinStyles } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
@@ -104,6 +104,9 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   protected _rtText: string;
   
   protected _fontMap: Map<string, FontDict>;
+
+  protected readonly _svgTemp = new TempSvgPath();
+  protected _pointsTemp: FreeTextAnnotPoints;
   
   /**annotation key points in stream-local CS */
   get pointsStreamCS(): FreeTextAnnotPoints {
@@ -255,8 +258,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   
   override setTextContent(text: string) {
     super.setTextContent(text);
-    const dict = <FreeTextAnnotation>this._proxy;
-    dict.generateApStreamAsync(this.pointsPageCS).then(() => dict.updateRenderAsync());
+    this.updateStream();
   }
   
   /**
@@ -352,6 +354,12 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     if (!this.DA) {
       throw new Error("Not all required properties parsed");
     }
+    
+    if (!this.C || (this.C[0] === 1 && this.C[1] === 1 && this.C[2] === 1)) {
+      // TODO: find more elegant and flexible solution
+      // if no color defined of the defined color is white, set color to red
+      this.C = [1, 0, 0];
+    }
   }
 
   //#region generating appearance stream
@@ -390,21 +398,22 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const matrixPageToStream = Mat3.invert(matrixStreamToPage);
 
     // calculate point positions in stream CS
-    const sBL = Vec2.applyMat3(pBL, matrixPageToStream);
-    const sTR = Vec2.applyMat3(pTR, matrixPageToStream);
-    const sBR = Vec2.applyMat3(pBR, matrixPageToStream);
-    const sTL = Vec2.applyMat3(pTL, matrixPageToStream);
-    const sL = Vec2.applyMat3(pL, matrixPageToStream);
-    const sT = Vec2.applyMat3(pT, matrixPageToStream);
-    const sR = Vec2.applyMat3(pR, matrixPageToStream);
-    const sB = Vec2.applyMat3(pB, matrixPageToStream);
-    const sCoBase = pCoBase ? Vec2.applyMat3(pCoBase, matrixPageToStream) : null;
-    const sCoKnee = pCoKnee ? Vec2.applyMat3(pCoKnee, matrixPageToStream) : null;
-    const sCoPointer = pCoPointer ? Vec2.applyMat3(pCoPointer, matrixPageToStream) : null;
+    const sBL = Vec2.applyMat3(pBL, matrixPageToStream).truncate();
+    const sTR = Vec2.applyMat3(pTR, matrixPageToStream).truncate();
+    const sBR = Vec2.applyMat3(pBR, matrixPageToStream).truncate();
+    const sTL = Vec2.applyMat3(pTL, matrixPageToStream).truncate();
+    const sL = Vec2.applyMat3(pL, matrixPageToStream).truncate();
+    const sT = Vec2.applyMat3(pT, matrixPageToStream).truncate();
+    const sR = Vec2.applyMat3(pR, matrixPageToStream).truncate();
+    const sB = Vec2.applyMat3(pB, matrixPageToStream).truncate();
+    const sCoBase = pCoBase ? Vec2.applyMat3(pCoBase, matrixPageToStream).truncate() : null;
+    const sCoKnee = pCoKnee ? Vec2.applyMat3(pCoKnee, matrixPageToStream).truncate() : null;
+    const sCoPointer = pCoPointer ? Vec2.applyMat3(pCoPointer, matrixPageToStream).truncate() : null;
 
     // get minimum and maximum point coordinates in stream CS
+    const actualPoints = [sBL, sTR, sBR, sTL, sCoKnee, sCoPointer].filter(x => x);
     const {min: boxMinNoMargin, max: boxMaxNoMargin} = 
-      Vec2.minMax(sBL, sTR, sBR, sTL, sCoKnee, sCoPointer);
+      Vec2.minMax(...actualPoints);
 
     // get minimum and maximum bounding box point coordinates in stream-local CS (including margins)
     const boxMin = new Vec2(boxMinNoMargin.x - minMargin, boxMinNoMargin.y - minMargin);
@@ -445,10 +454,10 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     
     // update the non axis-aligned bounding-box
     const localBox =  this.getLocalBB();
-    localBox.ll.set(boxMin.x, boxMin.y).applyMat3(matrixStreamToPage);
-    localBox.lr.set(boxMax.x, boxMin.y).applyMat3(matrixStreamToPage);
-    localBox.ur.set(boxMax.x, boxMax.y).applyMat3(matrixStreamToPage);
-    localBox.ul.set(boxMin.x, boxMax.y).applyMat3(matrixStreamToPage);
+    localBox.ll.set(boxMin.x, boxMin.y).applyMat3(matrixStreamToPage).truncate();
+    localBox.lr.set(boxMax.x, boxMin.y).applyMat3(matrixStreamToPage).truncate();
+    localBox.ur.set(boxMax.x, boxMax.y).applyMat3(matrixStreamToPage).truncate();
+    localBox.ul.set(boxMin.x, boxMax.y).applyMat3(matrixStreamToPage).truncate();
 
     // update the Rect (AABB)
     const {min: rectMin, max: rectMax} = 
@@ -478,8 +487,8 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   }  
   
   protected override getColorString(): string {
-    // TODO: implement getting real color if possible
-    return "1 G 1 0 0 rg";
+    const [r, g, b] = this.getColorRect();
+    return `${r} ${g} ${b} RG 1 g`;
   }
 
   /**
@@ -493,7 +502,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       // draw callout lines
       calloutStream += `\n${sPoints.cob.x} ${sPoints.cob.y} m`;
       if (sPoints.cok) {
-        calloutStream += `\n${sPoints.cok.x} ${sPoints.cok.x} l`;
+        calloutStream += `\n${sPoints.cok.x} ${sPoints.cok.y} l`;
       }
       calloutStream += `\n${sPoints.cop.x} ${sPoints.cop.y} l`;
       calloutStream += "\nS";
@@ -508,7 +517,19 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       const coMat = Mat3.from4Vec2(coStartAligned, coEndAligned, coStart, coEnd);      
       const calloutPointerStream = this.getLineEndingStreamPart(coEndAligned, 
         this.LE, this.strokeWidth, "right");
-      calloutStream += `\nq ${coMat.toFloatShortArray().join(" ")} cm`;
+      
+      // TODO: replace after updating Mathador
+      // calloutStream += `\nq ${coMat.toFloatShortArray().join(" ")} cm`;
+      const coMatShort = coMat.toFloatShortArray();
+      calloutStream += "\nq "
+       + `${coMatShort[0].toFixed(5)} `
+       + `${coMatShort[1].toFixed(5)} `
+       + `${coMatShort[2].toFixed(5)} `
+       + `${coMatShort[3].toFixed(5)} `
+       + `${coMatShort[4].toFixed(5)} `
+       + `${coMatShort[5].toFixed(5)} `
+       + "cm";
+
       calloutStream += calloutPointerStream;
       calloutStream += "\nQ";
     }
@@ -523,15 +544,18 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    */
   protected async getTextStreamPartAsync(sPoints: FreeTextAnnotPoints, 
     font: FontDict): Promise<string> {
-    const textMaxWidth = sPoints.br.x - sPoints.bl.x - this.strokeWidth;
+    const w = this.strokeWidth;
+
+    const textMaxWidth = sPoints.br.x - sPoints.bl.x - 2 * w;
     if (textMaxWidth <= 0) {
       return "";
     }
 
+    const fontSize = 12;
     const textData = await this.updateTextDataAsync({
       maxWidth: textMaxWidth, // prevent text to intersect with border
-      fontSize: 12,
-      textAlign: "center",
+      fontSize,
+      textAlign: "left",
       pivotPoint: "top-left",
     });
 
@@ -540,13 +564,15 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     }
 
     let textStream = "\nq 0 g 0 G"; // push the graphics state onto the stack and set text color
-    const fontSize = 9;
     const codeMap = font.encoding.codeMap;
     for (const line of textData.lines) {
       if (!line.text) {
         continue;
       }      
-      const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(sPoints.tl);
+      const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1])
+        .add(sPoints.tl)
+        .add(new Vec2(w, -w)) // prevent text from intersecting with border stroke
+        .truncate();
       let lineHex = "";
       for (const char of line.text) {
         const code =  codeMap.get(char);
@@ -555,6 +581,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
         }
       }
       textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
+      // '+ fontSize * 0.2' is needed to set the correct rendered text baseline
       textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
       textStream += `\n<${lineHex}> Tj`;
       textStream += "\nET";
@@ -613,8 +640,8 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const calloutStreamPart = this.getCalloutStreamPart(sPoints);
     const textBoxStreamPart = `\n${sPoints.bl.x} ${sPoints.bl.y} m`
       + `\n${sPoints.br.x} ${sPoints.br.y} l`
-      + `\n${sPoints.tr.x} ${sPoints.tr.y} m`
-      + `\n${sPoints.tl.x} ${sPoints.tl.y} m`
+      + `\n${sPoints.tr.x} ${sPoints.tr.y} l`
+      + `\n${sPoints.tl.x} ${sPoints.tl.y} l`
       + "\nb";
     const textStreamPart = await this.getTextStreamPartAsync(sPoints, font);
 
@@ -629,6 +656,12 @@ export class FreeTextAnnotation extends MarkupAnnotation {
 
     this.apStream = apStream;
   }
+
+  protected async updateStream(points?: FreeTextAnnotPoints) {    
+    const dict = <FreeTextAnnotation>this._proxy || this;
+    await dict.generateApStreamAsync(points || dict.pointsPageCS);
+    await dict.updateRenderAsync();
+  }
   //#endregion
   
   //#region overriding handles
@@ -642,14 +675,15 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     ];
   } 
   
+  //#region text box handles
   protected renderTextBoxCornerHandles(points: FreeTextAnnotPoints): SVGGraphicsElement[] {
     // text box corners in page CS
     const {bl: pBL, br: pBR, tr: pTR, tl: pTL} = points;
 
     const cornerMap = new Map<string, Vec2>();
     cornerMap.set("tb-bl", pBL);
-    cornerMap.set("tb-br", pTR);
-    cornerMap.set("tb-tr", pBR);
+    cornerMap.set("tb-br", pBR);
+    cornerMap.set("tb-tr", pTR);
     cornerMap.set("tb-tl", pTL);
 
     const handles: SVGGraphicsElement[] = [];
@@ -660,50 +694,293 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       handle.setAttribute("data-handle-name", x);
       handle.setAttribute("cx", cx + "");
       handle.setAttribute("cy", cy + ""); 
-      // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
+      handle.addEventListener("pointerdown", this.onTextBoxCornerHandlePointerDown);
       handles.push(handle);   
     });
 
     return handles;
-  } 
+  }   
   
-  protected renderCalloutHandles(points: FreeTextAnnotPoints): SVGGraphicsElement[] {
-    // callout points in page CS
-    const {cob: pCoBase, cok: pCoKnee, cop: pCoPointer} = points;
+  protected onTextBoxCornerHandlePointerDown = (e: PointerEvent) => { 
+    if (!e.isPrimary) {
+      //it's a secondary touch action
+      return;
+    }
 
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointerup", this.onTextBoxCornerHandlePointerUp);
+    target.addEventListener("pointerout", this.onTextBoxCornerHandlePointerUp); 
+
+    this._pointsTemp = this.pointsPageCS;
+    this._moved = false;
+
+    // set timeout to prevent an accidental annotation scaling
+    this._transformationTimer = setTimeout(() => {
+      this._transformationTimer = null;       
+      // append the svg element copy     
+      this._svgTemp.insertAfter(this._renderedControls);
+      target.addEventListener("pointermove", this.onTextBoxCornerHandlePointerMove);
+    }, 200);
+
+    e.stopPropagation();
+  };
+
+  protected onTextBoxCornerHandlePointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      //it's a secondary touch action
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    const handleName = target.dataset.handleName;
+
+    const points = this._pointsTemp;
+    const p = this.convertClientCoordsToPage(e.clientX, e.clientY);
+
+    // get length of the text box sides
+    const horLength = Vec2.substract(points.br, points.bl).getMagnitude();
+    const vertLength = Vec2.substract(points.tl, points.bl).getMagnitude();
+    // calculate the transformation matrix 
+    // from the current text box position to the AA CS (with bottom-left corner at 0,0)
+    const matToAligned = Mat3.from4Vec2(points.bl, points.br, new Vec2(), new Vec2(horLength, 0));
+
+    // get the opposite point (relatively to the moved one)
+    let oppositeP: Vec2;
+    switch (handleName) {
+      case "tb-bl": 
+        oppositeP = points.tr;
+        break;
+      case "tb-br":
+        oppositeP = points.tl;
+        break;
+      case "tb-tr":
+        oppositeP = points.bl;
+        break;
+      case "tb-tl":
+        oppositeP = points.br;
+        break;
+      default:
+        return;
+    }  
+
+    // calculate the current point and the opposite point
+    // coordinates in the AA CS
+    const pAligned = Vec2.applyMat3(p, matToAligned);
+    const oppositePAligned = Vec2.applyMat3(oppositeP, matToAligned);
+    // calculate length of the text box sides after moving the point
+    const transformedHorLength = Math.abs(pAligned.x - oppositePAligned.x);
+    const transformedVertLength = Math.abs(pAligned.y - oppositePAligned.y);
+    // calculate the transformation scale ratio for X and Y axes
+    const scaleX = transformedHorLength / horLength;
+    const scaleY = transformedVertLength / vertLength;
+    // get the current rotation
+    const {r: rotation} = matToAligned.getTRS();
+    // calculate the final transformation matrix
+    const mat = new Mat3()
+      .applyTranslation(-oppositeP.x, -oppositeP.y)
+      .applyRotation(rotation)
+      .applyScaling(scaleX, scaleY)
+      .applyRotation(-rotation)
+      .applyTranslation(oppositeP.x, oppositeP.y);
+    // apply the matrix to all points that need to be transformed
+    points.bl.applyMat3(mat);
+    points.br.applyMat3(mat);
+    points.tr.applyMat3(mat);
+    points.tl.applyMat3(mat); 
+    points.l.applyMat3(mat);
+    points.t.applyMat3(mat);
+    points.r.applyMat3(mat);
+    points.b.applyMat3(mat);
+    points.cob?.applyMat3(mat);
+
+    // update temp svg element to visualize the future transformation in real-time
+    this._svgTemp.set("lightblue", "blue", this.strokeWidth, 
+      [points.bl, points.br, points.tr, points.tl], true);
+
+    this._moved = true;
+  };
+  
+  protected onTextBoxCornerHandlePointerUp = async (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      // it's a secondary touch action
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onTextBoxCornerHandlePointerMove);
+    target.removeEventListener("pointerup", this.onTextBoxCornerHandlePointerUp);
+    target.removeEventListener("pointerout", this.onTextBoxCornerHandlePointerUp);
+    target.releasePointerCapture(e.pointerId); 
+
+    this._svgTemp.remove();
+    
+    if (this._moved) {
+      // transform the annotation
+      this.updateStream(this._pointsTemp);
+    }
+  };
+  //#endregion
+  
+  //#region callout handles
+  protected renderCalloutHandles(points: FreeTextAnnotPoints): SVGGraphicsElement[] {
     const handles: SVGGraphicsElement[] = [];
 
-    if (pCoKnee) {
+    if (!points.cop) {
+      return handles;
+    }
+
+    ["l", "t", "r", "b"].forEach(x => {    
+      const side = points[x];  
+      const sideHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      sideHandle.classList.add("annotation-handle", "helper");
+      sideHandle.setAttribute("data-handle-name", `co-pivot-${x}`);
+      sideHandle.setAttribute("cx", side.x + "");
+      sideHandle.setAttribute("cy", side.y + ""); 
+      sideHandle.addEventListener("pointerdown", this.onSideHandlePointerUp);
+      handles.push(sideHandle); 
+    });
+
+    if (points.cok) {
+      const pCoKnee = points.cok;
       const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      kneeHandle.classList.add("annotation-handle", "scale");
+      kneeHandle.classList.add("annotation-handle", "translation");
       kneeHandle.setAttribute("data-handle-name", "co-knee");
       kneeHandle.setAttribute("cx", pCoKnee.x + "");
       kneeHandle.setAttribute("cy", pCoKnee.y + ""); 
-      // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
+      kneeHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
       handles.push(kneeHandle);   
     }
 
-    if (pCoBase) {
-      const baseHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      baseHandle.classList.add("annotation-handle", "scale");
-      baseHandle.setAttribute("data-handle-name", "co-base");
-      baseHandle.setAttribute("cx", pCoBase.x + "");
-      baseHandle.setAttribute("cy", pCoBase.y + ""); 
-      // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
-      handles.push(baseHandle); 
-    }
-
-    if (pCoPointer) {
-      const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      pointerHandle.classList.add("annotation-handle", "scale");
-      pointerHandle.setAttribute("data-handle-name", "co-pointer");
-      pointerHandle.setAttribute("cx", pCoPointer.x + "");
-      pointerHandle.setAttribute("cy", pCoPointer.y + ""); 
-      // handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); // TODO: replace
-      handles.push(pointerHandle);
-    }
+    const pCoPointer = points.cop;
+    const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    pointerHandle.classList.add("annotation-handle", "translation");
+    pointerHandle.setAttribute("data-handle-name", "co-pointer");
+    pointerHandle.setAttribute("cx", pCoPointer.x + "");
+    pointerHandle.setAttribute("cy", pCoPointer.y + ""); 
+    pointerHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
+    handles.push(pointerHandle);
 
     return handles;
   } 
+  
+  protected onSideHandlePointerUp = async (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      // it's a secondary touch action
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    const handleName = target.dataset.handleName;
+
+    const points = this.pointsPageCS;
+    switch (handleName) {
+      case "co-pivot-l":
+        if (Vec2.equals(points.cob, points.l)) {
+          return;
+        }
+        points.cob.setFromVec2(points.l);
+        break;
+      case "co-pivot-t":
+        if (Vec2.equals(points.cob, points.t)) {
+          return;
+        }
+        points.cob.setFromVec2(points.t);
+        break;
+      case "co-pivot-r":
+        if (Vec2.equals(points.cob, points.r)) {
+          return;
+        }
+        points.cob.setFromVec2(points.r);
+        break;
+      case "co-pivot-b":
+        if (Vec2.equals(points.cob, points.b)) {
+          return;
+        }
+        points.cob.setFromVec2(points.b);
+        break;
+      default:
+        return;
+    }
+    
+    // transform the annotation
+    this.updateStream(points);
+  };
+  
+  protected onCalloutHandlePointerDown = (e: PointerEvent) => { 
+    if (!e.isPrimary) {
+      //it's a secondary touch action
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointerup", this.onCalloutHandlePointerUp);
+    target.addEventListener("pointerout", this.onCalloutHandlePointerUp); 
+
+    this._pointsTemp = this.pointsPageCS;
+    this._moved = false;
+
+    // set timeout to prevent an accidental annotation scaling
+    this._transformationTimer = setTimeout(() => {
+      this._transformationTimer = null;       
+      // append the svg element copy     
+      this._svgTemp.insertAfter(this._renderedControls);
+      target.addEventListener("pointermove", this.onCalloutHandlePointerMove);
+    }, 200);
+
+    e.stopPropagation();
+  };
+
+  protected onCalloutHandlePointerMove = (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      //it's a secondary touch action
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    const handleName = target.dataset.handleName;
+
+    switch (handleName) {
+      case "co-knee":
+        this._pointsTemp.cok.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
+        break;
+      case "co-pointer":
+        this._pointsTemp.cop.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
+        break;
+      default:
+        return;
+    }
+
+    this._svgTemp.set("none", "blue", 
+      this.strokeWidth, 
+      this._pointsTemp.cok 
+        ? [this._pointsTemp.cob, this._pointsTemp.cok, this._pointsTemp.cop]
+        : [this._pointsTemp.cob, this._pointsTemp.cop]);
+    
+    this._moved = true;
+  };
+  
+  protected onCalloutHandlePointerUp = async (e: PointerEvent) => {
+    if (!e.isPrimary) {
+      // it's a secondary touch action
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onCalloutHandlePointerMove);
+    target.removeEventListener("pointerup", this.onCalloutHandlePointerUp);
+    target.removeEventListener("pointerout", this.onCalloutHandlePointerUp);
+    target.releasePointerCapture(e.pointerId); 
+
+    this._svgTemp.remove();
+    
+    if (this._moved) {
+      // transform the annotation
+      this.updateStream(this._pointsTemp);
+    }
+  };
+  //#region 
+  
   //#endregion
 }

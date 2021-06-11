@@ -205,12 +205,12 @@ export class Viewer {
     this.renderVisible();
   };  
 
-  private onPointerDownScroll = (event: PointerEvent) => { 
+  private onPointerDownScroll = (e: PointerEvent) => { 
     if (this._mode !== "hand") {
       return;
     }
     
-    const {clientX, clientY} = event;
+    const {clientX, clientY} = e;
     this._pointerInfo.downPos = new Vec2(clientX, clientY);
     this._pointerInfo.downScroll = new Vec2(this._container.scrollLeft,this._container.scrollTop);    
 
@@ -226,14 +226,18 @@ export class Viewer {
       this._pointerInfo.downPos = null;
       this._pointerInfo.downScroll = null;
 
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
-      document.removeEventListener("pointerout", onPointerUp);
+      const upTarget = upEvent.target as HTMLElement;
+      upTarget.removeEventListener("pointermove", onPointerMove);
+      upTarget.removeEventListener("pointerup", onPointerUp);
+      upTarget.removeEventListener("pointerout", onPointerUp);
+      upTarget.releasePointerCapture(upEvent.pointerId); 
     };
 
-    document.addEventListener("pointermove", onPointerMove);
-    document.addEventListener("pointerup", onPointerUp);
-    document.addEventListener("pointerout", onPointerUp);
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointermove", onPointerMove);
+    target.addEventListener("pointerup", onPointerUp);
+    target.addEventListener("pointerout", onPointerUp);
   };
 
   //#region zoom(scale)

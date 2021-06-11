@@ -160,7 +160,8 @@ export abstract class AnnotationDict extends PdfDict {
   protected _transformationTimer: number; 
   protected _tempX: number;
   protected _tempY: number;
-  protected _currentAngle = 0; 
+  protected _currentAngle = 0;   
+  protected _moved: boolean;
 
   /**temp object used for calculations to prevent unnecessary objects creation overhead */
   protected _tempTransformationMatrix = new Mat3(); 
@@ -777,8 +778,10 @@ export abstract class AnnotationDict extends PdfDict {
       this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
       this._svgContentCopy.remove();
 
-      // transform the annotation
-      await this.applyCommonTransformAsync(this._tempTransformationMatrix);
+      if (this._moved) {
+        // transform the annotation
+        await this.applyCommonTransformAsync(this._tempTransformationMatrix);
+      }
 
       // reset the temp matrix
       this._tempTransformationMatrix.reset();
@@ -787,6 +790,7 @@ export abstract class AnnotationDict extends PdfDict {
     });
 
     await this._transformationPromise;
+    await this.updateRenderAsync();
   }
   //#endregion
 
@@ -870,7 +874,7 @@ export abstract class AnnotationDict extends PdfDict {
     contentRenderResult.elements.forEach(x => {
       copy.append(x.element.cloneNode(true));
     });
-    copy.setAttribute("opacity", "0.2");
+    copy.classList.add("annotation-temp-copy");
     return copy;
   }
   //#endregion
@@ -1017,8 +1021,12 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.addEventListener("pointerup", this.onTranslationPointerUp);
-    document.addEventListener("pointerout", this.onTranslationPointerUp);  
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointerup", this.onTranslationPointerUp);
+    target.addEventListener("pointerout", this.onTranslationPointerUp);  
+
+    this._moved = false;
 
     // set timeout to prevent an accidental annotation translation
     this._transformationTimer = setTimeout(() => {
@@ -1027,7 +1035,7 @@ export abstract class AnnotationDict extends PdfDict {
       this._renderedControls.after(this._svgContentCopy);
       // set the starting transformation point
       this._tempStartPoint.setFromVec2(this.convertClientCoordsToPage(e.clientX, e.clientY));
-      document.addEventListener("pointermove", this.onTranslationPointerMove);
+      target.addEventListener("pointermove", this.onTranslationPointerMove);
     }, 200);
   };
 
@@ -1045,6 +1053,8 @@ export abstract class AnnotationDict extends PdfDict {
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+
+    this._moved = true;
   };
   
   protected onTranslationPointerUp = async (e: PointerEvent) => {
@@ -1053,13 +1063,13 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.removeEventListener("pointermove", this.onTranslationPointerMove);
-    document.removeEventListener("pointerup", this.onTranslationPointerUp);
-    document.removeEventListener("pointerout", this.onTranslationPointerUp);
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onTranslationPointerMove);
+    target.removeEventListener("pointerup", this.onTranslationPointerUp);
+    target.removeEventListener("pointerout", this.onTranslationPointerUp);
+    target.releasePointerCapture(e.pointerId); 
 
-    // transform the annotation
     await this.applyTempTransformAsync();
-    await this.updateRenderAsync();
   };
   //#endregion
   
@@ -1070,15 +1080,19 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.addEventListener("pointerup", this.onRotationHandlePointerUp);
-    document.addEventListener("pointerout", this.onRotationHandlePointerUp);    
+    const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointerup", this.onRotationHandlePointerUp);
+    target.addEventListener("pointerout", this.onRotationHandlePointerUp);   
+    
+    this._moved = false;
 
     // set timeout to prevent an accidental annotation rotation
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;  
       // append the svg element copy       
       this._renderedControls.after(this._svgContentCopy);
-      document.addEventListener("pointermove", this.onRotationHandlePointerMove);
+      target.addEventListener("pointermove", this.onRotationHandlePointerMove);
     }, 200);
 
     e.stopPropagation();
@@ -1110,6 +1124,8 @@ export abstract class AnnotationDict extends PdfDict {
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+    
+    this._moved = true;
   };
   
   protected onRotationHandlePointerUp = async (e: PointerEvent) => {
@@ -1118,13 +1134,13 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.removeEventListener("pointermove", this.onRotationHandlePointerMove);
-    document.removeEventListener("pointerup", this.onRotationHandlePointerUp);
-    document.removeEventListener("pointerout", this.onRotationHandlePointerUp);
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onRotationHandlePointerMove);
+    target.removeEventListener("pointerup", this.onRotationHandlePointerUp);
+    target.removeEventListener("pointerout", this.onRotationHandlePointerUp);
+    target.releasePointerCapture(e.pointerId);     
     
-    // transform the annotation
     await this.applyTempTransformAsync();
-    await this.updateRenderAsync();
   };
   //#endregion
   
@@ -1135,10 +1151,10 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.addEventListener("pointerup", this.onScaleHandlePointerUp);
-    document.addEventListener("pointerout", this.onScaleHandlePointerUp); 
-
     const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointerup", this.onScaleHandlePointerUp);
+    target.addEventListener("pointerout", this.onScaleHandlePointerUp);
 
     // calculate the initial bounding box side vectors (from the further corner to the handle corner)
     const {ll, lr, ur, ul} = this.getLocalBB();
@@ -1171,12 +1187,14 @@ export abstract class AnnotationDict extends PdfDict {
     this._tempX = this._tempVecX.getMagnitude();
     this._tempY = this._tempVecY.getMagnitude();
 
+    this._moved = false;
+
     // set timeout to prevent an accidental annotation scaling
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;       
       // append the svg element copy     
       this._renderedControls.after(this._svgContentCopy);
-      document.addEventListener("pointermove", this.onScaleHandlePointerMove);
+      target.addEventListener("pointermove", this.onScaleHandlePointerMove);
     }, 200);
 
     e.stopPropagation();
@@ -1226,6 +1244,8 @@ export abstract class AnnotationDict extends PdfDict {
     // move the svg element copy to visualize the future transformation in real-time
     this._svgContentCopy.setAttribute("transform", 
       `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+      
+    this._moved = true;
   };
   
   protected onScaleHandlePointerUp = async (e: PointerEvent) => {
@@ -1234,13 +1254,13 @@ export abstract class AnnotationDict extends PdfDict {
       return;
     }
 
-    document.removeEventListener("pointermove", this.onScaleHandlePointerMove);
-    document.removeEventListener("pointerup", this.onScaleHandlePointerUp);
-    document.removeEventListener("pointerout", this.onScaleHandlePointerUp);
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onScaleHandlePointerMove);
+    target.removeEventListener("pointerup", this.onScaleHandlePointerUp);
+    target.removeEventListener("pointerout", this.onScaleHandlePointerUp);
+    target.releasePointerCapture(e.pointerId); 
     
-    // transform the annotation
     await this.applyTempTransformAsync();
-    await this.updateRenderAsync();
   };
   //#endregion
 

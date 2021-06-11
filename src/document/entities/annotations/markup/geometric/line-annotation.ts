@@ -1,6 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
 import { VecMinMax } from "../../../../../drawing/utils";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
+import { TempSvgPath } from "../../../../../common/dom";
 
 import { codes } from "../../../../char-codes";
 import { annotationTypes, lineCapStyles, 
@@ -125,6 +126,8 @@ export class LineAnnotation extends GeometricAnnotation {
   protected _rtText: string;
 
   protected _fontMap: Map<string, FontDict>;
+  
+  protected readonly _svgTemp = new TempSvgPath();
 
   /** Y-axis offset from control points to the actual line drawn */
   get offsetY(): number {
@@ -312,8 +315,7 @@ export class LineAnnotation extends GeometricAnnotation {
 
   override setTextContent(text: string) {
     super.setTextContent(text);
-    const dict = <LineAnnotation>this._proxy;
-    dict.generateApStreamAsync().then(() => dict.updateRenderAsync());
+    this.updateStream();
   }
   
   /**
@@ -448,6 +450,12 @@ export class LineAnnotation extends GeometricAnnotation {
     await dict.generateApStreamAsync();
 
     dict.M = DateString.fromDate(new Date());
+  }
+  
+  protected async updateStream() {    
+    const dict = <LineAnnotation>this._proxy || this;
+    await dict.generateApStreamAsync();
+    await dict.updateRenderAsync();
   }
 
   //#region generating appearance stream
@@ -736,13 +744,13 @@ export class LineAnnotation extends GeometricAnnotation {
       //it's a secondary touch action
       return;
     }
-
-    document.addEventListener("pointerup", this.onLineEndHandlePointerUp);
-    document.addEventListener("pointerout", this.onLineEndHandlePointerUp); 
-
+    
     const target = e.target as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    target.addEventListener("pointerup", this.onLineEndHandlePointerUp);
+    target.addEventListener("pointerout", this.onLineEndHandlePointerUp);
 
-    const handleName = target.dataset["handleName"];
+    const handleName = target.dataset.handleName;
     switch (handleName) {
       case "start": 
         this._scaleHandleActive = "start";    
@@ -755,12 +763,14 @@ export class LineAnnotation extends GeometricAnnotation {
         throw new Error(`Invalid handle name: ${handleName}`);
     }
 
+    this._moved = false;
+
     // set timeout to prevent an accidental annotation scaling
     this._transformationTimer = setTimeout(() => {
       this._transformationTimer = null;       
       // append the svg element copy     
-      this._renderedControls.after(this._svgContentCopy);
-      document.addEventListener("pointermove", this.onLineEndHandlePointerMove);
+      this._svgTemp.insertAfter(this._renderedControls);
+      target.addEventListener("pointermove", this.onLineEndHandlePointerMove);
     }, 200);
 
     e.stopPropagation();
@@ -790,8 +800,9 @@ export class LineAnnotation extends GeometricAnnotation {
     this._tempTransformationMatrix = Mat3.from4Vec2(start, end, startTemp, endTemp);
     
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopy.setAttribute("transform", 
-      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+    this._svgTemp.set("none", "blue", this.strokeWidth, [startTemp, endTemp]);
+
+    this._moved = true;
   };
   
   protected onLineEndHandlePointerUp = async (e: PointerEvent) => {
@@ -800,13 +811,14 @@ export class LineAnnotation extends GeometricAnnotation {
       return;
     }
 
-    document.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
-    document.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
-    document.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+    const target = e.target as HTMLElement;
+    target.removeEventListener("pointermove", this.onLineEndHandlePointerMove);
+    target.removeEventListener("pointerup", this.onLineEndHandlePointerUp);
+    target.removeEventListener("pointerout", this.onLineEndHandlePointerUp);
+    target.releasePointerCapture(e.pointerId);
     
-    // transform the annotation
+    this._svgTemp.remove();    
     await this.applyTempTransformAsync();
-    await this.updateRenderAsync();
   };
   //#endregion
 }

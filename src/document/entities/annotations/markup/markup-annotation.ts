@@ -402,7 +402,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       };
 
       // remove the temp paragraph from DOM 
-      // pTemp.remove();
+      pTemp.remove();
 
       this._textData = textData;
     } else {

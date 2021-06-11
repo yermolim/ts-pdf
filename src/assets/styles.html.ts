@@ -760,6 +760,9 @@ export const styles = /*html*/`
     border: 2px solid var(--tspdf-color-fg-secondary-final);
   }
 
+  .annotation-temp-copy {
+    opacity: 0.2;
+  }  
   .annotation-controls {
     cursor: pointer;
   }     
@@ -773,7 +776,10 @@ export const styles = /*html*/`
   .mode-annotation .annotation-controls.selected {
     cursor: grab;
   } 
-  .mode-annotation .annotation-controls.selected .annotation-rect,
+  .mode-annotation .annotation-controls.selected .annotation-rect {
+    stroke: rgba(80, 80, 80, 0.5);
+    stroke-dasharray: 3 3;
+  }
   .mode-annotation .annotation-controls.selected .annotation-bbox {
     stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
@@ -782,16 +788,22 @@ export const styles = /*html*/`
     stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
-  .mode-annotation .annotation-controls.selected .annotation-handle,
   .mode-annotation .annotation-controls.selected .annotation-handle {
     r: 8;
     cursor: pointer;
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.helper {
+    r: 4;
+    fill: rgba(200, 200, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.scale {
     fill: rgba(0, 0, 0, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
     fill: rgba(50, 100, 50, 0.75);
+  }
+  .mode-annotation .annotation-controls.selected .annotation-handle.translation {
+    fill: rgba(100, 100, 200, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
