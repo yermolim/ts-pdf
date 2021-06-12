@@ -53,13 +53,7 @@ All changes are made can be saved to a new PDF file, which can be downloaded or 
     <li>Squiggly annotation</li>
     <li>Strikeout annotation</li>
     <li>Text annotation (only note icon)</li>
-    <li>Free text annotation (only render and base transformation)</li>
-</ul>
-
-#### Yet to be implemented
-<ul>
-    <li>Text annotation (support for all standard icon types)</li>
-    <li>Free text annotation (support for adding new ones)</li>
+    <li>Free text annotation</li>
 </ul>
 
 ### Currently supported PDF encryption algorithms
@@ -168,16 +162,17 @@ The other one is to make your own build of PDF.js.
     <li><del>add custom stamp annotations support</del> added in 0.6.0</li>
     <li><del>optimize loading and saving files</del> some optimizations were made in 0.6.2</li>
     <li><del>add text caption support for line annotations</del> added in 0.6.6</li>
-    <li>add free text annotations support (partial support added in 0.6.3)</li>
+    <li><del>add free text annotations support</del> added in 0.7.0</li>
+    <li>add 'undo'/'redo'</li>
+    <li>optimize parser and renderer</li>
     <li>add tooltips to buttons</li>
     <li>add keyboard shortcuts</li>
-    <li>add 'undo'/'redo'</li>
     <li>add more options for line annotations</li>
+    <li>add more options for free text annotations</li>
     <li>add localizations</li>
     <li>write tests</li>
     <li>add support for the rest of encryption algorithms</li>
     <li>add support for the rest of encoding algorithms</li>
-    <li>optimize parser and renderer</li>
 </ul>
 
 ## External dependencies:
