@@ -29329,6 +29329,7 @@ class TsPdfViewer {
         this._loader = new Loader();
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
         this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
+        this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
         this.initMainContainerEventHandlers();
         this.initViewControls();
         this.initFileButtons(options.fileButtons || []);

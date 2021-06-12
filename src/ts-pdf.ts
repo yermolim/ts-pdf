@@ -181,6 +181,7 @@ export class TsPdfViewer {
       {canvasWidth: previewWidth});
     this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
       {minScale: minScale, maxScale: maxScale}); 
+    this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
 
     this.initMainContainerEventHandlers();
     this.initViewControls();
