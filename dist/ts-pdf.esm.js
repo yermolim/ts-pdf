@@ -23523,11 +23523,10 @@ class FreeTextAnnotation extends MarkupAnnotation {
         };
     }
     get minMargin() {
-        var _a;
         const strokeWidth = this.strokeWidth;
         const halfStrokeWidth = strokeWidth / 2;
         let marginMin;
-        if (((_a = this.CL) === null || _a === void 0 ? void 0 : _a.length) && this.LE && this.LE !== lineEndingTypes.NONE) {
+        if (this.LE && this.LE !== lineEndingTypes.NONE) {
             const endingSizeWoStroke = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
             const endingSize = endingSizeWoStroke + strokeWidth;
             marginMin = endingSize / 2;
@@ -27600,7 +27599,38 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
             if (!pageCoords || pageCoords.pageId !== this._pageId) {
                 return;
             }
-            if (this._points.cok) ;
+            const { pageX: px, pageY: py } = pageCoords;
+            const p = new Vec2(px, py);
+            const { l, b, r, t } = this._points;
+            const lv = new Vec2(l[0], l[1]);
+            const bv = new Vec2(b[0], b[1]);
+            const rv = new Vec2(r[0], r[1]);
+            const tv = new Vec2(t[0], t[1]);
+            let cob = lv;
+            let minDistance = Vec2.substract(p, lv).getMagnitude();
+            const bvToP = Vec2.substract(p, bv).getMagnitude();
+            if (bvToP < minDistance) {
+                minDistance = bvToP;
+                cob = bv;
+            }
+            const rvToP = Vec2.substract(p, rv).getMagnitude();
+            if (rvToP < minDistance) {
+                minDistance = rvToP;
+                cob = rv;
+            }
+            const tvToP = Vec2.substract(p, tv).getMagnitude();
+            if (tvToP < minDistance) {
+                minDistance = tvToP;
+                cob = tv;
+            }
+            this._points.cob = cob.toFloatArray();
+            if (!this._points.cop) {
+                this._points.cop = p.toFloatArray();
+            }
+            else {
+                this._points.cok = p.toFloatArray();
+            }
+            this.redrawCallout();
         };
         this._viewer = viewer;
         this.init();
@@ -27675,6 +27705,24 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
         rect.setAttribute("height", max.y - min.y + "");
         this._svgGroup.append(rect);
     }
+    redrawCallout() {
+        const svgRect = this._svgGroup.lastChild;
+        svgRect.remove();
+        this._svgGroup.innerHTML = "";
+        const [r, g, b, a] = this._color || [0, 0, 0, 1];
+        const callout = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        callout.setAttribute("fill", "none");
+        callout.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+        callout.setAttribute("stroke-width", this._strokeWidth + "");
+        let d = `M${this._points.cob[0]},${this._points.cob[1]} `;
+        if (this._points.cok) {
+            d += `L${this._points.cok[0]},${this._points.cok[1]} `;
+        }
+        d += `L${this._points.cop[0]},${this._points.cop[1]}`;
+        callout.setAttribute("d", d);
+        this._svgGroup.append(callout);
+        this._svgGroup.append(svgRect);
+    }
     refreshGroupPosition() {
         if (!this._pageId && this._pageId !== 0) {
             return;
@@ -27716,7 +27764,15 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
         this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
     }
     buildAnnotationDto(text) {
-        const margin = this._strokeWidth / 2;
+        let margin;
+        if (this._points.cob) {
+            const endingSizeWoStroke = Math.max(this._strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+            const endingSize = endingSizeWoStroke + this._strokeWidth;
+            margin = endingSize / 2;
+        }
+        else {
+            margin = this._strokeWidth / 2;
+        }
         const lm = margin;
         const tm = margin;
         const rm = margin;
@@ -27735,7 +27791,7 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
             rect: [min.x - lm, min.y - bm, max.x + rm, max.y + tm],
             points: this._points,
             intent: this._points.cob ? freeTextIntents.WITH_CALLOUT : freeTextIntents.PLAIN_TEXT,
-            calloutEndingType: this._points.cob ? lineEndingTypes.ARROW_OPEN_R : null,
+            calloutEndingType: this._points.cob ? lineEndingTypes.ARROW_OPEN : null,
             color: [this._color[0], this._color[1], this._color[2], 1],
             strokeWidth: this._strokeWidth,
             strokeDashGap: null,

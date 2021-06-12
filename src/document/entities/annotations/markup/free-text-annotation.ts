@@ -218,7 +218,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const halfStrokeWidth = strokeWidth / 2;    
     // calculate margin
     let marginMin: number;
-    if (this.CL?.length && this.LE && this.LE !== lineEndingTypes.NONE) {
+    if (this.LE && this.LE !== lineEndingTypes.NONE) {
       // annotation has a callout with special line ending
       const endingSizeWoStroke = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
       // '+ strokeWidth' is used to include the ending figure stroke width
@@ -226,7 +226,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       marginMin = endingSize / 2;      
     } else {
       marginMin = halfStrokeWidth;
-    }
+    }    
 
     return marginMin;
   }

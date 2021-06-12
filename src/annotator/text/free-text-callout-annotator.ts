@@ -1,15 +1,16 @@
 import { Vec2 } from "mathador";
-import { Quadruple } from "../../common/types";
+import { Double, Quadruple } from "../../common/types";
 import { getRandomUuid } from "../../common/uuid";
 
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
+
+import { lineEndingMinimalSize, lineEndingMultiplier, lineEndingTypes } from "../../document/const";
 import { FreeTextAnnotation, FreeTextAnnotationDto, FreeTextAnnotPointsDto, freeTextIntents } 
   from "../../document/entities/annotations/markup/free-text-annotation";
 
 import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";
-import { lineEndingTypes } from "../../document/const";
 
 export class FreeTextCalloutAnnotator extends TextAnnotator {
   protected readonly _viewer: Viewer;
@@ -122,6 +123,31 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
     rect.setAttribute("height", max.y - min.y + "");  
     this._svgGroup.append(rect);
   }
+
+  protected redrawCallout() {
+    // pop the rect svg from group
+    const svgRect = this._svgGroup.lastChild;
+    svgRect.remove();
+    // clear group content
+    this._svgGroup.innerHTML = "";
+    
+    const [r, g, b, a] = this._color || [0, 0, 0, 1];
+    const callout = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    callout.setAttribute("fill", "none");
+    callout.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
+    callout.setAttribute("stroke-width", this._strokeWidth + "");
+    let d = `M${this._points.cob[0]},${this._points.cob[1]} `;
+    if (this._points.cok) {
+      d += `L${this._points.cok[0]},${this._points.cok[1]} `;
+    }
+    d += `L${this._points.cop[0]},${this._points.cop[1]}`;
+    callout.setAttribute("d", d);
+
+    this._svgGroup.append(callout);
+
+    // append the rect svg back to group
+    this._svgGroup.append(svgRect);
+  }
   
   protected onPointerDown = (e: PointerEvent) => {
     if (!e.isPrimary || e.button === 2) {
@@ -200,14 +226,41 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
       // skip action if the pointer is outside of the starting page
       return;
     }
+
     const {pageX: px, pageY: py} = pageCoords; 
-    // TODO: implement getting the nearest side center and setting callout start to it
-    if (this._points.cok) {
-      // TODO: implement changing callout knee
-    } else {
-      // TODO: implement changing callout end
+    const p = new Vec2(px, py);
+
+    // get the nearest side center and setting callout start to it
+    const {l, b, r, t} = this._points;
+    const lv = new Vec2(l[0], l[1]);
+    const bv = new Vec2(b[0], b[1]);
+    const rv = new Vec2(r[0], r[1]);
+    const tv = new Vec2(t[0], t[1]);
+    let cob = lv;
+    let minDistance = Vec2.substract(p, lv).getMagnitude();
+    const bvToP = Vec2.substract(p, bv).getMagnitude();
+    if (bvToP < minDistance) {
+      minDistance = bvToP;
+      cob = bv;
     }
-    // TODO: redraw callout
+    const rvToP = Vec2.substract(p, rv).getMagnitude();
+    if (rvToP < minDistance) {
+      minDistance = rvToP;
+      cob = rv;
+    }
+    const tvToP = Vec2.substract(p, tv).getMagnitude();
+    if (tvToP < minDistance) {
+      minDistance = tvToP;
+      cob = tv;
+    }
+
+    this._points.cob = <Double><any>cob.toFloatArray();
+    if (!this._points.cop) {
+      this._points.cop = <Double><any>p.toFloatArray();
+    } else {
+      this._points.cok = <Double><any>p.toFloatArray();
+    }
+    this.redrawCallout();
   };
 
   protected refreshGroupPosition() {
@@ -262,8 +315,19 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
       `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
   }
   
-  protected buildAnnotationDto(text: string): FreeTextAnnotationDto {
-    const margin = this._strokeWidth / 2;
+  protected buildAnnotationDto(text: string): FreeTextAnnotationDto {    
+    // calculate margin
+    let margin: number;
+    if (this._points.cob) {
+      // annotation has a callout with special line ending
+      const endingSizeWoStroke = Math.max(
+        this._strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+      // '+ strokeWidth' is used to include the ending figure stroke width
+      const endingSize = endingSizeWoStroke + this._strokeWidth;
+      margin = endingSize / 2;      
+    } else {
+      margin = this._strokeWidth / 2;
+    }
     // separate variables to allow further changes of the margin calculation logic
     const lm = margin;
     const tm = margin;
@@ -301,7 +365,7 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
       points: this._points,
 
       intent: this._points.cob ? freeTextIntents.WITH_CALLOUT : freeTextIntents.PLAIN_TEXT,
-      calloutEndingType: this._points.cob ? lineEndingTypes.ARROW_OPEN_R : null,
+      calloutEndingType: this._points.cob ? lineEndingTypes.ARROW_OPEN : null,
 
       // opacity should be 1
       color: [this._color[0], this._color[1], this._color[2], 1],
