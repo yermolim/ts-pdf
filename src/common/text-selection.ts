@@ -187,8 +187,8 @@ function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
     // top and bottom vectors should actually be the same 
     // except for some skew transformations,
     // so decided to keep them separated
-    const spanBottomVec = Vec2.substract(spanBrVec, spanBlVec);
-    const spanTopVec = Vec2.substract(spanTrVec, spanTlVec);    
+    const spanBottomVec = Vec2.subtract(spanBrVec, spanBlVec);
+    const spanTopVec = Vec2.subtract(spanTrVec, spanTlVec);    
 
     //calculate the selected text corner positions taking offsets into account
     const selectionBlVec = Vec2.add(

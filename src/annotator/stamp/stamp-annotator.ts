@@ -7,7 +7,7 @@ import { DocumentService } from "../../services/document-service";
 import { StampAnnotation, StampAnnotationDto } 
   from "../../document/entities/annotations/markup/stamp-annotation";
   
-import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
+import { Annotator } from "../annotator";
 
 export const supportedStampTypes = [
   {type:"/Draft", name: "Draft"},
@@ -35,8 +35,6 @@ export class StampAnnotator extends Annotator {
   protected _tempAnnotation: StampAnnotation;
   protected _pageId: number;
 
-  protected _addedAnnotations: StampAnnotation[] = [];
-
   /**
    * 
    * @param docService 
@@ -56,29 +54,17 @@ export class StampAnnotator extends Annotator {
     this.init();
   }
 
-  override destroy() {    
-    this.emitDataChanged(0, false, false);
+  override destroy() {
     this._tempAnnotation = null;
     super.destroy();
   }
 
-  /**remove the most recently added annotation by this annotation instance */
   undo() {
-    if (!this._addedAnnotations.length) {
-      return;
-    }
-
-    const lastAnnotation = this._addedAnnotations.pop();
-    this._docService.removeAnnotation(lastAnnotation);
-    const empty = !this._addedAnnotations.length;
-    this.emitDataChanged(this._addedAnnotations.length, !empty, !empty);
+    this.clear();
   }
 
-  /**remove all the annotations added by this annotation instance */
   clear() {
-    while (this._addedAnnotations.length) {
-      this.undo();
-    }
+    this._tempAnnotation = null;
   }
 
   /**saves the current temp annotation to the document data */
@@ -89,9 +75,6 @@ export class StampAnnotator extends Annotator {
 
     // append the current temp annotation to the page
     this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-
-    this._addedAnnotations.push(this._tempAnnotation);
-    this.emitDataChanged(this._addedAnnotations.length, true, true);
 
     // create a new temp annotation
     this.createTempStampAnnotationAsync();
@@ -106,16 +89,6 @@ export class StampAnnotator extends Annotator {
       this.onPointerUp);
     this.createTempStampAnnotationAsync();
   }
-  
-  protected emitDataChanged(count: number, clearable?: boolean, undoable?: boolean) {
-    this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
-      annotatorType: "stamp",
-      elementCount: count,
-      undoable,
-      clearable,
-      saveable: false,
-    }));
-  }  
 
   protected createStandardStamp(type: string, 
     userName?: string): StampAnnotation {

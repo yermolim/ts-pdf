@@ -149,6 +149,7 @@ export const styles = /*html*/`
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
     z-index: 4;
+    pointer-events: none;
   }
   .mobile #focused-annotation-panel {
     left: 20px;
@@ -168,7 +169,9 @@ export const styles = /*html*/`
     color: var(--tspdf-color-fg-primary-final);
   }
   
-  #annotation-panel {
+  
+  #annotation-panel,
+  #command-panel {
     position: absolute;
     display: flex;
     flex-direction: column;
@@ -176,17 +179,24 @@ export const styles = /*html*/`
     align-items: flex-end;
     flex-grow: 1;
     flex-shrink: 1;
-    top: 80px;
     right: 20px;
+    pointer-events: none;
+  }
+  #annotation-panel {
+    top: 125px;
     z-index: -5;
     transition: z-index 0s linear 0.25s;
-    pointer-events: none;
+  }
+  #command-panel {
+    top: 80px;
+    z-index: 5;
   }
   .mode-annotation #annotation-panel {
     z-index: 5;
   }
   
-  .annotation-panel-row {      
+  .annotation-panel-row,
+  .command-panel-row {      
       display: flex;
       flex-direction: row;
       justify-content: flex-end;
@@ -212,12 +222,14 @@ export const styles = /*html*/`
     transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
   }
 
-  .annotation-panel-subitem {
+  .annotation-panel-subitem,
+  .command-panel-subitem {
     margin: 3px;    
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     pointer-events: all;
   }  
+  :not(.undoable-commands) #button-command-undo,
   :not(.annotation-selected) #button-annotation-edit-text,
   :not(.annotation-selected) #button-annotation-delete,
   :not(.stamp-annotator-data-undoable) #button-annotation-stamp-undo,
@@ -237,6 +249,7 @@ export const styles = /*html*/`
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }
+  .undoable-commands #button-command-undo,
   .annotation-selected #button-annotation-edit-text,
   .annotation-selected #button-annotation-delete,
   .stamp-annotator-data-undoable #button-annotation-stamp-undo,

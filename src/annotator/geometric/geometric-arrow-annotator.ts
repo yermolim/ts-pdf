@@ -26,7 +26,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     const start = new Vec2(min.x, min.y);
     const end = new Vec2(max.x, max.y);
     const xAlignedStart = new Vec2();
-    const xAlignedEnd = new Vec2(Vec2.substract(end, start).getMagnitude(), 0);
+    const xAlignedEnd = new Vec2(Vec2.subtract(end, start).getMagnitude(), 0);
     const mat = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");

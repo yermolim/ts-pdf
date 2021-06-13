@@ -14,7 +14,6 @@ export class TextNoteAnnotator extends TextAnnotator {
 
   protected _pageId: number;
   protected _tempAnnotation: TextAnnotation;
-  protected _addedAnnotations: TextAnnotation[] = [];
 
   constructor(docService: DocumentService, pageService: PageService, 
     viewer: Viewer, options?: TextAnnotatorOptions) {
@@ -24,28 +23,16 @@ export class TextNoteAnnotator extends TextAnnotator {
   }
 
   override destroy() {    
-    this.emitDataChanged(0);
     this._tempAnnotation = null;
     super.destroy();
   }
 
-  /**remove the most recently added annotation by this annotation instance */
   undo() {
-    if (!this._addedAnnotations.length) {
-      return;
-    }
-
-    const lastAnnotation = this._addedAnnotations.pop();
-    this._docService.removeAnnotation(lastAnnotation);
-    const empty = !this._addedAnnotations.length;
-    this.emitDataChanged(this._addedAnnotations.length, false, !empty, !empty);
+    this.clear();
   }
 
-  /**remove all the annotations added by this annotation instance */
   clear() {
-    while (this._addedAnnotations.length) {
-      this.undo();
-    }
+    this._tempAnnotation = null;
   }
 
   /**saves the current temp annotation to the document data */
@@ -62,9 +49,6 @@ export class TextNoteAnnotator extends TextAnnotator {
 
       // append the current temp annotation to the page
       this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-  
-      this._addedAnnotations.push(this._tempAnnotation);
-      this.emitDataChanged(this._addedAnnotations.length, false, true, true);
     }
 
     // create a new temp annotation

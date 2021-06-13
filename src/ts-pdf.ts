@@ -15,7 +15,7 @@ import { ElementEventService } from "./services/element-event-service";
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
 import { DocumentService, annotChangeEvent, AnnotEvent, 
-  AnnotEventDetail, AnnotationDto } from "./services/document-service";
+  AnnotEventDetail, AnnotationDto, DocServiceStateChangeEvent, docServiceStateChangeEvent } from "./services/document-service";
 import { customStampEvent, CustomStampEvent, CustomStampEventDetail, 
   CustomStampService } from "./services/custom-stamp-service";
 import { AnnotationService } from "./services/annotation-service";
@@ -193,6 +193,7 @@ export class TsPdfViewer {
     this._eventService.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
     this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
     this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
+    this._eventService.addListener(docServiceStateChangeEvent, this.onDocServiceStateChange);
     
     document.addEventListener("selectionchange", this.onTextSelectionChange); 
   }
@@ -619,6 +620,9 @@ export class TsPdfViewer {
       .addEventListener("click", this.annotatorClear);
     this._shadowRoot.querySelector("#button-annotation-text-save")
       .addEventListener("click", this.annotatorSave);
+
+    this._shadowRoot.querySelector("#button-command-undo")
+      .addEventListener("click", this.docServiceUndo);      
   }
   //#endregion
 
@@ -869,6 +873,18 @@ export class TsPdfViewer {
   //#region misc
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     // TODO: implement progress display
+  };
+
+  private docServiceUndo = () => {
+    this._docService?.undo();
+  };
+
+  private onDocServiceStateChange = (e: DocServiceStateChangeEvent) => {
+    if (e.detail.undoableCount) {
+      this._mainContainer.classList.add("undoable-commands");
+    } else {      
+      this._mainContainer.classList.remove("undoable-commands");
+    }
   };
 
   /**

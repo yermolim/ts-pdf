@@ -237,18 +237,18 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
     const rv = new Vec2(r[0], r[1]);
     const tv = new Vec2(t[0], t[1]);
     let cob = lv;
-    let minDistance = Vec2.substract(p, lv).getMagnitude();
-    const bvToP = Vec2.substract(p, bv).getMagnitude();
+    let minDistance = Vec2.subtract(p, lv).getMagnitude();
+    const bvToP = Vec2.subtract(p, bv).getMagnitude();
     if (bvToP < minDistance) {
       minDistance = bvToP;
       cob = bv;
     }
-    const rvToP = Vec2.substract(p, rv).getMagnitude();
+    const rvToP = Vec2.subtract(p, rv).getMagnitude();
     if (rvToP < minDistance) {
       minDistance = rvToP;
       cob = rv;
     }
-    const tvToP = Vec2.substract(p, tv).getMagnitude();
+    const tvToP = Vec2.subtract(p, tv).getMagnitude();
     if (tvToP < minDistance) {
       minDistance = tvToP;
       cob = tv;

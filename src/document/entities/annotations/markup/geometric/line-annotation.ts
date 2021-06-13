@@ -529,7 +529,7 @@ export class LineAnnotation extends GeometricAnnotation {
     const end = new Vec2(x2, y2);
 
     // calculate the data for updating bounding boxes
-    const length = Vec2.substract(end, start).getMagnitude();    
+    const length = Vec2.subtract(end, start).getMagnitude();    
     const xAlignedStart = new Vec2();
     const xAlignedEnd = new Vec2(length, 0);
     const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);

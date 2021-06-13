@@ -221,6 +221,14 @@ const mainHtml = `
         </div>
       </div>
     </div>
+    <div id="command-panel">
+      <div class="command-panel-row">
+        <div id="button-command-undo" 
+          class="panel-button command-panel-subitem">
+          <img src="${img$A}"/>
+        </div>
+      </div>      
+    </div>
     <div id="annotation-panel">
       <div class="annotation-panel-row">
         <div id="button-annotation-edit-text" 
@@ -582,6 +590,7 @@ const styles = `
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
     z-index: 4;
+    pointer-events: none;
   }
   .mobile #focused-annotation-panel {
     left: 20px;
@@ -601,7 +610,9 @@ const styles = `
     color: var(--tspdf-color-fg-primary-final);
   }
   
-  #annotation-panel {
+  
+  #annotation-panel,
+  #command-panel {
     position: absolute;
     display: flex;
     flex-direction: column;
@@ -609,17 +620,24 @@ const styles = `
     align-items: flex-end;
     flex-grow: 1;
     flex-shrink: 1;
-    top: 80px;
     right: 20px;
+    pointer-events: none;
+  }
+  #annotation-panel {
+    top: 125px;
     z-index: -5;
     transition: z-index 0s linear 0.25s;
-    pointer-events: none;
+  }
+  #command-panel {
+    top: 80px;
+    z-index: 5;
   }
   .mode-annotation #annotation-panel {
     z-index: 5;
   }
   
-  .annotation-panel-row {      
+  .annotation-panel-row,
+  .command-panel-row {      
       display: flex;
       flex-direction: row;
       justify-content: flex-end;
@@ -645,12 +663,14 @@ const styles = `
     transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
   }
 
-  .annotation-panel-subitem {
+  .annotation-panel-subitem,
+  .command-panel-subitem {
     margin: 3px;    
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     pointer-events: all;
   }  
+  :not(.undoable-commands) #button-command-undo,
   :not(.annotation-selected) #button-annotation-edit-text,
   :not(.annotation-selected) #button-annotation-delete,
   :not(.stamp-annotator-data-undoable) #button-annotation-stamp-undo,
@@ -670,6 +690,7 @@ const styles = `
     transform: scale(0);
     transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
   }
+  .undoable-commands #button-command-undo,
   .annotation-selected #button-annotation-edit-text,
   .annotation-selected #button-annotation-delete,
   .stamp-annotator-data-undoable #button-annotation-stamp-undo,
@@ -1699,8 +1720,8 @@ function getSelectionInfosFromRangeSpans(range) {
         });
         const startOffsetRelative = startOffset / textLength;
         const endOffsetRelative = endOffset / textLength;
-        const spanBottomVec = Vec2.substract(spanBrVec, spanBlVec);
-        const spanTopVec = Vec2.substract(spanTrVec, spanTlVec);
+        const spanBottomVec = Vec2.subtract(spanBrVec, spanBlVec);
+        const spanTopVec = Vec2.subtract(spanTrVec, spanTlVec);
         const selectionBlVec = Vec2.add(spanBlVec, Vec2.multiplyByScalar(spanBottomVec, startOffsetRelative));
         const selectionBrVec = Vec2.add(spanBlVec, Vec2.multiplyByScalar(spanBottomVec, endOffsetRelative));
         const selectionTrVec = Vec2.add(spanTlVec, Vec2.multiplyByScalar(spanTopVec, endOffsetRelative));
@@ -12856,7 +12877,7 @@ function buildSquigglyLine(start, end, maxWaveSize) {
     if (isNaN(maxWaveSize) || maxWaveSize <= 0) {
         throw new Error(`Invalid maximal squiggle size ${maxWaveSize}`);
     }
-    const lineLength = Vec2.substract(start, end).getMagnitude();
+    const lineLength = Vec2.subtract(start, end).getMagnitude();
     if (!lineLength) {
         return null;
     }
@@ -14448,23 +14469,23 @@ class AnnotationDict extends PdfDict {
             switch (handleName) {
                 case "ll":
                     this._tempStartPoint.setFromVec2(ur);
-                    this._tempVecX.setFromVec2(ul).substract(ur);
-                    this._tempVecY.setFromVec2(lr).substract(ur);
+                    this._tempVecX.setFromVec2(ul).subtract(ur);
+                    this._tempVecY.setFromVec2(lr).subtract(ur);
                     break;
                 case "lr":
                     this._tempStartPoint.setFromVec2(ul);
-                    this._tempVecX.setFromVec2(ur).substract(ul);
-                    this._tempVecY.setFromVec2(ll).substract(ul);
+                    this._tempVecX.setFromVec2(ur).subtract(ul);
+                    this._tempVecY.setFromVec2(ll).subtract(ul);
                     break;
                 case "ur":
                     this._tempStartPoint.setFromVec2(ll);
-                    this._tempVecX.setFromVec2(lr).substract(ll);
-                    this._tempVecY.setFromVec2(ul).substract(ll);
+                    this._tempVecX.setFromVec2(lr).subtract(ll);
+                    this._tempVecY.setFromVec2(ul).subtract(ll);
                     break;
                 case "ul":
                     this._tempStartPoint.setFromVec2(lr);
-                    this._tempVecX.setFromVec2(ll).substract(lr);
-                    this._tempVecY.setFromVec2(ur).substract(lr);
+                    this._tempVecX.setFromVec2(ll).subtract(lr);
+                    this._tempVecY.setFromVec2(ur).subtract(lr);
                     break;
                 default:
                     throw new Error(`Invalid handle name: ${handleName}`);
@@ -14484,7 +14505,7 @@ class AnnotationDict extends PdfDict {
                 return;
             }
             const currentBoxDiagonal = this.convertClientCoordsToPage(e.clientX, e.clientY)
-                .substract(this._tempStartPoint);
+                .subtract(this._tempStartPoint);
             const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
             const cos = Math.abs(currentBoxDiagonal.dotProduct(this._tempVecX))
                 / currentBoxDiagonalLength / this._tempX;
@@ -14502,7 +14523,7 @@ class AnnotationDict extends PdfDict {
                 .applyScaling(scaleX, scaleY)
                 .applyRotation(currentRotation)
                 .applyTranslation(annotCenterX, annotCenterY);
-            const translation = this._tempStartPoint.clone().substract(this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));
+            const translation = this._tempStartPoint.clone().subtract(this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));
             this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
             this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
             this._moved = true;
@@ -15411,8 +15432,8 @@ class MarkupAnnotation extends AnnotationDict {
                         lineBottomLeftPdf.x, lineBottomLeftPdf.y,
                         lineTopRightPdf.x, lineTopRightPdf.y
                     ];
-                    const lineBottomLeftPdfRel = Vec2.substract(lineBottomLeftPdf, pivotPoint);
-                    const lineTopRightPdfRel = Vec2.substract(lineTopRightPdf, pivotPoint);
+                    const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
+                    const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
                     const lineRelativeRect = [
                         lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
                         lineTopRightPdfRel.x, lineTopRightPdfRel.y
@@ -20948,7 +20969,7 @@ function buildCloudCurveFromPolyline(polylinePoints, maxArcSize) {
     for (i = 0; i < polylinePoints.length - 1; i++) {
         lineStart = polylinePoints[i];
         lineEnd = polylinePoints[i + 1];
-        lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
+        lineLength = Vec2.subtract(lineEnd, lineStart).getMagnitude();
         if (!lineLength) {
             continue;
         }
@@ -21448,8 +21469,8 @@ class CircleAnnotation extends GeometricAnnotation {
         const trBoxTop = Vec2.add(trBoxUL, trBoxUR).multiplyByScalar(0.5);
         const trBoxRight = Vec2.add(trBoxLR, trBoxUR).multiplyByScalar(0.5);
         const trBoxBottom = Vec2.add(trBoxLL, trBoxLR).multiplyByScalar(0.5);
-        const rx = Vec2.substract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
-        const ry = Vec2.substract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
+        const rx = Vec2.subtract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
+        const ry = Vec2.subtract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
         const colorString = this.getColorString();
         let streamTextData = `q ${colorString} /GS0 gs`;
         streamTextData += `\n${invMatArray[0]} ${invMatArray[1]} ${invMatArray[2]} ${invMatArray[3]} ${invMatArray[4]} ${invMatArray[5]} cm`;
@@ -21467,12 +21488,12 @@ class CircleAnnotation extends GeometricAnnotation {
             const cy = Vec2.multiplyByScalar(ry, c);
             const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);
             const controlTR2 = Vec2.add(Vec2.add(trBoxCenter, cy), rx);
-            const controlRB1 = Vec2.add(Vec2.substract(trBoxCenter, cy), rx);
-            const controlRB2 = Vec2.add(Vec2.substract(trBoxCenter, ry), cx);
-            const controlBL1 = Vec2.substract(Vec2.substract(trBoxCenter, ry), cx);
-            const controlBL2 = Vec2.substract(Vec2.substract(trBoxCenter, cy), rx);
-            const controlLT1 = Vec2.substract(Vec2.add(trBoxCenter, cy), rx);
-            const controlLT2 = Vec2.substract(Vec2.add(trBoxCenter, ry), cx);
+            const controlRB1 = Vec2.add(Vec2.subtract(trBoxCenter, cy), rx);
+            const controlRB2 = Vec2.add(Vec2.subtract(trBoxCenter, ry), cx);
+            const controlBL1 = Vec2.subtract(Vec2.subtract(trBoxCenter, ry), cx);
+            const controlBL2 = Vec2.subtract(Vec2.subtract(trBoxCenter, cy), rx);
+            const controlLT1 = Vec2.subtract(Vec2.add(trBoxCenter, cy), rx);
+            const controlLT2 = Vec2.subtract(Vec2.add(trBoxCenter, ry), cx);
             streamTextData += `\n${trBoxTop.x} ${trBoxTop.y} m`;
             streamTextData += `\n${controlTR1.x} ${controlTR1.y} ${controlTR2.x} ${controlTR2.y} ${trBoxRight.x} ${trBoxRight.y} c`;
             streamTextData += `\n${controlRB1.x} ${controlRB1.y} ${controlRB2.x} ${controlRB2.y} ${trBoxBottom.x} ${trBoxBottom.y} c`;
@@ -22486,7 +22507,7 @@ class LineAnnotation extends GeometricAnnotation {
         const [x1, y1, x2, y2] = this.L;
         const start = new Vec2(x1, y1);
         const end = new Vec2(x2, y2);
-        const length = Vec2.substract(end, start).getMagnitude();
+        const length = Vec2.subtract(end, start).getMagnitude();
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(length, 0);
         const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
@@ -23322,8 +23343,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
             const handleName = target.dataset.handleName;
             const points = this._pointsTemp;
             const p = this.convertClientCoordsToPage(e.clientX, e.clientY);
-            const horLength = Vec2.substract(points.br, points.bl).getMagnitude();
-            const vertLength = Vec2.substract(points.tl, points.bl).getMagnitude();
+            const horLength = Vec2.subtract(points.br, points.bl).getMagnitude();
+            const vertLength = Vec2.subtract(points.tl, points.bl).getMagnitude();
             const matToAligned = Mat3.from4Vec2(points.bl, points.br, new Vec2(), new Vec2(horLength, 0));
             let oppositeP;
             switch (handleName) {
@@ -23774,7 +23795,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         }
     }
     calculateStreamMatrix(tbTopLeftPage, tbTopRightPage) {
-        const length = Vec2.substract(tbTopRightPage, tbTopLeftPage).getMagnitude();
+        const length = Vec2.subtract(tbTopRightPage, tbTopLeftPage).getMagnitude();
         const alignedTL = new Vec2();
         const alignedTR = new Vec2(length, 0);
         const matrix = Mat3.from4Vec2(alignedTL, alignedTR, tbTopLeftPage, tbTopRightPage);
@@ -23864,7 +23885,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 : [sPoints.cob, sPoints.cop];
             const [coStart, coEnd] = coEnds;
             const coStartAligned = new Vec2(0, 0);
-            const coEndAligned = new Vec2(Vec2.substract(coEnd, coStart).getMagnitude());
+            const coEndAligned = new Vec2(Vec2.subtract(coEnd, coStart).getMagnitude());
             const coMat = Mat3.from4Vec2(coStartAligned, coEndAligned, coStart, coEnd);
             const calloutPointerStream = this.getLineEndingStreamPart(coEndAligned, this.LE, this.strokeWidth, "right");
             const coMatShort = coMat.toFloatShortArray();
@@ -24174,6 +24195,7 @@ var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _argu
 const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
 const annotFocusRequestEvent = "tspdf-annotfocusrequest";
 const annotChangeEvent = "tspdf-annotchange";
+const docServiceStateChangeEvent = "tspdf-docservicechange";
 class AnnotSelectionRequestEvent extends CustomEvent {
     constructor(detail) {
         super(annotSelectionRequestEvent, { detail });
@@ -24189,10 +24211,16 @@ class AnnotEvent extends CustomEvent {
         super(annotChangeEvent, { detail });
     }
 }
+class DocServiceStateChangeEvent extends CustomEvent {
+    constructor(detail) {
+        super(docServiceStateChangeEvent, { detail });
+    }
+}
 class DocumentService {
     constructor(eventService, data, userName) {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
+        this._lastCommands = [];
         this.getObjectParseInfo = (id) => {
             var _a, _b, _c;
             if (!id) {
@@ -24311,6 +24339,8 @@ class DocumentService {
         return !this._encryption || !!this._authResult;
     }
     destroy() {
+        this._lastCommands.length = 0;
+        this.emitStateChanged();
         this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
             x.$onEditedAction = null;
             x.$onRenderUpdatedAction = null;
@@ -24326,6 +24356,9 @@ class DocumentService {
     }
     getPlainData() {
         return this._data.slice();
+    }
+    undo() {
+        this.undoCommand();
     }
     getDataWithoutSupportedAnnotationsAsync() {
         return __awaiter$k(this, void 0, void 0, function* () {
@@ -24393,28 +24426,7 @@ class DocumentService {
     }
     appendAnnotationToPageAsync(pageId, annotation) {
         return __awaiter$k(this, void 0, void 0, function* () {
-            if (!annotation) {
-                throw new Error("Annotation is not defined");
-            }
-            const page = this._pageById.get(pageId);
-            if (!page) {
-                throw new Error(`Page with id ${pageId} is not found`);
-            }
-            annotation.$pageId = page.id;
-            annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
-            annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
-            const pageAnnotations = annotationMap.get(pageId);
-            if (pageAnnotations) {
-                pageAnnotations.push(annotation);
-            }
-            else {
-                annotationMap.set(pageId, [annotation]);
-            }
-            this._eventService.dispatchEvent(new AnnotEvent({
-                type: "add",
-                annotations: [annotation.toDto()],
-            }));
+            this.appendAnnotationAsync(pageId, annotation, true);
         });
     }
     appendSerializedAnnotationsAsync(dtos) {
@@ -24426,21 +24438,13 @@ class DocumentService {
             }
         });
     }
-    removeAnnotation(annotation) {
-        if (!annotation) {
-            return;
-        }
-        annotation.markAsDeleted(true);
-        this.setSelectedAnnotation(null);
-        this._eventService.dispatchEvent(new AnnotEvent({
-            type: "delete",
-            annotations: [annotation.toDto()],
-        }));
+    removeAnnotationFromPage(annotation) {
+        this.removeAnnotation(annotation, true);
     }
     removeSelectedAnnotation() {
         const annotation = this.selectedAnnotation;
         if (annotation) {
-            this.removeAnnotation(annotation);
+            this.removeAnnotation(annotation, true);
         }
     }
     setSelectedAnnotation(annotation) {
@@ -24504,6 +24508,77 @@ class DocumentService {
     setSelectedAnnotationTextContent(text) {
         var _a;
         (_a = this.selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContent(text);
+    }
+    pushCommand(command) {
+        this._lastCommands.push(command);
+        this.emitStateChanged();
+    }
+    undoCommand() {
+        if (!this._lastCommands.length) {
+            return;
+        }
+        const lastCommand = this._lastCommands.pop();
+        lastCommand.undo();
+        this.emitStateChanged();
+    }
+    emitStateChanged() {
+        this._eventService.dispatchEvent(new DocServiceStateChangeEvent({
+            undoableCount: this._lastCommands.length,
+        }));
+    }
+    appendAnnotationAsync(pageId, annotation, undoable) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            if (!annotation) {
+                throw new Error("Annotation is not defined");
+            }
+            const page = this._pageById.get(pageId);
+            if (!page) {
+                throw new Error(`Page with id ${pageId} is not found`);
+            }
+            annotation.markAsDeleted(false);
+            annotation.$pageId = page.id;
+            annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+            annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
+            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+            const pageAnnotations = annotationMap.get(pageId);
+            if (pageAnnotations) {
+                pageAnnotations.push(annotation);
+            }
+            else {
+                annotationMap.set(pageId, [annotation]);
+            }
+            if (undoable) {
+                this.pushCommand({
+                    timestamp: Date.now(),
+                    undo: () => {
+                        this.removeAnnotation(annotation, false);
+                    }
+                });
+            }
+            this._eventService.dispatchEvent(new AnnotEvent({
+                type: "add",
+                annotations: [annotation.toDto()],
+            }));
+        });
+    }
+    removeAnnotation(annotation, undoable) {
+        if (!annotation) {
+            return;
+        }
+        annotation.markAsDeleted(true);
+        this.setSelectedAnnotation(null);
+        if (undoable) {
+            this.pushCommand({
+                timestamp: Date.now(),
+                undo: () => {
+                    this.appendAnnotationAsync(annotation.$pageId, annotation, false);
+                }
+            });
+        }
+        this._eventService.dispatchEvent(new AnnotEvent({
+            type: "delete",
+            annotations: [annotation.toDto()],
+        }));
     }
     getOnAnnotEditAction(annotation) {
         if (!annotation) {
@@ -25673,7 +25748,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
         const start = new Vec2(min.x, min.y);
         const end = new Vec2(max.x, max.y);
         const xAlignedStart = new Vec2();
-        const xAlignedEnd = new Vec2(Vec2.substract(end, start).getMagnitude(), 0);
+        const xAlignedEnd = new Vec2(Vec2.subtract(end, start).getMagnitude(), 0);
         const mat = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "none");
@@ -26698,7 +26773,6 @@ const supportedStampTypes = [
 class StampAnnotator extends Annotator {
     constructor(docService, pageService, parent, type, creationInfo) {
         super(docService, pageService, parent);
-        this._addedAnnotations = [];
         this.onPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -26753,23 +26827,14 @@ class StampAnnotator extends Annotator {
         this.init();
     }
     destroy() {
-        this.emitDataChanged(0, false, false);
         this._tempAnnotation = null;
         super.destroy();
     }
     undo() {
-        if (!this._addedAnnotations.length) {
-            return;
-        }
-        const lastAnnotation = this._addedAnnotations.pop();
-        this._docService.removeAnnotation(lastAnnotation);
-        const empty = !this._addedAnnotations.length;
-        this.emitDataChanged(this._addedAnnotations.length, !empty, !empty);
+        this.clear();
     }
     clear() {
-        while (this._addedAnnotations.length) {
-            this.undo();
-        }
+        this._tempAnnotation = null;
     }
     saveAnnotationAsync() {
         return __awaiter$c(this, void 0, void 0, function* () {
@@ -26777,8 +26842,6 @@ class StampAnnotator extends Annotator {
                 return;
             }
             this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-            this._addedAnnotations.push(this._tempAnnotation);
-            this.emitDataChanged(this._addedAnnotations.length, true, true);
             this.createTempStampAnnotationAsync();
         });
     }
@@ -26787,15 +26850,6 @@ class StampAnnotator extends Annotator {
         this._overlay.addEventListener("pointermove", this.onPointerMove);
         this._overlay.addEventListener("pointerup", this.onPointerUp);
         this.createTempStampAnnotationAsync();
-    }
-    emitDataChanged(count, clearable, undoable) {
-        this._docService.eventService.dispatchEvent(new AnnotatorDataChangeEvent({
-            annotatorType: "stamp",
-            elementCount: count,
-            undoable,
-            clearable,
-            saveable: false,
-        }));
     }
     createStandardStamp(type, userName) {
         const nowString = new Date().toISOString();
@@ -27228,7 +27282,6 @@ var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _argu
 class TextNoteAnnotator extends TextAnnotator {
     constructor(docService, pageService, viewer, options) {
         super(docService, pageService, viewer.container, options || {});
-        this._addedAnnotations = [];
         this.onPointerMove = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -27278,23 +27331,14 @@ class TextNoteAnnotator extends TextAnnotator {
         this.init();
     }
     destroy() {
-        this.emitDataChanged(0);
         this._tempAnnotation = null;
         super.destroy();
     }
     undo() {
-        if (!this._addedAnnotations.length) {
-            return;
-        }
-        const lastAnnotation = this._addedAnnotations.pop();
-        this._docService.removeAnnotation(lastAnnotation);
-        const empty = !this._addedAnnotations.length;
-        this.emitDataChanged(this._addedAnnotations.length, false, !empty, !empty);
+        this.clear();
     }
     clear() {
-        while (this._addedAnnotations.length) {
-            this.undo();
-        }
+        this._tempAnnotation = null;
     }
     saveAnnotationAsync() {
         var _a, _b;
@@ -27307,8 +27351,6 @@ class TextNoteAnnotator extends TextAnnotator {
             if (text !== null) {
                 this._tempAnnotation.setTextContent(text);
                 this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-                this._addedAnnotations.push(this._tempAnnotation);
-                this.emitDataChanged(this._addedAnnotations.length, false, true, true);
             }
             this.createTempNoteAnnotationAsync();
         });
@@ -27607,18 +27649,18 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
             const rv = new Vec2(r[0], r[1]);
             const tv = new Vec2(t[0], t[1]);
             let cob = lv;
-            let minDistance = Vec2.substract(p, lv).getMagnitude();
-            const bvToP = Vec2.substract(p, bv).getMagnitude();
+            let minDistance = Vec2.subtract(p, lv).getMagnitude();
+            const bvToP = Vec2.subtract(p, bv).getMagnitude();
             if (bvToP < minDistance) {
                 minDistance = bvToP;
                 cob = bv;
             }
-            const rvToP = Vec2.substract(p, rv).getMagnitude();
+            const rvToP = Vec2.subtract(p, rv).getMagnitude();
             if (rvToP < minDistance) {
                 minDistance = rvToP;
                 cob = rv;
             }
-            const tvToP = Vec2.substract(p, tv).getMagnitude();
+            const tvToP = Vec2.subtract(p, tv).getMagnitude();
             if (tvToP < minDistance) {
                 minDistance = tvToP;
                 cob = tv;
@@ -29250,6 +29292,18 @@ class TsPdfViewer {
         };
         this.onPdfLoadingProgress = (progressData) => {
         };
+        this.docServiceUndo = () => {
+            var _a;
+            (_a = this._docService) === null || _a === void 0 ? void 0 : _a.undo();
+        };
+        this.onDocServiceStateChange = (e) => {
+            if (e.detail.undoableCount) {
+                this._mainContainer.classList.add("undoable-commands");
+            }
+            else {
+                this._mainContainer.classList.remove("undoable-commands");
+            }
+        };
         this.onPreviewerToggleClick = () => {
             if (this._previewer.hidden) {
                 this._mainContainer.classList.remove("hide-previewer");
@@ -29339,6 +29393,7 @@ class TsPdfViewer {
         this._eventService.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
         this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
         this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
+        this._eventService.addListener(docServiceStateChangeEvent, this.onDocServiceStateChange);
         document.addEventListener("selectionchange", this.onTextSelectionChange);
     }
     destroy() {
@@ -29642,6 +29697,8 @@ class TsPdfViewer {
             .addEventListener("click", this.annotatorClear);
         this._shadowRoot.querySelector("#button-annotation-text-save")
             .addEventListener("click", this.annotatorSave);
+        this._shadowRoot.querySelector("#button-command-undo")
+            .addEventListener("click", this.docServiceUndo);
     }
     setViewerMode(mode) {
         mode = mode || "text";

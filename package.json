@@ -73,7 +73,7 @@
   },
   "dependencies": {
     "crypto-es": "^1.2.7",
-    "mathador": "^0.1.5",
+    "mathador": "^0.2.0",
     "pako": "^2.0.3",
     "pdfjs-dist": "^2.7.570",
     "uuid": "^8.3.2"

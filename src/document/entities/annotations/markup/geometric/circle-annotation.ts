@@ -247,8 +247,8 @@ export class CircleAnnotation extends GeometricAnnotation {
     const trBoxRight = Vec2.add(trBoxLR, trBoxUR).multiplyByScalar(0.5);
     const trBoxBottom = Vec2.add(trBoxLL, trBoxLR).multiplyByScalar(0.5);
     
-    const rx = Vec2.substract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
-    const ry = Vec2.substract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
+    const rx = Vec2.subtract(trBoxRight, trBoxLeft).multiplyByScalar(0.5);
+    const ry = Vec2.subtract(trBoxTop, trBoxBottom).multiplyByScalar(0.5);
 
     // get color
     const colorString = this.getColorString();
@@ -276,12 +276,12 @@ export class CircleAnnotation extends GeometricAnnotation {
       const cy = Vec2.multiplyByScalar(ry, c);
       const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);
       const controlTR2 = Vec2.add(Vec2.add(trBoxCenter, cy), rx);
-      const controlRB1 = Vec2.add(Vec2.substract(trBoxCenter, cy), rx);
-      const controlRB2 = Vec2.add(Vec2.substract(trBoxCenter, ry), cx);
-      const controlBL1 = Vec2.substract(Vec2.substract(trBoxCenter, ry), cx);
-      const controlBL2 = Vec2.substract(Vec2.substract(trBoxCenter, cy), rx);
-      const controlLT1 = Vec2.substract(Vec2.add(trBoxCenter, cy), rx);
-      const controlLT2 = Vec2.substract(Vec2.add(trBoxCenter, ry), cx);
+      const controlRB1 = Vec2.add(Vec2.subtract(trBoxCenter, cy), rx);
+      const controlRB2 = Vec2.add(Vec2.subtract(trBoxCenter, ry), cx);
+      const controlBL1 = Vec2.subtract(Vec2.subtract(trBoxCenter, ry), cx);
+      const controlBL2 = Vec2.subtract(Vec2.subtract(trBoxCenter, cy), rx);
+      const controlLT1 = Vec2.subtract(Vec2.add(trBoxCenter, cy), rx);
+      const controlLT2 = Vec2.subtract(Vec2.add(trBoxCenter, ry), cx);
       // drawing the curves starting at the top tangent
       streamTextData += `\n${trBoxTop.x} ${trBoxTop.y} m`;
       streamTextData += `\n${controlTR1.x} ${controlTR1.y} ${controlTR2.x} ${controlTR2.y} ${trBoxRight.x} ${trBoxRight.y} c`;

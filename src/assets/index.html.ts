@@ -144,6 +144,14 @@ export const mainHtml = /*html*/`
         </div>
       </div>
     </div>
+    <div id="command-panel">
+      <div class="command-panel-row">
+        <div id="button-command-undo" 
+          class="panel-button command-panel-subitem">
+          <img src="${icon_back}"/>
+        </div>
+      </div>      
+    </div>
     <div id="annotation-panel">
       <div class="annotation-panel-row">
         <div id="button-annotation-edit-text" 

@@ -41,7 +41,7 @@ export function buildCloudCurveFromPolyline(polylinePoints: Vec2[], maxArcSize: 
   for (i = 0; i < polylinePoints.length - 1; i++) {
     lineStart = polylinePoints[i];
     lineEnd = polylinePoints[i + 1];
-    lineLength = Vec2.substract(lineEnd, lineStart).getMagnitude();
+    lineLength = Vec2.subtract(lineEnd, lineStart).getMagnitude();
     if (!lineLength) {
       // skip lines with zero length
       continue;

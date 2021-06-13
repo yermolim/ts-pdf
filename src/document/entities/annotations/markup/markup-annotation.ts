@@ -370,8 +370,8 @@ export abstract class MarkupAnnotation extends AnnotationDict {
         ];
         // line dimensions relative to annotation text pivot point 
         // (Y-axis is flipped, pivot point is 0,0)
-        const lineBottomLeftPdfRel = Vec2.substract(lineBottomLeftPdf, pivotPoint);
-        const lineTopRightPdfRel = Vec2.substract(lineTopRightPdf, pivotPoint);
+        const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
+        const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
         const lineRelativeRect: Quadruple = [
           lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
           lineTopRightPdfRel.x, lineTopRightPdfRel.y

@@ -29,6 +29,7 @@ export { AnnotationDto };
 export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;
 export const annotFocusRequestEvent = "tspdf-annotfocusrequest" as const;
 export const annotChangeEvent = "tspdf-annotchange" as const;
+export const docServiceStateChangeEvent = "tspdf-docservicechange" as const;
 
 export interface AnnotSelectionRequestEventDetail {
   annotation: AnnotationDict;
@@ -39,6 +40,9 @@ export interface AnnotFocusRequestEventDetail {
 export interface AnnotEventDetail {
   type: "focus" | "select" | "add" | "edit" | "delete" | "render";
   annotations: AnnotationDto[];
+}
+export interface DocServiceStateChangeEventDetail {
+  undoableCount: number;
 }
 
 export class AnnotSelectionRequestEvent extends CustomEvent<AnnotSelectionRequestEventDetail> {
@@ -56,15 +60,27 @@ export class AnnotEvent extends CustomEvent<AnnotEventDetail> {
     super(annotChangeEvent, {detail});
   }
 }
+export class DocServiceStateChangeEvent extends CustomEvent<DocServiceStateChangeEventDetail> {
+  constructor(detail: DocServiceStateChangeEventDetail) {
+    super(docServiceStateChangeEvent, {detail});
+  }
+}
 
 declare global {
   interface HTMLElementEventMap {
     [annotSelectionRequestEvent]: AnnotSelectionRequestEvent;
     [annotFocusRequestEvent]: AnnotFocusRequestEvent;
     [annotChangeEvent]: AnnotEvent;
+    [docServiceStateChangeEvent]: DocServiceStateChangeEvent;
   }
 }
 //#endregion
+
+interface DocCommand {
+  timestamp: number;  
+  undo(): void;
+  redo?(): void;
+}
 
 export class DocumentService {
   protected readonly _eventService: ElementEventService;
@@ -107,7 +123,9 @@ export class DocumentService {
   private _fontMap: Map<string, FontDict>;
   get fontMap(): Map<string, FontDict> {
     return this._fontMap;
-  }
+  }  
+
+  private _lastCommands: DocCommand[] = [];
 
   /**max PDF object id + 1 */
   get size(): number {
@@ -167,6 +185,9 @@ export class DocumentService {
 
   /**free the resources that can prevent garbage to be collected */
   destroy() {
+    this._lastCommands.length = 0;
+    this.emitStateChanged();
+
     this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
       // clear public actions to prevent memory leak
       x.$onEditedAction = null;
@@ -190,6 +211,11 @@ export class DocumentService {
    */
   getPlainData(): Uint8Array {
     return this._data.slice();
+  }
+  
+  /**undo the most recent command */
+  undo() {
+    this.undoCommand();
   }
 
   //#region public annotations
@@ -280,30 +306,7 @@ export class DocumentService {
    * appending an annotation to another page removes it from the first one
    */
   async appendAnnotationToPageAsync(pageId: number, annotation: AnnotationDict) {
-    if (!annotation) {
-      throw new Error("Annotation is not defined");
-    }
-
-    const page = this._pageById.get(pageId);
-    if (!page) {
-      throw new Error(`Page with id ${pageId} is not found`);
-    }
-
-    annotation.$pageId = page.id;
-    annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
-    annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
-    const annotationMap = await this.getSupportedAnnotationMapAsync();
-    const pageAnnotations = annotationMap.get(pageId);
-    if (pageAnnotations) {
-      pageAnnotations.push(annotation);
-    } else {
-      annotationMap.set(pageId, [annotation]);
-    }
-
-    this._eventService.dispatchEvent(new AnnotEvent({   
-      type: "add",   
-      annotations: [annotation.toDto()],
-    }));
+    this.appendAnnotationAsync(pageId, annotation, true);
   } 
 
   /**
@@ -319,25 +322,15 @@ export class DocumentService {
   }
 
   /**mark an annotation as deleted */
-  removeAnnotation(annotation: AnnotationDict) {
-    if (!annotation) {
-      return;
-    }
-
-    annotation.markAsDeleted(true);
-    this.setSelectedAnnotation(null);
-    
-    this._eventService.dispatchEvent(new AnnotEvent({  
-      type: "delete",
-      annotations: [annotation.toDto()],
-    }));
+  removeAnnotationFromPage(annotation: AnnotationDict) {
+    this.removeAnnotation(annotation, true);
   }
 
   /**mark the currently selected annotation as deleted */
   removeSelectedAnnotation() {
     const annotation = this.selectedAnnotation;
     if (annotation) {
-      this.removeAnnotation(annotation);
+      this.removeAnnotation(annotation, true);
     }
   }
   
@@ -413,6 +406,87 @@ export class DocumentService {
     this.selectedAnnotation?.setTextContent(text);
   }
   //#endregion
+
+  private pushCommand(command: DocCommand) {
+    this._lastCommands.push(command);
+    this.emitStateChanged();
+  }
+
+  private undoCommand() {
+    if (!this._lastCommands.length) {
+      return;
+    }
+    const lastCommand = this._lastCommands.pop();
+    lastCommand.undo();    
+    this.emitStateChanged();
+  }
+
+  private emitStateChanged() {
+    this._eventService.dispatchEvent(new DocServiceStateChangeEvent({
+      undoableCount: this._lastCommands.length,
+    }));    
+  }
+
+  private async appendAnnotationAsync(pageId: number, annotation: AnnotationDict, undoable: boolean) {
+    if (!annotation) {
+      throw new Error("Annotation is not defined");
+    }
+
+    const page = this._pageById.get(pageId);
+    if (!page) {
+      throw new Error(`Page with id ${pageId} is not found`);
+    }
+
+    annotation.markAsDeleted(false);
+    annotation.$pageId = page.id;
+    annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+    annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
+    const annotationMap = await this.getSupportedAnnotationMapAsync();
+    const pageAnnotations = annotationMap.get(pageId);
+    if (pageAnnotations) {
+      pageAnnotations.push(annotation);
+    } else {
+      annotationMap.set(pageId, [annotation]);
+    }
+
+    if (undoable) {
+      this.pushCommand({
+        timestamp: Date.now(),
+        undo: () => {
+          this.removeAnnotation(annotation, false);
+        }
+      });
+    }
+
+    this._eventService.dispatchEvent(new AnnotEvent({   
+      type: "add",   
+      annotations: [annotation.toDto()],
+    }));
+  } 
+  
+  /**mark an annotation as deleted */
+  private removeAnnotation(annotation: AnnotationDict, undoable: boolean) {
+    if (!annotation) {
+      return;
+    }
+
+    annotation.markAsDeleted(true);
+    this.setSelectedAnnotation(null);
+    
+    if (undoable) {
+      this.pushCommand({
+        timestamp: Date.now(),
+        undo: () => {
+          this.appendAnnotationAsync(annotation.$pageId, annotation, false);
+        }
+      });
+    }
+    
+    this._eventService.dispatchEvent(new AnnotEvent({  
+      type: "delete",
+      annotations: [annotation.toDto()],
+    }));
+  }
 
   private getOnAnnotEditAction(annotation: AnnotationDict): () => void {
     if (!annotation) {

@@ -145,6 +145,8 @@ export declare class TsPdfViewer {
 	private onAnnotationGeometricModeButtonClick;
 	private onAnnotationTextModeButtonClick;
 	private onPdfLoadingProgress;
+	private docServiceUndo;
+	private onDocServiceStateChange;
 	private refreshPagesAsync;
 	private onPreviewerToggleClick;
 	private onMainContainerPointerMove;

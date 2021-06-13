@@ -19,7 +19,7 @@ export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): 
     throw new Error(`Invalid maximal squiggle size ${maxWaveSize}`);
   }
   
-  const lineLength = Vec2.substract(start, end).getMagnitude();
+  const lineLength = Vec2.subtract(start, end).getMagnitude();
   if (!lineLength) {
     // the line has a zero length
     return null;

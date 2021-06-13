@@ -1167,23 +1167,23 @@ export abstract class AnnotationDict extends PdfDict {
     switch (handleName) {
       case "ll": 
         this._tempStartPoint.setFromVec2(ur);
-        this._tempVecX.setFromVec2(ul).substract(ur);
-        this._tempVecY.setFromVec2(lr).substract(ur);      
+        this._tempVecX.setFromVec2(ul).subtract(ur);
+        this._tempVecY.setFromVec2(lr).subtract(ur);      
         break;
       case "lr":
         this._tempStartPoint.setFromVec2(ul);
-        this._tempVecX.setFromVec2(ur).substract(ul);
-        this._tempVecY.setFromVec2(ll).substract(ul); 
+        this._tempVecX.setFromVec2(ur).subtract(ul);
+        this._tempVecY.setFromVec2(ll).subtract(ul); 
         break;
       case "ur":
         this._tempStartPoint.setFromVec2(ll); 
-        this._tempVecX.setFromVec2(lr).substract(ll);
-        this._tempVecY.setFromVec2(ul).substract(ll);
+        this._tempVecX.setFromVec2(lr).subtract(ll);
+        this._tempVecY.setFromVec2(ul).subtract(ll);
         break;
       case "ul":
         this._tempStartPoint.setFromVec2(lr); 
-        this._tempVecX.setFromVec2(ll).substract(lr);
-        this._tempVecY.setFromVec2(ur).substract(lr);
+        this._tempVecX.setFromVec2(ll).subtract(lr);
+        this._tempVecY.setFromVec2(ur).subtract(lr);
         break;
       default:
         // execution should not reach here
@@ -1217,7 +1217,7 @@ export abstract class AnnotationDict extends PdfDict {
 
     // calculate the current diagonal vector
     const currentBoxDiagonal = this.convertClientCoordsToPage(e.clientX, e.clientY)
-      .substract(this._tempStartPoint);
+      .subtract(this._tempStartPoint);
     const currentBoxDiagonalLength = currentBoxDiagonal.getMagnitude();
 
     // calculate the cosine of the angle between the current diagonal vector and the initial box side
@@ -1242,7 +1242,7 @@ export abstract class AnnotationDict extends PdfDict {
       .applyScaling(scaleX, scaleY)
       .applyRotation(currentRotation)
       .applyTranslation(annotCenterX, annotCenterY);
-    const translation = this._tempStartPoint.clone().substract(
+    const translation = this._tempStartPoint.clone().subtract(
       this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));
     this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
     

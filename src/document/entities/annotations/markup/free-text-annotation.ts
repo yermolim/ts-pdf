@@ -519,7 +519,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
    */
   protected calculateStreamMatrix(tbTopLeftPage: Vec2, tbTopRightPage: Vec2): Mat3 {
     // align annotation horizontally starting at 0, 0 (top-left text box corner) for stream    
-    const length = Vec2.substract(tbTopRightPage, tbTopLeftPage).getMagnitude();
+    const length = Vec2.subtract(tbTopRightPage, tbTopLeftPage).getMagnitude();
     const alignedTL = new Vec2();
     const alignedTR = new Vec2(length, 0);
     // calculate matrix from stream CS to page CS
@@ -661,7 +661,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
         : [sPoints.cob, sPoints.cop];
       const [coStart, coEnd] = coEnds;
       const coStartAligned = new Vec2(0, 0);
-      const coEndAligned = new Vec2(Vec2.substract(coEnd, coStart).getMagnitude());
+      const coEndAligned = new Vec2(Vec2.subtract(coEnd, coStart).getMagnitude());
       const coMat = Mat3.from4Vec2(coStartAligned, coEndAligned, coStart, coEnd);      
       const calloutPointerStream = this.getLineEndingStreamPart(coEndAligned, 
         this.LE, this.strokeWidth, "right");
@@ -895,8 +895,8 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const p = this.convertClientCoordsToPage(e.clientX, e.clientY);
 
     // get length of the text box sides
-    const horLength = Vec2.substract(points.br, points.bl).getMagnitude();
-    const vertLength = Vec2.substract(points.tl, points.bl).getMagnitude();
+    const horLength = Vec2.subtract(points.br, points.bl).getMagnitude();
+    const vertLength = Vec2.subtract(points.tl, points.bl).getMagnitude();
     // calculate the transformation matrix 
     // from the current text box position to the AA CS (with bottom-left corner at 0,0)
     const matToAligned = Mat3.from4Vec2(points.bl, points.br, new Vec2(), new Vec2(horLength, 0));
