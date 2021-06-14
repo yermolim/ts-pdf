@@ -1,5 +1,5 @@
 import { Double, Quadruple } from "../../../../../common/types";
-import { codes } from "../../../../char-codes";
+import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType } from "../../../../spec-constants";
 
 import { CryptInfo } from "../../../../common-interfaces";

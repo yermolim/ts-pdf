@@ -1,4 +1,4 @@
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { ObjectType, objectTypes, streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";

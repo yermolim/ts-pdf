@@ -2,7 +2,7 @@ import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
 import { StreamType, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
-import { keywordCodes } from "../../char-codes";
+import { keywordCodes } from "../../encoding/char-codes";
 
 import { PdfStream } from "../core/pdf-stream";
 import { HexString } from "../strings/hex-string";

@@ -1,4 +1,4 @@
-import { keywordCodes } from "../../char-codes";
+import { keywordCodes } from "../../encoding/char-codes";
 import { DictType } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";

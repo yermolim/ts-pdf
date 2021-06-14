@@ -1,5 +1,5 @@
 import { Double } from "../../../common/types";
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { dictTypes, borderStyles, BorderStyle } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";

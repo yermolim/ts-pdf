@@ -3,7 +3,7 @@ import { FlatePredictor, flatePredictors, StreamFilter,
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";
-import { keywordCodes } from "../../char-codes";
+import { keywordCodes } from "../../encoding/char-codes";
 import { FlateDecoder } from "../../encoding/flate-decoder";
 import { CryptInfo } from "../../common-interfaces";
 

@@ -4,7 +4,7 @@ import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../core/object-id";
 import { HexString } from "../strings/hex-string";
 import { EncryptionDict } from "../encryption/encryption-dict";
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../common-interfaces";
 
 export class TrailerDict extends PdfDict {

@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices, selectionStrokeWidth, 
   CssMixBlendMode } from "../../drawing/utils";
 
-import { codes } from "../char-codes";
+import { codes } from "../encoding/char-codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../spec-constants";
 
 import { DataParser } from "../data-parser";

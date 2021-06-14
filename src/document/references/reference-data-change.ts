@@ -1,9 +1,8 @@
-import { LinkedList } from "../common/types";
+import { LinkedList } from "../../common/types";
 
-import { FreeReference, UsedReference, Reference } from "./common-interfaces";
-import { xRefEntryTypes } from "./spec-constants";
-
-import { XRefEntry } from "./entities/x-refs/x-ref-entry";
+import { FreeReference, UsedReference, Reference } from "../common-interfaces";
+import { XRefEntry } from "../entities/x-refs/x-ref-entry";
+import { xRefEntryTypes } from "../spec-constants";
 
 import { ReferenceData } from "./reference-data";
 

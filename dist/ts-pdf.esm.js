@@ -2534,68 +2534,6 @@ const keywordCodes = {
     CMAP_END_RANGE: [codes.e, codes.n, codes.d,
         codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
 };
-const DELIMITER_CHARS = new Set([
-    codes.PERCENT,
-    codes.L_PARENTHESE,
-    codes.R_PARENTHESE,
-    codes.SLASH,
-    codes.LESS,
-    codes.GREATER,
-    codes.L_BRACKET,
-    codes.R_BRACKET,
-    codes.L_BRACE,
-    codes.R_BRACE,
-]);
-const SPACE_CHARS = new Set([
-    codes.NULL,
-    codes.HORIZONTAL_TAB,
-    codes.LINE_FEED,
-    codes.FORM_FEED,
-    codes.CARRIAGE_RETURN,
-    codes.WHITESPACE,
-]);
-const DIGIT_CHARS = new Set([
-    codes.D_0,
-    codes.D_1,
-    codes.D_2,
-    codes.D_3,
-    codes.D_4,
-    codes.D_5,
-    codes.D_6,
-    codes.D_7,
-    codes.D_8,
-    codes.D_9,
-]);
-function isRegularChar(code) {
-    if (isNaN(code)) {
-        return false;
-    }
-    return !DELIMITER_CHARS.has(code) && !SPACE_CHARS.has(code);
-}
-function isNotRegularChar(code) {
-    if (isNaN(code)) {
-        return true;
-    }
-    return DELIMITER_CHARS.has(code) || SPACE_CHARS.has(code);
-}
-function isDigit(code) {
-    return DIGIT_CHARS.has(code);
-}
-function isNewLineChar(code) {
-    return code === codes.CARRIAGE_RETURN || code === codes.LINE_FEED;
-}
-function isSpaceChar(code) {
-    return SPACE_CHARS.has(code);
-}
-function isNotSpaceChar(code) {
-    return !SPACE_CHARS.has(code);
-}
-function isDelimiterChar(code) {
-    return DELIMITER_CHARS.has(code);
-}
-function isNotDelimiterChar(code) {
-    return !DELIMITER_CHARS.has(code);
-}
 
 class DataParser {
     constructor(data) {
@@ -2607,6 +2545,36 @@ class DataParser {
     }
     get maxIndex() {
         return this._maxIndex;
+    }
+    static isRegularChar(code) {
+        if (isNaN(code)) {
+            return false;
+        }
+        return !this.delimiterChars.has(code) && !this.spaceChars.has(code);
+    }
+    static isNotRegularChar(code) {
+        if (isNaN(code)) {
+            return true;
+        }
+        return this.delimiterChars.has(code) || this.spaceChars.has(code);
+    }
+    static isDigit(code) {
+        return this.digitChars.has(code);
+    }
+    static isNewLineChar(code) {
+        return this.newLineChars.has(code);
+    }
+    static isSpaceChar(code) {
+        return this.spaceChars.has(code);
+    }
+    static isNotSpaceChar(code) {
+        return !this.spaceChars.has(code);
+    }
+    static isDelimiterChar(code) {
+        return this.delimiterChars.has(code);
+    }
+    static isNotDelimiterChar(code) {
+        return !this.delimiterChars.has(code);
     }
     getPdfVersion() {
         var _a;
@@ -2652,7 +2620,7 @@ class DataParser {
                         continue outer_loop;
                     }
                 }
-                if (allowOpened || !isRegularChar(arr[i + j])) {
+                if (allowOpened || !DataParser.isRegularChar(arr[i + j])) {
                     return { start: i, end: i + j - 1 };
                 }
             }
@@ -2665,7 +2633,7 @@ class DataParser {
                         continue outer_loop;
                     }
                 }
-                if (allowOpened || !isRegularChar(arr[i - j])) {
+                if (allowOpened || !DataParser.isRegularChar(arr[i - j])) {
                     return { start: i - j + 1, end: i };
                 }
             }
@@ -2705,7 +2673,7 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isNewLineChar(arr[i])) {
+                if (DataParser.isNewLineChar(arr[i])) {
                     lineBreakIndex = i;
                     break;
                 }
@@ -2713,7 +2681,7 @@ class DataParser {
         }
         else {
             for (i; i >= 0; i--) {
-                if (isNewLineChar(arr[i])) {
+                if (DataParser.isNewLineChar(arr[i])) {
                     lineBreakIndex = i;
                     break;
                 }
@@ -2746,14 +2714,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isSpaceChar(arr[i])) {
+                if (DataParser.isSpaceChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (isSpaceChar(arr[i])) {
+                if (DataParser.isSpaceChar(arr[i])) {
                     return i;
                 }
             }
@@ -2769,14 +2737,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isNotSpaceChar(arr[i])) {
+                if (DataParser.isNotSpaceChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (isNotSpaceChar(arr[i])) {
+                if (DataParser.isNotSpaceChar(arr[i])) {
                     return i;
                 }
             }
@@ -2792,14 +2760,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isDelimiterChar(arr[i])) {
+                if (DataParser.isDelimiterChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (isDelimiterChar(arr[i])) {
+                if (DataParser.isDelimiterChar(arr[i])) {
                     return i;
                 }
             }
@@ -2815,14 +2783,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isNotDelimiterChar(arr[i])) {
+                if (DataParser.isNotDelimiterChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (isNotDelimiterChar(arr[i])) {
+                if (DataParser.isNotDelimiterChar(arr[i])) {
                     return i;
                 }
             }
@@ -2838,14 +2806,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isNotRegularChar(arr[i])) {
+                if (DataParser.isNotRegularChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (isNotRegularChar(arr[i])) {
+                if (DataParser.isNotRegularChar(arr[i])) {
                     return i;
                 }
             }
@@ -2861,14 +2829,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (isRegularChar(arr[i])) {
+                if (DataParser.isRegularChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (isRegularChar(arr[i])) {
+                if (DataParser.isRegularChar(arr[i])) {
                     return i;
                 }
             }
@@ -2887,7 +2855,7 @@ class DataParser {
         const charCode = arr[i];
         switch (charCode) {
             case codes.SLASH:
-                if (isRegularChar(arr[i + 1])) {
+                if (DataParser.isRegularChar(arr[i + 1])) {
                     return valueTypes.NAME;
                 }
                 return valueTypes.UNKNOWN;
@@ -2915,14 +2883,14 @@ class DataParser {
                 const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
                 if (nextDelimIndex !== -1) {
                     const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
-                    if (refEndIndex !== -1 && refEndIndex > i && !isRegularChar(arr[refEndIndex + 1])) {
+                    if (refEndIndex !== -1 && refEndIndex > i && !DataParser.isRegularChar(arr[refEndIndex + 1])) {
                         return valueTypes.REF;
                     }
                 }
                 return valueTypes.NUMBER;
             case codes.DOT:
             case codes.MINUS:
-                if (isDigit(arr[i + 1])) {
+                if (DataParser.isDigit(arr[i + 1])) {
                     return valueTypes.NUMBER;
                 }
                 return valueTypes.UNKNOWN;
@@ -3155,7 +3123,7 @@ class DataParser {
         if (skipEmpty) {
             start = this.skipEmpty(start);
         }
-        if (this.isOutside(start) || !isRegularChar(this._data[start])) {
+        if (this.isOutside(start) || !DataParser.isRegularChar(this._data[start])) {
             return null;
         }
         let i = start;
@@ -3169,7 +3137,7 @@ class DataParser {
             numberStr += "0.";
             value = this._data[++i];
         }
-        while (isDigit(value)
+        while (DataParser.isDigit(value)
             || (float && value === codes.DOT)) {
             numberStr += String.fromCharCode(value);
             value = this._data[++i];
@@ -3190,7 +3158,7 @@ class DataParser {
             ? "/"
             : "";
         let value = this._data[i];
-        while (isRegularChar(value)) {
+        while (DataParser.isRegularChar(value)) {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
@@ -3208,7 +3176,7 @@ class DataParser {
         let i = start;
         let result = "";
         let value = this._data[i];
-        while (isRegularChar(value)) {
+        while (DataParser.isRegularChar(value)) {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
@@ -3333,7 +3301,7 @@ class DataParser {
             if (dictOpened !== 1) {
                 continue;
             }
-            if (!isRegularChar(arr[i + j])) {
+            if (!DataParser.isRegularChar(arr[i + j])) {
                 propNameBounds = { start: i, end: i + j - 1 };
                 break;
             }
@@ -3440,6 +3408,46 @@ class DataParser {
         return (index < 0 || index > this._maxIndex);
     }
 }
+DataParser.EOL = [
+    codes.CARRIAGE_RETURN,
+    codes.LINE_FEED,
+];
+DataParser.delimiterChars = new Set([
+    codes.PERCENT,
+    codes.L_PARENTHESE,
+    codes.R_PARENTHESE,
+    codes.SLASH,
+    codes.LESS,
+    codes.GREATER,
+    codes.L_BRACKET,
+    codes.R_BRACKET,
+    codes.L_BRACE,
+    codes.R_BRACE,
+]);
+DataParser.spaceChars = new Set([
+    codes.NULL,
+    codes.HORIZONTAL_TAB,
+    codes.LINE_FEED,
+    codes.FORM_FEED,
+    codes.CARRIAGE_RETURN,
+    codes.WHITESPACE,
+]);
+DataParser.digitChars = new Set([
+    codes.D_0,
+    codes.D_1,
+    codes.D_2,
+    codes.D_3,
+    codes.D_4,
+    codes.D_5,
+    codes.D_6,
+    codes.D_7,
+    codes.D_8,
+    codes.D_9,
+]);
+DataParser.newLineChars = new Set([
+    codes.CARRIAGE_RETURN,
+    codes.LINE_FEED,
+]);
 
 class LinkedListNode {
     constructor(data) {
@@ -3897,25 +3905,28 @@ class XRefEntry {
         this.streamId = streamId;
         this.streamIndex = streamIndex;
     }
+    static isDigit(code) {
+        return this.digitChars.has(code);
+    }
     static *fromTableBytes(bytes) {
         let i = 0;
         let j = 0;
         while (i < bytes.length) {
             const firstIndexBytes = [];
             let firstIndexDigit = bytes[i++];
-            while (isDigit(firstIndexDigit)) {
+            while (XRefEntry.isDigit(firstIndexDigit)) {
                 firstIndexBytes.push(firstIndexDigit);
                 firstIndexDigit = bytes[i++];
             }
             let firstIndex = parseInt(firstIndexBytes.map(x => String.fromCharCode(x)).join(""), 10);
             const countBytes = [];
             let countDigit = bytes[i++];
-            while (isDigit(countDigit)) {
+            while (XRefEntry.isDigit(countDigit)) {
                 countBytes.push(countDigit);
                 countDigit = bytes[i++];
             }
             const count = parseInt(countBytes.map(x => String.fromCharCode(x)).join(""), 10);
-            while (!isDigit(bytes[i])) {
+            while (!XRefEntry.isDigit(bytes[i])) {
                 i++;
             }
             for (j = 0; j < count; j++) {
@@ -4155,6 +4166,18 @@ class XRefEntry {
         return groups;
     }
 }
+XRefEntry.digitChars = new Set([
+    codes.D_0,
+    codes.D_1,
+    codes.D_2,
+    codes.D_3,
+    codes.D_4,
+    codes.D_5,
+    codes.D_6,
+    codes.D_7,
+    codes.D_8,
+    codes.D_9,
+]);
 
 class ReferenceDataChange {
     constructor(refData) {

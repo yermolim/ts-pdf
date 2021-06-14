@@ -1,10 +1,10 @@
-import { LinkedList } from "../common/types";
+import { LinkedList } from "../../common/types";
 
-import { maxGeneration, xRefEntryTypes } from "./spec-constants";
-import { FreeReference, Reference, UsedReference } from "./common-interfaces";
+import { maxGeneration, xRefEntryTypes } from "../spec-constants";
+import { FreeReference, Reference, UsedReference } from "../common-interfaces";
 
-import { XRef } from "./entities/x-refs/x-ref";
-import { XRefEntry } from "./entities/x-refs/x-ref-entry";
+import { XRef } from "../entities/x-refs/x-ref";
+import { XRefEntry } from "../entities/x-refs/x-ref-entry";
 
 /**
  * a class that encapsulates the logic related to

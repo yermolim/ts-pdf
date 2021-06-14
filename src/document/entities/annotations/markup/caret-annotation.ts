@@ -1,4 +1,4 @@
-import { codes } from "../../../char-codes";
+import { codes } from "../../../encoding/char-codes";
 import { annotationTypes, caretSymbolTypes, CaretSymbolType } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";

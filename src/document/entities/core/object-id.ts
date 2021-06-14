@@ -1,4 +1,4 @@
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable, Reference } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 

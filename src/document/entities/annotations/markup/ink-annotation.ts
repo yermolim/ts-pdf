@@ -1,4 +1,4 @@
-import { codes } from "../../../char-codes";
+import { codes } from "../../../encoding/char-codes";
 import { Mat3, Vec2 } from "mathador";
 import { Double, Quadruple } from "../../../../common/types";
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../spec-constants";

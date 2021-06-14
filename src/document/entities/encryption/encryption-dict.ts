@@ -1,4 +1,4 @@
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, 
   dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo, CryptOptions } from "../../common-interfaces";

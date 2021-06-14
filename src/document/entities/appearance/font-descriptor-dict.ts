@@ -3,7 +3,7 @@ import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
 import { HexString } from "../strings/hex-string";

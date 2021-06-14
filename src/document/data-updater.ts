@@ -1,7 +1,7 @@
 import { AuthenticationResult, CryptInfo, IDataCryptor, UsedReference } from "./common-interfaces";
 import { DataWriter } from "./data-writer";
-import { ReferenceData } from "./reference-data";
-import { ReferenceDataChange } from "./reference-data-change";
+import { ReferenceData } from "./references/reference-data";
+import { ReferenceDataChange } from "./references/reference-data-change";
 
 import { ObjectId } from "./entities/core/object-id";
 import { PdfObject } from "./entities/core/pdf-object";

@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { BBox } from "../../../drawing/utils";
 import { getRandomUuid } from "../../../common/uuid";
 
-import { codes } from "../../char-codes";
+import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../common-interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";

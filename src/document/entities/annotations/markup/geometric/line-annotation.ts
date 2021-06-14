@@ -4,7 +4,7 @@ import { VecMinMax, lineEndingMinimalSize,
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
 import { TempSvgPath } from "../../../../../common/dom";
 
-import { codes } from "../../../../char-codes";
+import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
   lineEndingTypes, lineJoinStyles, lineIntents, LineIntent, 
   lineCaptionPositions, LineCaptionPosition } from "../../../../spec-constants";

@@ -4,7 +4,7 @@ import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/common-interfaces";
 
 import { DataParser, ParseInfo } from "../document/data-parser";
-import { ReferenceData } from "../document/reference-data";
+import { ReferenceData } from "../document/references/reference-data";
 import { DataUpdater, PageUpdateInfo } from "../document/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
 

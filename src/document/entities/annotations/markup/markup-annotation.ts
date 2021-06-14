@@ -6,7 +6,7 @@ import { TextData, TextDataOptions, TextLineData } from "../../../../common/text
 import { bezierConstant, lineEndingMinimalSize, 
   lineEndingMultiplier } from "../../../../drawing/utils";
 
-import { codes } from "../../../char-codes";
+import { codes } from "../../../encoding/char-codes";
 import { AnnotationType, markupAnnotationReplyTypes, MarkupAnnotationReplyType,
   LineEndingType, lineEndingTypes, valueTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";

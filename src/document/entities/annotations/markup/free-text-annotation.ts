@@ -5,7 +5,7 @@ import { TempSvgPath } from "../../../../common/dom";
 import { calcPdfBBoxToRectMatrices, VecMinMax, 
   lineEndingMinimalSize, lineEndingMultiplier } from "../../../../drawing/utils";
 
-import { codes } from "../../../char-codes";
+import { codes } from "../../../encoding/char-codes";
 import { annotationTypes, JustificationType, justificationTypes, 
   lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles,
   freeTextIntents, FreeTextIntent } from "../../../spec-constants";

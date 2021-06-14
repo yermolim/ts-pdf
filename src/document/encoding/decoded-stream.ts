@@ -1,5 +1,5 @@
 /* eslint-disable no-bitwise */
-import { IStream } from "../common-interfaces";
+import { IStream } from "./i-stream";
 import { Stream } from "./stream";
 
 export abstract class DecodedStream implements IStream {  

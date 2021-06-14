@@ -1,8 +1,5 @@
 import { Quadruple } from "../common/types";
-import { codes, keywordCodes,
-  isRegularChar, isDigit, isNewLineChar, 
-  isSpaceChar, isNotSpaceChar, isDelimiterChar, 
-  isNotDelimiterChar, isNotRegularChar } from "./char-codes";
+import { codes, keywordCodes } from "./encoding/char-codes";
 import { ObjectType, ValueType, valueTypes } from "./spec-constants";
 import { CryptInfo } from "./common-interfaces";
 
@@ -51,6 +48,66 @@ export interface ParseResult<T> extends Bounds {
 
 /**PDF data parser */
 export class DataParser {
+  //#region static collections
+  /**
+   * Each line is terminated by an end-of-line (EOL) marker
+   */
+  static readonly EOL = [
+    codes.CARRIAGE_RETURN, 
+    codes.LINE_FEED,
+  ] as const;
+  
+  /**
+   * The delimiter  characters (, ), <, >, [, ], {, }, /,  and  %  are  special.  
+   * They delimit syntactic entities such as strings, arrays, names, and comments.  
+   * Any of these characters terminates the entity preceding it and is not included in the entity. 
+   */
+  static readonly delimiterChars = new Set<number>([
+    codes.PERCENT,
+    codes.L_PARENTHESE,
+    codes.R_PARENTHESE,
+    codes.SLASH,
+    codes.LESS,
+    codes.GREATER,
+    codes.L_BRACKET,
+    codes.R_BRACKET,
+    codes.L_BRACE,
+    codes.R_BRACE,
+  ]);
+  
+  /**
+   * White-space characters separate syntactic constructs such as names and numbers from each other.  
+   * All white-space characters are  equivalent, except in comments, strings, and streams. 
+   * In all other contexts, PDF treats any sequence of consecutive white-space characters as one character.
+   */
+  static readonly spaceChars = new Set<number>([
+    codes.NULL,
+    codes.HORIZONTAL_TAB,
+    codes.LINE_FEED,
+    codes.FORM_FEED,
+    codes.CARRIAGE_RETURN,
+    codes.WHITESPACE,
+  ]);
+  
+  static readonly digitChars = new Set<number>([
+    codes.D_0,
+    codes.D_1,
+    codes.D_2,
+    codes.D_3,
+    codes.D_4,
+    codes.D_5,
+    codes.D_6,
+    codes.D_7,
+    codes.D_8,
+    codes.D_9,
+  ]);
+
+  static readonly newLineChars = new Set<number>([
+    codes.CARRIAGE_RETURN,
+    codes.LINE_FEED,
+  ]);
+  //#endregion
+
   private readonly _data: Uint8Array;  
   private readonly _maxIndex: number;
 
@@ -69,7 +126,57 @@ export class DataParser {
     }
     this._data = data;
     this._maxIndex = data.length - 1;
+  }  
+
+  //#region static check methods
+  /**
+   * check if the char is not a space char or a delimiter char
+   * @param code char code
+   * @returns 
+   */
+  static isRegularChar(code: number): boolean {
+    if (isNaN(code)) {
+      return false;
+    }
+    return !this.delimiterChars.has(code) && !this.spaceChars.has(code);
   }
+
+  /**
+   * check if the char is a space char or a delimiter char
+   * @param code char code
+   * @returns 
+   */
+  static isNotRegularChar(code: number): boolean {
+    if (isNaN(code)) {
+      return true;
+    }
+    return this.delimiterChars.has(code) || this.spaceChars.has(code);
+  }
+
+  static isDigit(code: number): boolean {
+    return this.digitChars.has(code);
+  }
+
+  static isNewLineChar(code: number): boolean {
+    return this.newLineChars.has(code);
+  }
+
+  static isSpaceChar(code: number): boolean {
+    return this.spaceChars.has(code);
+  }
+
+  static isNotSpaceChar(code: number): boolean {
+    return !this.spaceChars.has(code);
+  }
+
+  static isDelimiterChar(code: number): boolean {
+    return this.delimiterChars.has(code);
+  }
+
+  static isNotDelimiterChar(code: number): boolean {
+    return !this.delimiterChars.has(code);
+  }
+  //#endregion
 
   /**
    * parse the PDF version (throws if the underlying data is not a PDF file)
@@ -142,7 +249,7 @@ export class DataParser {
             continue outer_loop;
           }
         }
-        if (allowOpened || !isRegularChar(arr[i + j])) {
+        if (allowOpened || !DataParser.isRegularChar(arr[i + j])) {
           return {start: i, end: i + j - 1};
         }
       }
@@ -155,7 +262,7 @@ export class DataParser {
             continue outer_loop;
           }
         }
-        if (allowOpened || !isRegularChar(arr[i - j])) {
+        if (allowOpened || !DataParser.isRegularChar(arr[i - j])) {
           return {start: i - j + 1, end: i};
         }
       }
@@ -216,14 +323,14 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isNewLineChar(arr[i])) {
+        if (DataParser.isNewLineChar(arr[i])) {
           lineBreakIndex = i;
           break;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isNewLineChar(arr[i])) {
+        if (DataParser.isNewLineChar(arr[i])) {
           lineBreakIndex = i;
           break;
         }
@@ -266,13 +373,13 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isSpaceChar(arr[i])) {
+        if (DataParser.isSpaceChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isSpaceChar(arr[i])) {
+        if (DataParser.isSpaceChar(arr[i])) {
           return i;
         }
       }
@@ -298,13 +405,13 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isNotSpaceChar(arr[i])) {
+        if (DataParser.isNotSpaceChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isNotSpaceChar(arr[i])) {
+        if (DataParser.isNotSpaceChar(arr[i])) {
           return i;
         }
       }
@@ -330,13 +437,13 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isDelimiterChar(arr[i])) {
+        if (DataParser.isDelimiterChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isDelimiterChar(arr[i])) {
+        if (DataParser.isDelimiterChar(arr[i])) {
           return i;
         }
       }
@@ -362,13 +469,13 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isNotDelimiterChar(arr[i])) {
+        if (DataParser.isNotDelimiterChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isNotDelimiterChar(arr[i])) {
+        if (DataParser.isNotDelimiterChar(arr[i])) {
           return i;
         }
       }
@@ -394,13 +501,13 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isNotRegularChar(arr[i])) {
+        if (DataParser.isNotRegularChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isNotRegularChar(arr[i])) {
+        if (DataParser.isNotRegularChar(arr[i])) {
           return i;
         }
       }
@@ -426,13 +533,13 @@ export class DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (isRegularChar(arr[i])) {
+        if (DataParser.isRegularChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (isRegularChar(arr[i])) {
+        if (DataParser.isRegularChar(arr[i])) {
           return i;
         }
       }
@@ -462,7 +569,7 @@ export class DataParser {
     const charCode = arr[i];
     switch (charCode) {
       case codes.SLASH:
-        if (isRegularChar(arr[i + 1])) {
+        if (DataParser.isRegularChar(arr[i + 1])) {
           return valueTypes.NAME;
         } 
         return valueTypes.UNKNOWN;
@@ -490,14 +597,14 @@ export class DataParser {
         const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
         if (nextDelimIndex !== -1) {
           const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
-          if (refEndIndex !== -1 && refEndIndex > i && !isRegularChar(arr[refEndIndex + 1])) {
+          if (refEndIndex !== -1 && refEndIndex > i && !DataParser.isRegularChar(arr[refEndIndex + 1])) {
             return valueTypes.REF;
           }
         }
         return valueTypes.NUMBER;
       case codes.DOT:
       case codes.MINUS:
-        if (isDigit(arr[i + 1])) {          
+        if (DataParser.isDigit(arr[i + 1])) {          
           return valueTypes.NUMBER;
         }
         return valueTypes.UNKNOWN;
@@ -768,7 +875,7 @@ export class DataParser {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
-    if (this.isOutside(start) || !isRegularChar(this._data[start])) {
+    if (this.isOutside(start) || !DataParser.isRegularChar(this._data[start])) {
       return null;
     }
 
@@ -782,7 +889,7 @@ export class DataParser {
       numberStr += "0.";
       value = this._data[++i];
     }
-    while (isDigit(value)
+    while (DataParser.isDigit(value)
       || (float && value === codes.DOT)) {
       numberStr += String.fromCharCode(value);
       value = this._data[++i];
@@ -807,7 +914,7 @@ export class DataParser {
       ? "/"
       : "";
     let value = this._data[i];
-    while (isRegularChar(value)) {
+    while (DataParser.isRegularChar(value)) {
       result += String.fromCharCode(value);
       value = this._data[++i];
     };
@@ -828,7 +935,7 @@ export class DataParser {
     let i = start;
     let result = "";
     let value = this._data[i];
-    while (isRegularChar(value)) {
+    while (DataParser.isRegularChar(value)) {
       result += String.fromCharCode(value);
       value = this._data[++i];
     };
@@ -987,7 +1094,7 @@ export class DataParser {
       }
 
       // check if name is closed
-      if (!isRegularChar(arr[i + j])) {
+      if (!DataParser.isRegularChar(arr[i + j])) {
         propNameBounds = {start: i, end: i + j - 1};
         break;
       }
