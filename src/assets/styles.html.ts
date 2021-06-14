@@ -228,7 +228,11 @@ export const styles = /*html*/`
     background: var(--tspdf-color-secondary-tr-final);
     box-shadow: 0 0 10px var(--tspdf-color-shadow-final);
     pointer-events: all;
-  }  
+  }    
+  .command-panel-subitem.accent:hover,
+  .command-panel-subitem.accent.on {
+    box-shadow: 0 0 10px var(--tspdf-color-fg-accent-final);
+  }
   :not(.undoable-commands) #button-command-undo,
   :not(.annotation-selected) #button-annotation-edit-text,
   :not(.annotation-selected) #button-annotation-delete,
@@ -293,15 +297,25 @@ export const styles = /*html*/`
   .panel-button.on {
     background-color: var(--tspdf-color-accent-final);
   }
+  .panel-button.accent,
+  .panel-button.accent:hover,
+  .panel-button.accent.on {
+    background-color: var(--tspdf-color-fg-accent-final);
+  }
   .panel-button img {
     width: 20px;
     height: 20px;
-    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
+    filter: invert() opacity(0.7) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }  
   .panel-button:hover img,
   .panel-button.on img {
-    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
+    filter: invert() opacity(0.7) drop-shadow(0 0 0 var(--tspdf-color-fg-accent-final)) saturate(1000%);
   }  
+  .panel-button.accent img,  
+  .panel-button.accent:hover img,
+  .panel-button.accent.on img {
+    filter: opacity(0.7) drop-shadow(0 0 0 var(--tspdf-color-primary-final)) saturate(1000%);
+  }
   .disabled .panel-button img,
   .panel-button.disabled img {
     filter: invert() opacity(0.2) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
@@ -920,7 +934,7 @@ export const styles = /*html*/`
     pointer-events: auto !important;
   }
   .disabled #button-open-file img {
-    filter: invert() opacity(0.5) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
+    filter: invert() opacity(0.7) drop-shadow(0 0 0 var(--tspdf-color-fg-primary-final)) saturate(1000%);
   }
 
   .loader {

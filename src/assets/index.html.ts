@@ -147,7 +147,7 @@ export const mainHtml = /*html*/`
     <div id="command-panel">
       <div class="command-panel-row">
         <div id="button-command-undo" 
-          class="panel-button command-panel-subitem">
+          class="panel-button command-panel-subitem accent">
           <img src="${icon_back}"/>
         </div>
       </div>      
