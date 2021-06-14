@@ -1,16 +1,9 @@
 import { codes } from "../../../char-codes";
-import { annotationTypes } from "../../../const";
+import { annotationTypes, caretSymbolTypes, CaretSymbolType } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 import { Quadruple } from "../../../../common/types";
-
-export const caretSymbolTypes = {
-  NONE: "/None",
-  PARAGRAPH: "/P",
-} as const;
-export type CaretSymbolType = typeof caretSymbolTypes[keyof typeof caretSymbolTypes];
-
 
 export class CaretAnnotation extends MarkupAnnotation {
   /**

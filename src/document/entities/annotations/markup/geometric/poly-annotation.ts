@@ -1,5 +1,5 @@
 import { codes } from "../../../../char-codes";
-import { AnnotationType, valueTypes } from "../../../../const";
+import { AnnotationType, valueTypes, polyIntents, PolyIntent } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { ObjectId } from "../../../core/object-id";
@@ -9,13 +9,6 @@ import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotat
 export interface PolyAnnotationDto extends GeometricAnnotationDto {
   vertices: number[];
 }
-
-export const polyIntents = {
-  CLOUD: "/PolygonCloud",
-  POLYGON_DIMENSION: "/PolygonDimension",
-  POLYLINE_DIMENSION: "/PolyLineDimension",
-} as const;
-export type PolyIntent = typeof polyIntents[keyof typeof polyIntents];
 
 export abstract class PolyAnnotation extends GeometricAnnotation {
   /**

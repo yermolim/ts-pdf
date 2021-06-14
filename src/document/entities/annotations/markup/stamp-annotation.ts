@@ -2,7 +2,7 @@ import { StandardStampCreationInfo, standardStampCreationInfos }
   from "../../../../drawing/stamps";
 
 import { CryptInfo } from "../../../common-interfaces";
-import { annotationTypes, colorSpaces } from "../../../const";
+import { annotationTypes, colorSpaces, stampTypes, StampType } from "../../../const";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";
@@ -15,24 +15,6 @@ import { DecodeParamsDict } from "../../encoding/decode-params-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
 import { AnnotationDto } from "../annotation-dict";
-
-export const stampTypes = {
-  DRAFT: "/Draft",
-  NOT_APPROVED: "/NotApproved",
-  APPROVED: "/Approved",
-  AS_IS: "/AsIs",
-  FOR_COMMENT: "/ForComment",
-  EXPERIMENTAL: "/Experimental",
-  FINAL: "/Final",
-  SOLD: "/Sold",
-  EXPIRED: "/Expired",
-  PUBLIC: "/ForPublicRelease",
-  NOT_PUBLIC: "/NotForPublicRelease",
-  DEPARTMENTAL: "/Departmental",
-  CONFIDENTIAL: "/Confidential",
-  SECRET: "/TopSecret",
-} as const;
-export type StampType = typeof stampTypes[keyof typeof stampTypes];
 
 export interface StampAnnotationDto extends AnnotationDto {
   stampType: string;

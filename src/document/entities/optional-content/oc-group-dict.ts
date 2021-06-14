@@ -1,7 +1,6 @@
-import { dictTypes } from "../../const";
+import { dictTypes, OcIntent } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { PdfDict } from "../core/pdf-dict";
-import { OcIntent } from "./oc-const";
 import { OcUsageDict } from "./oc-usage-dict";
 
 export class OcGroupDict extends PdfDict {

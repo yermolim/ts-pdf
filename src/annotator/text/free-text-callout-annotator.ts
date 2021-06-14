@@ -1,13 +1,14 @@
 import { Vec2 } from "mathador";
 import { Double, Quadruple } from "../../common/types";
 import { getRandomUuid } from "../../common/uuid";
+import { lineEndingMinimalSize, lineEndingMultiplier } from "../../drawing/utils";
 
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
 
-import { lineEndingMinimalSize, lineEndingMultiplier, lineEndingTypes } from "../../document/const";
-import { FreeTextAnnotation, FreeTextAnnotationDto, FreeTextAnnotPointsDto, freeTextIntents } 
+import { lineEndingTypes, freeTextIntents } from "../../document/const";
+import { FreeTextAnnotation, FreeTextAnnotationDto, FreeTextAnnotPointsDto } 
   from "../../document/entities/annotations/markup/free-text-annotation";
 
 import { TextAnnotator, TextAnnotatorOptions } from "./text-annotator";

@@ -1,6 +1,6 @@
 import { CryptInfo } from "../../common-interfaces";
+import { UsageEvent } from "../../const";
 import { PdfDict } from "../core/pdf-dict";
-import { UsageEvent } from "./oc-const";
 import { OcGroupDict } from "./oc-group-dict";
 
 export class UsageDict extends PdfDict {

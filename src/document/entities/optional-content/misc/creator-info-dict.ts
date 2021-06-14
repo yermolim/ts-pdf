@@ -1,6 +1,6 @@
 import { CryptInfo } from "../../../common-interfaces";
+import { CreatorInfoType } from "../../../const";
 import { PdfDict } from "../../core/pdf-dict";
-import { CreatorInfoType } from "../oc-const";
 export class CreatoInfoDict extends PdfDict {
   /**
    * (Required) A name defining the type of content controlled by the group

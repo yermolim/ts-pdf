@@ -1,8 +1,7 @@
 import { PdfDict } from "../core/pdf-dict";
 import { OcGroupDict } from "./oc-group-dict";
 import { VisibilityExpression } from "./misc/visibility-expression";
-import { VisibilityPolicy, visibilityPolicies } from "./oc-const";
-import { dictTypes } from "../../const";
+import { dictTypes, VisibilityPolicy, visibilityPolicies } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 
 export class OcMembershipDict extends PdfDict {

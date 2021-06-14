@@ -18,11 +18,6 @@ import { AnnotationDto } from "../annotation-dict";
 
 
 //#region additional stamp annotation types and constants
-export const textNoteTypes = {
-  NOTE: "/Note",
-} as const;
-export type TextNoteType = typeof textNoteTypes[keyof typeof textNoteTypes];
-
 const textNoteForms = {
   NOTE:
   `25 10 m

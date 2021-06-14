@@ -1,3 +1,7 @@
+//#region general
+/**max PDF object generation */
+export const maxGeneration = 65535;
+
 /**
  * PDF supports eight basic types of objects
  */
@@ -14,6 +18,80 @@ export const objectTypes = {
   STREAM: 9,
 } as const;
 export type ObjectType = typeof objectTypes[keyof typeof objectTypes]; 
+
+/**value types that can be found in PDF file data */
+export const valueTypes = {
+  UNKNOWN: 0,
+  NULL: 1,
+  BOOLEAN: 2,
+  NUMBER: 3,
+  STRING_LITERAL: 4,
+  STRING_HEX: 5,
+  NAME: 6,
+  ARRAY: 7,
+  DICTIONARY: 8,
+  STREAM: 9,
+  REF: 10,
+  COMMENT: 11,
+} as const;
+export type ValueType = typeof valueTypes[keyof typeof valueTypes];
+
+export const dictTypes = {
+  XREF: "/XRef",
+  XOBJECT: "/XObject",
+  CATALOG: "/Catalog",
+  PAGE_TREE: "/Pages",
+  PAGE: "/Page",
+  ANNOTATION: "/Annot",
+  BORDER_STYLE: "/Border",
+  OPTIONAL_CONTENT_GROUP: "/OCG",
+  OPTIONAL_CONTENT_MD: "/OCMD",
+  EXTERNAL_DATA: "/ExDATA",
+  ACTION: "/Action",
+  MEASURE: "/Measure",
+  DEV_EXTENSIONS: "/DeveloperExtensions",
+  GRAPHICS_STATE: "/ExtGState",
+  CRYPT_FILTER: "/CryptFilter",
+  SOFT_MASK: "/Mask",
+  GROUP: "/Group",
+  FONT: "/Font",
+  FONT_DESCRIPTOR: "/FontDescriptor",
+  ENCODING: "/Encoding",
+  EMPTY: "",
+} as const;
+export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
+
+export const actionTypes = {
+  GO_TO: "/GoTo",
+  GO_TO_REMOTE_DOC: "/GoToR",
+  GO_TO_EMBEDDED_FILE: "/GoToE",
+  LAUNCH_APP: "/Launch",
+  READ_THREAD: "/Thread",
+  RESOLVE_URI: "/URI",
+  PLAY_SOUND: "/Sound",
+  PLAY_MOVIE: "/Movie",
+  HIDE: "/Hide",
+  EXECUTE_READER_SPECIFIC_ACTION: "/Named",
+  FORM_SUBMIT: "/SubmitForm",
+  FORM_RESET: "/ResetForm",
+  IMPORT_FROM_FILE: "/ImportData",
+  EXECUTE_JS: "/JavaScript",
+  SET_OCG_STATES: "/SetOCGState",
+  RENDITION: "/Rendition",
+  TRANSITION: "/Trans",
+  GO_TO_3D_VIEW: "/GoTo3DView",
+} as const;
+export type ActionType = typeof actionTypes[keyof typeof actionTypes];
+
+export const userTypes = {
+  INDIVIDUAL: "/Ind",
+  TITLE: "/Title",
+  ORGANIZATION: "/Org",
+} as const;
+export type UserTypes = typeof userTypes[keyof typeof userTypes];
+//#endregion
+
+//#region xref
 
 /**
  * Cross-reference tables are used in PDF pre-1.5,
@@ -47,6 +125,9 @@ export const crsEntryTypes = {
   COMPRESSED: 2,
 } as const;
 
+//#endregion
+
+//#region stream
 export const streamFilters = {
   ASCII85: "/ASCII85Decode",
   ASCIIHEX: "/ASCIIHexDecode",
@@ -72,6 +153,22 @@ export const flatePredictors = {
   PNG_OPTIMUM: 15,
 } as const;
 export type FlatePredictor = typeof flatePredictors[keyof typeof flatePredictors]; 
+
+export const streamTypes = {
+  XREF: "/XRef",
+  OBJECT_STREAM: "/ObjStm",
+  FORM_XOBJECT: "/XObject",
+  METADATA_STREAM: "/Metadata",
+} as const;
+export type StreamType = typeof streamTypes[keyof typeof streamTypes];
+
+export const supportedFilters = new Set<string>([
+  streamFilters.FLATE,
+  streamFilters.DCT,
+  streamFilters.JBIG2,
+  streamFilters.JPX,
+]);
+//#endregion
 
 //#region encryption
 export const cryptVersions = {
@@ -106,102 +203,7 @@ export const authEvents = {
 export type AuthEvent = typeof authEvents[keyof typeof authEvents]; 
 //#endregion
 
-export const onOffStates = {
-  ON: "/ON",
-  OFF: "/OFF",
-} as const;
-export type OnOffState = typeof onOffStates[keyof typeof onOffStates];
-
-export const justificationTypes = {
-  LEFT: 0,
-  CENTER: 1,
-  RIGHT: 2,
-} as const;
-export type JustificationType = typeof justificationTypes[keyof typeof justificationTypes];
-
-export const pageLayouts = {
-  SINGLE: "/SinglePage",
-  TWO_ODD_LEFT: "/TwoPageLeft",
-  TWO_ODD_RIGHT: "/TwoPageRight",
-  SINGLE_COLUMN: "/OneColumn",
-  TWO_COLUMNS_ODD_LEFT: "/TwoColumnLeft",
-  TWO_COLUMNS_ODD_RIGHT: "/TwoColumnRight",
-} as const;
-export type PageLayout = typeof pageLayouts[keyof typeof pageLayouts];
-
-export const pageModes = {
-  NONE: "/UseNone",
-  OUTLINES: "/UseOutlines",
-  THUMBS: "/UseThumbs",
-  FULL_SCREEN: "/FullScreen",
-  OPTIONAL_CONTENT: "/UseOC",
-  ATTACHMENTS: "/UseAttachments",
-} as const;
-export type PageMode = typeof pageModes[keyof typeof pageModes];
-
-export const streamTypes = {
-  XREF: "/XRef",
-  OBJECT_STREAM: "/ObjStm",
-  FORM_XOBJECT: "/XObject",
-  METADATA_STREAM: "/Metadata",
-} as const;
-export type StreamType = typeof streamTypes[keyof typeof streamTypes];
-
-export const userTypes = {
-  INDIVIDUAL: "/Ind",
-  TITLE: "/Title",
-  ORGANIZATION: "/Org",
-} as const;
-export type UserTypes = typeof userTypes[keyof typeof userTypes];
-
-export const dictTypes = {
-  XREF: "/XRef",
-  XOBJECT: "/XObject",
-  CATALOG: "/Catalog",
-  PAGE_TREE: "/Pages",
-  PAGE: "/Page",
-  ANNOTATION: "/Annot",
-  BORDER_STYLE: "/Border",
-  OPTIONAL_CONTENT_GROUP: "/OCG",
-  OPTIONAL_CONTENT_MD: "/OCMD",
-  EXTERNAL_DATA: "/ExDATA",
-  ACTION: "/Action",
-  MEASURE: "/Measure",
-  DEV_EXTENSIONS: "/DeveloperExtensions",
-  GRAPHICS_STATE: "/ExtGState",
-  CRYPT_FILTER: "/CryptFilter",
-  SOFT_MASK: "/Mask",
-  GROUP: "/Group",
-  FONT: "/Font",
-  FONT_DESCRIPTOR: "/FontDescriptor",
-  ENCODING: "/Encoding",
-  EMPTY: "",
-} as const;
-export type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
-
-export const groupDictTypes = {
-  TRANSPARENCY: "/Transparency",
-} as const;
-export type GroupDictType = typeof groupDictTypes[keyof typeof groupDictTypes];
-
-/**value types that can be found in PDF file data */
-export const valueTypes = {
-  UNKNOWN: 0,
-  NULL: 1,
-  BOOLEAN: 2,
-  NUMBER: 3,
-  STRING_LITERAL: 4,
-  STRING_HEX: 5,
-  NAME: 6,
-  ARRAY: 7,
-  DICTIONARY: 8,
-  STREAM: 9,
-  REF: 10,
-  COMMENT: 11,
-} as const;
-export type ValueType = typeof valueTypes[keyof typeof valueTypes];
-
-//#region annotation const
+//#region annotation
 /**
  * PDF supports the standard annotation types listed
  */
@@ -355,17 +357,73 @@ export const annotationIconTypes = {
   INSERT: "/Insert",
 } as const;
 export type AnnotationIconType = typeof annotationIconTypes[keyof typeof annotationIconTypes];
+
+export const freeTextIntents = {
+  PLAIN_TEXT: "/FreeText",
+  WITH_CALLOUT: "/FreeTextCallout",
+  CLICK_TO_TYPE: "/FreeTextTypeWriter",
+} as const;
+export type FreeTextIntent = typeof freeTextIntents[keyof typeof freeTextIntents];
+
+export const markupAnnotationReplyTypes = {
+  /**
+   * The annotation shall be considered a reply to the annotation specified by IRT. 
+   * Conforming readers shall not display replies to an annotation individually 
+   * but together in the form of threaded comments
+   */
+  REPLY: "/R",
+  /**
+   * The annotation shall be grouped with the annotation specified by IRT
+   */
+  GROUP: "/Group",
+} as const;
+export type MarkupAnnotationReplyType = 
+  typeof markupAnnotationReplyTypes[keyof typeof markupAnnotationReplyTypes];
+  
+export const stampTypes = {
+  DRAFT: "/Draft",
+  NOT_APPROVED: "/NotApproved",
+  APPROVED: "/Approved",
+  AS_IS: "/AsIs",
+  FOR_COMMENT: "/ForComment",
+  EXPERIMENTAL: "/Experimental",
+  FINAL: "/Final",
+  SOLD: "/Sold",
+  EXPIRED: "/Expired",
+  PUBLIC: "/ForPublicRelease",
+  NOT_PUBLIC: "/NotForPublicRelease",
+  DEPARTMENTAL: "/Departmental",
+  CONFIDENTIAL: "/Confidential",
+  SECRET: "/TopSecret",
+} as const;
+export type StampType = typeof stampTypes[keyof typeof stampTypes];
+
+export const textNoteTypes = {
+  NOTE: "/Note",
+} as const;
+export type TextNoteType = typeof textNoteTypes[keyof typeof textNoteTypes];
+
+export const polyIntents = {
+  CLOUD: "/PolygonCloud",
+  POLYGON_DIMENSION: "/PolygonDimension",
+  POLYLINE_DIMENSION: "/PolyLineDimension",
+} as const;
+export type PolyIntent = typeof polyIntents[keyof typeof polyIntents];
+
+export const lineIntents = {
+  ARROW: "/LineArrow",
+  DIMENSION: "/LineDimension",
+} as const;
+export type LineIntent = typeof lineIntents[keyof typeof lineIntents];
+
+export const lineCaptionPositions = {
+  INLINE: "/Inline",
+  TOP: "/Top",
+} as const;
+export type LineCaptionPosition = typeof lineCaptionPositions[keyof typeof lineCaptionPositions];
 //#endregion
 
-export const highlightingModes = {
-  NO: "/N",
-  INVERT: "/I",
-  OUTLINE: "/O",
-  PUSH: "/P",
-} as const;
-export type HighlightingMode = typeof highlightingModes[keyof typeof highlightingModes];
-
-//#region lines
+//#region line
 export const lineEndingTypes = {
   SQUARE: "/Square",
   CIRCLE: "/Circle",
@@ -394,6 +452,48 @@ export const lineJoinStyles = {
 } as const;
 export type LineJoinStyle = typeof lineJoinStyles[keyof typeof lineJoinStyles];
 //#endregion
+
+//#region format and render
+export const onOffStates = {
+  ON: "/ON",
+  OFF: "/OFF",
+} as const;
+export type OnOffState = typeof onOffStates[keyof typeof onOffStates];
+
+export const pageLayouts = {
+  SINGLE: "/SinglePage",
+  TWO_ODD_LEFT: "/TwoPageLeft",
+  TWO_ODD_RIGHT: "/TwoPageRight",
+  SINGLE_COLUMN: "/OneColumn",
+  TWO_COLUMNS_ODD_LEFT: "/TwoColumnLeft",
+  TWO_COLUMNS_ODD_RIGHT: "/TwoColumnRight",
+} as const;
+export type PageLayout = typeof pageLayouts[keyof typeof pageLayouts];
+
+export const pageModes = {
+  NONE: "/UseNone",
+  OUTLINES: "/UseOutlines",
+  THUMBS: "/UseThumbs",
+  FULL_SCREEN: "/FullScreen",
+  OPTIONAL_CONTENT: "/UseOC",
+  ATTACHMENTS: "/UseAttachments",
+} as const;
+export type PageMode = typeof pageModes[keyof typeof pageModes];
+
+export const justificationTypes = {
+  LEFT: 0,
+  CENTER: 1,
+  RIGHT: 2,
+} as const;
+export type JustificationType = typeof justificationTypes[keyof typeof justificationTypes];
+
+export const highlightingModes = {
+  NO: "/N",
+  INVERT: "/I",
+  OUTLINE: "/O",
+  PUSH: "/P",
+} as const;
+export type HighlightingMode = typeof highlightingModes[keyof typeof highlightingModes];
 
 export const renderingIntents = {
   /**
@@ -518,6 +618,24 @@ export const textRenderModes = {
 } as const;
 export type TextRenderMode = typeof textRenderModes[keyof typeof textRenderModes];
 
+export const baseFonts = {
+  TNR: "/Times-Roman",
+  TNR_B: "/Times-Bold",
+  TNR_I: "/Times-Italic",
+  TNR_BI: "/Times-BoldItalic",
+  HELV: "/Helvetica",
+  HELV_B: "/Helvetica-Bold",
+  HELV_I: "/Helvetica-Oblique",
+  HELV_BI: "/Helvetica-BoldOblique",
+  COUR: "/Courier",
+  COUR_B: "/Courier-Bold",
+  COUR_I: "/Courier-Oblique",
+  COUR_BI: "/Courier-BoldOblique",
+  SYMBOL: "/Symbol",
+  ZAPF: "/ZapfDingbats",
+} as const;
+export type BaseFont = typeof baseFonts[keyof typeof baseFonts];
+
 export const colorSpaces = {
   GRAYSCALE: "/DeviceGray",
   RGB: "/DeviceRGB",
@@ -541,167 +659,89 @@ export const softMaskTypes = {
 } as const;
 export type SoftMaskType = typeof softMaskTypes[keyof typeof softMaskTypes];
 
-export const baseFonts = {
-  TNR: "/Times-Roman",
-  TNR_B: "/Times-Bold",
-  TNR_I: "/Times-Italic",
-  TNR_BI: "/Times-BoldItalic",
-  HELV: "/Helvetica",
-  HELV_B: "/Helvetica-Bold",
-  HELV_I: "/Helvetica-Oblique",
-  HELV_BI: "/Helvetica-BoldOblique",
-  COUR: "/Courier",
-  COUR_B: "/Courier-Bold",
-  COUR_I: "/Courier-Oblique",
-  COUR_BI: "/Courier-BoldOblique",
-  SYMBOL: "/Symbol",
-  ZAPF: "/ZapfDingbats",
+export const caretSymbolTypes = {
+  NONE: "/None",
+  PARAGRAPH: "/P",
 } as const;
-export type BaseFont = typeof baseFonts[keyof typeof baseFonts];
+export type CaretSymbolType = typeof caretSymbolTypes[keyof typeof caretSymbolTypes];
 
+export const borderEffects = {
+  NONE: "/S",
+  CLOUDY: "/C",
+};
+export type BorderEffect = typeof borderEffects[keyof typeof borderEffects];
 
-export const supportedFilters = new Set<string>([
-  streamFilters.FLATE,
-  streamFilters.DCT,
-  streamFilters.JBIG2,
-  streamFilters.JPX,
-]);
+export const borderStyles = {
+  SOLID: "/S",
+  DASHED: "/D",
+  BEVELED: "/B",
+  INSET: "/I",
+  UNDERLINE: "/U",
+  NONE: "/N", // came across some files, missing in the PDF specification (v1.7)
+} as const;
+export type BorderStyle = typeof borderStyles[keyof typeof borderStyles];
+//#endregion
 
-/**max PDF object generation */
-export const maxGeneration = 65535;
+//#region optional content
+export const creatorInfoTypes = {
+  ART: "/Artwork",
+  TECH: "/Technical",
+} as const;
+export type CreatorInfoType = typeof creatorInfoTypes[keyof typeof creatorInfoTypes];
 
-export const cyrillicEncodingDifferences = [
-  128,
-  "/Djecyrillic",
-  "/Gjecyrillic",
-  "/quotesinglbase",
-  "/afii10100",
-  "/quotedblbase",
-  "/ellipsis",
-  "/dagger",
-  "/daggerdbl",
-  "/Euro",
-  "/perthousand",
-  "/Ljecyrillic",
-  "/guilsinglleft",
-  "/Njecyrillic",
-  "/Kjecyrillic",
-  "/Tshecyrillic",
-  "/Dzhecyrillic",
-  "/afii10099",
-  "/quoteleft",
-  "/quoteright",
-  "/quotedblleft",
-  "/quotedblright",
-  "/bullet",
-  "/endash",
-  "/emdash",
-  "/.notdef",
-  "/trademark",
-  "/afii10106",
-  "/guilsinglright",
-  "/afii10107",
-  "/afii10109",
-  "/afii10108",
-  "/afii10193",
-  "/nbspace",
-  "/Ushortcyrillic",
-  "/afii10110",
-  "/Jecyrillic",
-  "/currency",
-  "/Gheupturncyrillic",
-  "/brokenbar",
-  "/section",
-  "/Iocyrillic",
-  "/copyright",
-  "/Ecyrillic",
-  "/guillemotleft",
-  "/logicalnot",
-  "/sfthyphen",
-  "/registered",
-  "/Yicyrillic",
-  "/degree",
-  "/plusminus",
-  "/Icyrillic",
-  "/afii10103",
-  "/afii10098",
-  "/mu",
-  "/paragraph",
-  "/middot",
-  "/afii10071",
-  "/afii61352",
-  "/afii10101",
-  "/guillemotright",
-  "/afii10105",
-  "/Dzecyrillic",
-  "/afii10102",
-  "/afii10104",
-  "/Acyrillic",
-  "/Becyrillic",
-  "/Vecyrillic",
-  "/Gecyrillic",
-  "/Decyrillic",
-  "/Iecyrillic",
-  "/Zhecyrillic",
-  "/Zecyrillic",
-  "/Iicyrillic",
-  "/Iishortcyrillic",
-  "/Kacyrillic",
-  "/Elcyrillic",
-  "/Emcyrillic",
-  "/Encyrillic",
-  "/Ocyrillic",
-  "/Pecyrillic",
-  "/Ercyrillic",
-  "/Escyrillic",
-  "/Tecyrillic",
-  "/Ucyrillic",
-  "/Efcyrillic",
-  "/Khacyrillic",
-  "/Tsecyrillic",
-  "/Checyrillic",
-  "/Shacyrillic",
-  "/Shchacyrillic",
-  "/Hardsigncyrillic",
-  "/Yericyrillic",
-  "/Softsigncyrillic",
-  "/Ereversedcyrillic",
-  "/IUcyrillic",
-  "/IAcyrillic",
-  "/acyrillic",
-  "/afii10066",
-  "/afii10067",
-  "/afii10068",
-  "/afii10069",
-  "/afii10070",
-  "/afii10072",
-  "/afii10073",
-  "/afii10074",
-  "/afii10075",
-  "/afii10076",
-  "/afii10077",
-  "/afii10078",
-  "/afii10079",
-  "/afii10080",
-  "/afii10081",
-  "/afii10082",
-  "/afii10083",
-  "/afii10084",
-  "/afii10085",
-  "/afii10086",
-  "/afii10087",
-  "/afii10088",
-  "/afii10089",
-  "/afii10090",
-  "/afii10091",
-  "/afii10092",
-  "/afii10093",
-  "/afii10094",
-  "/afii10095",
-  "/afii10096",
-  "/afii10097"
-] as const;
+export const pageElementTypes = {
+  HEADER_FOOTER: "/HF",
+  FOREGROUND: "/FG",
+  BACKGROUND: "/BG",
+  LOGO: "/L",
+} as const;
+export type PageElementType = typeof pageElementTypes[keyof typeof pageElementTypes];
 
-/**defines how many times the line ending size is larger than the line width */
-export const lineEndingMultiplier = 3;
-export const lineEndingMinimalSize = 10;
+export const ocConfigStates = {
+  ON: "/ON",
+  OFF: "/OFF",
+  NONE: "/Unchanged",
+} as const;
+export type OcConfigState = typeof ocConfigStates[keyof typeof ocConfigStates];
+
+export const ocListModes = {
+  ALL: "/AllPages",
+  VISIBLE: "/VisiblePages",
+} as const;
+export type OcListMode = typeof ocListModes[keyof typeof ocListModes];
+
+export const ocIntents = {
+  DESIGN: "/Design",
+  VIEW: "/View",
+  ALL: "/All",
+} as const;
+export type OcIntent = typeof ocIntents[keyof typeof ocIntents];
+
+export const visibilityPolicies = {
+  ALL_ON: "/AllOn",
+  ALL_OFF: "/AllOff",
+  ANY_ON: "/AnyOn",
+  ANY_OFF: "/AnyOff",
+} as const;
+export type VisibilityPolicy = typeof visibilityPolicies[keyof typeof visibilityPolicies];
+
+export const usageEvents = {
+  VIEW: "/View",
+  PRINT: "/Print",
+  EXPORT: "/Export",
+} as const;
+export type UsageEvent = typeof usageEvents[keyof typeof usageEvents];
+//#endregion
+
+//#region misc
+export const groupDictTypes = {
+  TRANSPARENCY: "/Transparency",
+} as const;
+export type GroupDictType = typeof groupDictTypes[keyof typeof groupDictTypes];
+
+export const attachmentIconTypes = {
+  PUSH_PIN: "/GraphPushPin",
+  PAPER_CLIP: "/PaperclipTag",
+} as const;
+export type AttachmentIconType = typeof attachmentIconTypes[keyof typeof attachmentIconTypes];
+//#endregion

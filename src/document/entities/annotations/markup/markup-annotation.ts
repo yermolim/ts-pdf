@@ -3,10 +3,11 @@ import { Vec2 } from "mathador";
 import { Quadruple } from "../../../../common/types";
 import { runEmptyTimeout } from "../../../../common/dom";
 import { TextData, TextDataOptions, TextLineData } from "../../../../common/text-data";
-import { bezierConstant } from "../../../../drawing/utils";
+import { bezierConstant, lineEndingMinimalSize, 
+  lineEndingMultiplier } from "../../../../drawing/utils";
 
 import { codes } from "../../../char-codes";
-import { AnnotationType, lineEndingMinimalSize, lineEndingMultiplier, 
+import { AnnotationType, markupAnnotationReplyTypes, MarkupAnnotationReplyType,
   LineEndingType, lineEndingTypes, valueTypes } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
@@ -18,21 +19,6 @@ import { TextStream } from "../../streams/text-stream";
 
 import { AnnotationDict } from "../annotation-dict";
 import { ExDataDict } from "../misc/ex-data-dict";
-
-export const markupAnnotationReplyTypes = {
-  /**
-   * The annotation shall be considered a reply to the annotation specified by IRT. 
-   * Conforming readers shall not display replies to an annotation individually 
-   * but together in the form of threaded comments
-   */
-  REPLY: "/R",
-  /**
-   * The annotation shall be grouped with the annotation specified by IRT
-   */
-  GROUP: "/Group",
-} as const;
-export type MarkupAnnotationReplyType = 
-  typeof markupAnnotationReplyTypes[keyof typeof markupAnnotationReplyTypes];
 
 export abstract class MarkupAnnotation extends AnnotationDict {
   /**

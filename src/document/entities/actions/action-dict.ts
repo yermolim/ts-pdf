@@ -1,28 +1,6 @@
-import { dictTypes } from "../../const";
+import { dictTypes, ActionType } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { PdfDict } from "../core/pdf-dict";
-
-export const actionTypes = {
-  GO_TO: "/GoTo",
-  GO_TO_REMOTE_DOC: "/GoToR",
-  GO_TO_EMBEDDED_FILE: "/GoToE",
-  LAUNCH_APP: "/Launch",
-  READ_THREAD: "/Thread",
-  RESOLVE_URI: "/URI",
-  PLAY_SOUND: "/Sound",
-  PLAY_MOVIE: "/Movie",
-  HIDE: "/Hide",
-  EXECUTE_READER_SPECIFIC_ACTION: "/Named",
-  FORM_SUBMIT: "/SubmitForm",
-  FORM_RESET: "/ResetForm",
-  IMPORT_FROM_FILE: "/ImportData",
-  EXECUTE_JS: "/JavaScript",
-  SET_OCG_STATES: "/SetOCGState",
-  RENDITION: "/Rendition",
-  TRANSITION: "/Trans",
-  GO_TO_3D_VIEW: "/GoTo3DView",
-} as const;
-export type ActionType = typeof actionTypes[keyof typeof actionTypes];
 
 export class ActionDict extends PdfDict {
   /**(Required) The type of action that this dictionary describes */

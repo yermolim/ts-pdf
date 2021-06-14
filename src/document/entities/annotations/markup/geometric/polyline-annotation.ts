@@ -1,7 +1,8 @@
 import { Mat3, Vec2 } from "mathador";
 
 import { codes } from "../../../../char-codes";
-import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles } from "../../../../const";
+import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, 
+  lineJoinStyles, polyIntents } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
@@ -11,7 +12,7 @@ import { XFormStream } from "../../../streams/x-form-stream";
 import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
-import { PolyAnnotation, PolyAnnotationDto, polyIntents } from "./poly-annotation";
+import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
 
 export interface PolylineAnnotationDto extends PolyAnnotationDto {  
   endingType?: [LineEndingType, LineEndingType];

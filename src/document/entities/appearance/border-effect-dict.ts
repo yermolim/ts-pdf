@@ -1,12 +1,7 @@
 import { CryptInfo } from "../../common-interfaces";
+import { borderEffects, BorderEffect } from "../../const";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
-
-export const borderEffects = {
-  NONE: "/S",
-  CLOUDY: "/C",
-};
-export type BorderEffect = typeof borderEffects[keyof typeof borderEffects];
 
 export class BorderEffectDict extends PdfDict {
   /**(Optional) A name representing the border effect to apply */

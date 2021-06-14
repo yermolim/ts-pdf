@@ -2,12 +2,13 @@ import { Mat3, Vec2 } from "mathador";
 
 import { Double, Hextuple, Quadruple } from "../../../../common/types";
 import { TempSvgPath } from "../../../../common/dom";
-import { calcPdfBBoxToRectMatrices, VecMinMax } from "../../../../drawing/utils";
+import { calcPdfBBoxToRectMatrices, VecMinMax, 
+  lineEndingMinimalSize, lineEndingMultiplier } from "../../../../drawing/utils";
 
 import { codes } from "../../../char-codes";
 import { annotationTypes, JustificationType, justificationTypes, 
-  lineCapStyles, lineEndingMinimalSize, lineEndingMultiplier, 
-  LineEndingType, lineEndingTypes, lineJoinStyles } from "../../../const";
+  lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles,
+  freeTextIntents, FreeTextIntent } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
@@ -21,13 +22,6 @@ import { ResourceDict } from "../../appearance/resource-dict";
 
 import { AnnotationDto } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
-
-export const freeTextIntents = {
-  PLAIN_TEXT: "/FreeText",
-  WITH_CALLOUT: "/FreeTextCallout",
-  CLICK_TO_TYPE: "/FreeTextTypeWriter",
-} as const;
-export type FreeTextIntent = typeof freeTextIntents[keyof typeof freeTextIntents];
 
 export interface FreeTextAnnotPoints {
   /**text box bottom-left corner */

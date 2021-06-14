@@ -1,12 +1,13 @@
 import { Mat3, Vec2 } from "mathador";
-import { VecMinMax } from "../../../../../drawing/utils";
+import { VecMinMax, lineEndingMinimalSize, 
+  lineEndingMultiplier } from "../../../../../drawing/utils";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
 import { TempSvgPath } from "../../../../../common/dom";
 
 import { codes } from "../../../../char-codes";
-import { annotationTypes, lineCapStyles, 
-  lineEndingMinimalSize, lineEndingMultiplier, LineEndingType, 
-  lineEndingTypes, lineJoinStyles, valueTypes } from "../../../../const";
+import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
+  lineEndingTypes, lineJoinStyles, lineIntents, LineIntent, 
+  lineCaptionPositions, LineCaptionPosition } from "../../../../const";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
   
@@ -22,18 +23,6 @@ import { MeasureDict } from "../../../appearance/measure-dict";
 
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";
 
-export const lineIntents = {
-  ARROW: "/LineArrow",
-  DIMENSION: "/LineDimension",
-} as const;
-export type LineIntent = typeof lineIntents[keyof typeof lineIntents];
-
-export const captionPositions = {
-  INLINE: "/Inline",
-  TOP: "/Top",
-} as const;
-export type CaptionPosition = typeof captionPositions[keyof typeof captionPositions];
-
 export interface LineAnnotationDto extends GeometricAnnotationDto {  
   vertices: Quadruple;
 
@@ -45,7 +34,7 @@ export interface LineAnnotationDto extends GeometricAnnotationDto {
   leaderLineOffset?: number;
 
   caption?: boolean;
-  captionPosition?: CaptionPosition;
+  captionPosition?: LineCaptionPosition;
   captionOffset?: Double;
 }
 
@@ -103,7 +92,7 @@ export class LineAnnotation extends GeometricAnnotation {
    * Inline, meaning the caption shall be centered inside the line, 
    * and Top, meaning the caption shall be on top of the line
    */
-  CP: CaptionPosition = captionPositions.INLINE;
+  CP: LineCaptionPosition = lineCaptionPositions.INLINE;
   /** 
    * (Optional; meaningful only if Cap is true; PDF 1.7+) 
    * An array of two numbers that shall specify the offset of the caption text 
@@ -191,7 +180,7 @@ export class LineAnnotation extends GeometricAnnotation {
     annotation.LLE = dto.leaderLineExtension || 0;
     annotation.LLO = dto.leaderLineOffset || 0;
     annotation.Cap = dto.caption;
-    annotation.CP = dto.captionPosition || captionPositions.INLINE;
+    annotation.CP = dto.captionPosition || lineCaptionPositions.INLINE;
     annotation.CO = dto.captionOffset || [0, 0];
  
     annotation._fontMap = fontMap;
@@ -367,9 +356,9 @@ export class LineAnnotation extends GeometricAnnotation {
             throw new Error("Can't parse /IT property value");
           case "/CP":
             const captionPosition = parser.parseNameAt(i, true);
-            if (captionPosition && (<string[]>Object.values(captionPositions))
+            if (captionPosition && (<string[]>Object.values(lineCaptionPositions))
               .includes(captionPosition.value)) {
-              this.CP = <CaptionPosition>captionPosition.value;
+              this.CP = <LineCaptionPosition>captionPosition.value;
               i = captionPosition.end + 1;
             } else {              
               throw new Error("Can't parse /CP property value");
@@ -488,7 +477,7 @@ export class LineAnnotation extends GeometricAnnotation {
       maxWidth: textMaxWidth,
       fontSize: 9,
       textAlign: "center",
-      pivotPoint: this.CP === captionPositions.INLINE
+      pivotPoint: this.CP === lineCaptionPositions.INLINE
         ? "center"
         : "bottom-margin",
     });

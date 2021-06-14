@@ -2085,6 +2085,7 @@ class PageService {
     }
 }
 
+const maxGeneration = 65535;
 const objectTypes = {
     UNKNOWN: 0,
     NULL: 1,
@@ -2096,6 +2097,43 @@ const objectTypes = {
     ARRAY: 7,
     DICTIONARY: 8,
     STREAM: 9,
+};
+const valueTypes = {
+    UNKNOWN: 0,
+    NULL: 1,
+    BOOLEAN: 2,
+    NUMBER: 3,
+    STRING_LITERAL: 4,
+    STRING_HEX: 5,
+    NAME: 6,
+    ARRAY: 7,
+    DICTIONARY: 8,
+    STREAM: 9,
+    REF: 10,
+    COMMENT: 11,
+};
+const dictTypes = {
+    XREF: "/XRef",
+    XOBJECT: "/XObject",
+    CATALOG: "/Catalog",
+    PAGE_TREE: "/Pages",
+    PAGE: "/Page",
+    ANNOTATION: "/Annot",
+    BORDER_STYLE: "/Border",
+    OPTIONAL_CONTENT_GROUP: "/OCG",
+    OPTIONAL_CONTENT_MD: "/OCMD",
+    EXTERNAL_DATA: "/ExDATA",
+    ACTION: "/Action",
+    MEASURE: "/Measure",
+    DEV_EXTENSIONS: "/DeveloperExtensions",
+    GRAPHICS_STATE: "/ExtGState",
+    CRYPT_FILTER: "/CryptFilter",
+    SOFT_MASK: "/Mask",
+    GROUP: "/Group",
+    FONT: "/Font",
+    FONT_DESCRIPTOR: "/FontDescriptor",
+    ENCODING: "/Encoding",
+    EMPTY: "",
 };
 const xRefTypes = {
     TABLE: 0,
@@ -2129,6 +2167,18 @@ const flatePredictors = {
     PNG_PAETH: 14,
     PNG_OPTIMUM: 15,
 };
+const streamTypes = {
+    XREF: "/XRef",
+    OBJECT_STREAM: "/ObjStm",
+    FORM_XOBJECT: "/XObject",
+    METADATA_STREAM: "/Metadata",
+};
+const supportedFilters = new Set([
+    streamFilters.FLATE,
+    streamFilters.DCT,
+    streamFilters.JBIG2,
+    streamFilters.JPX,
+]);
 const cryptVersions = {
     RC4_40: 1,
     RC4_128: 2,
@@ -2151,57 +2201,6 @@ const cryptMethods = {
 const authEvents = {
     DOC_OPEN: "/DocOpen",
     EMBEDDED_OPEN: "/EFOpen",
-};
-const justificationTypes = {
-    LEFT: 0,
-    CENTER: 1,
-    RIGHT: 2,
-};
-const streamTypes = {
-    XREF: "/XRef",
-    OBJECT_STREAM: "/ObjStm",
-    FORM_XOBJECT: "/XObject",
-    METADATA_STREAM: "/Metadata",
-};
-const dictTypes = {
-    XREF: "/XRef",
-    XOBJECT: "/XObject",
-    CATALOG: "/Catalog",
-    PAGE_TREE: "/Pages",
-    PAGE: "/Page",
-    ANNOTATION: "/Annot",
-    BORDER_STYLE: "/Border",
-    OPTIONAL_CONTENT_GROUP: "/OCG",
-    OPTIONAL_CONTENT_MD: "/OCMD",
-    EXTERNAL_DATA: "/ExDATA",
-    ACTION: "/Action",
-    MEASURE: "/Measure",
-    DEV_EXTENSIONS: "/DeveloperExtensions",
-    GRAPHICS_STATE: "/ExtGState",
-    CRYPT_FILTER: "/CryptFilter",
-    SOFT_MASK: "/Mask",
-    GROUP: "/Group",
-    FONT: "/Font",
-    FONT_DESCRIPTOR: "/FontDescriptor",
-    ENCODING: "/Encoding",
-    EMPTY: "",
-};
-const groupDictTypes = {
-    TRANSPARENCY: "/Transparency",
-};
-const valueTypes = {
-    UNKNOWN: 0,
-    NULL: 1,
-    BOOLEAN: 2,
-    NUMBER: 3,
-    STRING_LITERAL: 4,
-    STRING_HEX: 5,
-    NAME: 6,
-    ARRAY: 7,
-    DICTIONARY: 8,
-    STREAM: 9,
-    REF: 10,
-    COMMENT: 11,
 };
 const annotationTypes = {
     TEXT: "/Text",
@@ -2257,6 +2256,44 @@ const annotationIconTypes = {
     PARAGRAPH: "/Paragraph",
     INSERT: "/Insert",
 };
+const freeTextIntents = {
+    PLAIN_TEXT: "/FreeText",
+    WITH_CALLOUT: "/FreeTextCallout",
+    CLICK_TO_TYPE: "/FreeTextTypeWriter",
+};
+const markupAnnotationReplyTypes = {
+    REPLY: "/R",
+    GROUP: "/Group",
+};
+const stampTypes = {
+    DRAFT: "/Draft",
+    NOT_APPROVED: "/NotApproved",
+    APPROVED: "/Approved",
+    AS_IS: "/AsIs",
+    FOR_COMMENT: "/ForComment",
+    EXPERIMENTAL: "/Experimental",
+    FINAL: "/Final",
+    SOLD: "/Sold",
+    EXPIRED: "/Expired",
+    PUBLIC: "/ForPublicRelease",
+    NOT_PUBLIC: "/NotForPublicRelease",
+    DEPARTMENTAL: "/Departmental",
+    CONFIDENTIAL: "/Confidential",
+    SECRET: "/TopSecret",
+};
+const polyIntents = {
+    CLOUD: "/PolygonCloud",
+    POLYGON_DIMENSION: "/PolygonDimension",
+    POLYLINE_DIMENSION: "/PolyLineDimension",
+};
+const lineIntents = {
+    ARROW: "/LineArrow",
+    DIMENSION: "/LineDimension",
+};
+const lineCaptionPositions = {
+    INLINE: "/Inline",
+    TOP: "/Top",
+};
 const lineEndingTypes = {
     SQUARE: "/Square",
     CIRCLE: "/Circle",
@@ -2278,6 +2315,11 @@ const lineJoinStyles = {
     MITER: 0,
     ROUND: 1,
     BEVEL: 2,
+};
+const justificationTypes = {
+    LEFT: 0,
+    CENTER: 1,
+    RIGHT: 2,
 };
 const renderingIntents = {
     ABSOLUTE: "/AbsoluteColorimetric",
@@ -2323,146 +2365,21 @@ const softMaskTypes = {
     ALPHA: "/Alpha",
     LUMINOSITY: "/Luminosity",
 };
-const supportedFilters = new Set([
-    streamFilters.FLATE,
-    streamFilters.DCT,
-    streamFilters.JBIG2,
-    streamFilters.JPX,
-]);
-const maxGeneration = 65535;
-const cyrillicEncodingDifferences = [
-    128,
-    "/Djecyrillic",
-    "/Gjecyrillic",
-    "/quotesinglbase",
-    "/afii10100",
-    "/quotedblbase",
-    "/ellipsis",
-    "/dagger",
-    "/daggerdbl",
-    "/Euro",
-    "/perthousand",
-    "/Ljecyrillic",
-    "/guilsinglleft",
-    "/Njecyrillic",
-    "/Kjecyrillic",
-    "/Tshecyrillic",
-    "/Dzhecyrillic",
-    "/afii10099",
-    "/quoteleft",
-    "/quoteright",
-    "/quotedblleft",
-    "/quotedblright",
-    "/bullet",
-    "/endash",
-    "/emdash",
-    "/.notdef",
-    "/trademark",
-    "/afii10106",
-    "/guilsinglright",
-    "/afii10107",
-    "/afii10109",
-    "/afii10108",
-    "/afii10193",
-    "/nbspace",
-    "/Ushortcyrillic",
-    "/afii10110",
-    "/Jecyrillic",
-    "/currency",
-    "/Gheupturncyrillic",
-    "/brokenbar",
-    "/section",
-    "/Iocyrillic",
-    "/copyright",
-    "/Ecyrillic",
-    "/guillemotleft",
-    "/logicalnot",
-    "/sfthyphen",
-    "/registered",
-    "/Yicyrillic",
-    "/degree",
-    "/plusminus",
-    "/Icyrillic",
-    "/afii10103",
-    "/afii10098",
-    "/mu",
-    "/paragraph",
-    "/middot",
-    "/afii10071",
-    "/afii61352",
-    "/afii10101",
-    "/guillemotright",
-    "/afii10105",
-    "/Dzecyrillic",
-    "/afii10102",
-    "/afii10104",
-    "/Acyrillic",
-    "/Becyrillic",
-    "/Vecyrillic",
-    "/Gecyrillic",
-    "/Decyrillic",
-    "/Iecyrillic",
-    "/Zhecyrillic",
-    "/Zecyrillic",
-    "/Iicyrillic",
-    "/Iishortcyrillic",
-    "/Kacyrillic",
-    "/Elcyrillic",
-    "/Emcyrillic",
-    "/Encyrillic",
-    "/Ocyrillic",
-    "/Pecyrillic",
-    "/Ercyrillic",
-    "/Escyrillic",
-    "/Tecyrillic",
-    "/Ucyrillic",
-    "/Efcyrillic",
-    "/Khacyrillic",
-    "/Tsecyrillic",
-    "/Checyrillic",
-    "/Shacyrillic",
-    "/Shchacyrillic",
-    "/Hardsigncyrillic",
-    "/Yericyrillic",
-    "/Softsigncyrillic",
-    "/Ereversedcyrillic",
-    "/IUcyrillic",
-    "/IAcyrillic",
-    "/acyrillic",
-    "/afii10066",
-    "/afii10067",
-    "/afii10068",
-    "/afii10069",
-    "/afii10070",
-    "/afii10072",
-    "/afii10073",
-    "/afii10074",
-    "/afii10075",
-    "/afii10076",
-    "/afii10077",
-    "/afii10078",
-    "/afii10079",
-    "/afii10080",
-    "/afii10081",
-    "/afii10082",
-    "/afii10083",
-    "/afii10084",
-    "/afii10085",
-    "/afii10086",
-    "/afii10087",
-    "/afii10088",
-    "/afii10089",
-    "/afii10090",
-    "/afii10091",
-    "/afii10092",
-    "/afii10093",
-    "/afii10094",
-    "/afii10095",
-    "/afii10096",
-    "/afii10097"
-];
-const lineEndingMultiplier = 3;
-const lineEndingMinimalSize = 10;
+const borderEffects = {
+    NONE: "/S",
+    CLOUDY: "/C",
+};
+const borderStyles = {
+    SOLID: "/S",
+    DASHED: "/D",
+    BEVELED: "/B",
+    INSET: "/I",
+    UNDERLINE: "/U",
+    NONE: "/N",
+};
+const groupDictTypes = {
+    TRANSPARENCY: "/Transparency",
+};
 
 const codes = {
     NULL: 0,
@@ -11179,6 +11096,137 @@ class FontDescriptorDict extends PdfDict {
     }
 }
 
+const cyrillicEncodingDifferences = [
+    128,
+    "/Djecyrillic",
+    "/Gjecyrillic",
+    "/quotesinglbase",
+    "/afii10100",
+    "/quotedblbase",
+    "/ellipsis",
+    "/dagger",
+    "/daggerdbl",
+    "/Euro",
+    "/perthousand",
+    "/Ljecyrillic",
+    "/guilsinglleft",
+    "/Njecyrillic",
+    "/Kjecyrillic",
+    "/Tshecyrillic",
+    "/Dzhecyrillic",
+    "/afii10099",
+    "/quoteleft",
+    "/quoteright",
+    "/quotedblleft",
+    "/quotedblright",
+    "/bullet",
+    "/endash",
+    "/emdash",
+    "/.notdef",
+    "/trademark",
+    "/afii10106",
+    "/guilsinglright",
+    "/afii10107",
+    "/afii10109",
+    "/afii10108",
+    "/afii10193",
+    "/nbspace",
+    "/Ushortcyrillic",
+    "/afii10110",
+    "/Jecyrillic",
+    "/currency",
+    "/Gheupturncyrillic",
+    "/brokenbar",
+    "/section",
+    "/Iocyrillic",
+    "/copyright",
+    "/Ecyrillic",
+    "/guillemotleft",
+    "/logicalnot",
+    "/sfthyphen",
+    "/registered",
+    "/Yicyrillic",
+    "/degree",
+    "/plusminus",
+    "/Icyrillic",
+    "/afii10103",
+    "/afii10098",
+    "/mu",
+    "/paragraph",
+    "/middot",
+    "/afii10071",
+    "/afii61352",
+    "/afii10101",
+    "/guillemotright",
+    "/afii10105",
+    "/Dzecyrillic",
+    "/afii10102",
+    "/afii10104",
+    "/Acyrillic",
+    "/Becyrillic",
+    "/Vecyrillic",
+    "/Gecyrillic",
+    "/Decyrillic",
+    "/Iecyrillic",
+    "/Zhecyrillic",
+    "/Zecyrillic",
+    "/Iicyrillic",
+    "/Iishortcyrillic",
+    "/Kacyrillic",
+    "/Elcyrillic",
+    "/Emcyrillic",
+    "/Encyrillic",
+    "/Ocyrillic",
+    "/Pecyrillic",
+    "/Ercyrillic",
+    "/Escyrillic",
+    "/Tecyrillic",
+    "/Ucyrillic",
+    "/Efcyrillic",
+    "/Khacyrillic",
+    "/Tsecyrillic",
+    "/Checyrillic",
+    "/Shacyrillic",
+    "/Shchacyrillic",
+    "/Hardsigncyrillic",
+    "/Yericyrillic",
+    "/Softsigncyrillic",
+    "/Ereversedcyrillic",
+    "/IUcyrillic",
+    "/IAcyrillic",
+    "/acyrillic",
+    "/afii10066",
+    "/afii10067",
+    "/afii10068",
+    "/afii10069",
+    "/afii10070",
+    "/afii10072",
+    "/afii10073",
+    "/afii10074",
+    "/afii10075",
+    "/afii10076",
+    "/afii10077",
+    "/afii10078",
+    "/afii10079",
+    "/afii10080",
+    "/afii10081",
+    "/afii10082",
+    "/afii10083",
+    "/afii10084",
+    "/afii10085",
+    "/afii10086",
+    "/afii10087",
+    "/afii10088",
+    "/afii10089",
+    "/afii10090",
+    "/afii10091",
+    "/afii10092",
+    "/afii10093",
+    "/afii10094",
+    "/afii10095",
+    "/afii10096",
+    "/afii10097"
+];
 class FontDict extends PdfDict {
     constructor() {
         super(dictTypes.FONT);
@@ -12924,6 +12972,8 @@ class XFormStream extends PdfStream {
 
 const selectionStrokeWidth = 20;
 const bezierConstant = 0.551915;
+const lineEndingMultiplier = 3;
+const lineEndingMinimalSize = 10;
 function buildSquigglyLine(start, end, maxWaveSize) {
     if (!start || !end) {
         return null;
@@ -13906,14 +13956,6 @@ class AppearanceStreamRenderer {
     }
 }
 
-const borderStyles = {
-    SOLID: "/S",
-    DASHED: "/D",
-    BEVELED: "/B",
-    INSET: "/I",
-    UNDERLINE: "/U",
-    NONE: "/N",
-};
 class BorderStyleDict extends PdfDict {
     constructor() {
         super(dictTypes.BORDER_STYLE);
@@ -14246,10 +14288,6 @@ class AppearanceDict extends PdfDict {
     }
 }
 
-const borderEffects = {
-    NONE: "/S",
-    CLOUDY: "/C",
-};
 class BorderEffectDict extends PdfDict {
     constructor() {
         super(null);
@@ -15266,10 +15304,6 @@ var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _argu
         function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
-};
-const markupAnnotationReplyTypes = {
-    REPLY: "/R",
-    GROUP: "/Group",
 };
 class MarkupAnnotation extends AnnotationDict {
     constructor(subType) {
@@ -20331,22 +20365,6 @@ const standardStampCreationInfos = {
     },
 };
 
-const stampTypes = {
-    DRAFT: "/Draft",
-    NOT_APPROVED: "/NotApproved",
-    APPROVED: "/Approved",
-    AS_IS: "/AsIs",
-    FOR_COMMENT: "/ForComment",
-    EXPERIMENTAL: "/Experimental",
-    FINAL: "/Final",
-    SOLD: "/Sold",
-    EXPIRED: "/Expired",
-    PUBLIC: "/ForPublicRelease",
-    NOT_PUBLIC: "/NotForPublicRelease",
-    DEPARTMENTAL: "/Departmental",
-    CONFIDENTIAL: "/Confidential",
-    SECRET: "/TopSecret",
-};
 class StampAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.STAMP);
@@ -21668,11 +21686,6 @@ class CircleAnnotation extends GeometricAnnotation {
 }
 CircleAnnotation.cloudArcSize = 20;
 
-const polyIntents = {
-    CLOUD: "/PolygonCloud",
-    POLYGON_DIMENSION: "/PolygonDimension",
-    POLYLINE_DIMENSION: "/PolyLineDimension",
-};
 class PolyAnnotation extends GeometricAnnotation {
     constructor(type) {
         super(type);
@@ -22271,14 +22284,6 @@ var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const lineIntents = {
-    ARROW: "/LineArrow",
-    DIMENSION: "/LineDimension",
-};
-const captionPositions = {
-    INLINE: "/Inline",
-    TOP: "/Top",
-};
 class LineAnnotation extends GeometricAnnotation {
     constructor() {
         super(annotationTypes.LINE);
@@ -22288,7 +22293,7 @@ class LineAnnotation extends GeometricAnnotation {
         this.LL = 0;
         this.LLO = 0;
         this.Cap = false;
-        this.CP = captionPositions.INLINE;
+        this.CP = lineCaptionPositions.INLINE;
         this.CO = [0, 0];
         this._svgTemp = new TempSvgPath();
         this.onLineEndHandlePointerDown = (e) => {
@@ -22398,7 +22403,7 @@ class LineAnnotation extends GeometricAnnotation {
             annotation.LLE = dto.leaderLineExtension || 0;
             annotation.LLO = dto.leaderLineOffset || 0;
             annotation.Cap = dto.caption;
-            annotation.CP = dto.captionPosition || captionPositions.INLINE;
+            annotation.CP = dto.captionPosition || lineCaptionPositions.INLINE;
             annotation.CO = dto.captionOffset || [0, 0];
             annotation._fontMap = fontMap;
             yield annotation.generateApStreamAsync();
@@ -22555,7 +22560,7 @@ class LineAnnotation extends GeometricAnnotation {
                         throw new Error("Can't parse /IT property value");
                     case "/CP":
                         const captionPosition = parser.parseNameAt(i, true);
-                        if (captionPosition && Object.values(captionPositions)
+                        if (captionPosition && Object.values(lineCaptionPositions)
                             .includes(captionPosition.value)) {
                             this.CP = captionPosition.value;
                             i = captionPosition.end + 1;
@@ -22664,7 +22669,7 @@ class LineAnnotation extends GeometricAnnotation {
                 maxWidth: textMaxWidth,
                 fontSize: 9,
                 textAlign: "center",
-                pivotPoint: this.CP === captionPositions.INLINE
+                pivotPoint: this.CP === lineCaptionPositions.INLINE
                     ? "center"
                     : "bottom-margin",
             });
@@ -23524,11 +23529,6 @@ var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _argu
         function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
-};
-const freeTextIntents = {
-    PLAIN_TEXT: "/FreeText",
-    WITH_CALLOUT: "/FreeTextCallout",
-    CLICK_TO_TYPE: "/FreeTextTypeWriter",
 };
 class FreeTextAnnotation extends MarkupAnnotation {
     constructor() {

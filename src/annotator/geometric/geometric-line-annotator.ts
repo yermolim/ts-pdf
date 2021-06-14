@@ -4,7 +4,10 @@ import { getRandomUuid } from "../../common/uuid";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { LineAnnotation, LineAnnotationDto, lineIntents } from "../../document/entities/annotations/markup/geometric/line-annotation";
+
+import { LineAnnotation, LineAnnotationDto } 
+  from "../../document/entities/annotations/markup/geometric/line-annotation";
+import { lineIntents } from "../../document/const";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 

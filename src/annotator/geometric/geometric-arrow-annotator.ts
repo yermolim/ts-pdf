@@ -1,12 +1,11 @@
 import { Vec2, Mat3 } from "mathador";
 import { getRandomUuid } from "../../common/uuid";
+import { lineEndingMinimalSize, lineEndingMultiplier } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
-import { LineAnnotationDto, lineIntents } 
-  from "../../document/entities/annotations/markup/geometric/line-annotation";
-import { lineEndingMinimalSize, lineEndingMultiplier, 
-  lineEndingTypes } from "../../document/const";
+import { LineAnnotationDto } from "../../document/entities/annotations/markup/geometric/line-annotation";
+import { lineEndingTypes, lineIntents } from "../../document/const";
 
 import { GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";

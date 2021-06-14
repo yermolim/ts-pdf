@@ -1,13 +1,7 @@
-import { annotationTypes } from "../../../const";
+import { annotationTypes, attachmentIconTypes, AttachmentIconType } from "../../../const";
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 import { MarkupAnnotation } from "./markup-annotation";
-
-export const attachmentIconTypes = {
-  PUSH_PIN: "/GraphPushPin",
-  PAPER_CLIP: "/PaperclipTag",
-} as const;
-export type AttachmentIconType = typeof attachmentIconTypes[keyof typeof attachmentIconTypes];
 
 export class FileAttachmentAnnotation extends MarkupAnnotation {
   /**

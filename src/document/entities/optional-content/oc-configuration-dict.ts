@@ -1,7 +1,7 @@
 import { CryptInfo } from "../../common-interfaces";
-import { PdfDict } from "../core/pdf-dict";
 import { OcConfigState, ocConfigStates, OcIntent, ocIntents, 
-  OcListMode, ocListModes } from "./oc-const";
+  OcListMode, ocListModes } from "../../const";
+import { PdfDict } from "../core/pdf-dict";
 import { OcGroupDict } from "./oc-group-dict";
 import { UsageDict } from "./usage-dict";
 export class OcConfigurationDict extends PdfDict {

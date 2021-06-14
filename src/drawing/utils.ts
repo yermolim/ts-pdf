@@ -4,11 +4,17 @@ import { Hextuple, Quadruple } from "../common/types";
 export type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
 | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
 
+export type VecMinMax = readonly [min: Vec2, max: Vec2];
+
 /**width (in PDF page units) of the transparent lines rendered to simplify annotation selection */
 export const selectionStrokeWidth = 20;
 
 /**constant used to imitate circle using four cubic bezier curves */
 export const bezierConstant = 0.551915;
+
+/**defines how many times the line ending size is larger than the line width */
+export const lineEndingMultiplier = 3;
+export const lineEndingMinimalSize = 10;
 
 export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): Vec2[] {
   if (!start || !end) {
@@ -105,5 +111,3 @@ export interface BBox {
   ur: Vec2; 
   ul: Vec2;
 }
-
-export type VecMinMax = readonly [min: Vec2, max: Vec2];

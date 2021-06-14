@@ -1,22 +1,9 @@
 import { Double } from "../../../common/types";
 import { codes } from "../../char-codes";
-import { dictTypes } from "../../const";
+import { dictTypes, borderStyles, BorderStyle } from "../../const";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
-
-/**
- * Flags  specifying  various  characteristics of the annotation
- */
-export const borderStyles = {
-  SOLID: "/S",
-  DASHED: "/D",
-  BEVELED: "/B",
-  INSET: "/I",
-  UNDERLINE: "/U",
-  NONE: "/N", // came across some files, missing in the PDF specification (v1.7)
-} as const;
-export type BorderStyle = typeof borderStyles[keyof typeof borderStyles];
 
 export class BorderStyleDict extends PdfDict {
   /**(Optional) The border width in points. 
