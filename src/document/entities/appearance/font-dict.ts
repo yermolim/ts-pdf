@@ -287,9 +287,11 @@ export class FontDict extends PdfDict {
     try {
       const pdfObject = new FontDict();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<FontDict>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -762,5 +764,13 @@ export class FontDict extends PdfDict {
         || !this.CharProcs)) {
       throw new Error("Not all required properties parsed");
     }
+  }
+  
+  protected override initProxy(): FontDict {
+    return <FontDict>super.initProxy();
+  }
+
+  protected override getProxy(): FontDict {
+    return <FontDict>super.getProxy();
   }
 }

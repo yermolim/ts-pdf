@@ -4687,8 +4687,8 @@ class PdfObject {
             set: (target, prop, value) => {
                 if (prop[0] !== "_" && prop[0] !== "$") {
                     this._edited || (this._edited = true);
-                    if (this.$onEditedAction) {
-                        this.$onEditedAction();
+                    if (this.$onChangeAction) {
+                        this.$onChangeAction();
                     }
                 }
                 target[prop] = value;
@@ -4730,6 +4730,14 @@ class PdfObject {
     }
     markAsDeleted(value = true) {
         this._deleted = value;
+    }
+    initProxy() {
+        const proxy = new Proxy(this, this.onChange);
+        this._proxy = proxy;
+        return proxy;
+    }
+    getProxy() {
+        return this._proxy || this;
     }
     parseRefProp(propName, parser, index) {
         const parsed = ObjectId.parseRef(parser, index);
@@ -11251,9 +11259,11 @@ class FontDict extends PdfDict {
         try {
             const pdfObject = new FontDict();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -11676,6 +11686,12 @@ class FontDict extends PdfDict {
             throw new Error("Not all required properties parsed");
         }
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 class SoftMaskDict extends PdfDict {
@@ -11777,9 +11793,11 @@ class GraphicsStateDict extends PdfDict {
         try {
             const pdfObject = new GraphicsStateDict();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -12107,6 +12125,12 @@ class GraphicsStateDict extends PdfDict {
             }
         }
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 class ResourceDict extends PdfDict {
@@ -12124,9 +12148,11 @@ class ResourceDict extends PdfDict {
         try {
             const pdfObject = new ResourceDict(streamParsers);
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -12362,6 +12388,12 @@ class ResourceDict extends PdfDict {
         if (parseInfo.parseInfoGetter) {
             this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
         }
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -12645,9 +12677,11 @@ class XFormStream extends PdfStream {
         try {
             const pdfObject = new XFormStream();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -12865,6 +12899,12 @@ class XFormStream extends PdfStream {
         if (!this.BBox) {
             throw new Error("Not all required properties parsed");
         }
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -13966,9 +14006,11 @@ class AppearanceDict extends PdfDict {
         try {
             const pdfObject = new AppearanceDict();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -14181,6 +14223,12 @@ class AppearanceDict extends PdfDict {
         if (parseInfo.parseInfoGetter) {
             this.fillStreamsMap(parseInfo.parseInfoGetter);
         }
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -14710,7 +14758,7 @@ class AnnotationDict extends PdfDict {
         };
     }
     setTextContent(text) {
-        const dict = this._proxy || this;
+        const dict = this.getProxy();
         if (!text) {
             dict.Contents = null;
         }
@@ -14987,7 +15035,7 @@ class AnnotationDict extends PdfDict {
         return position;
     }
     applyRectTransform(matrix) {
-        const dict = this._proxy || this;
+        const dict = this.getProxy();
         const bBox = dict.getLocalBB();
         bBox.ll.applyMat3(matrix);
         bBox.lr.applyMat3(matrix);
@@ -14998,8 +15046,8 @@ class AnnotationDict extends PdfDict {
     }
     applyCommonTransformAsync(matrix) {
         return __awaiter$u(this, void 0, void 0, function* () {
-            this.applyRectTransform(matrix);
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
+            dict.applyRectTransform(matrix);
             const stream = dict.apStream;
             if (stream) {
                 const newApMatrix = Mat3.multiply(stream.matrix, matrix);
@@ -15166,6 +15214,12 @@ class AnnotationDict extends PdfDict {
                 this.$onRenderUpdatedAction();
             }
         });
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -20353,10 +20407,8 @@ class StampAnnotation extends MarkupAnnotation {
         else {
             throw new Error("Custom stamp has no valid image data");
         }
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -20365,9 +20417,11 @@ class StampAnnotation extends MarkupAnnotation {
         try {
             const pdfObject = new StampAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -20442,6 +20496,12 @@ class StampAnnotation extends MarkupAnnotation {
         if (!this.Name) {
             throw new Error("Not all required properties parsed");
         }
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -20559,10 +20619,8 @@ class TextAnnotation extends MarkupAnnotation {
         annotation.C = strokeColor;
         annotation.CA = 1;
         annotation.apStream = apStream;
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -20571,9 +20629,11 @@ class TextAnnotation extends MarkupAnnotation {
         try {
             const pdfObject = new TextAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -20691,6 +20751,12 @@ class TextAnnotation extends MarkupAnnotation {
     renderHandles() {
         return [];
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -20730,10 +20796,8 @@ class InkAnnotation extends MarkupAnnotation {
         annotation.CA = dto.color[3];
         annotation.BS = bs;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -20742,9 +20806,11 @@ class InkAnnotation extends MarkupAnnotation {
         try {
             const pdfObject = new InkAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -20885,7 +20951,7 @@ class InkAnnotation extends MarkupAnnotation {
     applyCommonTransformAsync(matrix) {
         var _a, _b, _c, _d;
         return __awaiter$s(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
             let x;
             let y;
             let xMin;
@@ -20942,6 +21008,12 @@ class InkAnnotation extends MarkupAnnotation {
                 .applyTranslation(centerX, centerY);
             yield this.applyCommonTransformAsync(matrix);
         });
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -21107,10 +21179,8 @@ class SquareAnnotation extends GeometricAnnotation {
         annotation.BS = bs;
         annotation._cloud = dto.cloud;
         annotation.generateApStream(dto.bbox, dto.matrix);
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -21119,9 +21189,11 @@ class SquareAnnotation extends GeometricAnnotation {
         try {
             const pdfObject = new SquareAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -21277,8 +21349,8 @@ class SquareAnnotation extends GeometricAnnotation {
     }
     applyCommonTransformAsync(matrix) {
         return __awaiter$r(this, void 0, void 0, function* () {
-            this.applyRectTransform(matrix);
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
+            dict.applyRectTransform(matrix);
             const stream = dict.apStream;
             if (stream) {
                 const newApMatrix = Mat3.multiply(stream.matrix, matrix);
@@ -21286,6 +21358,12 @@ class SquareAnnotation extends GeometricAnnotation {
             }
             dict.M = DateString.fromDate(new Date());
         });
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 SquareAnnotation.cloudArcSize = 20;
@@ -21328,10 +21406,8 @@ class CircleAnnotation extends GeometricAnnotation {
         annotation.BS = bs;
         annotation._cloud = dto.cloud;
         annotation.generateApStream(dto.bbox, dto.matrix);
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -21340,9 +21416,11 @@ class CircleAnnotation extends GeometricAnnotation {
         try {
             const pdfObject = new CircleAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -21509,8 +21587,8 @@ class CircleAnnotation extends GeometricAnnotation {
     }
     applyCommonTransformAsync(matrix) {
         return __awaiter$q(this, void 0, void 0, function* () {
-            this.applyRectTransform(matrix);
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
+            dict.applyRectTransform(matrix);
             const stream = dict.apStream;
             if (stream) {
                 const newApMatrix = Mat3.multiply(stream.matrix, matrix);
@@ -21518,6 +21596,12 @@ class CircleAnnotation extends GeometricAnnotation {
             }
             dict.M = DateString.fromDate(new Date());
         });
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 CircleAnnotation.cloudArcSize = 20;
@@ -21665,10 +21749,8 @@ class PolygonAnnotation extends PolyAnnotation {
             : polyIntents.POLYGON_DIMENSION;
         annotation.Vertices = dto.vertices;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -21677,9 +21759,11 @@ class PolygonAnnotation extends PolyAnnotation {
         try {
             const pdfObject = new PolygonAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -21779,7 +21863,7 @@ class PolygonAnnotation extends PolyAnnotation {
     applyCommonTransformAsync(matrix) {
         var _a, _b, _c, _d;
         return __awaiter$p(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
             let x;
             let y;
             let xMin;
@@ -21839,6 +21923,12 @@ class PolygonAnnotation extends PolyAnnotation {
             yield this.applyCommonTransformAsync(matrix);
         });
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 PolygonAnnotation.cloudArcSize = 20;
 
@@ -21882,10 +21972,8 @@ class PolylineAnnotation extends PolyAnnotation {
         annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
         annotation.Vertices = dto.vertices;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -21894,9 +21982,11 @@ class PolylineAnnotation extends PolyAnnotation {
         try {
             const pdfObject = new PolylineAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -22027,7 +22117,7 @@ class PolylineAnnotation extends PolyAnnotation {
     applyCommonTransformAsync(matrix) {
         var _a, _b, _c, _d;
         return __awaiter$o(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
             let x;
             let y;
             let xMin;
@@ -22083,6 +22173,12 @@ class PolylineAnnotation extends PolyAnnotation {
                 .applyTranslation(centerX, centerY);
             yield this.applyCommonTransformAsync(matrix);
         });
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -22226,10 +22322,8 @@ class LineAnnotation extends GeometricAnnotation {
             annotation.CO = dto.captionOffset || [0, 0];
             annotation._fontMap = fontMap;
             yield annotation.generateApStreamAsync();
-            const proxy = new Proxy(annotation, annotation.onChange);
-            annotation._proxy = proxy;
             annotation._added = true;
-            return proxy;
+            return annotation.initProxy();
         });
     }
     static parse(parseInfo, fontMap) {
@@ -22240,9 +22334,11 @@ class LineAnnotation extends GeometricAnnotation {
             const pdfObject = new LineAnnotation();
             pdfObject.parseProps(parseInfo);
             pdfObject._fontMap = fontMap;
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -22443,7 +22539,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
     applyCommonTransformAsync(matrix) {
         return __awaiter$n(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
             const [x1, y1, x2, y2] = dict.L;
             const start = new Vec2(x1, y1).applyMat3(matrix);
             const end = new Vec2(x2, y2).applyMat3(matrix);
@@ -22454,7 +22550,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
     updateStream() {
         return __awaiter$n(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
             yield dict.generateApStreamAsync();
             yield dict.updateRenderAsync();
         });
@@ -22668,6 +22764,12 @@ class LineAnnotation extends GeometricAnnotation {
         endHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
         return [startHandle, endHandle];
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 class TextMarkupAnnotation extends MarkupAnnotation {
@@ -22768,10 +22870,8 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         annotation.BS = bs;
         annotation.QuadPoints = dto.quadPoints;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -22780,9 +22880,11 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         try {
             const pdfObject = new HighlightAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -22867,6 +22969,12 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 class UnderlineAnnotation extends TextMarkupAnnotation {
@@ -22914,10 +23022,8 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         annotation.BS = bs;
         annotation.QuadPoints = dto.quadPoints;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -22926,9 +23032,11 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         try {
             const pdfObject = new UnderlineAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -23006,6 +23114,12 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 class StrikeoutAnnotation extends TextMarkupAnnotation {
@@ -23050,10 +23164,8 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         annotation.BS = bs;
         annotation.QuadPoints = dto.quadPoints;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -23062,9 +23174,11 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         try {
             const pdfObject = new StrikeoutAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -23150,6 +23264,12 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
+    }
 }
 
 class SquigglyAnnotation extends TextMarkupAnnotation {
@@ -23195,10 +23315,8 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         annotation.BS = bs;
         annotation.QuadPoints = dto.quadPoints;
         annotation.generateApStream();
-        const proxy = new Proxy(annotation, annotation.onChange);
-        annotation._proxy = proxy;
         annotation._added = true;
-        return proxy;
+        return annotation.initProxy();
     }
     static parse(parseInfo) {
         if (!parseInfo) {
@@ -23207,9 +23325,11 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         try {
             const pdfObject = new SquigglyAnnotation();
             pdfObject.parseProps(parseInfo);
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -23292,6 +23412,12 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         apStream.Resources.setGraphicsState("/GS0", gs);
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 SquigglyAnnotation.squiggleSize = 6;
@@ -23599,10 +23725,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 cop: cop ? new Vec2(cop[0], cop[1]) : null,
             };
             yield annotation.generateApStreamAsync(points);
-            const proxy = new Proxy(annotation, annotation.onChange);
-            annotation._proxy = proxy;
             annotation._added = true;
-            return proxy;
+            return annotation.initProxy();
         });
     }
     static parse(parseInfo, fontMap) {
@@ -23613,9 +23737,11 @@ class FreeTextAnnotation extends MarkupAnnotation {
             const pdfObject = new FreeTextAnnotation();
             pdfObject.parseProps(parseInfo);
             pdfObject._fontMap = fontMap;
-            const proxy = new Proxy(pdfObject, pdfObject.onChange);
-            pdfObject._proxy = proxy;
-            return { value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
         }
         catch (e) {
             console.log(e.message);
@@ -24008,7 +24134,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
     updateStream(points) {
         return __awaiter$m(this, void 0, void 0, function* () {
-            const dict = this._proxy || this;
+            const dict = this.getProxy();
             yield dict.generateApStreamAsync(points || dict.pointsPageCS);
             yield dict.updateRenderAsync();
         });
@@ -24075,6 +24201,12 @@ class FreeTextAnnotation extends MarkupAnnotation {
         pointerHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
         handles.push(pointerHandle);
         return handles;
+    }
+    initProxy() {
+        return super.initProxy();
+    }
+    getProxy() {
+        return super.getProxy();
     }
 }
 
@@ -24342,7 +24474,7 @@ class DocumentService {
         this._lastCommands.length = 0;
         this.emitStateChanged();
         this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
-            x.$onEditedAction = null;
+            x.$onChangeAction = null;
             x.$onRenderUpdatedAction = null;
         }));
         this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
@@ -24537,7 +24669,7 @@ class DocumentService {
             }
             annotation.markAsDeleted(false);
             annotation.$pageId = page.id;
-            annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+            annotation.$onChangeAction = this.getOnAnnotEditAction(annotation);
             annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const pageAnnotations = annotationMap.get(pageId);
@@ -24708,7 +24840,7 @@ class DocumentService {
                     if (annot) {
                         annotations.push(annot);
                         annot.$pageId = page.id;
-                        annot.$onEditedAction = this.getOnAnnotEditAction(annot);
+                        annot.$onChangeAction = this.getOnAnnotEditAction(annot);
                         annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
                     }
                 }

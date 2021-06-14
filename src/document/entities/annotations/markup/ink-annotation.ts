@@ -64,10 +64,8 @@ export class InkAnnotation extends MarkupAnnotation {
 
     annotation.generateApStream();
 
-    const proxy = new Proxy<InkAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {
@@ -77,9 +75,11 @@ export class InkAnnotation extends MarkupAnnotation {
     try {
       const pdfObject = new InkAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<InkAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -244,7 +244,7 @@ export class InkAnnotation extends MarkupAnnotation {
   }  
   
   protected override async applyCommonTransformAsync(matrix: Mat3) {
-    const dict = <InkAnnotation>this._proxy || this;
+    const dict = this.getProxy();
 
     // transform current InkList and Rect
     let x: number;
@@ -310,5 +310,13 @@ export class InkAnnotation extends MarkupAnnotation {
       .applyTranslation(centerX, centerY);
 
     await this.applyCommonTransformAsync(matrix);
+  }  
+
+  protected override initProxy(): InkAnnotation {
+    return <InkAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): InkAnnotation {
+    return <InkAnnotation>super.getProxy();
   }
 }

@@ -403,7 +403,7 @@ export abstract class AnnotationDict extends PdfDict {
    */
   setTextContent(text: string) {
     // use proxy for tracking property changes
-    const dict = <AnnotationDict>this._proxy || this;
+    const dict = this.getProxy();
 
     if (!text) {
       dict.Contents = null;
@@ -734,7 +734,7 @@ export abstract class AnnotationDict extends PdfDict {
    * @param matrix 
    */
   protected applyRectTransform(matrix: Mat3) {
-    const dict = <AnnotationDict>this._proxy || this;
+    const dict = this.getProxy();
 
     // transform current bounding box (not axis-aligned)
     const bBox = dict.getLocalBB();
@@ -750,10 +750,10 @@ export abstract class AnnotationDict extends PdfDict {
   }  
   
   protected async applyCommonTransformAsync(matrix: Mat3) {
+    const dict = this.getProxy();
+
     // transform bounding boxes
-    this.applyRectTransform(matrix);
-    
-    const dict = <AnnotationDict>this._proxy || this;
+    dict.applyRectTransform(matrix);    
     
     // if the annotation has a content stream, update its matrix
     const stream = dict.apStream;
@@ -1270,4 +1270,12 @@ export abstract class AnnotationDict extends PdfDict {
   //#endregion
 
   //#endregion
+  
+  protected override initProxy(): AnnotationDict {
+    return <AnnotationDict>super.initProxy();
+  }
+
+  protected override getProxy(): AnnotationDict {
+    return <AnnotationDict>super.getProxy();
+  }
 }

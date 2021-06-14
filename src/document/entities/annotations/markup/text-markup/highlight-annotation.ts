@@ -60,10 +60,8 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
     
     annotation.generateApStream();
 
-    const proxy = new Proxy<HighlightAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
 
   static parse(parseInfo: ParseInfo): ParseResult<HighlightAnnotation> {
@@ -73,9 +71,11 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
     try {
       const pdfObject = new HighlightAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<HighlightAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -205,4 +205,12 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
 
     this.apStream = apStream;
   }
+
+  protected override initProxy(): HighlightAnnotation {
+    return <HighlightAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): HighlightAnnotation {
+    return <HighlightAnnotation>super.getProxy();
+  } 
 }

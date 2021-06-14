@@ -33,9 +33,11 @@ export class AppearanceDict extends PdfDict {
     try {
       const pdfObject = new AppearanceDict();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<AppearanceDict>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -253,5 +255,13 @@ export class AppearanceDict extends PdfDict {
     if (parseInfo.parseInfoGetter) {
       this.fillStreamsMap(parseInfo.parseInfoGetter);
     }
+  }
+  
+  protected override initProxy(): AppearanceDict {
+    return <AppearanceDict>super.initProxy();
+  }
+
+  protected override getProxy(): AppearanceDict {
+    return <AppearanceDict>super.getProxy();
   }
 }

@@ -70,10 +70,8 @@ export class CircleAnnotation extends GeometricAnnotation {
     annotation._cloud = dto.cloud;
     annotation.generateApStream(dto.bbox, dto.matrix);
 
-    const proxy = new Proxy<CircleAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
 
   static parse(parseInfo: ParseInfo): ParseResult<CircleAnnotation> {
@@ -83,9 +81,11 @@ export class CircleAnnotation extends GeometricAnnotation {
     try {
       const pdfObject = new CircleAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<CircleAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -302,10 +302,10 @@ export class CircleAnnotation extends GeometricAnnotation {
   }
   
   protected override async applyCommonTransformAsync(matrix: Mat3) {    
-    // transform bounding boxes
-    this.applyRectTransform(matrix);
+    const dict = this.getProxy();
 
-    const dict = <CircleAnnotation>this._proxy || this;
+    // transform bounding boxes
+    dict.applyRectTransform(matrix);
     
     // if the annotation has a content stream, rebuild the stream
     const stream = dict.apStream;
@@ -315,5 +315,13 @@ export class CircleAnnotation extends GeometricAnnotation {
     }
 
     dict.M = DateString.fromDate(new Date());
+  }
+  
+  protected override initProxy(): CircleAnnotation {
+    return <CircleAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): CircleAnnotation {
+    return <CircleAnnotation>super.getProxy();
   }
 }

@@ -62,10 +62,8 @@ export class PolylineAnnotation extends PolyAnnotation {
  
     annotation.generateApStream();
 
-    const proxy = new Proxy<PolylineAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<PolylineAnnotation> { 
@@ -75,9 +73,11 @@ export class PolylineAnnotation extends PolyAnnotation {
     try {
       const pdfObject = new PolylineAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<PolylineAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -236,7 +236,7 @@ export class PolylineAnnotation extends PolyAnnotation {
   }
   
   protected override async applyCommonTransformAsync(matrix: Mat3) {  
-    const dict = <PolylineAnnotation>this._proxy || this;
+    const dict = this.getProxy();
 
     // transform current Vertices
     let x: number;
@@ -302,5 +302,13 @@ export class PolylineAnnotation extends PolyAnnotation {
       .applyTranslation(centerX, centerY);
 
     await this.applyCommonTransformAsync(matrix);
+  }
+
+  protected override initProxy(): PolylineAnnotation {
+    return <PolylineAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): PolylineAnnotation {
+    return <PolylineAnnotation>super.getProxy();
   }
 }

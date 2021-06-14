@@ -283,10 +283,8 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     };
     await annotation.generateApStreamAsync(points);
 
-    const proxy = new Proxy<FreeTextAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
-    annotation._added = true;
-    return proxy;
+    annotation._added = true;    
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo, 
@@ -298,9 +296,11 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       const pdfObject = new FreeTextAnnotation();
       pdfObject.parseProps(parseInfo);
       pdfObject._fontMap = fontMap;
-      const proxy = new Proxy<FreeTextAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -813,8 +813,8 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     this.apStream = apStream;
   }
 
-  protected async updateStream(points?: FreeTextAnnotPoints) {    
-    const dict = <FreeTextAnnotation>this._proxy || this;
+  protected async updateStream(points?: FreeTextAnnotPoints) {  
+    const dict = this.getProxy();
     await dict.generateApStreamAsync(points || dict.pointsPageCS);
     await dict.updateRenderAsync();
   }
@@ -1139,4 +1139,12 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   //#region 
   
   //#endregion
+
+  protected override initProxy(): FreeTextAnnotation {
+    return <FreeTextAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): FreeTextAnnotation {
+    return <FreeTextAnnotation>super.getProxy();
+  }
 }

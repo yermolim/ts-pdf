@@ -190,10 +190,8 @@ export class TextAnnotation extends MarkupAnnotation {
     annotation.CA = 1; // opacity
     annotation.apStream = apStream;
 
-    const proxy = new Proxy<TextAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<TextAnnotation> {
@@ -203,9 +201,11 @@ export class TextAnnotation extends MarkupAnnotation {
     try {
       const pdfObject = new TextAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<TextAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -334,4 +334,12 @@ export class TextAnnotation extends MarkupAnnotation {
   protected override renderHandles(): SVGGraphicsElement[] {   
     return [];
   } 
+  
+  protected override initProxy(): TextAnnotation {
+    return <TextAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): TextAnnotation {
+    return <TextAnnotation>super.getProxy();
+  }
 }

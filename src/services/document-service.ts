@@ -190,7 +190,7 @@ export class DocumentService {
 
     this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
       // clear public actions to prevent memory leak
-      x.$onEditedAction = null;
+      x.$onChangeAction = null;
       x.$onRenderUpdatedAction = null;
     }));
 
@@ -439,7 +439,7 @@ export class DocumentService {
 
     annotation.markAsDeleted(false);
     annotation.$pageId = page.id;
-    annotation.$onEditedAction = this.getOnAnnotEditAction(annotation);
+    annotation.$onChangeAction = this.getOnAnnotEditAction(annotation);
     annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
     const annotationMap = await this.getSupportedAnnotationMapAsync();
     const pageAnnotations = annotationMap.get(pageId);
@@ -699,7 +699,7 @@ export class DocumentService {
         if (annot) {
           annotations.push(annot);
           annot.$pageId = page.id;
-          annot.$onEditedAction = this.getOnAnnotEditAction(annot);
+          annot.$onChangeAction = this.getOnAnnotEditAction(annot);
           annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
         }
       }

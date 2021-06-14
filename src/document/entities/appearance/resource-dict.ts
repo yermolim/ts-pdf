@@ -72,9 +72,11 @@ export class ResourceDict extends PdfDict {
     try {
       const pdfObject = new ResourceDict(streamParsers);
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<ResourceDict>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -326,5 +328,13 @@ export class ResourceDict extends PdfDict {
     if (parseInfo.parseInfoGetter) {
       this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
     }
+  }
+  
+  protected override initProxy(): ResourceDict {
+    return <ResourceDict>super.initProxy();
+  }
+
+  protected override getProxy(): ResourceDict {
+    return <ResourceDict>super.getProxy();
   }
 }

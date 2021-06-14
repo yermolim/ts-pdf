@@ -158,10 +158,8 @@ export class StampAnnotation extends MarkupAnnotation {
       throw new Error("Custom stamp has no valid image data");
     }
 
-    const proxy = new Proxy<StampAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
 
   static parse(parseInfo: ParseInfo): ParseResult<StampAnnotation> {
@@ -171,9 +169,11 @@ export class StampAnnotation extends MarkupAnnotation {
     try {
       const pdfObject = new StampAnnotation();
       pdfObject.parseProps(parseInfo); 
-      const proxy = new Proxy<StampAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -259,5 +259,13 @@ export class StampAnnotation extends MarkupAnnotation {
     if (!this.Name) {
       throw new Error("Not all required properties parsed");
     }
+  }
+  
+  protected override initProxy(): StampAnnotation {
+    return <StampAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): StampAnnotation {
+    return <StampAnnotation>super.getProxy();
   }
 }

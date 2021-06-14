@@ -197,10 +197,8 @@ export class LineAnnotation extends GeometricAnnotation {
     annotation._fontMap = fontMap;
     await annotation.generateApStreamAsync();
 
-    const proxy = new Proxy<LineAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
 
   static parse(parseInfo: ParseInfo, 
@@ -212,9 +210,11 @@ export class LineAnnotation extends GeometricAnnotation {
       const pdfObject = new LineAnnotation();
       pdfObject.parseProps(parseInfo);
       pdfObject._fontMap = fontMap;
-      const proxy = new Proxy<LineAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -439,7 +439,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }
 
   protected override async applyCommonTransformAsync(matrix: Mat3) {  
-    const dict = <LineAnnotation>this._proxy || this;
+    const dict = this.getProxy();
 
     // transform the segment end points    
     const [x1, y1, x2, y2] = dict.L;
@@ -454,7 +454,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }
   
   protected async updateStream() {    
-    const dict = <LineAnnotation>this._proxy || this;
+    const dict = this.getProxy();
     await dict.generateApStreamAsync();
     await dict.updateRenderAsync();
   }
@@ -822,4 +822,12 @@ export class LineAnnotation extends GeometricAnnotation {
     this.applyTempTransformAsync();
   };
   //#endregion
+  
+  protected override initProxy(): LineAnnotation {
+    return <LineAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): LineAnnotation {
+    return <LineAnnotation>super.getProxy();
+  }
 }

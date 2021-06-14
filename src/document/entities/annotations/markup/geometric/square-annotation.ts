@@ -71,10 +71,8 @@ export class SquareAnnotation extends GeometricAnnotation {
     annotation._cloud = dto.cloud;    
     annotation.generateApStream(dto.bbox, dto.matrix);
 
-    const proxy = new Proxy<SquareAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<SquareAnnotation> {
@@ -84,9 +82,11 @@ export class SquareAnnotation extends GeometricAnnotation {
     try {
       const pdfObject = new SquareAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<SquareAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -292,10 +292,10 @@ export class SquareAnnotation extends GeometricAnnotation {
   }
   
   protected override async applyCommonTransformAsync(matrix: Mat3) {    
-    // transform bounding boxes
-    this.applyRectTransform(matrix);
+    const dict = this.getProxy();
 
-    const dict = <SquareAnnotation>this._proxy || this;
+    // transform bounding boxes
+    dict.applyRectTransform(matrix);
     
     // if the annotation has a content stream, rebuild the stream
     const stream = dict.apStream;
@@ -306,4 +306,12 @@ export class SquareAnnotation extends GeometricAnnotation {
 
     dict.M = DateString.fromDate(new Date());
   }
+
+  protected override initProxy(): SquareAnnotation {
+    return <SquareAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): SquareAnnotation {
+    return <SquareAnnotation>super.getProxy();
+  }  
 }

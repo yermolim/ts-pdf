@@ -123,9 +123,11 @@ export class GraphicsStateDict extends PdfDict {
     try {
       const pdfObject = new GraphicsStateDict();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<GraphicsStateDict>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -480,5 +482,13 @@ export class GraphicsStateDict extends PdfDict {
         break;
       }
     };    
+  }
+  
+  protected override initProxy(): GraphicsStateDict {
+    return <GraphicsStateDict>super.initProxy();
+  }
+
+  protected override getProxy(): GraphicsStateDict {
+    return <GraphicsStateDict>super.getProxy();
   }
 }

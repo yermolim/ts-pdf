@@ -63,10 +63,8 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
     
     annotation.generateApStream();
 
-    const proxy = new Proxy<UnderlineAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<UnderlineAnnotation> { 
@@ -76,9 +74,11 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
     try {
       const pdfObject = new UnderlineAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<UnderlineAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -178,5 +178,13 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
     apStream.setTextStreamData(streamTextData);   
 
     this.apStream = apStream;
+  }
+
+  protected override initProxy(): UnderlineAnnotation {
+    return <UnderlineAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): UnderlineAnnotation {
+    return <UnderlineAnnotation>super.getProxy();
   }
 }

@@ -7,7 +7,9 @@ import { ObjectId } from "./object-id";
 
 export abstract class PdfObject implements IEncodable {
   /**action to execute on change of any of the public properties of the current object using proxy */
-  $onEditedAction: () => void;
+  $onChangeAction: () => void;
+  /**action to execute on user edit of the current object */
+  $onEditAction: (undo: () => void) => void;
 
   protected _sourceBytes: Uint8Array;
   /**
@@ -83,8 +85,8 @@ export abstract class PdfObject implements IEncodable {
         // console.log(`EDITED prop ${prop}`);
         // console.log(this);
   
-        if (this.$onEditedAction) {     
-          this.$onEditedAction();
+        if (this.$onChangeAction) {     
+          this.$onChangeAction();
         }
       }
       // proceed assignment as usual
@@ -100,6 +102,16 @@ export abstract class PdfObject implements IEncodable {
   
   markAsDeleted(value = true) {
     this._deleted = value;
+  }
+
+  protected initProxy(): PdfObject {    
+    const proxy = new Proxy<PdfObject>(this, this.onChange);
+    this._proxy = proxy;
+    return proxy;
+  }
+
+  protected getProxy(): PdfObject {
+    return this._proxy || this;
   }
 
   //#region parse simple properties 

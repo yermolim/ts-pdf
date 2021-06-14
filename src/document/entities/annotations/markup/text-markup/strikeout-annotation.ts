@@ -60,10 +60,8 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
     
     annotation.generateApStream();
 
-    const proxy = new Proxy<StrikeoutAnnotation>(annotation, annotation.onChange);
-    annotation._proxy = proxy;
     annotation._added = true;
-    return proxy;
+    return annotation.initProxy();
   }
   
   static parse(parseInfo: ParseInfo): ParseResult<StrikeoutAnnotation> {
@@ -73,9 +71,11 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
     try {
       const pdfObject = new StrikeoutAnnotation();
       pdfObject.parseProps(parseInfo);
-      const proxy = new Proxy<StrikeoutAnnotation>(pdfObject, pdfObject.onChange);
-      pdfObject._proxy = proxy;
-      return {value: proxy, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
+      return {
+        value: pdfObject.initProxy(), 
+        start: parseInfo.bounds.start, 
+        end: parseInfo.bounds.end,
+      };
     } catch (e) {
       console.log(e.message);
       return null;
@@ -206,4 +206,12 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
 
     this.apStream = apStream;
   }
+
+  protected override initProxy(): StrikeoutAnnotation {
+    return <StrikeoutAnnotation>super.initProxy();
+  }
+
+  protected override getProxy(): StrikeoutAnnotation {
+    return <StrikeoutAnnotation>super.getProxy();
+  } 
 }
