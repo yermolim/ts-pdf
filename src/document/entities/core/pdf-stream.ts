@@ -1,5 +1,5 @@
 import { FlatePredictor, flatePredictors, StreamFilter, 
-  streamFilters, StreamType, supportedFilters, valueTypes } from "../../const";
+  streamFilters, StreamType, supportedFilters, valueTypes } from "../../spec-constants";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";

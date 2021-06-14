@@ -2,7 +2,7 @@
 import { arraysEqual, findSubarrayIndex, int32ToBytes, xorBytes } from "../../common/byte";
 import { md5, rc4, bytesToWordArray, wordArrayToBytes } from "../../common/crypto";
 
-import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../const";
+import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../spec-constants";
 import { CryptOptions, AuthenticationResult, IDataCryptor } from "../common-interfaces";
 
 import { AESV2DataCryptor } from "./aesv2-data-cryptor";

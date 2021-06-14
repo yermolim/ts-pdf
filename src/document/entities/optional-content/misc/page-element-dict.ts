@@ -1,6 +1,6 @@
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
-import { PageElementType } from "../../../const";
+import { PageElementType } from "../../../spec-constants";
 export class PageElementDict extends PdfDict {
   /** (Required) */
   Subtype: PageElementType;

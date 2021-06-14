@@ -1,6 +1,6 @@
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
-import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../const";
+import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../spec-constants";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";

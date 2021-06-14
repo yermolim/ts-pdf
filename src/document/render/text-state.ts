@@ -1,5 +1,5 @@
 import { Mat3 } from "mathador";
-import { TextRenderMode, textRenderModes } from "../const";
+import { TextRenderMode, textRenderModes } from "../spec-constants";
 
 export interface TextStateParams {   
   matrix?: Mat3;  

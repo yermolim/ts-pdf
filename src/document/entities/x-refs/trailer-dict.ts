@@ -1,4 +1,4 @@
-import { dictTypes, valueTypes } from "../../const";
+import { dictTypes, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../core/object-id";

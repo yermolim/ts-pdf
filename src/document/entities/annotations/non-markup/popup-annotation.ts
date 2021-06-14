@@ -1,5 +1,5 @@
 import { codes } from "../../../char-codes";
-import { annotationTypes } from "../../../const";
+import { annotationTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { ObjectId } from "../../core/object-id";

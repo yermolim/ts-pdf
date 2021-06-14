@@ -1,4 +1,4 @@
-import { dictTypes, valueTypes } from "../../const";
+import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { codes } from "../../char-codes";
 import { getCharCodesMapByCode, pdfCharCodesByName } from "../../char-encodings";

@@ -1,5 +1,5 @@
 import { codes } from "../../../char-codes";
-import { annotationTypes, caretSymbolTypes, CaretSymbolType } from "../../../const";
+import { annotationTypes, caretSymbolTypes, CaretSymbolType } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";

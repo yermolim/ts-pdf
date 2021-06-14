@@ -1,4 +1,4 @@
-import { flatePredictors, streamFilters, xRefTypes } from "../../const";
+import { flatePredictors, streamFilters, xRefTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";

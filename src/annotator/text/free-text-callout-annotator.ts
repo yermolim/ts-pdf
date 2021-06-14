@@ -7,7 +7,7 @@ import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
 
-import { lineEndingTypes, freeTextIntents } from "../../document/const";
+import { lineEndingTypes, freeTextIntents } from "../../document/spec-constants";
 import { FreeTextAnnotation, FreeTextAnnotationDto, FreeTextAnnotPointsDto } 
   from "../../document/entities/annotations/markup/free-text-annotation";
 

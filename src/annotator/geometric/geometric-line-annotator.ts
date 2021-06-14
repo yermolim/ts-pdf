@@ -7,7 +7,7 @@ import { DocumentService } from "../../services/document-service";
 
 import { LineAnnotation, LineAnnotationDto } 
   from "../../document/entities/annotations/markup/geometric/line-annotation";
-import { lineIntents } from "../../document/const";
+import { lineIntents } from "../../document/spec-constants";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 

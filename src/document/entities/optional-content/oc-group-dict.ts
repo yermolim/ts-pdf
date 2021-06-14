@@ -1,4 +1,4 @@
-import { dictTypes, OcIntent } from "../../const";
+import { dictTypes, OcIntent } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { PdfDict } from "../core/pdf-dict";
 import { OcUsageDict } from "./oc-usage-dict";

@@ -1,6 +1,6 @@
 import { Vec2 } from "mathador";
 
-import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 

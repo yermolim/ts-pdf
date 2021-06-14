@@ -1,4 +1,4 @@
-import { annotationTypes } from "../../../const";
+import { annotationTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { AnnotationDict } from "../annotation-dict";
 

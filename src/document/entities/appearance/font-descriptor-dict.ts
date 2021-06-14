@@ -1,5 +1,5 @@
 import { Quadruple } from "../../../common/types";
-import { dictTypes, valueTypes } from "../../const";
+import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";

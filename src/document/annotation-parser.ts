@@ -1,4 +1,4 @@
-import { annotationTypes } from "./const";
+import { annotationTypes } from "./spec-constants";
 import { ParseInfo, ParseResult } from "./data-parser";
 
 import { FontDict } from "./entities/appearance/font-dict";

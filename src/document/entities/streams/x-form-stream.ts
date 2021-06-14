@@ -4,7 +4,7 @@ import { BBox } from "../../../drawing/utils";
 
 import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
-import { streamTypes, valueTypes } from "../../const";
+import { streamTypes, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
 import { ObjectId } from "../core/object-id";

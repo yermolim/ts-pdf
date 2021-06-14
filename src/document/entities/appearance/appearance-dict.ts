@@ -1,4 +1,4 @@
-import { valueTypes } from "../../const";
+import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";

@@ -1,5 +1,5 @@
 import { codes } from "../../char-codes";
-import { ObjectType, objectTypes, streamTypes } from "../../const";
+import { ObjectType, objectTypes, streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";

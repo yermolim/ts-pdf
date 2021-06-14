@@ -1,6 +1,6 @@
 import { CryptInfo } from "../../common-interfaces";
 import { OcConfigState, ocConfigStates, OcIntent, ocIntents, 
-  OcListMode, ocListModes } from "../../const";
+  OcListMode, ocListModes } from "../../spec-constants";
 import { PdfDict } from "../core/pdf-dict";
 import { OcGroupDict } from "./oc-group-dict";
 import { UsageDict } from "./usage-dict";

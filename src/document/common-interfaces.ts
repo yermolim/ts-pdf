@@ -1,4 +1,4 @@
-import { CryptVersion, CryptRevision, CryptMethod } from "./const";
+import { CryptVersion, CryptRevision, CryptMethod } from "./spec-constants";
 
 //#region PDF object references
 /**interface for the PDF ObjectId-like objects  */

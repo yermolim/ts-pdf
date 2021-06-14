@@ -3,7 +3,7 @@ import { codes, keywordCodes,
   isRegularChar, isDigit, isNewLineChar, 
   isSpaceChar, isNotSpaceChar, isDelimiterChar, 
   isNotDelimiterChar, isNotRegularChar } from "./char-codes";
-import { ObjectType, ValueType, valueTypes } from "./const";
+import { ObjectType, ValueType, valueTypes } from "./spec-constants";
 import { CryptInfo } from "./common-interfaces";
 
 export interface SearchOptions {

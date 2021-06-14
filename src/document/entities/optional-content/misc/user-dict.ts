@@ -1,4 +1,4 @@
-import { UserTypes } from "../../../const";
+import { UserTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 

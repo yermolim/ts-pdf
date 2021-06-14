@@ -7,7 +7,7 @@ import { TempSvgPath } from "../../../../../common/dom";
 import { codes } from "../../../../char-codes";
 import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
   lineEndingTypes, lineJoinStyles, lineIntents, LineIntent, 
-  lineCaptionPositions, LineCaptionPosition } from "../../../../const";
+  lineCaptionPositions, LineCaptionPosition } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
   

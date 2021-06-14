@@ -1,4 +1,4 @@
-import { dictTypes, streamTypes, valueTypes } from "../../const";
+import { dictTypes, streamTypes, valueTypes } from "../../spec-constants";
 import { HexString } from "../strings/hex-string";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";

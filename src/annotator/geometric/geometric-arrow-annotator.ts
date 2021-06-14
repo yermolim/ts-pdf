@@ -5,7 +5,7 @@ import { lineEndingMinimalSize, lineEndingMultiplier } from "../../drawing/utils
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 import { LineAnnotationDto } from "../../document/entities/annotations/markup/geometric/line-annotation";
-import { lineEndingTypes, lineIntents } from "../../document/const";
+import { lineEndingTypes, lineIntents } from "../../document/spec-constants";
 
 import { GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";

@@ -1,4 +1,4 @@
-import { annotationTypes, HighlightingMode, highlightingModes } from "../../../const";
+import { annotationTypes, HighlightingMode, highlightingModes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ActionDict } from "../../actions/action-dict";
 import { UriAction } from "../../actions/uri-action";

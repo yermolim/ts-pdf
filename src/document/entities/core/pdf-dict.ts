@@ -1,5 +1,5 @@
 import { keywordCodes } from "../../char-codes";
-import { DictType } from "../../const";
+import { DictType } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfObject } from "./pdf-object";

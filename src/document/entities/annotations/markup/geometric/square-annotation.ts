@@ -4,7 +4,7 @@ import { calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { codes } from "../../../../char-codes";
-import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 

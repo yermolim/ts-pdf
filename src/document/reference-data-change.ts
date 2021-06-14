@@ -1,7 +1,7 @@
 import { LinkedList } from "../common/types";
 
 import { FreeReference, UsedReference, Reference } from "./common-interfaces";
-import { xRefEntryTypes } from "./const";
+import { xRefEntryTypes } from "./spec-constants";
 
 import { XRefEntry } from "./entities/x-refs/x-ref-entry";
 

@@ -1,5 +1,5 @@
 import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
-import { StreamType, valueTypes } from "../../const";
+import { StreamType, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { keywordCodes } from "../../char-codes";

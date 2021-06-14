@@ -1,7 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
-import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 

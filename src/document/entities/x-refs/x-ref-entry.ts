@@ -1,7 +1,7 @@
 import { parseIntFromBytes, int8ToBytes, 
   int16ToBytes, int32ToBytes } from "../../../common/byte";
 import { codes, isDigit } from "../../char-codes";
-import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../const";
+import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../spec-constants";
 import { Reference } from "../../common-interfaces";
 
 /**PDF cross-reference section entry */

@@ -1,7 +1,7 @@
 import { codes } from "../../../char-codes";
 import { Mat3, Vec2 } from "mathador";
 import { Double, Quadruple } from "../../../../common/types";
-import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../const";
+import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";

@@ -5,7 +5,7 @@ import { getRandomUuid } from "../../../common/uuid";
 
 import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
-import { AnnotationType, dictTypes, valueTypes } from "../../const";
+import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
 import { AppearanceStreamRenderer, AppearanceRenderResult } 

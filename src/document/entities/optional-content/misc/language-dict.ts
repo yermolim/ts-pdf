@@ -1,4 +1,4 @@
-import { OnOffState, onOffStates } from "../../../const";
+import { OnOffState, onOffStates } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 

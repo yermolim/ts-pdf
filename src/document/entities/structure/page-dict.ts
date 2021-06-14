@@ -1,6 +1,6 @@
 import { Quadruple } from "../../../common/types";
 import { codes } from "../../char-codes";
-import { dictTypes, valueTypes } from "../../const";
+import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 

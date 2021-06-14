@@ -1,4 +1,4 @@
-import { annotationTypes, attachmentIconTypes, AttachmentIconType } from "../../../const";
+import { annotationTypes, attachmentIconTypes, AttachmentIconType } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { PdfDict } from "../../core/pdf-dict";
 import { MarkupAnnotation } from "./markup-annotation";

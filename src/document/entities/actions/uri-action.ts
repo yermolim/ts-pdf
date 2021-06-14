@@ -1,5 +1,5 @@
 import { ActionDict } from "./action-dict";
-import { actionTypes } from "../../const";
+import { actionTypes } from "../../spec-constants";
 
 export class UriAction extends ActionDict {
   /**

@@ -8,7 +8,7 @@ import { calcPdfBBoxToRectMatrices, VecMinMax,
 import { codes } from "../../../char-codes";
 import { annotationTypes, JustificationType, justificationTypes, 
   lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles,
-  freeTextIntents, FreeTextIntent } from "../../../const";
+  freeTextIntents, FreeTextIntent } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 

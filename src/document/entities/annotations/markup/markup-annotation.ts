@@ -8,7 +8,7 @@ import { bezierConstant, lineEndingMinimalSize,
 
 import { codes } from "../../../char-codes";
 import { AnnotationType, markupAnnotationReplyTypes, MarkupAnnotationReplyType,
-  LineEndingType, lineEndingTypes, valueTypes } from "../../../const";
+  LineEndingType, lineEndingTypes, valueTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 

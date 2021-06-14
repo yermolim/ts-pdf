@@ -1,5 +1,5 @@
 import { CryptInfo } from "../../../common-interfaces";
-import { CreatorInfoType } from "../../../const";
+import { CreatorInfoType } from "../../../spec-constants";
 import { PdfDict } from "../../core/pdf-dict";
 export class CreatoInfoDict extends PdfDict {
   /**

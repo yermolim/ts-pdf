@@ -1,4 +1,4 @@
-import { dictTypes, ActionType } from "../../const";
+import { dictTypes, ActionType } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { PdfDict } from "../core/pdf-dict";
 

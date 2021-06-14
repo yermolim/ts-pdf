@@ -1,4 +1,4 @@
-import { dictTypes, SoftMaskType, softMaskTypes } from "../../const";
+import { dictTypes, SoftMaskType, softMaskTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";

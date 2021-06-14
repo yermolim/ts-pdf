@@ -1,7 +1,7 @@
 import { Quadruple } from "../../../common/types";
 import { getBit } from "../../../common/byte";
 
-import { dictTypes, valueTypes } from "../../const";
+import { dictTypes, valueTypes } from "../../spec-constants";
 import { codes } from "../../char-codes";
 import { CryptInfo } from "../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";

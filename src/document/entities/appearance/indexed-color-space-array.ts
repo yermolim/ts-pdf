@@ -1,6 +1,6 @@
 import { codes } from "../../char-codes";
 import { CryptInfo, IEncodable } from "../../common-interfaces";
-import { ColorSpace, colorSpaces, valueTypes } from "../../const";
+import { ColorSpace, colorSpaces, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { ObjectId } from "../core/object-id";
 import { TextStream } from "../streams/text-stream";

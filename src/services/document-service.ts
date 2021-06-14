@@ -1,6 +1,6 @@
 import { ElementEventService } from "./element-event-service";
 
-import { dictTypes } from "../document/const";
+import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/common-interfaces";
 
 import { DataParser, ParseInfo } from "../document/data-parser";

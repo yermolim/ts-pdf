@@ -1,5 +1,5 @@
 import { keywordCodes } from "../../char-codes";
-import { xRefTypes } from "../../const";
+import { xRefTypes } from "../../spec-constants";
 import { CryptInfo } from "../../common-interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";

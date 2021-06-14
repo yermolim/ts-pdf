@@ -5,7 +5,7 @@ import { AnnotationIconType, annotationIconTypes,
   annotationMarkedStates, 
   annotationReviewStates, 
   AnnotationState, AnnotationStateModelType, 
-  annotationStateModelTypes, annotationTypes } from "../../../const";
+  annotationStateModelTypes, annotationTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 

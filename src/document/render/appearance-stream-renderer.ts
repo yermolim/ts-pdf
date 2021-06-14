@@ -4,7 +4,7 @@ import { calcPdfBBoxToRectMatrices, selectionStrokeWidth,
   CssMixBlendMode } from "../../drawing/utils";
 
 import { codes } from "../char-codes";
-import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../const";
+import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../spec-constants";
 
 import { DataParser } from "../data-parser";
 
