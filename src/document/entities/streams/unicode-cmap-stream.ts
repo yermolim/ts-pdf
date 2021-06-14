@@ -1,6 +1,6 @@
 import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
 import { StreamType, valueTypes } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { keywordCodes } from "../../encoding/char-codes";
 

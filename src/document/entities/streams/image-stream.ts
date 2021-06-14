@@ -3,7 +3,7 @@ import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../spec-constants";
 import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { codes } from "../../encoding/char-codes";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { IndexedColorSpaceArray } from "../appearance/indexed-color-space-array";
 

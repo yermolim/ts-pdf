@@ -5,7 +5,7 @@ import { Mat3, Vec2 } from "mathador";
 import { bezierConstant, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
 import { DateString } from "../../../strings/date-string";

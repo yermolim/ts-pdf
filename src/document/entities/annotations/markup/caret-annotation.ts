@@ -1,6 +1,6 @@
 import { codes } from "../../../encoding/char-codes";
 import { annotationTypes, caretSymbolTypes, CaretSymbolType } from "../../../spec-constants";
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 import { MarkupAnnotation } from "./markup-annotation";
 import { Quadruple } from "../../../../common/types";

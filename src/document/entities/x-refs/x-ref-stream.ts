@@ -1,5 +1,5 @@
 import { flatePredictors, streamFilters, xRefTypes } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";

@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { buildSquigglyLine } from "../../../../../drawing/utils";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
 import { DateString } from "../../../strings/date-string";

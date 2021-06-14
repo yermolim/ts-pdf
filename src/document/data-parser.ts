@@ -1,7 +1,7 @@
 import { Quadruple } from "../common/types";
 import { codes, keywordCodes } from "./encoding/char-codes";
 import { ObjectType, ValueType, valueTypes } from "./spec-constants";
-import { CryptInfo } from "./common-interfaces";
+import { CryptInfo } from "./encryption/interfaces";
 
 export interface SearchOptions {
   /**'true' - straight, 'false' - reverse */

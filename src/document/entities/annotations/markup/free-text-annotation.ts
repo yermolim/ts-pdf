@@ -9,7 +9,7 @@ import { codes } from "../../../encoding/char-codes";
 import { annotationTypes, JustificationType, justificationTypes, 
   lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles,
   freeTextIntents, FreeTextIntent } from "../../../spec-constants";
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";

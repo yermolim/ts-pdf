@@ -1,5 +1,5 @@
 import { dictTypes, valueTypes } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { codes } from "../../encoding/char-codes";
 import { getCharCodesMapByCode, pdfCharCodesByName } from "../../encoding/char-encodings";
 import { ParseInfo, ParseResult } from "../../data-parser";

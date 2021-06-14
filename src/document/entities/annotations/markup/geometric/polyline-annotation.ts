@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, 
   lineJoinStyles, polyIntents } from "../../../../spec-constants";
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
 import { DateString } from "../../../strings/date-string";

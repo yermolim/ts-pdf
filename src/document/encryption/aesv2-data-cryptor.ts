@@ -1,6 +1,6 @@
 import { int32ToBytes } from "../../common/byte";
 import { md5, aes, wordArrayToBytes } from "../../common/crypto";
-import { IDataCryptor } from "../common-interfaces";
+import { IDataCryptor } from "./interfaces";
 import { Reference } from "../references/reference";
 
 /**

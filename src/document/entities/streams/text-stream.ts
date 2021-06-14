@@ -1,5 +1,5 @@
 import { StreamType } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfStream } from "../core/pdf-stream";
 

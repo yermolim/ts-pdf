@@ -1,6 +1,6 @@
 import { codes } from "../../encoding/char-codes";
 import { ObjectType, objectTypes, streamTypes } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";

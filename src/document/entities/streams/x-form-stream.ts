@@ -3,7 +3,7 @@ import { Hextuple, Quadruple } from "../../../common/types";
 import { BBox } from "../../../drawing/utils";
 
 import { codes } from "../../encoding/char-codes";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { streamTypes, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";
 

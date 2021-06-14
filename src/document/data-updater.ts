@@ -1,4 +1,4 @@
-import { AuthenticationResult, CryptInfo, IDataCryptor } from "./common-interfaces";
+import { AuthenticationResult, CryptInfo, IDataCryptor } from "./encryption/interfaces";
 import { DataWriter } from "./data-writer";
 import { UsedReference } from "./references/reference";
 import { ReferenceData } from "./references/reference-data";

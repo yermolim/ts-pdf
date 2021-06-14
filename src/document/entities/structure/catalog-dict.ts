@@ -1,6 +1,6 @@
 import { codes } from "../../encoding/char-codes";
 import { dictTypes } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "../core/object-id";

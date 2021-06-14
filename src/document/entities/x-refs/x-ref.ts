@@ -1,5 +1,5 @@
 import { XRefType } from "../../spec-constants";
-import { CryptInfo, IEncodable } from "../../common-interfaces";
+import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
 import { XRefEntry } from "./x-ref-entry";

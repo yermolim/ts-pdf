@@ -1,5 +1,5 @@
 import { codes } from "../../encoding/char-codes";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
 /**

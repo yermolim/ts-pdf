@@ -3,7 +3,7 @@ import { getBit } from "../../../common/byte";
 
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { codes } from "../../encoding/char-codes";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 
 import { ObjectId } from "../core/object-id";

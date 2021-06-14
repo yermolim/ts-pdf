@@ -1,4 +1,4 @@
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { OcConfigState, ocConfigStates, OcIntent, ocIntents, 
   OcListMode, ocListModes } from "../../spec-constants";
 import { PdfDict } from "../core/pdf-dict";

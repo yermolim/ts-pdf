@@ -1,7 +1,7 @@
 import { StandardStampCreationInfo, standardStampCreationInfos } 
   from "../../../../drawing/stamps";
 
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, colorSpaces, stampTypes, StampType } from "../../../spec-constants";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 

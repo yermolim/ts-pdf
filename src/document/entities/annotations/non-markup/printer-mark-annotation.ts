@@ -1,5 +1,5 @@
 import { annotationTypes } from "../../../spec-constants";
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { AnnotationDict } from "../annotation-dict";
 
 export class PrinterMarkAnnotation extends AnnotationDict {

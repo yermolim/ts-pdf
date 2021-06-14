@@ -1,6 +1,6 @@
 import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType, valueTypes, polyIntents, PolyIntent } from "../../../../spec-constants";
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../appearance/measure-dict";

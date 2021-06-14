@@ -1,7 +1,7 @@
 import { ElementEventService } from "./element-event-service";
 
 import { dictTypes } from "../document/spec-constants";
-import { AuthenticationResult } from "../document/common-interfaces";
+import { AuthenticationResult } from "../document/encryption/interfaces";
 
 import { DataParser, ParseInfo } from "../document/data-parser";
 import { ReferenceData } from "../document/references/reference-data";

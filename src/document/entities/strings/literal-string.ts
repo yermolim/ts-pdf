@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../encoding/char-codes";
-import { CryptInfo, IEncodable } from "../../common-interfaces";
+import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { DataParser, ParseResult } from "../../data-parser";
 
 /**

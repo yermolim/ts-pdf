@@ -2,7 +2,7 @@ import { Double, Quadruple } from "../../../../../common/types";
 import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType } from "../../../../spec-constants";
 
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 import { AnnotationDto } from "../../annotation-dict";
 import { MarkupAnnotation } from "../markup-annotation";

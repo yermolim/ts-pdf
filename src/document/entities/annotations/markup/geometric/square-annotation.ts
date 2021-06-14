@@ -5,7 +5,7 @@ import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
 import { DateString } from "../../../strings/date-string";

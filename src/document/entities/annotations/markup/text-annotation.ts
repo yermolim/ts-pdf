@@ -6,7 +6,7 @@ import { AnnotationIconType, annotationIconTypes,
   annotationReviewStates, 
   AnnotationState, AnnotationStateModelType, 
   annotationStateModelTypes, annotationTypes } from "../../../spec-constants";
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";

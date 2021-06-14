@@ -4,7 +4,7 @@ import { BBox } from "../../../drawing/utils";
 import { getRandomUuid } from "../../../common/uuid";
 
 import { codes } from "../../encoding/char-codes";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
 import { ParseInfo, ParseResult } from "../../data-parser";
 

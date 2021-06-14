@@ -2,7 +2,7 @@ import { Mat3, Vec2 } from "mathador";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../spec-constants";
-import { CryptInfo } from "../../../../common-interfaces";
+import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
 
 import { DateString } from "../../../strings/date-string";

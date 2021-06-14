@@ -1,4 +1,4 @@
-import { IDataCryptor } from "../common-interfaces";
+import { IDataCryptor } from "./interfaces";
 import { Reference } from "../references/reference";
 
 /**

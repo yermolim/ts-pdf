@@ -1,5 +1,5 @@
-import { CryptVersion, CryptRevision, CryptMethod } from "./spec-constants";
-import { Reference } from "./references/reference";
+import { CryptVersion, CryptRevision, CryptMethod } from "../spec-constants";
+import { Reference } from "../references/reference";
 
 /**options used during the PDF objects encryption/decryption */
 export interface CryptOptions {

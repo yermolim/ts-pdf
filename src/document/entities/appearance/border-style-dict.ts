@@ -1,7 +1,7 @@
 import { Double } from "../../../common/types";
 import { codes } from "../../encoding/char-codes";
 import { dictTypes, borderStyles, BorderStyle } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { PdfDict } from "../core/pdf-dict";
 

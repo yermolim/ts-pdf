@@ -1,5 +1,5 @@
 import { valueTypes } from "../../spec-constants";
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../data-parser";
 import { GroupDict } from "../misc/group-dict";
 

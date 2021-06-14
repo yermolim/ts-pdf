@@ -1,5 +1,5 @@
 import { aes, wordArrayToBytes } from "../../common/crypto";
-import { IDataCryptor } from "../common-interfaces";
+import { IDataCryptor } from "./interfaces";
 import { Reference } from "../references/reference";
 
 export class AESV3DataCryptor implements IDataCryptor {

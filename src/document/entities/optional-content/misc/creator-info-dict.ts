@@ -1,4 +1,4 @@
-import { CryptInfo } from "../../../common-interfaces";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { CreatorInfoType } from "../../../spec-constants";
 import { PdfDict } from "../../core/pdf-dict";
 export class CreatoInfoDict extends PdfDict {

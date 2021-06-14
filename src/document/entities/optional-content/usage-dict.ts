@@ -1,4 +1,4 @@
-import { CryptInfo } from "../../common-interfaces";
+import { CryptInfo } from "../../encryption/interfaces";
 import { UsageEvent } from "../../spec-constants";
 import { PdfDict } from "../core/pdf-dict";
 import { OcGroupDict } from "./oc-group-dict";
