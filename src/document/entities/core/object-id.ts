@@ -1,5 +1,6 @@
 import { codes } from "../../encoding/char-codes";
-import { CryptInfo, IEncodable, Reference } from "../../common-interfaces";
+import { CryptInfo, IEncodable } from "../../common-interfaces";
+import { Reference } from "../../references/reference";
 import { DataParser, ParseResult } from "../../data-parser";
 
 /**

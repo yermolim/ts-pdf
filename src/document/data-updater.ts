@@ -1,5 +1,6 @@
-import { AuthenticationResult, CryptInfo, IDataCryptor, UsedReference } from "./common-interfaces";
+import { AuthenticationResult, CryptInfo, IDataCryptor } from "./common-interfaces";
 import { DataWriter } from "./data-writer";
+import { UsedReference } from "./references/reference";
 import { ReferenceData } from "./references/reference-data";
 import { ReferenceDataChange } from "./references/reference-data-change";
 

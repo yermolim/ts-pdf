@@ -1,6 +1,7 @@
 import { int32ToBytes } from "../../common/byte";
 import { md5, aes, wordArrayToBytes } from "../../common/crypto";
-import { IDataCryptor, Reference } from "../common-interfaces";
+import { IDataCryptor } from "../common-interfaces";
+import { Reference } from "../references/reference";
 
 /**
  * If using the AES-128 algorithm, extend the encryption key an additional 4 bytes 

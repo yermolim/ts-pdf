@@ -1,4 +1,5 @@
-import { CryptInfo, IEncodable, Reference } from "../../common-interfaces";
+import { CryptInfo, IEncodable } from "../../common-interfaces";
+import { Reference } from "../../references/reference";
 import { DataParser, ParseResult } from "../../data-parser";
 import { DateString } from "../strings/date-string";
 import { HexString } from "../strings/hex-string";

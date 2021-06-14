@@ -1,4 +1,5 @@
-import { IDataCryptor, Reference } from "../common-interfaces";
+import { IDataCryptor } from "../common-interfaces";
+import { Reference } from "../references/reference";
 
 /**
  * "null-object" encryption handler. returns plain data without actually encrypting or decrypting it

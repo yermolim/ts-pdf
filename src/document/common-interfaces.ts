@@ -1,23 +1,5 @@
 import { CryptVersion, CryptRevision, CryptMethod } from "./spec-constants";
-
-//#region PDF object references
-/**interface for the PDF ObjectId-like objects  */
-export interface Reference {  
-  id: number;
-  generation: number;
-}
-
-export interface UsedReference extends Reference {
-  byteOffset: number;
-  compressed?: boolean;
-  streamId?: number;
-  streamIndex?: number;
-}
-
-export interface FreeReference extends Reference {
-  nextFreeId: number;
-}
-//#endregion
+import { Reference } from "./references/reference";
 
 /**options used during the PDF objects encryption/decryption */
 export interface CryptOptions {

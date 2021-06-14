@@ -2,7 +2,7 @@ import { parseIntFromBytes, int8ToBytes,
   int16ToBytes, int32ToBytes } from "../../../common/byte";
 import { codes } from "../../encoding/char-codes";
 import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../spec-constants";
-import { Reference } from "../../common-interfaces";
+import { Reference } from "../../references/reference";
 
 /**PDF cross-reference section entry */
 export class XRefEntry implements Reference {  
