@@ -23,12 +23,12 @@ export class TextHighlightAnnotator extends TextMarkupAnnotator {
     }
 
     const dtos = this.buildAnnotationDtos("/Highlight");
-    dtos.forEach(dto => {
+    for (const dto of dtos) {      
       const annotation = HighlightAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
-      this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-    });
+      await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    }
     
     this.clear();
   }

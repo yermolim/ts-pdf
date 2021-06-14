@@ -74,10 +74,10 @@ export class StampAnnotator extends Annotator {
     }
 
     // append the current temp annotation to the page
-    this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+    await this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
 
     // create a new temp annotation
-    this.createTempStampAnnotationAsync();
+    await this.createTempStampAnnotationAsync();
   }
   
   protected override init() {

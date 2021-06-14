@@ -45,14 +45,14 @@ export class TextNoteAnnotator extends TextAnnotator {
 
     const text = await this._viewer.showTextDialogAsync(initialText);
     if (text !== null) {
-      this._tempAnnotation.setTextContent(text);
+      await this._tempAnnotation.setTextContentAsync(text);
 
       // append the current temp annotation to the page
-      this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+      await this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
     }
 
     // create a new temp annotation
-    this.createTempNoteAnnotationAsync();
+    await this.createTempNoteAnnotationAsync();
   }
   
   protected override init() {

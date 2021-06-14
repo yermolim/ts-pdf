@@ -24,12 +24,12 @@ export class TextSquigglyAnnotator extends TextMarkupAnnotator {
     }
 
     const dtos = this.buildAnnotationDtos("/Squiggly");
-    dtos.forEach(dto => {
+    for (const dto of dtos) {      
       const annotation = SquigglyAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
       this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-    });
+    }
     
     this.clear();
   }

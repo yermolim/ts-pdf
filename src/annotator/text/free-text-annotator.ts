@@ -58,7 +58,7 @@ export class FreeTextAnnotator extends TextAnnotator {
         // console.log(annotation);
     
         // append the current temp annotation to the page
-        this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
       }
     }
     

@@ -78,8 +78,8 @@ declare global {
 
 interface DocCommand {
   timestamp: number;  
-  undo(): void;
-  redo?(): void;
+  undo(): Promise<void>;
+  redo?(): Promise<void>;
 }
 
 export class DocumentService {
@@ -190,7 +190,7 @@ export class DocumentService {
 
     this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
       // clear public actions to prevent memory leak
-      x.$onChangeAction = null;
+      x.$onEditAction = null;
       x.$onRenderUpdatedAction = null;
     }));
 
@@ -214,8 +214,8 @@ export class DocumentService {
   }
   
   /**undo the most recent command */
-  undo() {
-    this.undoCommand();
+  async undoAsync() {
+    this.undoCommandAsync();
   }
 
   //#region public annotations
@@ -306,7 +306,7 @@ export class DocumentService {
    * appending an annotation to another page removes it from the first one
    */
   async appendAnnotationToPageAsync(pageId: number, annotation: AnnotationDict) {
-    this.appendAnnotationAsync(pageId, annotation, true);
+    await this.appendAnnotationAsync(pageId, annotation, true);
   } 
 
   /**
@@ -317,7 +317,7 @@ export class DocumentService {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
       annotation = await AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-      this.appendAnnotationToPageAsync(dto.pageId, annotation);
+      await this.appendAnnotationToPageAsync(dto.pageId, annotation);
     }
   }
 
@@ -402,8 +402,8 @@ export class DocumentService {
     return this._selectedAnnotation?.Contents?.literal;
   }
 
-  setSelectedAnnotationTextContent(text: string) {
-    this.selectedAnnotation?.setTextContent(text);
+  async setSelectedAnnotationTextContentAsync(text: string) {
+    await this.selectedAnnotation?.setTextContentAsync(text);
   }
   //#endregion
 
@@ -412,12 +412,12 @@ export class DocumentService {
     this.emitStateChanged();
   }
 
-  private undoCommand() {
+  private async undoCommandAsync() {
     if (!this._lastCommands.length) {
       return;
     }
     const lastCommand = this._lastCommands.pop();
-    lastCommand.undo();    
+    await lastCommand.undo();    
     this.emitStateChanged();
   }
 
@@ -439,7 +439,7 @@ export class DocumentService {
 
     annotation.markAsDeleted(false);
     annotation.$pageId = page.id;
-    annotation.$onChangeAction = this.getOnAnnotEditAction(annotation);
+    annotation.$onEditAction = this.getOnAnnotEditAction(annotation);
     annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
     const annotationMap = await this.getSupportedAnnotationMapAsync();
     const pageAnnotations = annotationMap.get(pageId);
@@ -452,7 +452,7 @@ export class DocumentService {
     if (undoable) {
       this.pushCommand({
         timestamp: Date.now(),
-        undo: () => {
+        undo: async () => {
           this.removeAnnotation(annotation, false);
         }
       });
@@ -476,7 +476,7 @@ export class DocumentService {
     if (undoable) {
       this.pushCommand({
         timestamp: Date.now(),
-        undo: () => {
+        undo: async () => {
           this.appendAnnotationAsync(annotation.$pageId, annotation, false);
         }
       });
@@ -488,15 +488,25 @@ export class DocumentService {
     }));
   }
 
-  private getOnAnnotEditAction(annotation: AnnotationDict): () => void {
+  private getOnAnnotEditAction(annotation: AnnotationDict): (undo: () => Promise<void>) => void {
     if (!annotation) {
       return null;
     }
 
-    return () => this._eventService.dispatchEvent(new AnnotEvent({
-      type: "edit",
-      annotations: [annotation.toDto()],
-    }));
+    return (undo?: () => Promise<void>) => {
+      if (!annotation.$pageId) {
+        // do not emit annotation edit events until the annotation is not appended to the page
+        return;
+      }
+
+      if (undo) {
+        this.pushCommand({ timestamp: Date.now(), undo });
+      }
+      this._eventService.dispatchEvent(new AnnotEvent({
+        type: "edit",
+        annotations: [annotation.toDto()],
+      }));
+    };
   }
   
   private getOnAnnotRenderUpdatedAction(annotation: AnnotationDict): () => void {
@@ -699,7 +709,7 @@ export class DocumentService {
         if (annot) {
           annotations.push(annot);
           annot.$pageId = page.id;
-          annot.$onChangeAction = this.getOnAnnotEditAction(annot);
+          annot.$onEditAction = this.getOnAnnotEditAction(annot);
           annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
         }
       }

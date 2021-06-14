@@ -14757,14 +14757,27 @@ class AnnotationDict extends PdfDict {
             matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
         };
     }
-    setTextContent(text) {
-        const dict = this.getProxy();
-        if (!text) {
-            dict.Contents = null;
-        }
-        const literalString = LiteralString.fromString(text);
-        dict.Contents = literalString;
-        dict.M = DateString.fromDate(new Date());
+    setTextContentAsync(text, undoable = true) {
+        var _a;
+        return __awaiter$u(this, void 0, void 0, function* () {
+            const dict = this.getProxy();
+            const oldText = (_a = dict.Contents) === null || _a === void 0 ? void 0 : _a.literal;
+            if (!text) {
+                dict.Contents = null;
+            }
+            else {
+                const literalString = LiteralString.fromString(text);
+                dict.Contents = literalString;
+            }
+            dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$u(this, void 0, void 0, function* () {
+                        dict.setTextContentAsync(oldText, false);
+                    })
+                    : undefined);
+            }
+        });
     }
     parseProps(parseInfo) {
         var _a;
@@ -15035,16 +15048,15 @@ class AnnotationDict extends PdfDict {
         return position;
     }
     applyRectTransform(matrix) {
-        const dict = this.getProxy();
-        const bBox = dict.getLocalBB();
+        const bBox = this.getLocalBB();
         bBox.ll.applyMat3(matrix);
         bBox.lr.applyMat3(matrix);
         bBox.ur.applyMat3(matrix);
         bBox.ul.applyMat3(matrix);
         const { min: newRectMin, max: newRectMax } = Vec2.minMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-        dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+        this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         return __awaiter$u(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
@@ -15054,6 +15066,15 @@ class AnnotationDict extends PdfDict {
                 dict.apStream.matrix = newApMatrix;
             }
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$u(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
     applyTempTransformAsync() {
@@ -20948,7 +20969,7 @@ class InkAnnotation extends MarkupAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
         return __awaiter$s(this, void 0, void 0, function* () {
             const dict = this.getProxy();
@@ -20995,6 +21016,15 @@ class InkAnnotation extends MarkupAnnotation {
             }
             this.generateApStream();
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$s(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
     bakeRotationAsync() {
@@ -21347,7 +21377,7 @@ class SquareAnnotation extends GeometricAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         return __awaiter$r(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
@@ -21357,6 +21387,15 @@ class SquareAnnotation extends GeometricAnnotation {
                 dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
             }
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$r(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
     initProxy() {
@@ -21585,7 +21624,7 @@ class CircleAnnotation extends GeometricAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         return __awaiter$q(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
@@ -21595,6 +21634,15 @@ class CircleAnnotation extends GeometricAnnotation {
                 dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
             }
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$q(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
     initProxy() {
@@ -21860,7 +21908,7 @@ class PolygonAnnotation extends PolyAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
         return __awaiter$p(this, void 0, void 0, function* () {
             const dict = this.getProxy();
@@ -21909,6 +21957,15 @@ class PolygonAnnotation extends PolyAnnotation {
             }
             dict.generateApStream();
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$p(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
     bakeRotationAsync() {
@@ -22114,7 +22171,7 @@ class PolylineAnnotation extends PolyAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
         return __awaiter$o(this, void 0, void 0, function* () {
             const dict = this.getProxy();
@@ -22160,6 +22217,15 @@ class PolylineAnnotation extends PolyAnnotation {
             }
             dict.generateApStream();
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$o(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
     bakeRotationAsync() {
@@ -22420,9 +22486,14 @@ class LineAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    setTextContent(text) {
-        super.setTextContent(text);
-        this.updateStream();
+    setTextContentAsync(text, undoable = true) {
+        const _super = Object.create(null, {
+            setTextContentAsync: { get: () => super.setTextContentAsync }
+        });
+        return __awaiter$n(this, void 0, void 0, function* () {
+            yield _super.setTextContentAsync.call(this, text, undoable);
+            yield this.updateStreamAsync();
+        });
     }
     parseProps(parseInfo) {
         var _a;
@@ -22537,7 +22608,7 @@ class LineAnnotation extends GeometricAnnotation {
             }
         }
     }
-    applyCommonTransformAsync(matrix) {
+    applyCommonTransformAsync(matrix, undoable = true) {
         return __awaiter$n(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             const [x1, y1, x2, y2] = dict.L;
@@ -22546,9 +22617,18 @@ class LineAnnotation extends GeometricAnnotation {
             dict.L = [start.x, start.y, end.x, end.y];
             yield dict.generateApStreamAsync();
             dict.M = DateString.fromDate(new Date());
+            if (dict.$onEditAction) {
+                const invertedMat = Mat3.invert(matrix);
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$n(this, void 0, void 0, function* () {
+                        yield dict.applyCommonTransformAsync(invertedMat, false);
+                        yield dict.updateRenderAsync();
+                    })
+                    : undefined);
+            }
         });
     }
-    updateStream() {
+    updateStreamAsync() {
         return __awaiter$n(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             yield dict.generateApStreamAsync();
@@ -23525,7 +23605,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             target.releasePointerCapture(e.pointerId);
             this._svgTemp.remove();
             if (this._moved) {
-                this.updateStream(this._pointsTemp);
+                this.updateStreamAsync(this._pointsTemp);
             }
         };
         this.onSideHandlePointerUp = (e) => {
@@ -23563,7 +23643,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                 default:
                     return;
             }
-            this.updateStream(points);
+            this.updateStreamAsync(points);
         };
         this.onCalloutHandlePointerDown = (e) => {
             if (!e.isPrimary) {
@@ -23614,7 +23694,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             target.releasePointerCapture(e.pointerId);
             this._svgTemp.remove();
             if (this._moved) {
-                this.updateStream(this._pointsTemp);
+                this.updateStreamAsync(this._pointsTemp);
             }
         };
     }
@@ -23826,9 +23906,14 @@ class FreeTextAnnotation extends MarkupAnnotation {
             calloutEndingType: this.LE,
         };
     }
-    setTextContent(text) {
-        super.setTextContent(text);
-        this.updateStream();
+    setTextContentAsync(text, undoable = true) {
+        const _super = Object.create(null, {
+            setTextContentAsync: { get: () => super.setTextContentAsync }
+        });
+        return __awaiter$m(this, void 0, void 0, function* () {
+            yield _super.setTextContentAsync.call(this, text, undoable);
+            yield this.updateStreamAsync(null);
+        });
     }
     parseProps(parseInfo) {
         var _a;
@@ -24132,11 +24217,19 @@ class FreeTextAnnotation extends MarkupAnnotation {
             this.apStream = apStream;
         });
     }
-    updateStream(points) {
+    updateStreamAsync(points, undoable = true) {
         return __awaiter$m(this, void 0, void 0, function* () {
             const dict = this.getProxy();
-            yield dict.generateApStreamAsync(points || dict.pointsPageCS);
+            const oldPoints = dict.pointsPageCS;
+            yield dict.generateApStreamAsync(points || oldPoints);
             yield dict.updateRenderAsync();
+            if (points && dict.$onEditAction) {
+                dict.$onEditAction(undoable
+                    ? () => __awaiter$m(this, void 0, void 0, function* () {
+                        yield dict.updateStreamAsync(oldPoints, false);
+                    })
+                    : undefined);
+            }
         });
     }
     renderHandles() {
@@ -24474,7 +24567,7 @@ class DocumentService {
         this._lastCommands.length = 0;
         this.emitStateChanged();
         this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
-            x.$onChangeAction = null;
+            x.$onEditAction = null;
             x.$onRenderUpdatedAction = null;
         }));
         this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
@@ -24489,8 +24582,10 @@ class DocumentService {
     getPlainData() {
         return this._data.slice();
     }
-    undo() {
-        this.undoCommand();
+    undoAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            this.undoCommandAsync();
+        });
     }
     getDataWithoutSupportedAnnotationsAsync() {
         return __awaiter$k(this, void 0, void 0, function* () {
@@ -24558,7 +24653,7 @@ class DocumentService {
     }
     appendAnnotationToPageAsync(pageId, annotation) {
         return __awaiter$k(this, void 0, void 0, function* () {
-            this.appendAnnotationAsync(pageId, annotation, true);
+            yield this.appendAnnotationAsync(pageId, annotation, true);
         });
     }
     appendSerializedAnnotationsAsync(dtos) {
@@ -24566,7 +24661,7 @@ class DocumentService {
             let annotation;
             for (const dto of dtos) {
                 annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-                this.appendAnnotationToPageAsync(dto.pageId, annotation);
+                yield this.appendAnnotationToPageAsync(dto.pageId, annotation);
             }
         });
     }
@@ -24637,21 +24732,25 @@ class DocumentService {
         var _a, _b;
         return (_b = (_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
     }
-    setSelectedAnnotationTextContent(text) {
+    setSelectedAnnotationTextContentAsync(text) {
         var _a;
-        (_a = this.selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContent(text);
+        return __awaiter$k(this, void 0, void 0, function* () {
+            yield ((_a = this.selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
+        });
     }
     pushCommand(command) {
         this._lastCommands.push(command);
         this.emitStateChanged();
     }
-    undoCommand() {
-        if (!this._lastCommands.length) {
-            return;
-        }
-        const lastCommand = this._lastCommands.pop();
-        lastCommand.undo();
-        this.emitStateChanged();
+    undoCommandAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            if (!this._lastCommands.length) {
+                return;
+            }
+            const lastCommand = this._lastCommands.pop();
+            yield lastCommand.undo();
+            this.emitStateChanged();
+        });
     }
     emitStateChanged() {
         this._eventService.dispatchEvent(new DocServiceStateChangeEvent({
@@ -24669,7 +24768,7 @@ class DocumentService {
             }
             annotation.markAsDeleted(false);
             annotation.$pageId = page.id;
-            annotation.$onChangeAction = this.getOnAnnotEditAction(annotation);
+            annotation.$onEditAction = this.getOnAnnotEditAction(annotation);
             annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const pageAnnotations = annotationMap.get(pageId);
@@ -24682,9 +24781,9 @@ class DocumentService {
             if (undoable) {
                 this.pushCommand({
                     timestamp: Date.now(),
-                    undo: () => {
+                    undo: () => __awaiter$k(this, void 0, void 0, function* () {
                         this.removeAnnotation(annotation, false);
-                    }
+                    })
                 });
             }
             this._eventService.dispatchEvent(new AnnotEvent({
@@ -24702,9 +24801,9 @@ class DocumentService {
         if (undoable) {
             this.pushCommand({
                 timestamp: Date.now(),
-                undo: () => {
+                undo: () => __awaiter$k(this, void 0, void 0, function* () {
                     this.appendAnnotationAsync(annotation.$pageId, annotation, false);
-                }
+                })
             });
         }
         this._eventService.dispatchEvent(new AnnotEvent({
@@ -24716,10 +24815,18 @@ class DocumentService {
         if (!annotation) {
             return null;
         }
-        return () => this._eventService.dispatchEvent(new AnnotEvent({
-            type: "edit",
-            annotations: [annotation.toDto()],
-        }));
+        return (undo) => {
+            if (!annotation.$pageId) {
+                return;
+            }
+            if (undo) {
+                this.pushCommand({ timestamp: Date.now(), undo });
+            }
+            this._eventService.dispatchEvent(new AnnotEvent({
+                type: "edit",
+                annotations: [annotation.toDto()],
+            }));
+        };
     }
     getOnAnnotRenderUpdatedAction(annotation) {
         if (!annotation) {
@@ -24840,7 +24947,7 @@ class DocumentService {
                     if (annot) {
                         annotations.push(annot);
                         annot.$pageId = page.id;
-                        annot.$onChangeAction = this.getOnAnnotEditAction(annot);
+                        annot.$onEditAction = this.getOnAnnotEditAction(annot);
                         annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
                     }
                 }
@@ -25827,7 +25934,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
             const pageId = this._pageId;
             const dto = this.buildAnnotationDto();
             const annotation = yield LineAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
-            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });
     }
@@ -25999,7 +26106,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
             const pageId = this._pageId;
             const dto = this.buildAnnotationDto();
             const annotation = CircleAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });
     }
@@ -26162,7 +26269,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
             const pageId = this._pageId;
             const dto = this.buildAnnotationDto();
             const annotation = PolygonAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });
     }
@@ -26342,7 +26449,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
             const pageId = this._pageId;
             const dto = this.buildAnnotationDto();
             const annotation = PolylineAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });
     }
@@ -26500,7 +26607,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
             const pageId = this._pageId;
             const dto = this.buildAnnotationDto();
             const annotation = SquareAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });
     }
@@ -26762,7 +26869,7 @@ class PenAnnotator extends Annotator {
             const pageId = this._annotationPathData.id;
             const dto = this.buildAnnotationDto(this._annotationPathData);
             const annotation = InkAnnotation.createFromDto(dto);
-            this._docService.appendAnnotationToPageAsync(pageId, annotation);
+            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
             this.clear();
         });
     }
@@ -26973,8 +27080,8 @@ class StampAnnotator extends Annotator {
             if (!this._pageId || !this._tempAnnotation) {
                 return;
             }
-            this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-            this.createTempStampAnnotationAsync();
+            yield this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+            yield this.createTempStampAnnotationAsync();
         });
     }
     init() {
@@ -27213,10 +27320,10 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
                 return;
             }
             const dtos = this.buildAnnotationDtos("/Highlight");
-            dtos.forEach(dto => {
+            for (const dto of dtos) {
                 const annotation = HighlightAnnotation.createFromDto(dto);
-                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            });
+                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            }
             this.clear();
         });
     }
@@ -27259,10 +27366,10 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
                 return;
             }
             const dtos = this.buildAnnotationDtos("/Squiggly");
-            dtos.forEach(dto => {
+            for (const dto of dtos) {
                 const annotation = SquigglyAnnotation.createFromDto(dto);
                 this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            });
+            }
             this.clear();
         });
     }
@@ -27314,10 +27421,10 @@ class TextStrikeoutAnnotator extends TextMarkupAnnotator {
                 return;
             }
             const dtos = this.buildAnnotationDtos("/Strikeout");
-            dtos.forEach(dto => {
+            for (const dto of dtos) {
                 const annotation = StrikeoutAnnotation.createFromDto(dto);
-                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            });
+                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            }
             this.clear();
         });
     }
@@ -27374,10 +27481,10 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
                 return;
             }
             const dtos = this.buildAnnotationDtos("/Underline");
-            dtos.forEach(dto => {
+            for (const dto of dtos) {
                 const annotation = UnderlineAnnotation.createFromDto(dto);
-                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            });
+                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+            }
             this.clear();
         });
     }
@@ -27481,10 +27588,10 @@ class TextNoteAnnotator extends TextAnnotator {
             const initialText = (_b = (_a = this._tempAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
             const text = yield this._viewer.showTextDialogAsync(initialText);
             if (text !== null) {
-                this._tempAnnotation.setTextContent(text);
-                this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+                yield this._tempAnnotation.setTextContentAsync(text);
+                yield this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
             }
-            this.createTempNoteAnnotationAsync();
+            yield this.createTempNoteAnnotationAsync();
         });
     }
     init() {
@@ -27594,7 +27701,7 @@ class FreeTextAnnotator extends TextAnnotator {
                 const dto = this.buildAnnotationDto(text);
                 if (dto) {
                     const annotation = yield FreeTextAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
-                    this._docService.appendAnnotationToPageAsync(pageId, annotation);
+                    yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
                 }
             }
             this.clear();
@@ -27833,7 +27940,7 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
                 const dto = this.buildAnnotationDto(text);
                 if (dto) {
                     const annotation = yield FreeTextAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
-                    this._docService.appendAnnotationToPageAsync(pageId, annotation);
+                    yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
                 }
             }
             this.clear();
@@ -29401,7 +29508,7 @@ class TsPdfViewer {
             if (text === null) {
                 return;
             }
-            (_b = this._docService) === null || _b === void 0 ? void 0 : _b.setSelectedAnnotationTextContent(text);
+            yield ((_b = this._docService) === null || _b === void 0 ? void 0 : _b.setSelectedAnnotationTextContentAsync(text));
         });
         this.onAnnotationDeleteButtonClick = () => {
             var _a;
@@ -29426,7 +29533,7 @@ class TsPdfViewer {
         };
         this.docServiceUndo = () => {
             var _a;
-            (_a = this._docService) === null || _a === void 0 ? void 0 : _a.undo();
+            (_a = this._docService) === null || _a === void 0 ? void 0 : _a.undoAsync();
         };
         this.onDocServiceStateChange = (e) => {
             if (e.detail.undoableCount) {

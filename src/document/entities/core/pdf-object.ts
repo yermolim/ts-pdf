@@ -9,7 +9,7 @@ export abstract class PdfObject implements IEncodable {
   /**action to execute on change of any of the public properties of the current object using proxy */
   $onChangeAction: () => void;
   /**action to execute on user edit of the current object */
-  $onEditAction: (undo: () => void) => void;
+  $onEditAction: (undo?: () => Promise<void>) => void;
 
   protected _sourceBytes: Uint8Array;
   /**

@@ -404,9 +404,9 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     };
   }
   
-  override setTextContent(text: string) {
-    super.setTextContent(text);
-    this.updateStream();
+  override async setTextContentAsync(text: string, undoable = true) {
+    await super.setTextContentAsync(text, undoable);
+    await this.updateStreamAsync(null);
   }
   
   /**
@@ -813,10 +813,23 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     this.apStream = apStream;
   }
 
-  protected async updateStream(points?: FreeTextAnnotPoints) {  
+  protected async updateStreamAsync(points: FreeTextAnnotPoints, undoable = true) {    
+    // use proxy for tracking property changes
     const dict = this.getProxy();
-    await dict.generateApStreamAsync(points || dict.pointsPageCS);
-    await dict.updateRenderAsync();
+
+    const oldPoints = dict.pointsPageCS;
+    await dict.generateApStreamAsync(points || oldPoints);
+    await dict.updateRenderAsync();    
+    
+    if (points && dict.$onEditAction) {
+      // run callback only if the 'points' variable is defined
+      // that means the edit is actually happened, not just a stream refresh
+      dict.$onEditAction(undoable 
+        ? async () => {
+          await dict.updateStreamAsync(oldPoints, false);
+        }
+        : undefined);
+    }
   }
   //#endregion
   
@@ -973,7 +986,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     
     if (this._moved) {
       // transform the annotation
-      this.updateStream(this._pointsTemp);
+      this.updateStreamAsync(this._pointsTemp);
     }
   };
   //#endregion
@@ -1060,7 +1073,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     }
     
     // transform the annotation
-    this.updateStream(points);
+    this.updateStreamAsync(points);
   };
   
   protected onCalloutHandlePointerDown = (e: PointerEvent) => { 
@@ -1133,7 +1146,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     
     if (this._moved) {
       // transform the annotation
-      this.updateStream(this._pointsTemp);
+      this.updateStreamAsync(this._pointsTemp);
     }
   };
   //#region 

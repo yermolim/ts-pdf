@@ -21,12 +21,12 @@ export class TextUnderlineAnnotator extends TextMarkupAnnotator {
     }
 
     const dtos = this.buildAnnotationDtos("/Underline");
-    dtos.forEach(dto => {
+    for (const dto of dtos) {
       const annotation = UnderlineAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
-      this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-    });
+      await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    }
     
     this.clear();
   }

@@ -841,7 +841,7 @@ export class TsPdfViewer {
     if (text === null) {
       return;
     }
-    this._docService?.setSelectedAnnotationTextContent(text);
+    await this._docService?.setSelectedAnnotationTextContentAsync(text);
   };
 
   private onAnnotationDeleteButtonClick = () => {
@@ -876,7 +876,7 @@ export class TsPdfViewer {
   };
 
   private docServiceUndo = () => {
-    this._docService?.undo();
+    this._docService?.undoAsync();
   };
 
   private onDocServiceStateChange = (e: DocServiceStateChangeEvent) => {

@@ -301,7 +301,8 @@ export class CircleAnnotation extends GeometricAnnotation {
     this.apStream = apStream;
   }
   
-  protected override async applyCommonTransformAsync(matrix: Mat3) {    
+  protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) { 
+    // use proxy for tracking property changes   
     const dict = this.getProxy();
 
     // transform bounding boxes
@@ -315,6 +316,16 @@ export class CircleAnnotation extends GeometricAnnotation {
     }
 
     dict.M = DateString.fromDate(new Date());
+    
+    if (dict.$onEditAction) {
+      const invertedMat = Mat3.invert(matrix);           
+      dict.$onEditAction(undoable
+        ? async () => {
+          await dict.applyCommonTransformAsync(invertedMat, false);
+          await dict.updateRenderAsync();
+        }
+        : undefined);
+    }
   }
   
   protected override initProxy(): CircleAnnotation {

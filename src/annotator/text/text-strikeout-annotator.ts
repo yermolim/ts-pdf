@@ -24,12 +24,12 @@ export class TextStrikeoutAnnotator extends TextMarkupAnnotator {
     }
 
     const dtos = this.buildAnnotationDtos("/Strikeout");
-    dtos.forEach(dto => {
+    for (const dto of dtos) {      
       const annotation = StrikeoutAnnotation.createFromDto(dto);
       // DEBUG
       // console.log(annotation);
-      this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-    });
+      await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+    }
     
     this.clear();
   }

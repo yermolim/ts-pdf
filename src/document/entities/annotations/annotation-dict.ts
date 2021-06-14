@@ -401,17 +401,28 @@ export abstract class AnnotationDict extends PdfDict {
    * (override in subclasses to fill all the required fields)
    * @param text 
    */
-  setTextContent(text: string) {
+  async setTextContentAsync(text: string, undoable = true) {
     // use proxy for tracking property changes
     const dict = this.getProxy();
 
+    const oldText = dict.Contents?.literal;
+
     if (!text) {
       dict.Contents = null;
+    } else {
+      const literalString = LiteralString.fromString(text);
+      dict.Contents = literalString;
     }
-    const literalString = LiteralString.fromString(text);
-    dict.Contents = literalString;
 
     dict.M = DateString.fromDate(new Date());
+
+    if (dict.$onEditAction) {
+      dict.$onEditAction(undoable
+        ? async () => {
+          dict.setTextContentAsync(oldText, false);
+        }
+        : undefined);
+    }
   }
   
   /**
@@ -734,10 +745,8 @@ export abstract class AnnotationDict extends PdfDict {
    * @param matrix 
    */
   protected applyRectTransform(matrix: Mat3) {
-    const dict = this.getProxy();
-
     // transform current bounding box (not axis-aligned)
-    const bBox = dict.getLocalBB();
+    const bBox = this.getLocalBB();
     bBox.ll.applyMat3(matrix);
     bBox.lr.applyMat3(matrix);
     bBox.ur.applyMat3(matrix);
@@ -746,10 +755,11 @@ export abstract class AnnotationDict extends PdfDict {
     // get an axis-aligned bounding box and assign it to the Rect property
     const {min: newRectMin, max: newRectMax} = 
       Vec2.minMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
-    dict.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
+    this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
   }  
   
-  protected async applyCommonTransformAsync(matrix: Mat3) {
+  protected async applyCommonTransformAsync(matrix: Mat3, undoable = true) {
+    // use proxy for tracking property changes
     const dict = this.getProxy();
 
     // transform bounding boxes
@@ -763,6 +773,16 @@ export abstract class AnnotationDict extends PdfDict {
     }
 
     dict.M = DateString.fromDate(new Date());
+    
+    if (dict.$onEditAction) {
+      const invertedMat = Mat3.invert(matrix);      
+      dict.$onEditAction(undoable
+        ? async () => {
+          await dict.applyCommonTransformAsync(invertedMat, false);
+          await dict.updateRenderAsync();
+        }
+        : undefined);
+    }
   }
   
   /**

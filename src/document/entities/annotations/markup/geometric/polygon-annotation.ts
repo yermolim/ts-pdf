@@ -197,7 +197,8 @@ export class PolygonAnnotation extends PolyAnnotation {
     this.apStream = apStream;
   }
   
-  protected override async applyCommonTransformAsync(matrix: Mat3) { 
+  protected override async applyCommonTransformAsync(matrix: Mat3, undoable = true) { 
+    // use proxy for tracking property changes
     const dict = this.getProxy();
 
     // transform current Vertices
@@ -253,6 +254,16 @@ export class PolygonAnnotation extends PolyAnnotation {
     dict.generateApStream();
 
     dict.M = DateString.fromDate(new Date());
+    
+    if (dict.$onEditAction) {
+      const invertedMat = Mat3.invert(matrix);     
+      dict.$onEditAction(undoable
+        ? async () => {
+          await dict.applyCommonTransformAsync(invertedMat, false);
+          await dict.updateRenderAsync();
+        }
+        : undefined);
+    }
   }
   
   protected async bakeRotationAsync() {    
