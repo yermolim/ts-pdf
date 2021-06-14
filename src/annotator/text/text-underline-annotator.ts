@@ -32,7 +32,7 @@ export class TextUnderlineAnnotator extends TextMarkupAnnotator {
   }
    
   /**
-   * clear the old svg highlights if present and draw new ones instead
+   * clear the old svg if present and draw new ones instead
    */
   protected redraw() {
     const [r, g, b, a] = this._color || [0, 0, 0, 1];

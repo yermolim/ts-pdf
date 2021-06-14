@@ -76,7 +76,7 @@ declare global {
 }
 //#endregion
 
-interface DocCommand {
+interface ExecutedAsyncCommand {
   timestamp: number;  
   undo(): Promise<void>;
   redo?(): Promise<void>;
@@ -125,7 +125,7 @@ export class DocumentService {
     return this._fontMap;
   }  
 
-  private _lastCommands: DocCommand[] = [];
+  private _lastCommands: ExecutedAsyncCommand[] = [];
 
   /**max PDF object id + 1 */
   get size(): number {
@@ -407,7 +407,7 @@ export class DocumentService {
   }
   //#endregion
 
-  private pushCommand(command: DocCommand) {
+  private pushCommand(command: ExecutedAsyncCommand) {
     this._lastCommands.push(command);
     this.emitStateChanged();
   }

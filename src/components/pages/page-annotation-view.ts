@@ -2,8 +2,10 @@ import { Vec2 } from "mathador";
 import { Quadruple } from "../../common/types";
 
 import { DocumentService, annotChangeEvent, 
-  AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } from "../../services/document-service";
-import { AnnotationDict, AnnotationRenderResult } from "../../document/entities/annotations/annotation-dict";
+  AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
+  from "../../services/document-service";
+import { AnnotationDict, AnnotationRenderResult } 
+  from "../../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
   private readonly _pageId: number;

@@ -4,7 +4,8 @@ import { getRandomUuid } from "../../common/uuid";
 
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
-import { InkAnnotation, InkAnnotationDto } from "../../document/entities/annotations/markup/ink-annotation";
+import { InkAnnotation, InkAnnotationDto } 
+  from "../../document/entities/annotations/markup/ink-annotation";
 
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 import { SvgSmoothPath } from "../../drawing/paths/svg-smooth-path";

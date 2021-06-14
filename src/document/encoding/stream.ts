@@ -1,5 +1,4 @@
 /* eslint-disable no-bitwise */
-
 import { IStream } from "../common-interfaces";
 
 export class Stream implements IStream {

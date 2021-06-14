@@ -51,7 +51,6 @@ export class TextAnnotatorFactory {
     };
 
     switch (type) {
-      // TODO: implement all annotators
       case "note":
         return new TextNoteAnnotator(docService, pageService, viewer, combinedOptions);
       case "freeText":

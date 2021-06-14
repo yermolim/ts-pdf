@@ -2,12 +2,13 @@ import { Vec2 } from "mathador";
 
 import { Quadruple } from "../../../../common/types";
 import { runEmptyTimeout } from "../../../../common/dom";
+import { TextData, TextDataOptions, TextLineData } from "../../../../common/text-data";
 import { bezierConstant } from "../../../../drawing/utils";
 
 import { codes } from "../../../char-codes";
 import { AnnotationType, lineEndingMinimalSize, lineEndingMultiplier, 
   LineEndingType, lineEndingTypes, valueTypes } from "../../../const";
-import { CryptInfo, TextData, TextDataOptions, TextLineData } from "../../../common-interfaces";
+import { CryptInfo } from "../../../common-interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";
@@ -30,7 +31,8 @@ export const markupAnnotationReplyTypes = {
    */
   GROUP: "/Group",
 } as const;
-export type MarkupAnnotationReplyType = typeof markupAnnotationReplyTypes[keyof typeof markupAnnotationReplyTypes];
+export type MarkupAnnotationReplyType = 
+  typeof markupAnnotationReplyTypes[keyof typeof markupAnnotationReplyTypes];
 
 export abstract class MarkupAnnotation extends AnnotationDict {
   /**

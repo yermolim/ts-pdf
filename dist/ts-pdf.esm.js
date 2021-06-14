@@ -24369,7 +24369,6 @@ class AnnotationParser {
                 break;
             case annotationTypes.FREE_TEXT:
                 annot = FreeTextAnnotation.parse(info, fontMap);
-                console.log(annot);
                 break;
         }
         return annot === null || annot === void 0 ? void 0 : annot.value;
