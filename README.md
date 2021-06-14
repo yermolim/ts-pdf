@@ -163,16 +163,16 @@ The other one is to make your own build of PDF.js.
     <li><del>optimize loading and saving files</del> some optimizations were made in 0.6.2</li>
     <li><del>add text caption support for line annotations</del> added in 0.6.6</li>
     <li><del>add free text annotations support</del> added in 0.7.0</li>
-    <li>add 'undo'/'redo'</li>
-    <li>optimize parser and renderer</li>
-    <li>add tooltips to buttons</li>
+    <li><del>add 'undo' button and corresponding logic</del> added in 0.7.0</li>
     <li>add keyboard shortcuts</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>
+    <li>add tooltips to buttons</li>
     <li>add localizations</li>
-    <li>write tests</li>
-    <li>add support for the rest of encryption algorithms</li>
-    <li>add support for the rest of encoding algorithms</li>
+    <li>add tests</li>
+    <li>further optimization of the parser and the renderer</li>
+    <li>support for the rest of encryption algorithms</li>
+    <li>support for the rest of encoding algorithms</li>
 </ul>
 
 ## External dependencies:
