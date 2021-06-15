@@ -1,5 +1,6 @@
 import { StandardStampCreationInfo, standardStampCreationInfos } 
   from "../../../../drawing/stamps";
+import { AnnotationDto } from "../../../../common/annotation";
 
 import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, colorSpaces, stampTypes, StampType } from "../../../spec-constants";
@@ -14,7 +15,6 @@ import { ResourceDict } from "../../appearance/resource-dict";
 import { DecodeParamsDict } from "../../encoding/decode-params-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
-import { AnnotationDto } from "../annotation-dict";
 
 export interface StampAnnotationDto extends AnnotationDto {
   stampType: string;

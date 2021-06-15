@@ -1,5 +1,6 @@
 import { Quadruple } from "../../../../common/types";
 import { getRandomUuid } from "../../../../common/uuid";
+import { AnnotationDto } from "../../../../common/annotation";
 
 import { AnnotationIconType, annotationIconTypes, 
   annotationMarkedStates, 
@@ -14,7 +15,6 @@ import { LiteralString } from "../../strings/literal-string";
 import { XFormStream } from "../../streams/x-form-stream";
 import { ResourceDict } from "../../appearance/resource-dict";
 import { MarkupAnnotation } from "./markup-annotation";
-import { AnnotationDto } from "../annotation-dict";
 
 
 //#region additional stamp annotation types and constants

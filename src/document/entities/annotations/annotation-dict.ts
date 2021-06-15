@@ -1,8 +1,9 @@
 import { Mat3, Vec2 } from "mathador";
 
-import { Hextuple, Quadruple } from "../../../common/types";
+import { Quadruple } from "../../../common/types";
 import { getRandomUuid } from "../../../common/uuid";
-import { RenderableAnnotation, AnnotationRenderResult } from "../../../common/annotation";
+import { RenderableAnnotation, AnnotationRenderResult, 
+  AnnotationDto } from "../../../common/annotation";
 import { BBox } from "../../../drawing/utils";
 
 import { codes } from "../../encoding/char-codes";
@@ -22,34 +23,6 @@ import { AppearanceDict } from "../appearance/appearance-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
 import { BorderArray } from "../appearance/border-array";
 import { XFormStream } from "../streams/x-form-stream";
-
-export interface AnnotationDto {
-  annotationType: string;
-  uuid: string;
-  pageId: number;
-
-  dateCreated: string;
-  dateModified: string;
-  author: string;
-
-  textContent: string;
-
-  /**
-   * annotation AABB min and max coordinates after all translations 
-   * (annotation dictionary 'Rect' property value)
-   */
-  rect: Quadruple;
-  /**
-   * annotation AABB min and max coordinates before all translations 
-   * (appearance stream 'BBox' property value) 
-   */
-  bbox?: Quadruple;
-  /**
-   * annotation transformation matrix for 'BBox' to fit inside 'Rect'
-   * (appearance stream 'Matrix' property value)
-   */
-  matrix?: Hextuple;
-}
 
 export abstract class AnnotationDict extends PdfDict implements RenderableAnnotation {
   /**annotation name (should be a uuid) */

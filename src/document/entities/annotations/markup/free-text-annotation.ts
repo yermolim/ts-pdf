@@ -1,15 +1,17 @@
 import { Mat3, Vec2 } from "mathador";
 
 import { Double, Hextuple, Quadruple } from "../../../../common/types";
+import { AnnotationDto } from "../../../../common/annotation";
+
 import { SvgTempPath } from "../../../../drawing/paths/svg-temp-path";
 import { calcPdfBBoxToRectMatrices, VecMinMax, 
   lineEndingMinimalSize, lineEndingMultiplier } from "../../../../drawing/utils";
 
 import { codes } from "../../../encoding/char-codes";
+import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, JustificationType, justificationTypes, 
   lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles,
   freeTextIntents, FreeTextIntent } from "../../../spec-constants";
-import { CryptInfo } from "../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../data-parser";
 
 import { DateString } from "../../strings/date-string";
@@ -20,7 +22,6 @@ import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 import { FontDict } from "../../appearance/font-dict";
 import { ResourceDict } from "../../appearance/resource-dict";
 
-import { AnnotationDto } from "../annotation-dict";
 import { MarkupAnnotation } from "./markup-annotation";
 
 export interface FreeTextAnnotPoints {

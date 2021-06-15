@@ -1,19 +1,18 @@
+import { AnnotationDto } from "../common/annotation";
+
 import { annotationTypes } from "./spec-constants";
 import { ParseInfo, ParseResult } from "./data-parser";
 
 import { FontDict } from "./entities/appearance/font-dict";
-
-import { AnnotationDict, AnnotationDto } from "./entities/annotations/annotation-dict";
+import { AnnotationDict } from "./entities/annotations/annotation-dict";
 import { StampAnnotation, StampAnnotationDto } from "./entities/annotations/markup/stamp-annotation";
 import { TextAnnotation, TextAnnotationDto } from "./entities/annotations/markup/text-annotation";
 import { InkAnnotation, InkAnnotationDto } from "./entities/annotations/markup/ink-annotation";
-
 import { SquareAnnotation, SquareAnnotationDto } from "./entities/annotations/markup/geometric/square-annotation";
 import { CircleAnnotation, CircleAnnotationDto } from "./entities/annotations/markup/geometric/circle-annotation";
 import { PolygonAnnotation, PolygonAnnotationDto } from "./entities/annotations/markup/geometric/polygon-annotation";
 import { PolylineAnnotation, PolylineAnnotationDto } from "./entities/annotations/markup/geometric/polyline-annotation";
 import { LineAnnotation, LineAnnotationDto } from "./entities/annotations/markup/geometric/line-annotation";
-
 import { TextMarkupAnnotationDto } from "./entities/annotations/markup/text-markup/text-markup-annotation";
 import { HighlightAnnotation } from "./entities/annotations/markup/text-markup/highlight-annotation";
 import { UnderlineAnnotation } from "./entities/annotations/markup/text-markup/underline-annotation";

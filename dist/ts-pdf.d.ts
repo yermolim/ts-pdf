@@ -14,16 +14,6 @@ export declare type Hextuple = readonly [
 	g: number,
 	h: number
 ];
-export interface StampCreationInfo {
-	subject: string;
-	bBox: Quadruple;
-	rect: Quadruple;
-}
-export interface CustomStampCreationInfo extends StampCreationInfo {
-	imageData: number[];
-	type: string;
-	name: string;
-}
 export interface AnnotationDto {
 	annotationType: string;
 	uuid: string;
@@ -35,6 +25,16 @@ export interface AnnotationDto {
 	rect: Quadruple;
 	bbox?: Quadruple;
 	matrix?: Hextuple;
+}
+export interface StampCreationInfo {
+	subject: string;
+	bBox: Quadruple;
+	rect: Quadruple;
+}
+export interface CustomStampCreationInfo extends StampCreationInfo {
+	imageData: number[];
+	type: string;
+	name: string;
 }
 export interface AnnotEventDetail {
 	type: "focus" | "select" | "add" | "edit" | "delete" | "render";

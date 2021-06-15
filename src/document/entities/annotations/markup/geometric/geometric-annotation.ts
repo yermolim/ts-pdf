@@ -1,10 +1,10 @@
 import { Double, Quadruple } from "../../../../../common/types";
+import { AnnotationDto } from "../../../../../common/annotation";
 import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType } from "../../../../spec-constants";
 
 import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseInfo, ParseResult } from "../../../../data-parser";
-import { AnnotationDto } from "../../annotation-dict";
 import { MarkupAnnotation } from "../markup-annotation";
 
 export interface GeometricAnnotationDto extends AnnotationDto {

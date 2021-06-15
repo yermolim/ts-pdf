@@ -9,13 +9,15 @@ import { styles } from "./assets/styles.html";
 
 import { downloadFile, htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
+import { AnnotationDto } from "./common/annotation";
 import { CustomStampCreationInfo } from "./drawing/stamps";
 
 import { ElementEventService } from "./services/element-event-service";
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
 import { DocumentService, annotChangeEvent, AnnotEvent, 
-  AnnotEventDetail, AnnotationDto, DocServiceStateChangeEvent, docServiceStateChangeEvent } from "./services/document-service";
+  AnnotEventDetail, DocServiceStateChangeEvent, 
+  docServiceStateChangeEvent } from "./services/document-service";
 import { customStampEvent, CustomStampEvent, CustomStampEventDetail, 
   CustomStampService } from "./services/custom-stamp-service";
 import { AnnotatorService } from "./services/annotator-service";

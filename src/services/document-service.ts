@@ -1,4 +1,4 @@
-import { ElementEventService } from "./element-event-service";
+import { AnnotationDto } from "../common/annotation";
 
 import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/encryption/interfaces";
@@ -21,9 +21,9 @@ import { PageTreeDict } from "../document/entities/structure/page-tree-dict";
 import { FontDict } from "../document/entities/appearance/font-dict";
 
 import { AnnotationParser } from "../document/annotation-parser";
-import { AnnotationDict, AnnotationDto } from "../document/entities/annotations/annotation-dict";
+import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
 
-export { AnnotationDto };
+import { ElementEventService } from "./element-event-service";
 
 //#region custom events
 export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;

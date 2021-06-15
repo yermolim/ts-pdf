@@ -1,7 +1,10 @@
-import { codes } from "../../../encoding/char-codes";
 import { Mat3, Vec2 } from "mathador";
+
 import { Double, Quadruple } from "../../../../common/types";
+import { AnnotationDto } from "../../../../common/annotation";
+
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../spec-constants";
+import { codes } from "../../../encoding/char-codes";
 import { CryptInfo } from "../../../encryption/interfaces";
 
 import { ParseInfo, ParseResult } from "../../../data-parser";
@@ -13,7 +16,6 @@ import { ResourceDict } from "../../appearance/resource-dict";
 import { GraphicsStateDict } from "../../appearance/graphics-state-dict";
 
 import { MarkupAnnotation } from "./markup-annotation";
-import { AnnotationDto } from "../annotation-dict";
 
 export interface InkAnnotationDto extends AnnotationDto {
   inkList: number[][];
