@@ -21,9 +21,9 @@ import { StampAnnotator, supportedStampTypes } from "../annotator/stamp/stamp-an
 import { TextAnnotatorFactory, TextAnnotatorType, textAnnotatorTypes } 
   from "../annotator/text/text-annotator-factory";
 
-export type AnnotationServiceMode = "select" | "stamp" | "pen" | "geometric" | "text";
+export type AnnotatorServiceMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
-export class AnnotationService {
+export class AnnotatorService {
   private readonly _annotationColors: readonly Quadruple[] = [
     [0, 0, 0, 0.5], // black
     [0.804, 0, 0, 0.5], // red
@@ -43,11 +43,11 @@ export class AnnotationService {
   private _textFactory: TextAnnotatorFactory;
   private _viewerResizeObserver: ResizeObserver;
   
-  private _mode: AnnotationServiceMode;  
-  get mode(): AnnotationServiceMode {
+  private _mode: AnnotatorServiceMode;  
+  get mode(): AnnotatorServiceMode {
     return this._mode;
   }
-  set mode(value: AnnotationServiceMode) {
+  set mode(value: AnnotatorServiceMode) {
     this.setMode(value);
   }
 
@@ -115,7 +115,7 @@ export class AnnotationService {
     this._textFactory = new TextAnnotatorFactory();
   }
 
-  private setMode(mode?: AnnotationServiceMode) {
+  private setMode(mode?: AnnotatorServiceMode) {
     mode ||= this._mode;
 
     // disable previous mode

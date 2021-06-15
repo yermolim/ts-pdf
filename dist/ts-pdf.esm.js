@@ -28161,7 +28161,7 @@ class TextAnnotatorFactory {
     }
 }
 
-class AnnotationService {
+class AnnotatorService {
     constructor(docService, pageService, customStampService, viewer) {
         this._annotationColors = [
             [0, 0, 0, 0.5],
@@ -29753,7 +29753,7 @@ class TsPdfViewer {
             this._docService = docService;
             this._fileName = fileName;
             yield this.refreshPagesAsync();
-            this._annotationService = new AnnotationService(this._docService, this._pageService, this._customStampsService, this._viewer);
+            this._annotationService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
             this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
             this._loader.hide();

@@ -18,7 +18,7 @@ import { DocumentService, annotChangeEvent, AnnotEvent,
   AnnotEventDetail, AnnotationDto, DocServiceStateChangeEvent, docServiceStateChangeEvent } from "./services/document-service";
 import { customStampEvent, CustomStampEvent, CustomStampEventDetail, 
   CustomStampService } from "./services/custom-stamp-service";
-import { AnnotationService } from "./services/annotation-service";
+import { AnnotatorService } from "./services/annotator-service";
 
 import { Loader } from "./components/loader";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
@@ -112,7 +112,7 @@ export class TsPdfViewer {
   private _fileName: string; 
 
   private _docService: DocumentService;  
-  private _annotationService: AnnotationService;
+  private _annotationService: AnnotatorService;
 
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
@@ -305,7 +305,7 @@ export class TsPdfViewer {
     await this.refreshPagesAsync();
 
     // create an annotation builder and set its mode to 'select'
-    this._annotationService = new AnnotationService(this._docService, 
+    this._annotationService = new AnnotatorService(this._docService, 
       this._pageService, this._customStampsService, this._viewer);
     this.setAnnotationMode("select");
 
