@@ -328,7 +328,7 @@ export class DocumentService {
 
   /**mark the currently selected annotation as deleted */
   removeSelectedAnnotation() {
-    const annotation = this.selectedAnnotation;
+    const annotation = this._selectedAnnotation;
     if (annotation) {
       this.removeAnnotation(annotation, true);
     }
@@ -403,7 +403,7 @@ export class DocumentService {
   }
 
   async setSelectedAnnotationTextContentAsync(text: string) {
-    await this.selectedAnnotation?.setTextContentAsync(text);
+    await this._selectedAnnotation?.setTextContentAsync(text);
   }
   //#endregion
 

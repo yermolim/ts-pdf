@@ -1,18 +1,17 @@
 import { Vec2 } from "mathador";
 import { Quadruple } from "../../common/types";
+import { RenderableAnnotation, AnnotationRenderResult } from "../../common/annotation";
 
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
   from "../../services/document-service";
-import { AnnotationDict, AnnotationRenderResult } 
-  from "../../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
   private readonly _pageId: number;
   private readonly _viewbox: Quadruple;
 
   private _docService: DocumentService;
-  private _rendered = new Set<AnnotationDict>();
+  private _rendered = new Set<RenderableAnnotation>();
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;

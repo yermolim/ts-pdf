@@ -24706,7 +24706,7 @@ class DocumentService {
         this.removeAnnotation(annotation, true);
     }
     removeSelectedAnnotation() {
-        const annotation = this.selectedAnnotation;
+        const annotation = this._selectedAnnotation;
         if (annotation) {
             this.removeAnnotation(annotation, true);
         }
@@ -24772,7 +24772,7 @@ class DocumentService {
     setSelectedAnnotationTextContentAsync(text) {
         var _a;
         return __awaiter$k(this, void 0, void 0, function* () {
-            yield ((_a = this.selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
+            yield ((_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
         });
     }
     pushCommand(command) {

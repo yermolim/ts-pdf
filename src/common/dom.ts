@@ -1,5 +1,3 @@
-import { Vec2 } from "mathador";
-
 /**
  * create HTML elements from HTML string
  * @param html HTML string

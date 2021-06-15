@@ -1,7 +1,9 @@
-import { Hextuple, Quadruple } from "../../../common/types";
 import { Mat3, Vec2 } from "mathador";
-import { BBox } from "../../../drawing/utils";
+
+import { Hextuple, Quadruple } from "../../../common/types";
 import { getRandomUuid } from "../../../common/uuid";
+import { RenderableAnnotation, AnnotationRenderResult } from "../../../common/annotation";
+import { BBox } from "../../../drawing/utils";
 
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
@@ -49,14 +51,7 @@ export interface AnnotationDto {
   matrix?: Hextuple;
 }
 
-export interface AnnotationRenderResult {
-  /**svg container with all the annotation rendered helpers (boxes, handles, etc.) */
-  controls: SVGGraphicsElement;
-  /**container with the annotation rendered content*/
-  content: HTMLDivElement;
-}
-
-export abstract class AnnotationDict extends PdfDict {
+export abstract class AnnotationDict extends PdfDict implements RenderableAnnotation {
   /**annotation name (should be a uuid) */
   $name: string;
   /**internal pdf object id of the parent page */
