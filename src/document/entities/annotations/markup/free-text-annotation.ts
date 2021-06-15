@@ -1,7 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
 
 import { Double, Hextuple, Quadruple } from "../../../../common/types";
-import { TempSvgPath } from "../../../../common/dom";
+import { SvgTempPath } from "../../../../drawing/paths/svg-temp-path";
 import { calcPdfBBoxToRectMatrices, VecMinMax, 
   lineEndingMinimalSize, lineEndingMultiplier } from "../../../../drawing/utils";
 
@@ -141,7 +141,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   
   protected _fontMap: Map<string, FontDict>;
 
-  protected readonly _svgTemp = new TempSvgPath();
+  protected readonly _svgTemp = new SvgTempPath();
   protected _pointsTemp: FreeTextAnnotPoints;
   
   /**annotation key points in stream-local CS */

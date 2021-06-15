@@ -1,8 +1,8 @@
 import { Mat3, Vec2 } from "mathador";
+import { Quadruple, Double, Hextuple } from "../../../../../common/types";
 import { VecMinMax, lineEndingMinimalSize, 
   lineEndingMultiplier } from "../../../../../drawing/utils";
-import { Quadruple, Double, Hextuple } from "../../../../../common/types";
-import { TempSvgPath } from "../../../../../common/dom";
+import { SvgTempPath } from "../../../../../drawing/paths/svg-temp-path";
 
 import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
@@ -117,7 +117,7 @@ export class LineAnnotation extends GeometricAnnotation {
 
   protected _fontMap: Map<string, FontDict>;
   
-  protected readonly _svgTemp = new TempSvgPath();
+  protected readonly _svgTemp = new SvgTempPath();
 
   /** Y-axis offset from control points to the actual line drawn */
   get offsetY(): number {

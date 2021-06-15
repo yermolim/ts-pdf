@@ -1618,38 +1618,6 @@ function downloadFile(blob, name) {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
-class TempSvgPath {
-    constructor() {
-        this._path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    }
-    get path() {
-        return this._path;
-    }
-    set(fill, stroke, w, points, close = false) {
-        let d = "";
-        if ((points === null || points === void 0 ? void 0 : points.length) > 1) {
-            d += `M${points[0].x},${points[0].y} `;
-            for (let i = 1; i < points.length; i++) {
-                d += `L${points[i].x},${points[i].y} `;
-            }
-            if (close) {
-                d += "Z";
-            }
-        }
-        this._path.classList.add("annotation-temp-copy");
-        this._path.setAttribute("d", d);
-        this._path.style.fill = fill;
-        this._path.style.stroke = stroke;
-        this._path.style.strokeWidth = w + "";
-    }
-    insertAfter(element) {
-        element.after(this._path);
-    }
-    remove() {
-        this._path.setAttribute("d", "");
-        this._path.remove();
-    }
-}
 
 function getNextNode(node) {
     if (node.hasChildNodes()) {
@@ -22298,6 +22266,39 @@ class PolylineAnnotation extends PolyAnnotation {
     }
 }
 
+class SvgTempPath {
+    constructor() {
+        this._path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    }
+    get path() {
+        return this._path;
+    }
+    set(fill, stroke, w, points, close = false) {
+        let d = "";
+        if ((points === null || points === void 0 ? void 0 : points.length) > 1) {
+            d += `M${points[0].x},${points[0].y} `;
+            for (let i = 1; i < points.length; i++) {
+                d += `L${points[i].x},${points[i].y} `;
+            }
+            if (close) {
+                d += "Z";
+            }
+        }
+        this._path.classList.add("annotation-temp-copy");
+        this._path.setAttribute("d", d);
+        this._path.style.fill = fill;
+        this._path.style.stroke = stroke;
+        this._path.style.strokeWidth = w + "";
+    }
+    insertAfter(element) {
+        element.after(this._path);
+    }
+    remove() {
+        this._path.setAttribute("d", "");
+        this._path.remove();
+    }
+}
+
 var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -22318,7 +22319,7 @@ class LineAnnotation extends GeometricAnnotation {
         this.Cap = false;
         this.CP = lineCaptionPositions.INLINE;
         this.CO = [0, 0];
-        this._svgTemp = new TempSvgPath();
+        this._svgTemp = new SvgTempPath();
         this.onLineEndHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
@@ -23559,7 +23560,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.Q = justificationTypes.LEFT;
         this.IT = freeTextIntents.PLAIN_TEXT;
         this.LE = lineEndingTypes.NONE;
-        this._svgTemp = new TempSvgPath();
+        this._svgTemp = new SvgTempPath();
         this.onTextBoxCornerHandlePointerDown = (e) => {
             if (!e.isPrimary) {
                 return;
