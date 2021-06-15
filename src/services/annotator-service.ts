@@ -1,8 +1,9 @@
+import { Vec2 } from "mathador";
+
 import { geometricIcons, lineTypeIcons, textIcons, 
   stampContextButtonsHtml } from "../assets/index.html";
 
 import { Quadruple } from "../common/types";
-import { Vec2 } from "mathador";
 import { htmlToElements } from "../common/dom";
 import { CustomStampCreationInfo } from "../drawing/stamps";
 
