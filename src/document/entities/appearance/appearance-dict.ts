@@ -1,7 +1,7 @@
 import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectMapDict } from "../misc/object-map-dict";
@@ -27,7 +27,7 @@ export class AppearanceDict extends PdfDict {
     super(null);
   } 
   
-  static parse(parseInfo: ParseInfo): ParseResult<AppearanceDict> { 
+  static parse(parseInfo: ParserInfo): ParseResult<AppearanceDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -117,7 +117,7 @@ export class AppearanceDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
 
-  protected fillStreamsMap(parseInfoGetter: (id: number) => ParseInfo) {
+  protected fillStreamsMap(parseInfoGetter: (id: number) => ParserInfo) {
     this._streamsMap.clear();
 
     for (const prop of ["N", "R", "D"]) {
@@ -153,7 +153,7 @@ export class AppearanceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

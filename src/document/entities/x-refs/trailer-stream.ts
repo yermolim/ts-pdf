@@ -1,7 +1,7 @@
 import { streamTypes, valueTypes } from "../../spec-constants";
 import { HexString } from "../strings/hex-string";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { codes } from "../../encoding/char-codes";
@@ -65,7 +65,7 @@ export class TrailerStream extends PdfStream {
     super(streamTypes.XREF);
   }  
   
-  static parse(parseInfo: ParseInfo): ParseResult<TrailerStream> { 
+  static parse(parseInfo: ParserInfo): ParseResult<TrailerStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -129,7 +129,7 @@ export class TrailerStream extends PdfStream {
     return new Uint8Array(totalBytes);
   }
 
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

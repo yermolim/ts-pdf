@@ -2,7 +2,7 @@ import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../spec-constants";
 import { DataParser, ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
@@ -157,7 +157,7 @@ export class ImageStream extends PdfStream {
     super(streamTypes.FORM_XOBJECT);
   }  
 
-  static parse(parseInfo: ParseInfo): ParseResult<ImageStream> { 
+  static parse(parseInfo: ParserInfo): ParseResult<ImageStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -329,7 +329,7 @@ export class ImageStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

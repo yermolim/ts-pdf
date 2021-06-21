@@ -3,7 +3,7 @@ import { codes } from "../../encoding/char-codes";
 import { dictTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
@@ -41,7 +41,7 @@ export class PageTreeDict extends PdfDict {
     super(dictTypes.PAGE_TREE);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<PageTreeDict> {
+  static parse(parseInfo: ParserInfo): ParseResult<PageTreeDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -91,7 +91,7 @@ export class PageTreeDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

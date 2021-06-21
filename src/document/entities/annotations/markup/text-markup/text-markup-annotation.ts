@@ -5,7 +5,7 @@ import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseResult } from "../../../../data-parse/data-parser";
-import { ParseInfo } from "../../../../data-parse/parser-info";
+import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { MarkupAnnotation } from "../markup-annotation";
 
@@ -49,7 +49,7 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

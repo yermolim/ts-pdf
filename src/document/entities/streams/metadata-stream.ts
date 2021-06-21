@@ -1,7 +1,7 @@
 import { streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { TextStream } from "./text-stream";
 
 export class MetadataStream extends TextStream {
@@ -14,7 +14,7 @@ export class MetadataStream extends TextStream {
     super(streamTypes.METADATA_STREAM);
   }  
 
-  static override parse(parseInfo: ParseInfo): ParseResult<MetadataStream> { 
+  static override parse(parseInfo: ParserInfo): ParseResult<MetadataStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -47,7 +47,7 @@ export class MetadataStream extends TextStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

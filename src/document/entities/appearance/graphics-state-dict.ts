@@ -3,7 +3,7 @@ import { BlendMode, blendModes, dictTypes, LineCapStyle, lineCapStyles,
   valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { codes } from "../../encoding/char-codes";
@@ -118,7 +118,7 @@ export class GraphicsStateDict extends PdfDict {
     super(dictTypes.GRAPHICS_STATE);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<GraphicsStateDict> {
+  static parse(parseInfo: ParserInfo): ParseResult<GraphicsStateDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -329,7 +329,7 @@ export class GraphicsStateDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

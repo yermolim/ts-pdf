@@ -2,7 +2,7 @@ import { codes } from "../../encoding/char-codes";
 import { ObjectType, objectTypes, streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { Bounds, DataParser, ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "../core/object-id";
@@ -27,7 +27,7 @@ export class ObjectStream extends PdfStream {
     super(streamTypes.OBJECT_STREAM);
   }  
   
-  static parse(parseInfo: ParseInfo): ParseResult<ObjectStream> { 
+  static parse(parseInfo: ParserInfo): ParseResult<ObjectStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -41,7 +41,7 @@ export class ObjectStream extends PdfStream {
     }
   }
 
-  getObjectData(id: number): ParseInfo  { 
+  getObjectData(id: number): ParserInfo  { 
     if (!this._streamData || !this.N || !this.First) {
       return null;
     }
@@ -165,7 +165,7 @@ export class ObjectStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

@@ -2,7 +2,7 @@ import { codes, keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { valueTypes } from "../../spec-constants";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
@@ -13,8 +13,8 @@ import { FontDict } from "./font-dict";
 import { GraphicsStateDict } from "./graphics-state-dict";
 
 interface ResourceStreamParsers {
-  xform: (info: ParseInfo) => ParseResult<PdfStream>;
-  image: (info: ParseInfo) => ParseResult<PdfStream>;
+  xform: (info: ParserInfo) => ParseResult<PdfStream>;
+  image: (info: ParserInfo) => ParseResult<PdfStream>;
 }
 
 export class ResourceDict extends PdfDict {
@@ -66,7 +66,7 @@ export class ResourceDict extends PdfDict {
     this._streamParsers = streamParsers;
   }
   
-  static parse(parseInfo: ParseInfo, streamParsers?: ResourceStreamParsers): ParseResult<ResourceDict> { 
+  static parse(parseInfo: ParserInfo, streamParsers?: ResourceStreamParsers): ParseResult<ResourceDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
@@ -198,7 +198,7 @@ export class ResourceDict extends PdfDict {
     this._edited = true;
   }
   
-  protected fillMaps(parseInfoGetter: (id: number) => ParseInfo, cryptInfo?: CryptInfo) {
+  protected fillMaps(parseInfoGetter: (id: number) => ParserInfo, cryptInfo?: CryptInfo) {
     this._gsMap.clear();
     this._fontsMap.clear();
     this._xObjectsMap.clear();
@@ -259,7 +259,7 @@ export class ResourceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

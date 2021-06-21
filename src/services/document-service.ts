@@ -4,7 +4,7 @@ import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/encryption/interfaces";
 
 import { DataParser } from "../document/data-parse/data-parser";
-import { ParseInfo } from "../document/data-parse/parser-info";
+import { ParserInfo } from "../document/data-parse/parser-info";
 import { ReferenceData } from "../document/references/reference-data";
 import { DataUpdater, PageUpdateInfo } from "../document/data-save/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
@@ -526,7 +526,7 @@ export class DocumentService {
    * returns null if an object with the specified id not found.
    * @param id 
    */
-  private getObjectParseInfo = (id: number): ParseInfo => {
+  private getObjectParseInfo = (id: number): ParserInfo => {
     if (!id) {
       return null;
     }
@@ -545,7 +545,7 @@ export class DocumentService {
       return null;
     }
     const parseInfoGetter = this.getObjectParseInfo;
-    const info: ParseInfo = {
+    const info: ParserInfo = {
       parser: this._docParser, 
       bounds, 
       parseInfoGetter, 

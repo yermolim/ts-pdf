@@ -1,20 +1,20 @@
 import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { DataParser, ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { codes } from "../../encoding/char-codes";
 
 export class ObjectMapDict extends PdfDict {
   protected readonly _objectIdMap = new Map<string, ObjectId>();
-  protected readonly _dictParserMap = new Map<string, ParseInfo>();
+  protected readonly _dictParserMap = new Map<string, ParserInfo>();
   
   constructor() {
     super(null);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<ObjectMapDict> {  
+  static parse(parseInfo: ParserInfo): ParseResult<ObjectMapDict> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -39,11 +39,11 @@ export class ObjectMapDict extends PdfDict {
     return;
   }
   
-  getDictParser(name: string): ParseInfo {
+  getDictParser(name: string): ParserInfo {
     return this._dictParserMap.get(name);
   }
 
-  *getDictParsers(): Iterable<[string, ParseInfo]> {
+  *getDictParsers(): Iterable<[string, ParserInfo]> {
     for (const pair of this._dictParserMap) {
       yield pair;
     }
@@ -69,7 +69,7 @@ export class ObjectMapDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
@@ -96,7 +96,7 @@ export class ObjectMapDict extends PdfDict {
             } else if (entryType === valueTypes.DICTIONARY) {
               const dictBounds = parser.getDictBoundsAt(i);
               if (dictBounds) {
-                const dictParseInfo: ParseInfo = {
+                const dictParseInfo: ParserInfo = {
                   parser: new DataParser(parser.sliceCharCodes(dictBounds.start, dictBounds.end)), 
                   bounds: {
                     start: 0, 

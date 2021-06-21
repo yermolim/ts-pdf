@@ -2,7 +2,7 @@ import { codes } from "../../../encoding/char-codes";
 import { annotationTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../encryption/interfaces";
 import { ParseResult } from "../../../data-parse/data-parser";
-import { ParseInfo } from "../../../data-parse/parser-info";
+import { ParserInfo } from "../../../data-parse/parser-info";
 import { ObjectId } from "../../core/object-id";
 import { AnnotationDict } from "../annotation-dict";
 
@@ -21,7 +21,7 @@ export class PopupAnnotation extends AnnotationDict {
     super(annotationTypes.POPUP);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<PopupAnnotation> { 
+  static parse(parseInfo: ParserInfo): ParseResult<PopupAnnotation> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -59,7 +59,7 @@ export class PopupAnnotation extends AnnotationDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

@@ -2,7 +2,7 @@ import { FlatePredictor, flatePredictors, StreamFilter,
   streamFilters, StreamType, supportedFilters, valueTypes } from "../../spec-constants";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../encoding/char-codes";
 import { FlateDecoder } from "../../encoding/flate-decoder";
@@ -115,7 +115,7 @@ export abstract class PdfStream extends PdfObject {
   /**
    * try to parse and fill public properties from data using parse info
    */
-  protected parseProps(parseInfo: ParseInfo) {
+  protected parseProps(parseInfo: ParserInfo) {
     if (!parseInfo) {
       throw new Error("Parse info is empty");
     }

@@ -1,7 +1,7 @@
 import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { GroupDict } from "../misc/group-dict";
 
 export class TransparencyGroupDict extends GroupDict {
@@ -55,7 +55,7 @@ export class TransparencyGroupDict extends GroupDict {
     super();
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<TransparencyGroupDict> {
+  static parse(parseInfo: ParserInfo): ParseResult<TransparencyGroupDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -94,7 +94,7 @@ export class TransparencyGroupDict extends GroupDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     if (this.S !== "/Transparency") {
       throw new Error("Not a transparency dict");

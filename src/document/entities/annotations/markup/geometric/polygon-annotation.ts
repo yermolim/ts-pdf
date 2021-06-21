@@ -4,7 +4,7 @@ import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseResult } from "../../../../data-parse/data-parser";
-import { ParseInfo } from "../../../../data-parse/parser-info";
+import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
 import { LiteralString } from "../../../strings/literal-string";
@@ -61,7 +61,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<PolygonAnnotation> { 
+  static parse(parseInfo: ParserInfo): ParseResult<PolygonAnnotation> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
@@ -118,7 +118,7 @@ export class PolygonAnnotation extends PolyAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     
     // bake the current annotation rotation into its appearance stream

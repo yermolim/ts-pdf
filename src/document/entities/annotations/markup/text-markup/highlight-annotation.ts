@@ -4,7 +4,7 @@ import { annotationTypes, blendModes, lineCapStyles,
   lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParseResult } from "../../../../data-parse/data-parser";
-import { ParseInfo } from "../../../../data-parse/parser-info";
+import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
 import { LiteralString } from "../../../strings/literal-string";
@@ -66,7 +66,7 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
     return annotation.initProxy();
   }
 
-  static parse(parseInfo: ParseInfo): ParseResult<HighlightAnnotation> {
+  static parse(parseInfo: ParserInfo): ParseResult<HighlightAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -122,7 +122,7 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     // const {parser, bounds} = parseInfo;
     // const start = bounds.contentStart || bounds.start;

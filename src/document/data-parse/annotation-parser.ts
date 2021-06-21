@@ -2,7 +2,7 @@ import { AnnotationDto } from "../../common/annotation";
 
 import { annotationTypes } from "../spec-constants";
 import { ParseResult } from "./data-parser";
-import { ParseInfo } from "./parser-info";
+import { ParserInfo } from "./parser-info";
 
 import { FontDict } from "../entities/appearance/font-dict";
 import { AnnotationDict } from "../entities/annotations/annotation-dict";
@@ -23,7 +23,7 @@ import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-ann
 
 export class AnnotationParser {
 
-  static ParseAnnotationFromInfo(info: ParseInfo, 
+  static ParseAnnotationFromInfo(info: ParserInfo, 
     fontMap: Map<string, FontDict>): AnnotationDict {
     const annotationType = info.parser.parseDictSubtype(info.bounds);
     let annot: ParseResult<AnnotationDict>;

@@ -3,7 +3,7 @@ import { CryptInfo } from "../../encryption/interfaces";
 import { codes } from "../../encoding/char-codes";
 import { getCharCodesMapByCode, pdfCharCodesByName } from "../../encoding/char-encodings";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
 export class EncodingDict extends PdfDict {
@@ -49,7 +49,7 @@ export class EncodingDict extends PdfDict {
     super(dictTypes.ENCODING);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<EncodingDict> {    
+  static parse(parseInfo: ParserInfo): ParseResult<EncodingDict> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -87,7 +87,7 @@ export class EncodingDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

@@ -8,7 +8,7 @@ import { codes } from "../../../encoding/char-codes";
 import { CryptInfo } from "../../../encryption/interfaces";
 
 import { ParseResult } from "../../../data-parse/data-parser";
-import { ParseInfo } from "../../../data-parse/parser-info";
+import { ParserInfo } from "../../../data-parse/parser-info";
 import { LiteralString } from "../../strings/literal-string";
 import { DateString } from "../../strings/date-string";
 import { XFormStream } from "../../streams/x-form-stream";
@@ -71,7 +71,7 @@ export class InkAnnotation extends MarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<InkAnnotation> {
+  static parse(parseInfo: ParserInfo): ParseResult<InkAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -143,7 +143,7 @@ export class InkAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

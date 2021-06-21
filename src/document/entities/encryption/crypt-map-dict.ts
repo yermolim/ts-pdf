@@ -1,7 +1,7 @@
 import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 import { CryptFilterDict } from "./crypt-filter-dict";
 
@@ -12,7 +12,7 @@ export class CryptMapDict extends PdfDict {
     super(null);
   }
   
-  static parse(parseInfo: ParseInfo): ParseResult<CryptMapDict> {  
+  static parse(parseInfo: ParserInfo): ParseResult<CryptMapDict> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -51,7 +51,7 @@ export class CryptMapDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;

@@ -1,7 +1,7 @@
 import { StreamType } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfStream } from "../core/pdf-stream";
 
 export class TextStream extends PdfStream {
@@ -10,7 +10,7 @@ export class TextStream extends PdfStream {
     super(type);
   }  
 
-  static parse(parseInfo: ParseInfo): ParseResult<TextStream> {
+  static parse(parseInfo: ParserInfo): ParseResult<TextStream> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -37,7 +37,7 @@ export class TextStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParseInfo) {
+  protected override parseProps(parseInfo: ParserInfo) {
     super.parseProps(parseInfo);
     
   }

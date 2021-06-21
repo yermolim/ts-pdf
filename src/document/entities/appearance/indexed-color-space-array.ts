@@ -2,7 +2,7 @@ import { codes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { ColorSpace, colorSpaces, valueTypes } from "../../spec-constants";
 import { ParseResult } from "../../data-parse/data-parser";
-import { ParseInfo } from "../../data-parse/parser-info";
+import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { TextStream } from "../streams/text-stream";
 import { HexString } from "../strings/hex-string";
@@ -43,7 +43,7 @@ export class IndexedColorSpaceArray implements IEncodable {
     // console.log(this);
   }
 
-  static parse(parseInfo: ParseInfo, skipEmpty = true): ParseResult<IndexedColorSpaceArray> {  
+  static parse(parseInfo: ParserInfo, skipEmpty = true): ParseResult<IndexedColorSpaceArray> {  
     const {parser, bounds, cryptInfo} = parseInfo;
 
     let i: number;
