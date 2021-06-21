@@ -1,10 +1,9 @@
 import { Double, Quadruple } from "../../../../../common/types";
 import { AnnotationDto } from "../../../../../common/annotation";
-import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType } from "../../../../spec-constants";
 
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 import { MarkupAnnotation } from "../markup-annotation";
 
@@ -31,9 +30,7 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.IC) {
-      bytes.push(...encoder.encode("/IC "), codes.L_BRACKET);    
-      this.IC.forEach(x => bytes.push( ...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/IC "), ...this.encodePrimitiveArray(this.IC));
     }
 
     const totalBytes: number[] = [
@@ -54,7 +51,7 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

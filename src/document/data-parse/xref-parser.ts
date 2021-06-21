@@ -1,5 +1,5 @@
 import { keywordCodes } from "../encoding/char-codes";
-import { DataParser } from "./data-parser";
+import { DataParser, ParserResult } from "./data-parser";
 
 import { ObjectId } from "../entities/core/object-id";
 import { XRef } from "../entities/x-refs/x-ref";
@@ -18,6 +18,25 @@ export class XrefParser {
       throw new Error("Parser is not defined");
     }
     this._dataParser = parser;
+  }  
+  
+  /**
+   * parse the last cross-reference section byte offset
+   * @returns the last cross-reference section byte offset (null if not found)
+   */
+  getLastXrefIndex(): ParserResult<number> {
+    const xrefStartIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_START, 
+      {maxIndex: this._dataParser.maxIndex, direction: false});
+    if (!xrefStartIndex) {
+      return null;
+    }
+
+    const xrefIndex = this._dataParser.parseNumberAt(xrefStartIndex.end + 1);
+    if (!xrefIndex) {
+      return null;
+    }
+
+    return xrefIndex;
   }
   
   /**

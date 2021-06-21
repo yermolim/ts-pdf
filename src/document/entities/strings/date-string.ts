@@ -1,6 +1,6 @@
 import { codes, keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 
 /**
  * Immutablse class representing PDF date
@@ -22,7 +22,7 @@ export class DateString implements IEncodable {
   }
     
   static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParseResult<DateString>  {       
+    skipEmpty = true): ParserResult<DateString>  {       
     if (skipEmpty) {
       start = parser.skipEmpty(start);
     }

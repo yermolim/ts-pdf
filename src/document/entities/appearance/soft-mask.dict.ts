@@ -1,10 +1,9 @@
 import { dictTypes, SoftMaskType, softMaskTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../encoding/char-codes";
 
 export class SoftMaskDict extends PdfDict {
   /** 
@@ -45,7 +44,7 @@ export class SoftMaskDict extends PdfDict {
     super(dictTypes.SOFT_MASK);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<SoftMaskDict> {
+  static parse(parseInfo: ParserInfo): ParserResult<SoftMaskDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -68,12 +67,10 @@ export class SoftMaskDict extends PdfDict {
       bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
     }
     if (this.G) {
-      bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.G.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/G "), ...this.G.toArray(cryptInfo));
     }
     if (this.BC) {
-      bytes.push(...encoder.encode("/BC "), codes.L_BRACKET);
-      this.BC.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/BC "), ...this.encodePrimitiveArray(this.BC));
     }
     if (this.TR) {
       bytes.push(...encoder.encode("/TR "), ...encoder.encode(" " + this.TR));
@@ -98,7 +95,7 @@ export class SoftMaskDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

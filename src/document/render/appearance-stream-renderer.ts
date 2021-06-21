@@ -3,7 +3,7 @@ import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices, selectionStrokeWidth, 
   CssMixBlendMode } from "../../drawing/utils";
 
-import { codes } from "../encoding/char-codes";
+import { keywordCodes } from "../encoding/char-codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../spec-constants";
 
 import { DataParser } from "../data-parse/data-parser";
@@ -908,7 +908,7 @@ export class AppearanceStreamRenderer {
           //#endregion
 
         case "BT": // Text object
-          const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
+          const textObjectEnd = parser.findSubarrayIndex(keywordCodes.AP_STREAM_TEXT_END, {
             closedOnly: true, 
             minIndex: i,
           });

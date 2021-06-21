@@ -3,10 +3,9 @@ import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
-import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
@@ -76,7 +75,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<SquareAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<SquareAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -100,13 +99,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.RD) {
-      bytes.push(
-        ...encoder.encode("/RD "), codes.L_BRACKET, 
-        ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
     }
 
     const totalBytes: number[] = [
@@ -157,7 +150,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

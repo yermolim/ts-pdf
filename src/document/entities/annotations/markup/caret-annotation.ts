@@ -1,7 +1,6 @@
-import { codes } from "../../../encoding/char-codes";
 import { annotationTypes, caretSymbolTypes, CaretSymbolType } from "../../../spec-constants";
 import { CryptInfo } from "../../../encryption/interfaces";
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 import { MarkupAnnotation } from "./markup-annotation";
 import { Quadruple } from "../../../../common/types";
@@ -23,7 +22,7 @@ export class CaretAnnotation extends MarkupAnnotation {
     super(annotationTypes.CARET);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<CaretAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<CaretAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -43,13 +42,7 @@ export class CaretAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.RD) {
-      bytes.push(
-        ...encoder.encode("/RD "), codes.L_BRACKET, 
-        ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
     }
     if (this.Sy) {
       bytes.push(...encoder.encode("/Sy "), ...encoder.encode(this.Sy));
@@ -75,7 +68,7 @@ export class CaretAnnotation extends MarkupAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

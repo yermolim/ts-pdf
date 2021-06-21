@@ -157,11 +157,12 @@ export class DocumentService {
     this._docParser = new DataParser(data);
     this._version = this._docParser.getPdfVersion();
     
-    const lastXrefIndex = this._docParser.getLastXrefIndex();
+    const xrefParser = new XrefParser(this._docParser);
+    const lastXrefIndex = xrefParser.getLastXrefIndex();
     if (!lastXrefIndex) {{
       throw new Error("File doesn't contain update section");
     }}
-    const xrefs = new XrefParser(this._docParser).parseAllXrefs(lastXrefIndex.value);
+    const xrefs = xrefParser.parseAllXrefs(lastXrefIndex.value);
     if (!xrefs.length) {{
       throw new Error("Failed to parse cross-reference sections");
     }}

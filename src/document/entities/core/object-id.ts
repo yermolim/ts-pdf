@@ -1,7 +1,7 @@
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { Reference } from "../../references/reference";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF indirect object reference
@@ -29,7 +29,7 @@ export class ObjectId implements Reference, IEncodable {
    * @returns 
    */
   static parse(parser: DataParser, start: number, 
-    skipEmpty = true): ParseResult<ObjectId> {  
+    skipEmpty = true): ParserResult<ObjectId> {  
     if (skipEmpty) {
       start = parser.findRegularIndex(true, start);
     }
@@ -62,7 +62,7 @@ export class ObjectId implements Reference, IEncodable {
    * @returns 
    */
   static parseRef(parser: DataParser, start: number, 
-    skipEmpty = true): ParseResult<ObjectId> {    
+    skipEmpty = true): ParserResult<ObjectId> {    
 
     const id = ObjectId.parse(parser, start, skipEmpty);
     if (!id) {
@@ -91,14 +91,14 @@ export class ObjectId implements Reference, IEncodable {
    * @returns 
    */
   static parseRefArray(parser: DataParser, start: number, 
-    skipEmpty = true): ParseResult<ObjectId[]>  {
+    skipEmpty = true): ParserResult<ObjectId[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
 
     const ids: ObjectId[] = [];
-    let current: ParseResult<ObjectId>;
+    let current: ParserResult<ObjectId>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
       current = ObjectId.parseRef(parser, i, true);

@@ -1,7 +1,6 @@
-import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType, valueTypes, polyIntents, PolyIntent } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../appearance/measure-dict";
@@ -37,9 +36,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.Vertices) {
-      bytes.push(...encoder.encode("/Vertices "), codes.L_BRACKET);
-      this.Vertices.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/Vertices "), ...this.encodePrimitiveArray(this.Vertices));
     }
     if (this.IT) {
       bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
@@ -66,7 +63,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

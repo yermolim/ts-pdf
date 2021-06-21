@@ -3,7 +3,7 @@ import { buildSquigglyLine } from "../../../../../drawing/utils";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
@@ -69,7 +69,7 @@ export class SquigglyAnnotation extends TextMarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<SquigglyAnnotation> { 
+  static parse(parseInfo: ParserInfo): ParserResult<SquigglyAnnotation> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }

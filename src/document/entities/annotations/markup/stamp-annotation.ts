@@ -4,7 +4,7 @@ import { AnnotationDto } from "../../../../common/annotation";
 
 import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, colorSpaces, stampTypes, StampType } from "../../../spec-constants";
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 
 import { DateString } from "../../strings/date-string";
@@ -145,7 +145,7 @@ export class StampAnnotation extends MarkupAnnotation {
     return annotation.initProxy();
   }
 
-  static parse(parseInfo: ParserInfo): ParseResult<StampAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<StampAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -219,7 +219,7 @@ export class StampAnnotation extends MarkupAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

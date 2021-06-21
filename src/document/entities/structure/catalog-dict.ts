@@ -1,7 +1,6 @@
-import { codes } from "../../encoding/char-codes";
 import { dictTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "../core/object-id";
@@ -40,7 +39,7 @@ export class CatalogDict extends PdfDict {
     super(dictTypes.CATALOG);
   }  
   
-  static parse(parseInfo: ParserInfo): ParseResult<CatalogDict> {   
+  static parse(parseInfo: ParserInfo): ParserResult<CatalogDict> {   
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -63,7 +62,7 @@ export class CatalogDict extends PdfDict {
       bytes.push(...encoder.encode("/Version "), ...encoder.encode(this.Version));
     }
     if (this.Pages) {
-      bytes.push(...encoder.encode("/Pages "), codes.WHITESPACE, ...this.Pages.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Pages "), ...this.Pages.toArray(cryptInfo));
     }
     if (this.Lang) {
       bytes.push(...encoder.encode("/Lang "), ...this.Lang.toArray(cryptInfo));
@@ -86,7 +85,7 @@ export class CatalogDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

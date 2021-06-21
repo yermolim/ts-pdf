@@ -1,6 +1,6 @@
 import { dictTypes, GroupDictType, groupDictTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
@@ -44,7 +44,7 @@ export abstract class GroupDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

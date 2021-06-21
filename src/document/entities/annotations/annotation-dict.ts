@@ -6,10 +6,9 @@ import { RenderableAnnotation, AnnotationRenderResult,
   AnnotationDto } from "../../../common/annotation";
 import { BBox } from "../../../drawing/utils";
 
-import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { AppearanceStreamRenderer, AppearanceRenderResult } 
@@ -190,19 +189,13 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
     if (this.Rect) {
-      bytes.push(
-        ...encoder.encode("/Rect "), codes.L_BRACKET, 
-        ...encoder.encode(this.Rect[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.Rect[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.Rect[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.Rect[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/Rect "), ...this.encodePrimitiveArray(this.Rect));
     }
     if (this.Contents) {
       bytes.push(...encoder.encode("/Contents "), ...this.Contents.toArray(cryptInfo));
     }
     if (this.P) {
-      bytes.push(...encoder.encode("/P "), codes.WHITESPACE, ...this.P.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/P "), ...this.P.toArray(cryptInfo));
     }
     if (this.NM) {
       bytes.push(...encoder.encode("/NM "), ...this.NM.toArray(cryptInfo));
@@ -229,9 +222,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       bytes.push(...encoder.encode("/BE "), ...this.BE.toArray(cryptInfo));
     }
     if (this.C) {
-      bytes.push(...encoder.encode("/C "), codes.L_BRACKET);
-      this.C.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/C "), ...this.encodePrimitiveArray(this.C));
     }
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
@@ -408,7 +399,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

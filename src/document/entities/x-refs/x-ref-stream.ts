@@ -1,6 +1,6 @@
 import { flatePredictors, streamFilters, xRefTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
@@ -121,7 +121,7 @@ export class XRefStream extends XRef {
    * @param offset CRS byte offset in the PDF document
    * @returns 
    */
-  static parse(parseInfo: ParserInfo, offset: number): ParseResult<XRefStream> {
+  static parse(parseInfo: ParserInfo, offset: number): ParserResult<XRefStream> {
     if (!parseInfo) {
       return null;
     }

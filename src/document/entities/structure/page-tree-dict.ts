@@ -1,8 +1,7 @@
 import { Quadruple } from "../../../common/types";
-import { codes } from "../../encoding/char-codes";
 import { dictTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
@@ -41,7 +40,7 @@ export class PageTreeDict extends PdfDict {
     super(dictTypes.PAGE_TREE);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<PageTreeDict> {
+  static parse(parseInfo: ParserInfo): ParserResult<PageTreeDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -61,24 +60,16 @@ export class PageTreeDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Parent "), ...this.Parent.toArray(cryptInfo));
     }
     if (this.Kids) {
-      bytes.push(...encoder.encode("/Kids "), codes.L_BRACKET);
-      this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/Kids "), ...this.encodeSerializableArray(this.Kids, cryptInfo));
     }
     if (this.Count) {
       bytes.push(...encoder.encode("/Count "), ...encoder.encode(" " + this.Count));
     }
     if (this.MediaBox) {
-      bytes.push(
-        ...encoder.encode("/MediaBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox));
     }
     if (this.Rotate) {
       bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));
@@ -99,7 +90,7 @@ export class PageTreeDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

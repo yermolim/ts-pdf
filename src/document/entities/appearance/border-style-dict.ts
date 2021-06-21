@@ -1,8 +1,7 @@
 import { Double } from "../../../common/types";
-import { codes } from "../../encoding/char-codes";
 import { dictTypes, borderStyles, BorderStyle } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
@@ -20,7 +19,7 @@ export class BorderStyleDict extends PdfDict {
     super(dictTypes.BORDER_STYLE);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<BorderStyleDict> { 
+  static parse(parseInfo: ParserInfo): ParserResult<BorderStyleDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
@@ -46,11 +45,7 @@ export class BorderStyleDict extends PdfDict {
       bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
     }
     if (this.D) {
-      bytes.push(
-        ...encoder.encode("/D "), codes.L_BRACKET, 
-        ...encoder.encode(this.D[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.D[1] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/D "), ...this.encodePrimitiveArray(this.D));
     }
 
     const totalBytes: number[] = [
@@ -71,7 +66,7 @@ export class BorderStyleDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

@@ -1,6 +1,6 @@
 import { dictTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../encryption/interfaces";
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 import { PdfDict } from "../../core/pdf-dict";
 
@@ -14,7 +14,7 @@ export class ExDataDict extends PdfDict {
     super(dictTypes.EXTERNAL_DATA);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<ExDataDict> { 
+  static parse(parseInfo: ParserInfo): ParserResult<ExDataDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -55,7 +55,7 @@ export class ExDataDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

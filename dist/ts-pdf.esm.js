@@ -2501,6 +2501,7 @@ const keywordCodes = {
         codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
     CMAP_END_RANGE: [codes.e, codes.n, codes.d,
         codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
+    AP_STREAM_TEXT_END: [codes.E, codes.T],
 };
 
 class DataParser {
@@ -2555,17 +2556,6 @@ class DataParser {
             throw new Error("Error parsing version number");
         }
         return version.toFixed(1);
-    }
-    getLastXrefIndex() {
-        const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this.maxIndex, direction: false });
-        if (!xrefStartIndex) {
-            return null;
-        }
-        const xrefIndex = this.parseNumberAt(xrefStartIndex.end + 1);
-        if (!xrefIndex) {
-            return null;
-        }
-        return xrefIndex;
     }
     findSubarrayIndex(sub, options) {
         var _a, _b, _c;
@@ -4661,6 +4651,30 @@ class PdfObject {
     getProxy() {
         return this._proxy || this;
     }
+    encodePrimitiveArray(array, encoder) {
+        encoder || (encoder = new TextEncoder());
+        const bytes = [codes.L_BRACKET];
+        array.forEach(x => bytes.push(...encoder.encode(" " + x)));
+        bytes.push(codes.R_BRACKET);
+        return bytes;
+    }
+    encodeNestedPrimitiveArray(array, encoder) {
+        encoder || (encoder = new TextEncoder());
+        const bytes = [codes.L_BRACKET];
+        array.forEach(x => {
+            bytes.push(codes.L_BRACKET);
+            x.forEach(y => bytes.push(...encoder.encode(" " + y)));
+            bytes.push(codes.R_BRACKET);
+        });
+        bytes.push(codes.R_BRACKET);
+        return bytes;
+    }
+    encodeSerializableArray(array, cryptInfo) {
+        const bytes = [codes.L_BRACKET];
+        array.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
+        bytes.push(codes.R_BRACKET);
+        return bytes;
+    }
     parseRefProp(propName, parser, index) {
         const parsed = ObjectId.parseRef(parser, index);
         return this.setParsedProp(propName, parsed);
@@ -5861,24 +5875,22 @@ class TrailerStream extends PdfStream {
             bytes.push(...encoder.encode("/Prev "), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root "), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Root "), ...this.Root.toArray(cryptInfo));
         }
         if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt "), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Encrypt "), ...this.Encrypt.toArray(cryptInfo));
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info "), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Info "), ...this.Info.toArray(cryptInfo));
         }
         if (this.ID) {
-            bytes.push(...encoder.encode("/ID "), codes.L_BRACKET, ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/ID "), ...this.encodeSerializableArray(this.ID, cryptInfo));
         }
         if (this.Index) {
-            bytes.push(...encoder.encode("/Index "), codes.L_BRACKET);
-            this.Index.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Index "), ...this.encodePrimitiveArray(this.Index));
         }
         if (this.W) {
-            bytes.push(...encoder.encode("/W "), codes.L_BRACKET, ...encoder.encode(this.W[0] + ""), codes.WHITESPACE, ...encoder.encode(this.W[1] + ""), codes.WHITESPACE, ...encoder.encode(this.W[2] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/W "), ...this.encodePrimitiveArray(this.W));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -6277,14 +6289,10 @@ class ImageStream extends PdfStream {
         }
         bytes.push(...encoder.encode("/ImageMask "), ...encoder.encode(" " + !!this.ImageMask));
         if (this.Mask) {
-            bytes.push(...encoder.encode("/Mask "), codes.L_BRACKET);
-            this.Mask.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Mask "), ...this.encodePrimitiveArray(this.Mask));
         }
         if (this.Decode) {
-            bytes.push(...encoder.encode("/Decode "), codes.L_BRACKET);
-            this.Decode.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Decode "), ...this.encodePrimitiveArray(this.Decode));
         }
         bytes.push(...encoder.encode("/Interpolate "), ...encoder.encode(" " + !!this.Interpolate));
         if (this.SMask) {
@@ -6294,15 +6302,13 @@ class ImageStream extends PdfStream {
             bytes.push(...encoder.encode("/SMaskInData "), ...encoder.encode(" " + this.SMaskInData));
         }
         if (this.Matte) {
-            bytes.push(...encoder.encode("/Matte "), codes.L_BRACKET);
-            this.Matte.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Matte "), ...this.encodePrimitiveArray(this.Matte));
         }
         if (this.StructParent) {
             bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
         }
         if (this.Metadata) {
-            bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Metadata "), ...this.Metadata.toArray(cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -6724,7 +6730,7 @@ class ObjectMapDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         this._objectIdMap.forEach((v, k) => {
-            bytes.push(...encoder.encode(k), codes.WHITESPACE, ...v.toArray(cryptInfo));
+            bytes.push(...encoder.encode(k + " "), ...v.toArray(cryptInfo));
         });
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -10820,9 +10826,7 @@ class EncodingDict extends PdfDict {
             bytes.push(...encoder.encode("/BaseEncoding "), ...encoder.encode(" " + this.BaseEncoding));
         }
         if (this.Differences) {
-            bytes.push(...encoder.encode("/Differences "), codes.L_BRACKET);
-            this.Differences.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Differences "), ...this.encodePrimitiveArray(this.Differences));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -10946,7 +10950,7 @@ class FontDescriptorDict extends PdfDict {
             bytes.push(...encoder.encode("/FontName "), ...encoder.encode(" " + this.FontName));
         }
         if (this.FontFamily) {
-            bytes.push(...encoder.encode("/FontFamily "), codes.WHITESPACE, ...this.FontFamily.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/FontFamily "), ...this.FontFamily.toArray(cryptInfo));
         }
         if (this.FontStretch) {
             bytes.push(...encoder.encode("/FontStretch "), ...encoder.encode(" " + this.FontStretch));
@@ -10958,9 +10962,7 @@ class FontDescriptorDict extends PdfDict {
             bytes.push(...encoder.encode("/Flags "), ...encoder.encode(" " + this.Flags));
         }
         if (this.FontBBox) {
-            bytes.push(...encoder.encode("/FontBBox "), codes.L_BRACKET);
-            this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox));
         }
         if (this.ItalicAngle || this.ItalicAngle === 0) {
             bytes.push(...encoder.encode("/ItalicAngle "), ...encoder.encode(" " + (this.ItalicAngle)));
@@ -10996,16 +10998,16 @@ class FontDescriptorDict extends PdfDict {
             bytes.push(...encoder.encode("/XHeight "), ...encoder.encode(" " + this.XHeight));
         }
         if (this.CharSet) {
-            bytes.push(...encoder.encode("/CharSet "), codes.WHITESPACE, ...this.CharSet.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/CharSet "), ...this.CharSet.toArray(cryptInfo));
         }
         if (this.FontFile) {
-            bytes.push(...encoder.encode("/FontFile "), codes.WHITESPACE, ...this.FontFile.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/FontFile "), ...this.FontFile.toArray(cryptInfo));
         }
         if (this.FontFile2) {
-            bytes.push(...encoder.encode("/FontFile2 "), codes.WHITESPACE, ...this.FontFile2.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/FontFile2 "), ...this.FontFile2.toArray(cryptInfo));
         }
         if (this.FontFile3) {
-            bytes.push(...encoder.encode("/FontFile3 "), codes.WHITESPACE, ...this.FontFile3.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/FontFile3 "), ...this.FontFile3.toArray(cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -11544,7 +11546,7 @@ class FontDict extends PdfDict {
             bytes.push(...encoder.encode("/BaseFont "), ...encoder.encode(" " + this.BaseFont));
         }
         if (this.ToUnicode) {
-            bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/G "), ...this.ToUnicode.toArray(cryptInfo));
         }
         if (this.FirstChar) {
             bytes.push(...encoder.encode("/FirstChar "), ...encoder.encode(" " + this.FirstChar));
@@ -11554,24 +11556,22 @@ class FontDict extends PdfDict {
         }
         if (this.Widths) {
             if (this.Widths instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Widths "), codes.WHITESPACE, ...this.Widths.toArray(cryptInfo));
+                bytes.push(...encoder.encode("/Widths "), ...this.Widths.toArray(cryptInfo));
             }
             else {
-                bytes.push(...encoder.encode("/Widths "), codes.L_BRACKET);
-                this.Widths.forEach(x => bytes.push(...encoder.encode(" " + x)));
-                bytes.push(codes.R_BRACKET);
+                bytes.push(...encoder.encode("/Widths "), ...this.encodePrimitiveArray(this.Widths));
             }
         }
         if (this.Encoding || this.encodingValue) {
             if (this.Encoding instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
+                bytes.push(...encoder.encode("/Encoding "), ...this.Encoding.toArray(cryptInfo));
             }
             else {
                 bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
             }
         }
         if (this.descriptorValue) {
-            bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, ...this.descriptorValue.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/FontDescriptor "), ...this.descriptorValue.toArray(cryptInfo));
         }
         if (this.Resources) {
             bytes.push(...encoder.encode("/Resources "), ...this.Resources);
@@ -11580,14 +11580,10 @@ class FontDict extends PdfDict {
             bytes.push(...encoder.encode("/CharProcs "), ...this.CharProcs);
         }
         if (this.FontBBox) {
-            bytes.push(...encoder.encode("/FontBBox "), codes.L_BRACKET);
-            this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox));
         }
         if (this.FontMatrix) {
-            bytes.push(...encoder.encode("/FontMatrix "), codes.L_BRACKET);
-            this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/FontMatrix "), ...this.encodePrimitiveArray(this.FontMatrix));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -11774,12 +11770,10 @@ class SoftMaskDict extends PdfDict {
             bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
         }
         if (this.G) {
-            bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.G.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/G "), ...this.G.toArray(cryptInfo));
         }
         if (this.BC) {
-            bytes.push(...encoder.encode("/BC "), codes.L_BRACKET);
-            this.BC.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/BC "), ...this.encodePrimitiveArray(this.BC));
         }
         if (this.TR) {
             bytes.push(...encoder.encode("/TR "), ...encoder.encode(" " + this.TR));
@@ -12269,9 +12263,7 @@ class ResourceDict extends PdfDict {
             bytes.push(...encoder.encode("/Properties "), ...this.Properties.toArray(cryptInfo));
         }
         if (this.ProcSet) {
-            bytes.push(...encoder.encode("/ProcSet "), codes.L_BRACKET);
-            this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/ProcSet "), ...this.encodePrimitiveArray(this.ProcSet));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -12752,16 +12744,16 @@ class XFormStream extends PdfStream {
             bytes.push(...encoder.encode("/FormType "), ...encoder.encode(" " + this.FormType));
         }
         if (this.BBox) {
-            bytes.push(...encoder.encode("/BBox "), codes.L_BRACKET, ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.BBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/BBox "), ...this.encodePrimitiveArray(this.BBox));
         }
         if (this.Matrix) {
-            bytes.push(...encoder.encode("/Matrix "), codes.L_BRACKET, ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[3] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[4] + ""), codes.WHITESPACE, ...encoder.encode(this.Matrix[5] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Matrix "), ...this.encodePrimitiveArray(this.Matrix));
         }
         if (this.Resources) {
             bytes.push(...encoder.encode("/Resources "), ...this.Resources.toArray(cryptInfo));
         }
         if (this.Metadata) {
-            bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Metadata "), ...this.Metadata.toArray(cryptInfo));
         }
         if (this.LastModified) {
             bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
@@ -13897,7 +13889,7 @@ class AppearanceStreamRenderer {
                     case "W*":
                         break;
                     case "BT":
-                        const textObjectEnd = parser.findSubarrayIndex([codes.E, codes.T], {
+                        const textObjectEnd = parser.findSubarrayIndex(keywordCodes.AP_STREAM_TEXT_END, {
                             closedOnly: true,
                             minIndex: i,
                         });
@@ -13979,7 +13971,7 @@ class BorderStyleDict extends PdfDict {
             bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
         }
         if (this.D) {
-            bytes.push(...encoder.encode("/D "), codes.L_BRACKET, ...encoder.encode(this.D[0] + ""), codes.WHITESPACE, ...encoder.encode(this.D[1] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/D "), ...this.encodePrimitiveArray(this.D));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -14667,13 +14659,13 @@ class AnnotationDict extends PdfDict {
             bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
         }
         if (this.Rect) {
-            bytes.push(...encoder.encode("/Rect "), codes.L_BRACKET, ...encoder.encode(this.Rect[0] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[1] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[2] + ""), codes.WHITESPACE, ...encoder.encode(this.Rect[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Rect "), ...this.encodePrimitiveArray(this.Rect));
         }
         if (this.Contents) {
             bytes.push(...encoder.encode("/Contents "), ...this.Contents.toArray(cryptInfo));
         }
         if (this.P) {
-            bytes.push(...encoder.encode("/P "), codes.WHITESPACE, ...this.P.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/P "), ...this.P.toArray(cryptInfo));
         }
         if (this.NM) {
             bytes.push(...encoder.encode("/NM "), ...this.NM.toArray(cryptInfo));
@@ -14697,9 +14689,7 @@ class AnnotationDict extends PdfDict {
             bytes.push(...encoder.encode("/BE "), ...this.BE.toArray(cryptInfo));
         }
         if (this.C) {
-            bytes.push(...encoder.encode("/C "), codes.L_BRACKET);
-            this.C.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/C "), ...this.encodePrimitiveArray(this.C));
         }
         if (this.StructParent) {
             bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
@@ -15309,7 +15299,7 @@ class MarkupAnnotation extends AnnotationDict {
             bytes.push(...encoder.encode("/T "), ...this.T.toArray(cryptInfo));
         }
         if (this.Popup) {
-            bytes.push(...encoder.encode("/Popup "), codes.WHITESPACE, ...this.Popup.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Popup "), ...this.Popup.toArray(cryptInfo));
         }
         if (this.RC) {
             bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
@@ -15324,7 +15314,7 @@ class MarkupAnnotation extends AnnotationDict {
             bytes.push(...encoder.encode("/Subj "), ...this.Subj.toArray(cryptInfo));
         }
         if (this.IRT) {
-            bytes.push(...encoder.encode("/IRT "), codes.WHITESPACE, ...this.IRT.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/IRT "), ...this.IRT.toArray(cryptInfo));
         }
         if (this.RT) {
             bytes.push(...encoder.encode("/RT "), ...encoder.encode(this.RT));
@@ -16396,7 +16386,7 @@ class ObjectStream extends PdfStream {
             bytes.push(...encoder.encode("/First "), ...encoder.encode(" " + this.First));
         }
         if (this.Extends) {
-            bytes.push(...encoder.encode("/Extends "), codes.WHITESPACE, ...this.Extends.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Extends "), ...this.Extends.toArray(cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -16481,9 +16471,7 @@ class CryptFilterDict extends PdfDict {
                 bytes.push(...encoder.encode("/Recipients "), ...this.Recipients.toArray(cryptInfo));
             }
             else {
-                bytes.push(codes.L_BRACKET);
-                this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
-                bytes.push(codes.R_BRACKET);
+                bytes.push(...encoder.encode("/Recipients "), ...this.encodeSerializableArray(this.Recipients, cryptInfo));
             }
         }
         const totalBytes = [
@@ -16729,9 +16717,7 @@ class EncryptionDict extends PdfDict {
                 bytes.push(...encoder.encode("/Recipients "), ...this.Recipients.toArray(cryptInfo));
             }
             else {
-                bytes.push(codes.L_BRACKET);
-                this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
-                bytes.push(codes.R_BRACKET);
+                bytes.push(...encoder.encode("/Recipients "), ...this.encodeSerializableArray(this.Recipients, cryptInfo));
             }
         }
         const totalBytes = [
@@ -16922,16 +16908,16 @@ class TrailerDict extends PdfDict {
             bytes.push(...encoder.encode("/Prev "), ...encoder.encode(" " + this.Prev));
         }
         if (this.Root) {
-            bytes.push(...encoder.encode("/Root "), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Root "), ...this.Root.toArray(cryptInfo));
         }
         if (this.Encrypt) {
-            bytes.push(...encoder.encode("/Encrypt "), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Encrypt "), ...this.Encrypt.toArray(cryptInfo));
         }
         if (this.Info) {
-            bytes.push(...encoder.encode("/Info "), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Info "), ...this.Info.toArray(cryptInfo));
         }
         if (this.ID) {
-            bytes.push(...encoder.encode("/ID "), codes.L_BRACKET, ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/ID "), ...this.encodeSerializableArray(this.ID, cryptInfo));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -17108,6 +17094,17 @@ class XrefParser {
         }
         this._dataParser = parser;
     }
+    getLastXrefIndex() {
+        const xrefStartIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._dataParser.maxIndex, direction: false });
+        if (!xrefStartIndex) {
+            return null;
+        }
+        const xrefIndex = this._dataParser.parseNumberAt(xrefStartIndex.end + 1);
+        if (!xrefIndex) {
+            return null;
+        }
+        return xrefIndex;
+    }
     parseXref(start, max) {
         if (!start) {
             return null;
@@ -17184,7 +17181,7 @@ class CatalogDict extends PdfDict {
             bytes.push(...encoder.encode("/Version "), ...encoder.encode(this.Version));
         }
         if (this.Pages) {
-            bytes.push(...encoder.encode("/Pages "), codes.WHITESPACE, ...this.Pages.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Pages "), ...this.Pages.toArray(cryptInfo));
         }
         if (this.Lang) {
             bytes.push(...encoder.encode("/Lang "), ...this.Lang.toArray(cryptInfo));
@@ -17258,7 +17255,7 @@ class PageDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Parent "), ...this.Parent.toArray(cryptInfo));
         }
         if (this.LastModified) {
             bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
@@ -17267,44 +17264,40 @@ class PageDict extends PdfDict {
             bytes.push(...encoder.encode("/Resources "), ...this.Resources);
         }
         if (this.MediaBox) {
-            bytes.push(...encoder.encode("/MediaBox "), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox));
         }
         if (this.CropBox) {
-            bytes.push(...encoder.encode("/CropBox "), codes.L_BRACKET, ...encoder.encode(this.CropBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CropBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.CropBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.CropBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/CropBox "), ...this.encodePrimitiveArray(this.CropBox));
         }
         if (this.BleedBox) {
-            bytes.push(...encoder.encode("/BleedBox "), codes.L_BRACKET, ...encoder.encode(this.BleedBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.BleedBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.BleedBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.BleedBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/BleedBox "), ...this.encodePrimitiveArray(this.BleedBox));
         }
         if (this.TrimBox) {
-            bytes.push(...encoder.encode("/TrimBox "), codes.L_BRACKET, ...encoder.encode(this.TrimBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.TrimBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.TrimBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.TrimBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/TrimBox "), ...this.encodePrimitiveArray(this.TrimBox));
         }
         if (this.ArtBox) {
-            bytes.push(...encoder.encode("/ArtBox "), codes.L_BRACKET, ...encoder.encode(this.ArtBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.ArtBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.ArtBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.ArtBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/ArtBox "), ...this.encodePrimitiveArray(this.ArtBox));
         }
         if (this.Contents) {
             if (this.Contents instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Contents "), codes.WHITESPACE, ...this.Contents.toArray(cryptInfo));
+                bytes.push(...encoder.encode("/Contents "), ...this.Contents.toArray(cryptInfo));
             }
             else {
-                bytes.push(...encoder.encode("/Contents "), codes.L_BRACKET);
-                this.Contents.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-                bytes.push(codes.R_BRACKET);
+                bytes.push(...encoder.encode("/Contents "), ...this.encodeSerializableArray(this.Contents, cryptInfo));
             }
         }
         if (this.Rotate) {
             bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));
         }
         if (this.Thumb) {
-            bytes.push(...encoder.encode("/Thumb "), codes.WHITESPACE, ...this.Thumb.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Thumb "), ...this.Thumb.toArray(cryptInfo));
         }
         if (this.B) {
             if (this.B instanceof ObjectId) {
-                bytes.push(...encoder.encode("/B "), codes.WHITESPACE, ...this.B.toArray(cryptInfo));
+                bytes.push(...encoder.encode("/B "), ...this.B.toArray(cryptInfo));
             }
             else {
-                bytes.push(...encoder.encode("/B "), codes.L_BRACKET);
-                this.B.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-                bytes.push(codes.R_BRACKET);
+                bytes.push(...encoder.encode("/B "), ...this.encodeSerializableArray(this.B, cryptInfo));
             }
         }
         if (this.Dur) {
@@ -17312,22 +17305,20 @@ class PageDict extends PdfDict {
         }
         if (this.Annots) {
             if (this.Annots instanceof ObjectId) {
-                bytes.push(...encoder.encode("/Annots "), codes.WHITESPACE, ...this.Annots.toArray(cryptInfo));
+                bytes.push(...encoder.encode("/Annots "), ...this.Annots.toArray(cryptInfo));
             }
             else {
-                bytes.push(...encoder.encode("/Annots "), codes.L_BRACKET);
-                this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-                bytes.push(codes.R_BRACKET);
+                bytes.push(...encoder.encode("/Annots "), ...this.encodeSerializableArray(this.Annots, cryptInfo));
             }
         }
         if (this.Metadata) {
-            bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Metadata "), ...this.Metadata.toArray(cryptInfo));
         }
         if (this.StructParent) {
             bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
         }
         if (this.ID) {
-            bytes.push(...encoder.encode("/ID "), codes.WHITESPACE, ...this.ID.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/ID "), ...this.ID.toArray(cryptInfo));
         }
         if (this.PZ) {
             bytes.push(...encoder.encode("/PZ "), ...encoder.encode(" " + this.PZ));
@@ -17497,18 +17488,16 @@ class PageTreeDict extends PdfDict {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Parent) {
-            bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+            bytes.push(...encoder.encode("/Parent "), ...this.Parent.toArray(cryptInfo));
         }
         if (this.Kids) {
-            bytes.push(...encoder.encode("/Kids "), codes.L_BRACKET);
-            this.Kids.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Kids "), ...this.encodeSerializableArray(this.Kids, cryptInfo));
         }
         if (this.Count) {
             bytes.push(...encoder.encode("/Count "), ...encoder.encode(" " + this.Count));
         }
         if (this.MediaBox) {
-            bytes.push(...encoder.encode("/MediaBox "), codes.L_BRACKET, ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox));
         }
         if (this.Rotate) {
             bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));
@@ -20866,13 +20855,7 @@ class InkAnnotation extends MarkupAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.InkList) {
-            bytes.push(...encoder.encode("/InkList "), codes.L_BRACKET);
-            this.InkList.forEach(x => {
-                bytes.push(codes.L_BRACKET);
-                x.forEach(y => bytes.push(...encoder.encode(" " + y)));
-                bytes.push(codes.R_BRACKET);
-            });
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/InkList "), ...this.encodeNestedPrimitiveArray(this.InkList));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -21154,9 +21137,7 @@ class GeometricAnnotation extends MarkupAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.IC) {
-            bytes.push(...encoder.encode("/IC "), codes.L_BRACKET);
-            this.IC.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/IC "), ...this.encodePrimitiveArray(this.IC));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -21258,7 +21239,7 @@ class SquareAnnotation extends GeometricAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.RD) {
-            bytes.push(...encoder.encode("/RD "), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -21494,7 +21475,7 @@ class CircleAnnotation extends GeometricAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.RD) {
-            bytes.push(...encoder.encode("/RD "), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -21686,9 +21667,7 @@ class PolyAnnotation extends GeometricAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.Vertices) {
-            bytes.push(...encoder.encode("/Vertices "), codes.L_BRACKET);
-            this.Vertices.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/Vertices "), ...this.encodePrimitiveArray(this.Vertices));
         }
         if (this.IT) {
             bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
@@ -22073,9 +22052,7 @@ class PolylineAnnotation extends PolyAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.LE) {
-            bytes.push(...encoder.encode("/LE "), codes.L_BRACKET);
-            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -22459,12 +22436,10 @@ class LineAnnotation extends GeometricAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.L) {
-            bytes.push(...encoder.encode("/L "), codes.L_BRACKET, ...encoder.encode(this.L[0] + ""), codes.WHITESPACE, ...encoder.encode(this.L[1] + ""), codes.WHITESPACE, ...encoder.encode(this.L[2] + ""), codes.WHITESPACE, ...encoder.encode(this.L[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/L "), ...this.encodePrimitiveArray(this.L));
         }
         if (this.LE) {
-            bytes.push(...encoder.encode("/LE "), codes.L_BRACKET);
-            this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE));
         }
         if (this.LL) {
             bytes.push(...encoder.encode("/LL "), ...encoder.encode(" " + this.LL));
@@ -22488,7 +22463,7 @@ class LineAnnotation extends GeometricAnnotation {
             bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
         }
         if (this.CO) {
-            bytes.push(...encoder.encode("/CO "), codes.L_BRACKET, ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/CO "), ...this.encodePrimitiveArray(this.CO));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -22905,9 +22880,7 @@ class TextMarkupAnnotation extends MarkupAnnotation {
         const encoder = new TextEncoder();
         const bytes = [];
         if (this.QuadPoints) {
-            bytes.push(...encoder.encode("/QuadPoints "), codes.L_BRACKET);
-            this.QuadPoints.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/QuadPoints "), ...this.encodePrimitiveArray(this.QuadPoints));
         }
         const totalBytes = [
             ...superBytes.subarray(0, 2),
@@ -23883,15 +23856,13 @@ class FreeTextAnnotation extends MarkupAnnotation {
             bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
         }
         if (this.CL) {
-            bytes.push(...encoder.encode("/CL "), codes.L_BRACKET);
-            this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
-            bytes.push(codes.R_BRACKET);
+            bytes.push(...encoder.encode("/CL "), ...this.encodePrimitiveArray(this.CL));
         }
         if (this.IT) {
             bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
         }
         if (this.RD) {
-            bytes.push(...encoder.encode("/RD "), codes.L_BRACKET, ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET);
+            bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
         }
         if (this.LE) {
             bytes.push(...encoder.encode("/LE "), ...encoder.encode(this.LE));
@@ -24550,13 +24521,14 @@ class DocumentService {
         this._data = data;
         this._docParser = new DataParser(data);
         this._version = this._docParser.getPdfVersion();
-        const lastXrefIndex = this._docParser.getLastXrefIndex();
+        const xrefParser = new XrefParser(this._docParser);
+        const lastXrefIndex = xrefParser.getLastXrefIndex();
         if (!lastXrefIndex) {
             {
                 throw new Error("File doesn't contain update section");
             }
         }
-        const xrefs = new XrefParser(this._docParser).parseAllXrefs(lastXrefIndex.value);
+        const xrefs = xrefParser.parseAllXrefs(lastXrefIndex.value);
         if (!xrefs.length) {
             {
                 throw new Error("Failed to parse cross-reference sections");

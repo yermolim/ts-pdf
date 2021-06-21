@@ -1,6 +1,6 @@
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../core/object-id";
@@ -15,7 +15,7 @@ export class DecodeParamsDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
 
-  static parse(parseInfo: ParserInfo): ParseResult<DecodeParamsDict> {  
+  static parse(parseInfo: ParserInfo): ParserResult<DecodeParamsDict> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -30,14 +30,14 @@ export class DecodeParamsDict extends PdfDict {
   }
   
   static parseArray(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParseResult<DecodeParamsDict[]>  {
+    skipEmpty = true): ParserResult<DecodeParamsDict[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
 
     const paramsDicts: DecodeParamsDict[] = [];
-    let current: ParseResult<DecodeParamsDict>;
+    let current: ParserResult<DecodeParamsDict>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
       const paramsBounds = parser.getDictBoundsAt(i);
@@ -116,7 +116,7 @@ export class DecodeParamsDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

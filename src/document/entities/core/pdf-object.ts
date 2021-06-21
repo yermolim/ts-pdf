@@ -1,10 +1,11 @@
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { Reference } from "../../references/reference";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { DateString } from "../strings/date-string";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "./object-id";
+import { codes } from "../../encoding/char-codes";
 
 export abstract class PdfObject implements IEncodable {
   /**action to execute on change of any of the public properties of the current object using proxy */
@@ -113,6 +114,35 @@ export abstract class PdfObject implements IEncodable {
 
   protected getProxy(): PdfObject {
     return this._proxy || this;
+  }  
+
+  protected encodePrimitiveArray(array: (number | string)[] | readonly (number | string)[], 
+    encoder?: TextEncoder): number[] {       
+    encoder ||= new TextEncoder();  
+    const bytes: number[] = [codes.L_BRACKET];
+    array.forEach(x => bytes.push(...encoder.encode(" " + x))); 
+    bytes.push(codes.R_BRACKET);
+    return bytes;
+  }
+  
+  protected encodeNestedPrimitiveArray(array: (number | string)[][] | readonly (number | string)[][], 
+    encoder?: TextEncoder): number[] {       
+    encoder ||= new TextEncoder();  
+    const bytes: number[] = [codes.L_BRACKET];    
+    array.forEach(x => {        
+      bytes.push(codes.L_BRACKET);
+      x.forEach(y => bytes.push(...encoder.encode(" " + y)));         
+      bytes.push(codes.R_BRACKET);
+    });
+    bytes.push(codes.R_BRACKET);
+    return bytes;
+  }
+  
+  protected encodeSerializableArray(array: IEncodable[], cryptInfo?: CryptInfo): number[] {
+    const bytes: number[] = [codes.L_BRACKET];
+    array.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
+    bytes.push(codes.R_BRACKET);
+    return bytes;
   }
 
   //#region parse simple properties 
@@ -166,7 +196,7 @@ export abstract class PdfObject implements IEncodable {
     return this.setParsedProp(propName, parsed);
   }
 
-  private setParsedProp(propName: string, parsed: ParseResult<any>): number {
+  private setParsedProp(propName: string, parsed: ParserResult<any>): number {
     if (!parsed) {
       throw new Error(`Can't parse ${propName} property value`);
     }

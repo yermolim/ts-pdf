@@ -4,10 +4,9 @@ import { Double, Quadruple } from "../../../../common/types";
 import { AnnotationDto } from "../../../../common/annotation";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../spec-constants";
-import { codes } from "../../../encoding/char-codes";
 import { CryptInfo } from "../../../encryption/interfaces";
 
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 import { LiteralString } from "../../strings/literal-string";
 import { DateString } from "../../strings/date-string";
@@ -71,7 +70,7 @@ export class InkAnnotation extends MarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<InkAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<InkAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -95,13 +94,7 @@ export class InkAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.InkList) {
-      bytes.push(...encoder.encode("/InkList "), codes.L_BRACKET);
-      this.InkList.forEach(x => {        
-        bytes.push(codes.L_BRACKET);
-        x.forEach(y => bytes.push(...encoder.encode(" " + y)));         
-        bytes.push(codes.R_BRACKET);
-      });
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/InkList "), ...this.encodeNestedPrimitiveArray(this.InkList));
     }
 
     const totalBytes: number[] = [
@@ -151,7 +144,7 @@ export class InkAnnotation extends MarkupAnnotation {
 
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

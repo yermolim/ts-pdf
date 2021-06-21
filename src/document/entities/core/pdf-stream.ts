@@ -1,7 +1,7 @@
 import { FlatePredictor, flatePredictors, StreamFilter, 
   streamFilters, StreamType, supportedFilters, valueTypes } from "../../spec-constants";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../encoding/char-codes";
@@ -153,7 +153,7 @@ export abstract class PdfStream extends PdfObject {
     }    
 
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {      

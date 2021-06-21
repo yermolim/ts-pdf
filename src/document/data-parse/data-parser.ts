@@ -1,7 +1,7 @@
 import { codes, keywordCodes } from "../encoding/char-codes";
 import { ValueType, valueTypes } from "../spec-constants";
 
-export interface SearchOptions {
+export interface ParserOptions {
   /**'true' - straight, 'false' - reverse */
   direction?: boolean; 
   /**search start index, inclusive */
@@ -13,14 +13,14 @@ export interface SearchOptions {
 }
 
 /**indices of the PDF object parsing bounds in the byte array of the corresponding DataParser */
-export interface Bounds {  
+export interface ParserBounds {  
   start: number;
   end: number;
   contentStart?: number;
   contentEnd?: number;
 }
 
-export interface ParseResult<T> extends Bounds {
+export interface ParserResult<T> extends ParserBounds {
   value: T; 
 }
 
@@ -112,7 +112,7 @@ export class DataParser {
    * @param code char code
    * @returns 
    */
-  static isRegularChar(code: number): boolean {
+  private static isRegularChar(code: number): boolean {
     if (isNaN(code)) {
       return false;
     }
@@ -124,34 +124,34 @@ export class DataParser {
    * @param code char code
    * @returns 
    */
-  static isNotRegularChar(code: number): boolean {
+  private static isNotRegularChar(code: number): boolean {
     if (isNaN(code)) {
       return true;
     }
     return this.delimiterChars.has(code) || this.spaceChars.has(code);
   }
 
-  static isDigit(code: number): boolean {
+  private static isDigit(code: number): boolean {
     return this.digitChars.has(code);
   }
 
-  static isNewLineChar(code: number): boolean {
+  private static isNewLineChar(code: number): boolean {
     return this.newLineChars.has(code);
   }
 
-  static isSpaceChar(code: number): boolean {
+  private static isSpaceChar(code: number): boolean {
     return this.spaceChars.has(code);
   }
 
-  static isNotSpaceChar(code: number): boolean {
+  private static isNotSpaceChar(code: number): boolean {
     return !this.spaceChars.has(code);
   }
 
-  static isDelimiterChar(code: number): boolean {
+  private static isDelimiterChar(code: number): boolean {
     return this.delimiterChars.has(code);
   }
 
-  static isNotDelimiterChar(code: number): boolean {
+  private static isNotDelimiterChar(code: number): boolean {
     return !this.delimiterChars.has(code);
   }
   //#endregion
@@ -172,25 +172,6 @@ export class DataParser {
 
     return version.toFixed(1);
   }
-  
-  /**
-   * parse the last cross-reference section byte offset
-   * @returns the last cross-reference section byte offset (null if not found)
-   */
-  getLastXrefIndex(): ParseResult<number> {
-    const xrefStartIndex = this.findSubarrayIndex(keywordCodes.XREF_START, 
-      {maxIndex: this.maxIndex, direction: false});
-    if (!xrefStartIndex) {
-      return null;
-    }
-
-    const xrefIndex = this.parseNumberAt(xrefStartIndex.end + 1);
-    if (!xrefIndex) {
-      return null;
-    }
-
-    return xrefIndex;
-  }
 
   //#region search methods
 
@@ -202,7 +183,7 @@ export class DataParser {
    * @param closedOnly define if subarray must be followed by a delimiter in the search direction
    */
   findSubarrayIndex(sub: number[] | readonly number[], 
-    options?: SearchOptions): Bounds { 
+    options?: ParserOptions): ParserBounds { 
 
     const arr = this._data;
     if (!sub?.length) {
@@ -615,7 +596,7 @@ export class DataParser {
     }
   } 
   
-  getIndirectObjectBoundsAt(start: number, skipEmpty = true): Bounds {   
+  getIndirectObjectBoundsAt(start: number, skipEmpty = true): ParserBounds {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -657,7 +638,7 @@ export class DataParser {
     };
   } 
   
-  getXrefTableBoundsAt(start: number, skipEmpty = true): Bounds {   
+  getXrefTableBoundsAt(start: number, skipEmpty = true): ParserBounds {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -694,7 +675,7 @@ export class DataParser {
     };
   }
 
-  getDictBoundsAt(start: number, skipEmpty = true): Bounds {   
+  getDictBoundsAt(start: number, skipEmpty = true): ParserBounds {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -767,7 +748,7 @@ export class DataParser {
     };
   }
   
-  getArrayBoundsAt(start: number, skipEmpty = true): Bounds {
+  getArrayBoundsAt(start: number, skipEmpty = true): ParserBounds {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -794,7 +775,7 @@ export class DataParser {
     return {start, end: arrayEnd};
   }
       
-  getHexBounds(start: number, skipEmpty = true): Bounds  {   
+  getHexBounds(start: number, skipEmpty = true): ParserBounds  {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -810,7 +791,7 @@ export class DataParser {
     return {start, end};
   }  
 
-  getLiteralBounds(start: number, skipEmpty = true): Bounds  {       
+  getLiteralBounds(start: number, skipEmpty = true): ParserBounds  {       
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -849,7 +830,7 @@ export class DataParser {
   }
 
   parseNumberAt(start: number, 
-    float = false, skipEmpty = true): ParseResult<number>  {
+    float = false, skipEmpty = true): ParserResult<number>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -879,7 +860,7 @@ export class DataParser {
   }
   
   parseNameAt(start: number, 
-    includeSlash = true, skipEmpty = true): ParseResult<string>  {
+    includeSlash = true, skipEmpty = true): ParserResult<string>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -902,7 +883,7 @@ export class DataParser {
       : null;
   } 
   
-  parseStringAt(start: number, skipEmpty = true): ParseResult<string>  {
+  parseStringAt(start: number, skipEmpty = true): ParserResult<string>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -923,7 +904,7 @@ export class DataParser {
       : null;
   } 
   
-  parseBoolAt(start: number, skipEmpty = true): ParseResult<boolean>  {
+  parseBoolAt(start: number, skipEmpty = true): ParserResult<boolean>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }    
@@ -954,14 +935,14 @@ export class DataParser {
   } 
   
   parseNumberArrayAt(start: number, float = true, 
-    skipEmpty = true): ParseResult<number[]>  {
+    skipEmpty = true): ParserResult<number[]>  {
     const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
 
     const numbers: number[] = [];
-    let current: ParseResult<number>;
+    let current: ParserResult<number>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
       current = this.parseNumberAt(i, float, true);
@@ -976,14 +957,14 @@ export class DataParser {
   }  
   
   parseNameArrayAt(start: number, includeSlash = true, 
-    skipEmpty = true): ParseResult<string[]>  {
+    skipEmpty = true): ParserResult<string[]>  {
     const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
 
     const names: string[] = [];
-    let current: ParseResult<string>;
+    let current: ParserResult<string>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
       current = this.parseNameAt(i, includeSlash, true);
@@ -997,15 +978,15 @@ export class DataParser {
     return {value: names, start: arrayBounds.start, end: arrayBounds.end};
   }  
   
-  parseDictType(bounds: Bounds): string  {
+  parseDictType(bounds: ParserBounds): string  {
     return this.parseDictPropertyByName(keywordCodes.TYPE, bounds);   
   } 
   
-  parseDictSubtype(bounds: Bounds): string {
+  parseDictSubtype(bounds: ParserBounds): string {
     return this.parseDictPropertyByName(keywordCodes.SUBTYPE, bounds);   
   } 
   
-  parseDictPropertyByName(propName: readonly number[] | number[], bounds: Bounds): string {
+  parseDictPropertyByName(propName: readonly number[] | number[], bounds: ParserBounds): string {
     const arr = this._data;
     if (!propName?.length) {
       return null;
@@ -1014,7 +995,7 @@ export class DataParser {
     const minIndex = Math.max(Math.min(bounds.start ?? 0, this._maxIndex), 0);
     const maxIndex = Math.max(Math.min(bounds.end ?? this._maxIndex, this._maxIndex), 0);
 
-    let propNameBounds: Bounds;
+    let propNameBounds: ParserBounds;
     let i = minIndex;
     let j: number;
     let code: number;
@@ -1134,7 +1115,7 @@ export class DataParser {
     while (i <= max) {      
       const value = this.getValueTypeAt(i, true);
       if (value) {
-        let skipValueBounds: Bounds;
+        let skipValueBounds: ParserBounds;
         switch (value) {
           case valueTypes.DICTIONARY:
             skipValueBounds = this.getDictBoundsAt(i, false);

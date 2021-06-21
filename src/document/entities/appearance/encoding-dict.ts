@@ -1,8 +1,7 @@
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { codes } from "../../encoding/char-codes";
 import { getCharCodesMapByCode, pdfCharCodesByName } from "../../encoding/char-encodings";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
@@ -49,7 +48,7 @@ export class EncodingDict extends PdfDict {
     super(dictTypes.ENCODING);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<EncodingDict> {    
+  static parse(parseInfo: ParserInfo): ParserResult<EncodingDict> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -71,10 +70,8 @@ export class EncodingDict extends PdfDict {
     if (this.BaseEncoding) {
       bytes.push(...encoder.encode("/BaseEncoding "), ...encoder.encode(" " + this.BaseEncoding));
     }
-    if (this.Differences) {
-      bytes.push(...encoder.encode("/Differences "), codes.L_BRACKET);
-      this.Differences.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+    if (this.Differences) {      
+      bytes.push(...encoder.encode("/Differences "), ...this.encodePrimitiveArray(this.Differences));
     }
 
     const totalBytes: number[] = [
@@ -98,7 +95,7 @@ export class EncodingDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

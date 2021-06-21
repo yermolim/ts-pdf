@@ -1,10 +1,9 @@
 import { streamTypes, valueTypes } from "../../spec-constants";
 import { HexString } from "../strings/hex-string";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
-import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 
 export class TrailerStream extends PdfStream {
@@ -65,7 +64,7 @@ export class TrailerStream extends PdfStream {
     super(streamTypes.XREF);
   }  
   
-  static parse(parseInfo: ParserInfo): ParseResult<TrailerStream> { 
+  static parse(parseInfo: ParserInfo): ParserResult<TrailerStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -91,35 +90,22 @@ export class TrailerStream extends PdfStream {
       bytes.push(...encoder.encode("/Prev "), ...encoder.encode(" " + this.Prev));
     }
     if (this.Root) {
-      bytes.push(...encoder.encode("/Root "), codes.WHITESPACE, ...this.Root.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Root "), ...this.Root.toArray(cryptInfo));
     }
     if (this.Encrypt) {
-      bytes.push(...encoder.encode("/Encrypt "), codes.WHITESPACE, ...this.Encrypt.toArray(cryptInfo));
-      // if (this.Encrypt instanceof ObjectId) {
-      //   bytes.push(...encoder.encode("/Encrypt "), codes.WHITESPACE, ...this.Encrypt.toRefArray());
-      // } else {
-      //   bytes.push(...encoder.encode("/Encrypt "), ...this.Encrypt.toArray(cryptInfo));
-      // }
+      bytes.push(...encoder.encode("/Encrypt "), ...this.Encrypt.toArray(cryptInfo));
     }
     if (this.Info) {
-      bytes.push(...encoder.encode("/Info "), codes.WHITESPACE, ...this.Info.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Info "), ...this.Info.toArray(cryptInfo));
     }
-    if (this.ID) {
-      bytes.push(...encoder.encode("/ID "), codes.L_BRACKET, 
-        ...this.ID[0].toArray(cryptInfo), ...this.ID[1].toArray(cryptInfo), codes.R_BRACKET);
+    if (this.ID) {        
+      bytes.push(...encoder.encode("/ID "), ...this.encodeSerializableArray(this.ID, cryptInfo));
     }
     if (this.Index) {
-      bytes.push(...encoder.encode("/Index "), codes.L_BRACKET);
-      this.Index.forEach(x => bytes.push(...encoder.encode(" " + x))); 
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/Index "), ...this.encodePrimitiveArray(this.Index));
     }
     if (this.W) {
-      bytes.push(
-        ...encoder.encode("/W "), codes.L_BRACKET,
-        ...encoder.encode(this.W[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.W[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.W[2] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/W "), ...this.encodePrimitiveArray(this.W));
     }
 
     const totalBytes: number[] = [
@@ -137,7 +123,7 @@ export class TrailerStream extends PdfStream {
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

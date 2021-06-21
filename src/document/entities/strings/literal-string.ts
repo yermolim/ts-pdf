@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF literal string
@@ -23,7 +23,7 @@ export class LiteralString implements IEncodable {
   }
     
   static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParseResult<LiteralString>  {  
+    skipEmpty = true): ParserResult<LiteralString>  {  
       
     const bounds = parser.getLiteralBounds(start, skipEmpty);
     if (!bounds) {

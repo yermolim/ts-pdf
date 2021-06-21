@@ -1,7 +1,6 @@
-import { codes } from "../../encoding/char-codes";
 import { ObjectType, objectTypes, streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { Bounds, DataParser, ParseResult } from "../../data-parse/data-parser";
+import { ParserBounds, DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
@@ -27,7 +26,7 @@ export class ObjectStream extends PdfStream {
     super(streamTypes.OBJECT_STREAM);
   }  
   
-  static parse(parseInfo: ParserInfo): ParseResult<ObjectStream> { 
+  static parse(parseInfo: ParserInfo): ParserResult<ObjectStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -49,7 +48,7 @@ export class ObjectStream extends PdfStream {
     const parser = new DataParser(this.decodedStreamData);
 
     const offsetMap = new Map<number, number>();
-    let temp: ParseResult<number>;
+    let temp: ParserResult<number>;
     let objectId: number;
     let byteOffset: number;
     let position = 0;
@@ -76,7 +75,7 @@ export class ObjectStream extends PdfStream {
       return;
     }
 
-    let bounds: Bounds;
+    let bounds: ParserBounds;
     let value: any;
     switch (objectType) {
       case objectTypes.DICTIONARY:
@@ -152,7 +151,7 @@ export class ObjectStream extends PdfStream {
       bytes.push(...encoder.encode("/First "), ...encoder.encode(" " + this.First));
     }
     if (this.Extends) {
-      bytes.push(...encoder.encode("/Extends "), codes.WHITESPACE, ...this.Extends.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Extends "), ...this.Extends.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [
@@ -173,7 +172,7 @@ export class ObjectStream extends PdfStream {
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

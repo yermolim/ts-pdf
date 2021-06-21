@@ -2,7 +2,7 @@ import { BlendMode, blendModes, dictTypes, LineCapStyle, lineCapStyles,
   LineJoinStyle, lineJoinStyles, RenderingIntent, renderingIntents, 
   valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
@@ -118,7 +118,7 @@ export class GraphicsStateDict extends PdfDict {
     super(dictTypes.GRAPHICS_STATE);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<GraphicsStateDict> {
+  static parse(parseInfo: ParserInfo): ParserResult<GraphicsStateDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -337,7 +337,7 @@ export class GraphicsStateDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

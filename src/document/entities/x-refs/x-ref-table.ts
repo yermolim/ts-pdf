@@ -1,7 +1,7 @@
 import { keywordCodes } from "../../encoding/char-codes";
 import { xRefTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
 import { TrailerDict } from "./trailer-dict";
@@ -110,7 +110,7 @@ export class XRefTable extends XRef {
    * @param offset CRT byte offset in the PDF document
    * @returns 
    */
-  static parse(parser: DataParser, start: number, offset: number): ParseResult<XRefTable> {
+  static parse(parser: DataParser, start: number, offset: number): ParserResult<XRefTable> {
     if (!parser || isNaN(start)) {
       return null;
     }

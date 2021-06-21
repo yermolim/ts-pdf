@@ -1,6 +1,6 @@
 import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { GroupDict } from "../misc/group-dict";
 
@@ -55,7 +55,7 @@ export class TransparencyGroupDict extends GroupDict {
     super();
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<TransparencyGroupDict> {
+  static parse(parseInfo: ParserInfo): ParserResult<TransparencyGroupDict> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -106,7 +106,7 @@ export class TransparencyGroupDict extends GroupDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

@@ -3,8 +3,7 @@ import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../encoding/char-codes";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { HexString } from "../strings/hex-string";
@@ -139,7 +138,7 @@ export class FontDescriptorDict extends PdfDict {
     super(dictTypes.FONT_DESCRIPTOR);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<FontDescriptorDict> {    
+  static parse(parseInfo: ParserInfo): ParserResult<FontDescriptorDict> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -162,7 +161,7 @@ export class FontDescriptorDict extends PdfDict {
       bytes.push(...encoder.encode("/FontName "), ...encoder.encode(" " + this.FontName));
     }
     if (this.FontFamily) {
-      bytes.push(...encoder.encode("/FontFamily "), codes.WHITESPACE, ...this.FontFamily.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/FontFamily "), ...this.FontFamily.toArray(cryptInfo));
     }
     if (this.FontStretch) {
       bytes.push(...encoder.encode("/FontStretch "), ...encoder.encode(" " + this.FontStretch));
@@ -173,10 +172,8 @@ export class FontDescriptorDict extends PdfDict {
     if (this.Flags) {
       bytes.push(...encoder.encode("/Flags "), ...encoder.encode(" " + this.Flags));
     }
-    if (this.FontBBox) {
-      bytes.push(...encoder.encode("/FontBBox "), codes.L_BRACKET);
-      this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+    if (this.FontBBox) {   
+      bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox));
     }
     if (this.ItalicAngle || this.ItalicAngle === 0) {
       bytes.push(...encoder.encode("/ItalicAngle "), ...encoder.encode(" " + (this.ItalicAngle)));
@@ -212,16 +209,16 @@ export class FontDescriptorDict extends PdfDict {
       bytes.push(...encoder.encode("/XHeight "), ...encoder.encode(" " + this.XHeight));
     }
     if (this.CharSet) {
-      bytes.push(...encoder.encode("/CharSet "), codes.WHITESPACE, ...this.CharSet.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/CharSet "), ...this.CharSet.toArray(cryptInfo));
     }
     if (this.FontFile) {
-      bytes.push(...encoder.encode("/FontFile "), codes.WHITESPACE, ...this.FontFile.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/FontFile "), ...this.FontFile.toArray(cryptInfo));
     }
     if (this.FontFile2) {
-      bytes.push(...encoder.encode("/FontFile2 "), codes.WHITESPACE, ...this.FontFile2.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/FontFile2 "), ...this.FontFile2.toArray(cryptInfo));
     }
     if (this.FontFile3) {
-      bytes.push(...encoder.encode("/FontFile3 "), codes.WHITESPACE, ...this.FontFile3.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/FontFile3 "), ...this.FontFile3.toArray(cryptInfo));
     }
 
     const totalBytes: number[] = [
@@ -245,7 +242,7 @@ export class FontDescriptorDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

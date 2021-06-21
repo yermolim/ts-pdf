@@ -2,9 +2,8 @@ import { Quadruple } from "../../../common/types";
 import { getBit } from "../../../common/byte";
 
 import { dictTypes, valueTypes } from "../../spec-constants";
-import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
@@ -413,7 +412,7 @@ export class FontDict extends PdfDict {
     return map;
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<FontDict> {    
+  static parse(parseInfo: ParserInfo): ParserResult<FontDict> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -671,7 +670,7 @@ export class FontDict extends PdfDict {
       bytes.push(...encoder.encode("/BaseFont "), ...encoder.encode(" " + this.BaseFont));
     }
     if (this.ToUnicode) {
-      bytes.push(...encoder.encode("/G "), codes.WHITESPACE, ...this.ToUnicode.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/G "), ...this.ToUnicode.toArray(cryptInfo));
     }
     if (this.FirstChar) {
       bytes.push(...encoder.encode("/FirstChar "), ...encoder.encode(" " + this.FirstChar));
@@ -681,24 +680,22 @@ export class FontDict extends PdfDict {
     }
     if (this.Widths) {
       if (this.Widths instanceof ObjectId) {
-        bytes.push(...encoder.encode("/Widths "), codes.WHITESPACE, ...this.Widths.toArray(cryptInfo));
-      } else {
-        bytes.push(...encoder.encode("/Widths "), codes.L_BRACKET);
-        this.Widths.forEach(x => bytes.push(...encoder.encode(" " + x)));
-        bytes.push(codes.R_BRACKET);
+        bytes.push(...encoder.encode("/Widths "), ...this.Widths.toArray(cryptInfo));
+      } else {     
+        bytes.push(...encoder.encode("/Widths "), ...this.encodePrimitiveArray(this.Widths));
       }
     }
     
     if (this.Encoding || this.encodingValue) {
       if (this.Encoding instanceof ObjectId) {
-        bytes.push(...encoder.encode("/Encoding "), codes.WHITESPACE, ...this.Encoding.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Encoding "), ...this.Encoding.toArray(cryptInfo));
       } else {
         bytes.push(...encoder.encode("/Encoding "), ...encoder.encode(" " + this.Encoding));
       }
     }
 
     if (this.descriptorValue) {
-      bytes.push(...encoder.encode("/FontDescriptor "), codes.WHITESPACE, 
+      bytes.push(...encoder.encode("/FontDescriptor "), 
         ...this.descriptorValue.toArray(cryptInfo));
     }
 
@@ -710,14 +707,10 @@ export class FontDict extends PdfDict {
     }
 
     if (this.FontBBox) {
-      bytes.push(...encoder.encode("/FontBBox "), codes.L_BRACKET);
-      this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox));
     }
     if (this.FontMatrix) {
-      bytes.push(...encoder.encode("/FontMatrix "), codes.L_BRACKET);
-      this.FontBBox.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/FontMatrix "), ...this.encodePrimitiveArray(this.FontMatrix));
     }
     
     //TODO: handle remaining properties if needed
@@ -766,7 +759,7 @@ export class FontDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

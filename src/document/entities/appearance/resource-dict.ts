@@ -1,7 +1,7 @@
 import { codes, keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { valueTypes } from "../../spec-constants";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
@@ -13,8 +13,8 @@ import { FontDict } from "./font-dict";
 import { GraphicsStateDict } from "./graphics-state-dict";
 
 interface ResourceStreamParsers {
-  xform: (info: ParserInfo) => ParseResult<PdfStream>;
-  image: (info: ParserInfo) => ParseResult<PdfStream>;
+  xform: (info: ParserInfo) => ParserResult<PdfStream>;
+  image: (info: ParserInfo) => ParserResult<PdfStream>;
 }
 
 export class ResourceDict extends PdfDict {
@@ -66,7 +66,7 @@ export class ResourceDict extends PdfDict {
     this._streamParsers = streamParsers;
   }
   
-  static parse(parseInfo: ParserInfo, streamParsers?: ResourceStreamParsers): ParseResult<ResourceDict> { 
+  static parse(parseInfo: ParserInfo, streamParsers?: ResourceStreamParsers): ParserResult<ResourceDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
@@ -143,10 +143,8 @@ export class ResourceDict extends PdfDict {
     if (this.Properties) {
       bytes.push(...encoder.encode("/Properties "), ...this.Properties.toArray(cryptInfo));
     }
-    if (this.ProcSet) {
-      bytes.push(...encoder.encode("/ProcSet "), codes.L_BRACKET);
-      this.ProcSet.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x))); 
-      bytes.push(codes.R_BRACKET);
+    if (this.ProcSet) {     
+      bytes.push(...encoder.encode("/ProcSet "), ...this.encodePrimitiveArray(this.ProcSet));
     }
 
     const totalBytes: number[] = [
@@ -267,7 +265,7 @@ export class ResourceDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

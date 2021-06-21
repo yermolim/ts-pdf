@@ -1,6 +1,6 @@
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF border array
@@ -23,7 +23,7 @@ export class BorderArray {
   }
 
   static parse(parser: DataParser, start: number, 
-    skipEmpty = true): ParseResult<BorderArray> {
+    skipEmpty = true): ParserResult<BorderArray> {
     if (skipEmpty) {
       start = parser.findNonSpaceIndex(true, start);
     }

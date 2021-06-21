@@ -1,7 +1,7 @@
 import { AnnotationDto } from "../../common/annotation";
 
 import { annotationTypes } from "../spec-constants";
-import { ParseResult } from "./data-parser";
+import { ParserResult } from "./data-parser";
 import { ParserInfo } from "./parser-info";
 
 import { FontDict } from "../entities/appearance/font-dict";
@@ -26,7 +26,7 @@ export class AnnotationParser {
   static ParseAnnotationFromInfo(info: ParserInfo, 
     fontMap: Map<string, FontDict>): AnnotationDict {
     const annotationType = info.parser.parseDictSubtype(info.bounds);
-    let annot: ParseResult<AnnotationDict>;
+    let annot: ParserResult<AnnotationDict>;
     switch (annotationType) {
       case annotationTypes.STAMP:
         annot = StampAnnotation.parse(info);

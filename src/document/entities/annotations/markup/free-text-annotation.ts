@@ -7,12 +7,11 @@ import { SvgTempPath } from "../../../../drawing/paths/svg-temp-path";
 import { calcPdfBBoxToRectMatrices, VecMinMax, 
   lineEndingMinimalSize, lineEndingMultiplier } from "../../../../drawing/utils";
 
-import { codes } from "../../../encoding/char-codes";
 import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, JustificationType, justificationTypes, 
   lineCapStyles, LineEndingType, lineEndingTypes, lineJoinStyles,
   freeTextIntents, FreeTextIntent } from "../../../spec-constants";
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 
 import { DateString } from "../../strings/date-string";
@@ -284,7 +283,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   }
   
   static parse(parseInfo: ParserInfo, 
-    fontMap: Map<string, FontDict>): ParseResult<FreeTextAnnotation> {
+    fontMap: Map<string, FontDict>): ParserResult<FreeTextAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -321,21 +320,13 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
     }
     if (this.CL) {
-      bytes.push(...encoder.encode("/CL "), codes.L_BRACKET);
-      this.CL.forEach(x => bytes.push(...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/CL "), ...this.encodePrimitiveArray(this.CL));
     }
     if (this.IT) {
       bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
     }
     if (this.RD) {
-      bytes.push(
-        ...encoder.encode("/RD "), codes.L_BRACKET, 
-        ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
     }
     if (this.LE) {
       bytes.push(...encoder.encode("/LE "), ...encoder.encode(this.LE));
@@ -416,7 +407,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

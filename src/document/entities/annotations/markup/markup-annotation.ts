@@ -6,11 +6,10 @@ import { TextData, TextDataOptions, TextLineData } from "../../../../common/text
 import { bezierConstant, lineEndingMinimalSize, 
   lineEndingMultiplier } from "../../../../drawing/utils";
 
-import { codes } from "../../../encoding/char-codes";
 import { AnnotationType, markupAnnotationReplyTypes, MarkupAnnotationReplyType,
   LineEndingType, lineEndingTypes, valueTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../encryption/interfaces";
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 
 import { DateString } from "../../strings/date-string";
@@ -85,7 +84,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       bytes.push(...encoder.encode("/T "), ...this.T.toArray(cryptInfo));
     }
     if (this.Popup) {
-      bytes.push(...encoder.encode("/Popup "), codes.WHITESPACE, ...this.Popup.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Popup "), ...this.Popup.toArray(cryptInfo));
     }
     if (this.RC) {
       bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
@@ -100,7 +99,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
       bytes.push(...encoder.encode("/Subj "), ...this.Subj.toArray(cryptInfo));
     }
     if (this.IRT) {
-      bytes.push(...encoder.encode("/IRT "), codes.WHITESPACE, ...this.IRT.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/IRT "), ...this.IRT.toArray(cryptInfo));
     }
     if (this.RT) {
       bytes.push(...encoder.encode("/RT "), ...encoder.encode(this.RT));
@@ -124,7 +123,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

@@ -1,8 +1,7 @@
 import { Quadruple } from "../../../common/types";
-import { codes } from "../../encoding/char-codes";
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
@@ -151,7 +150,7 @@ export class PageDict extends PdfDict {
     super(dictTypes.PAGE);
   }  
   
-  static parse(parseInfo: ParserInfo): ParseResult<PageDict> { 
+  static parse(parseInfo: ParserInfo): ParserResult<PageDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -171,7 +170,7 @@ export class PageDict extends PdfDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Parent "), ...this.Parent.toArray(cryptInfo));
     }
     if (this.LastModified) {
       bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
@@ -180,72 +179,38 @@ export class PageDict extends PdfDict {
       bytes.push(...encoder.encode("/Resources "), ...this.Resources);
     }
     if (this.MediaBox) {
-      bytes.push(
-        ...encoder.encode("/MediaBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.MediaBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.MediaBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.MediaBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.MediaBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox));
     }
     if (this.CropBox) {
-      bytes.push(
-        ...encoder.encode("/CropBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.CropBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.CropBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.CropBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.CropBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/CropBox "), ...this.encodePrimitiveArray(this.CropBox));
     }
     if (this.BleedBox) {
-      bytes.push(
-        ...encoder.encode("/BleedBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.BleedBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.BleedBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.BleedBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.BleedBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/BleedBox "), ...this.encodePrimitiveArray(this.BleedBox));
     }
     if (this.TrimBox) {
-      bytes.push(
-        ...encoder.encode("/TrimBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.TrimBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.TrimBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.TrimBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.TrimBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/TrimBox "), ...this.encodePrimitiveArray(this.TrimBox));
     }
     if (this.ArtBox) {
-      bytes.push(
-        ...encoder.encode("/ArtBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.ArtBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.ArtBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.ArtBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.ArtBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/ArtBox "), ...this.encodePrimitiveArray(this.ArtBox));
     }
     if (this.Contents) {
       if (this.Contents instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/Contents "), codes.WHITESPACE, ...this.Contents.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Contents "), ...this.Contents.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/Contents "), codes.L_BRACKET);
-        this.Contents.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-        bytes.push(codes.R_BRACKET);
+        bytes.push(...encoder.encode("/Contents "), ...this.encodeSerializableArray(this.Contents, cryptInfo));
       }
     }
     if (this.Rotate) {
       bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));
     }
     if (this.Thumb) {
-      bytes.push(...encoder.encode("/Thumb "), codes.WHITESPACE, ...this.Thumb.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Thumb "), ...this.Thumb.toArray(cryptInfo));
     }    
     if (this.B) {
       if (this.B instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/B "), codes.WHITESPACE, ...this.B.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/B "), ...this.B.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/B "), codes.L_BRACKET);
-        this.B.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-        bytes.push(codes.R_BRACKET);
+        bytes.push(...encoder.encode("/B "), ...this.encodeSerializableArray(this.B, cryptInfo));
       }
     }
     if (this.Dur) {
@@ -253,21 +218,19 @@ export class PageDict extends PdfDict {
     }
     if (this.Annots) {
       if (this.Annots instanceof ObjectId) {        
-        bytes.push(...encoder.encode("/Annots "), codes.WHITESPACE, ...this.Annots.toArray(cryptInfo));
+        bytes.push(...encoder.encode("/Annots "), ...this.Annots.toArray(cryptInfo));
       } else {
-        bytes.push(...encoder.encode("/Annots "), codes.L_BRACKET);
-        this.Annots.forEach(x => bytes.push(codes.WHITESPACE, ...x.toArray(cryptInfo)));
-        bytes.push(codes.R_BRACKET);
+        bytes.push(...encoder.encode("/Annots "), ...this.encodeSerializableArray(this.Annots, cryptInfo));
       }
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Metadata "), ...this.Metadata.toArray(cryptInfo));
     } 
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
     }
     if (this.ID) {
-      bytes.push(...encoder.encode("/ID "), codes.WHITESPACE, ...this.ID.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/ID "), ...this.ID.toArray(cryptInfo));
     }
     if (this.PZ) {
       bytes.push(...encoder.encode("/PZ "), ...encoder.encode(" " + this.PZ));
@@ -302,7 +265,7 @@ export class PageDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

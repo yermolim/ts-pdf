@@ -4,12 +4,11 @@ import { VecMinMax, lineEndingMinimalSize,
   lineEndingMultiplier } from "../../../../../drawing/utils";
 import { SvgTempPath } from "../../../../../drawing/paths/svg-temp-path";
 
-import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
   lineEndingTypes, lineJoinStyles, lineIntents, LineIntent, 
   lineCaptionPositions, LineCaptionPosition } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
   
 import { ObjectId } from "../../../core/object-id";
@@ -192,7 +191,7 @@ export class LineAnnotation extends GeometricAnnotation {
   }
 
   static parse(parseInfo: ParserInfo, 
-    fontMap: Map<string, FontDict>): ParseResult<LineAnnotation> {  
+    fontMap: Map<string, FontDict>): ParserResult<LineAnnotation> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
@@ -217,18 +216,10 @@ export class LineAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.L) {
-      bytes.push(
-        ...encoder.encode("/L "), codes.L_BRACKET, 
-        ...encoder.encode(this.L[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.L[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.L[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.L[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/L "), ...this.encodePrimitiveArray(this.L));
     }
     if (this.LE) {
-      bytes.push(...encoder.encode("/LE "), codes.L_BRACKET);
-      this.LE.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE));
     }
     if (this.LL) {
       bytes.push(...encoder.encode("/LL "), ...encoder.encode(" " + this.LL));
@@ -252,11 +243,7 @@ export class LineAnnotation extends GeometricAnnotation {
       bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
     }
     if (this.CO) {
-      bytes.push(
-        ...encoder.encode("/CO "), codes.L_BRACKET, 
-        ...encoder.encode(this.CO[0] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.CO[1] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/CO "), ...this.encodePrimitiveArray(this.CO));
     }
 
     const totalBytes: number[] = [
@@ -319,7 +306,7 @@ export class LineAnnotation extends GeometricAnnotation {
     const end = bounds.contentEnd || bounds.end;    
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

@@ -1,7 +1,7 @@
 import { keywordCodes } from "../../encoding/char-codes";
 import { DictType } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { PdfObject } from "./pdf-object";
 
@@ -59,7 +59,7 @@ export abstract class PdfDict extends PdfObject {
       throw new Error("Dict is empty (has no properties)");
     }
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

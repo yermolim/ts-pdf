@@ -2,10 +2,9 @@ import { Mat3, Vec2 } from "mathador";
 import { Hextuple, Quadruple } from "../../../common/types";
 import { BBox } from "../../../drawing/utils";
 
-import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { streamTypes, valueTypes } from "../../spec-constants";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
@@ -133,7 +132,7 @@ export class XFormStream extends PdfStream {
     super(streamTypes.FORM_XOBJECT);
   }  
 
-  static parse(parseInfo: ParserInfo): ParseResult<XFormStream> {    
+  static parse(parseInfo: ParserInfo): ParserResult<XFormStream> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -163,30 +162,16 @@ export class XFormStream extends PdfStream {
       bytes.push(...encoder.encode("/FormType "), ...encoder.encode(" " + this.FormType));
     }
     if (this.BBox) {
-      bytes.push(
-        ...encoder.encode("/BBox "), codes.L_BRACKET, 
-        ...encoder.encode(this.BBox[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.BBox[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.BBox[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.BBox[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/BBox "), ...this.encodePrimitiveArray(this.BBox));
     }
     if (this.Matrix) {
-      bytes.push(
-        ...encoder.encode("/Matrix "), codes.L_BRACKET, 
-        ...encoder.encode(this.Matrix[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.Matrix[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.Matrix[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.Matrix[3] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.Matrix[4] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.Matrix[5] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/Matrix "), ...this.encodePrimitiveArray(this.Matrix));
     }
     if (this.Resources) {
       bytes.push(...encoder.encode("/Resources "), ...this.Resources.toArray(cryptInfo));
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Metadata "), ...this.Metadata.toArray(cryptInfo));
     }
     if (this.LastModified) {
       bytes.push(...encoder.encode("/LastModified "), ...this.LastModified.toArray(cryptInfo));
@@ -224,7 +209,7 @@ export class XFormStream extends PdfStream {
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

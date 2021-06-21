@@ -1,7 +1,7 @@
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../spec-constants";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
@@ -157,7 +157,7 @@ export class ImageStream extends PdfStream {
     super(streamTypes.FORM_XOBJECT);
   }  
 
-  static parse(parseInfo: ParserInfo): ParseResult<ImageStream> { 
+  static parse(parseInfo: ParserInfo): ParserResult<ImageStream> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -196,15 +196,11 @@ export class ImageStream extends PdfStream {
       bytes.push(...encoder.encode("/BitsPerComponent "), ...encoder.encode(" " + this.BitsPerComponent));
     }
     bytes.push(...encoder.encode("/ImageMask "), ...encoder.encode(" " + !!this.ImageMask));
-    if (this.Mask) {
-      bytes.push(...encoder.encode("/Mask "), codes.L_BRACKET);
-      this.Mask.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+    if (this.Mask) {   
+      bytes.push(...encoder.encode("/Mask "), ...this.encodePrimitiveArray(this.Mask));
     }
     if (this.Decode) {
-      bytes.push(...encoder.encode("/Decode "), codes.L_BRACKET);
-      this.Decode.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/Decode "), ...this.encodePrimitiveArray(this.Decode));
     }    
     bytes.push(...encoder.encode("/Interpolate "), ...encoder.encode(" " + !!this.Interpolate));
     if (this.SMask) {
@@ -214,15 +210,13 @@ export class ImageStream extends PdfStream {
       bytes.push(...encoder.encode("/SMaskInData "), ...encoder.encode(" " + this.SMaskInData));
     }
     if (this.Matte) {
-      bytes.push(...encoder.encode("/Matte "), codes.L_BRACKET);
-      this.Matte.forEach(x => bytes.push(codes.WHITESPACE, ...encoder.encode(" " + x)));
-      bytes.push(codes.R_BRACKET);
+      bytes.push(...encoder.encode("/Matte "), ...this.encodePrimitiveArray(this.Matte));
     }
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));
     }
     if (this.Metadata) {
-      bytes.push(...encoder.encode("/Metadata "), codes.WHITESPACE, ...this.Metadata.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Metadata "), ...this.Metadata.toArray(cryptInfo));
     }
     
     //TODO: handle remaining properties
@@ -337,7 +331,7 @@ export class ImageStream extends PdfStream {
     
     let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

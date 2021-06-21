@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
@@ -65,7 +65,7 @@ export class StrikeoutAnnotation extends TextMarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<StrikeoutAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<StrikeoutAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }

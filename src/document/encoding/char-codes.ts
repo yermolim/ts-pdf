@@ -166,4 +166,6 @@ export const keywordCodes = {
     codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
   CMAP_END_RANGE: [codes.e, codes.n, codes.d,
     codes.b, codes.f, codes.r, codes.a, codes.n, codes.g, codes.e],
+
+  AP_STREAM_TEXT_END: [codes.E, codes.T],
 } as const;

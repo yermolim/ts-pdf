@@ -2,7 +2,7 @@
 import { hexStringToBytes } from "../../../common/byte";
 import { keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF byte string
@@ -36,7 +36,7 @@ export class HexString implements IEncodable {
   }
     
   static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParseResult<HexString>  {   
+    skipEmpty = true): ParserResult<HexString>  {   
 
     const bounds = parser.getHexBounds(start, skipEmpty);
     if (!bounds) {
@@ -53,14 +53,14 @@ export class HexString implements IEncodable {
   }  
   
   static parseArray(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParseResult<HexString[]>  {
+    skipEmpty = true): ParserResult<HexString[]>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
 
     const hexes: HexString[] = [];
-    let current: ParseResult<HexString>;
+    let current: ParserResult<HexString>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
       current = HexString.parse(parser, i, cryptInfo, skipEmpty);

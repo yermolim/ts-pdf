@@ -1,10 +1,9 @@
 import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
-import { codes } from "../../encoding/char-codes";
 
 export class ObjectMapDict extends PdfDict {
   protected readonly _objectIdMap = new Map<string, ObjectId>();
@@ -14,7 +13,7 @@ export class ObjectMapDict extends PdfDict {
     super(null);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<ObjectMapDict> {  
+  static parse(parseInfo: ParserInfo): ParserResult<ObjectMapDict> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -56,7 +55,7 @@ export class ObjectMapDict extends PdfDict {
     const bytes: number[] = [];  
 
     this._objectIdMap.forEach((v, k) => {
-      bytes.push(...encoder.encode(k), codes.WHITESPACE, ...v.toArray(cryptInfo));
+      bytes.push(...encoder.encode(k + " "), ...v.toArray(cryptInfo));
     });
 
     const totalBytes: number[] = [
@@ -77,7 +76,7 @@ export class ObjectMapDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

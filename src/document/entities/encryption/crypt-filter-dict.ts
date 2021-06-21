@@ -1,8 +1,7 @@
-import { codes } from "../../encoding/char-codes";
 import { AuthEvent, authEvents, CryptMethod, cryptMethods, 
   dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { HexString } from "../strings/hex-string";
 import { PdfDict } from "../core/pdf-dict";
@@ -88,7 +87,7 @@ export class CryptFilterDict extends PdfDict {
     super(dictTypes.CRYPT_FILTER);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<CryptFilterDict> { 
+  static parse(parseInfo: ParserInfo): ParserResult<CryptFilterDict> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -122,10 +121,8 @@ export class CryptFilterDict extends PdfDict {
     if (this.Recipients) {
       if (this.Recipients instanceof HexString) {
         bytes.push(...encoder.encode("/Recipients "), ...this.Recipients.toArray(cryptInfo));
-      } else {        
-        bytes.push(codes.L_BRACKET);
-        this.Recipients.forEach(x => bytes.push(...x.toArray(cryptInfo)));
-        bytes.push(codes.R_BRACKET);
+      } else {             
+        bytes.push(...encoder.encode("/Recipients "), ...this.encodeSerializableArray(this.Recipients, cryptInfo));
       }
     }
 
@@ -147,7 +144,7 @@ export class CryptFilterDict extends PdfDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

@@ -1,7 +1,7 @@
 import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
 import { StreamType, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 import { keywordCodes } from "../../encoding/char-codes";
 
@@ -23,7 +23,7 @@ export class UnicodeCmapStream extends PdfStream {
     super(type);
   }  
 
-  static parse(parseInfo: ParserInfo): ParseResult<UnicodeCmapStream> {
+  static parse(parseInfo: ParserInfo): ParserResult<UnicodeCmapStream> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }

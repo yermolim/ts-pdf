@@ -1,12 +1,11 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
-import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { Mat3, Vec2 } from "mathador";
 import { bezierConstant, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
@@ -75,7 +74,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     return annotation.initProxy();
   }
 
-  static parse(parseInfo: ParserInfo): ParseResult<CircleAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<CircleAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
@@ -99,13 +98,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.RD) {
-      bytes.push(
-        ...encoder.encode("/RD "), codes.L_BRACKET, 
-        ...encoder.encode(this.RD[0] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[1] + ""), codes.WHITESPACE,
-        ...encoder.encode(this.RD[2] + ""), codes.WHITESPACE, 
-        ...encoder.encode(this.RD[3] + ""), codes.R_BRACKET,
-      );
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
     }
 
     const totalBytes: number[] = [
@@ -156,7 +149,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

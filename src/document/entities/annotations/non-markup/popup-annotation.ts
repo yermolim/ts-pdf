@@ -1,7 +1,6 @@
-import { codes } from "../../../encoding/char-codes";
 import { annotationTypes } from "../../../spec-constants";
 import { CryptInfo } from "../../../encryption/interfaces";
-import { ParseResult } from "../../../data-parse/data-parser";
+import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 import { ObjectId } from "../../core/object-id";
 import { AnnotationDict } from "../annotation-dict";
@@ -21,7 +20,7 @@ export class PopupAnnotation extends AnnotationDict {
     super(annotationTypes.POPUP);
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<PopupAnnotation> { 
+  static parse(parseInfo: ParserInfo): ParserResult<PopupAnnotation> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
@@ -41,7 +40,7 @@ export class PopupAnnotation extends AnnotationDict {
     const bytes: number[] = [];  
 
     if (this.Parent) {
-      bytes.push(...encoder.encode("/Parent "), codes.WHITESPACE, ...this.Parent.toArray(cryptInfo));
+      bytes.push(...encoder.encode("/Parent "), ...this.Parent.toArray(cryptInfo));
     }
     if (this.Open) {
       bytes.push(...encoder.encode("/Open "), ...encoder.encode(" " + this.Open));
@@ -67,7 +66,7 @@ export class PopupAnnotation extends AnnotationDict {
     
     let i = parser.skipToNextName(start, end - 1);
     let name: string;
-    let parseResult: ParseResult<string>;
+    let parseResult: ParserResult<string>;
     while (true) {
       parseResult = parser.parseNameAt(i);
       if (parseResult) {

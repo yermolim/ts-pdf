@@ -3,7 +3,7 @@ import { Vec2 } from "mathador";
 import { annotationTypes, blendModes, lineCapStyles, 
   lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
@@ -66,7 +66,7 @@ export class HighlightAnnotation extends TextMarkupAnnotation {
     return annotation.initProxy();
   }
 
-  static parse(parseInfo: ParserInfo): ParseResult<HighlightAnnotation> {
+  static parse(parseInfo: ParserInfo): ParserResult<HighlightAnnotation> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }

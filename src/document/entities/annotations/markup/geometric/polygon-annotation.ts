@@ -3,7 +3,7 @@ import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
@@ -61,7 +61,7 @@ export class PolygonAnnotation extends PolyAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParseResult<PolygonAnnotation> { 
+  static parse(parseInfo: ParserInfo): ParserResult<PolygonAnnotation> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
