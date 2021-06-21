@@ -30,7 +30,7 @@ export abstract class GeometricAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.IC) {
-      bytes.push(...encoder.encode("/IC "), ...this.encodePrimitiveArray(this.IC));
+      bytes.push(...encoder.encode("/IC "), ...this.encodePrimitiveArray(this.IC, encoder));
     }
 
     const totalBytes: number[] = [

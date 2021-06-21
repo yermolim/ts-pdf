@@ -71,7 +71,7 @@ export class EncodingDict extends PdfDict {
       bytes.push(...encoder.encode("/BaseEncoding "), ...encoder.encode(" " + this.BaseEncoding));
     }
     if (this.Differences) {      
-      bytes.push(...encoder.encode("/Differences "), ...this.encodePrimitiveArray(this.Differences));
+      bytes.push(...encoder.encode("/Differences "), ...this.encodePrimitiveArray(this.Differences, encoder));
     }
 
     const totalBytes: number[] = [

@@ -91,7 +91,7 @@ export class PolylineAnnotation extends PolyAnnotation {
     const bytes: number[] = [];  
 
     if (this.LE) {
-      bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE));
+      bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE, encoder));
     }
 
     const totalBytes: number[] = [

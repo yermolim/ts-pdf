@@ -33,7 +33,7 @@ export abstract class TextMarkupAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.QuadPoints) {
-      bytes.push(...encoder.encode("/QuadPoints "), ...this.encodePrimitiveArray(this.QuadPoints));
+      bytes.push(...encoder.encode("/QuadPoints "), ...this.encodePrimitiveArray(this.QuadPoints, encoder));
     }
 
     const totalBytes: number[] = [

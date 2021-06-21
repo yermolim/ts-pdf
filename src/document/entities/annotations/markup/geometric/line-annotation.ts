@@ -216,10 +216,10 @@ export class LineAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.L) {
-      bytes.push(...encoder.encode("/L "), ...this.encodePrimitiveArray(this.L));
+      bytes.push(...encoder.encode("/L "), ...this.encodePrimitiveArray(this.L, encoder));
     }
     if (this.LE) {
-      bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE));
+      bytes.push(...encoder.encode("/LE "), ...this.encodePrimitiveArray(this.LE, encoder));
     }
     if (this.LL) {
       bytes.push(...encoder.encode("/LL "), ...encoder.encode(" " + this.LL));
@@ -243,7 +243,7 @@ export class LineAnnotation extends GeometricAnnotation {
       bytes.push(...encoder.encode("/Measure "), ...this.Measure.toArray(cryptInfo));
     }
     if (this.CO) {
-      bytes.push(...encoder.encode("/CO "), ...this.encodePrimitiveArray(this.CO));
+      bytes.push(...encoder.encode("/CO "), ...this.encodePrimitiveArray(this.CO, encoder));
     }
 
     const totalBytes: number[] = [

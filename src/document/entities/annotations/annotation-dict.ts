@@ -189,7 +189,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       bytes.push(...encoder.encode("/Subtype "), ...encoder.encode(this.Subtype));
     }
     if (this.Rect) {
-      bytes.push(...encoder.encode("/Rect "), ...this.encodePrimitiveArray(this.Rect));
+      bytes.push(...encoder.encode("/Rect "), ...this.encodePrimitiveArray(this.Rect, encoder));
     }
     if (this.Contents) {
       bytes.push(...encoder.encode("/Contents "), ...this.Contents.toArray(cryptInfo));
@@ -222,7 +222,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       bytes.push(...encoder.encode("/BE "), ...this.BE.toArray(cryptInfo));
     }
     if (this.C) {
-      bytes.push(...encoder.encode("/C "), ...this.encodePrimitiveArray(this.C));
+      bytes.push(...encoder.encode("/C "), ...this.encodePrimitiveArray(this.C, encoder));
     }
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));

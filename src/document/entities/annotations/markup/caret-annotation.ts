@@ -42,7 +42,7 @@ export class CaretAnnotation extends MarkupAnnotation {
     const bytes: number[] = [];  
 
     if (this.RD) {
-      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD, encoder));
     }
     if (this.Sy) {
       bytes.push(...encoder.encode("/Sy "), ...encoder.encode(this.Sy));

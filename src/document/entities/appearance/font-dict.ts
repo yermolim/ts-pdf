@@ -682,7 +682,7 @@ export class FontDict extends PdfDict {
       if (this.Widths instanceof ObjectId) {
         bytes.push(...encoder.encode("/Widths "), ...this.Widths.toArray(cryptInfo));
       } else {     
-        bytes.push(...encoder.encode("/Widths "), ...this.encodePrimitiveArray(this.Widths));
+        bytes.push(...encoder.encode("/Widths "), ...this.encodePrimitiveArray(this.Widths, encoder));
       }
     }
     
@@ -707,10 +707,10 @@ export class FontDict extends PdfDict {
     }
 
     if (this.FontBBox) {
-      bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox));
+      bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox, encoder));
     }
     if (this.FontMatrix) {
-      bytes.push(...encoder.encode("/FontMatrix "), ...this.encodePrimitiveArray(this.FontMatrix));
+      bytes.push(...encoder.encode("/FontMatrix "), ...this.encodePrimitiveArray(this.FontMatrix, encoder));
     }
     
     //TODO: handle remaining properties if needed

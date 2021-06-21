@@ -197,10 +197,10 @@ export class ImageStream extends PdfStream {
     }
     bytes.push(...encoder.encode("/ImageMask "), ...encoder.encode(" " + !!this.ImageMask));
     if (this.Mask) {   
-      bytes.push(...encoder.encode("/Mask "), ...this.encodePrimitiveArray(this.Mask));
+      bytes.push(...encoder.encode("/Mask "), ...this.encodePrimitiveArray(this.Mask, encoder));
     }
     if (this.Decode) {
-      bytes.push(...encoder.encode("/Decode "), ...this.encodePrimitiveArray(this.Decode));
+      bytes.push(...encoder.encode("/Decode "), ...this.encodePrimitiveArray(this.Decode, encoder));
     }    
     bytes.push(...encoder.encode("/Interpolate "), ...encoder.encode(" " + !!this.Interpolate));
     if (this.SMask) {
@@ -210,7 +210,7 @@ export class ImageStream extends PdfStream {
       bytes.push(...encoder.encode("/SMaskInData "), ...encoder.encode(" " + this.SMaskInData));
     }
     if (this.Matte) {
-      bytes.push(...encoder.encode("/Matte "), ...this.encodePrimitiveArray(this.Matte));
+      bytes.push(...encoder.encode("/Matte "), ...this.encodePrimitiveArray(this.Matte, encoder));
     }
     if (this.StructParent) {
       bytes.push(...encoder.encode("/StructParent "), ...encoder.encode(" " + this.StructParent));

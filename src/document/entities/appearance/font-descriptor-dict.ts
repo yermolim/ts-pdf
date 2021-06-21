@@ -173,7 +173,7 @@ export class FontDescriptorDict extends PdfDict {
       bytes.push(...encoder.encode("/Flags "), ...encoder.encode(" " + this.Flags));
     }
     if (this.FontBBox) {   
-      bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox));
+      bytes.push(...encoder.encode("/FontBBox "), ...this.encodePrimitiveArray(this.FontBBox, encoder));
     }
     if (this.ItalicAngle || this.ItalicAngle === 0) {
       bytes.push(...encoder.encode("/ItalicAngle "), ...encoder.encode(" " + (this.ItalicAngle)));

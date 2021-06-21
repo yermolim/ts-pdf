@@ -320,13 +320,13 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       bytes.push(...encoder.encode("/RC "), ...this.RC.toArray(cryptInfo));
     }
     if (this.CL) {
-      bytes.push(...encoder.encode("/CL "), ...this.encodePrimitiveArray(this.CL));
+      bytes.push(...encoder.encode("/CL "), ...this.encodePrimitiveArray(this.CL, encoder));
     }
     if (this.IT) {
       bytes.push(...encoder.encode("/IT "), ...encoder.encode(this.IT));
     }
     if (this.RD) {
-      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD, encoder));
     }
     if (this.LE) {
       bytes.push(...encoder.encode("/LE "), ...encoder.encode(this.LE));

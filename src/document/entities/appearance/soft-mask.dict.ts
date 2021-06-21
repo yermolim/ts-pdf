@@ -70,7 +70,7 @@ export class SoftMaskDict extends PdfDict {
       bytes.push(...encoder.encode("/G "), ...this.G.toArray(cryptInfo));
     }
     if (this.BC) {
-      bytes.push(...encoder.encode("/BC "), ...this.encodePrimitiveArray(this.BC));
+      bytes.push(...encoder.encode("/BC "), ...this.encodePrimitiveArray(this.BC, encoder));
     }
     if (this.TR) {
       bytes.push(...encoder.encode("/TR "), ...encoder.encode(" " + this.TR));

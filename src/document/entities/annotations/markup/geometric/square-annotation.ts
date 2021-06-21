@@ -99,7 +99,7 @@ export class SquareAnnotation extends GeometricAnnotation {
     const bytes: number[] = [];  
 
     if (this.RD) {
-      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD));
+      bytes.push(...encoder.encode("/RD "), ...this.encodePrimitiveArray(this.RD, encoder));
     }
 
     const totalBytes: number[] = [

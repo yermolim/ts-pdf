@@ -45,7 +45,7 @@ export class BorderStyleDict extends PdfDict {
       bytes.push(...encoder.encode("/S "), ...encoder.encode(this.S));
     }
     if (this.D) {
-      bytes.push(...encoder.encode("/D "), ...this.encodePrimitiveArray(this.D));
+      bytes.push(...encoder.encode("/D "), ...this.encodePrimitiveArray(this.D, encoder));
     }
 
     const totalBytes: number[] = [

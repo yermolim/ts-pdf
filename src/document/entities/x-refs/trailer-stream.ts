@@ -102,10 +102,10 @@ export class TrailerStream extends PdfStream {
       bytes.push(...encoder.encode("/ID "), ...this.encodeSerializableArray(this.ID, cryptInfo));
     }
     if (this.Index) {
-      bytes.push(...encoder.encode("/Index "), ...this.encodePrimitiveArray(this.Index));
+      bytes.push(...encoder.encode("/Index "), ...this.encodePrimitiveArray(this.Index, encoder));
     }
     if (this.W) {
-      bytes.push(...encoder.encode("/W "), ...this.encodePrimitiveArray(this.W));
+      bytes.push(...encoder.encode("/W "), ...this.encodePrimitiveArray(this.W, encoder));
     }
 
     const totalBytes: number[] = [

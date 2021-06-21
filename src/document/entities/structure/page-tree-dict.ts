@@ -69,7 +69,7 @@ export class PageTreeDict extends PdfDict {
       bytes.push(...encoder.encode("/Count "), ...encoder.encode(" " + this.Count));
     }
     if (this.MediaBox) {
-      bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox));
+      bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox, encoder));
     }
     if (this.Rotate) {
       bytes.push(...encoder.encode("/Rotate "), ...encoder.encode(" " + this.Rotate));

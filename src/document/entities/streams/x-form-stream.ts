@@ -162,10 +162,10 @@ export class XFormStream extends PdfStream {
       bytes.push(...encoder.encode("/FormType "), ...encoder.encode(" " + this.FormType));
     }
     if (this.BBox) {
-      bytes.push(...encoder.encode("/BBox "), ...this.encodePrimitiveArray(this.BBox));
+      bytes.push(...encoder.encode("/BBox "), ...this.encodePrimitiveArray(this.BBox, encoder));
     }
     if (this.Matrix) {
-      bytes.push(...encoder.encode("/Matrix "), ...this.encodePrimitiveArray(this.Matrix));
+      bytes.push(...encoder.encode("/Matrix "), ...this.encodePrimitiveArray(this.Matrix, encoder));
     }
     if (this.Resources) {
       bytes.push(...encoder.encode("/Resources "), ...this.Resources.toArray(cryptInfo));

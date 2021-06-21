@@ -179,19 +179,19 @@ export class PageDict extends PdfDict {
       bytes.push(...encoder.encode("/Resources "), ...this.Resources);
     }
     if (this.MediaBox) {
-      bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox));
+      bytes.push(...encoder.encode("/MediaBox "), ...this.encodePrimitiveArray(this.MediaBox, encoder));
     }
     if (this.CropBox) {
-      bytes.push(...encoder.encode("/CropBox "), ...this.encodePrimitiveArray(this.CropBox));
+      bytes.push(...encoder.encode("/CropBox "), ...this.encodePrimitiveArray(this.CropBox, encoder));
     }
     if (this.BleedBox) {
-      bytes.push(...encoder.encode("/BleedBox "), ...this.encodePrimitiveArray(this.BleedBox));
+      bytes.push(...encoder.encode("/BleedBox "), ...this.encodePrimitiveArray(this.BleedBox, encoder));
     }
     if (this.TrimBox) {
-      bytes.push(...encoder.encode("/TrimBox "), ...this.encodePrimitiveArray(this.TrimBox));
+      bytes.push(...encoder.encode("/TrimBox "), ...this.encodePrimitiveArray(this.TrimBox, encoder));
     }
     if (this.ArtBox) {
-      bytes.push(...encoder.encode("/ArtBox "), ...this.encodePrimitiveArray(this.ArtBox));
+      bytes.push(...encoder.encode("/ArtBox "), ...this.encodePrimitiveArray(this.ArtBox, encoder));
     }
     if (this.Contents) {
       if (this.Contents instanceof ObjectId) {        

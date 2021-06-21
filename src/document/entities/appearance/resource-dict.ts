@@ -144,7 +144,7 @@ export class ResourceDict extends PdfDict {
       bytes.push(...encoder.encode("/Properties "), ...this.Properties.toArray(cryptInfo));
     }
     if (this.ProcSet) {     
-      bytes.push(...encoder.encode("/ProcSet "), ...this.encodePrimitiveArray(this.ProcSet));
+      bytes.push(...encoder.encode("/ProcSet "), ...this.encodePrimitiveArray(this.ProcSet, encoder));
     }
 
     const totalBytes: number[] = [
