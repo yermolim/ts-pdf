@@ -4,7 +4,8 @@ import { AnnotationDto } from "../../../../common/annotation";
 
 import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, colorSpaces, stampTypes, StampType } from "../../../spec-constants";
-import { ParseInfo, ParseResult } from "../../../data-parser";
+import { ParseResult } from "../../../data-parse/data-parser";
+import { ParseInfo } from "../../../data-parse/parser-info";
 
 import { DateString } from "../../strings/date-string";
 import { LiteralString } from "../../strings/literal-string";

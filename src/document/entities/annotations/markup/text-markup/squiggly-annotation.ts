@@ -3,7 +3,8 @@ import { buildSquigglyLine } from "../../../../../drawing/utils";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../../../data-parser";
+import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParseInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
 import { LiteralString } from "../../../strings/literal-string";

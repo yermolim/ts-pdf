@@ -3,16 +3,17 @@ import { AnnotationDto } from "../common/annotation";
 import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/encryption/interfaces";
 
-import { DataParser, ParseInfo } from "../document/data-parser";
+import { DataParser } from "../document/data-parse/data-parser";
+import { ParseInfo } from "../document/data-parse/parser-info";
 import { ReferenceData } from "../document/references/reference-data";
-import { DataUpdater, PageUpdateInfo } from "../document/data-updater";
+import { DataUpdater, PageUpdateInfo } from "../document/data-save/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
 
 import { ObjectId } from "../document/entities/core/object-id";
 import { ObjectStream } from "../document/entities/streams/object-stream";
 import { EncryptionDict } from "../document/entities/encryption/encryption-dict";
 
-import { XrefParser } from "../document/xref-parser";
+import { XrefParser } from "../document/data-parse/xref-parser";
 import { XRef } from "../document/entities/x-refs/x-ref";
 
 import { CatalogDict } from "../document/entities/structure/catalog-dict";
@@ -20,7 +21,7 @@ import { PageDict } from "../document/entities/structure/page-dict";
 import { PageTreeDict } from "../document/entities/structure/page-tree-dict";
 import { FontDict } from "../document/entities/appearance/font-dict";
 
-import { AnnotationParser } from "../document/annotation-parser";
+import { AnnotationParser } from "../document/data-parse/annotation-parser";
 import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
 
 import { ElementEventService } from "./element-event-service";

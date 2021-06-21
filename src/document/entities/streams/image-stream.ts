@@ -1,7 +1,8 @@
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../spec-constants";
-import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";

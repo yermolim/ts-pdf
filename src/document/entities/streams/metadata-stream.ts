@@ -1,6 +1,7 @@
 import { streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { TextStream } from "./text-stream";
 
 export class MetadataStream extends TextStream {

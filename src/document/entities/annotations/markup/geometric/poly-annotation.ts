@@ -1,7 +1,8 @@
 import { codes } from "../../../../encoding/char-codes";
 import { AnnotationType, valueTypes, polyIntents, PolyIntent } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../../../data-parser";
+import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParseInfo } from "../../../../data-parse/parser-info";
 import { ObjectId } from "../../../core/object-id";
 import { MeasureDict } from "../../../appearance/measure-dict";
 import { GeometricAnnotation, GeometricAnnotationDto } from "./geometric-annotation";

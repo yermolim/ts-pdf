@@ -1,5 +1,5 @@
-import { codes, keywordCodes } from "./encoding/char-codes";
-import { CryptInfo, IEncodable } from "./encryption/interfaces";
+import { codes, keywordCodes } from "../encoding/char-codes";
+import { CryptInfo, IEncodable } from "../encryption/interfaces";
 
 export class DataWriter {
   private readonly _encoder: TextEncoder;

@@ -2,7 +2,8 @@ import { codes } from "../../encoding/char-codes";
 import { CryptRevision, cryptRevisions, CryptVersion, cryptVersions, 
   dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo, CryptOptions } from "../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
 import { PdfDict } from "../core/pdf-dict";

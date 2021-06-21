@@ -1,8 +1,8 @@
-import { dictTypes, streamTypes, valueTypes } from "../../spec-constants";
+import { streamTypes, valueTypes } from "../../spec-constants";
 import { HexString } from "../strings/hex-string";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
-import { EncryptionDict } from "../encryption/encryption-dict";
 import { PdfStream } from "../core/pdf-stream";
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";

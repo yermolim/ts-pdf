@@ -4,7 +4,8 @@ import { codes } from "../../../../encoding/char-codes";
 import { annotationTypes, lineCapStyles, LineEndingType, lineEndingTypes, 
   lineJoinStyles, polyIntents } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../../../data-parser";
+import { ParseResult } from "../../../../data-parse/data-parser";
+import { ParseInfo } from "../../../../data-parse/parser-info";
 
 import { DateString } from "../../../strings/date-string";
 import { LiteralString } from "../../../strings/literal-string";

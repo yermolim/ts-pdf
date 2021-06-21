@@ -9,7 +9,8 @@ import { BBox } from "../../../drawing/utils";
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 
 import { AppearanceStreamRenderer, AppearanceRenderResult } 
   from "../../render/appearance-stream-renderer";

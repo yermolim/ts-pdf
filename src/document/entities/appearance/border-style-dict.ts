@@ -2,7 +2,8 @@ import { Double } from "../../../common/types";
 import { codes } from "../../encoding/char-codes";
 import { dictTypes, borderStyles, BorderStyle } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
 export class BorderStyleDict extends PdfDict {

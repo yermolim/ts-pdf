@@ -1,6 +1,6 @@
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { Reference } from "../../references/reference";
-import { DataParser, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
 import { DateString } from "../strings/date-string";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";

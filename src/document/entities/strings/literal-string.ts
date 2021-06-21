@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 import { codes, keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF literal string

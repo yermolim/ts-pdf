@@ -4,7 +4,8 @@ import { CryptInfo } from "../../encryption/interfaces";
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 import { codes } from "../../encoding/char-codes";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";

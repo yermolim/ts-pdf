@@ -1,7 +1,7 @@
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { Reference } from "../../references/reference";
-import { DataParser, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF indirect object reference

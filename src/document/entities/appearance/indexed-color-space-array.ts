@@ -1,7 +1,8 @@
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { ColorSpace, colorSpaces, valueTypes } from "../../spec-constants";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { ObjectId } from "../core/object-id";
 import { TextStream } from "../streams/text-stream";
 import { HexString } from "../strings/hex-string";

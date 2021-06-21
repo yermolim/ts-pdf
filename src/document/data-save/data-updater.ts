@@ -1,20 +1,20 @@
-import { AuthenticationResult, CryptInfo, IDataCryptor } from "./encryption/interfaces";
+import { AuthenticationResult, CryptInfo, IDataCryptor } from "../encryption/interfaces";
 import { DataWriter } from "./data-writer";
-import { UsedReference } from "./references/reference";
-import { ReferenceData } from "./references/reference-data";
-import { ReferenceDataChange } from "./references/reference-data-change";
+import { UsedReference } from "../references/reference";
+import { ReferenceData } from "../references/reference-data";
+import { ReferenceDataChange } from "../references/reference-data-change";
 
-import { ObjectId } from "./entities/core/object-id";
-import { PdfObject } from "./entities/core/pdf-object";
-import { XRef } from "./entities/x-refs/x-ref";
-import { XRefStream } from "./entities/x-refs/x-ref-stream";
+import { ObjectId } from "../entities/core/object-id";
+import { PdfObject } from "../entities/core/pdf-object";
+import { XRef } from "../entities/x-refs/x-ref";
+import { XRefStream } from "../entities/x-refs/x-ref-stream";
 
-import { ImageStream } from "./entities/streams/image-stream";
-import { XFormStream } from "./entities/streams/x-form-stream";
+import { ImageStream } from "../entities/streams/image-stream";
+import { XFormStream } from "../entities/streams/x-form-stream";
 
-import { PageDict } from "./entities/structure/page-dict";
-import { AnnotationDict } from "./entities/annotations/annotation-dict";
-import { MarkupAnnotation } from "./entities/annotations/markup/markup-annotation";
+import { PageDict } from "../entities/structure/page-dict";
+import { AnnotationDict } from "../entities/annotations/annotation-dict";
+import { MarkupAnnotation } from "../entities/annotations/markup/markup-annotation";
 
 export interface PageUpdateInfo {
   page: PageDict;

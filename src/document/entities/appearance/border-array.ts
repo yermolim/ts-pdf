@@ -1,6 +1,6 @@
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF border array

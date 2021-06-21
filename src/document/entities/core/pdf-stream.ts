@@ -1,7 +1,8 @@
 import { FlatePredictor, flatePredictors, StreamFilter, 
   streamFilters, StreamType, supportedFilters, valueTypes } from "../../spec-constants";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../encoding/char-codes";
 import { FlateDecoder } from "../../encoding/flate-decoder";

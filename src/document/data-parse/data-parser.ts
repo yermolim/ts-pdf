@@ -1,7 +1,5 @@
-import { Quadruple } from "../common/types";
-import { codes, keywordCodes } from "./encoding/char-codes";
-import { ObjectType, ValueType, valueTypes } from "./spec-constants";
-import { CryptInfo } from "./encryption/interfaces";
+import { codes, keywordCodes } from "../encoding/char-codes";
+import { ValueType, valueTypes } from "../spec-constants";
 
 export interface SearchOptions {
   /**'true' - straight, 'false' - reverse */
@@ -20,26 +18,6 @@ export interface Bounds {
   end: number;
   contentStart?: number;
   contentEnd?: number;
-}
-
-/**information used for parsing PDF object */
-export interface ParseInfo {
-  /** parser instance used to parse the object */
-  parser: DataParser;
-  /** object indices in the parser data array */
-  bounds: Bounds;
-  /** encryption info (only for encrypted PDF files) */
-  cryptInfo?: CryptInfo;
-  /** parent object stream id */
-  streamId?: number;
-  /** PDF object type */
-  type?: ObjectType;
-  /** parsed value (only for primitive objects which are parsed in place) */
-  value?: any;
-  /** max object rendering bounds */
-  rect?: Quadruple;
-  /** a function used to get ParseInfo for indirect objects */
-  parseInfoGetter?: (id: number) => ParseInfo;
 }
 
 export interface ParseResult<T> extends Bounds {

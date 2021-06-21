@@ -2,8 +2,8 @@ import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { codes } from "../../encoding/char-codes";
 import { getCharCodesMapByCode, pdfCharCodesByName } from "../../encoding/char-encodings";
-import { ParseInfo, ParseResult } from "../../data-parser";
-
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
 export class EncodingDict extends PdfDict {

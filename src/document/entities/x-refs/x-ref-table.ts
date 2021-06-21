@@ -1,7 +1,7 @@
 import { keywordCodes } from "../../encoding/char-codes";
 import { xRefTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
 import { HexString } from "../strings/hex-string";
 import { ObjectId } from "../core/object-id";
 import { TrailerDict } from "./trailer-dict";

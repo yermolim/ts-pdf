@@ -1,10 +1,10 @@
-import { keywordCodes } from "./encoding/char-codes";
+import { keywordCodes } from "../encoding/char-codes";
 import { DataParser } from "./data-parser";
 
-import { ObjectId } from "./entities/core/object-id";
-import { XRef } from "./entities/x-refs/x-ref";
-import { XRefStream } from "./entities/x-refs/x-ref-stream";
-import { XRefTable } from "./entities/x-refs/x-ref-table";
+import { ObjectId } from "../entities/core/object-id";
+import { XRef } from "../entities/x-refs/x-ref";
+import { XRefStream } from "../entities/x-refs/x-ref-stream";
+import { XRefTable } from "../entities/x-refs/x-ref-table";
 
 export class XrefParser {
   private _dataParser: DataParser;

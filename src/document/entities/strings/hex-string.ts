@@ -2,7 +2,7 @@
 import { hexStringToBytes } from "../../../common/byte";
 import { keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
-import { DataParser, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
 
 /**
  * Immutable class representing PDF byte string

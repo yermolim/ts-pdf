@@ -7,7 +7,8 @@ import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../.
 import { codes } from "../../../encoding/char-codes";
 import { CryptInfo } from "../../../encryption/interfaces";
 
-import { ParseInfo, ParseResult } from "../../../data-parser";
+import { ParseResult } from "../../../data-parse/data-parser";
+import { ParseInfo } from "../../../data-parse/parser-info";
 import { LiteralString } from "../../strings/literal-string";
 import { DateString } from "../../strings/date-string";
 import { XFormStream } from "../../streams/x-form-stream";

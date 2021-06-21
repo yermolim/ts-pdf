@@ -1,7 +1,8 @@
 import { codes } from "../../encoding/char-codes";
 import { ObjectType, objectTypes, streamTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { Bounds, DataParser, ParseInfo, ParseResult } from "../../data-parser";
+import { Bounds, DataParser, ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
 import { ObjectId } from "../core/object-id";

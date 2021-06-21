@@ -6,7 +6,7 @@ import { calcPdfBBoxToRectMatrices, selectionStrokeWidth,
 import { codes } from "../encoding/char-codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../spec-constants";
 
-import { DataParser } from "../data-parser";
+import { DataParser } from "../data-parse/data-parser";
 
 import { ImageStream } from "../entities/streams/image-stream";
 import { XFormStream } from "../entities/streams/x-form-stream";

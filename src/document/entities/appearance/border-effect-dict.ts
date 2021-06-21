@@ -1,6 +1,7 @@
 import { CryptInfo } from "../../encryption/interfaces";
 import { borderEffects, BorderEffect } from "../../spec-constants";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { PdfDict } from "../core/pdf-dict";
 
 export class BorderEffectDict extends PdfDict {

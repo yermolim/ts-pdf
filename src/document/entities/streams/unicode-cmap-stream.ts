@@ -1,7 +1,8 @@
 import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
 import { StreamType, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
-import { DataParser, ParseInfo, ParseResult } from "../../data-parser";
+import { DataParser, ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 import { keywordCodes } from "../../encoding/char-codes";
 
 import { PdfStream } from "../core/pdf-stream";

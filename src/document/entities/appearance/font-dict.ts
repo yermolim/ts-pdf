@@ -4,7 +4,8 @@ import { getBit } from "../../../common/byte";
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
-import { ParseInfo, ParseResult } from "../../data-parser";
+import { ParseResult } from "../../data-parse/data-parser";
+import { ParseInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
