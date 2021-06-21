@@ -797,7 +797,7 @@ export class AppearanceStreamRenderer {
   }
 
   protected async drawStreamAsync(stream: XFormStream): Promise<SvgElementWithBlendMode[]> {
-    const parser = new DataParser(stream.decodedStreamData);    
+    const parser = stream.streamDataParser;    
     const svgElements: SvgElementWithBlendMode[] = [];
 
     const lastCoord = new Vec2();
@@ -913,7 +913,7 @@ export class AppearanceStreamRenderer {
             minIndex: i,
           });
           if (textObjectEnd) {     
-            const textParser = new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1)); 
+            const textParser = parser.getSubParser(i, textObjectEnd.start - 1);
             const textGroup = await this.drawTextGroupAsync(textParser, stream.Resources);
             svgElements.push(...textGroup);
             i = parser.skipEmpty(textObjectEnd.end + 1);

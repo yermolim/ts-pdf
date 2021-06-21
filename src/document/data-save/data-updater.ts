@@ -141,10 +141,6 @@ export class DataUpdater {
     // get the result
     const bytes = this._writer.getCurrentData();
 
-    // DEBUG
-    // const parser = new DataParser(bytes);
-    // console.log(parser.sliceChars(parser.maxIndex - 3000, parser.maxIndex));
-
     return bytes;
   }
 

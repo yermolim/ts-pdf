@@ -2504,7 +2504,7 @@ const keywordCodes = {
     AP_STREAM_TEXT_END: [codes.E, codes.T],
 };
 
-class DataParser {
+class DefaultDataParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
@@ -2545,17 +2545,90 @@ class DataParser {
     static isNotDelimiterChar(code) {
         return !this.delimiterChars.has(code);
     }
-    getPdfVersion() {
-        var _a;
-        const i = this.findSubarrayIndex(keywordCodes.VERSION);
-        if (!i) {
-            throw new Error("PDF not valid. Version not found");
+    getSubParser(start, end) {
+        return new DefaultDataParser(this.subCharCodes(start, end));
+    }
+    isOutside(index) {
+        return (index < 0 || index > this._maxIndex);
+    }
+    getValueTypeAt(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = this.skipEmpty(start);
         }
-        const version = (_a = this.parseNumberAt(i.end + 1, true)) === null || _a === void 0 ? void 0 : _a.value;
-        if (!version) {
-            throw new Error("Error parsing version number");
+        if (this.isOutside(start)) {
+            return null;
         }
-        return version.toFixed(1);
+        const arr = this._data;
+        const i = start;
+        const charCode = arr[i];
+        switch (charCode) {
+            case codes.SLASH:
+                if (DefaultDataParser.isRegularChar(arr[i + 1])) {
+                    return valueTypes.NAME;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.L_BRACKET:
+                return valueTypes.ARRAY;
+            case codes.L_PARENTHESE:
+                return valueTypes.STRING_LITERAL;
+            case codes.LESS:
+                if (codes.LESS === arr[i + 1]) {
+                    return valueTypes.DICTIONARY;
+                }
+                return valueTypes.STRING_HEX;
+            case codes.PERCENT:
+                return valueTypes.COMMENT;
+            case codes.D_0:
+            case codes.D_1:
+            case codes.D_2:
+            case codes.D_3:
+            case codes.D_4:
+            case codes.D_5:
+            case codes.D_6:
+            case codes.D_7:
+            case codes.D_8:
+            case codes.D_9:
+                const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
+                if (nextDelimIndex !== -1) {
+                    const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
+                    if (refEndIndex !== -1 && refEndIndex > i && !DefaultDataParser.isRegularChar(arr[refEndIndex + 1])) {
+                        return valueTypes.REF;
+                    }
+                }
+                return valueTypes.NUMBER;
+            case codes.DOT:
+            case codes.MINUS:
+                if (DefaultDataParser.isDigit(arr[i + 1])) {
+                    return valueTypes.NUMBER;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.s:
+                if (arr[i + 1] === codes.t
+                    && arr[i + 2] === codes.r
+                    && arr[i + 3] === codes.e
+                    && arr[i + 4] === codes.a
+                    && arr[i + 5] === codes.m) {
+                    return valueTypes.STREAM;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.t:
+                if (arr[i + 1] === codes.r
+                    && arr[i + 2] === codes.u
+                    && arr[i + 3] === codes.e) {
+                    return valueTypes.BOOLEAN;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.f:
+                if (arr[i + 1] === codes.a
+                    && arr[i + 2] === codes.l
+                    && arr[i + 3] === codes.s
+                    && arr[i + 4] === codes.e) {
+                    return valueTypes.BOOLEAN;
+                }
+                return valueTypes.UNKNOWN;
+            default:
+                return valueTypes.UNKNOWN;
+        }
     }
     findSubarrayIndex(sub, options) {
         var _a, _b, _c;
@@ -2578,7 +2651,7 @@ class DataParser {
                         continue outer_loop;
                     }
                 }
-                if (allowOpened || !DataParser.isRegularChar(arr[i + j])) {
+                if (allowOpened || !DefaultDataParser.isRegularChar(arr[i + j])) {
                     return { start: i, end: i + j - 1 };
                 }
             }
@@ -2591,7 +2664,7 @@ class DataParser {
                         continue outer_loop;
                     }
                 }
-                if (allowOpened || !DataParser.isRegularChar(arr[i - j])) {
+                if (allowOpened || !DefaultDataParser.isRegularChar(arr[i - j])) {
                     return { start: i - j + 1, end: i };
                 }
             }
@@ -2631,7 +2704,7 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isNewLineChar(arr[i])) {
+                if (DefaultDataParser.isNewLineChar(arr[i])) {
                     lineBreakIndex = i;
                     break;
                 }
@@ -2639,7 +2712,7 @@ class DataParser {
         }
         else {
             for (i; i >= 0; i--) {
-                if (DataParser.isNewLineChar(arr[i])) {
+                if (DefaultDataParser.isNewLineChar(arr[i])) {
                     lineBreakIndex = i;
                     break;
                 }
@@ -2672,14 +2745,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isSpaceChar(arr[i])) {
+                if (DefaultDataParser.isSpaceChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DataParser.isSpaceChar(arr[i])) {
+                if (DefaultDataParser.isSpaceChar(arr[i])) {
                     return i;
                 }
             }
@@ -2695,14 +2768,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isNotSpaceChar(arr[i])) {
+                if (DefaultDataParser.isNotSpaceChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DataParser.isNotSpaceChar(arr[i])) {
+                if (DefaultDataParser.isNotSpaceChar(arr[i])) {
                     return i;
                 }
             }
@@ -2718,14 +2791,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isDelimiterChar(arr[i])) {
+                if (DefaultDataParser.isDelimiterChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DataParser.isDelimiterChar(arr[i])) {
+                if (DefaultDataParser.isDelimiterChar(arr[i])) {
                     return i;
                 }
             }
@@ -2741,37 +2814,14 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isNotDelimiterChar(arr[i])) {
+                if (DefaultDataParser.isNotDelimiterChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DataParser.isNotDelimiterChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-    findIrregularIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isNotRegularChar(arr[i])) {
-                    return i;
-                }
-            }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (DataParser.isNotRegularChar(arr[i])) {
+                if (DefaultDataParser.isNotDelimiterChar(arr[i])) {
                     return i;
                 }
             }
@@ -2787,98 +2837,42 @@ class DataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DataParser.isRegularChar(arr[i])) {
+                if (DefaultDataParser.isRegularChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DataParser.isRegularChar(arr[i])) {
+                if (DefaultDataParser.isRegularChar(arr[i])) {
                     return i;
                 }
             }
         }
         return -1;
     }
-    getValueTypeAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start)) {
-            return null;
-        }
+    findIrregularIndex(direction = true, start) {
         const arr = this._data;
-        const i = start;
-        const charCode = arr[i];
-        switch (charCode) {
-            case codes.SLASH:
-                if (DataParser.isRegularChar(arr[i + 1])) {
-                    return valueTypes.NAME;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (DefaultDataParser.isNotRegularChar(arr[i])) {
+                    return i;
                 }
-                return valueTypes.UNKNOWN;
-            case codes.L_BRACKET:
-                return valueTypes.ARRAY;
-            case codes.L_PARENTHESE:
-                return valueTypes.STRING_LITERAL;
-            case codes.LESS:
-                if (codes.LESS === arr[i + 1]) {
-                    return valueTypes.DICTIONARY;
-                }
-                return valueTypes.STRING_HEX;
-            case codes.PERCENT:
-                return valueTypes.COMMENT;
-            case codes.D_0:
-            case codes.D_1:
-            case codes.D_2:
-            case codes.D_3:
-            case codes.D_4:
-            case codes.D_5:
-            case codes.D_6:
-            case codes.D_7:
-            case codes.D_8:
-            case codes.D_9:
-                const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
-                if (nextDelimIndex !== -1) {
-                    const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
-                    if (refEndIndex !== -1 && refEndIndex > i && !DataParser.isRegularChar(arr[refEndIndex + 1])) {
-                        return valueTypes.REF;
-                    }
-                }
-                return valueTypes.NUMBER;
-            case codes.DOT:
-            case codes.MINUS:
-                if (DataParser.isDigit(arr[i + 1])) {
-                    return valueTypes.NUMBER;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.s:
-                if (arr[i + 1] === codes.t
-                    && arr[i + 2] === codes.r
-                    && arr[i + 3] === codes.e
-                    && arr[i + 4] === codes.a
-                    && arr[i + 5] === codes.m) {
-                    return valueTypes.STREAM;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.t:
-                if (arr[i + 1] === codes.r
-                    && arr[i + 2] === codes.u
-                    && arr[i + 3] === codes.e) {
-                    return valueTypes.BOOLEAN;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.f:
-                if (arr[i + 1] === codes.a
-                    && arr[i + 2] === codes.l
-                    && arr[i + 3] === codes.s
-                    && arr[i + 4] === codes.e) {
-                    return valueTypes.BOOLEAN;
-                }
-                return valueTypes.UNKNOWN;
-            default:
-                return valueTypes.UNKNOWN;
+            }
         }
+        else {
+            for (i; i >= 0; i--) {
+                if (DefaultDataParser.isNotRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
     }
     getIndirectObjectBoundsAt(start, skipEmpty = true) {
         if (skipEmpty) {
@@ -3081,7 +3075,7 @@ class DataParser {
         if (skipEmpty) {
             start = this.skipEmpty(start);
         }
-        if (this.isOutside(start) || !DataParser.isRegularChar(this._data[start])) {
+        if (this.isOutside(start) || !DefaultDataParser.isRegularChar(this._data[start])) {
             return null;
         }
         let i = start;
@@ -3095,7 +3089,7 @@ class DataParser {
             numberStr += "0.";
             value = this._data[++i];
         }
-        while (DataParser.isDigit(value)
+        while (DefaultDataParser.isDigit(value)
             || (float && value === codes.DOT)) {
             numberStr += String.fromCharCode(value);
             value = this._data[++i];
@@ -3116,7 +3110,7 @@ class DataParser {
             ? "/"
             : "";
         let value = this._data[i];
-        while (DataParser.isRegularChar(value)) {
+        while (DefaultDataParser.isRegularChar(value)) {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
@@ -3134,7 +3128,7 @@ class DataParser {
         let i = start;
         let result = "";
         let value = this._data[i];
-        while (DataParser.isRegularChar(value)) {
+        while (DefaultDataParser.isRegularChar(value)) {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
@@ -3259,7 +3253,7 @@ class DataParser {
             if (dictOpened !== 1) {
                 continue;
             }
-            if (!DataParser.isRegularChar(arr[i + j])) {
+            if (!DefaultDataParser.isRegularChar(arr[i + j])) {
                 propNameBounds = { start: i, end: i + j - 1 };
                 break;
             }
@@ -3362,15 +3356,12 @@ class DataParser {
     subCharCodes(start, end) {
         return this._data.subarray(start, (end || start) + 1);
     }
-    isOutside(index) {
-        return (index < 0 || index > this._maxIndex);
-    }
 }
-DataParser.EOL = [
+DefaultDataParser.EOL = [
     codes.CARRIAGE_RETURN,
     codes.LINE_FEED,
 ];
-DataParser.delimiterChars = new Set([
+DefaultDataParser.delimiterChars = new Set([
     codes.PERCENT,
     codes.L_PARENTHESE,
     codes.R_PARENTHESE,
@@ -3382,7 +3373,7 @@ DataParser.delimiterChars = new Set([
     codes.L_BRACE,
     codes.R_BRACE,
 ]);
-DataParser.spaceChars = new Set([
+DefaultDataParser.spaceChars = new Set([
     codes.NULL,
     codes.HORIZONTAL_TAB,
     codes.LINE_FEED,
@@ -3390,7 +3381,7 @@ DataParser.spaceChars = new Set([
     codes.CARRIAGE_RETURN,
     codes.WHITESPACE,
 ]);
-DataParser.digitChars = new Set([
+DefaultDataParser.digitChars = new Set([
     codes.D_0,
     codes.D_1,
     codes.D_2,
@@ -3402,10 +3393,88 @@ DataParser.digitChars = new Set([
     codes.D_8,
     codes.D_9,
 ]);
-DataParser.newLineChars = new Set([
+DefaultDataParser.newLineChars = new Set([
     codes.CARRIAGE_RETURN,
     codes.LINE_FEED,
 ]);
+
+class DataWriter {
+    constructor(data) {
+        this._dataToAppend = [];
+        if (!(data === null || data === void 0 ? void 0 : data.length)) {
+            throw new Error("Data is empty");
+        }
+        this._encoder = new TextEncoder();
+        this._sourceData = data.slice(0);
+        this._pointer = data.length;
+        this.fixEof();
+    }
+    get offset() {
+        return this._pointer;
+    }
+    getCurrentData() {
+        const result = new Uint8Array(this._sourceData.length + this._dataToAppend.length);
+        result.set(this._sourceData, 0);
+        result.set(this._dataToAppend, this._sourceData.length);
+        return result;
+    }
+    writeBytes(bytes) {
+        if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
+            return;
+        }
+        for (let i = 0; i < bytes.length; i++) {
+            this._dataToAppend.push(bytes[i]);
+        }
+        this._pointer += bytes.length;
+    }
+    writeIndirectObject(cryptInfo, obj) {
+        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !obj) {
+            return;
+        }
+        const objBytes = [
+            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
+            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+            ...obj.toArray(cryptInfo), ...keywordCodes.END_OF_LINE,
+            ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
+        ];
+        this.writeBytes(objBytes);
+    }
+    writeIndirectArray(cryptInfo, objs) {
+        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !objs) {
+            return;
+        }
+        const objBytes = [
+            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
+            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
+            codes.L_BRACKET,
+        ];
+        for (const obj of objs) {
+            objBytes.push(codes.WHITESPACE, ...obj.toArray(cryptInfo));
+        }
+        objBytes.push(codes.R_BRACKET, ...keywordCodes.END_OF_LINE, ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE);
+        this.writeBytes(objBytes);
+    }
+    writeEof(xrefOffset) {
+        const eof = [
+            ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
+            ...this._encoder.encode(xrefOffset + ""), ...keywordCodes.END_OF_LINE,
+            ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE
+        ];
+        this.writeBytes(eof);
+    }
+    fixEof() {
+        if (this._sourceData[this._pointer - 1] !== codes.LINE_FEED) {
+            if (this._sourceData[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
+                this._dataToAppend.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
+                this._pointer += 2;
+            }
+            else {
+                this._dataToAppend.push(codes.LINE_FEED);
+                this._pointer += 1;
+            }
+        }
+    }
+}
 
 class LinkedListNode {
     constructor(data) {
@@ -3561,206 +3630,6 @@ class LinkedList {
         while (current) {
             yield current.data;
             current = current.next;
-        }
-    }
-}
-
-class ReferenceData {
-    constructor(xrefs) {
-        var _a;
-        const allFreeEntries = [];
-        const allNormalEntries = [];
-        const allCompressedEntries = [];
-        let maxId = 0;
-        xrefs.forEach(x => {
-            for (const entry of x.getEntries()) {
-                switch (entry.type) {
-                    case xRefEntryTypes.FREE:
-                        allFreeEntries.push(entry);
-                        break;
-                    case xRefEntryTypes.NORMAL:
-                        allNormalEntries.push(entry);
-                        break;
-                    case xRefEntryTypes.COMPRESSED:
-                        allCompressedEntries.push(entry);
-                        break;
-                    default:
-                        continue;
-                }
-                if (entry.id > maxId) {
-                    maxId = entry.id;
-                }
-            }
-        });
-        this.size = maxId + 1;
-        const zeroFreeRef = {
-            id: 0,
-            generation: maxGeneration,
-            nextFreeId: 0,
-        };
-        const freeLinkedList = new LinkedList(zeroFreeRef);
-        const freeOutsideListMap = new Map();
-        const freeMap = new Map();
-        let zeroFound = false;
-        for (const entry of allFreeEntries) {
-            if (!zeroFound && entry.id === 0) {
-                zeroFound = true;
-                zeroFreeRef.nextFreeId = entry.nextFreeId;
-                continue;
-            }
-            const valueFromMap = freeMap.get(entry.id);
-            if (!valueFromMap || valueFromMap.generation < entry.generation) {
-                freeMap.set(entry.id, {
-                    id: entry.id,
-                    generation: entry.generation,
-                    nextFreeId: entry.nextFreeId
-                });
-            }
-        }
-        let nextId = zeroFreeRef.nextFreeId;
-        let next;
-        while (nextId) {
-            next = freeMap.get(nextId);
-            freeMap.delete(nextId);
-            freeLinkedList.push(next);
-            nextId = next.nextFreeId;
-        }
-        [...freeMap].forEach(x => {
-            const value = x[1];
-            if (value.generation === maxGeneration && value.nextFreeId === 0) {
-                freeOutsideListMap.set(value.id, value);
-            }
-        });
-        this.freeLinkedList = freeLinkedList;
-        this.freeOutsideListMap = freeOutsideListMap;
-        const normalRefs = new Map();
-        for (const entry of allNormalEntries) {
-            if (this.isFreed(entry)) {
-                continue;
-            }
-            const valueFromMap = normalRefs.get(entry.id);
-            if (valueFromMap && valueFromMap.generation >= entry.generation) {
-                continue;
-            }
-            normalRefs.set(entry.id, {
-                id: entry.id,
-                generation: entry.generation,
-                byteOffset: entry.byteOffset,
-            });
-        }
-        for (const entry of allCompressedEntries) {
-            if (this.isFreed(entry)) {
-                continue;
-            }
-            const valueFromMap = normalRefs.get(entry.id);
-            if (valueFromMap) {
-                continue;
-            }
-            const offset = (_a = normalRefs.get(entry.streamId)) === null || _a === void 0 ? void 0 : _a.byteOffset;
-            if (offset) {
-                normalRefs.set(entry.id, {
-                    id: entry.id,
-                    generation: entry.generation,
-                    byteOffset: offset,
-                    compressed: true,
-                    streamId: entry.streamId,
-                    streamIndex: entry.streamIndex,
-                });
-            }
-        }
-        this.usedMap = normalRefs;
-    }
-    getOffset(id) {
-        var _a;
-        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
-    }
-    getGeneration(id) {
-        var _a;
-        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
-    }
-    isFreed(ref) {
-        return this.freeOutsideListMap.has(ref.id)
-            || this.freeLinkedList.has(ref, (a, b) => a.id === b.id && a.generation < b.generation);
-    }
-    isUsed(id) {
-        return this.usedMap.has(id);
-    }
-}
-
-class DataWriter {
-    constructor(data) {
-        this._dataToAppend = [];
-        if (!(data === null || data === void 0 ? void 0 : data.length)) {
-            throw new Error("Data is empty");
-        }
-        this._encoder = new TextEncoder();
-        this._sourceData = data.slice(0);
-        this._pointer = data.length;
-        this.fixEof();
-    }
-    get offset() {
-        return this._pointer;
-    }
-    getCurrentData() {
-        const result = new Uint8Array(this._sourceData.length + this._dataToAppend.length);
-        result.set(this._sourceData, 0);
-        result.set(this._dataToAppend, this._sourceData.length);
-        return result;
-    }
-    writeBytes(bytes) {
-        if (!(bytes === null || bytes === void 0 ? void 0 : bytes.length)) {
-            return;
-        }
-        for (let i = 0; i < bytes.length; i++) {
-            this._dataToAppend.push(bytes[i]);
-        }
-        this._pointer += bytes.length;
-    }
-    writeIndirectObject(cryptInfo, obj) {
-        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !obj) {
-            return;
-        }
-        const objBytes = [
-            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
-            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-            ...obj.toArray(cryptInfo), ...keywordCodes.END_OF_LINE,
-            ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE,
-        ];
-        this.writeBytes(objBytes);
-    }
-    writeIndirectArray(cryptInfo, objs) {
-        if (!(cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) || !objs) {
-            return;
-        }
-        const objBytes = [
-            ...this._encoder.encode(`${cryptInfo.ref.id} ${cryptInfo.ref.generation} `),
-            ...keywordCodes.OBJ, ...keywordCodes.END_OF_LINE,
-            codes.L_BRACKET,
-        ];
-        for (const obj of objs) {
-            objBytes.push(codes.WHITESPACE, ...obj.toArray(cryptInfo));
-        }
-        objBytes.push(codes.R_BRACKET, ...keywordCodes.END_OF_LINE, ...keywordCodes.OBJ_END, ...keywordCodes.END_OF_LINE);
-        this.writeBytes(objBytes);
-    }
-    writeEof(xrefOffset) {
-        const eof = [
-            ...keywordCodes.XREF_START, ...keywordCodes.END_OF_LINE,
-            ...this._encoder.encode(xrefOffset + ""), ...keywordCodes.END_OF_LINE,
-            ...keywordCodes.END_OF_FILE, ...keywordCodes.END_OF_LINE
-        ];
-        this.writeBytes(eof);
-    }
-    fixEof() {
-        if (this._sourceData[this._pointer - 1] !== codes.LINE_FEED) {
-            if (this._sourceData[this._pointer - 2] !== codes.CARRIAGE_RETURN) {
-                this._dataToAppend.push(codes.CARRIAGE_RETURN, codes.LINE_FEED);
-                this._pointer += 2;
-            }
-            else {
-                this._dataToAppend.push(codes.LINE_FEED);
-                this._pointer += 1;
-            }
         }
     }
 }
@@ -5639,6 +5508,9 @@ class PdfStream extends PdfObject {
         const decoder = new TextDecoder();
         return decoder.decode(this.decodedStreamData);
     }
+    get streamDataParser() {
+        return new PdfStream.dataParserConstructor(this.decodedStreamData);
+    }
     toArray(cryptInfo) {
         const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
             ? cryptInfo.streamCryptor.encrypt(this.streamData, cryptInfo.ref)
@@ -5845,6 +5717,7 @@ class PdfStream extends PdfObject {
         this._decodedStreamData = decodedData;
     }
 }
+PdfStream.dataParserConstructor = DefaultDataParser;
 
 class TrailerStream extends PdfStream {
     constructor() {
@@ -6498,19 +6371,22 @@ class ImageStream extends PdfStream {
                             if (!maskStream) {
                                 throw new Error("Can't parse /Mask value reference: failed to parse image stream");
                             }
-                            const maskStreamParser = new DataParser(new Uint8Array([
-                                codes.L_BRACKET,
-                                ...maskStream.value.decodedStreamData,
-                                codes.R_BRACKET,
-                            ]));
-                            if (!maskStreamParser) {
-                                throw new Error("Can't parse /Mask value reference: failed to get decoded image data");
+                            const maskParser = maskStream.value.streamDataParser;
+                            const maskValues = [];
+                            let j = 0;
+                            let value;
+                            while (j <= maskParser.maxIndex) {
+                                value = maskParser.parseNumberAt(j, true, true);
+                                if (!value) {
+                                    break;
+                                }
+                                maskValues.push(value.value);
+                                j = value.end + 1;
                             }
-                            const maskArray = maskStreamParser.parseNumberArrayAt(0, false);
-                            if (!maskArray) {
+                            if (!maskValues.length) {
                                 throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
                             }
-                            this.Mask = maskArray.value;
+                            this.Mask = maskValues;
                             i = maskStreamId.end + 1;
                             break;
                         }
@@ -6767,7 +6643,7 @@ class ObjectMapDict extends PdfDict {
                             const dictBounds = parser.getDictBoundsAt(i);
                             if (dictBounds) {
                                 const dictParseInfo = {
-                                    parser: new DataParser(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
+                                    parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
                                     bounds: {
                                         start: 0,
                                         end: dictBounds.end - dictBounds.start,
@@ -6791,6 +6667,7 @@ class ObjectMapDict extends PdfDict {
         }
     }
 }
+ObjectMapDict.dataParserConstructor = DefaultDataParser;
 
 class UnicodeCmapStream extends PdfStream {
     constructor(type = null) {
@@ -6927,7 +6804,7 @@ class UnicodeCmapStream extends PdfStream {
     fillMap() {
         this._codeRanges.length = 0;
         this._map.clear();
-        const parser = new DataParser(this.decodedStreamData);
+        const parser = this.streamDataParser;
         const decoder = new TextDecoder("utf-16be");
         this.parseCodeRanges(parser);
         this.parseCharMap(parser, decoder);
@@ -13791,7 +13668,7 @@ class AppearanceStreamRenderer {
     }
     drawStreamAsync(stream) {
         return __awaiter$v(this, void 0, void 0, function* () {
-            const parser = new DataParser(stream.decodedStreamData);
+            const parser = stream.streamDataParser;
             const svgElements = [];
             const lastCoord = new Vec2();
             let lastOperator;
@@ -13894,7 +13771,7 @@ class AppearanceStreamRenderer {
                             minIndex: i,
                         });
                         if (textObjectEnd) {
-                            const textParser = new DataParser(parser.sliceCharCodes(i, textObjectEnd.start - 1));
+                            const textParser = parser.getSubParser(i, textObjectEnd.start - 1);
                             const textGroup = yield this.drawTextGroupAsync(textParser, stream.Resources);
                             svgElements.push(...textGroup);
                             i = parser.skipEmpty(textObjectEnd.end + 1);
@@ -16292,11 +16169,12 @@ class ObjectStream extends PdfStream {
             return null;
         }
     }
-    getObjectData(id) {
+    getObjectData(id, dataParserConstructor) {
+        dataParserConstructor || (dataParserConstructor = PdfStream.dataParserConstructor);
         if (!this._streamData || !this.N || !this.First) {
             return null;
         }
-        const parser = new DataParser(this.decodedStreamData);
+        const parser = this.streamDataParser;
         const offsetMap = new Map();
         let temp;
         let objectId;
@@ -16358,7 +16236,7 @@ class ObjectStream extends PdfStream {
             throw new Error("Object byte array is empty");
         }
         return {
-            parser: new DataParser(bytes),
+            parser: new dataParserConstructor(bytes),
             bounds: {
                 start: 0,
                 end: bytes.length - 1,
@@ -17094,6 +16972,18 @@ class XrefParser {
         }
         this._dataParser = parser;
     }
+    getPdfVersion() {
+        var _a;
+        const i = this._dataParser.findSubarrayIndex(keywordCodes.VERSION);
+        if (!i) {
+            return null;
+        }
+        const version = (_a = this._dataParser.parseNumberAt(i.end + 1, true)) === null || _a === void 0 ? void 0 : _a.value;
+        if (!version) {
+            return null;
+        }
+        return version.toFixed(1);
+    }
     getLastXrefIndex() {
         const xrefStartIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_START, { maxIndex: this._dataParser.maxIndex, direction: false });
         if (!xrefStartIndex) {
@@ -17152,6 +17042,128 @@ class XrefParser {
             }
         }
         return xrefs;
+    }
+}
+
+class ReferenceData {
+    constructor(xrefs) {
+        var _a;
+        const allFreeEntries = [];
+        const allNormalEntries = [];
+        const allCompressedEntries = [];
+        let maxId = 0;
+        xrefs.forEach(x => {
+            for (const entry of x.getEntries()) {
+                switch (entry.type) {
+                    case xRefEntryTypes.FREE:
+                        allFreeEntries.push(entry);
+                        break;
+                    case xRefEntryTypes.NORMAL:
+                        allNormalEntries.push(entry);
+                        break;
+                    case xRefEntryTypes.COMPRESSED:
+                        allCompressedEntries.push(entry);
+                        break;
+                    default:
+                        continue;
+                }
+                if (entry.id > maxId) {
+                    maxId = entry.id;
+                }
+            }
+        });
+        this.size = maxId + 1;
+        const zeroFreeRef = {
+            id: 0,
+            generation: maxGeneration,
+            nextFreeId: 0,
+        };
+        const freeLinkedList = new LinkedList(zeroFreeRef);
+        const freeOutsideListMap = new Map();
+        const freeMap = new Map();
+        let zeroFound = false;
+        for (const entry of allFreeEntries) {
+            if (!zeroFound && entry.id === 0) {
+                zeroFound = true;
+                zeroFreeRef.nextFreeId = entry.nextFreeId;
+                continue;
+            }
+            const valueFromMap = freeMap.get(entry.id);
+            if (!valueFromMap || valueFromMap.generation < entry.generation) {
+                freeMap.set(entry.id, {
+                    id: entry.id,
+                    generation: entry.generation,
+                    nextFreeId: entry.nextFreeId
+                });
+            }
+        }
+        let nextId = zeroFreeRef.nextFreeId;
+        let next;
+        while (nextId) {
+            next = freeMap.get(nextId);
+            freeMap.delete(nextId);
+            freeLinkedList.push(next);
+            nextId = next.nextFreeId;
+        }
+        [...freeMap].forEach(x => {
+            const value = x[1];
+            if (value.generation === maxGeneration && value.nextFreeId === 0) {
+                freeOutsideListMap.set(value.id, value);
+            }
+        });
+        this.freeLinkedList = freeLinkedList;
+        this.freeOutsideListMap = freeOutsideListMap;
+        const normalRefs = new Map();
+        for (const entry of allNormalEntries) {
+            if (this.isFreed(entry)) {
+                continue;
+            }
+            const valueFromMap = normalRefs.get(entry.id);
+            if (valueFromMap && valueFromMap.generation >= entry.generation) {
+                continue;
+            }
+            normalRefs.set(entry.id, {
+                id: entry.id,
+                generation: entry.generation,
+                byteOffset: entry.byteOffset,
+            });
+        }
+        for (const entry of allCompressedEntries) {
+            if (this.isFreed(entry)) {
+                continue;
+            }
+            const valueFromMap = normalRefs.get(entry.id);
+            if (valueFromMap) {
+                continue;
+            }
+            const offset = (_a = normalRefs.get(entry.streamId)) === null || _a === void 0 ? void 0 : _a.byteOffset;
+            if (offset) {
+                normalRefs.set(entry.id, {
+                    id: entry.id,
+                    generation: entry.generation,
+                    byteOffset: offset,
+                    compressed: true,
+                    streamId: entry.streamId,
+                    streamIndex: entry.streamIndex,
+                });
+            }
+        }
+        this.usedMap = normalRefs;
+    }
+    getOffset(id) {
+        var _a;
+        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.byteOffset;
+    }
+    getGeneration(id) {
+        var _a;
+        return (_a = this.usedMap.get(id)) === null || _a === void 0 ? void 0 : _a.generation;
+    }
+    isFreed(ref) {
+        return this.freeOutsideListMap.has(ref.id)
+            || this.freeLinkedList.has(ref, (a, b) => a.id === b.id && a.generation < b.generation);
+    }
+    isUsed(id) {
+        return this.usedMap.has(id);
     }
 }
 
@@ -24489,7 +24501,7 @@ class DocumentService {
             if (!stream) {
                 return;
             }
-            const objectParseInfo = stream.value.getObjectData(id);
+            const objectParseInfo = stream.value.getObjectData(id, DefaultDataParser);
             if (objectParseInfo) {
                 objectParseInfo.parseInfoGetter = parseInfoGetter;
                 return objectParseInfo;
@@ -24519,9 +24531,12 @@ class DocumentService {
         }
         this._eventService = eventService;
         this._data = data;
-        this._docParser = new DataParser(data);
-        this._version = this._docParser.getPdfVersion();
+        this._docParser = new DefaultDataParser(data);
         const xrefParser = new XrefParser(this._docParser);
+        this._version = xrefParser.getPdfVersion();
+        if (!this._version) {
+            throw new Error("Error parsing PDF version number");
+        }
         const lastXrefIndex = xrefParser.getLastXrefIndex();
         if (!lastXrefIndex) {
             {

@@ -40,12 +40,14 @@ export class ObjectStream extends PdfStream {
     }
   }
 
-  getObjectData(id: number): ParserInfo  { 
+  getObjectData(id: number, dataParserConstructor: new (data: Uint8Array) => DataParser): ParserInfo  { 
+    dataParserConstructor ||= PdfStream.dataParserConstructor;
+
     if (!this._streamData || !this.N || !this.First) {
       return null;
     }
 
-    const parser = new DataParser(this.decodedStreamData);
+    const parser = this.streamDataParser;
 
     const offsetMap = new Map<number, number>();
     let temp: ParserResult<number>;
@@ -121,7 +123,7 @@ export class ObjectStream extends PdfStream {
     }
 
     return {
-      parser: new DataParser(bytes),
+      parser: new dataParserConstructor(bytes),
       bounds: {
         start: 0, 
         end: bytes.length - 1,

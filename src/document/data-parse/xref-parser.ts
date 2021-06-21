@@ -19,6 +19,23 @@ export class XrefParser {
     }
     this._dataParser = parser;
   }  
+
+  /**
+   * parse the PDF version (throws if the underlying data is not a PDF file)
+   * @returns 
+   */
+  getPdfVersion(): string {
+    const i = this._dataParser.findSubarrayIndex(keywordCodes.VERSION);
+    if (!i) {
+      return null;
+    }
+    const version = this._dataParser.parseNumberAt(i.end + 1, true)?.value;
+    if (!version) {
+      return null;
+    }
+
+    return version.toFixed(1);
+  }  
   
   /**
    * parse the last cross-reference section byte offset

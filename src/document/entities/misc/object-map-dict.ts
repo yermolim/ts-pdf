@@ -1,11 +1,17 @@
 import { valueTypes } from "../../spec-constants";
+
 import { CryptInfo } from "../../encryption/interfaces";
+
 import { DataParser, ParserResult } from "../../data-parse/data-parser";
+import { DefaultDataParser } from "../../data-parse/default-data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
+
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
 export class ObjectMapDict extends PdfDict {
+  static dataParserConstructor: new (data: Uint8Array) => DataParser = DefaultDataParser;
+  
   protected readonly _objectIdMap = new Map<string, ObjectId>();
   protected readonly _dictParserMap = new Map<string, ParserInfo>();
   
@@ -96,7 +102,7 @@ export class ObjectMapDict extends PdfDict {
               const dictBounds = parser.getDictBoundsAt(i);
               if (dictBounds) {
                 const dictParseInfo: ParserInfo = {
-                  parser: new DataParser(parser.sliceCharCodes(dictBounds.start, dictBounds.end)), 
+                  parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)), 
                   bounds: {
                     start: 0, 
                     end: dictBounds.end - dictBounds.start, 

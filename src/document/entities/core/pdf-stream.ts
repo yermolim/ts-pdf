@@ -1,14 +1,20 @@
 import { FlatePredictor, flatePredictors, StreamFilter, 
   streamFilters, StreamType, supportedFilters, valueTypes } from "../../spec-constants";
+
+import { CryptInfo } from "../../encryption/interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
-import { ParserResult } from "../../data-parse/data-parser";
-import { ParserInfo } from "../../data-parse/parser-info";
-import { PdfObject } from "./pdf-object";
 import { keywordCodes } from "../../encoding/char-codes";
 import { FlateDecoder } from "../../encoding/flate-decoder";
-import { CryptInfo } from "../../encryption/interfaces";
+
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
+import { ParserInfo } from "../../data-parse/parser-info";
+import { DefaultDataParser } from "../../data-parse/default-data-parser";
+
+import { PdfObject } from "./pdf-object";
 
 export abstract class PdfStream extends PdfObject {
+  static dataParserConstructor: new (data: Uint8Array) => DataParser = DefaultDataParser;
+
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: StreamType;
 
@@ -38,7 +44,6 @@ export abstract class PdfStream extends PdfObject {
   DL: number;
   
   protected _streamData: Uint8Array;
-  protected _decodedStreamData: Uint8Array;
   /**encoded stream data */
   get streamData(): Uint8Array {
     return this._streamData;
@@ -48,8 +53,8 @@ export abstract class PdfStream extends PdfObject {
     this.setStreamData(data);
     this._edited = true;
   }
-
   
+  protected _decodedStreamData: Uint8Array;
   get decodedStreamData(): Uint8Array {
     if (!this._decodedStreamData) {
       this.decodeStreamData();
@@ -63,6 +68,13 @@ export abstract class PdfStream extends PdfObject {
   get decodedStreamDataChars(): string {
     const decoder = new TextDecoder();
     return decoder.decode(this.decodedStreamData);
+  }
+
+  /**
+   * get a new instance of the decoded stream data parser
+   */
+  get streamDataParser(): DataParser {
+    return new PdfStream.dataParserConstructor(this.decodedStreamData);
   }
   
   protected constructor(type: StreamType) {

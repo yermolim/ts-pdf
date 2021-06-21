@@ -4,8 +4,8 @@ import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/encryption/interfaces";
 
 import { DataParser } from "../document/data-parse/data-parser";
+import { DefaultDataParser } from "../document/data-parse/default-data-parser";
 import { ParserInfo } from "../document/data-parse/parser-info";
-import { ReferenceData } from "../document/references/reference-data";
 import { DataUpdater, PageUpdateInfo } from "../document/data-save/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
 
@@ -15,6 +15,7 @@ import { EncryptionDict } from "../document/entities/encryption/encryption-dict"
 
 import { XrefParser } from "../document/data-parse/xref-parser";
 import { XRef } from "../document/entities/x-refs/x-ref";
+import { ReferenceData } from "../document/references/reference-data";
 
 import { CatalogDict } from "../document/entities/structure/catalog-dict";
 import { PageDict } from "../document/entities/structure/page-dict";
@@ -154,10 +155,14 @@ export class DocumentService {
     this._eventService = eventService;
 
     this._data = data;
-    this._docParser = new DataParser(data);
-    this._version = this._docParser.getPdfVersion();
-    
+    this._docParser = new DefaultDataParser(data);    
     const xrefParser = new XrefParser(this._docParser);
+
+    this._version = xrefParser.getPdfVersion();
+    if (!this._version) {      
+      throw new Error("Error parsing PDF version number");
+    }
+
     const lastXrefIndex = xrefParser.getLastXrefIndex();
     if (!lastXrefIndex) {{
       throw new Error("File doesn't contain update section");
@@ -166,11 +171,12 @@ export class DocumentService {
     if (!xrefs.length) {{
       throw new Error("Failed to parse cross-reference sections");
     }}
-
     this._xrefs = xrefs;
-    this._referenceData = new ReferenceData(xrefs);
     // DEBUG
-    // console.log(this._xrefs);    
+    // console.log(this._xrefs); 
+
+    this._referenceData = new ReferenceData(xrefs);   
+    // DEBUG
     // console.log(this._referenceData);   
 
     this.parseEncryption();
@@ -568,7 +574,7 @@ export class DocumentService {
     if (!stream) {
       return;
     }
-    const objectParseInfo = stream.value.getObjectData(id);
+    const objectParseInfo = stream.value.getObjectData(id, DefaultDataParser);
     if (objectParseInfo) {
       // the object is found inside the stream
       objectParseInfo.parseInfoGetter = parseInfoGetter;

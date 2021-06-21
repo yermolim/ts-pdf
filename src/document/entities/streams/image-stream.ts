@@ -1,9 +1,8 @@
 import { ObjectId } from "../core/object-id";
 import { PdfStream } from "../core/pdf-stream";
 import { colorSpaces, streamFilters, streamTypes, valueTypes } from "../../spec-constants";
-import { DataParser, ParserResult } from "../../data-parse/data-parser";
+import { ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
-import { codes } from "../../encoding/char-codes";
 import { CryptInfo } from "../../encryption/interfaces";
 import { DecodeParamsDict } from "../encoding/decode-params-dict";
 import { IndexedColorSpaceArray } from "../appearance/indexed-color-space-array";
@@ -457,19 +456,24 @@ export class ImageStream extends PdfStream {
               if (!maskStream) {
                 throw new Error("Can't parse /Mask value reference: failed to parse image stream");
               }
-              const maskStreamParser = new DataParser(new Uint8Array([
-                codes.L_BRACKET,
-                ...maskStream.value.decodedStreamData,
-                codes.R_BRACKET,
-              ]));
-              if (!maskStreamParser) {
-                throw new Error("Can't parse /Mask value reference: failed to get decoded image data");
+
+              const maskParser = maskStream.value.streamDataParser;
+              const maskValues: number[] = [];
+              let j = 0;
+              let value: ParserResult<number>;
+              while (j <= maskParser.maxIndex) {
+                value = maskParser.parseNumberAt(j, true, true);
+                if (!value) {
+                  break;
+                }
+                maskValues.push(value.value);
+                j = value.end + 1;
               }
-              const maskArray = maskStreamParser.parseNumberArrayAt(0, false);
-              if (!maskArray) {
+              if (!maskValues.length) {
                 throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
-              }       
-              this.Mask = maskArray.value;
+              }
+              this.Mask = maskValues;
+
               i = maskStreamId.end + 1;
               break; 
             } else if (maskEntryType === valueTypes.ARRAY) {               
