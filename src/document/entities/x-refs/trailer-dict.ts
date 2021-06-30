@@ -5,6 +5,7 @@ import { PdfDict } from "../core/pdf-dict";
 import { ObjectId } from "../core/object-id";
 import { HexString } from "../strings/hex-string";
 import { CryptInfo } from "../../encryption/interfaces";
+import { LiteralString } from "../strings/literal-string";
 
 export class TrailerDict extends PdfDict {
   /**
@@ -148,14 +149,25 @@ export class TrailerDict extends PdfDict {
             throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
 
           case "/ID":
-            const ids = HexString.parseArray(parser, i);
-            if (ids) {
-              this.ID = [ids.value[0], ids.value[1]];
-              i = ids.end + 1;
-            } else {              
-              throw new Error("Can't parse /ID property value");
-            }
-            break;
+            const hexIds = HexString.parseArray(parser, i);
+            if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+              this.ID = [
+                hexIds.value[0], 
+                hexIds.value[1],
+              ];
+              i = hexIds.end + 1;
+              break;
+            } 
+            const literalIds = LiteralString.parseArray(parser, i);
+            if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+              this.ID = [
+                HexString.fromHexBytes(literalIds.value[0].bytes), 
+                HexString.fromHexBytes(literalIds.value[1].bytes),
+              ];
+              i = literalIds.end + 1;
+              break;
+            } 
+            throw new Error("Can't parse /ID property value");
             
           default:
             // skip to next name

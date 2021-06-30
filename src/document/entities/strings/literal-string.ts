@@ -39,6 +39,28 @@ export class LiteralString implements IEncodable {
     return {value: result, start: bounds.start, end: bounds.end};
   }
 
+  static parseArray(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
+    skipEmpty = true): ParserResult<LiteralString[]>  {
+    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    if (!arrayBounds) {
+      return null;
+    }
+
+    const strings: LiteralString[] = [];
+    let current: ParserResult<LiteralString>;
+    let i = arrayBounds.start + 1;
+    while(i < arrayBounds.end) {
+      current = LiteralString.parse(parser, i, cryptInfo, skipEmpty);
+      if (!current) {
+        break;
+      }
+      strings.push(current.value);
+      i = current.end + 1;
+    }
+
+    return {value: strings, start: arrayBounds.start, end: arrayBounds.end};
+  }
+
   /**
    * create LiteralString from escaped byte array
    * @param bytes escaped byte array

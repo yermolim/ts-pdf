@@ -4342,6 +4342,24 @@ class LiteralString {
         const result = LiteralString.fromBytes(bytes);
         return { value: result, start: bounds.start, end: bounds.end };
     }
+    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const strings = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = LiteralString.parse(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
+            }
+            strings.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: strings, start: arrayBounds.start, end: arrayBounds.end };
+    }
     static fromBytes(bytes) {
         const decoder = bytes[0] === 254 && bytes[1] === 255
             ? new TextDecoder("utf-16be")
@@ -5810,15 +5828,25 @@ class TrailerStream extends PdfStream {
                         }
                         throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
                     case "/ID":
-                        const ids = HexString.parseArray(parser, i);
-                        if (ids) {
-                            this.ID = [ids.value[0], ids.value[1]];
-                            i = ids.end + 1;
+                        const hexIds = HexString.parseArray(parser, i);
+                        if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+                            this.ID = [
+                                hexIds.value[0],
+                                hexIds.value[1],
+                            ];
+                            i = hexIds.end + 1;
+                            break;
                         }
-                        else {
-                            throw new Error("Can't parse /ID property value");
+                        const literalIds = LiteralString.parseArray(parser, i);
+                        if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+                            this.ID = [
+                                HexString.fromHexBytes(literalIds.value[0].bytes),
+                                HexString.fromHexBytes(literalIds.value[1].bytes),
+                            ];
+                            i = literalIds.end + 1;
+                            break;
                         }
-                        break;
+                        throw new Error("Can't parse /ID property value");
                     case "/Index":
                     case "/W":
                         i = this.parseNumberArrayProp(name, parser, i, false);
@@ -16841,15 +16869,25 @@ class TrailerDict extends PdfDict {
                         }
                         throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
                     case "/ID":
-                        const ids = HexString.parseArray(parser, i);
-                        if (ids) {
-                            this.ID = [ids.value[0], ids.value[1]];
-                            i = ids.end + 1;
+                        const hexIds = HexString.parseArray(parser, i);
+                        if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+                            this.ID = [
+                                hexIds.value[0],
+                                hexIds.value[1],
+                            ];
+                            i = hexIds.end + 1;
+                            break;
                         }
-                        else {
-                            throw new Error("Can't parse /ID property value");
+                        const literalIds = LiteralString.parseArray(parser, i);
+                        if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+                            this.ID = [
+                                HexString.fromHexBytes(literalIds.value[0].bytes),
+                                HexString.fromHexBytes(literalIds.value[1].bytes),
+                            ];
+                            i = literalIds.end + 1;
+                            break;
                         }
-                        break;
+                        throw new Error("Can't parse /ID property value");
                     default:
                         i = parser.skipToNextName(i, end - 1);
                         break;
