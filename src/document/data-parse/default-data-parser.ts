@@ -1100,7 +1100,7 @@ export class DefaultDataParser implements DataParser {
     return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
   }
   
-  subCharCodes(start: number, end?: number): Uint8Array {
+  private subCharCodes(start: number, end?: number): Uint8Array {
     return this._data.subarray(start, (end || start) + 1);
   }
   

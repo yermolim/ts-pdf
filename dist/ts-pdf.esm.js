@@ -4204,7 +4204,7 @@ class DateString {
         if (end === -1) {
             return null;
         }
-        let bytes = parser.subCharCodes(start + 1, end - 1);
+        let bytes = parser.sliceCharCodes(start + 1, end - 1);
         if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
             bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
         }
@@ -4335,7 +4335,7 @@ class LiteralString {
         if (!bounds) {
             return;
         }
-        let bytes = LiteralString.unescape(parser.subCharCodes(bounds.start + 1, bounds.end - 1));
+        let bytes = LiteralString.unescape(parser.sliceCharCodes(bounds.start + 1, bounds.end - 1));
         if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
             bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
         }

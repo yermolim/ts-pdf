@@ -35,7 +35,7 @@ export class DateString implements IEncodable {
       return null;
     }
 
-    let bytes = parser.subCharCodes(start + 1, end - 1);
+    let bytes = parser.sliceCharCodes(start + 1, end - 1);
     if (cryptInfo?.ref && cryptInfo.stringCryptor) {
       bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
     }

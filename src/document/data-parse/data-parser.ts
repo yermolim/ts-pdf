@@ -31,7 +31,7 @@ export interface DataParser {
   /**
    * get a new parser instance which inner data array is a subarray of the source parser data
    * @param start subarray start index
-   * @param end subarray end index (chat at the end index is INCLUDED into the subarray)
+   * @param end subarray end index (char at the end index is INCLUDED into the subarray)
    * @returns 
    */
   getSubParser(start: number, end?: number): DataParser;
@@ -201,9 +201,4 @@ export interface DataParser {
    * and convert it to string
    */
   sliceChars(start: number, end?: number): string;
-  
-  /** returns a SUBARRAY of the inner data array 
-   * from the start index to the end index including BOTH ends */
-  subCharCodes(start: number, end?: number): Uint8Array;
-  //#endregion
 }
