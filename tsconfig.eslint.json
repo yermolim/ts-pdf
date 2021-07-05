@@ -2,10 +2,11 @@
   "extends": "./tsconfig.json",
   "include": [
     "src/**/*.ts",
+    "src/**/*.js",
     "test/**/*.ts",
     ".eslintrc.js",
     "rollup.config.js",
-    "karma.conf.js"
+    "karma.conf.js",
   ],
   "exclude": ["node_modules", "demo"]
 }

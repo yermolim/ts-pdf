@@ -66,5 +66,5 @@
 
     "noImplicitOverride": true
   },
-  "exclude": ["node_modules", "dist", "tsc", "demo", "coverage", "src/_temp"]
+  "exclude": ["node_modules", "dist", "tsc", "demo", "coverage"]
 }

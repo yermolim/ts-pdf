@@ -28,6 +28,8 @@ export interface DataParser {
   /**the last index in the underlying data byte array */
   get maxIndex(): number;
 
+  destroy(): void;
+
   /**
    * get a new parser instance which inner data array is a subarray of the source parser data
    * @param start subarray start index

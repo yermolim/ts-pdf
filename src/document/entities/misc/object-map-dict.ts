@@ -3,14 +3,14 @@ import { valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 
 import { DataParser, ParserResult } from "../../data-parse/data-parser";
-import { DefaultDataParser } from "../../data-parse/default-data-parser";
+import { SyncDataParser } from "../../data-parse/sync-data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
 
 import { ObjectId } from "../core/object-id";
 import { PdfDict } from "../core/pdf-dict";
 
 export class ObjectMapDict extends PdfDict {
-  static dataParserConstructor: new (data: Uint8Array) => DataParser = DefaultDataParser;
+  static dataParserConstructor: new (data: Uint8Array) => DataParser = SyncDataParser;
   
   protected readonly _objectIdMap = new Map<string, ObjectId>();
   protected readonly _dictParserMap = new Map<string, ParserInfo>();

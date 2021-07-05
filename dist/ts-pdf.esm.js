@@ -2504,7 +2504,7 @@ const keywordCodes = {
     AP_STREAM_TEXT_END: [codes.E, codes.T],
 };
 
-class DefaultDataParser {
+class SyncDataParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
@@ -2545,8 +2545,10 @@ class DefaultDataParser {
     static isNotDelimiterChar(code) {
         return !this.delimiterChars.has(code);
     }
+    destroy() {
+    }
     getSubParser(start, end) {
-        return new DefaultDataParser(this.subCharCodes(start, end));
+        return new SyncDataParser(this.subCharCodes(start, end));
     }
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
@@ -2563,7 +2565,7 @@ class DefaultDataParser {
         const charCode = arr[i];
         switch (charCode) {
             case codes.SLASH:
-                if (DefaultDataParser.isRegularChar(arr[i + 1])) {
+                if (SyncDataParser.isRegularChar(arr[i + 1])) {
                     return valueTypes.NAME;
                 }
                 return valueTypes.UNKNOWN;
@@ -2591,14 +2593,14 @@ class DefaultDataParser {
                 const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
                 if (nextDelimIndex !== -1) {
                     const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
-                    if (refEndIndex !== -1 && refEndIndex > i && !DefaultDataParser.isRegularChar(arr[refEndIndex + 1])) {
+                    if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
                         return valueTypes.REF;
                     }
                 }
                 return valueTypes.NUMBER;
             case codes.DOT:
             case codes.MINUS:
-                if (DefaultDataParser.isDigit(arr[i + 1])) {
+                if (SyncDataParser.isDigit(arr[i + 1])) {
                     return valueTypes.NUMBER;
                 }
                 return valueTypes.UNKNOWN;
@@ -2651,7 +2653,7 @@ class DefaultDataParser {
                         continue outer_loop;
                     }
                 }
-                if (allowOpened || !DefaultDataParser.isRegularChar(arr[i + j])) {
+                if (allowOpened || !SyncDataParser.isRegularChar(arr[i + j])) {
                     return { start: i, end: i + j - 1 };
                 }
             }
@@ -2664,7 +2666,7 @@ class DefaultDataParser {
                         continue outer_loop;
                     }
                 }
-                if (allowOpened || !DefaultDataParser.isRegularChar(arr[i - j])) {
+                if (allowOpened || !SyncDataParser.isRegularChar(arr[i - j])) {
                     return { start: i - j + 1, end: i };
                 }
             }
@@ -2704,7 +2706,7 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isNewLineChar(arr[i])) {
+                if (SyncDataParser.isNewLineChar(arr[i])) {
                     lineBreakIndex = i;
                     break;
                 }
@@ -2712,7 +2714,7 @@ class DefaultDataParser {
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isNewLineChar(arr[i])) {
+                if (SyncDataParser.isNewLineChar(arr[i])) {
                     lineBreakIndex = i;
                     break;
                 }
@@ -2745,14 +2747,14 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isSpaceChar(arr[i])) {
+                if (SyncDataParser.isSpaceChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isSpaceChar(arr[i])) {
+                if (SyncDataParser.isSpaceChar(arr[i])) {
                     return i;
                 }
             }
@@ -2768,14 +2770,14 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isNotSpaceChar(arr[i])) {
+                if (SyncDataParser.isNotSpaceChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isNotSpaceChar(arr[i])) {
+                if (SyncDataParser.isNotSpaceChar(arr[i])) {
                     return i;
                 }
             }
@@ -2791,14 +2793,14 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isDelimiterChar(arr[i])) {
+                if (SyncDataParser.isDelimiterChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isDelimiterChar(arr[i])) {
+                if (SyncDataParser.isDelimiterChar(arr[i])) {
                     return i;
                 }
             }
@@ -2814,14 +2816,14 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isNotDelimiterChar(arr[i])) {
+                if (SyncDataParser.isNotDelimiterChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isNotDelimiterChar(arr[i])) {
+                if (SyncDataParser.isNotDelimiterChar(arr[i])) {
                     return i;
                 }
             }
@@ -2837,14 +2839,14 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isRegularChar(arr[i])) {
+                if (SyncDataParser.isRegularChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isRegularChar(arr[i])) {
+                if (SyncDataParser.isRegularChar(arr[i])) {
                     return i;
                 }
             }
@@ -2860,14 +2862,14 @@ class DefaultDataParser {
             : start;
         if (direction) {
             for (i; i <= this._maxIndex; i++) {
-                if (DefaultDataParser.isNotRegularChar(arr[i])) {
+                if (SyncDataParser.isNotRegularChar(arr[i])) {
                     return i;
                 }
             }
         }
         else {
             for (i; i >= 0; i--) {
-                if (DefaultDataParser.isNotRegularChar(arr[i])) {
+                if (SyncDataParser.isNotRegularChar(arr[i])) {
                     return i;
                 }
             }
@@ -3075,7 +3077,7 @@ class DefaultDataParser {
         if (skipEmpty) {
             start = this.skipEmpty(start);
         }
-        if (this.isOutside(start) || !DefaultDataParser.isRegularChar(this._data[start])) {
+        if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
             return null;
         }
         let i = start;
@@ -3089,7 +3091,7 @@ class DefaultDataParser {
             numberStr += "0.";
             value = this._data[++i];
         }
-        while (DefaultDataParser.isDigit(value)
+        while (SyncDataParser.isDigit(value)
             || (float && value === codes.DOT)) {
             numberStr += String.fromCharCode(value);
             value = this._data[++i];
@@ -3110,7 +3112,7 @@ class DefaultDataParser {
             ? "/"
             : "";
         let value = this._data[i];
-        while (DefaultDataParser.isRegularChar(value)) {
+        while (SyncDataParser.isRegularChar(value)) {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
@@ -3128,7 +3130,7 @@ class DefaultDataParser {
         let i = start;
         let result = "";
         let value = this._data[i];
-        while (DefaultDataParser.isRegularChar(value)) {
+        while (SyncDataParser.isRegularChar(value)) {
             result += String.fromCharCode(value);
             value = this._data[++i];
         }
@@ -3253,7 +3255,7 @@ class DefaultDataParser {
             if (dictOpened !== 1) {
                 continue;
             }
-            if (!DefaultDataParser.isRegularChar(arr[i + j])) {
+            if (!SyncDataParser.isRegularChar(arr[i + j])) {
                 propNameBounds = { start: i, end: i + j - 1 };
                 break;
             }
@@ -3357,11 +3359,11 @@ class DefaultDataParser {
         return this._data.subarray(start, (end || start) + 1);
     }
 }
-DefaultDataParser.EOL = [
+SyncDataParser.EOL = [
     codes.CARRIAGE_RETURN,
     codes.LINE_FEED,
 ];
-DefaultDataParser.delimiterChars = new Set([
+SyncDataParser.delimiterChars = new Set([
     codes.PERCENT,
     codes.L_PARENTHESE,
     codes.R_PARENTHESE,
@@ -3373,7 +3375,7 @@ DefaultDataParser.delimiterChars = new Set([
     codes.L_BRACE,
     codes.R_BRACE,
 ]);
-DefaultDataParser.spaceChars = new Set([
+SyncDataParser.spaceChars = new Set([
     codes.NULL,
     codes.HORIZONTAL_TAB,
     codes.LINE_FEED,
@@ -3381,7 +3383,7 @@ DefaultDataParser.spaceChars = new Set([
     codes.CARRIAGE_RETURN,
     codes.WHITESPACE,
 ]);
-DefaultDataParser.digitChars = new Set([
+SyncDataParser.digitChars = new Set([
     codes.D_0,
     codes.D_1,
     codes.D_2,
@@ -3393,7 +3395,7 @@ DefaultDataParser.digitChars = new Set([
     codes.D_8,
     codes.D_9,
 ]);
-DefaultDataParser.newLineChars = new Set([
+SyncDataParser.newLineChars = new Set([
     codes.CARRIAGE_RETURN,
     codes.LINE_FEED,
 ]);
@@ -5735,7 +5737,7 @@ class PdfStream extends PdfObject {
         this._decodedStreamData = decodedData;
     }
 }
-PdfStream.dataParserConstructor = DefaultDataParser;
+PdfStream.dataParserConstructor = SyncDataParser;
 
 class TrailerStream extends PdfStream {
     constructor() {
@@ -6695,7 +6697,7 @@ class ObjectMapDict extends PdfDict {
         }
     }
 }
-ObjectMapDict.dataParserConstructor = DefaultDataParser;
+ObjectMapDict.dataParserConstructor = SyncDataParser;
 
 class UnicodeCmapStream extends PdfStream {
     constructor(type = null) {
@@ -24539,7 +24541,7 @@ class DocumentService {
             if (!stream) {
                 return;
             }
-            const objectParseInfo = stream.value.getObjectData(id, DefaultDataParser);
+            const objectParseInfo = stream.value.getObjectData(id, SyncDataParser);
             if (objectParseInfo) {
                 objectParseInfo.parseInfoGetter = parseInfoGetter;
                 return objectParseInfo;
@@ -24569,7 +24571,7 @@ class DocumentService {
         }
         this._eventService = eventService;
         this._data = data;
-        this._docParser = new DefaultDataParser(data);
+        this._docParser = new SyncDataParser(data);
         const xrefParser = new XrefParser(this._docParser);
         this._version = xrefParser.getPdfVersion();
         if (!this._version) {
@@ -24626,6 +24628,7 @@ class DocumentService {
         return !this._encryption || !!this._authResult;
     }
     destroy() {
+        var _a;
         this._lastCommands.length = 0;
         this.emitStateChanged();
         this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
@@ -24634,6 +24637,7 @@ class DocumentService {
         }));
         this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
         this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+        (_a = this._docParser) === null || _a === void 0 ? void 0 : _a.destroy();
     }
     tryAuthenticate(password = "") {
         if (!this.authenticated) {

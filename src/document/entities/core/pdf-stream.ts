@@ -8,12 +8,12 @@ import { FlateDecoder } from "../../encoding/flate-decoder";
 
 import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
-import { DefaultDataParser } from "../../data-parse/default-data-parser";
+import { SyncDataParser } from "../../data-parse/sync-data-parser";
 
 import { PdfObject } from "./pdf-object";
 
 export abstract class PdfStream extends PdfObject {
-  static dataParserConstructor: new (data: Uint8Array) => DataParser = DefaultDataParser;
+  static dataParserConstructor: new (data: Uint8Array) => DataParser = SyncDataParser;
 
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: StreamType;

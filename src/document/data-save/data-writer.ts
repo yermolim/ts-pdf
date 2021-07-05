@@ -7,7 +7,6 @@ export class DataWriter {
   private readonly _dataToAppend: number[] = [];
   private _pointer: number;
 
-
   /**
    * return the next byte position (the current last byte position + 1)
    */

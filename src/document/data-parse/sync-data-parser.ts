@@ -2,7 +2,7 @@ import { codes, keywordCodes } from "../encoding/char-codes";
 import { ValueType, valueTypes } from "../spec-constants";
 import { DataParser, ParserOptions, ParserBounds, ParserResult } from "./data-parser";
 
-export class DefaultDataParser implements DataParser {
+export class SyncDataParser implements DataParser {
   //#region static collections
   /**
    * Each line is terminated by an end-of-line (EOL) marker
@@ -132,6 +132,10 @@ export class DefaultDataParser implements DataParser {
   }
   //#endregion
 
+  destroy() {
+    
+  }
+
   /**
    * get a new parser instance which inner data array is a subarray of the source parser data
    * @param start subarray start index
@@ -139,7 +143,7 @@ export class DefaultDataParser implements DataParser {
    * @returns 
    */
   getSubParser(start: number, end?: number): DataParser {
-    return new DefaultDataParser(this.subCharCodes(start, end)); 
+    return new SyncDataParser(this.subCharCodes(start, end)); 
   }
   
   isOutside(index: number): boolean {
@@ -159,7 +163,7 @@ export class DefaultDataParser implements DataParser {
     const charCode = arr[i];
     switch (charCode) {
       case codes.SLASH:
-        if (DefaultDataParser.isRegularChar(arr[i + 1])) {
+        if (SyncDataParser.isRegularChar(arr[i + 1])) {
           return valueTypes.NAME;
         } 
         return valueTypes.UNKNOWN;
@@ -187,14 +191,14 @@ export class DefaultDataParser implements DataParser {
         const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
         if (nextDelimIndex !== -1) {
           const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
-          if (refEndIndex !== -1 && refEndIndex > i && !DefaultDataParser.isRegularChar(arr[refEndIndex + 1])) {
+          if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
             return valueTypes.REF;
           }
         }
         return valueTypes.NUMBER;
       case codes.DOT:
       case codes.MINUS:
-        if (DefaultDataParser.isDigit(arr[i + 1])) {          
+        if (SyncDataParser.isDigit(arr[i + 1])) {          
           return valueTypes.NUMBER;
         }
         return valueTypes.UNKNOWN;
@@ -255,7 +259,7 @@ export class DefaultDataParser implements DataParser {
             continue outer_loop;
           }
         }
-        if (allowOpened || !DefaultDataParser.isRegularChar(arr[i + j])) {
+        if (allowOpened || !SyncDataParser.isRegularChar(arr[i + j])) {
           return {start: i, end: i + j - 1};
         }
       }
@@ -268,7 +272,7 @@ export class DefaultDataParser implements DataParser {
             continue outer_loop;
           }
         }
-        if (allowOpened || !DefaultDataParser.isRegularChar(arr[i - j])) {
+        if (allowOpened || !SyncDataParser.isRegularChar(arr[i - j])) {
           return {start: i - j + 1, end: i};
         }
       }
@@ -318,14 +322,14 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isNewLineChar(arr[i])) {
+        if (SyncDataParser.isNewLineChar(arr[i])) {
           lineBreakIndex = i;
           break;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isNewLineChar(arr[i])) {
+        if (SyncDataParser.isNewLineChar(arr[i])) {
           lineBreakIndex = i;
           break;
         }
@@ -363,13 +367,13 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isSpaceChar(arr[i])) {
+        if (SyncDataParser.isSpaceChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isSpaceChar(arr[i])) {
+        if (SyncDataParser.isSpaceChar(arr[i])) {
           return i;
         }
       }
@@ -390,13 +394,13 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isNotSpaceChar(arr[i])) {
+        if (SyncDataParser.isNotSpaceChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isNotSpaceChar(arr[i])) {
+        if (SyncDataParser.isNotSpaceChar(arr[i])) {
           return i;
         }
       }
@@ -417,13 +421,13 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isDelimiterChar(arr[i])) {
+        if (SyncDataParser.isDelimiterChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isDelimiterChar(arr[i])) {
+        if (SyncDataParser.isDelimiterChar(arr[i])) {
           return i;
         }
       }
@@ -444,13 +448,13 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isNotDelimiterChar(arr[i])) {
+        if (SyncDataParser.isNotDelimiterChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isNotDelimiterChar(arr[i])) {
+        if (SyncDataParser.isNotDelimiterChar(arr[i])) {
           return i;
         }
       }
@@ -471,13 +475,13 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isRegularChar(arr[i])) {
+        if (SyncDataParser.isRegularChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isRegularChar(arr[i])) {
+        if (SyncDataParser.isRegularChar(arr[i])) {
           return i;
         }
       }
@@ -498,13 +502,13 @@ export class DefaultDataParser implements DataParser {
       
     if (direction) {        
       for (i; i <= this._maxIndex; i++) {
-        if (DefaultDataParser.isNotRegularChar(arr[i])) {
+        if (SyncDataParser.isNotRegularChar(arr[i])) {
           return i;
         }
       }    
     } else {        
       for (i; i >= 0; i--) {
-        if (DefaultDataParser.isNotRegularChar(arr[i])) {
+        if (SyncDataParser.isNotRegularChar(arr[i])) {
           return i;
         }
       }
@@ -759,7 +763,7 @@ export class DefaultDataParser implements DataParser {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
-    if (this.isOutside(start) || !DefaultDataParser.isRegularChar(this._data[start])) {
+    if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
       return null;
     }
 
@@ -773,7 +777,7 @@ export class DefaultDataParser implements DataParser {
       numberStr += "0.";
       value = this._data[++i];
     }
-    while (DefaultDataParser.isDigit(value)
+    while (SyncDataParser.isDigit(value)
       || (float && value === codes.DOT)) {
       numberStr += String.fromCharCode(value);
       value = this._data[++i];
@@ -798,7 +802,7 @@ export class DefaultDataParser implements DataParser {
       ? "/"
       : "";
     let value = this._data[i];
-    while (DefaultDataParser.isRegularChar(value)) {
+    while (SyncDataParser.isRegularChar(value)) {
       result += String.fromCharCode(value);
       value = this._data[++i];
     };
@@ -819,7 +823,7 @@ export class DefaultDataParser implements DataParser {
     let i = start;
     let result = "";
     let value = this._data[i];
-    while (DefaultDataParser.isRegularChar(value)) {
+    while (SyncDataParser.isRegularChar(value)) {
       result += String.fromCharCode(value);
       value = this._data[++i];
     };
@@ -978,7 +982,7 @@ export class DefaultDataParser implements DataParser {
       }
 
       // check if name is closed
-      if (!DefaultDataParser.isRegularChar(arr[i + j])) {
+      if (!SyncDataParser.isRegularChar(arr[i + j])) {
         propNameBounds = {start: i, end: i + j - 1};
         break;
       }

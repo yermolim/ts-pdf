@@ -4,7 +4,7 @@ import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/encryption/interfaces";
 
 import { DataParser } from "../document/data-parse/data-parser";
-import { DefaultDataParser } from "../document/data-parse/default-data-parser";
+import { SyncDataParser } from "../document/data-parse/sync-data-parser";
 import { ParserInfo } from "../document/data-parse/parser-info";
 import { DataUpdater, PageUpdateInfo } from "../document/data-save/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
@@ -155,7 +155,7 @@ export class DocumentService {
     this._eventService = eventService;
 
     this._data = data;
-    this._docParser = new DefaultDataParser(data);    
+    this._docParser = new SyncDataParser(data);    
     const xrefParser = new XrefParser(this._docParser);
 
     this._version = xrefParser.getPdfVersion();
@@ -204,6 +204,8 @@ export class DocumentService {
 
     this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
     this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+
+    this._docParser?.destroy();
   }
 
   tryAuthenticate(password = ""): boolean {
@@ -574,7 +576,7 @@ export class DocumentService {
     if (!stream) {
       return;
     }
-    const objectParseInfo = stream.value.getObjectData(id, DefaultDataParser);
+    const objectParseInfo = stream.value.getObjectData(id, SyncDataParser);
     if (objectParseInfo) {
       // the object is found inside the stream
       objectParseInfo.parseInfoGetter = parseInfoGetter;
