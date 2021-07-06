@@ -139,7 +139,7 @@ export abstract class PdfStream extends PdfObject {
     this._ref = parseInfo.cryptInfo?.ref;
     this._sourceBytes = parser.sliceCharCodes(start, end);
 
-    const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, { 
+    const streamEndIndex = await parser.findSubarrayIndexAsync(keywordCodes.STREAM_END, { 
       direction: false, 
       minIndex: start, 
       maxIndex: end, 
@@ -148,7 +148,7 @@ export abstract class PdfStream extends PdfObject {
     if (!streamEndIndex) {
       throw new Error("Object is not a stream");
     }   
-    const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
+    const streamStartIndex = await parser.findSubarrayIndexAsync(keywordCodes.STREAM_START, {
       direction: false, 
       minIndex: start,
       maxIndex: streamEndIndex.start - 1, 
@@ -159,7 +159,7 @@ export abstract class PdfStream extends PdfObject {
     }   
     
     const dictBounds = parser.getDictBoundsAt(start);
-    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+    let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
       throw new Error("Dict is empty (has no properties)");
     }    
@@ -247,7 +247,7 @@ export abstract class PdfStream extends PdfObject {
 
           default:
             // skip value to next name
-            i = parser.skipToNextName(i, dictBounds.contentEnd);
+            i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
             break;
         }
       } else {

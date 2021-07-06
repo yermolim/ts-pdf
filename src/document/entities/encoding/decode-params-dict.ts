@@ -114,7 +114,7 @@ export class DecodeParamsDict extends PdfDict {
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;
     
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -133,7 +133,7 @@ export class DecodeParamsDict extends PdfDict {
             }   
             break; 
           case valueTypes.BOOLEAN:       
-            const boolValue = parser.parseBoolAt(i);
+            const boolValue = await parser.parseBoolAtAsync(i);
             if (boolValue) {
               this._boolPropMap.set(name, boolValue.value);
               i = boolValue.end + 1;
@@ -157,7 +157,7 @@ export class DecodeParamsDict extends PdfDict {
             }
             break;
         } 
-        i = parser.skipToNextName(i, end - 1);
+        i = await parser.skipToNextNameAsync(i, end - 1);
       } else {
         break;
       }

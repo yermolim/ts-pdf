@@ -83,15 +83,15 @@ export class UnicodeCmapStream extends PdfStream {
 
   protected async parseCodeRangesAsync(parser: DataParser) {
     let i = 0;
-    const codeRangeStart = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CODE_RANGE, 
-      { closedOnly: true })?.end;
+    const codeRangeStart = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CODE_RANGE, 
+      { closedOnly: true }))?.end;
     if (!codeRangeStart) {
       // no allowed codes found
       return;
     }
     i = codeRangeStart + 1;
-    const codeRangeEnd = parser.findSubarrayIndex(keywordCodes.CMAP_END_CODE_RANGE, 
-      { closedOnly: true, minIndex: i })?.start;
+    const codeRangeEnd = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_CODE_RANGE, 
+      { closedOnly: true, minIndex: i }))?.start;
     while (i < codeRangeEnd - 1) {
       const rangeStart = await HexString.parseAsync(parser, i);
       i = rangeStart.end + 1;
@@ -110,15 +110,15 @@ export class UnicodeCmapStream extends PdfStream {
     let i = 0;
     // parse char maps (there can be multiple maps with up to 100 entries in each of them)
     while (true) {
-      const charMapStart = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CHAR, 
-        { closedOnly: true, minIndex: i })?.end;
+      const charMapStart = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CHAR, 
+        { closedOnly: true, minIndex: i }))?.end;
       if (!charMapStart) {
         // no char map found
         break;
       }
       i = charMapStart + 1;
-      const charMapEnd = parser.findSubarrayIndex(keywordCodes.CMAP_END_CHAR, 
-        { closedOnly: true, minIndex: i })?.start;
+      const charMapEnd = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_CHAR, 
+        { closedOnly: true, minIndex: i }))?.start;
       while (i < charMapEnd - 1) {
         const hexKey = await HexString.parseAsync(parser, i);
         i = hexKey.end + 1;
@@ -134,15 +134,15 @@ export class UnicodeCmapStream extends PdfStream {
     let i = 0;
     // parse char map ranges (there can be multiple ranges with up to 100 entries in each of them)
     while (true) {
-      const rangeMapStart = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_RANGE, 
-        { closedOnly: true, minIndex: i })?.end;
+      const rangeMapStart = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_RANGE, 
+        { closedOnly: true, minIndex: i }))?.end;
       if (!rangeMapStart) {
         // no char map found
         break;
       }
       i = rangeMapStart + 1;
-      const rangeMapEnd = parser.findSubarrayIndex(keywordCodes.CMAP_END_RANGE, 
-        { closedOnly: true, minIndex: i })?.start;
+      const rangeMapEnd = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_RANGE, 
+        { closedOnly: true, minIndex: i }))?.start;
       while (i < rangeMapEnd - 1) {
         const keyRangeStart = await HexString.parseAsync(parser, i);
         i = keyRangeStart.end + 1;

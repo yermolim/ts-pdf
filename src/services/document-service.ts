@@ -406,12 +406,12 @@ export class DocumentService {
   private async parseXrefsAsync() {    
     const xrefParser = new XrefParser(this._docParser);
 
-    this._version = xrefParser.getPdfVersion();
+    this._version = await xrefParser.getPdfVersionAsync();
     if (!this._version) {      
       throw new Error("Error parsing PDF version number");
     }
 
-    const lastXrefIndex = xrefParser.getLastXrefIndex();
+    const lastXrefIndex = await xrefParser.getLastXrefIndexAsync();
     if (!lastXrefIndex) {{
       throw new Error("File doesn't contain update section");
     }}
@@ -565,15 +565,15 @@ export class DocumentService {
       return null;
     }   
 
-    const bounds = this._docParser.getIndirectObjectBoundsAt(objectId.end + 1, true);
+    const bounds = await this._docParser.getIndirectObjectBoundsAtAsync(objectId.end + 1, true);
     if (!bounds) {
       return null;
     }
-    const parseInfoGetter = this.getObjectParseInfoAsync;
+    const parseInfoGetterAsync = this.getObjectParseInfoAsync;
     const info: ParserInfo = {
       parser: this._docParser, 
       bounds, 
-      parseInfoGetterAsync: parseInfoGetter, 
+      parseInfoGetterAsync: parseInfoGetterAsync, 
       cryptInfo: {
         ref: {id: objectId.value.id, generation: objectId.value.generation},
         stringCryptor: this._authResult?.stringCryptor,
@@ -595,7 +595,7 @@ export class DocumentService {
     const objectParseInfo = await stream.value.getObjectDataAsync(id, SyncDataParser);
     if (objectParseInfo) {
       // the object is found inside the stream
-      objectParseInfo.parseInfoGetterAsync = parseInfoGetter;
+      objectParseInfo.parseInfoGetterAsync = parseInfoGetterAsync;
       return objectParseInfo;
     }
 

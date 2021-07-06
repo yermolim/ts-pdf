@@ -757,7 +757,7 @@ export class FontDict extends PdfDict {
     // DEBUG
     // console.log(parser.sliceChars(start, end));  
     
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -799,13 +799,13 @@ export class FontDict extends PdfDict {
             
           case "/FontBBox":
           case "/FontMatrix":
-            i = this.parseNumberArrayProp(name, parser, i, true);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             break; 
 
           case "/Widths":
             const widthPropType = parser.getValueTypeAt(i);
             if (widthPropType === valueTypes.ARRAY) {
-              i = this.parseNumberArrayProp(name, parser, i, true);
+              i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             } else if (widthPropType === valueTypes.REF) {              
               i = await this.parseRefPropAsync(name, parser, i);
             } else {
@@ -845,7 +845,7 @@ export class FontDict extends PdfDict {
           // TODO: add cases for remaining properties if needed
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {

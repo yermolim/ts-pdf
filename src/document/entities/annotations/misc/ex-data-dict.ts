@@ -53,7 +53,7 @@ export class ExDataDict extends PdfDict {
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -66,7 +66,7 @@ export class ExDataDict extends PdfDict {
             const subtype = parser.parseNameAt(i);
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
-                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -76,7 +76,7 @@ export class ExDataDict extends PdfDict {
              
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {

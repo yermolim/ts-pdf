@@ -173,7 +173,7 @@ export class ObjectStream extends PdfStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+    let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -193,7 +193,7 @@ export class ObjectStream extends PdfStream {
 
           default:
             // skip to next name
-            i = parser.skipToNextName(i, dictBounds.contentEnd);
+            i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
             break;
         }
       } else {

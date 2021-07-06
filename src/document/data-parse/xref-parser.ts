@@ -24,8 +24,8 @@ export class XrefParser {
    * parse the PDF version (throws if the underlying data is not a PDF file)
    * @returns 
    */
-  getPdfVersion(): string {
-    const i = this._dataParser.findSubarrayIndex(keywordCodes.VERSION);
+  async getPdfVersionAsync(): Promise<string> {
+    const i = await this._dataParser.findSubarrayIndexAsync(keywordCodes.VERSION);
     if (!i) {
       return null;
     }
@@ -41,8 +41,8 @@ export class XrefParser {
    * parse the last cross-reference section byte offset
    * @returns the last cross-reference section byte offset (null if not found)
    */
-  getLastXrefIndex(): ParserResult<number> {
-    const xrefStartIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_START, 
+  async getLastXrefIndexAsync(): Promise<ParserResult<number>> {
+    const xrefStartIndex = await this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_START, 
       {maxIndex: this._dataParser.maxIndex, direction: false});
     if (!xrefStartIndex) {
       return null;
@@ -69,10 +69,10 @@ export class XrefParser {
 
     const offset = start;
     
-    const xrefTableIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_TABLE, 
+    const xrefTableIndex = await this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_TABLE, 
       {minIndex: start, closedOnly: true});
     if (xrefTableIndex && xrefTableIndex.start === start) {      
-      const xrefStmIndexProp = this._dataParser.findSubarrayIndex(keywordCodes.XREF_HYBRID,
+      const xrefStmIndexProp = await this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_HYBRID,
         {minIndex: start, maxIndex: max, closedOnly: true});
       if (xrefStmIndexProp) {
         // HYBRID
@@ -92,7 +92,7 @@ export class XrefParser {
     if (!id) {
       return null;
     }
-    const xrefStreamBounds = this._dataParser.getIndirectObjectBoundsAt(id.end + 1);   
+    const xrefStreamBounds = await this._dataParser.getIndirectObjectBoundsAtAsync(id.end + 1);   
     if (!xrefStreamBounds) {      
       return null;
     }       

@@ -397,7 +397,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     // DEBUG
     // console.log(parser.sliceChars(start, end));    
     
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -411,7 +411,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -420,7 +420,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             break;
           
           case "/Rect":
-            i = this.parseNumberArrayProp(name, parser, i, true);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             break;
           
           case "/P":
@@ -449,7 +449,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             throw new Error("Can't parse /M property value"); 
        
           case "/C":
-            i = this.parseNumberArrayProp(name, parser, i, true);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             break;
           
           case "/F":
@@ -567,7 +567,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
           case "/OC":
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {

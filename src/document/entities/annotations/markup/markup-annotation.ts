@@ -121,7 +121,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -154,8 +154,9 @@ export abstract class MarkupAnnotation extends AnnotationDict {
                   if (rcObjectType === valueTypes.STRING_LITERAL) {
                     // reference is to the indirect literal string 
                     // or to the string in an object stream 
-                    const popupTextFromIndirectLiteral = await LiteralString
-                      .parseAsync(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
+                    const popupTextFromIndirectLiteral = 
+                      await LiteralString.parseAsync(
+                        rcParseInfo.parser, rcParseInfo.bounds.contentStart);
                     if (popupTextFromIndirectLiteral) {
                       this.RC = popupTextFromIndirectLiteral.value;
                       i = rsObjectId.end + 1;
@@ -212,7 +213,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
             break;
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {

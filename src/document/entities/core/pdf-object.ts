@@ -160,7 +160,7 @@ export abstract class PdfObject implements IEncodable {
   
   protected async parseBoolPropAsync(propName: string, 
     parser: DataParser, index: number): Promise<number> {
-    const parsed = parser.parseBoolAt(index);
+    const parsed = await parser.parseBoolAtAsync(index);
     return this.setParsedProp(propName, parsed);
   }
   
@@ -182,7 +182,8 @@ export abstract class PdfObject implements IEncodable {
     return this.setParsedProp(propName, parsed);
   }
     
-  protected parseNumberArrayProp(propName: string, parser: DataParser, index: number, float = true): number {
+  protected async parseNumberArrayPropAsync(propName: string, 
+    parser: DataParser, index: number, float = true): Promise<number> {
     const parsed = parser.parseNumberArrayAt(index, float);
     return this.setParsedProp(propName, parsed);
   }

@@ -228,8 +228,8 @@ export class ResourceDict extends PdfDict {
         if (!streamParseInfo) {
           continue;
         }
-        const stream =  streamParseInfo.parser
-          .findSubarrayIndex(keywordCodes.FORM, {
+        const stream = await streamParseInfo.parser.findSubarrayIndexAsync(
+          keywordCodes.FORM, {
             direction: true,
             minIndex: streamParseInfo.bounds.start,
             maxIndex: streamParseInfo.bounds.end,
@@ -265,7 +265,7 @@ export class ResourceDict extends PdfDict {
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
     
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -318,7 +318,7 @@ export class ResourceDict extends PdfDict {
           
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {

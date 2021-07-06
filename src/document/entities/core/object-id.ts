@@ -70,7 +70,7 @@ export class ObjectId implements Reference, IEncodable {
     }
 
     const rIndexSupposed = id.end + 2;
-    const rIndex = parser.findSubarrayIndex([codes.R], 
+    const rIndex = await parser.findSubarrayIndexAsync([codes.R], 
       {minIndex: rIndexSupposed, closedOnly: true});
     if (!rIndex || rIndex.start !== rIndexSupposed) {
       return null;

@@ -304,7 +304,7 @@ export class LineAnnotation extends GeometricAnnotation {
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;    
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -315,7 +315,7 @@ export class LineAnnotation extends GeometricAnnotation {
         switch (name) {
           case "/L":
           case "/CO":
-            i = this.parseNumberArrayProp(name, parser, i, true);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             break;
           
           case "/LE":
@@ -395,7 +395,7 @@ export class LineAnnotation extends GeometricAnnotation {
 
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {

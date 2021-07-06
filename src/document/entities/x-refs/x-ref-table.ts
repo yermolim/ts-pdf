@@ -116,7 +116,7 @@ export class XRefTable extends XRef {
       return null;
     }
 
-    const xrefTableBounds = parser.getXrefTableBoundsAt(start);
+    const xrefTableBounds = await parser.getXrefTableBoundsAtAsync(start);
     if (!xrefTableBounds) {
       return null;
     }

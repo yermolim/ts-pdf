@@ -328,7 +328,7 @@ export class ImageStream extends PdfStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+    let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -342,7 +342,7 @@ export class ImageStream extends PdfStream {
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -359,11 +359,11 @@ export class ImageStream extends PdfStream {
             break; 
             
           case "/Decode":
-            i = this.parseNumberArrayProp(name, parser, i, false);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, false);
             break; 
 
           case "/Matte":
-            i = this.parseNumberArrayProp(name, parser, i, true);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             break; 
 
           case "/Interpolate":
@@ -429,7 +429,7 @@ export class ImageStream extends PdfStream {
             throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
            
           case "/ImageMask":
-            const imageMask = parser.parseBoolAt(i, false);
+            const imageMask = await parser.parseBoolAtAsync(i, false);
             if (imageMask) {
               this.ImageMask = imageMask.value;
               i = imageMask.end + 1;
@@ -495,7 +495,7 @@ export class ImageStream extends PdfStream {
           case "/OPI":
           default:
             // skip to next name
-            i = parser.skipToNextName(i, dictBounds.contentEnd);
+            i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
             break;
         }
       } else {

@@ -911,7 +911,7 @@ export class AppearanceStreamRenderer {
           //#endregion
 
         case "BT": // Text object
-          const textObjectEnd = parser.findSubarrayIndex(keywordCodes.AP_STREAM_TEXT_END, {
+          const textObjectEnd = await parser.findSubarrayIndexAsync(keywordCodes.AP_STREAM_TEXT_END, {
             closedOnly: true, 
             minIndex: i,
           });

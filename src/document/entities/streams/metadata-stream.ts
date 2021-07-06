@@ -53,7 +53,7 @@ export class MetadataStream extends TextStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+    let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -67,7 +67,7 @@ export class MetadataStream extends TextStream {
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -76,7 +76,7 @@ export class MetadataStream extends TextStream {
             break;
           default:
             // skip to next name
-            i = parser.skipToNextName(i, dictBounds.contentEnd);
+            i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
             break;
         }
       } else {

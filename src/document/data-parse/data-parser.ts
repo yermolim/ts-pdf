@@ -58,8 +58,8 @@ export interface DataParser {
    * @param start starting index
    * @param closedOnly define if subarray must be followed by a delimiter in the search direction
    */
-  findSubarrayIndex(sub: number[] | readonly number[], 
-    options?: ParserOptions): ParserBounds;
+  findSubarrayIndexAsync(sub: number[] | readonly number[], 
+    options?: ParserOptions): Promise<ParserBounds>;
 
   /**
    * find the nearest specified char index
@@ -130,9 +130,9 @@ export interface DataParser {
 
   //#region get bounds methods  
   
-  getIndirectObjectBoundsAt(start: number, skipEmpty?: boolean): ParserBounds;
+  getIndirectObjectBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
   
-  getXrefTableBoundsAt(start: number, skipEmpty?: boolean): ParserBounds;
+  getXrefTableBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
   getDictBoundsAt(start: number, skipEmpty?: boolean): ParserBounds;
   
@@ -154,7 +154,7 @@ export interface DataParser {
   
   parseStringAt(start: number, skipEmpty?: boolean): ParserResult<string>;
   
-  parseBoolAt(start: number, skipEmpty?: boolean): ParserResult<boolean>;
+  parseBoolAtAsync(start: number, skipEmpty?: boolean): Promise<ParserResult<boolean>>;
   
   parseNumberArrayAt(start: number, float?: boolean, 
     skipEmpty?: boolean): ParserResult<number[]>;
@@ -185,7 +185,7 @@ export interface DataParser {
    * @param max search end index
    * @returns first PDF name index (-1 if not found till the end of the data)
    */
-  skipToNextName(start: number, max: number): number;
+  skipToNextNameAsync(start: number, max: number): Promise<number>;
 
   //#endregion
 

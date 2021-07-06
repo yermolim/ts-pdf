@@ -207,7 +207,7 @@ export class XFormStream extends PdfStream {
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
     
-    let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+    let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
@@ -221,7 +221,7 @@ export class XFormStream extends PdfStream {
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
-                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
               }
               i = subtype.end + 1;
             } else {
@@ -243,7 +243,7 @@ export class XFormStream extends PdfStream {
 
           case "/BBox":
           case "/Matrix":
-            i = this.parseNumberArrayProp(name, parser, i, true);
+            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             break; 
 
           case "/LastModified":
@@ -316,8 +316,8 @@ export class XFormStream extends PdfStream {
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
               const measureDictBounds = parser.getDictBoundsAt(i); 
               if (measureDictBounds) {
-                const measureDict = await MeasureDict
-                  .parseAsync({parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo});
+                const measureDict = await MeasureDict.parseAsync(
+                  {parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo});
                 if (measureDict) {
                   this.Measure = measureDict.value;
                   i = measureDict.end + 1;
@@ -346,8 +346,8 @@ export class XFormStream extends PdfStream {
             } else if (groupEntryType === valueTypes.DICTIONARY) { 
               const groupDictBounds = parser.getDictBoundsAt(i); 
               if (groupDictBounds) {
-                const groupDict = await TransparencyGroupDict
-                  .parseAsync({parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo});
+                const groupDict = await TransparencyGroupDict.parseAsync(
+                  {parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo});
                 if (groupDict) {
                   this.Group = groupDict.value;
                   i = groupDict.end + 1;
@@ -363,7 +363,7 @@ export class XFormStream extends PdfStream {
           case "/OPI":
           default:
             // skip to next name
-            i = parser.skipToNextName(i, dictBounds.contentEnd);
+            i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
             break;
         }
       } else {

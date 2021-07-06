@@ -233,8 +233,8 @@ export class SyncDataParser implements DataParser {
 
   //#region search methods
 
-  findSubarrayIndex(sub: number[] | readonly number[], 
-    options?: ParserOptions): ParserBounds { 
+  async findSubarrayIndexAsync(sub: number[] | readonly number[], 
+    options?: ParserOptions): Promise<ParserBounds> { 
 
     const arr = this._data;
     if (!sub?.length) {
@@ -521,7 +521,7 @@ export class SyncDataParser implements DataParser {
 
   //#region get bounds methods  
   
-  getIndirectObjectBoundsAt(start: number, skipEmpty = true): ParserBounds {   
+  async getIndirectObjectBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -529,7 +529,7 @@ export class SyncDataParser implements DataParser {
       return null;
     }    
 
-    const objStartIndex = this.findSubarrayIndex(keywordCodes.OBJ, 
+    const objStartIndex = await this.findSubarrayIndexAsync(keywordCodes.OBJ, 
       {minIndex: start, closedOnly: true});
     if (!objStartIndex) {
       return null;
@@ -539,7 +539,7 @@ export class SyncDataParser implements DataParser {
     if (contentStart === -1){
       return null;
     }    
-    const objEndIndex = this.findSubarrayIndex(keywordCodes.OBJ_END, 
+    const objEndIndex = await this.findSubarrayIndexAsync(keywordCodes.OBJ_END, 
       {minIndex: contentStart, closedOnly: true});
     if (!objEndIndex) {
       return null;
@@ -563,7 +563,7 @@ export class SyncDataParser implements DataParser {
     };
   } 
   
-  getXrefTableBoundsAt(start: number, skipEmpty = true): ParserBounds {   
+  async getXrefTableBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -571,7 +571,7 @@ export class SyncDataParser implements DataParser {
       return null;
     }
 
-    const xrefStart = this.findSubarrayIndex(keywordCodes.XREF_TABLE, 
+    const xrefStart = await this.findSubarrayIndexAsync(keywordCodes.XREF_TABLE, 
       {minIndex: start});
     if (!xrefStart) {
       return null;
@@ -580,7 +580,7 @@ export class SyncDataParser implements DataParser {
     if (contentStart === -1){
       return null;
     }   
-    const xrefEnd = this.findSubarrayIndex(keywordCodes.TRAILER, 
+    const xrefEnd = await this.findSubarrayIndexAsync(keywordCodes.TRAILER, 
       {minIndex: xrefStart.end + 1});
     if (!xrefEnd) {
       return null;
@@ -833,7 +833,7 @@ export class SyncDataParser implements DataParser {
       : null;
   } 
   
-  parseBoolAt(start: number, skipEmpty = true): ParserResult<boolean>  {
+  async parseBoolAtAsync(start: number, skipEmpty = true): Promise<ParserResult<boolean>>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }    
@@ -844,7 +844,7 @@ export class SyncDataParser implements DataParser {
 
     const nearestDelimiter = this.findDelimiterIndex(true, start);
 
-    const isTrue = this.findSubarrayIndex(keywordCodes.TRUE, {
+    const isTrue = await this.findSubarrayIndexAsync(keywordCodes.TRUE, {
       minIndex: start, 
       maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
     });
@@ -852,7 +852,7 @@ export class SyncDataParser implements DataParser {
       return {value: true, start, end: isTrue.end};
     }    
     
-    const isFalse = this.findSubarrayIndex(keywordCodes.FALSE, {
+    const isFalse = await this.findSubarrayIndexAsync(keywordCodes.FALSE, {
       minIndex: start,      
       maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
     });
@@ -1021,7 +1021,7 @@ export class SyncDataParser implements DataParser {
     return index;
   }
 
-  skipToNextName(start: number, max: number): number {
+  async skipToNextNameAsync(start: number, max: number): Promise<number> {
     start ||= 0;
     max = max 
       ? Math.min(max, this._maxIndex)
@@ -1055,7 +1055,7 @@ export class SyncDataParser implements DataParser {
             }
             break; 
           case valueTypes.BOOLEAN:
-            const boolParseResult = this.parseBoolAt(i, false);
+            const boolParseResult = await this.parseBoolAtAsync(i, false);
             if (boolParseResult) {
               skipValueBounds = boolParseResult;
             }

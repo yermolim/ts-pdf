@@ -54,7 +54,7 @@ export abstract class PdfDict extends PdfObject {
     this._streamId = parseInfo.streamId;
     this._sourceBytes = parser.sliceCharCodes(start, end);
 
-    let i = parser.skipToNextName(start, end - 1);
+    let i = await parser.skipToNextNameAsync(start, end - 1);
     if (i === -1) {     
       throw new Error("Dict is empty (has no properties)");
     }
@@ -80,7 +80,7 @@ export abstract class PdfDict extends PdfObject {
 
           default:
             // skip to next name
-            i = parser.skipToNextName(i, end - 1);
+            i = await parser.skipToNextNameAsync(i, end - 1);
             break;
         }
       } else {
