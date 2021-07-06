@@ -190,14 +190,14 @@ export class LineAnnotation extends GeometricAnnotation {
     return annotation.initProxy();
   }
 
-  static parse(parseInfo: ParserInfo, 
-    fontMap: Map<string, FontDict>): ParserResult<LineAnnotation> {  
+  static async parseAsync(parseInfo: ParserInfo, 
+    fontMap: Map<string, FontDict>): Promise<ParserResult<LineAnnotation>> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
     try {
       const pdfObject = new LineAnnotation();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       pdfObject._fontMap = fontMap;
       return {
         value: pdfObject.initProxy(), 
@@ -299,8 +299,8 @@ export class LineAnnotation extends GeometricAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;    
@@ -356,21 +356,21 @@ export class LineAnnotation extends GeometricAnnotation {
           case "/LL":      
           case "/LLE":
           case "/LLO":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break; 
 
           case "/Cap":
-            i = this.parseBoolProp(name, parser, i);
+            i = await this.parseBoolPropAsync(name, parser, i);
             break; 
 
           case "/Measure":            
             const measureEntryType = parser.getValueTypeAt(i);
             if (measureEntryType === valueTypes.REF) {              
-              const measureDictId = ObjectId.parseRef(parser, i);
-              if (measureDictId && parseInfo.parseInfoGetter) {
-                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+              const measureDictId = await ObjectId.parseRefAsync(parser, i);
+              if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                const measureParseInfo = await parseInfo.parseInfoGetterAsync(measureDictId.value.id);
                 if (measureParseInfo) {
-                  const measureDict = MeasureDict.parse(measureParseInfo);
+                  const measureDict = await MeasureDict.parseAsync(measureParseInfo);
                   if (measureDict) {
                     this.Measure = measureDict.value;
                     i = measureDict.end + 1;
@@ -382,7 +382,7 @@ export class LineAnnotation extends GeometricAnnotation {
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
               const measureDictBounds = parser.getDictBoundsAt(i); 
               if (measureDictBounds) {
-                const measureDict = MeasureDict.parse({parser, bounds: measureDictBounds});
+                const measureDict = await MeasureDict.parseAsync({parser, bounds: measureDictBounds});
                 if (measureDict) {
                   this.Measure = measureDict.value;
                   i = measureDict.end + 1;

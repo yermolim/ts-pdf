@@ -70,13 +70,13 @@ export class InkAnnotation extends MarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<InkAnnotation> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<InkAnnotation>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new InkAnnotation();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -136,8 +136,8 @@ export class InkAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -187,7 +187,7 @@ export class InkAnnotation extends MarkupAnnotation {
     // bake the current annotation rotation into its appearance stream
     // works perfectly with PDF-XChange annotations
     // TODO: test with annotations created not in PDF-XChange
-    this.bakeRotationAsync();    
+    await this.bakeRotationAsync();    
   }
 
   protected generateApStream() {

@@ -15,13 +15,13 @@ export class DecodeParamsDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
 
-  static parse(parseInfo: ParserInfo): ParserResult<DecodeParamsDict> {  
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<DecodeParamsDict>> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new DecodeParamsDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -29,8 +29,8 @@ export class DecodeParamsDict extends PdfDict {
     }
   }
   
-  static parseArray(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParserResult<DecodeParamsDict[]>  {
+  static async parseArrayAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
+    skipEmpty = true): Promise<ParserResult<DecodeParamsDict[]>> {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
@@ -41,7 +41,7 @@ export class DecodeParamsDict extends PdfDict {
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
       const paramsBounds = parser.getDictBoundsAt(i);
-      current = DecodeParamsDict.parse({parser, bounds: paramsBounds, cryptInfo});
+      current = await DecodeParamsDict.parseAsync({parser, bounds: paramsBounds, cryptInfo});
       if (!current) {
         break;
       }
@@ -108,8 +108,8 @@ export class DecodeParamsDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;
@@ -149,7 +149,7 @@ export class DecodeParamsDict extends PdfDict {
             }
             break;              
           case valueTypes.REF:       
-            const refValue = ObjectId.parseRef(parser, i);
+            const refValue = await ObjectId.parseRefAsync(parser, i);
             if (refValue) {
               this._refPropMap.set(name, refValue.value);
               i = refValue.end + 1;

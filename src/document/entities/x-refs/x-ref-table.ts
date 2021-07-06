@@ -110,7 +110,8 @@ export class XRefTable extends XRef {
    * @param offset CRT byte offset in the PDF document
    * @returns 
    */
-  static parse(parser: DataParser, start: number, offset: number): ParserResult<XRefTable> {
+  static async parseAsync(parser: DataParser, start: number, 
+    offset: number): Promise<ParserResult<XRefTable>> {
     if (!parser || isNaN(start)) {
       return null;
     }
@@ -128,7 +129,7 @@ export class XRefTable extends XRef {
     const table = parser.sliceCharCodes(xrefTableBounds.contentStart, 
       xrefTableBounds.contentEnd);    
 
-    const trailerDict = TrailerDict.parse({parser, bounds: trailerDictBounds});   
+    const trailerDict = await TrailerDict.parseAsync({parser, bounds: trailerDictBounds});   
     if (!trailerDict) {
       return null;
     }

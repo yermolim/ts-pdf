@@ -55,8 +55,8 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -88,11 +88,11 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
           case "/Measure":            
             const measureEntryType = parser.getValueTypeAt(i);
             if (measureEntryType === valueTypes.REF) {              
-              const measureDictId = ObjectId.parseRef(parser, i);
-              if (measureDictId && parseInfo.parseInfoGetter) {
-                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
+              const measureDictId = await ObjectId.parseRefAsync(parser, i);
+              if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                const measureParseInfo = await parseInfo.parseInfoGetterAsync(measureDictId.value.id);
                 if (measureParseInfo) {
-                  const measureDict = MeasureDict.parse(measureParseInfo);
+                  const measureDict = await MeasureDict.parseAsync(measureParseInfo);
                   if (measureDict) {
                     this.Measure = measureDict.value;
                     i = measureDict.end + 1;
@@ -104,7 +104,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
               const measureDictBounds = parser.getDictBoundsAt(i); 
               if (measureDictBounds) {
-                const measureDict = MeasureDict.parse({parser, bounds: measureDictBounds});
+                const measureDict = await MeasureDict.parseAsync({parser, bounds: measureDictBounds});
                 if (measureDict) {
                   this.Measure = measureDict.value;
                   i = measureDict.end + 1;

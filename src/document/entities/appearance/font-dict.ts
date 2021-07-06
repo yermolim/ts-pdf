@@ -412,13 +412,13 @@ export class FontDict extends PdfDict {
     return map;
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<FontDict> {    
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<FontDict>> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new FontDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -748,8 +748,8 @@ export class FontDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -775,26 +775,26 @@ export class FontDict extends PdfDict {
             }
             throw new Error("Can't parse /Subtype property value");       
           case "/BaseFont":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break;          
           case "/Encoding":
             const encodingPropType = parser.getValueTypeAt(i);
             if (encodingPropType === valueTypes.NAME) {
-              i = this.parseNameProp(name, parser, i);
+              i = await this.parseNamePropAsync(name, parser, i);
             } else if (encodingPropType === valueTypes.REF) {              
-              i = this.parseRefProp(name, parser, i);
+              i = await this.parseRefPropAsync(name, parser, i);
             } else {
               throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
             }
             break;
           
           case "/ToUnicode":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break; 
             
           case "/FirstChar":
           case "/LastChar":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break; 
             
           case "/FontBBox":
@@ -807,14 +807,14 @@ export class FontDict extends PdfDict {
             if (widthPropType === valueTypes.ARRAY) {
               i = this.parseNumberArrayProp(name, parser, i, true);
             } else if (widthPropType === valueTypes.REF) {              
-              i = this.parseRefProp(name, parser, i);
+              i = await this.parseRefPropAsync(name, parser, i);
             } else {
               throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
             }
             break;
             
           case "/FontDescriptor":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break; 
 
           // there is no need to parse font resources and char to stream maps
@@ -824,8 +824,8 @@ export class FontDict extends PdfDict {
           case "/CharProcs":  
             const excludedEntryType = parser.getValueTypeAt(i);
             if (excludedEntryType === valueTypes.REF) {              
-              const excludedDictId = ObjectId.parseRef(parser, i);
-              if (excludedDictId && parseInfo.parseInfoGetter) {
+              const excludedDictId = await ObjectId.parseRefAsync(parser, i);
+              if (excludedDictId && parseInfo.parseInfoGetterAsync) {
                 this[name.slice(1)] = parser.sliceCharCodes(excludedDictId.start, excludedDictId.end);
                 i = excludedDictId.end + 1;
                 break;
@@ -854,20 +854,20 @@ export class FontDict extends PdfDict {
     };
 
     if (this.Encoding && this.Encoding instanceof ObjectId) {
-      const encodingParseInfo = parseInfo.parseInfoGetter(this.Encoding.id);
-      const encodingDict = EncodingDict.parse(encodingParseInfo);
+      const encodingParseInfo = await parseInfo.parseInfoGetterAsync(this.Encoding.id);
+      const encodingDict = await EncodingDict.parseAsync(encodingParseInfo);
       this._encoding = encodingDict?.value;
     }
 
     if (this.ToUnicode) {      
-      const toUtfParseInfo = parseInfo.parseInfoGetter(this.ToUnicode.id);
-      const cmap = UnicodeCmapStream.parse(toUtfParseInfo);
+      const toUtfParseInfo = await parseInfo.parseInfoGetterAsync(this.ToUnicode.id);
+      const cmap = await UnicodeCmapStream.parseAsync(toUtfParseInfo);
       this._toUtfCmap = cmap?.value;
     }
     
     if (this.FontDescriptor) {      
-      const descriptorParseInfo = parseInfo.parseInfoGetter(this.FontDescriptor.id);
-      const descriptor = FontDescriptorDict.parse(descriptorParseInfo);
+      const descriptorParseInfo = await parseInfo.parseInfoGetterAsync(this.FontDescriptor.id);
+      const descriptor = await FontDescriptorDict.parseAsync(descriptorParseInfo);
       this._descriptor = descriptor?.value;
     }
 

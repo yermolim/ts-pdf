@@ -100,7 +100,8 @@ export class AppearanceStreamRenderer {
    * @param i byte offset from the stream start
    * @returns 
    */
-  protected static parseNextCommand(parser: DataParser, i: number): ParsedCommand {
+  protected static async parseNextCommandAsync(
+    parser: DataParser, i: number): Promise<ParsedCommand> {
     const parameters: OperatorParameter[] = [];
     let operator: string;
     // parse parameters and operator
@@ -124,7 +125,7 @@ export class AppearanceStreamRenderer {
             const nextArrayValueType = parser.getValueTypeAt(j, true);
             switch (nextArrayValueType) {
               case valueTypes.STRING_LITERAL:
-                const arrayLiteralResult = LiteralString.parse(parser, j);
+                const arrayLiteralResult = await LiteralString.parseAsync(parser, j);
                 parameters.push(arrayLiteralResult.value.bytes);
                 j = arrayLiteralResult.end + 1;
                 break;
@@ -142,12 +143,12 @@ export class AppearanceStreamRenderer {
           i = arrayBounds.end + 1;
           break;
         case valueTypes.STRING_LITERAL:
-          const literalResult = LiteralString.parse(parser, i);
+          const literalResult = await LiteralString.parseAsync(parser, i);
           parameters.push(literalResult.value.literal);
           i = literalResult.end + 1;
           break;
         case valueTypes.STRING_HEX:
-          const hexResult = HexString.parse(parser, i);
+          const hexResult = await HexString.parseAsync(parser, i);
           parameters.push(hexResult.value.hex);
           i = hexResult.end + 1;
           break;
@@ -752,7 +753,8 @@ export class AppearanceStreamRenderer {
 
     let i = 0;
     while (i !== -1) {
-      const {nextIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
+      const {nextIndex, parameters, operator} = 
+        await AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
       i = parser.skipEmpty(nextIndex);
         
       switch (operator) {
@@ -805,7 +807,8 @@ export class AppearanceStreamRenderer {
     let d = "";
     let i = 0;
     while (i !== -1) {
-      const {nextIndex, parameters, operator} = AppearanceStreamRenderer.parseNextCommand(parser, i);
+      const {nextIndex, parameters, operator} =
+        await AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
       i = parser.skipEmpty(nextIndex + 1);
   
       switch (operator) {  

@@ -52,13 +52,13 @@ export class TrailerDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<TrailerDict> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<TrailerDict>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new TrailerDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -97,8 +97,8 @@ export class TrailerDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -114,18 +114,18 @@ export class TrailerDict extends PdfDict {
         switch (name) {
           case "/Size":
           case "/Prev":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break;
 
           case "/Root":
           case "/Info":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
 
           case "/Encrypt":
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.REF) {              
-              const encryptId = ObjectId.parseRef(parser, i);
+              const encryptId = await ObjectId.parseRefAsync(parser, i);
               if (encryptId) {
                 this.Encrypt = encryptId.value;
                 i = encryptId.end + 1;
@@ -149,7 +149,7 @@ export class TrailerDict extends PdfDict {
             throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
 
           case "/ID":
-            const hexIds = HexString.parseArray(parser, i);
+            const hexIds = await HexString.parseArrayAsync(parser, i);
             if (hexIds && hexIds.value[0] && hexIds.value[1]) {
               this.ID = [
                 hexIds.value[0], 
@@ -158,7 +158,7 @@ export class TrailerDict extends PdfDict {
               i = hexIds.end + 1;
               break;
             } 
-            const literalIds = LiteralString.parseArray(parser, i);
+            const literalIds = await LiteralString.parseArrayAsync(parser, i);
             if (literalIds && literalIds.value[0] && literalIds.value[1]) {
               this.ID = [
                 HexString.fromHexBytes(literalIds.value[0].bytes), 

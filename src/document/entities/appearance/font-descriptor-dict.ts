@@ -138,13 +138,13 @@ export class FontDescriptorDict extends PdfDict {
     super(dictTypes.FONT_DESCRIPTOR);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<FontDescriptorDict> {    
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<FontDescriptorDict>> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new FontDescriptorDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -231,8 +231,8 @@ export class FontDescriptorDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -251,17 +251,17 @@ export class FontDescriptorDict extends PdfDict {
         switch (name) {
           case "/FontName":
           case "/FontStretch":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break; 
 
           case "/FontFile":
           case "/FontFile2":
           case "/FontFile3":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
             
           case "/Flags":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break; 
             
           case "/FontWeight":
@@ -276,7 +276,7 @@ export class FontDescriptorDict extends PdfDict {
           case "/AvgWidth":
           case "/MaxWidth":
           case "/MissingWidth":
-            i = this.parseNumberProp(name, parser, i, true);
+            i = await this.parseNumberPropAsync(name, parser, i, true);
             break; 
             
           case "/FontBBox":
@@ -287,9 +287,9 @@ export class FontDescriptorDict extends PdfDict {
           case "/FontFamily":
             const propType = parser.getValueTypeAt(i);
             if (propType === valueTypes.STRING_HEX) {
-              i = this.parseHexProp(name, parser, i);
+              i = await this.parseHexPropAsync(name, parser, i);
             } else if (propType === valueTypes.STRING_LITERAL) {
-              i = this.parseLiteralProp(name, parser, i);
+              i = await this.parseLiteralPropAsync(name, parser, i);
             } else {
               throw new Error(`Unsupported '${name}' property value type: '${propType}'`);
             }

@@ -121,12 +121,12 @@ export class XRefStream extends XRef {
    * @param offset CRS byte offset in the PDF document
    * @returns 
    */
-  static parse(parseInfo: ParserInfo, offset: number): ParserResult<XRefStream> {
+  static async parseAsync(parseInfo: ParserInfo, offset: number): Promise<ParserResult<XRefStream>> {
     if (!parseInfo) {
       return null;
     }
     
-    const trailerStream = TrailerStream.parse(parseInfo);   
+    const trailerStream = await TrailerStream.parseAsync(parseInfo);   
     if (!trailerStream) {
       return null;
     }

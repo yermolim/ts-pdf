@@ -62,7 +62,7 @@ export class XrefParser {
    * @param max search end byte offset
    * @returns parsed cross-reference section
    */
-  parseXref(start: number, max: number): XRef {
+  async parseXrefAsync(start: number, max: number): Promise<XRef> {
     if (!start) {
       return null;
     }
@@ -83,12 +83,12 @@ export class XrefParser {
         start = streamXrefIndex.value;
       } else {
         // TABLE
-        const xrefTable = XRefTable.parse(this._dataParser, start, offset);
+        const xrefTable = await XRefTable.parseAsync(this._dataParser, start, offset);
         return xrefTable?.value;
       }
     }
     // STREAM
-    const id = ObjectId.parse(this._dataParser, start, false);
+    const id = await ObjectId.parseAsync(this._dataParser, start, false);
     if (!id) {
       return null;
     }
@@ -96,7 +96,8 @@ export class XrefParser {
     if (!xrefStreamBounds) {      
       return null;
     }       
-    const xrefStream = XRefStream.parse({parser: this._dataParser, bounds: xrefStreamBounds}, offset);
+    const xrefStream = await XRefStream.parseAsync(
+      {parser: this._dataParser, bounds: xrefStreamBounds}, offset);
     return xrefStream?.value; 
   }  
   
@@ -106,12 +107,12 @@ export class XrefParser {
    * @param start search start byte offset
    * @returns all document cross-reference sections
    */
-  parseAllXrefs(start: number): XRef[] {    
+  async parseAllXrefsAsync(start: number): Promise<XRef[]> {    
     const xrefs: XRef[] = [];
     let max = this._dataParser.maxIndex;
     let xref: XRef;
     while (start) {
-      xref = this.parseXref(start, max);
+      xref = await this.parseXrefAsync(start, max);
       if (xref) {
         xrefs.push(xref);        
         max = start;

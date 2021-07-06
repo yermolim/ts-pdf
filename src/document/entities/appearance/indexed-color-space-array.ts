@@ -43,7 +43,8 @@ export class IndexedColorSpaceArray implements IEncodable {
     // console.log(this);
   }
 
-  static parse(parseInfo: ParserInfo, skipEmpty = true): ParserResult<IndexedColorSpaceArray> {  
+  static async parseAsync(parseInfo: ParserInfo, 
+    skipEmpty = true): Promise<ParserResult<IndexedColorSpaceArray>> {  
     const {parser, bounds, cryptInfo} = parseInfo;
 
     let i: number;
@@ -84,16 +85,16 @@ export class IndexedColorSpaceArray implements IEncodable {
     const lookupEntryType = parser.getValueTypeAt(i);
     if (lookupEntryType === valueTypes.REF) {  
       try {
-        const lookupId = ObjectId.parseRef(parser, i); 
-        const lookupParseInfo = parseInfo.parseInfoGetter(lookupId.value.id);
-        const lookupStream = TextStream.parse(lookupParseInfo);
+        const lookupId = await ObjectId.parseRefAsync(parser, i); 
+        const lookupParseInfo = await parseInfo.parseInfoGetterAsync(lookupId.value.id);
+        const lookupStream = await TextStream.parseAsync(lookupParseInfo);
         lookupArray = lookupStream.value.decodedStreamData;
         i = lookupId.end + 1;
       } catch (e) {
         throw new Error(`Can't parse indexed color array lookup ref: ${e.message}`);
       }
     } else if (lookupEntryType === valueTypes.STRING_HEX) {      
-      const lookupHex = HexString.parse(parser, i, cryptInfo);  
+      const lookupHex = await HexString.parseAsync(parser, i, cryptInfo);  
       if (lookupHex) {
         lookupArray = lookupHex.value.hex;
         i = lookupHex.end + 1;

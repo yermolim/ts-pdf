@@ -55,13 +55,13 @@ export class TransparencyGroupDict extends GroupDict {
     super();
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<TransparencyGroupDict> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<TransparencyGroupDict>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new TransparencyGroupDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -94,8 +94,8 @@ export class TransparencyGroupDict extends GroupDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     if (this.S !== "/Transparency") {
       throw new Error("Not a transparency dict");
     }
@@ -136,7 +136,7 @@ export class TransparencyGroupDict extends GroupDict {
           
           case "/I":
           case "/K":
-            i = this.parseBoolProp(name, parser, i);
+            i = await this.parseBoolPropAsync(name, parser, i);
             break;
           
           default:

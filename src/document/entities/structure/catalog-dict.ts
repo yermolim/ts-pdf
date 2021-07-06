@@ -39,13 +39,13 @@ export class CatalogDict extends PdfDict {
     super(dictTypes.CATALOG);
   }  
   
-  static parse(parseInfo: ParserInfo): ParserResult<CatalogDict> {   
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<CatalogDict>> {   
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new CatalogDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -77,8 +77,8 @@ export class CatalogDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -93,15 +93,15 @@ export class CatalogDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/Version":            
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break;
 
           case "/Pages":            
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
 
           case "/Lang":            
-            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
 
           default:

@@ -21,8 +21,8 @@ export class DateString implements IEncodable {
     this._date = new Date(date);
   }
     
-  static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParserResult<DateString>  {       
+  static async parseAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
+    skipEmpty = true): Promise<ParserResult<DateString>> {       
     if (skipEmpty) {
       start = parser.skipEmpty(start);
     }

@@ -28,8 +28,8 @@ export class ObjectId implements Reference, IEncodable {
    * @param skipEmpty skip space chars if found at the start position
    * @returns 
    */
-  static parse(parser: DataParser, start: number, 
-    skipEmpty = true): ParserResult<ObjectId> {  
+  static async parseAsync(parser: DataParser, start: number, 
+    skipEmpty = true): Promise<ParserResult<ObjectId>> {  
     if (skipEmpty) {
       start = parser.findRegularIndex(true, start);
     }
@@ -61,10 +61,10 @@ export class ObjectId implements Reference, IEncodable {
    * @param skipEmpty skip space chars if found at the start position
    * @returns 
    */
-  static parseRef(parser: DataParser, start: number, 
-    skipEmpty = true): ParserResult<ObjectId> {    
+  static async parseRefAsync(parser: DataParser, start: number, 
+    skipEmpty = true): Promise<ParserResult<ObjectId>> {    
 
-    const id = ObjectId.parse(parser, start, skipEmpty);
+    const id = await ObjectId.parseAsync(parser, start, skipEmpty);
     if (!id) {
       return null;
     }
@@ -90,8 +90,8 @@ export class ObjectId implements Reference, IEncodable {
    * @param skipEmpty skip space chars if found at the start position
    * @returns 
    */
-  static parseRefArray(parser: DataParser, start: number, 
-    skipEmpty = true): ParserResult<ObjectId[]>  {
+  static async parseRefArrayAsync(parser: DataParser, start: number, 
+    skipEmpty = true): Promise<ParserResult<ObjectId[]>>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
@@ -101,7 +101,7 @@ export class ObjectId implements Reference, IEncodable {
     let current: ParserResult<ObjectId>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = ObjectId.parseRef(parser, i, true);
+      current = await ObjectId.parseRefAsync(parser, i, true);
       if (!current) {
         break;
       }

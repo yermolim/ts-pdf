@@ -87,13 +87,13 @@ export class CryptFilterDict extends PdfDict {
     super(dictTypes.CRYPT_FILTER);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<CryptFilterDict> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<CryptFilterDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new CryptFilterDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -136,8 +136,8 @@ export class CryptFilterDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -173,17 +173,17 @@ export class CryptFilterDict extends PdfDict {
             break;
           
           case "/Length":            
-            i = this.parseNumberProp(name, parser, i, false);  
+            i = await this.parseNumberPropAsync(name, parser, i, false);  
             break;
           
           case "/EncryptMetadata":            
-            i = this.parseBoolProp(name, parser, i);  
+            i = await this.parseBoolPropAsync(name, parser, i);  
             break;
 
           case "/Recipients":            
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.STRING_HEX) {  
-              const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);  
+              const recipient = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);  
               if (recipient) {
                 this.Recipients = recipient.value;
                 i = recipient.end + 1;
@@ -192,7 +192,7 @@ export class CryptFilterDict extends PdfDict {
                 throw new Error("Can't parse /Recipients property value");
               }
             } else if (entryType === valueTypes.ARRAY) {              
-              const recipients = HexString.parseArray(parser, i);
+              const recipients = await HexString.parseArrayAsync(parser, i);
               if (recipients) {
                 this.Recipients = recipients.value;
                 i = recipients.end + 1;

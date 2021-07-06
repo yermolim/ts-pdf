@@ -158,13 +158,13 @@ export class EncryptionDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<EncryptionDict> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<EncryptionDict>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new EncryptionDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -274,8 +274,8 @@ export class EncryptionDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -294,7 +294,7 @@ export class EncryptionDict extends PdfDict {
           case "/StmF":
           case "/StrF":
           case "/EFF":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break; 
 
           case "/V":
@@ -320,7 +320,7 @@ export class EncryptionDict extends PdfDict {
 
           case "/Length":
           case "/P":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break; 
 
           case "/O":
@@ -328,17 +328,17 @@ export class EncryptionDict extends PdfDict {
           case "/OE":
           case "/UE":
           case "/Perms":
-            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
   
           case "/EncryptMetadata":
-            i = this.parseBoolProp(name, parser, i);
+            i = await this.parseBoolPropAsync(name, parser, i);
             break;  
 
           case "/CF":
             const dictBounds = parser.getDictBoundsAt(i);
             if (bounds) {
-              const cryptMap = CryptMapDict.parse({parser, bounds: dictBounds});
+              const cryptMap = await CryptMapDict.parseAsync({parser, bounds: dictBounds});
               if (cryptMap) {
                 this.CF = cryptMap.value;
                 i = cryptMap.end + 1;
@@ -351,7 +351,7 @@ export class EncryptionDict extends PdfDict {
           case "/Recipients":            
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.STRING_HEX) {  
-              const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);  
+              const recipient = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);  
               if (recipient) {
                 this.Recipients = recipient.value;
                 i = recipient.end + 1;
@@ -360,7 +360,7 @@ export class EncryptionDict extends PdfDict {
                 throw new Error("Can't parse /Recipients property value");
               }
             } else if (entryType === valueTypes.ARRAY) {              
-              const recipients = HexString.parseArray(parser, i);
+              const recipients = await HexString.parseArrayAsync(parser, i);
               if (recipients) {
                 this.Recipients = recipients.value;
                 i = recipients.end + 1;

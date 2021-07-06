@@ -35,8 +35,8 @@ export class HexString implements IEncodable {
     this._bytes = bytes;
   }
     
-  static parse(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParserResult<HexString>  {   
+  static async parseAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
+    skipEmpty = true): Promise<ParserResult<HexString>>  {   
 
     const bounds = parser.getHexBounds(start, skipEmpty);
     if (!bounds) {
@@ -52,8 +52,8 @@ export class HexString implements IEncodable {
     return {value: hex, start: bounds.start, end: bounds.end};
   }  
   
-  static parseArray(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
-    skipEmpty = true): ParserResult<HexString[]>  {
+  static async parseArrayAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
+    skipEmpty = true): Promise<ParserResult<HexString[]>>  {
     const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
     if (!arrayBounds) {
       return null;
@@ -63,7 +63,7 @@ export class HexString implements IEncodable {
     let current: ParserResult<HexString>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = HexString.parse(parser, i, cryptInfo, skipEmpty);
+      current = await HexString.parseAsync(parser, i, cryptInfo, skipEmpty);
       if (!current) {
         break;
       }

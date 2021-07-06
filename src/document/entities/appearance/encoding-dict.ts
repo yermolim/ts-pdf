@@ -48,13 +48,13 @@ export class EncodingDict extends PdfDict {
     super(dictTypes.ENCODING);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<EncodingDict> {    
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<EncodingDict>> {    
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new EncodingDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -84,8 +84,8 @@ export class EncodingDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -103,7 +103,7 @@ export class EncodingDict extends PdfDict {
         name = parseResult.value;
         switch (name) {   
           case "/BaseEncoding":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break; 
 
           case "/Differences": 

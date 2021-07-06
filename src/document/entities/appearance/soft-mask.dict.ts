@@ -44,13 +44,13 @@ export class SoftMaskDict extends PdfDict {
     super(dictTypes.SOFT_MASK);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<SoftMaskDict> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<SoftMaskDict>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new SoftMaskDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -87,8 +87,8 @@ export class SoftMaskDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -114,7 +114,7 @@ export class SoftMaskDict extends PdfDict {
             break;         
           
           case "/G":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break; 
           
           case "/BC":            

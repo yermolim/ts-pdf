@@ -94,13 +94,15 @@ export class DocumentService {
   get userName(): string {
     return this._userName;
   }
+  
+  private _initPromise: Promise<void>;
 
   private readonly _data: Uint8Array; 
   private readonly _docParser: DataParser;
-  private readonly _version: string; 
 
-  private readonly _xrefs: XRef[];
-  private readonly _referenceData: ReferenceData;
+  private _version: string; 
+  private _xrefs: XRef[];
+  private _referenceData: ReferenceData;
 
   private _encryption: EncryptionDict;  
   private _authResult: AuthenticationResult;
@@ -148,64 +150,48 @@ export class DocumentService {
     return !this._encryption || !!this._authResult;
   }
 
-  constructor(eventService: ElementEventService, data: Uint8Array, userName: string) {
+  private constructor(eventService: ElementEventService, data: Uint8Array, userName: string) {
     if (!eventService) {
       throw new Error("Event controller is not defined");
     }
-    this._eventService = eventService;
-
+    
     this._data = data;
     this._docParser = new SyncDataParser(data);    
-    const xrefParser = new XrefParser(this._docParser);
-
-    this._version = xrefParser.getPdfVersion();
-    if (!this._version) {      
-      throw new Error("Error parsing PDF version number");
-    }
-
-    const lastXrefIndex = xrefParser.getLastXrefIndex();
-    if (!lastXrefIndex) {{
-      throw new Error("File doesn't contain update section");
-    }}
-    const xrefs = xrefParser.parseAllXrefs(lastXrefIndex.value);
-    if (!xrefs.length) {{
-      throw new Error("Failed to parse cross-reference sections");
-    }}
-    this._xrefs = xrefs;
-    // DEBUG
-    // console.log(this._xrefs); 
-
-    this._referenceData = new ReferenceData(xrefs);   
-    // DEBUG
-    // console.log(this._referenceData);   
-
-    this.parseEncryption();
-    // DEBUG
-    // console.log(this._encryption);
-
-    this._userName = userName;
-
-    this._fontMap = FontDict.newFontMap();
     
+    this._userName = userName;
+    this._fontMap = FontDict.newFontMap();  
+      
+    this._eventService = eventService;
     this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
     this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+
+    this._initPromise = this.initAsync();
+  }
+
+  static async CreateNewAsync(eventService: ElementEventService, 
+    data: Uint8Array, userName: string): Promise<DocumentService> {
+    const service = new DocumentService(eventService, data, userName);
+    await service._initPromise;
+    return service;
   }
 
   /**free the resources that can prevent garbage to be collected */
   destroy() {
-    this._lastCommands.length = 0;
-    this.emitStateChanged();
-
-    this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
-      // clear public actions to prevent memory leak
-      x.$onEditAction = null;
-      x.$onRenderUpdatedAction = null;
-    }));
-
-    this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
-    this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
-
-    this._docParser?.destroy();
+    this._initPromise.then(() => { // wait for initialization end
+      this._lastCommands.length = 0;
+      this.emitStateChanged();
+  
+      this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
+        // clear public actions to prevent memory leak
+        x.$onEditAction = null;
+        x.$onRenderUpdatedAction = null;
+      }));
+  
+      this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+      this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+  
+      this._docParser?.destroy();
+    });
   }
 
   tryAuthenticate(password = ""): boolean {
@@ -225,7 +211,7 @@ export class DocumentService {
   
   /**undo the most recent command */
   async undoAsync() {
-    this.undoCommandAsync();
+    await this.undoCommandAsync();
   }
 
   //#region public annotations
@@ -417,6 +403,36 @@ export class DocumentService {
   }
   //#endregion
 
+  private async parseXrefsAsync() {    
+    const xrefParser = new XrefParser(this._docParser);
+
+    this._version = xrefParser.getPdfVersion();
+    if (!this._version) {      
+      throw new Error("Error parsing PDF version number");
+    }
+
+    const lastXrefIndex = xrefParser.getLastXrefIndex();
+    if (!lastXrefIndex) {{
+      throw new Error("File doesn't contain update section");
+    }}
+    const xrefs = await xrefParser.parseAllXrefsAsync(lastXrefIndex.value);
+    if (!xrefs.length) {{
+      throw new Error("Failed to parse cross-reference sections");
+    }}
+    this._xrefs = xrefs;
+    // DEBUG
+    // console.log(this._xrefs); 
+
+    this._referenceData = new ReferenceData(xrefs);   
+    // DEBUG
+    // console.log(this._referenceData);  
+  }
+
+  private async initAsync() { 
+    await this.parseXrefsAsync();
+    await this.parseEncryptionAsync();
+  }
+
   private pushCommand(command: ExecutedAsyncCommand) {
     this._lastCommands.push(command);
     this.emitStateChanged();
@@ -487,7 +503,7 @@ export class DocumentService {
       this.pushCommand({
         timestamp: Date.now(),
         undo: async () => {
-          this.appendAnnotationAsync(annotation.$pageId, annotation, false);
+          await this.appendAnnotationAsync(annotation.$pageId, annotation, false);
         }
       });
     }
@@ -535,7 +551,7 @@ export class DocumentService {
    * returns null if an object with the specified id not found.
    * @param id 
    */
-  private getObjectParseInfo = (id: number): ParserInfo => {
+  private getObjectParseInfoAsync = async (id: number): Promise<ParserInfo> => {
     if (!id) {
       return null;
     }
@@ -544,7 +560,7 @@ export class DocumentService {
       return null;
     } 
     
-    const objectId = ObjectId.parse(this._docParser, offset);
+    const objectId = await ObjectId.parseAsync(this._docParser, offset);
     if (!objectId) {
       return null;
     }   
@@ -553,11 +569,11 @@ export class DocumentService {
     if (!bounds) {
       return null;
     }
-    const parseInfoGetter = this.getObjectParseInfo;
+    const parseInfoGetter = this.getObjectParseInfoAsync;
     const info: ParserInfo = {
       parser: this._docParser, 
       bounds, 
-      parseInfoGetter, 
+      parseInfoGetterAsync: parseInfoGetter, 
       cryptInfo: {
         ref: {id: objectId.value.id, generation: objectId.value.generation},
         stringCryptor: this._authResult?.stringCryptor,
@@ -572,14 +588,14 @@ export class DocumentService {
 
     // object id at the given offset is not equal to the sought one
     // check if the object is an object stream and try to find the needed object inside it
-    const stream = ObjectStream.parse(info);
+    const stream = await ObjectStream.parseAsync(info);
     if (!stream) {
       return;
     }
-    const objectParseInfo = stream.value.getObjectData(id, SyncDataParser);
+    const objectParseInfo = await stream.value.getObjectDataAsync(id, SyncDataParser);
     if (objectParseInfo) {
       // the object is found inside the stream
-      objectParseInfo.parseInfoGetter = parseInfoGetter;
+      objectParseInfo.parseInfoGetterAsync = parseInfoGetter;
       return objectParseInfo;
     }
 
@@ -605,14 +621,14 @@ export class DocumentService {
     }
   }
 
-  private parseEncryption() {    
+  private async parseEncryptionAsync() {    
     const encryptionId = this._xrefs[0].encrypt;
     if (!encryptionId) {
       return;
     }
 
-    const encryptionParseInfo = this.getObjectParseInfo(encryptionId.id);
-    const encryption = EncryptionDict.parse(encryptionParseInfo);
+    const encryptionParseInfo = await this.getObjectParseInfoAsync(encryptionId.id);
+    const encryption = await EncryptionDict.parseAsync(encryptionParseInfo);
     if (!encryption) {
       throw new Error("Encryption dict can't be parsed");
     }
@@ -621,25 +637,25 @@ export class DocumentService {
   //#endregion
 
   //#region parsing annotations
-  private parsePages(output: PageDict[], tree: PageTreeDict) {
+  private async parsePagesAsync(output: PageDict[], tree: PageTreeDict) {
     if (!tree.Kids.length) {
       return;
     }
 
     for (const kid of tree.Kids) {
-      const parseInfo = this.getObjectParseInfo(kid.id);
+      const parseInfo = await this.getObjectParseInfoAsync(kid.id);
       if (!parseInfo) {
         continue;
       }
 
       const type = parseInfo.parser.parseDictType(parseInfo.bounds);
       if (type === dictTypes.PAGE_TREE) {          
-        const kidTree = PageTreeDict.parse(parseInfo);
+        const kidTree = await PageTreeDict.parseAsync(parseInfo);
         if (kidTree) {
-          this.parsePages(output, kidTree.value);
+          await this.parsePagesAsync(output, kidTree.value);
         }
       } else if (type === dictTypes.PAGE) {
-        const kidPage = PageDict.parse(parseInfo);
+        const kidPage = await PageDict.parseAsync(parseInfo);
         if (kidPage) {
           output.push(kidPage.value);
         }
@@ -647,24 +663,24 @@ export class DocumentService {
     }
   }; 
 
-  private parsePageTree() {  
+  private async parsePageTreeAsync() {  
     const catalogId = this._xrefs[0].root;
-    const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
-    const catalog = CatalogDict.parse(catalogParseInfo);
+    const catalogParseInfo = await this.getObjectParseInfoAsync(catalogId.id);
+    const catalog = await CatalogDict.parseAsync(catalogParseInfo);
     if (!catalog) {
       throw new Error("Document root catalog not found");
     }
     this._catalog = catalog.value;
 
     const pageRootId = catalog.value.Pages;
-    const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
-    const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
+    const pageRootParseInfo = await this.getObjectParseInfoAsync(pageRootId.id);
+    const pageRootTree = await PageTreeDict.parseAsync(pageRootParseInfo);
     if (!pageRootTree) {
       throw new Error("Document root page tree not found");
     }
 
     const pages: PageDict[] = [];
-    this.parsePages(pages, pageRootTree.value);
+    await this.parsePagesAsync(pages, pageRootTree.value);
     this._pages = pages;
 
     this._pageById.clear();
@@ -678,7 +694,7 @@ export class DocumentService {
     this.checkAuthentication();
 
     if (!this._catalog) {      
-      this.parsePageTree(); 
+      await this.parsePageTreeAsync(); 
       // DEBUG
       // console.log(this._catalog);
       // console.log(this._pages);
@@ -692,9 +708,9 @@ export class DocumentService {
       if (Array.isArray(page.Annots)) {
         annotationIds.push(...page.Annots);
       } else if (page.Annots instanceof ObjectId) {
-        const parseInfo = this.getObjectParseInfo(page.Annots.id);
+        const parseInfo = await this.getObjectParseInfoAsync(page.Annots.id);
         if (parseInfo) {
-          const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, 
+          const annotationRefs = await ObjectId.parseRefArrayAsync(parseInfo.parser, 
             parseInfo.bounds.contentStart);
           if (annotationRefs?.value?.length) {
             annotationIds.push(...annotationRefs.value);
@@ -704,13 +720,13 @@ export class DocumentService {
       annotIdsByPageId.set(page.ref.id, annotationIds);
 
       const annotations: AnnotationDict[] = [];   
-      // fake async function to keep user interface responsible   
+      // fake async function to keep user interface responsible. TODO: remove when it will be unneeded   
       const processAnnotation = (objectId: ObjectId) => 
         new Promise<AnnotationDict>((resolve, reject) => {
-          setTimeout(() => {          
-            const info = this.getObjectParseInfo(objectId.id);  
+          setTimeout(async () => {          
+            const info = await this.getObjectParseInfoAsync(objectId.id);  
             info.rect = page.MediaBox;
-            const annot = AnnotationParser.ParseAnnotationFromInfo(info, this._fontMap);
+            const annot = await AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
             resolve(annot);
           }, 0);
         });

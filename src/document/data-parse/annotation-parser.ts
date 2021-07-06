@@ -23,49 +23,49 @@ import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-ann
 
 export class AnnotationParser {
 
-  static ParseAnnotationFromInfo(info: ParserInfo, 
-    fontMap: Map<string, FontDict>): AnnotationDict {
+  static async ParseAnnotationFromInfoAsync(info: ParserInfo, 
+    fontMap: Map<string, FontDict>): Promise<AnnotationDict> {
     const annotationType = info.parser.parseDictSubtype(info.bounds);
     let annot: ParserResult<AnnotationDict>;
     switch (annotationType) {
       case annotationTypes.STAMP:
-        annot = StampAnnotation.parse(info);
+        annot = await StampAnnotation.parseAsync(info);
         break;     
       case annotationTypes.TEXT:
-        annot = TextAnnotation.parse(info);
+        annot = await TextAnnotation.parseAsync(info);
         break;
       case annotationTypes.INK:
-        annot = InkAnnotation.parse(info);
+        annot = await InkAnnotation.parseAsync(info);
         break;
       case annotationTypes.SQUARE:
-        annot = SquareAnnotation.parse(info);
+        annot = await SquareAnnotation.parseAsync(info);
         break;
       case annotationTypes.CIRCLE:
-        annot = CircleAnnotation.parse(info);
+        annot = await CircleAnnotation.parseAsync(info);
         break;
       case annotationTypes.POLYGON:
-        annot = PolygonAnnotation.parse(info);
+        annot = await PolygonAnnotation.parseAsync(info);
         break;
       case annotationTypes.POLYLINE:
-        annot = PolylineAnnotation.parse(info);
+        annot = await PolylineAnnotation.parseAsync(info);
         break;
       case annotationTypes.LINE:
-        annot = LineAnnotation.parse(info, fontMap);
+        annot = await LineAnnotation.parseAsync(info, fontMap);
         break;
       case annotationTypes.HIGHLIGHT:
-        annot = HighlightAnnotation.parse(info);
+        annot = await HighlightAnnotation.parseAsync(info);
         break;
       case annotationTypes.SQUIGGLY:
-        annot = SquigglyAnnotation.parse(info);
+        annot = await SquigglyAnnotation.parseAsync(info);
         break;
       case annotationTypes.STRIKEOUT:
-        annot = StrikeoutAnnotation.parse(info);
+        annot = await StrikeoutAnnotation.parseAsync(info);
         break;
       case annotationTypes.UNDERLINE:
-        annot = UnderlineAnnotation.parse(info);
+        annot = await UnderlineAnnotation.parseAsync(info);
         break; 
       case annotationTypes.FREE_TEXT:
-        annot = FreeTextAnnotation.parse(info, fontMap);
+        annot = await FreeTextAnnotation.parseAsync(info, fontMap);
         break;
       default:
         break;

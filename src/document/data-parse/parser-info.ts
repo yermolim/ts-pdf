@@ -20,5 +20,5 @@ export interface ParserInfo {
   /** max object rendering bounds */
   rect?: Quadruple;
   /** a function used to get ParseInfo for indirect objects */
-  parseInfoGetter?: (id: number) => ParserInfo;
+  parseInfoGetterAsync?: (id: number) => Promise<ParserInfo>;
 }

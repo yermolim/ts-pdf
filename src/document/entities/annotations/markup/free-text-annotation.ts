@@ -282,14 +282,14 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo, 
-    fontMap: Map<string, FontDict>): ParserResult<FreeTextAnnotation> {
+  static async parseAsync(parseInfo: ParserInfo, 
+    fontMap: Map<string, FontDict>): Promise<ParserResult<FreeTextAnnotation>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new FreeTextAnnotation();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       pdfObject._fontMap = fontMap;
       return {
         value: pdfObject.initProxy(), 
@@ -399,8 +399,8 @@ export class FreeTextAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -417,7 +417,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
           case "/DA":         
           case "/DS":            
           case "/RC":            
-            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
 
           case "/Q":

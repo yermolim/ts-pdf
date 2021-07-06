@@ -259,7 +259,7 @@ export class TsPdfViewer {
     }
 
     // create DocumentData
-    const docService = new DocumentService(this._eventService, data, this._userName);
+    const docService = await DocumentService.CreateNewAsync(this._eventService, data, this._userName);
     let password: string;
     while (true) {
       const authenticated = docService.tryAuthenticate(password);

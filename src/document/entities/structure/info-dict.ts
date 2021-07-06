@@ -41,13 +41,13 @@ export class InfoDict extends PdfDict {
     super(dictTypes.EMPTY);
   }
 
-  static parse(parseInfo: ParserInfo): ParserResult<InfoDict> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<InfoDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new InfoDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -95,8 +95,8 @@ export class InfoDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -116,12 +116,12 @@ export class InfoDict extends PdfDict {
           case "/Keywords": 
           case "/Creator": 
           case "/Producer":        
-            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
 
           case "/CreationDate": 
           case "/ModDate":           
-            i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
             
           default:

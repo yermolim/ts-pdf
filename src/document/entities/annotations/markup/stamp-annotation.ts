@@ -145,13 +145,13 @@ export class StampAnnotation extends MarkupAnnotation {
     return annotation.initProxy();
   }
 
-  static parse(parseInfo: ParserInfo): ParserResult<StampAnnotation> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<StampAnnotation>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new StampAnnotation();
-      pdfObject.parseProps(parseInfo); 
+      await pdfObject.parsePropsAsync(parseInfo); 
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -211,8 +211,8 @@ export class StampAnnotation extends MarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;
@@ -227,7 +227,7 @@ export class StampAnnotation extends MarkupAnnotation {
         name = parseResult.value;
         switch (name) {
           case "/Name":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break;  
           default:
             // skip to next name

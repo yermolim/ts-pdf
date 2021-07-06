@@ -22,8 +22,8 @@ export class BorderArray {
     this.gap = gap ?? 0;
   }
 
-  static parse(parser: DataParser, start: number, 
-    skipEmpty = true): ParserResult<BorderArray> {
+  static async parseAsync(parser: DataParser, start: number, 
+    skipEmpty = true): Promise<ParserResult<BorderArray>> {
     if (skipEmpty) {
       start = parser.findNonSpaceIndex(true, start);
     }

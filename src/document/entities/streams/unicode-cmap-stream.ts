@@ -23,13 +23,13 @@ export class UnicodeCmapStream extends PdfStream {
     super(type);
   }  
 
-  static parse(parseInfo: ParserInfo): ParserResult<UnicodeCmapStream> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<UnicodeCmapStream>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new UnicodeCmapStream();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -81,7 +81,7 @@ export class UnicodeCmapStream extends PdfStream {
     return false;
   }
 
-  protected parseCodeRanges(parser: DataParser) {
+  protected async parseCodeRangesAsync(parser: DataParser) {
     let i = 0;
     const codeRangeStart = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CODE_RANGE, 
       { closedOnly: true })?.end;
@@ -93,9 +93,9 @@ export class UnicodeCmapStream extends PdfStream {
     const codeRangeEnd = parser.findSubarrayIndex(keywordCodes.CMAP_END_CODE_RANGE, 
       { closedOnly: true, minIndex: i })?.start;
     while (i < codeRangeEnd - 1) {
-      const rangeStart = HexString.parse(parser, i);
+      const rangeStart = await HexString.parseAsync(parser, i);
       i = rangeStart.end + 1;
-      const rangeEnd = HexString.parse(parser, i);
+      const rangeEnd = await HexString.parseAsync(parser, i);
       i = rangeEnd.end + 1;
 
       this._codeRanges.push({
@@ -106,7 +106,7 @@ export class UnicodeCmapStream extends PdfStream {
     }  
   }
   
-  protected parseCharMap(parser: DataParser, decoder: TextDecoder) {
+  protected async parseCharMapAsync(parser: DataParser, decoder: TextDecoder) {
     let i = 0;
     // parse char maps (there can be multiple maps with up to 100 entries in each of them)
     while (true) {
@@ -120,9 +120,9 @@ export class UnicodeCmapStream extends PdfStream {
       const charMapEnd = parser.findSubarrayIndex(keywordCodes.CMAP_END_CHAR, 
         { closedOnly: true, minIndex: i })?.start;
       while (i < charMapEnd - 1) {
-        const hexKey = HexString.parse(parser, i);
+        const hexKey = await HexString.parseAsync(parser, i);
         i = hexKey.end + 1;
-        const unicodeValue = HexString.parse(parser, i);
+        const unicodeValue = await HexString.parseAsync(parser, i);
         i = unicodeValue.end + 1;        
         this._map.set(parseIntFromBytes(hexKey.value.hex), 
           decoder.decode(unicodeValue.value.hex));
@@ -130,7 +130,7 @@ export class UnicodeCmapStream extends PdfStream {
     } 
   }
   
-  protected parseCharRangesMap(parser: DataParser, decoder: TextDecoder) {
+  protected async parseCharRangesMapAsync(parser: DataParser, decoder: TextDecoder) {
     let i = 0;
     // parse char map ranges (there can be multiple ranges with up to 100 entries in each of them)
     while (true) {
@@ -144,23 +144,23 @@ export class UnicodeCmapStream extends PdfStream {
       const rangeMapEnd = parser.findSubarrayIndex(keywordCodes.CMAP_END_RANGE, 
         { closedOnly: true, minIndex: i })?.start;
       while (i < rangeMapEnd - 1) {
-        const keyRangeStart = HexString.parse(parser, i);
+        const keyRangeStart = await HexString.parseAsync(parser, i);
         i = keyRangeStart.end + 1;
-        const keyRangeEnd = HexString.parse(parser, i);
+        const keyRangeEnd = await HexString.parseAsync(parser, i);
         i = keyRangeEnd.end + 1;
         
         let key = parseIntFromBytes(keyRangeStart.value.hex);
         const nextValueType = parser.getValueTypeAt(i, true);
         if (nextValueType === valueTypes.ARRAY) {
           // unicode value range is defined as array
-          const valueArray = HexString.parseArray(parser, i);
+          const valueArray = await HexString.parseArrayAsync(parser, i);
           i = valueArray.end + 1;
           for (const value of valueArray.value) {            
             this._map.set(key++, decoder.decode(value.hex));
           }
         } else {
           // unicode value range is defined by the starting value          
-          const startingValue = HexString.parse(parser, i);
+          const startingValue = await HexString.parseAsync(parser, i);
           i = startingValue.end + 1;
           let startingUtf = parseIntFromBytes(startingValue.value.hex);
           while (key <= parseIntFromBytes(keyRangeEnd.value.hex)) {
@@ -176,16 +176,16 @@ export class UnicodeCmapStream extends PdfStream {
     }
   }  
 
-  protected fillMap() {
+  protected async fillMapAsync() {
     this._codeRanges.length = 0;
     this._map.clear();
 
     const parser = this.streamDataParser;
     const decoder = new TextDecoder("utf-16be");
     
-    this.parseCodeRanges(parser);
-    this.parseCharMap(parser, decoder);
-    this.parseCharRangesMap(parser, decoder);
+    await this.parseCodeRangesAsync(parser);
+    await this.parseCharMapAsync(parser, decoder);
+    await this.parseCharRangesMapAsync(parser, decoder);
 
     // DEBUG
     // console.log(this);
@@ -198,8 +198,8 @@ export class UnicodeCmapStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);    
-    this.fillMap();
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await await super.parsePropsAsync(parseInfo);    
+    await this.fillMapAsync();
   }
 }

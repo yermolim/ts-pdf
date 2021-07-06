@@ -41,7 +41,7 @@ export abstract class PdfDict extends PdfObject {
   /**
    * try to parse and fill public properties from data using parse info
    */
-  protected parseProps(parseInfo: ParserInfo) {
+  protected async parsePropsAsync(parseInfo: ParserInfo) {
     if (!parseInfo) {
       throw new Error("Parse info is empty");
     }

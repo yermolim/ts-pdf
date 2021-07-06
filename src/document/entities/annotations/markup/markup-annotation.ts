@@ -115,8 +115,8 @@ export abstract class MarkupAnnotation extends AnnotationDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -132,12 +132,12 @@ export abstract class MarkupAnnotation extends AnnotationDict {
         switch (name) {
           case "/T":
           case "/Subj":
-            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
           
           case "/Popup":
           case "/IRT":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
 
           case "/RC":    
@@ -145,17 +145,17 @@ export abstract class MarkupAnnotation extends AnnotationDict {
             const rcEntryType = parser.getValueTypeAt(i);
             if (rcEntryType === valueTypes.REF) {    
               // should be reference to text stream or literal string           
-              const rsObjectId = ObjectId.parseRef(parser, i);
-              if (rsObjectId && parseInfo.parseInfoGetter) {
-                const rcParseInfo = parseInfo.parseInfoGetter(rsObjectId.value.id);
+              const rsObjectId = await ObjectId.parseRefAsync(parser, i);
+              if (rsObjectId && parseInfo.parseInfoGetterAsync) {
+                const rcParseInfo = await parseInfo.parseInfoGetterAsync(rsObjectId.value.id);
                 if (rcParseInfo) {
                   const rcObjectType = rcParseInfo.type 
                     || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
                   if (rcObjectType === valueTypes.STRING_LITERAL) {
                     // reference is to the indirect literal string 
                     // or to the string in an object stream 
-                    const popupTextFromIndirectLiteral = LiteralString
-                      .parse(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
+                    const popupTextFromIndirectLiteral = await LiteralString
+                      .parseAsync(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
                     if (popupTextFromIndirectLiteral) {
                       this.RC = popupTextFromIndirectLiteral.value;
                       i = rsObjectId.end + 1;
@@ -163,7 +163,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
                     }
                   } else if (rcObjectType === valueTypes.DICTIONARY) {
                     // should be a text stream. check it
-                    const popupTextStream = TextStream.parse(rcParseInfo);
+                    const popupTextStream = await TextStream.parseAsync(rcParseInfo);
                     if (popupTextStream) {
                       const popupTextFromStream = popupTextStream.value.getText();
                       this.RC = LiteralString.fromString(popupTextFromStream);
@@ -177,7 +177,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
               }              
               throw new Error("Can't parse /RC value reference");
             } else if (rcEntryType === valueTypes.STRING_LITERAL) { 
-              const popupTextFromLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
+              const popupTextFromLiteral = await LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
               if (popupTextFromLiteral) {
                 this.RC = popupTextFromLiteral.value;
                 i = popupTextFromLiteral.end + 1;
@@ -189,11 +189,11 @@ export abstract class MarkupAnnotation extends AnnotationDict {
             throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
           
           case "/CA":
-            i = this.parseNumberProp(name, parser, i, true);
+            i = await this.parseNumberPropAsync(name, parser, i, true);
             break;   
           
           case "/CreationDate":
-            i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
 
           case "/RT":

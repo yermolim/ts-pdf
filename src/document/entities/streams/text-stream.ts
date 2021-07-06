@@ -10,13 +10,13 @@ export class TextStream extends PdfStream {
     super(type);
   }  
 
-  static parse(parseInfo: ParserInfo): ParserResult<TextStream> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<TextStream>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new TextStream();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -37,8 +37,8 @@ export class TextStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     
   }
 }

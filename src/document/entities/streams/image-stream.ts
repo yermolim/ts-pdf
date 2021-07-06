@@ -156,13 +156,13 @@ export class ImageStream extends PdfStream {
     super(streamTypes.FORM_XOBJECT);
   }  
 
-  static parse(parseInfo: ParserInfo): ParserResult<ImageStream> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<ImageStream>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new ImageStream();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -322,8 +322,8 @@ export class ImageStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
@@ -355,7 +355,7 @@ export class ImageStream extends PdfStream {
           case "/BitsPerComponent":
           case "/SMaskInData":
           case "/StructParent":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break; 
             
           case "/Decode":
@@ -367,12 +367,12 @@ export class ImageStream extends PdfStream {
             break; 
 
           case "/Interpolate":
-            i = this.parseBoolProp(name, parser, i);
+            i = await this.parseBoolPropAsync(name, parser, i);
             break; 
 
           case "/SMask":
           case "/Metadata":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
              
           case "/ColorSpace":
@@ -388,11 +388,11 @@ export class ImageStream extends PdfStream {
             } else if (colorSpaceEntryType === valueTypes.ARRAY) { 
               const colorSpaceArrayBounds = parser.getArrayBoundsAt(i); 
               if (colorSpaceArrayBounds) {
-                const indexedColorSpace = IndexedColorSpaceArray.parse({
+                const indexedColorSpace = await IndexedColorSpaceArray.parseAsync({
                   parser, 
                   bounds: colorSpaceArrayBounds,
                   cryptInfo: parseInfo.cryptInfo,
-                  parseInfoGetter: parseInfo.parseInfoGetter,
+                  parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
                 });
                 if (indexedColorSpace) {
                   this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
@@ -406,11 +406,11 @@ export class ImageStream extends PdfStream {
               }  
               throw new Error("Can't parse /ColorSpace value array");  
             } else if (colorSpaceEntryType === valueTypes.REF) { 
-              const colorSpaceRef = ObjectId.parseRef(parser, i); 
+              const colorSpaceRef = await ObjectId.parseRefAsync(parser, i); 
               if (colorSpaceRef) {
-                const colorSpaceParseInfo = parseInfo.parseInfoGetter(colorSpaceRef.value.id);
+                const colorSpaceParseInfo = await parseInfo.parseInfoGetterAsync(colorSpaceRef.value.id);
                 if (colorSpaceParseInfo) {
-                  const indexedColorSpace = IndexedColorSpaceArray.parse(colorSpaceParseInfo);
+                  const indexedColorSpace = await IndexedColorSpaceArray.parseAsync(colorSpaceParseInfo);
                   if (indexedColorSpace) {
                     this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
                     this._indexedColorSpace = indexedColorSpace.value;
@@ -444,15 +444,15 @@ export class ImageStream extends PdfStream {
           case "/Mask":
             const maskEntryType = parser.getValueTypeAt(i);            
             if (maskEntryType === valueTypes.REF) {                  
-              const maskStreamId = ObjectId.parseRef(parser, i);
+              const maskStreamId = await ObjectId.parseRefAsync(parser, i);
               if (!maskStreamId) {                
                 throw new Error("Can't parse /Mask value reference: failed to parse ref");
               }
-              const maskParseInfo = parseInfo.parseInfoGetter(maskStreamId.value.id);
+              const maskParseInfo = await parseInfo.parseInfoGetterAsync(maskStreamId.value.id);
               if (!maskParseInfo) {
                 throw new Error("Can't parse /Mask value reference: failed to get image parse info");
               }
-              const maskStream = ImageStream.parse(maskParseInfo);
+              const maskStream = await ImageStream.parseAsync(maskParseInfo);
               if (!maskStream) {
                 throw new Error("Can't parse /Mask value reference: failed to parse image stream");
               }
@@ -580,11 +580,11 @@ export class ImageStream extends PdfStream {
     }
     
     if (this.SMask) {
-      const sMaskParseInfo = parseInfo.parseInfoGetter(this.SMask.id);
+      const sMaskParseInfo = await parseInfo.parseInfoGetterAsync(this.SMask.id);
       if (!sMaskParseInfo) {
         throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
       }
-      const sMask = ImageStream.parse(sMaskParseInfo);
+      const sMask = await ImageStream.parseAsync(sMaskParseInfo);
       if (!sMask) {
         throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
       }

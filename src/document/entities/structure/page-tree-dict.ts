@@ -40,13 +40,13 @@ export class PageTreeDict extends PdfDict {
     super(dictTypes.PAGE_TREE);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<PageTreeDict> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<PageTreeDict>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new PageTreeDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -82,8 +82,8 @@ export class PageTreeDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -98,16 +98,16 @@ export class PageTreeDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/Parent":            
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
             
           case "/Kids":            
-            i = this.parseRefArrayProp(name, parser, i);
+            i = await this.parseRefArrayPropAsync(name, parser, i);
             break;
             
           case "/Count":
           case "/Rotate":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break;
 
           case "/MediaBox":

@@ -19,13 +19,13 @@ export class ObjectMapDict extends PdfDict {
     super(null);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<ObjectMapDict> {  
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<ObjectMapDict>> {  
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new ObjectMapDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -74,8 +74,8 @@ export class ObjectMapDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;
@@ -92,7 +92,7 @@ export class ObjectMapDict extends PdfDict {
           default:
             const entryType = parser.getValueTypeAt(i);
             if (entryType === valueTypes.REF) {              
-              const id = ObjectId.parseRef(parser, i);
+              const id = await ObjectId.parseRefAsync(parser, i);
               if (id) {
                 this._objectIdMap.set(name, id.value);
                 i = id.end + 1;

@@ -13,8 +13,8 @@ import { FontDict } from "./font-dict";
 import { GraphicsStateDict } from "./graphics-state-dict";
 
 interface ResourceStreamParsers {
-  xform: (info: ParserInfo) => ParserResult<PdfStream>;
-  image: (info: ParserInfo) => ParserResult<PdfStream>;
+  xform: (info: ParserInfo) => Promise<ParserResult<PdfStream>>;
+  image: (info: ParserInfo) => Promise<ParserResult<PdfStream>>;
 }
 
 export class ResourceDict extends PdfDict {
@@ -66,13 +66,14 @@ export class ResourceDict extends PdfDict {
     this._streamParsers = streamParsers;
   }
   
-  static parse(parseInfo: ParserInfo, streamParsers?: ResourceStreamParsers): ParserResult<ResourceDict> { 
+  static async parseAsync(parseInfo: ParserInfo, 
+    streamParsers?: ResourceStreamParsers): Promise<ParserResult<ResourceDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
     try {
       const pdfObject = new ResourceDict(streamParsers);
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -196,24 +197,25 @@ export class ResourceDict extends PdfDict {
     this._edited = true;
   }
   
-  protected fillMaps(parseInfoGetter: (id: number) => ParserInfo, cryptInfo?: CryptInfo) {
+  protected async fillMapsAsync(parseInfoGetterAsync: (id: number) => Promise<ParserInfo>, 
+    cryptInfo?: CryptInfo) {
     this._gsMap.clear();
     this._fontsMap.clear();
     this._xObjectsMap.clear();
 
     if (this.ExtGState) {
       for (const [name, objectId] of this.ExtGState.getObjectIds()) {
-        const streamParseInfo = parseInfoGetter(objectId.id);
+        const streamParseInfo = await parseInfoGetterAsync(objectId.id);
         if (!streamParseInfo) {
           continue;
         }
-        const stream = GraphicsStateDict.parse(streamParseInfo);
+        const stream = await GraphicsStateDict.parseAsync(streamParseInfo);
         if (stream) {
           this._gsMap.set(`/ExtGState${name}`, stream.value);
         }
       }
       for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {        
-        const dict = GraphicsStateDict.parse(parseInfo);
+        const dict = await GraphicsStateDict.parseAsync(parseInfo);
         if (dict) {
           this._gsMap.set(`/ExtGState${name}`, dict.value);
         }
@@ -222,18 +224,18 @@ export class ResourceDict extends PdfDict {
 
     if (this.XObject && this._streamParsers) {
       for (const [name, objectId] of this.XObject.getObjectIds()) {
-        const streamParseInfo = parseInfoGetter(objectId.id);
+        const streamParseInfo = await parseInfoGetterAsync(objectId.id);
         if (!streamParseInfo) {
           continue;
         }
-        const stream = streamParseInfo.parser
+        const stream =  streamParseInfo.parser
           .findSubarrayIndex(keywordCodes.FORM, {
             direction: true,
             minIndex: streamParseInfo.bounds.start,
             maxIndex: streamParseInfo.bounds.end,
           })
-          ? this._streamParsers.xform(streamParseInfo)
-          : this._streamParsers.image(streamParseInfo);
+          ? await this._streamParsers.xform(streamParseInfo)
+          : await this._streamParsers.image(streamParseInfo);
         if (stream) {
           this._xObjectsMap.set(`/XObject${name}`, stream.value);
         }
@@ -242,11 +244,11 @@ export class ResourceDict extends PdfDict {
     
     if (this.Font) {
       for (const [name, objectId] of this.Font.getObjectIds()) {
-        const dictParseInfo = parseInfoGetter(objectId.id);
+        const dictParseInfo = await parseInfoGetterAsync(objectId.id);
         if (!dictParseInfo) {
           continue;
         }
-        const dict = FontDict.parse(dictParseInfo);
+        const dict = await FontDict.parseAsync(dictParseInfo);
         if (dict) {
           this._fontsMap.set(`/Font${name}`, dict.value);
         }
@@ -257,8 +259,8 @@ export class ResourceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -281,11 +283,11 @@ export class ResourceDict extends PdfDict {
           case "/Properties":
             const mapEntryType = parser.getValueTypeAt(i);
             if (mapEntryType === valueTypes.REF) {              
-              const mapDictId = ObjectId.parseRef(parser, i);
-              if (mapDictId && parseInfo.parseInfoGetter) {
-                const mapParseInfo = parseInfo.parseInfoGetter(mapDictId.value.id);
+              const mapDictId = await ObjectId.parseRefAsync(parser, i);
+              if (mapDictId && parseInfo.parseInfoGetterAsync) {
+                const mapParseInfo = await parseInfo.parseInfoGetterAsync(mapDictId.value.id);
                 if (mapParseInfo) {
-                  const mapDict = ObjectMapDict.parse(mapParseInfo);
+                  const mapDict = await ObjectMapDict.parseAsync(mapParseInfo);
                   if (mapDict) {
                     this[name.slice(1)] = mapDict.value;
                     i = mapDict.end + 1;
@@ -297,7 +299,7 @@ export class ResourceDict extends PdfDict {
             } else if (mapEntryType === valueTypes.DICTIONARY) { 
               const mapBounds = parser.getDictBoundsAt(i);
               if (mapBounds) {
-                const map = ObjectMapDict.parse({parser, bounds: mapBounds});              
+                const map = await ObjectMapDict.parseAsync({parser, bounds: mapBounds});              
                 if (map) {
                   this[name.slice(1)] = map.value;
                   i = mapBounds.end + 1;
@@ -311,7 +313,7 @@ export class ResourceDict extends PdfDict {
             throw new Error(`Unsupported /Resources property value type: ${mapEntryType}`);    
 
           case "/ProcSet":                     
-            i = this.parseNameArrayProp(name, parser, i);
+            i = await this.parseNameArrayPropAsync(name, parser, i);
             break;
           
           default:
@@ -324,8 +326,8 @@ export class ResourceDict extends PdfDict {
       }
     };
 
-    if (parseInfo.parseInfoGetter) {
-      this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
+    if (parseInfo.parseInfoGetterAsync) {
+      await this.fillMapsAsync(parseInfo.parseInfoGetterAsync, parseInfo.cryptInfo);
     }
   }
   

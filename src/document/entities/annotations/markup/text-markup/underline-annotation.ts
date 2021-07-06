@@ -68,13 +68,13 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
     return annotation.initProxy();
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<UnderlineAnnotation> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<UnderlineAnnotation>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }  
     try {
       const pdfObject = new UnderlineAnnotation();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -124,8 +124,8 @@ export class UnderlineAnnotation extends TextMarkupAnnotation {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
   }
   
   protected generateApStream() {

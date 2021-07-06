@@ -27,13 +27,13 @@ export class AppearanceDict extends PdfDict {
     super(null);
   } 
   
-  static parse(parseInfo: ParserInfo): ParserResult<AppearanceDict> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<AppearanceDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new AppearanceDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -117,17 +117,17 @@ export class AppearanceDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
 
-  protected fillStreamsMap(parseInfoGetter: (id: number) => ParserInfo) {
+  protected async fillStreamsMapAsync(parseInfoGetterAsync: (id: number) => Promise<ParserInfo>) {
     this._streamsMap.clear();
 
     for (const prop of ["N", "R", "D"]) {
       if (this[prop]) {
         if (this[prop] instanceof ObjectId) {
-          const streamParseInfo = parseInfoGetter(this[prop].id);
+          const streamParseInfo = await parseInfoGetterAsync(this[prop].id);
           if (!streamParseInfo) {
             continue;
           }
-          const stream = XFormStream.parse(streamParseInfo);
+          const stream = await XFormStream.parseAsync(streamParseInfo);
           if (!stream) {
             continue;
           }
@@ -136,11 +136,11 @@ export class AppearanceDict extends PdfDict {
           }
         } else {
           for (const [name, objectId] of this[prop].getProps()) {
-            const streamParseInfo = parseInfoGetter(objectId.id);
+            const streamParseInfo = await parseInfoGetterAsync(objectId.id);
             if (!streamParseInfo) {
               continue;
             }
-            const stream = XFormStream.parse(streamParseInfo);
+            const stream = await XFormStream.parseAsync(streamParseInfo);
             if (stream) {
               this._streamsMap.set(`/${prop}${name}`, stream.value);
             }
@@ -153,8 +153,8 @@ export class AppearanceDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -171,7 +171,7 @@ export class AppearanceDict extends PdfDict {
           case "/N":
             const nEntryType = parser.getValueTypeAt(i);
             if (nEntryType === valueTypes.REF) {              
-              const nRefId = ObjectId.parseRef(parser, i);
+              const nRefId = await ObjectId.parseRefAsync(parser, i);
               if (nRefId) {
                 this.N = nRefId.value;
                 i = nRefId.end + 1;
@@ -180,7 +180,7 @@ export class AppearanceDict extends PdfDict {
             } else if (nEntryType === valueTypes.DICTIONARY) {     
               const nDictBounds = parser.getDictBoundsAt(i);
               if (nDictBounds) {
-                const nSubDict = ObjectMapDict.parse({parser, bounds: nDictBounds});
+                const nSubDict = await ObjectMapDict.parseAsync({parser, bounds: nDictBounds});
                 if (nSubDict) {
                   this.N = nSubDict.value;
                   i = nSubDict.end + 1;
@@ -195,7 +195,7 @@ export class AppearanceDict extends PdfDict {
           case "/R":
             const rEntryType = parser.getValueTypeAt(i);
             if (rEntryType === valueTypes.REF) {              
-              const rRefId = ObjectId.parseRef(parser, i);
+              const rRefId = await ObjectId.parseRefAsync(parser, i);
               if (rRefId) {
                 this.R = rRefId.value;
                 i = rRefId.end + 1;
@@ -204,7 +204,7 @@ export class AppearanceDict extends PdfDict {
             } else if (rEntryType === valueTypes.DICTIONARY) {     
               const rDictBounds = parser.getDictBoundsAt(i);
               if (rDictBounds) {
-                const rSubDict = ObjectMapDict.parse({parser, bounds: rDictBounds});
+                const rSubDict = await ObjectMapDict.parseAsync({parser, bounds: rDictBounds});
                 if (rSubDict) {
                   this.R = rSubDict.value;
                   i = rSubDict.end + 1;
@@ -219,7 +219,7 @@ export class AppearanceDict extends PdfDict {
           case "/D":
             const dEntryType = parser.getValueTypeAt(i);
             if (dEntryType === valueTypes.REF) {              
-              const dRefId = ObjectId.parseRef(parser, i);
+              const dRefId = await ObjectId.parseRefAsync(parser, i);
               if (dRefId) {
                 this.D = dRefId.value;
                 i = dRefId.end + 1;
@@ -228,7 +228,7 @@ export class AppearanceDict extends PdfDict {
             } else if (dEntryType === valueTypes.DICTIONARY) {     
               const dDictBounds = parser.getDictBoundsAt(i);
               if (dDictBounds) {
-                const dSubDict = ObjectMapDict.parse({parser, bounds: dDictBounds});
+                const dSubDict = await ObjectMapDict.parseAsync({parser, bounds: dDictBounds});
                 if (dSubDict) {
                   this.D = dSubDict.value;
                   i = dSubDict.end + 1;
@@ -253,8 +253,8 @@ export class AppearanceDict extends PdfDict {
       throw new Error("Not all required properties parsed");
     }
 
-    if (parseInfo.parseInfoGetter) {
-      this.fillStreamsMap(parseInfo.parseInfoGetter);
+    if (parseInfo.parseInfoGetterAsync) {
+      await this.fillStreamsMapAsync(parseInfo.parseInfoGetterAsync);
     }
   }
   

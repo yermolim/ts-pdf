@@ -150,7 +150,7 @@ export class FreeTextAnnotator extends TextAnnotator {
     this.redrawRect(min, max);
   };
 
-  protected onPointerUp = (e: PointerEvent) => {
+  protected onPointerUp = async (e: PointerEvent) => {
     if (!e.isPrimary) {
       return;
     }
@@ -162,7 +162,7 @@ export class FreeTextAnnotator extends TextAnnotator {
     target.releasePointerCapture(e.pointerId); 
     
     if (this._rect) {
-      this.saveAnnotationAsync();
+      await this.saveAnnotationAsync();
     }
   };
 

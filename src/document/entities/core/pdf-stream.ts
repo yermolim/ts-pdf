@@ -127,7 +127,7 @@ export abstract class PdfStream extends PdfObject {
   /**
    * try to parse and fill public properties from data using parse info
    */
-  protected parseProps(parseInfo: ParserInfo) {
+  protected async parsePropsAsync(parseInfo: ParserInfo) {
     if (!parseInfo) {
       throw new Error("Parse info is empty");
     }
@@ -187,7 +187,7 @@ export abstract class PdfStream extends PdfObject {
           
           case "/Length":
           case "/DL":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break;
             
           case "/Filter":
@@ -221,7 +221,7 @@ export abstract class PdfStream extends PdfObject {
             if (paramsEntryType === valueTypes.DICTIONARY) {  
               const decodeParamsBounds = parser.getDictBoundsAt(i);
               if (decodeParamsBounds) {
-                const params = DecodeParamsDict.parse({parser, 
+                const params = await DecodeParamsDict.parseAsync({parser, 
                   bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo});
                 if (params) {
                   this.DecodeParms = params.value;
@@ -231,7 +231,7 @@ export abstract class PdfStream extends PdfObject {
               }              
               throw new Error("Can't parse /DecodeParms property value");
             } else if (paramsEntryType === valueTypes.ARRAY) {               
-              const paramsDicts = DecodeParamsDict.parseArray(parser, i, parseInfo.cryptInfo);
+              const paramsDicts = await DecodeParamsDict.parseArrayAsync(parser, i, parseInfo.cryptInfo);
               if (paramsDicts) {
                 const paramsArray = paramsDicts.value;
                 // TODO: add support for multiple filters

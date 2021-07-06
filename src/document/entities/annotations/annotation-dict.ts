@@ -379,7 +379,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     if (dict.$onEditAction) {
       dict.$onEditAction(undoable
         ? async () => {
-          dict.setTextContentAsync(oldText, false);
+          await dict.setTextContentAsync(oldText, false);
         }
         : undefined);
     }
@@ -388,8 +388,8 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -424,22 +424,22 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             break;
           
           case "/P":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
           
           case "/Contents":
           case "/NM":
-            i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
             break;
           
           case "/M":
-            const date = DateString.parse(parser, i, parseInfo.cryptInfo);
+            const date = await DateString.parseAsync(parser, i, parseInfo.cryptInfo);
             if (date) {
               this.M = date.value;
               i = date.end + 1;    
               break;      
             } else {   
-              const dateLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
+              const dateLiteral = await LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
               if (dateLiteral) {
                 this.M = dateLiteral.value;
                 i = dateLiteral.end + 1; 
@@ -454,11 +454,11 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
           
           case "/F":
           case "/StructParent":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break;
           
           case "/Border":
-            const borderArray = BorderArray.parse(parser, i);
+            const borderArray = await BorderArray.parseAsync(parser, i);
             if (borderArray) {
               this.Border = borderArray.value;
               i = borderArray.end + 1;
@@ -469,11 +469,11 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
           case "/BS":            
             const bsEntryType = parser.getValueTypeAt(i);
             if (bsEntryType === valueTypes.REF) {              
-              const bsDictId = ObjectId.parseRef(parser, i);
-              if (bsDictId && parseInfo.parseInfoGetter) {
-                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
+              const bsDictId = await ObjectId.parseRefAsync(parser, i);
+              if (bsDictId && parseInfo.parseInfoGetterAsync) {
+                const bsParseInfo = await parseInfo.parseInfoGetterAsync(bsDictId.value.id);
                 if (bsParseInfo) {
-                  const bsDict = BorderStyleDict.parse(bsParseInfo);
+                  const bsDict = await BorderStyleDict.parseAsync(bsParseInfo);
                   if (bsDict) {
                     this.BS = bsDict.value;
                     i = bsDict.end + 1;
@@ -485,7 +485,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             } else if (bsEntryType === valueTypes.DICTIONARY) { 
               const bsDictBounds = parser.getDictBoundsAt(i); 
               if (bsDictBounds) {
-                const bsDict = BorderStyleDict.parse({parser, bounds: bsDictBounds});
+                const bsDict = await BorderStyleDict.parseAsync({parser, bounds: bsDictBounds});
                 if (bsDict) {
                   this.BS = bsDict.value;
                   i = bsDict.end + 1;
@@ -498,11 +498,11 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
           case "/BE":
             const beEntryType = parser.getValueTypeAt(i);
             if (beEntryType === valueTypes.REF) {              
-              const bsDictId = ObjectId.parseRef(parser, i);
-              if (bsDictId && parseInfo.parseInfoGetter) {
-                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
+              const bsDictId = await ObjectId.parseRefAsync(parser, i);
+              if (bsDictId && parseInfo.parseInfoGetterAsync) {
+                const bsParseInfo = await parseInfo.parseInfoGetterAsync(bsDictId.value.id);
                 if (bsParseInfo) {
-                  const bsDict = BorderEffectDict.parse(bsParseInfo);
+                  const bsDict = await BorderEffectDict.parseAsync(bsParseInfo);
                   if (bsDict) {
                     this.BE = bsDict.value;
                     i = bsDict.end + 1;
@@ -514,7 +514,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             } else if (beEntryType === valueTypes.DICTIONARY) { 
               const bsDictBounds = parser.getDictBoundsAt(i); 
               if (bsDictBounds) {
-                const bsDict = BorderEffectDict.parse({parser, bounds: bsDictBounds});
+                const bsDict = await BorderEffectDict.parseAsync({parser, bounds: bsDictBounds});
                 if (bsDict) {
                   this.BE = bsDict.value;
                   i = bsDict.end + 1;
@@ -528,11 +528,11 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
           case "/AP":          
             const apEntryType = parser.getValueTypeAt(i);
             if (apEntryType === valueTypes.REF) {              
-              const apDictId = ObjectId.parseRef(parser, i);
-              if (apDictId && parseInfo.parseInfoGetter) {
-                const apParseInfo = parseInfo.parseInfoGetter(apDictId.value.id);
+              const apDictId = await ObjectId.parseRefAsync(parser, i);
+              if (apDictId && parseInfo.parseInfoGetterAsync) {
+                const apParseInfo = await parseInfo.parseInfoGetterAsync(apDictId.value.id);
                 if (apParseInfo) {
-                  const apDict = AppearanceDict.parse(apParseInfo);
+                  const apDict = await AppearanceDict.parseAsync(apParseInfo);
                   if (apDict) {
                     this.AP = apDict.value;
                     i = apDict.end + 1;
@@ -544,10 +544,10 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             } else if (apEntryType === valueTypes.DICTIONARY) { 
               const apDictBounds = parser.getDictBoundsAt(i); 
               if (apDictBounds) {
-                const apDict = AppearanceDict.parse({
+                const apDict = await AppearanceDict.parseAsync({
                   parser, 
                   bounds: apDictBounds, 
-                  parseInfoGetter: parseInfo.parseInfoGetter,
+                  parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
                 });
                 if (apDict) {
                   this.AP = apDict.value;
@@ -560,7 +560,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
           
           case "/AS":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break;
           
           // TODO: handle remaining properties

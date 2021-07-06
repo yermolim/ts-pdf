@@ -19,13 +19,13 @@ export class BorderStyleDict extends PdfDict {
     super(dictTypes.BORDER_STYLE);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<BorderStyleDict> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<BorderStyleDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     } 
     try {
       const pdfObject = new BorderStyleDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -58,8 +58,8 @@ export class BorderStyleDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -74,7 +74,7 @@ export class BorderStyleDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/W":
-            i = this.parseNumberProp(name, parser, i, true);
+            i = await this.parseNumberPropAsync(name, parser, i, true);
             break;
 
           case "/S":

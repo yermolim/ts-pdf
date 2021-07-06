@@ -146,32 +146,38 @@ export abstract class PdfObject implements IEncodable {
   }
 
   //#region parse simple properties 
-  protected parseRefProp(propName: string, parser: DataParser, index: number): number {
-    const parsed = ObjectId.parseRef(parser, index);
+  protected async parseRefPropAsync(propName: string, 
+    parser: DataParser, index: number): Promise<number> {
+    const parsed = await ObjectId.parseRefAsync(parser, index);
     return this.setParsedProp(propName, parsed);
   }
 
-  protected parseRefArrayProp(propName: string, parser: DataParser, index: number): number {
-    const parsed = ObjectId.parseRefArray(parser, index);
+  protected async parseRefArrayPropAsync(propName: string, 
+    parser: DataParser, index: number): Promise<number> {
+    const parsed = await ObjectId.parseRefArrayAsync(parser, index);
     return this.setParsedProp(propName, parsed);
   }
   
-  protected parseBoolProp(propName: string, parser: DataParser, index: number): number {
+  protected async parseBoolPropAsync(propName: string, 
+    parser: DataParser, index: number): Promise<number> {
     const parsed = parser.parseBoolAt(index);
     return this.setParsedProp(propName, parsed);
   }
   
-  protected parseNameProp(propName: string, parser: DataParser, index: number, includeSlash = true): number {
+  protected async parseNamePropAsync(propName: string, 
+    parser: DataParser, index: number, includeSlash = true): Promise<number> {
     const parsed = parser.parseNameAt(index, includeSlash);
     return this.setParsedProp(propName, parsed);
   }
   
-  protected parseNameArrayProp(propName: string, parser: DataParser, index: number, includeSlash = true): number {
+  protected async parseNameArrayPropAsync(propName: string, 
+    parser: DataParser, index: number, includeSlash = true): Promise<number> {
     const parsed = parser.parseNameArrayAt(index, includeSlash);
     return this.setParsedProp(propName, parsed);
   }
 
-  protected parseNumberProp(propName: string, parser: DataParser, index: number, float = true): number {
+  protected async parseNumberPropAsync(propName: string, 
+    parser: DataParser, index: number, float = true): Promise<number> {
     const parsed = parser.parseNumberAt(index, float);
     return this.setParsedProp(propName, parsed);
   }
@@ -181,18 +187,21 @@ export abstract class PdfObject implements IEncodable {
     return this.setParsedProp(propName, parsed);
   }
   
-  protected parseDateProp(propName: string, parser: DataParser, index: number, cryptInfo?: CryptInfo): number {
-    const parsed = DateString.parse(parser, index, cryptInfo);
+  protected async parseDatePropAsync(propName: string, 
+    parser: DataParser, index: number, cryptInfo?: CryptInfo): Promise<number> {
+    const parsed = await DateString.parseAsync(parser, index, cryptInfo);
     return this.setParsedProp(propName, parsed);
   }
 
-  protected parseLiteralProp(propName: string, parser: DataParser, index: number, cryptInfo?: CryptInfo): number {
-    const parsed = LiteralString.parse(parser, index, cryptInfo);
+  protected async parseLiteralPropAsync(propName: string, 
+    parser: DataParser, index: number, cryptInfo?: CryptInfo): Promise<number> {
+    const parsed = await LiteralString.parseAsync(parser, index, cryptInfo);
     return this.setParsedProp(propName, parsed);
   }
   
-  protected parseHexProp(propName: string, parser: DataParser, index: number, cryptInfo?: CryptInfo): number {
-    const parsed = HexString.parse(parser, index, cryptInfo);
+  protected async parseHexPropAsync(propName: string, 
+    parser: DataParser, index: number, cryptInfo?: CryptInfo): Promise<number> {
+    const parsed = await HexString.parseAsync(parser, index, cryptInfo);
     return this.setParsedProp(propName, parsed);
   }
 

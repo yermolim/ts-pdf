@@ -1573,7 +1573,7 @@ const styles = `
 </style>
 `;
 
-var __awaiter$x = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1594,7 +1594,7 @@ function htmlToElements(html) {
     return nodes;
 }
 function promisify(callback) {
-    return __awaiter$x(this, void 0, void 0, function* () {
+    return __awaiter$1g(this, void 0, void 0, function* () {
         return new Promise(resolve => {
             setTimeout(() => {
                 const result = callback();
@@ -1604,7 +1604,7 @@ function promisify(callback) {
     });
 }
 function runEmptyTimeout() {
-    return __awaiter$x(this, void 0, void 0, function* () {
+    return __awaiter$1g(this, void 0, void 0, function* () {
         yield promisify(() => undefined);
     });
 }
@@ -4109,65 +4109,80 @@ class ReferenceDataChange {
     }
 }
 
+var __awaiter$1f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ObjectId {
     constructor(id, generation) {
         this.id = id !== null && id !== void 0 ? id : 0;
         this.generation = generation !== null && generation !== void 0 ? generation : 0;
     }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.findRegularIndex(true, start);
-        }
-        if (start < 0 || start > parser.maxIndex) {
-            return null;
-        }
-        const id = parser.parseNumberAt(start, false, false);
-        if (!id || isNaN(id.value)) {
-            return null;
-        }
-        const generation = parser.parseNumberAt(id.end + 2, false, false);
-        if (!generation || isNaN(generation.value)) {
-            return null;
-        }
-        return {
-            value: new ObjectId(id.value, generation.value),
-            start,
-            end: generation.end,
-        };
-    }
-    static parseRef(parser, start, skipEmpty = true) {
-        const id = ObjectId.parse(parser, start, skipEmpty);
-        if (!id) {
-            return null;
-        }
-        const rIndexSupposed = id.end + 2;
-        const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
-        if (!rIndex || rIndex.start !== rIndexSupposed) {
-            return null;
-        }
-        return {
-            value: id.value,
-            start: id.start,
-            end: rIndex.end,
-        };
-    }
-    static parseRefArray(parser, start, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const ids = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = ObjectId.parseRef(parser, i, true);
-            if (!current) {
-                break;
+    static parseAsync(parser, start, skipEmpty = true) {
+        return __awaiter$1f(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = parser.findRegularIndex(true, start);
             }
-            ids.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
+            if (start < 0 || start > parser.maxIndex) {
+                return null;
+            }
+            const id = parser.parseNumberAt(start, false, false);
+            if (!id || isNaN(id.value)) {
+                return null;
+            }
+            const generation = parser.parseNumberAt(id.end + 2, false, false);
+            if (!generation || isNaN(generation.value)) {
+                return null;
+            }
+            return {
+                value: new ObjectId(id.value, generation.value),
+                start,
+                end: generation.end,
+            };
+        });
+    }
+    static parseRefAsync(parser, start, skipEmpty = true) {
+        return __awaiter$1f(this, void 0, void 0, function* () {
+            const id = yield ObjectId.parseAsync(parser, start, skipEmpty);
+            if (!id) {
+                return null;
+            }
+            const rIndexSupposed = id.end + 2;
+            const rIndex = parser.findSubarrayIndex([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
+            if (!rIndex || rIndex.start !== rIndexSupposed) {
+                return null;
+            }
+            return {
+                value: id.value,
+                start: id.start,
+                end: rIndex.end,
+            };
+        });
+    }
+    static parseRefArrayAsync(parser, start, skipEmpty = true) {
+        return __awaiter$1f(this, void 0, void 0, function* () {
+            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            if (!arrayBounds) {
+                return null;
+            }
+            const ids = [];
+            let current;
+            let i = arrayBounds.start + 1;
+            while (i < arrayBounds.end) {
+                current = yield ObjectId.parseRefAsync(parser, i, true);
+                if (!current) {
+                    break;
+                }
+                ids.push(current.value);
+                i = current.end + 1;
+            }
+            return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
+        });
     }
     static fromRef(ref) {
         return new ObjectId(ref.id, ref.generation);
@@ -4184,6 +4199,15 @@ class ObjectId {
     }
 }
 
+var __awaiter$1e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class DateString {
     constructor(source, date) {
         this._source = source;
@@ -4195,28 +4219,30 @@ class DateString {
     get date() {
         return new Date(this._date);
     }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.skipEmpty(start);
-        }
-        if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        const end = parser.findCharIndex(codes.R_PARENTHESE, true, start);
-        if (end === -1) {
-            return null;
-        }
-        let bytes = parser.sliceCharCodes(start + 1, end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        try {
-            const date = DateString.fromArray(bytes);
-            return { value: date, start, end };
-        }
-        catch (_a) {
-            return null;
-        }
+    static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        return __awaiter$1e(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = parser.skipEmpty(start);
+            }
+            if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+                return null;
+            }
+            const end = parser.findCharIndex(codes.R_PARENTHESE, true, start);
+            if (end === -1) {
+                return null;
+            }
+            let bytes = parser.sliceCharCodes(start + 1, end - 1);
+            if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+                bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+            }
+            try {
+                const date = DateString.fromArray(bytes);
+                return { value: date, start, end };
+            }
+            catch (_a) {
+                return null;
+            }
+        });
     }
     static fromDate(date) {
         const year = date.getFullYear();
@@ -4250,6 +4276,15 @@ class DateString {
     }
 }
 
+var __awaiter$1d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class HexString {
     constructor(literal, hex, bytes) {
         this._literal = literal;
@@ -4265,35 +4300,39 @@ class HexString {
     get bytes() {
         return this._bytes.slice();
     }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        const bounds = parser.getHexBounds(start, skipEmpty);
-        if (!bounds) {
-            return null;
-        }
-        let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        const hex = HexString.fromBytes(bytes);
-        return { value: hex, start: bounds.start, end: bounds.end };
-    }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const hexes = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = HexString.parse(parser, i, cryptInfo, skipEmpty);
-            if (!current) {
-                break;
+    static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        return __awaiter$1d(this, void 0, void 0, function* () {
+            const bounds = parser.getHexBounds(start, skipEmpty);
+            if (!bounds) {
+                return null;
             }
-            hexes.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+            let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+            if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+                bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+            }
+            const hex = HexString.fromBytes(bytes);
+            return { value: hex, start: bounds.start, end: bounds.end };
+        });
+    }
+    static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        return __awaiter$1d(this, void 0, void 0, function* () {
+            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            if (!arrayBounds) {
+                return null;
+            }
+            const hexes = [];
+            let current;
+            let i = arrayBounds.start + 1;
+            while (i < arrayBounds.end) {
+                current = yield HexString.parseAsync(parser, i, cryptInfo, skipEmpty);
+                if (!current) {
+                    break;
+                }
+                hexes.push(current.value);
+                i = current.end + 1;
+            }
+            return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
+        });
     }
     static fromBytes(bytes) {
         const literal = new TextDecoder().decode(bytes);
@@ -4321,6 +4360,15 @@ class HexString {
     }
 }
 
+var __awaiter$1c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class LiteralString {
     constructor(literal, bytes) {
         this._literal = literal;
@@ -4332,35 +4380,39 @@ class LiteralString {
     get bytes() {
         return this._bytes.slice();
     }
-    static parse(parser, start, cryptInfo = null, skipEmpty = true) {
-        const bounds = parser.getLiteralBounds(start, skipEmpty);
-        if (!bounds) {
-            return;
-        }
-        let bytes = LiteralString.unescape(parser.sliceCharCodes(bounds.start + 1, bounds.end - 1));
-        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-        }
-        const result = LiteralString.fromBytes(bytes);
-        return { value: result, start: bounds.start, end: bounds.end };
-    }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const strings = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = LiteralString.parse(parser, i, cryptInfo, skipEmpty);
-            if (!current) {
-                break;
+    static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        return __awaiter$1c(this, void 0, void 0, function* () {
+            const bounds = parser.getLiteralBounds(start, skipEmpty);
+            if (!bounds) {
+                return;
             }
-            strings.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: strings, start: arrayBounds.start, end: arrayBounds.end };
+            let bytes = LiteralString.unescape(parser.sliceCharCodes(bounds.start + 1, bounds.end - 1));
+            if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+                bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+            }
+            const result = LiteralString.fromBytes(bytes);
+            return { value: result, start: bounds.start, end: bounds.end };
+        });
+    }
+    static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        return __awaiter$1c(this, void 0, void 0, function* () {
+            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            if (!arrayBounds) {
+                return null;
+            }
+            const strings = [];
+            let current;
+            let i = arrayBounds.start + 1;
+            while (i < arrayBounds.end) {
+                current = yield LiteralString.parseAsync(parser, i, cryptInfo, skipEmpty);
+                if (!current) {
+                    break;
+                }
+                strings.push(current.value);
+                i = current.end + 1;
+            }
+            return { value: strings, start: arrayBounds.start, end: arrayBounds.end };
+        });
     }
     static fromBytes(bytes) {
         const decoder = bytes[0] === 254 && bytes[1] === 255
@@ -4479,6 +4531,15 @@ class LiteralString {
     }
 }
 
+var __awaiter$1b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PdfObject {
     constructor() {
         this._added = false;
@@ -4564,45 +4625,63 @@ class PdfObject {
         bytes.push(codes.R_BRACKET);
         return bytes;
     }
-    parseRefProp(propName, parser, index) {
-        const parsed = ObjectId.parseRef(parser, index);
-        return this.setParsedProp(propName, parsed);
+    parseRefPropAsync(propName, parser, index) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = yield ObjectId.parseRefAsync(parser, index);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseRefArrayProp(propName, parser, index) {
-        const parsed = ObjectId.parseRefArray(parser, index);
-        return this.setParsedProp(propName, parsed);
+    parseRefArrayPropAsync(propName, parser, index) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = yield ObjectId.parseRefArrayAsync(parser, index);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseBoolProp(propName, parser, index) {
-        const parsed = parser.parseBoolAt(index);
-        return this.setParsedProp(propName, parsed);
+    parseBoolPropAsync(propName, parser, index) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = parser.parseBoolAt(index);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseNameProp(propName, parser, index, includeSlash = true) {
-        const parsed = parser.parseNameAt(index, includeSlash);
-        return this.setParsedProp(propName, parsed);
+    parseNamePropAsync(propName, parser, index, includeSlash = true) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = parser.parseNameAt(index, includeSlash);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseNameArrayProp(propName, parser, index, includeSlash = true) {
-        const parsed = parser.parseNameArrayAt(index, includeSlash);
-        return this.setParsedProp(propName, parsed);
+    parseNameArrayPropAsync(propName, parser, index, includeSlash = true) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = parser.parseNameArrayAt(index, includeSlash);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseNumberProp(propName, parser, index, float = true) {
-        const parsed = parser.parseNumberAt(index, float);
-        return this.setParsedProp(propName, parsed);
+    parseNumberPropAsync(propName, parser, index, float = true) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = parser.parseNumberAt(index, float);
+            return this.setParsedProp(propName, parsed);
+        });
     }
     parseNumberArrayProp(propName, parser, index, float = true) {
         const parsed = parser.parseNumberArrayAt(index, float);
         return this.setParsedProp(propName, parsed);
     }
-    parseDateProp(propName, parser, index, cryptInfo) {
-        const parsed = DateString.parse(parser, index, cryptInfo);
-        return this.setParsedProp(propName, parsed);
+    parseDatePropAsync(propName, parser, index, cryptInfo) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = yield DateString.parseAsync(parser, index, cryptInfo);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseLiteralProp(propName, parser, index, cryptInfo) {
-        const parsed = LiteralString.parse(parser, index, cryptInfo);
-        return this.setParsedProp(propName, parsed);
+    parseLiteralPropAsync(propName, parser, index, cryptInfo) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = yield LiteralString.parseAsync(parser, index, cryptInfo);
+            return this.setParsedProp(propName, parsed);
+        });
     }
-    parseHexProp(propName, parser, index, cryptInfo) {
-        const parsed = HexString.parse(parser, index, cryptInfo);
-        return this.setParsedProp(propName, parsed);
+    parseHexPropAsync(propName, parser, index, cryptInfo) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parsed = yield HexString.parseAsync(parser, index, cryptInfo);
+            return this.setParsedProp(propName, parsed);
+        });
     }
     setParsedProp(propName, parsed) {
         if (!parsed) {
@@ -4613,6 +4692,15 @@ class PdfObject {
     }
 }
 
+var __awaiter$1a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PdfDict extends PdfObject {
     constructor(type) {
         super();
@@ -4630,50 +4718,61 @@ class PdfDict extends PdfObject {
         bytes.push(...keywordCodes.DICT_END);
         return new Uint8Array(bytes);
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
         var _a;
-        if (!parseInfo) {
-            throw new Error("Parse info is empty");
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
-        this._streamId = parseInfo.streamId;
-        this._sourceBytes = parser.sliceCharCodes(start, end);
-        let i = parser.skipToNextName(start, end - 1);
-        if (i === -1) {
-            throw new Error("Dict is empty (has no properties)");
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Type":
-                        const type = parser.parseNameAt(i);
-                        if (type) {
-                            if (this.Type && this.Type !== type.value) {
-                                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
+        return __awaiter$1a(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parse info is empty");
+            }
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
+            this._streamId = parseInfo.streamId;
+            this._sourceBytes = parser.sliceCharCodes(start, end);
+            let i = parser.skipToNextName(start, end - 1);
+            if (i === -1) {
+                throw new Error("Dict is empty (has no properties)");
+            }
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Type":
+                            const type = parser.parseNameAt(i);
+                            if (type) {
+                                if (this.Type && this.Type !== type.value) {
+                                    throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
+                                }
+                                return;
                             }
-                            return;
-                        }
-                        throw new Error("Can't parse /Type property value");
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error("Can't parse /Type property value");
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$19 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class DecodeParamsDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
@@ -4682,38 +4781,42 @@ class DecodeParamsDict extends PdfDict {
         this._namePropMap = new Map();
         this._refPropMap = new Map();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new DecodeParamsDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
-    }
-    static parseArray(parser, start, cryptInfo = null, skipEmpty = true) {
-        const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const paramsDicts = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            const paramsBounds = parser.getDictBoundsAt(i);
-            current = DecodeParamsDict.parse({ parser, bounds: paramsBounds, cryptInfo });
-            if (!current) {
-                break;
+    static parseAsync(parseInfo) {
+        return __awaiter$19(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
             }
-            paramsDicts.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: paramsDicts, start: arrayBounds.start, end: arrayBounds.end };
+            try {
+                const pdfObject = new DecodeParamsDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
+    }
+    static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        return __awaiter$19(this, void 0, void 0, function* () {
+            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            if (!arrayBounds) {
+                return null;
+            }
+            const paramsDicts = [];
+            let current;
+            let i = arrayBounds.start + 1;
+            while (i < arrayBounds.end) {
+                const paramsBounds = parser.getDictBoundsAt(i);
+                current = yield DecodeParamsDict.parseAsync({ parser, bounds: paramsBounds, cryptInfo });
+                if (!current) {
+                    break;
+                }
+                paramsDicts.push(current.value);
+                i = current.end + 1;
+            }
+            return { value: paramsDicts, start: arrayBounds.start, end: arrayBounds.end };
+        });
     }
     getIntProp(name) {
         return this._intPropMap.get(name);
@@ -4754,60 +4857,65 @@ class DecodeParamsDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                const valueType = parser.getValueTypeAt(i);
-                switch (valueType) {
-                    case valueTypes.NUMBER:
-                        const intValue = parser.parseNumberAt(i, false);
-                        if (intValue) {
-                            this._intPropMap.set(name, intValue.value);
-                            i = intValue.end + 1;
-                            continue;
-                        }
-                        break;
-                    case valueTypes.BOOLEAN:
-                        const boolValue = parser.parseBoolAt(i);
-                        if (boolValue) {
-                            this._boolPropMap.set(name, boolValue.value);
-                            i = boolValue.end + 1;
-                            continue;
-                        }
-                        break;
-                    case valueTypes.NAME:
-                        const nameValue = parser.parseNameAt(i);
-                        if (nameValue) {
-                            this._namePropMap.set(name, nameValue.value);
-                            i = nameValue.end + 1;
-                            continue;
-                        }
-                        break;
-                    case valueTypes.REF:
-                        const refValue = ObjectId.parseRef(parser, i);
-                        if (refValue) {
-                            this._refPropMap.set(name, refValue.value);
-                            i = refValue.end + 1;
-                            continue;
-                        }
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$19(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    const valueType = parser.getValueTypeAt(i);
+                    switch (valueType) {
+                        case valueTypes.NUMBER:
+                            const intValue = parser.parseNumberAt(i, false);
+                            if (intValue) {
+                                this._intPropMap.set(name, intValue.value);
+                                i = intValue.end + 1;
+                                continue;
+                            }
+                            break;
+                        case valueTypes.BOOLEAN:
+                            const boolValue = parser.parseBoolAt(i);
+                            if (boolValue) {
+                                this._boolPropMap.set(name, boolValue.value);
+                                i = boolValue.end + 1;
+                                continue;
+                            }
+                            break;
+                        case valueTypes.NAME:
+                            const nameValue = parser.parseNameAt(i);
+                            if (nameValue) {
+                                this._namePropMap.set(name, nameValue.value);
+                                i = nameValue.end + 1;
+                                continue;
+                            }
+                            break;
+                        case valueTypes.REF:
+                            const refValue = yield ObjectId.parseRefAsync(parser, i);
+                            if (refValue) {
+                                this._refPropMap.set(name, refValue.value);
+                                i = refValue.end + 1;
+                                continue;
+                            }
+                            break;
+                    }
+                    i = parser.skipToNextName(i, end - 1);
                 }
-                i = parser.skipToNextName(i, end - 1);
+                else {
+                    break;
+                }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
@@ -5506,6 +5614,15 @@ class FlateDecoder {
     }
 }
 
+var __awaiter$18 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PdfStream extends PdfObject {
     constructor(type) {
         super();
@@ -5559,135 +5676,137 @@ class PdfStream extends PdfObject {
         const bytes = encoder.encode(text);
         this.streamData = bytes;
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
         var _a, _b;
-        if (!parseInfo) {
-            throw new Error("Parse info is empty");
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
-        this._sourceBytes = parser.sliceCharCodes(start, end);
-        const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
-            direction: false,
-            minIndex: start,
-            maxIndex: end,
-            closedOnly: true,
-        });
-        if (!streamEndIndex) {
-            throw new Error("Object is not a stream");
-        }
-        const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
-            direction: false,
-            minIndex: start,
-            maxIndex: streamEndIndex.start - 1,
-            closedOnly: true
-        });
-        if (!streamStartIndex) {
-            throw new Error("Stream start is out of the data bounds");
-        }
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        if (i === -1) {
-            throw new Error("Dict is empty (has no properties)");
-        }
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Type":
-                        const type = parser.parseNameAt(i);
-                        if (type) {
-                            if (this.Type && this.Type !== type.value) {
-                                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
-                            }
-                            i = type.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Type property value");
-                        }
-                        break;
-                    case "/Length":
-                    case "/DL":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Filter":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.NAME) {
-                            const filter = parser.parseNameAt(i);
-                            if (filter && supportedFilters.has(filter.value)) {
-                                this.Filter = filter.value;
-                                i = filter.end + 1;
-                                break;
+        return __awaiter$18(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parse info is empty");
+            }
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
+            this._sourceBytes = parser.sliceCharCodes(start, end);
+            const streamEndIndex = parser.findSubarrayIndex(keywordCodes.STREAM_END, {
+                direction: false,
+                minIndex: start,
+                maxIndex: end,
+                closedOnly: true,
+            });
+            if (!streamEndIndex) {
+                throw new Error("Object is not a stream");
+            }
+            const streamStartIndex = parser.findSubarrayIndex(keywordCodes.STREAM_START, {
+                direction: false,
+                minIndex: start,
+                maxIndex: streamEndIndex.start - 1,
+                closedOnly: true
+            });
+            if (!streamStartIndex) {
+                throw new Error("Stream start is out of the data bounds");
+            }
+            const dictBounds = parser.getDictBoundsAt(start);
+            let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+            if (i === -1) {
+                throw new Error("Dict is empty (has no properties)");
+            }
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Type":
+                            const type = parser.parseNameAt(i);
+                            if (type) {
+                                if (this.Type && this.Type !== type.value) {
+                                    throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
+                                }
+                                i = type.end + 1;
                             }
                             else {
-                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+                                throw new Error("Can't parse /Type property value");
                             }
-                        }
-                        else if (entryType === valueTypes.ARRAY) {
-                            const filterNames = parser.parseNameArrayAt(i);
-                            if (filterNames) {
-                                const filterArray = filterNames.value;
-                                if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
-                                    this.Filter = filterArray[0];
-                                    i = filterNames.end + 1;
+                            break;
+                        case "/Length":
+                        case "/DL":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Filter":
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.NAME) {
+                                const filter = parser.parseNameAt(i);
+                                if (filter && supportedFilters.has(filter.value)) {
+                                    this.Filter = filter.value;
+                                    i = filter.end + 1;
                                     break;
                                 }
                                 else {
-                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                                    throw new Error(`Unsupported /Filter property value: ${filter.value}`);
                                 }
                             }
-                        }
-                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                    case "/DecodeParms":
-                        const paramsEntryType = parser.getValueTypeAt(i);
-                        if (paramsEntryType === valueTypes.DICTIONARY) {
-                            const decodeParamsBounds = parser.getDictBoundsAt(i);
-                            if (decodeParamsBounds) {
-                                const params = DecodeParamsDict.parse({ parser,
-                                    bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo });
-                                if (params) {
-                                    this.DecodeParms = params.value;
-                                    i = decodeParamsBounds.end + 1;
-                                    break;
+                            else if (entryType === valueTypes.ARRAY) {
+                                const filterNames = parser.parseNameArrayAt(i);
+                                if (filterNames) {
+                                    const filterArray = filterNames.value;
+                                    if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
+                                        this.Filter = filterArray[0];
+                                        i = filterNames.end + 1;
+                                        break;
+                                    }
+                                    else {
+                                        throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
+                                    }
                                 }
                             }
-                            throw new Error("Can't parse /DecodeParms property value");
-                        }
-                        else if (paramsEntryType === valueTypes.ARRAY) {
-                            const paramsDicts = DecodeParamsDict.parseArray(parser, i, parseInfo.cryptInfo);
-                            if (paramsDicts) {
-                                const paramsArray = paramsDicts.value;
-                                if (paramsArray.length === 1) {
-                                    this.DecodeParms = paramsArray[0];
-                                    i = paramsDicts.end + 1;
-                                    break;
+                            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                        case "/DecodeParms":
+                            const paramsEntryType = parser.getValueTypeAt(i);
+                            if (paramsEntryType === valueTypes.DICTIONARY) {
+                                const decodeParamsBounds = parser.getDictBoundsAt(i);
+                                if (decodeParamsBounds) {
+                                    const params = yield DecodeParamsDict.parseAsync({ parser,
+                                        bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo });
+                                    if (params) {
+                                        this.DecodeParms = params.value;
+                                        i = decodeParamsBounds.end + 1;
+                                        break;
+                                    }
                                 }
+                                throw new Error("Can't parse /DecodeParms property value");
                             }
-                            throw new Error("Can't parse /DecodeParms property value");
-                        }
-                        throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
-                    default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
+                            else if (paramsEntryType === valueTypes.ARRAY) {
+                                const paramsDicts = yield DecodeParamsDict.parseArrayAsync(parser, i, parseInfo.cryptInfo);
+                                if (paramsDicts) {
+                                    const paramsArray = paramsDicts.value;
+                                    if (paramsArray.length === 1) {
+                                        this.DecodeParms = paramsArray[0];
+                                        i = paramsDicts.end + 1;
+                                        break;
+                                    }
+                                }
+                                throw new Error("Can't parse /DecodeParms property value");
+                            }
+                            throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
+                        default:
+                            i = parser.skipToNextName(i, dictBounds.contentEnd);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
-        const streamStart = parser.findNewLineIndex(true, streamStartIndex.end + 1);
-        const streamEnd = parser.findNewLineIndex(false, streamEndIndex.start - 1);
-        const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
-        const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
-            ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
-            : streamBytes;
-        this._streamData = encodedData;
+            const streamStart = parser.findNewLineIndex(true, streamStartIndex.end + 1);
+            const streamEnd = parser.findNewLineIndex(false, streamEndIndex.start - 1);
+            const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
+            const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
+                ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
+                : streamBytes;
+            this._streamData = encodedData;
+        });
     }
     setStreamData(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -5739,23 +5858,34 @@ class PdfStream extends PdfObject {
 }
 PdfStream.dataParserConstructor = SyncDataParser;
 
+var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TrailerStream extends PdfStream {
     constructor() {
         super(streamTypes.XREF);
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new TrailerStream();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$17(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new TrailerStream();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -5792,82 +5922,87 @@ class TrailerStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Size":
-                    case "/Prev":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Root":
-                    case "/Info":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Encrypt":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const encryptId = ObjectId.parseRef(parser, i);
-                            if (encryptId) {
-                                this.Encrypt = encryptId.value;
-                                i = encryptId.end + 1;
+        return __awaiter$17(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const dictBounds = parser.getDictBoundsAt(start);
+            let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Size":
+                        case "/Prev":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Root":
+                        case "/Info":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Encrypt":
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.REF) {
+                                const encryptId = yield ObjectId.parseRefAsync(parser, i);
+                                if (encryptId) {
+                                    this.Encrypt = encryptId.value;
+                                    i = encryptId.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error("Can't parse /Encrypt property value");
+                                }
+                            }
+                            throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
+                        case "/ID":
+                            const hexIds = yield HexString.parseArrayAsync(parser, i);
+                            if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+                                this.ID = [
+                                    hexIds.value[0],
+                                    hexIds.value[1],
+                                ];
+                                i = hexIds.end + 1;
                                 break;
                             }
-                            else {
-                                throw new Error("Can't parse /Encrypt property value");
+                            const literalIds = yield LiteralString.parseArrayAsync(parser, i);
+                            if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+                                this.ID = [
+                                    HexString.fromHexBytes(literalIds.value[0].bytes),
+                                    HexString.fromHexBytes(literalIds.value[1].bytes),
+                                ];
+                                i = literalIds.end + 1;
+                                break;
                             }
-                        }
-                        throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                    case "/ID":
-                        const hexIds = HexString.parseArray(parser, i);
-                        if (hexIds && hexIds.value[0] && hexIds.value[1]) {
-                            this.ID = [
-                                hexIds.value[0],
-                                hexIds.value[1],
-                            ];
-                            i = hexIds.end + 1;
+                            throw new Error("Can't parse /ID property value");
+                        case "/Index":
+                        case "/W":
+                            i = this.parseNumberArrayProp(name, parser, i, false);
                             break;
-                        }
-                        const literalIds = LiteralString.parseArray(parser, i);
-                        if (literalIds && literalIds.value[0] && literalIds.value[1]) {
-                            this.ID = [
-                                HexString.fromHexBytes(literalIds.value[0].bytes),
-                                HexString.fromHexBytes(literalIds.value[1].bytes),
-                            ];
-                            i = literalIds.end + 1;
+                        default:
+                            i = parser.skipToNextName(i, dictBounds.contentEnd);
                             break;
-                        }
-                        throw new Error("Can't parse /ID property value");
-                    case "/Index":
-                    case "/W":
-                        i = this.parseNumberArrayProp(name, parser, i, false);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
-            this.Index = [0, this.Size];
-        }
+            if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
+                this.Index = [0, this.Size];
+            }
+        });
     }
 }
 
@@ -5883,6 +6018,15 @@ class XRef {
     }
 }
 
+var __awaiter$16 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class XRefStream extends XRef {
     constructor(trailer, offset) {
         super(xRefTypes.STREAM);
@@ -5948,20 +6092,22 @@ class XRefStream extends XRef {
         stream._trailerStream.streamData = data.bytes;
         return stream;
     }
-    static parse(parseInfo, offset) {
-        if (!parseInfo) {
-            return null;
-        }
-        const trailerStream = TrailerStream.parse(parseInfo);
-        if (!trailerStream) {
-            return null;
-        }
-        const xrefStream = new XRefStream(trailerStream.value, offset);
-        return {
-            value: xrefStream,
-            start: null,
-            end: null,
-        };
+    static parseAsync(parseInfo, offset) {
+        return __awaiter$16(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                return null;
+            }
+            const trailerStream = yield TrailerStream.parseAsync(parseInfo);
+            if (!trailerStream) {
+                return null;
+            }
+            const xrefStream = new XRefStream(trailerStream.value, offset);
+            return {
+                value: xrefStream,
+                start: null,
+                end: null,
+            };
+        });
     }
     createUpdate(entries, offset) {
         return XRefStream.createFrom(this, entries, offset);
@@ -5978,23 +6124,34 @@ class XRefStream extends XRef {
     }
 }
 
+var __awaiter$15 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TextStream extends PdfStream {
     constructor(type = null) {
         super(type);
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new TextStream();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$15(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new TextStream();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     getText() {
         return null;
@@ -6003,11 +6160,25 @@ class TextStream extends PdfStream {
         const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$15(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+        });
     }
 }
 
+var __awaiter$14 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class IndexedColorSpaceArray {
     constructor(baseColorSpace, highestValue, lookupArray) {
         switch (baseColorSpace) {
@@ -6030,73 +6201,75 @@ class IndexedColorSpaceArray {
         this.highestValue = highestValue;
         this.lookupArray = lookupArray;
     }
-    static parse(parseInfo, skipEmpty = true) {
-        const { parser, bounds, cryptInfo } = parseInfo;
-        let i;
-        if (skipEmpty) {
-            i = parser.findNonSpaceIndex(true, bounds.start);
-        }
-        const start = i;
-        if (i < 0 || i > parser.maxIndex
-            || parser.getCharCode(i) !== codes.L_BRACKET) {
-            console.log("Color space array start not found");
-            return null;
-        }
-        i++;
-        const type = parser.parseNameAt(i);
-        if (!type || type.value !== "/Indexed") {
-            console.log("Array is not representing an indexed color space");
-            return null;
-        }
-        i = type.end + 1;
-        const base = parser.parseNameAt(i);
-        if (!base) {
-            console.log("Can't parse base color space name of the indexed color space");
-            return null;
-        }
-        i = base.end + 2;
-        const highestValue = parser.parseNumberAt(i);
-        if (!highestValue || isNaN(highestValue.value)) {
-            console.log("Can't parse the highest value of the indexed color space");
-            return null;
-        }
-        i = highestValue.end + 1;
-        let lookupArray;
-        const lookupEntryType = parser.getValueTypeAt(i);
-        if (lookupEntryType === valueTypes.REF) {
+    static parseAsync(parseInfo, skipEmpty = true) {
+        return __awaiter$14(this, void 0, void 0, function* () {
+            const { parser, bounds, cryptInfo } = parseInfo;
+            let i;
+            if (skipEmpty) {
+                i = parser.findNonSpaceIndex(true, bounds.start);
+            }
+            const start = i;
+            if (i < 0 || i > parser.maxIndex
+                || parser.getCharCode(i) !== codes.L_BRACKET) {
+                console.log("Color space array start not found");
+                return null;
+            }
+            i++;
+            const type = parser.parseNameAt(i);
+            if (!type || type.value !== "/Indexed") {
+                console.log("Array is not representing an indexed color space");
+                return null;
+            }
+            i = type.end + 1;
+            const base = parser.parseNameAt(i);
+            if (!base) {
+                console.log("Can't parse base color space name of the indexed color space");
+                return null;
+            }
+            i = base.end + 2;
+            const highestValue = parser.parseNumberAt(i);
+            if (!highestValue || isNaN(highestValue.value)) {
+                console.log("Can't parse the highest value of the indexed color space");
+                return null;
+            }
+            i = highestValue.end + 1;
+            let lookupArray;
+            const lookupEntryType = parser.getValueTypeAt(i);
+            if (lookupEntryType === valueTypes.REF) {
+                try {
+                    const lookupId = yield ObjectId.parseRefAsync(parser, i);
+                    const lookupParseInfo = yield parseInfo.parseInfoGetterAsync(lookupId.value.id);
+                    const lookupStream = yield TextStream.parseAsync(lookupParseInfo);
+                    lookupArray = lookupStream.value.decodedStreamData;
+                    i = lookupId.end + 1;
+                }
+                catch (e) {
+                    throw new Error(`Can't parse indexed color array lookup ref: ${e.message}`);
+                }
+            }
+            else if (lookupEntryType === valueTypes.STRING_HEX) {
+                const lookupHex = yield HexString.parseAsync(parser, i, cryptInfo);
+                if (lookupHex) {
+                    lookupArray = lookupHex.value.hex;
+                    i = lookupHex.end + 1;
+                }
+                else {
+                    throw new Error("Can't parse indexed color array lookup hex string");
+                }
+            }
             try {
-                const lookupId = ObjectId.parseRef(parser, i);
-                const lookupParseInfo = parseInfo.parseInfoGetter(lookupId.value.id);
-                const lookupStream = TextStream.parse(lookupParseInfo);
-                lookupArray = lookupStream.value.decodedStreamData;
-                i = lookupId.end + 1;
+                const colorSpace = new IndexedColorSpaceArray(base.value, highestValue.value, lookupArray);
+                return {
+                    value: colorSpace,
+                    start,
+                    end: i - 1,
+                };
             }
             catch (e) {
-                throw new Error(`Can't parse indexed color array lookup ref: ${e.message}`);
+                console.log(e.message);
+                return null;
             }
-        }
-        else if (lookupEntryType === valueTypes.STRING_HEX) {
-            const lookupHex = HexString.parse(parser, i, cryptInfo);
-            if (lookupHex) {
-                lookupArray = lookupHex.value.hex;
-                i = lookupHex.end + 1;
-            }
-            else {
-                throw new Error("Can't parse indexed color array lookup hex string");
-            }
-        }
-        try {
-            const colorSpace = new IndexedColorSpaceArray(base.value, highestValue.value, lookupArray);
-            return {
-                value: colorSpace,
-                start,
-                end: i - 1,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+        });
     }
     toArray(cryptInfo) {
         const encoder = new TextEncoder();
@@ -6129,7 +6302,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$w = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$13 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6152,19 +6325,21 @@ class ImageStream extends PdfStream {
     set sMask(value) {
         this._sMask = value;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new ImageStream();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$13(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new ImageStream();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6221,7 +6396,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$w(this, void 0, void 0, function* () {
+        return __awaiter$13(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -6277,235 +6452,240 @@ class ImageStream extends PdfStream {
             throw new Error(`Unsupported image filter type: ${this.Filter}`);
         });
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i);
-                        if (subtype) {
-                            if (this.Subtype && this.Subtype !== subtype.value) {
-                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$13(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const dictBounds = parser.getDictBoundsAt(start);
+            let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Subtype":
+                            const subtype = parser.parseNameAt(i);
+                            if (subtype) {
+                                if (this.Subtype && this.Subtype !== subtype.value) {
+                                    throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                                }
+                                i = subtype.end + 1;
                             }
-                            i = subtype.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
-                        }
-                        break;
-                    case "/Width":
-                    case "/Height":
-                    case "/BitsPerComponent":
-                    case "/SMaskInData":
-                    case "/StructParent":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Decode":
-                        i = this.parseNumberArrayProp(name, parser, i, false);
-                        break;
-                    case "/Matte":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/Interpolate":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    case "/SMask":
-                    case "/Metadata":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/ColorSpace":
-                        const colorSpaceEntryType = parser.getValueTypeAt(i);
-                        if (colorSpaceEntryType === valueTypes.NAME) {
-                            const colorSpaceName = parser.parseNameAt(i);
-                            if (colorSpaceName) {
-                                this.ColorSpace = colorSpaceName.value;
-                                i = colorSpaceName.end + 1;
-                                break;
+                            else {
+                                throw new Error("Can't parse /Subtype property value");
                             }
-                            throw new Error("Can't parse /ColorSpace name");
-                        }
-                        else if (colorSpaceEntryType === valueTypes.ARRAY) {
-                            const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
-                            if (colorSpaceArrayBounds) {
-                                const indexedColorSpace = IndexedColorSpaceArray.parse({
-                                    parser,
-                                    bounds: colorSpaceArrayBounds,
-                                    cryptInfo: parseInfo.cryptInfo,
-                                    parseInfoGetter: parseInfo.parseInfoGetter,
-                                });
-                                if (indexedColorSpace) {
-                                    this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
-                                    this._indexedColorSpace = indexedColorSpace.value;
-                                    i = colorSpaceArrayBounds.end + 1;
+                            break;
+                        case "/Width":
+                        case "/Height":
+                        case "/BitsPerComponent":
+                        case "/SMaskInData":
+                        case "/StructParent":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Decode":
+                            i = this.parseNumberArrayProp(name, parser, i, false);
+                            break;
+                        case "/Matte":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/Interpolate":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        case "/SMask":
+                        case "/Metadata":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/ColorSpace":
+                            const colorSpaceEntryType = parser.getValueTypeAt(i);
+                            if (colorSpaceEntryType === valueTypes.NAME) {
+                                const colorSpaceName = parser.parseNameAt(i);
+                                if (colorSpaceName) {
+                                    this.ColorSpace = colorSpaceName.value;
+                                    i = colorSpaceName.end + 1;
                                     break;
                                 }
-                                throw new Error("Can't parse /ColorSpace object:" +
-                                    parser.sliceChars(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
+                                throw new Error("Can't parse /ColorSpace name");
                             }
-                            throw new Error("Can't parse /ColorSpace value array");
-                        }
-                        else if (colorSpaceEntryType === valueTypes.REF) {
-                            const colorSpaceRef = ObjectId.parseRef(parser, i);
-                            if (colorSpaceRef) {
-                                const colorSpaceParseInfo = parseInfo.parseInfoGetter(colorSpaceRef.value.id);
-                                if (colorSpaceParseInfo) {
-                                    const indexedColorSpace = IndexedColorSpaceArray.parse(colorSpaceParseInfo);
+                            else if (colorSpaceEntryType === valueTypes.ARRAY) {
+                                const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
+                                if (colorSpaceArrayBounds) {
+                                    const indexedColorSpace = yield IndexedColorSpaceArray.parseAsync({
+                                        parser,
+                                        bounds: colorSpaceArrayBounds,
+                                        cryptInfo: parseInfo.cryptInfo,
+                                        parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
+                                    });
                                     if (indexedColorSpace) {
                                         this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
                                         this._indexedColorSpace = indexedColorSpace.value;
-                                        i = colorSpaceRef.end + 1;
+                                        i = colorSpaceArrayBounds.end + 1;
                                         break;
                                     }
                                     throw new Error("Can't parse /ColorSpace object:" +
-                                        colorSpaceParseInfo.parser.sliceChars(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end));
+                                        parser.sliceChars(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
+                                }
+                                throw new Error("Can't parse /ColorSpace value array");
+                            }
+                            else if (colorSpaceEntryType === valueTypes.REF) {
+                                const colorSpaceRef = yield ObjectId.parseRefAsync(parser, i);
+                                if (colorSpaceRef) {
+                                    const colorSpaceParseInfo = yield parseInfo.parseInfoGetterAsync(colorSpaceRef.value.id);
+                                    if (colorSpaceParseInfo) {
+                                        const indexedColorSpace = yield IndexedColorSpaceArray.parseAsync(colorSpaceParseInfo);
+                                        if (indexedColorSpace) {
+                                            this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
+                                            this._indexedColorSpace = indexedColorSpace.value;
+                                            i = colorSpaceRef.end + 1;
+                                            break;
+                                        }
+                                        throw new Error("Can't parse /ColorSpace object:" +
+                                            colorSpaceParseInfo.parser.sliceChars(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end));
+                                    }
+                                }
+                                throw new Error("Can't parse /ColorSpace ref");
+                            }
+                            throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
+                        case "/ImageMask":
+                            const imageMask = parser.parseBoolAt(i, false);
+                            if (imageMask) {
+                                this.ImageMask = imageMask.value;
+                                i = imageMask.end + 1;
+                                if (this.ImageMask) {
+                                    this.BitsPerComponent = 1;
                                 }
                             }
-                            throw new Error("Can't parse /ColorSpace ref");
-                        }
-                        throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
-                    case "/ImageMask":
-                        const imageMask = parser.parseBoolAt(i, false);
-                        if (imageMask) {
-                            this.ImageMask = imageMask.value;
-                            i = imageMask.end + 1;
-                            if (this.ImageMask) {
-                                this.BitsPerComponent = 1;
+                            else {
+                                throw new Error("Can't parse /ImageMask property value");
                             }
-                        }
-                        else {
-                            throw new Error("Can't parse /ImageMask property value");
-                        }
-                        break;
-                    case "/Mask":
-                        const maskEntryType = parser.getValueTypeAt(i);
-                        if (maskEntryType === valueTypes.REF) {
-                            const maskStreamId = ObjectId.parseRef(parser, i);
-                            if (!maskStreamId) {
-                                throw new Error("Can't parse /Mask value reference: failed to parse ref");
-                            }
-                            const maskParseInfo = parseInfo.parseInfoGetter(maskStreamId.value.id);
-                            if (!maskParseInfo) {
-                                throw new Error("Can't parse /Mask value reference: failed to get image parse info");
-                            }
-                            const maskStream = ImageStream.parse(maskParseInfo);
-                            if (!maskStream) {
-                                throw new Error("Can't parse /Mask value reference: failed to parse image stream");
-                            }
-                            const maskParser = maskStream.value.streamDataParser;
-                            const maskValues = [];
-                            let j = 0;
-                            let value;
-                            while (j <= maskParser.maxIndex) {
-                                value = maskParser.parseNumberAt(j, true, true);
-                                if (!value) {
-                                    break;
-                                }
-                                maskValues.push(value.value);
-                                j = value.end + 1;
-                            }
-                            if (!maskValues.length) {
-                                throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
-                            }
-                            this.Mask = maskValues;
-                            i = maskStreamId.end + 1;
                             break;
-                        }
-                        else if (maskEntryType === valueTypes.ARRAY) {
-                            const maskArray = parser.parseNumberArrayAt(i, false);
-                            if (maskArray) {
-                                this.Mask = maskArray.value;
-                                i = maskArray.end + 1;
+                        case "/Mask":
+                            const maskEntryType = parser.getValueTypeAt(i);
+                            if (maskEntryType === valueTypes.REF) {
+                                const maskStreamId = yield ObjectId.parseRefAsync(parser, i);
+                                if (!maskStreamId) {
+                                    throw new Error("Can't parse /Mask value reference: failed to parse ref");
+                                }
+                                const maskParseInfo = yield parseInfo.parseInfoGetterAsync(maskStreamId.value.id);
+                                if (!maskParseInfo) {
+                                    throw new Error("Can't parse /Mask value reference: failed to get image parse info");
+                                }
+                                const maskStream = yield ImageStream.parseAsync(maskParseInfo);
+                                if (!maskStream) {
+                                    throw new Error("Can't parse /Mask value reference: failed to parse image stream");
+                                }
+                                const maskParser = maskStream.value.streamDataParser;
+                                const maskValues = [];
+                                let j = 0;
+                                let value;
+                                while (j <= maskParser.maxIndex) {
+                                    value = maskParser.parseNumberAt(j, true, true);
+                                    if (!value) {
+                                        break;
+                                    }
+                                    maskValues.push(value.value);
+                                    j = value.end + 1;
+                                }
+                                if (!maskValues.length) {
+                                    throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
+                                }
+                                this.Mask = maskValues;
+                                i = maskStreamId.end + 1;
                                 break;
                             }
-                            throw new Error("Can't parse /Mask property value");
-                        }
-                        throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
-                    case "/OC":
-                    case "/Intent":
-                    case "/Alternates":
-                    case "/ID":
-                    case "/OPI":
+                            else if (maskEntryType === valueTypes.ARRAY) {
+                                const maskArray = parser.parseNumberArrayAt(i, false);
+                                if (maskArray) {
+                                    this.Mask = maskArray.value;
+                                    i = maskArray.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /Mask property value");
+                            }
+                            throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
+                        case "/OC":
+                        case "/Intent":
+                        case "/Alternates":
+                        case "/ID":
+                        case "/OPI":
+                        default:
+                            i = parser.skipToNextName(i, dictBounds.contentEnd);
+                            break;
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+            if (!this.Width && !this.Height) {
+                throw new Error("Not all required properties parsed");
+            }
+            if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
+                throw new Error("Mutually exclusive properties found");
+            }
+            if (!this.Decode && !(this.Filter === streamFilters.JPX && !this.ImageMask)) {
+                switch (this.ColorSpace) {
+                    case colorSpaces.GRAYSCALE:
+                        this.Decode = [0, 1];
+                        break;
+                    case colorSpaces.RGB:
+                        this.Decode = [0, 1, 0, 1, 0, 1];
+                        break;
+                    case colorSpaces.CMYK:
+                        this.Decode = [0, 1, 0, 1, 0, 1, 0, 1];
+                        break;
+                    case colorSpaces.SPECIAL_INDEXED:
+                        this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
+                        break;
                     default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
+                        this.Decode = [0, 1];
                         break;
                 }
             }
-            else {
-                break;
+            if (!this.DecodeParms) {
+                this.DecodeParms = new DecodeParamsDict();
             }
-        }
-        if (!this.Width && !this.Height) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
-            throw new Error("Mutually exclusive properties found");
-        }
-        if (!this.Decode && !(this.Filter === streamFilters.JPX && !this.ImageMask)) {
-            switch (this.ColorSpace) {
-                case colorSpaces.GRAYSCALE:
-                    this.Decode = [0, 1];
-                    break;
-                case colorSpaces.RGB:
-                    this.Decode = [0, 1, 0, 1, 0, 1];
-                    break;
-                case colorSpaces.CMYK:
-                    this.Decode = [0, 1, 0, 1, 0, 1, 0, 1];
-                    break;
-                case colorSpaces.SPECIAL_INDEXED:
-                    this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
-                    break;
-                default:
-                    this.Decode = [0, 1];
-                    break;
+            if (!this.DecodeParms.getIntProp("/BitsPerComponent")) {
+                this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
             }
-        }
-        if (!this.DecodeParms) {
-            this.DecodeParms = new DecodeParamsDict();
-        }
-        if (!this.DecodeParms.getIntProp("/BitsPerComponent")) {
-            this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
-        }
-        if (!this.DecodeParms.getIntProp("/Columns")) {
-            this.DecodeParms.setIntProp("/Columns", this.Width);
-        }
-        if (!this.DecodeParms.getIntProp("/Colors")) {
-            switch (this.ColorSpace) {
-                case colorSpaces.GRAYSCALE:
-                case colorSpaces.SPECIAL_INDEXED:
-                    this.DecodeParms.setIntProp("/Colors", 1);
-                    break;
-                case colorSpaces.RGB:
-                    this.DecodeParms.setIntProp("/Colors", 3);
-                    break;
-                case colorSpaces.CMYK:
-                    this.DecodeParms.setIntProp("/Colors", 4);
-                    break;
-                default:
-                    this.DecodeParms.setIntProp("/Colors", 1);
-                    break;
+            if (!this.DecodeParms.getIntProp("/Columns")) {
+                this.DecodeParms.setIntProp("/Columns", this.Width);
             }
-        }
-        if (this.SMask) {
-            const sMaskParseInfo = parseInfo.parseInfoGetter(this.SMask.id);
-            if (!sMaskParseInfo) {
-                throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
+            if (!this.DecodeParms.getIntProp("/Colors")) {
+                switch (this.ColorSpace) {
+                    case colorSpaces.GRAYSCALE:
+                    case colorSpaces.SPECIAL_INDEXED:
+                        this.DecodeParms.setIntProp("/Colors", 1);
+                        break;
+                    case colorSpaces.RGB:
+                        this.DecodeParms.setIntProp("/Colors", 3);
+                        break;
+                    case colorSpaces.CMYK:
+                        this.DecodeParms.setIntProp("/Colors", 4);
+                        break;
+                    default:
+                        this.DecodeParms.setIntProp("/Colors", 1);
+                        break;
+                }
             }
-            const sMask = ImageStream.parse(sMaskParseInfo);
-            if (!sMask) {
-                throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
+            if (this.SMask) {
+                const sMaskParseInfo = yield parseInfo.parseInfoGetterAsync(this.SMask.id);
+                if (!sMaskParseInfo) {
+                    throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
+                }
+                const sMask = yield ImageStream.parseAsync(sMaskParseInfo);
+                if (!sMask) {
+                    throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
+                }
+                this._sMask = sMask.value;
             }
-            this._sMask = sMask.value;
-        }
+        });
     }
     getRgbColor(index) {
         var _a;
@@ -6593,25 +6773,36 @@ class ImageStream extends PdfStream {
     }
 }
 
+var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ObjectMapDict extends PdfDict {
     constructor() {
         super(null);
         this._objectIdMap = new Map();
         this._dictParserMap = new Map();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new ObjectMapDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$12(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new ObjectMapDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     getObjectId(name) {
         return this._objectIdMap.get(name);
@@ -6645,79 +6836,95 @@ class ObjectMapDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    default:
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const id = ObjectId.parseRef(parser, i);
-                            if (id) {
-                                this._objectIdMap.set(name, id.value);
-                                i = id.end + 1;
-                                break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$12(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        default:
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.REF) {
+                                const id = yield ObjectId.parseRefAsync(parser, i);
+                                if (id) {
+                                    this._objectIdMap.set(name, id.value);
+                                    i = id.end + 1;
+                                    break;
+                                }
                             }
-                        }
-                        else if (entryType === valueTypes.DICTIONARY) {
-                            const dictBounds = parser.getDictBoundsAt(i);
-                            if (dictBounds) {
-                                const dictParseInfo = {
-                                    parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
-                                    bounds: {
-                                        start: 0,
-                                        end: dictBounds.end - dictBounds.start,
-                                        contentStart: dictBounds.contentStart - dictBounds.start,
-                                        contentEnd: dictBounds.contentEnd - dictBounds.start,
-                                    },
-                                    cryptInfo: parseInfo.cryptInfo,
-                                };
-                                this._dictParserMap.set(name, dictParseInfo);
-                                i = dictBounds.end + 1;
-                                break;
+                            else if (entryType === valueTypes.DICTIONARY) {
+                                const dictBounds = parser.getDictBoundsAt(i);
+                                if (dictBounds) {
+                                    const dictParseInfo = {
+                                        parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
+                                        bounds: {
+                                            start: 0,
+                                            end: dictBounds.end - dictBounds.start,
+                                            contentStart: dictBounds.contentStart - dictBounds.start,
+                                            contentEnd: dictBounds.contentEnd - dictBounds.start,
+                                        },
+                                        cryptInfo: parseInfo.cryptInfo,
+                                    };
+                                    this._dictParserMap.set(name, dictParseInfo);
+                                    i = dictBounds.end + 1;
+                                    break;
+                                }
                             }
-                        }
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 ObjectMapDict.dataParserConstructor = SyncDataParser;
 
+var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class UnicodeCmapStream extends PdfStream {
     constructor(type = null) {
         super(type);
         this._codeRanges = [];
         this._map = new Map();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new UnicodeCmapStream();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$11(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new UnicodeCmapStream();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6751,98 +6958,111 @@ class UnicodeCmapStream extends PdfStream {
         }
         return false;
     }
-    parseCodeRanges(parser) {
+    parseCodeRangesAsync(parser) {
         var _a, _b;
-        let i = 0;
-        const codeRangeStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true })) === null || _a === void 0 ? void 0 : _a.end;
-        if (!codeRangeStart) {
-            return;
-        }
-        i = codeRangeStart + 1;
-        const codeRangeEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_CODE_RANGE, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
-        while (i < codeRangeEnd - 1) {
-            const rangeStart = HexString.parse(parser, i);
-            i = rangeStart.end + 1;
-            const rangeEnd = HexString.parse(parser, i);
-            i = rangeEnd.end + 1;
-            this._codeRanges.push({
-                length: rangeStart.value.hex.length,
-                start: rangeStart.value.hex,
-                end: rangeEnd.value.hex,
-            });
-        }
+        return __awaiter$11(this, void 0, void 0, function* () {
+            let i = 0;
+            const codeRangeStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true })) === null || _a === void 0 ? void 0 : _a.end;
+            if (!codeRangeStart) {
+                return;
+            }
+            i = codeRangeStart + 1;
+            const codeRangeEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_CODE_RANGE, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
+            while (i < codeRangeEnd - 1) {
+                const rangeStart = yield HexString.parseAsync(parser, i);
+                i = rangeStart.end + 1;
+                const rangeEnd = yield HexString.parseAsync(parser, i);
+                i = rangeEnd.end + 1;
+                this._codeRanges.push({
+                    length: rangeStart.value.hex.length,
+                    start: rangeStart.value.hex,
+                    end: rangeEnd.value.hex,
+                });
+            }
+        });
     }
-    parseCharMap(parser, decoder) {
+    parseCharMapAsync(parser, decoder) {
         var _a, _b;
-        let i = 0;
-        while (true) {
-            const charMapStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i })) === null || _a === void 0 ? void 0 : _a.end;
-            if (!charMapStart) {
-                break;
-            }
-            i = charMapStart + 1;
-            const charMapEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_CHAR, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
-            while (i < charMapEnd - 1) {
-                const hexKey = HexString.parse(parser, i);
-                i = hexKey.end + 1;
-                const unicodeValue = HexString.parse(parser, i);
-                i = unicodeValue.end + 1;
-                this._map.set(parseIntFromBytes(hexKey.value.hex), decoder.decode(unicodeValue.value.hex));
-            }
-        }
-    }
-    parseCharRangesMap(parser, decoder) {
-        var _a, _b;
-        let i = 0;
-        while (true) {
-            const rangeMapStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i })) === null || _a === void 0 ? void 0 : _a.end;
-            if (!rangeMapStart) {
-                break;
-            }
-            i = rangeMapStart + 1;
-            const rangeMapEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_RANGE, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
-            while (i < rangeMapEnd - 1) {
-                const keyRangeStart = HexString.parse(parser, i);
-                i = keyRangeStart.end + 1;
-                const keyRangeEnd = HexString.parse(parser, i);
-                i = keyRangeEnd.end + 1;
-                let key = parseIntFromBytes(keyRangeStart.value.hex);
-                const nextValueType = parser.getValueTypeAt(i, true);
-                if (nextValueType === valueTypes.ARRAY) {
-                    const valueArray = HexString.parseArray(parser, i);
-                    i = valueArray.end + 1;
-                    for (const value of valueArray.value) {
-                        this._map.set(key++, decoder.decode(value.hex));
-                    }
+        return __awaiter$11(this, void 0, void 0, function* () {
+            let i = 0;
+            while (true) {
+                const charMapStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i })) === null || _a === void 0 ? void 0 : _a.end;
+                if (!charMapStart) {
+                    break;
                 }
-                else {
-                    const startingValue = HexString.parse(parser, i);
-                    i = startingValue.end + 1;
-                    let startingUtf = parseIntFromBytes(startingValue.value.hex);
-                    while (key <= parseIntFromBytes(keyRangeEnd.value.hex)) {
-                        const hexStringUnpadded = (startingUtf++).toString(16);
-                        const padding = hexStringUnpadded.length % 2
-                            ? "0"
-                            : "";
-                        const hexString = padding + hexStringUnpadded;
-                        this._map.set(key++, decoder.decode(hexStringToBytes(hexString)));
-                    }
+                i = charMapStart + 1;
+                const charMapEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_CHAR, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
+                while (i < charMapEnd - 1) {
+                    const hexKey = yield HexString.parseAsync(parser, i);
+                    i = hexKey.end + 1;
+                    const unicodeValue = yield HexString.parseAsync(parser, i);
+                    i = unicodeValue.end + 1;
+                    this._map.set(parseIntFromBytes(hexKey.value.hex), decoder.decode(unicodeValue.value.hex));
                 }
             }
-        }
+        });
     }
-    fillMap() {
-        this._codeRanges.length = 0;
-        this._map.clear();
-        const parser = this.streamDataParser;
-        const decoder = new TextDecoder("utf-16be");
-        this.parseCodeRanges(parser);
-        this.parseCharMap(parser, decoder);
-        this.parseCharRangesMap(parser, decoder);
+    parseCharRangesMapAsync(parser, decoder) {
+        var _a, _b;
+        return __awaiter$11(this, void 0, void 0, function* () {
+            let i = 0;
+            while (true) {
+                const rangeMapStart = (_a = parser.findSubarrayIndex(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i })) === null || _a === void 0 ? void 0 : _a.end;
+                if (!rangeMapStart) {
+                    break;
+                }
+                i = rangeMapStart + 1;
+                const rangeMapEnd = (_b = parser.findSubarrayIndex(keywordCodes.CMAP_END_RANGE, { closedOnly: true, minIndex: i })) === null || _b === void 0 ? void 0 : _b.start;
+                while (i < rangeMapEnd - 1) {
+                    const keyRangeStart = yield HexString.parseAsync(parser, i);
+                    i = keyRangeStart.end + 1;
+                    const keyRangeEnd = yield HexString.parseAsync(parser, i);
+                    i = keyRangeEnd.end + 1;
+                    let key = parseIntFromBytes(keyRangeStart.value.hex);
+                    const nextValueType = parser.getValueTypeAt(i, true);
+                    if (nextValueType === valueTypes.ARRAY) {
+                        const valueArray = yield HexString.parseArrayAsync(parser, i);
+                        i = valueArray.end + 1;
+                        for (const value of valueArray.value) {
+                            this._map.set(key++, decoder.decode(value.hex));
+                        }
+                    }
+                    else {
+                        const startingValue = yield HexString.parseAsync(parser, i);
+                        i = startingValue.end + 1;
+                        let startingUtf = parseIntFromBytes(startingValue.value.hex);
+                        while (key <= parseIntFromBytes(keyRangeEnd.value.hex)) {
+                            const hexStringUnpadded = (startingUtf++).toString(16);
+                            const padding = hexStringUnpadded.length % 2
+                                ? "0"
+                                : "";
+                            const hexString = padding + hexStringUnpadded;
+                            this._map.set(key++, decoder.decode(hexStringToBytes(hexString)));
+                        }
+                    }
+                }
+            }
+        });
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        this.fillMap();
+    fillMapAsync() {
+        return __awaiter$11(this, void 0, void 0, function* () {
+            this._codeRanges.length = 0;
+            this._map.clear();
+            const parser = this.streamDataParser;
+            const decoder = new TextDecoder("utf-16be");
+            yield this.parseCodeRangesAsync(parser);
+            yield this.parseCharMapAsync(parser, decoder);
+            yield this.parseCharRangesMapAsync(parser, decoder);
+        });
+    }
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$11(this, void 0, void 0, function* () {
+            yield yield _super.parsePropsAsync.call(this, parseInfo);
+            yield this.fillMapAsync();
+        });
     }
 }
 
@@ -10695,6 +10915,15 @@ function getCharCodesMapByCode(encoding) {
     return map;
 }
 
+var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class EncodingDict extends PdfDict {
     constructor() {
         super(dictTypes.ENCODING);
@@ -10711,19 +10940,21 @@ class EncodingDict extends PdfDict {
         }
         return this._codeMap;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new EncodingDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$10(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new EncodingDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -10742,61 +10973,66 @@ class EncodingDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/BaseEncoding":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    case "/Differences":
-                        const differencesValueType = parser.getValueTypeAt(i, true);
-                        if (differencesValueType === valueTypes.ARRAY) {
-                            this.Differences = [];
-                            const arrayBounds = parser.getArrayBoundsAt(i);
-                            let j = arrayBounds.start + 1;
-                            while (j < arrayBounds.end - 1 && j !== -1) {
-                                const nextArrayValueType = parser.getValueTypeAt(j, true);
-                                switch (nextArrayValueType) {
-                                    case valueTypes.NAME:
-                                        const arrayNameResult = parser.parseNameAt(j, true);
-                                        this.Differences.push(arrayNameResult.value);
-                                        j = arrayNameResult.end + 1;
-                                        break;
-                                    case valueTypes.NUMBER:
-                                        const arrayNumberResult = parser.parseNumberAt(j, true);
-                                        this.Differences.push(arrayNumberResult.value);
-                                        j = arrayNumberResult.end + 1;
-                                        break;
-                                    default:
-                                        throw new Error(`Invalid differences array value type: ${nextArrayValueType}`);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$10(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/BaseEncoding":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        case "/Differences":
+                            const differencesValueType = parser.getValueTypeAt(i, true);
+                            if (differencesValueType === valueTypes.ARRAY) {
+                                this.Differences = [];
+                                const arrayBounds = parser.getArrayBoundsAt(i);
+                                let j = arrayBounds.start + 1;
+                                while (j < arrayBounds.end - 1 && j !== -1) {
+                                    const nextArrayValueType = parser.getValueTypeAt(j, true);
+                                    switch (nextArrayValueType) {
+                                        case valueTypes.NAME:
+                                            const arrayNameResult = parser.parseNameAt(j, true);
+                                            this.Differences.push(arrayNameResult.value);
+                                            j = arrayNameResult.end + 1;
+                                            break;
+                                        case valueTypes.NUMBER:
+                                            const arrayNumberResult = parser.parseNumberAt(j, true);
+                                            this.Differences.push(arrayNumberResult.value);
+                                            j = arrayNumberResult.end + 1;
+                                            break;
+                                        default:
+                                            throw new Error(`Invalid differences array value type: ${nextArrayValueType}`);
+                                    }
                                 }
+                                i = arrayBounds.end + 1;
                             }
-                            i = arrayBounds.end + 1;
-                        }
-                        else {
-                            throw new Error(`Invalid differences value type: ${differencesValueType}`);
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            else {
+                                throw new Error(`Invalid differences value type: ${differencesValueType}`);
+                            }
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
     refreshCharMaps() {
         if (this.Differences) {
@@ -10825,6 +11061,15 @@ class EncodingDict extends PdfDict {
     }
 }
 
+var __awaiter$$ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class FontDescriptorDict extends PdfDict {
     constructor() {
         super(dictTypes.FONT_DESCRIPTOR);
@@ -10835,19 +11080,21 @@ class FontDescriptorDict extends PdfDict {
         this.MissingWidth = 0;
         this.XHeight = 0;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new FontDescriptorDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$$(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new FontDescriptorDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -10923,79 +11170,93 @@ class FontDescriptorDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/FontName":
-                    case "/FontStretch":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    case "/FontFile":
-                    case "/FontFile2":
-                    case "/FontFile3":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Flags":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/FontWeight":
-                    case "/ItalicAngle":
-                    case "/Ascent":
-                    case "/Descent":
-                    case "/Leading":
-                    case "/CapHeight":
-                    case "/XHeight":
-                    case "/StemV":
-                    case "/StemH":
-                    case "/AvgWidth":
-                    case "/MaxWidth":
-                    case "/MissingWidth":
-                        i = this.parseNumberProp(name, parser, i, true);
-                        break;
-                    case "/FontBBox":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/CharSet":
-                    case "/FontFamily":
-                        const propType = parser.getValueTypeAt(i);
-                        if (propType === valueTypes.STRING_HEX) {
-                            i = this.parseHexProp(name, parser, i);
-                        }
-                        else if (propType === valueTypes.STRING_LITERAL) {
-                            i = this.parseLiteralProp(name, parser, i);
-                        }
-                        else {
-                            throw new Error(`Unsupported '${name}' property value type: '${propType}'`);
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$$(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/FontName":
+                        case "/FontStretch":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        case "/FontFile":
+                        case "/FontFile2":
+                        case "/FontFile3":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Flags":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/FontWeight":
+                        case "/ItalicAngle":
+                        case "/Ascent":
+                        case "/Descent":
+                        case "/Leading":
+                        case "/CapHeight":
+                        case "/XHeight":
+                        case "/StemV":
+                        case "/StemH":
+                        case "/AvgWidth":
+                        case "/MaxWidth":
+                        case "/MissingWidth":
+                            i = yield this.parseNumberPropAsync(name, parser, i, true);
+                            break;
+                        case "/FontBBox":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/CharSet":
+                        case "/FontFamily":
+                            const propType = parser.getValueTypeAt(i);
+                            if (propType === valueTypes.STRING_HEX) {
+                                i = yield this.parseHexPropAsync(name, parser, i);
+                            }
+                            else if (propType === valueTypes.STRING_LITERAL) {
+                                i = yield this.parseLiteralPropAsync(name, parser, i);
+                            }
+                            else {
+                                throw new Error(`Unsupported '${name}' property value type: '${propType}'`);
+                            }
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.FontName
+                || (!this.Flags && this.Flags !== 0)
+                || (!this.ItalicAngle && this.ItalicAngle !== 0)) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.FontName
-            || (!this.Flags && this.Flags !== 0)
-            || (!this.ItalicAngle && this.ItalicAngle !== 0)) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
 }
 
+var __awaiter$_ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const cyrillicEncodingDifferences = [
     128,
     "/Djecyrillic",
@@ -11214,23 +11475,25 @@ class FontDict extends PdfDict {
         map.set("verdana", FontDict.createVerdanaFont(encoding));
         return map;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new FontDict();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$_(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new FontDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     static createArialFont(encoding) {
         const descriptor = new FontDescriptorDict();
@@ -11516,131 +11779,136 @@ class FontDict extends PdfDict {
         const literal = decoder.decode(bytes);
         return literal || "";
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i, true);
-                        if (subtype) {
-                            this.Subtype = subtype.value;
-                            i = subtype.end + 1;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$_(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Subtype":
+                            const subtype = parser.parseNameAt(i, true);
+                            if (subtype) {
+                                this.Subtype = subtype.value;
+                                i = subtype.end + 1;
+                                break;
+                            }
+                            throw new Error("Can't parse /Subtype property value");
+                        case "/BaseFont":
+                            i = yield this.parseNamePropAsync(name, parser, i);
                             break;
-                        }
-                        throw new Error("Can't parse /Subtype property value");
-                    case "/BaseFont":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    case "/Encoding":
-                        const encodingPropType = parser.getValueTypeAt(i);
-                        if (encodingPropType === valueTypes.NAME) {
-                            i = this.parseNameProp(name, parser, i);
-                        }
-                        else if (encodingPropType === valueTypes.REF) {
-                            i = this.parseRefProp(name, parser, i);
-                        }
-                        else {
-                            throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
-                        }
-                        break;
-                    case "/ToUnicode":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/FirstChar":
-                    case "/LastChar":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/FontBBox":
-                    case "/FontMatrix":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/Widths":
-                        const widthPropType = parser.getValueTypeAt(i);
-                        if (widthPropType === valueTypes.ARRAY) {
+                        case "/Encoding":
+                            const encodingPropType = parser.getValueTypeAt(i);
+                            if (encodingPropType === valueTypes.NAME) {
+                                i = yield this.parseNamePropAsync(name, parser, i);
+                            }
+                            else if (encodingPropType === valueTypes.REF) {
+                                i = yield this.parseRefPropAsync(name, parser, i);
+                            }
+                            else {
+                                throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+                            }
+                            break;
+                        case "/ToUnicode":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/FirstChar":
+                        case "/LastChar":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/FontBBox":
+                        case "/FontMatrix":
                             i = this.parseNumberArrayProp(name, parser, i, true);
-                        }
-                        else if (widthPropType === valueTypes.REF) {
-                            i = this.parseRefProp(name, parser, i);
-                        }
-                        else {
-                            throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
-                        }
-                        break;
-                    case "/FontDescriptor":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Resources":
-                    case "/CharProcs":
-                        const excludedEntryType = parser.getValueTypeAt(i);
-                        if (excludedEntryType === valueTypes.REF) {
-                            const excludedDictId = ObjectId.parseRef(parser, i);
-                            if (excludedDictId && parseInfo.parseInfoGetter) {
-                                this[name.slice(1)] = parser.sliceCharCodes(excludedDictId.start, excludedDictId.end);
-                                i = excludedDictId.end + 1;
-                                break;
+                            break;
+                        case "/Widths":
+                            const widthPropType = parser.getValueTypeAt(i);
+                            if (widthPropType === valueTypes.ARRAY) {
+                                i = this.parseNumberArrayProp(name, parser, i, true);
                             }
-                            throw new Error(`Can't parse ${name} value reference`);
-                        }
-                        else if (excludedEntryType === valueTypes.DICTIONARY) {
-                            const excludedDictBounds = parser.getDictBoundsAt(i);
-                            if (excludedDictBounds) {
-                                this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
-                                i = excludedDictBounds.end + 1;
-                                break;
+                            else if (widthPropType === valueTypes.REF) {
+                                i = yield this.parseRefPropAsync(name, parser, i);
                             }
-                            throw new Error(`Can't parse ${name} dictionary bounds`);
-                        }
-                        throw new Error(`Unsupported ${name} property value type: ${excludedEntryType}`);
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            else {
+                                throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+                            }
+                            break;
+                        case "/FontDescriptor":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Resources":
+                        case "/CharProcs":
+                            const excludedEntryType = parser.getValueTypeAt(i);
+                            if (excludedEntryType === valueTypes.REF) {
+                                const excludedDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (excludedDictId && parseInfo.parseInfoGetterAsync) {
+                                    this[name.slice(1)] = parser.sliceCharCodes(excludedDictId.start, excludedDictId.end);
+                                    i = excludedDictId.end + 1;
+                                    break;
+                                }
+                                throw new Error(`Can't parse ${name} value reference`);
+                            }
+                            else if (excludedEntryType === valueTypes.DICTIONARY) {
+                                const excludedDictBounds = parser.getDictBoundsAt(i);
+                                if (excludedDictBounds) {
+                                    this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
+                                    i = excludedDictBounds.end + 1;
+                                    break;
+                                }
+                                throw new Error(`Can't parse ${name} dictionary bounds`);
+                            }
+                            throw new Error(`Unsupported ${name} property value type: ${excludedEntryType}`);
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (this.Encoding && this.Encoding instanceof ObjectId) {
+                const encodingParseInfo = yield parseInfo.parseInfoGetterAsync(this.Encoding.id);
+                const encodingDict = yield EncodingDict.parseAsync(encodingParseInfo);
+                this._encoding = encodingDict === null || encodingDict === void 0 ? void 0 : encodingDict.value;
             }
-        }
-        if (this.Encoding && this.Encoding instanceof ObjectId) {
-            const encodingParseInfo = parseInfo.parseInfoGetter(this.Encoding.id);
-            const encodingDict = EncodingDict.parse(encodingParseInfo);
-            this._encoding = encodingDict === null || encodingDict === void 0 ? void 0 : encodingDict.value;
-        }
-        if (this.ToUnicode) {
-            const toUtfParseInfo = parseInfo.parseInfoGetter(this.ToUnicode.id);
-            const cmap = UnicodeCmapStream.parse(toUtfParseInfo);
-            this._toUtfCmap = cmap === null || cmap === void 0 ? void 0 : cmap.value;
-        }
-        if (this.FontDescriptor) {
-            const descriptorParseInfo = parseInfo.parseInfoGetter(this.FontDescriptor.id);
-            const descriptor = FontDescriptorDict.parse(descriptorParseInfo);
-            this._descriptor = descriptor === null || descriptor === void 0 ? void 0 : descriptor.value;
-        }
-        if (this.Subtype !== "/Type1"
-            && this.Subtype !== "/Type3"
-            && this.Subtype !== "/TrueType"
-            && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
-            throw new Error(`Font type is not supported: ${this.Subtype}`);
-        }
-        if (this.Subtype === "/Type3"
-            && (!this.FontBBox
-                || !this.FontMatrix
-                || !this.Encoding
-                || !this.FirstChar
-                || !this.LastChar
-                || !this.Widths
-                || !this.CharProcs)) {
-            throw new Error("Not all required properties parsed");
-        }
+            if (this.ToUnicode) {
+                const toUtfParseInfo = yield parseInfo.parseInfoGetterAsync(this.ToUnicode.id);
+                const cmap = yield UnicodeCmapStream.parseAsync(toUtfParseInfo);
+                this._toUtfCmap = cmap === null || cmap === void 0 ? void 0 : cmap.value;
+            }
+            if (this.FontDescriptor) {
+                const descriptorParseInfo = yield parseInfo.parseInfoGetterAsync(this.FontDescriptor.id);
+                const descriptor = yield FontDescriptorDict.parseAsync(descriptorParseInfo);
+                this._descriptor = descriptor === null || descriptor === void 0 ? void 0 : descriptor.value;
+            }
+            if (this.Subtype !== "/Type1"
+                && this.Subtype !== "/Type3"
+                && this.Subtype !== "/TrueType"
+                && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
+                throw new Error(`Font type is not supported: ${this.Subtype}`);
+            }
+            if (this.Subtype === "/Type3"
+                && (!this.FontBBox
+                    || !this.FontMatrix
+                    || !this.Encoding
+                    || !this.FirstChar
+                    || !this.LastChar
+                    || !this.Widths
+                    || !this.CharProcs)) {
+                throw new Error("Not all required properties parsed");
+            }
+        });
     }
     initProxy() {
         return super.initProxy();
@@ -11650,24 +11918,35 @@ class FontDict extends PdfDict {
     }
 }
 
+var __awaiter$Z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class SoftMaskDict extends PdfDict {
     constructor() {
         super(dictTypes.SOFT_MASK);
         this.TR = "/Identity";
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new SoftMaskDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$Z(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new SoftMaskDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -11692,71 +11971,87 @@ class SoftMaskDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/S":
-                        const softMaskType = parser.parseNameAt(i, true);
-                        if (softMaskType && Object.values(softMaskTypes)
-                            .includes(softMaskType.value)) {
-                            this.S = softMaskType.value;
-                            i = softMaskType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /S property value");
-                        }
-                        break;
-                    case "/G":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/BC":
-                        i = this.parseNumberArrayProp(name, parser, i);
-                        break;
-                    case "/TR":
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$Z(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/S":
+                            const softMaskType = parser.parseNameAt(i, true);
+                            if (softMaskType && Object.values(softMaskTypes)
+                                .includes(softMaskType.value)) {
+                                this.S = softMaskType.value;
+                                i = softMaskType.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /S property value");
+                            }
+                            break;
+                        case "/G":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/BC":
+                            i = this.parseNumberArrayProp(name, parser, i);
+                            break;
+                        case "/TR":
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$Y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GraphicsStateDict extends PdfDict {
     constructor() {
         super(dictTypes.GRAPHICS_STATE);
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new GraphicsStateDict();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$Y(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new GraphicsStateDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -11922,162 +12217,167 @@ class GraphicsStateDict extends PdfDict {
         if (this.AIS) ;
         return params;
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/LC":
-                        const lineCap = parser.parseNumberAt(i, true);
-                        if (lineCap && Object.values(lineCapStyles)
-                            .includes(lineCap.value)) {
-                            this.LC = lineCap.value;
-                            i = lineCap.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LC property value");
-                        }
-                        break;
-                    case "/OPM":
-                        const overprintMode = parser.parseNumberAt(i, true);
-                        if (overprintMode && ([0, 1].includes(overprintMode.value))) {
-                            this.OPM = overprintMode.value;
-                            i = overprintMode.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /OPM property value");
-                        }
-                        break;
-                    case "/LJ":
-                        const lineJoin = parser.parseNumberAt(i, true);
-                        if (lineJoin && Object.values(lineJoinStyles)
-                            .includes(lineJoin.value)) {
-                            this.LJ = lineJoin.value;
-                            i = lineJoin.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LJ property value");
-                        }
-                        break;
-                    case "/RI":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent && Object.values(renderingIntents)
-                            .includes(intent.value)) {
-                            this.RI = intent.value;
-                            i = intent.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RI property value");
-                        }
-                        break;
-                    case "/BM":
-                        const blendMode = parser.parseNameAt(i, true);
-                        if (blendMode && Object.values(blendModes)
-                            .includes(blendMode.value)) {
-                            this.BM = blendMode.value;
-                            i = blendMode.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /BM property value");
-                        }
-                        break;
-                    case "/SMask":
-                        const sMaskEntryType = parser.getValueTypeAt(i);
-                        if (sMaskEntryType === valueTypes.NAME) {
-                            const sMaskName = parser.parseNameAt(i);
-                            if (sMaskName) {
-                                this.SMask = sMaskName.value;
-                                i = sMaskName.end + 1;
-                                break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$Y(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/LC":
+                            const lineCap = parser.parseNumberAt(i, true);
+                            if (lineCap && Object.values(lineCapStyles)
+                                .includes(lineCap.value)) {
+                                this.LC = lineCap.value;
+                                i = lineCap.end + 1;
                             }
-                            throw new Error("Can't parse /SMask property name");
-                        }
-                        else if (sMaskEntryType === valueTypes.DICTIONARY) {
-                            const sMaskDictBounds = parser.getDictBoundsAt(i);
-                            if (sMaskDictBounds) {
-                                const sMaskDict = SoftMaskDict.parse({ parser, bounds: sMaskDictBounds });
-                                if (sMaskDict) {
-                                    this.SMask = sMaskDict.value;
-                                    i = sMaskDict.end + 1;
+                            else {
+                                throw new Error("Can't parse /LC property value");
+                            }
+                            break;
+                        case "/OPM":
+                            const overprintMode = parser.parseNumberAt(i, true);
+                            if (overprintMode && ([0, 1].includes(overprintMode.value))) {
+                                this.OPM = overprintMode.value;
+                                i = overprintMode.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /OPM property value");
+                            }
+                            break;
+                        case "/LJ":
+                            const lineJoin = parser.parseNumberAt(i, true);
+                            if (lineJoin && Object.values(lineJoinStyles)
+                                .includes(lineJoin.value)) {
+                                this.LJ = lineJoin.value;
+                                i = lineJoin.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /LJ property value");
+                            }
+                            break;
+                        case "/RI":
+                            const intent = parser.parseNameAt(i, true);
+                            if (intent && Object.values(renderingIntents)
+                                .includes(intent.value)) {
+                                this.RI = intent.value;
+                                i = intent.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /RI property value");
+                            }
+                            break;
+                        case "/BM":
+                            const blendMode = parser.parseNameAt(i, true);
+                            if (blendMode && Object.values(blendModes)
+                                .includes(blendMode.value)) {
+                                this.BM = blendMode.value;
+                                i = blendMode.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /BM property value");
+                            }
+                            break;
+                        case "/SMask":
+                            const sMaskEntryType = parser.getValueTypeAt(i);
+                            if (sMaskEntryType === valueTypes.NAME) {
+                                const sMaskName = parser.parseNameAt(i);
+                                if (sMaskName) {
+                                    this.SMask = sMaskName.value;
+                                    i = sMaskName.end + 1;
                                     break;
                                 }
+                                throw new Error("Can't parse /SMask property name");
                             }
-                            throw new Error("Can't parse /SMask value dictionary");
-                        }
-                        throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
-                    case "/Font":
-                        const fontEntryType = parser.getValueTypeAt(i);
-                        if (fontEntryType === valueTypes.ARRAY) {
-                            const fontArrayBounds = parser.getArrayBoundsAt(i);
-                            if (fontArrayBounds) {
-                                const fontRef = ObjectId.parse(parser, fontArrayBounds.start + 1);
-                                if (fontRef) {
-                                    const fontSize = parser.parseNumberAt(fontRef.end + 1);
-                                    if (fontSize) {
-                                        this.Font = [fontRef.value, fontSize.value];
-                                        i = fontArrayBounds.end + 1;
+                            else if (sMaskEntryType === valueTypes.DICTIONARY) {
+                                const sMaskDictBounds = parser.getDictBoundsAt(i);
+                                if (sMaskDictBounds) {
+                                    const sMaskDict = yield SoftMaskDict.parseAsync({ parser, bounds: sMaskDictBounds });
+                                    if (sMaskDict) {
+                                        this.SMask = sMaskDict.value;
+                                        i = sMaskDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /SMask value dictionary");
                             }
-                        }
-                        else {
-                            throw new Error(`Unsupported /Font property value type: ${fontEntryType}`);
-                        }
-                        throw new Error("Can't parse /Font property value");
-                    case "/D":
-                        const dashEntryType = parser.getValueTypeAt(i);
-                        if (dashEntryType === valueTypes.ARRAY) {
-                            const dashArrayBounds = parser.getArrayBoundsAt(i);
-                            if (dashArrayBounds) {
-                                const dashArray = parser.parseNumberArrayAt(dashArrayBounds.start + 1);
-                                if (dashArray) {
-                                    const dashPhase = parser.parseNumberAt(dashArray.end + 1);
-                                    if (dashPhase) {
-                                        this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
-                                        i = dashArrayBounds.end + 1;
-                                        break;
+                            throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
+                        case "/Font":
+                            const fontEntryType = parser.getValueTypeAt(i);
+                            if (fontEntryType === valueTypes.ARRAY) {
+                                const fontArrayBounds = parser.getArrayBoundsAt(i);
+                                if (fontArrayBounds) {
+                                    const fontRef = yield ObjectId.parseAsync(parser, fontArrayBounds.start + 1);
+                                    if (fontRef) {
+                                        const fontSize = parser.parseNumberAt(fontRef.end + 1);
+                                        if (fontSize) {
+                                            this.Font = [fontRef.value, fontSize.value];
+                                            i = fontArrayBounds.end + 1;
+                                            break;
+                                        }
                                     }
                                 }
                             }
-                        }
-                        else {
-                            throw new Error(`Unsupported /D property value type: ${dashEntryType}`);
-                        }
-                        throw new Error("Can't parse /D property value");
-                    case "/OP":
-                    case "/op":
-                    case "/SA":
-                    case "/AIS":
-                    case "/TK":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    case "/LW":
-                    case "/ML":
-                    case "/FL":
-                    case "/SM":
-                    case "/CA":
-                    case "/ca":
-                        i = this.parseNumberProp(name, parser, i);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            else {
+                                throw new Error(`Unsupported /Font property value type: ${fontEntryType}`);
+                            }
+                            throw new Error("Can't parse /Font property value");
+                        case "/D":
+                            const dashEntryType = parser.getValueTypeAt(i);
+                            if (dashEntryType === valueTypes.ARRAY) {
+                                const dashArrayBounds = parser.getArrayBoundsAt(i);
+                                if (dashArrayBounds) {
+                                    const dashArray = parser.parseNumberArrayAt(dashArrayBounds.start + 1);
+                                    if (dashArray) {
+                                        const dashPhase = parser.parseNumberAt(dashArray.end + 1);
+                                        if (dashPhase) {
+                                            this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
+                                            i = dashArrayBounds.end + 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                throw new Error(`Unsupported /D property value type: ${dashEntryType}`);
+                            }
+                            throw new Error("Can't parse /D property value");
+                        case "/OP":
+                        case "/op":
+                        case "/SA":
+                        case "/AIS":
+                        case "/TK":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        case "/LW":
+                        case "/ML":
+                        case "/FL":
+                        case "/SM":
+                        case "/CA":
+                        case "/ca":
+                            i = yield this.parseNumberPropAsync(name, parser, i);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
     initProxy() {
         return super.initProxy();
@@ -12087,6 +12387,15 @@ class GraphicsStateDict extends PdfDict {
     }
 }
 
+var __awaiter$X = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ResourceDict extends PdfDict {
     constructor(streamParsers) {
         super(null);
@@ -12095,23 +12404,25 @@ class ResourceDict extends PdfDict {
         this._xObjectsMap = new Map();
         this._streamParsers = streamParsers;
     }
-    static parse(parseInfo, streamParsers) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new ResourceDict(streamParsers);
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo, streamParsers) {
+        return __awaiter$X(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new ResourceDict(streamParsers);
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12218,128 +12529,135 @@ class ResourceDict extends PdfDict {
         this._xObjectsMap.set(`/XObject${name}`, xObject);
         this._edited = true;
     }
-    fillMaps(parseInfoGetter, cryptInfo) {
-        this._gsMap.clear();
-        this._fontsMap.clear();
-        this._xObjectsMap.clear();
-        if (this.ExtGState) {
-            for (const [name, objectId] of this.ExtGState.getObjectIds()) {
-                const streamParseInfo = parseInfoGetter(objectId.id);
-                if (!streamParseInfo) {
-                    continue;
+    fillMapsAsync(parseInfoGetterAsync, cryptInfo) {
+        return __awaiter$X(this, void 0, void 0, function* () {
+            this._gsMap.clear();
+            this._fontsMap.clear();
+            this._xObjectsMap.clear();
+            if (this.ExtGState) {
+                for (const [name, objectId] of this.ExtGState.getObjectIds()) {
+                    const streamParseInfo = yield parseInfoGetterAsync(objectId.id);
+                    if (!streamParseInfo) {
+                        continue;
+                    }
+                    const stream = yield GraphicsStateDict.parseAsync(streamParseInfo);
+                    if (stream) {
+                        this._gsMap.set(`/ExtGState${name}`, stream.value);
+                    }
                 }
-                const stream = GraphicsStateDict.parse(streamParseInfo);
-                if (stream) {
-                    this._gsMap.set(`/ExtGState${name}`, stream.value);
-                }
-            }
-            for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {
-                const dict = GraphicsStateDict.parse(parseInfo);
-                if (dict) {
-                    this._gsMap.set(`/ExtGState${name}`, dict.value);
-                }
-            }
-        }
-        if (this.XObject && this._streamParsers) {
-            for (const [name, objectId] of this.XObject.getObjectIds()) {
-                const streamParseInfo = parseInfoGetter(objectId.id);
-                if (!streamParseInfo) {
-                    continue;
-                }
-                const stream = streamParseInfo.parser
-                    .findSubarrayIndex(keywordCodes.FORM, {
-                    direction: true,
-                    minIndex: streamParseInfo.bounds.start,
-                    maxIndex: streamParseInfo.bounds.end,
-                })
-                    ? this._streamParsers.xform(streamParseInfo)
-                    : this._streamParsers.image(streamParseInfo);
-                if (stream) {
-                    this._xObjectsMap.set(`/XObject${name}`, stream.value);
+                for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {
+                    const dict = yield GraphicsStateDict.parseAsync(parseInfo);
+                    if (dict) {
+                        this._gsMap.set(`/ExtGState${name}`, dict.value);
+                    }
                 }
             }
-        }
-        if (this.Font) {
-            for (const [name, objectId] of this.Font.getObjectIds()) {
-                const dictParseInfo = parseInfoGetter(objectId.id);
-                if (!dictParseInfo) {
-                    continue;
-                }
-                const dict = FontDict.parse(dictParseInfo);
-                if (dict) {
-                    this._fontsMap.set(`/Font${name}`, dict.value);
+            if (this.XObject && this._streamParsers) {
+                for (const [name, objectId] of this.XObject.getObjectIds()) {
+                    const streamParseInfo = yield parseInfoGetterAsync(objectId.id);
+                    if (!streamParseInfo) {
+                        continue;
+                    }
+                    const stream = streamParseInfo.parser
+                        .findSubarrayIndex(keywordCodes.FORM, {
+                        direction: true,
+                        minIndex: streamParseInfo.bounds.start,
+                        maxIndex: streamParseInfo.bounds.end,
+                    })
+                        ? yield this._streamParsers.xform(streamParseInfo)
+                        : yield this._streamParsers.image(streamParseInfo);
+                    if (stream) {
+                        this._xObjectsMap.set(`/XObject${name}`, stream.value);
+                    }
                 }
             }
-        }
+            if (this.Font) {
+                for (const [name, objectId] of this.Font.getObjectIds()) {
+                    const dictParseInfo = yield parseInfoGetterAsync(objectId.id);
+                    if (!dictParseInfo) {
+                        continue;
+                    }
+                    const dict = yield FontDict.parseAsync(dictParseInfo);
+                    if (dict) {
+                        this._fontsMap.set(`/Font${name}`, dict.value);
+                    }
+                }
+            }
+        });
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/ExtGState":
-                    case "/ColorSpace":
-                    case "/Pattern":
-                    case "/Shading":
-                    case "/XObject":
-                    case "/Font":
-                    case "/Properties":
-                        const mapEntryType = parser.getValueTypeAt(i);
-                        if (mapEntryType === valueTypes.REF) {
-                            const mapDictId = ObjectId.parseRef(parser, i);
-                            if (mapDictId && parseInfo.parseInfoGetter) {
-                                const mapParseInfo = parseInfo.parseInfoGetter(mapDictId.value.id);
-                                if (mapParseInfo) {
-                                    const mapDict = ObjectMapDict.parse(mapParseInfo);
-                                    if (mapDict) {
-                                        this[name.slice(1)] = mapDict.value;
-                                        i = mapDict.end + 1;
-                                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$X(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/ExtGState":
+                        case "/ColorSpace":
+                        case "/Pattern":
+                        case "/Shading":
+                        case "/XObject":
+                        case "/Font":
+                        case "/Properties":
+                            const mapEntryType = parser.getValueTypeAt(i);
+                            if (mapEntryType === valueTypes.REF) {
+                                const mapDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (mapDictId && parseInfo.parseInfoGetterAsync) {
+                                    const mapParseInfo = yield parseInfo.parseInfoGetterAsync(mapDictId.value.id);
+                                    if (mapParseInfo) {
+                                        const mapDict = yield ObjectMapDict.parseAsync(mapParseInfo);
+                                        if (mapDict) {
+                                            this[name.slice(1)] = mapDict.value;
+                                            i = mapDict.end + 1;
+                                            break;
+                                        }
                                     }
                                 }
+                                throw new Error(`Can't parse ${name} value reference`);
                             }
-                            throw new Error(`Can't parse ${name} value reference`);
-                        }
-                        else if (mapEntryType === valueTypes.DICTIONARY) {
-                            const mapBounds = parser.getDictBoundsAt(i);
-                            if (mapBounds) {
-                                const map = ObjectMapDict.parse({ parser, bounds: mapBounds });
-                                if (map) {
-                                    this[name.slice(1)] = map.value;
-                                    i = mapBounds.end + 1;
-                                    break;
+                            else if (mapEntryType === valueTypes.DICTIONARY) {
+                                const mapBounds = parser.getDictBoundsAt(i);
+                                if (mapBounds) {
+                                    const map = yield ObjectMapDict.parseAsync({ parser, bounds: mapBounds });
+                                    if (map) {
+                                        this[name.slice(1)] = map.value;
+                                        i = mapBounds.end + 1;
+                                        break;
+                                    }
+                                    else {
+                                        throw new Error(`Can't parse ${name} value dictionary`);
+                                    }
                                 }
-                                else {
-                                    throw new Error(`Can't parse ${name} value dictionary`);
-                                }
+                                throw new Error(`Can't parse ${name} dictionary bounds`);
                             }
-                            throw new Error(`Can't parse ${name} dictionary bounds`);
-                        }
-                        throw new Error(`Unsupported /Resources property value type: ${mapEntryType}`);
-                    case "/ProcSet":
-                        i = this.parseNameArrayProp(name, parser, i);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /Resources property value type: ${mapEntryType}`);
+                        case "/ProcSet":
+                            i = yield this.parseNameArrayPropAsync(name, parser, i);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (parseInfo.parseInfoGetterAsync) {
+                yield this.fillMapsAsync(parseInfo.parseInfoGetterAsync, parseInfo.cryptInfo);
             }
-        }
-        if (parseInfo.parseInfoGetter) {
-            this.fillMaps(parseInfo.parseInfoGetter, parseInfo.cryptInfo);
-        }
+        });
     }
     initProxy() {
         return super.initProxy();
@@ -12349,24 +12667,35 @@ class ResourceDict extends PdfDict {
     }
 }
 
+var __awaiter$W = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class MeasureDict extends PdfDict {
     constructor() {
         super(dictTypes.MEASURE);
         this.Subtype = "/RL";
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new MeasureDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$W(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new MeasureDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12382,44 +12711,58 @@ class MeasureDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i);
-                        if (subtype) {
-                            if (this.Subtype && this.Subtype !== subtype.value) {
-                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$W(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Subtype":
+                            const subtype = parser.parseNameAt(i);
+                            if (subtype) {
+                                if (this.Subtype && this.Subtype !== subtype.value) {
+                                    throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                                }
+                                i = subtype.end + 1;
                             }
-                            i = subtype.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            else {
+                                throw new Error("Can't parse /Subtype property value");
+                            }
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$V = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GroupDict extends PdfDict {
     constructor() {
         super(dictTypes.GROUP);
@@ -12439,66 +12782,82 @@ class GroupDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/S":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent) {
-                            if (Object.values(groupDictTypes).includes(intent.value)) {
-                                this.S = intent.value;
-                                i = intent.end + 1;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$V(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/S":
+                            const intent = parser.parseNameAt(i, true);
+                            if (intent) {
+                                if (Object.values(groupDictTypes).includes(intent.value)) {
+                                    this.S = intent.value;
+                                    i = intent.end + 1;
+                                }
+                                else {
+                                    throw new Error(`Ivalid dict subtype: '${intent.value}'`);
+                                }
                             }
                             else {
-                                throw new Error(`Ivalid dict subtype: '${intent.value}'`);
+                                throw new Error("Can't parse /S property value");
                             }
-                        }
-                        else {
-                            throw new Error("Can't parse /S property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$U = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TransparencyGroupDict extends GroupDict {
     constructor() {
         super();
         this.I = false;
         this.K = false;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new TransparencyGroupDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$U(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new TransparencyGroupDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12520,59 +12879,73 @@ class TransparencyGroupDict extends GroupDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        if (this.S !== "/Transparency") {
-            throw new Error("Not a transparency dict");
-        }
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/CS":
-                        const colorSpaceEntryType = parser.getValueTypeAt(i);
-                        if (colorSpaceEntryType === valueTypes.NAME) {
-                            const colorSpaceName = parser.parseNameAt(i);
-                            if (colorSpaceName) {
-                                this.CS = colorSpaceName.value;
-                                i = colorSpaceName.end + 1;
-                                break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$U(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            if (this.S !== "/Transparency") {
+                throw new Error("Not a transparency dict");
+            }
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/CS":
+                            const colorSpaceEntryType = parser.getValueTypeAt(i);
+                            if (colorSpaceEntryType === valueTypes.NAME) {
+                                const colorSpaceName = parser.parseNameAt(i);
+                                if (colorSpaceName) {
+                                    this.CS = colorSpaceName.value;
+                                    i = colorSpaceName.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /CS property name");
                             }
-                            throw new Error("Can't parse /CS property name");
-                        }
-                        else if (colorSpaceEntryType === valueTypes.ARRAY) {
-                            const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
-                            if (colorSpaceArrayBounds) {
-                                i = colorSpaceArrayBounds.end + 1;
-                                break;
+                            else if (colorSpaceEntryType === valueTypes.ARRAY) {
+                                const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
+                                if (colorSpaceArrayBounds) {
+                                    i = colorSpaceArrayBounds.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /CS value dictionary");
                             }
-                            throw new Error("Can't parse /CS value dictionary");
-                        }
-                        throw new Error(`Unsupported /CS property value type: ${colorSpaceEntryType}`);
-                    case "/I":
-                    case "/K":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /CS property value type: ${colorSpaceEntryType}`);
+                        case "/I":
+                        case "/K":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class XFormStream extends PdfStream {
     constructor() {
         super(streamTypes.FORM_XOBJECT);
@@ -12622,23 +12995,25 @@ class XFormStream extends PdfStream {
     get edited() {
         return this._edited || this.Resources.edited;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new XFormStream();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$T(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new XFormStream();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12684,173 +13059,178 @@ class XFormStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i);
-                        if (subtype) {
-                            if (this.Subtype && this.Subtype !== subtype.value) {
-                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$T(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const dictBounds = parser.getDictBoundsAt(start);
+            let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Subtype":
+                            const subtype = parser.parseNameAt(i);
+                            if (subtype) {
+                                if (this.Subtype && this.Subtype !== subtype.value) {
+                                    throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                                }
+                                i = subtype.end + 1;
                             }
-                            i = subtype.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
-                        }
-                        break;
-                    case "/FormType":
-                        const formType = parser.parseNumberAt(i, false);
-                        if (formType) {
-                            if (formType.value !== 1) {
-                                throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
+                            else {
+                                throw new Error("Can't parse /Subtype property value");
                             }
-                            i = formType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /FormType property value");
-                        }
-                        break;
-                    case "/BBox":
-                    case "/Matrix":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/LastModified":
-                        i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/Metadata":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/StructParent":
-                    case "/StructParents":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Resources":
-                        const resEntryType = parser.getValueTypeAt(i);
-                        if (resEntryType === valueTypes.REF) {
-                            const resDictId = ObjectId.parseRef(parser, i);
-                            if (resDictId && parseInfo.parseInfoGetter) {
-                                const resParseInfo = parseInfo.parseInfoGetter(resDictId.value.id);
-                                if (resParseInfo) {
-                                    const resDict = ResourceDict.parse(resParseInfo, { xform: XFormStream.parse, image: ImageStream.parse });
-                                    if (resDict) {
-                                        this.Resources = resDict.value;
-                                        i = resDict.end + 1;
-                                        break;
+                            break;
+                        case "/FormType":
+                            const formType = parser.parseNumberAt(i, false);
+                            if (formType) {
+                                if (formType.value !== 1) {
+                                    throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
+                                }
+                                i = formType.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /FormType property value");
+                            }
+                            break;
+                        case "/BBox":
+                        case "/Matrix":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/LastModified":
+                            i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/Metadata":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/StructParent":
+                        case "/StructParents":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Resources":
+                            const resEntryType = parser.getValueTypeAt(i);
+                            if (resEntryType === valueTypes.REF) {
+                                const resDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (resDictId && parseInfo.parseInfoGetterAsync) {
+                                    const resParseInfo = yield parseInfo.parseInfoGetterAsync(resDictId.value.id);
+                                    if (resParseInfo) {
+                                        const resDict = yield ResourceDict.parseAsync(resParseInfo, { xform: XFormStream.parseAsync, image: ImageStream.parseAsync });
+                                        if (resDict) {
+                                            this.Resources = resDict.value;
+                                            i = resDict.end + 1;
+                                            break;
+                                        }
                                     }
                                 }
+                                throw new Error("Can't parse /Resources value reference");
                             }
-                            throw new Error("Can't parse /Resources value reference");
-                        }
-                        else if (resEntryType === valueTypes.DICTIONARY) {
-                            const resDictBounds = parser.getDictBoundsAt(i);
-                            if (resDictBounds) {
-                                if (resDictBounds.contentStart) {
-                                    const resDict = ResourceDict.parse({
-                                        parser,
-                                        bounds: resDictBounds,
-                                        parseInfoGetter: parseInfo.parseInfoGetter,
-                                    }, { xform: XFormStream.parse, image: ImageStream.parse });
-                                    if (resDict) {
-                                        this.Resources = resDict.value;
+                            else if (resEntryType === valueTypes.DICTIONARY) {
+                                const resDictBounds = parser.getDictBoundsAt(i);
+                                if (resDictBounds) {
+                                    if (resDictBounds.contentStart) {
+                                        const resDict = yield ResourceDict.parseAsync({
+                                            parser,
+                                            bounds: resDictBounds,
+                                            parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
+                                        }, { xform: XFormStream.parseAsync, image: ImageStream.parseAsync });
+                                        if (resDict) {
+                                            this.Resources = resDict.value;
+                                        }
+                                        else {
+                                            throw new Error("Can't parse /Resources value dictionary");
+                                        }
                                     }
-                                    else {
-                                        throw new Error("Can't parse /Resources value dictionary");
+                                    i = resDictBounds.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /Resources dictionary bounds");
+                            }
+                            throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
+                        case "/Measure":
+                            const measureEntryType = parser.getValueTypeAt(i);
+                            if (measureEntryType === valueTypes.REF) {
+                                const measureDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                                    const measureParseInfo = yield parseInfo.parseInfoGetterAsync(measureDictId.value.id);
+                                    if (measureParseInfo) {
+                                        const measureDict = yield MeasureDict.parseAsync(measureParseInfo);
+                                        if (measureDict) {
+                                            this.Measure = measureDict.value;
+                                            i = measureDict.end + 1;
+                                            break;
+                                        }
                                     }
                                 }
-                                i = resDictBounds.end + 1;
-                                break;
+                                throw new Error("Can't parse /Measure value reference");
                             }
-                            throw new Error("Can't parse /Resources dictionary bounds");
-                        }
-                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
-                    case "/Measure":
-                        const measureEntryType = parser.getValueTypeAt(i);
-                        if (measureEntryType === valueTypes.REF) {
-                            const measureDictId = ObjectId.parseRef(parser, i);
-                            if (measureDictId && parseInfo.parseInfoGetter) {
-                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
-                                if (measureParseInfo) {
-                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                            else if (measureEntryType === valueTypes.DICTIONARY) {
+                                const measureDictBounds = parser.getDictBoundsAt(i);
+                                if (measureDictBounds) {
+                                    const measureDict = yield MeasureDict
+                                        .parseAsync({ parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo });
                                     if (measureDict) {
                                         this.Measure = measureDict.value;
                                         i = measureDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /Measure value dictionary");
                             }
-                            throw new Error("Can't parse /Measure value reference");
-                        }
-                        else if (measureEntryType === valueTypes.DICTIONARY) {
-                            const measureDictBounds = parser.getDictBoundsAt(i);
-                            if (measureDictBounds) {
-                                const measureDict = MeasureDict
-                                    .parse({ parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo });
-                                if (measureDict) {
-                                    this.Measure = measureDict.value;
-                                    i = measureDict.end + 1;
-                                    break;
+                            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                        case "/Group":
+                            const groupEntryType = parser.getValueTypeAt(i);
+                            if (groupEntryType === valueTypes.REF) {
+                                const groupDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (groupDictId && parseInfo.parseInfoGetterAsync) {
+                                    const groupParseInfo = yield parseInfo.parseInfoGetterAsync(groupDictId.value.id);
+                                    if (groupParseInfo) {
+                                        const groupDict = yield TransparencyGroupDict.parseAsync(groupParseInfo);
+                                        if (groupDict) {
+                                            this.Group = groupDict.value;
+                                            i = groupDict.end + 1;
+                                            break;
+                                        }
+                                    }
                                 }
+                                throw new Error("Can't parse /Group value reference");
                             }
-                            throw new Error("Can't parse /Measure value dictionary");
-                        }
-                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                    case "/Group":
-                        const groupEntryType = parser.getValueTypeAt(i);
-                        if (groupEntryType === valueTypes.REF) {
-                            const groupDictId = ObjectId.parseRef(parser, i);
-                            if (groupDictId && parseInfo.parseInfoGetter) {
-                                const groupParseInfo = parseInfo.parseInfoGetter(groupDictId.value.id);
-                                if (groupParseInfo) {
-                                    const groupDict = TransparencyGroupDict.parse(groupParseInfo);
+                            else if (groupEntryType === valueTypes.DICTIONARY) {
+                                const groupDictBounds = parser.getDictBoundsAt(i);
+                                if (groupDictBounds) {
+                                    const groupDict = yield TransparencyGroupDict
+                                        .parseAsync({ parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo });
                                     if (groupDict) {
                                         this.Group = groupDict.value;
                                         i = groupDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /Group value dictionary");
                             }
-                            throw new Error("Can't parse /Group value reference");
-                        }
-                        else if (groupEntryType === valueTypes.DICTIONARY) {
-                            const groupDictBounds = parser.getDictBoundsAt(i);
-                            if (groupDictBounds) {
-                                const groupDict = TransparencyGroupDict
-                                    .parse({ parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo });
-                                if (groupDict) {
-                                    this.Group = groupDict.value;
-                                    i = groupDict.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Group value dictionary");
-                        }
-                        throw new Error(`Unsupported /Group property value type: ${groupEntryType}`);
-                    case "/OC":
-                    case "/OPI":
-                    default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
+                            throw new Error(`Unsupported /Group property value type: ${groupEntryType}`);
+                        case "/OC":
+                        case "/OPI":
+                        default:
+                            i = parser.skipToNextName(i, dictBounds.contentEnd);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.BBox) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.BBox) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
     initProxy() {
         return super.initProxy();
@@ -13053,7 +13433,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$v = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$S = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -13093,69 +13473,71 @@ class AppearanceStreamRenderer {
     get state() {
         return this._graphicsStates[this._graphicsStates.length - 1];
     }
-    static parseNextCommand(parser, i) {
-        const parameters = [];
-        let operator;
-        command: while (!operator) {
-            const nextValueType = parser.getValueTypeAt(i, true);
-            switch (nextValueType) {
-                case valueTypes.NUMBER:
-                    const numberResult = parser.parseNumberAt(i, true);
-                    parameters.push(numberResult.value);
-                    i = numberResult.end + 1;
-                    break;
-                case valueTypes.NAME:
-                    const nameResult = parser.parseNameAt(i, true);
-                    parameters.push(nameResult.value);
-                    i = nameResult.end + 1;
-                    break;
-                case valueTypes.ARRAY:
-                    const arrayBounds = parser.getArrayBoundsAt(i);
-                    let j = arrayBounds.start + 1;
-                    while (j < arrayBounds.end - 1 && j !== -1) {
-                        const nextArrayValueType = parser.getValueTypeAt(j, true);
-                        switch (nextArrayValueType) {
-                            case valueTypes.STRING_LITERAL:
-                                const arrayLiteralResult = LiteralString.parse(parser, j);
-                                parameters.push(arrayLiteralResult.value.bytes);
-                                j = arrayLiteralResult.end + 1;
-                                break;
-                            case valueTypes.NUMBER:
-                                const arrayNumberResult = parser.parseNumberAt(j, true);
-                                parameters.push(arrayNumberResult.value);
-                                j = arrayNumberResult.end + 1;
-                                break;
-                            default:
-                                console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
-                                j = parser.findDelimiterIndex(true, j + 1);
-                                break;
+    static parseNextCommandAsync(parser, i) {
+        return __awaiter$S(this, void 0, void 0, function* () {
+            const parameters = [];
+            let operator;
+            command: while (!operator) {
+                const nextValueType = parser.getValueTypeAt(i, true);
+                switch (nextValueType) {
+                    case valueTypes.NUMBER:
+                        const numberResult = parser.parseNumberAt(i, true);
+                        parameters.push(numberResult.value);
+                        i = numberResult.end + 1;
+                        break;
+                    case valueTypes.NAME:
+                        const nameResult = parser.parseNameAt(i, true);
+                        parameters.push(nameResult.value);
+                        i = nameResult.end + 1;
+                        break;
+                    case valueTypes.ARRAY:
+                        const arrayBounds = parser.getArrayBoundsAt(i);
+                        let j = arrayBounds.start + 1;
+                        while (j < arrayBounds.end - 1 && j !== -1) {
+                            const nextArrayValueType = parser.getValueTypeAt(j, true);
+                            switch (nextArrayValueType) {
+                                case valueTypes.STRING_LITERAL:
+                                    const arrayLiteralResult = yield LiteralString.parseAsync(parser, j);
+                                    parameters.push(arrayLiteralResult.value.bytes);
+                                    j = arrayLiteralResult.end + 1;
+                                    break;
+                                case valueTypes.NUMBER:
+                                    const arrayNumberResult = parser.parseNumberAt(j, true);
+                                    parameters.push(arrayNumberResult.value);
+                                    j = arrayNumberResult.end + 1;
+                                    break;
+                                default:
+                                    console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
+                                    j = parser.findDelimiterIndex(true, j + 1);
+                                    break;
+                            }
                         }
-                    }
-                    i = arrayBounds.end + 1;
-                    break;
-                case valueTypes.STRING_LITERAL:
-                    const literalResult = LiteralString.parse(parser, i);
-                    parameters.push(literalResult.value.literal);
-                    i = literalResult.end + 1;
-                    break;
-                case valueTypes.STRING_HEX:
-                    const hexResult = HexString.parse(parser, i);
-                    parameters.push(hexResult.value.hex);
-                    i = hexResult.end + 1;
-                    break;
-                case valueTypes.UNKNOWN:
-                    const operatorResult = parser.parseStringAt(i);
-                    operator = operatorResult.value;
-                    i = operatorResult.end + 1;
-                    break command;
-                default:
-                    throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
+                        i = arrayBounds.end + 1;
+                        break;
+                    case valueTypes.STRING_LITERAL:
+                        const literalResult = yield LiteralString.parseAsync(parser, i);
+                        parameters.push(literalResult.value.literal);
+                        i = literalResult.end + 1;
+                        break;
+                    case valueTypes.STRING_HEX:
+                        const hexResult = yield HexString.parseAsync(parser, i);
+                        parameters.push(hexResult.value.hex);
+                        i = hexResult.end + 1;
+                        break;
+                    case valueTypes.UNKNOWN:
+                        const operatorResult = parser.parseStringAt(i);
+                        operator = operatorResult.value;
+                        i = operatorResult.end + 1;
+                        break command;
+                    default:
+                        throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
+                }
             }
-        }
-        return { nextIndex: i, parameters, operator };
+            return { nextIndex: i, parameters, operator };
+        });
     }
     renderAsync() {
-        return __awaiter$v(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -13500,7 +13882,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$v(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -13536,7 +13918,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextAsync(textParam, resources) {
-        return __awaiter$v(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             const textState = this.state.textState;
             const fontDict = resources.getFont(textState.customFontName);
             const text = this.decodeTextParam(textParam, fontDict);
@@ -13652,12 +14034,12 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextGroupAsync(parser, resources) {
-        return __awaiter$v(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             const svgElements = [];
             const textState = this.state.textState;
             let i = 0;
             while (i !== -1) {
-                const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+                const { nextIndex, parameters, operator } = yield AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
                 i = parser.skipEmpty(nextIndex);
                 switch (operator) {
                     case "Tj":
@@ -13697,7 +14079,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawStreamAsync(stream) {
-        return __awaiter$v(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             const parser = stream.streamDataParser;
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -13705,7 +14087,7 @@ class AppearanceStreamRenderer {
             let d = "";
             let i = 0;
             while (i !== -1) {
-                const { nextIndex, parameters, operator } = AppearanceStreamRenderer.parseNextCommand(parser, i);
+                const { nextIndex, parameters, operator } = yield AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
                 i = parser.skipEmpty(nextIndex + 1);
                 switch (operator) {
                     case "m":
@@ -13846,6 +14228,15 @@ class AppearanceStreamRenderer {
     }
 }
 
+var __awaiter$R = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class BorderStyleDict extends PdfDict {
     constructor() {
         super(dictTypes.BORDER_STYLE);
@@ -13853,19 +14244,21 @@ class BorderStyleDict extends PdfDict {
         this.S = borderStyles.SOLID;
         this.D = [3, 0];
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new BorderStyleDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$R(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new BorderStyleDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -13887,81 +14280,97 @@ class BorderStyleDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a, _b;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/W":
-                        i = this.parseNumberProp(name, parser, i, true);
-                        break;
-                    case "/S":
-                        const style = parser.parseNameAt(i, true);
-                        if (style && Object.values(borderStyles).includes(style.value)) {
-                            this.S = style.value;
-                            i = style.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /S property value");
-                        }
-                        break;
-                    case "/D":
-                        const dashGap = parser.parseNumberArrayAt(i, true);
-                        if (dashGap) {
-                            this.D = [
-                                (_a = dashGap.value[0]) !== null && _a !== void 0 ? _a : 3,
-                                (_b = dashGap.value[1]) !== null && _b !== void 0 ? _b : 0,
-                            ];
-                            i = dashGap.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /D property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+        return __awaiter$R(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/W":
+                            i = yield this.parseNumberPropAsync(name, parser, i, true);
+                            break;
+                        case "/S":
+                            const style = parser.parseNameAt(i, true);
+                            if (style && Object.values(borderStyles).includes(style.value)) {
+                                this.S = style.value;
+                                i = style.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /S property value");
+                            }
+                            break;
+                        case "/D":
+                            const dashGap = parser.parseNumberArrayAt(i, true);
+                            if (dashGap) {
+                                this.D = [
+                                    (_a = dashGap.value[0]) !== null && _a !== void 0 ? _a : 3,
+                                    (_b = dashGap.value[1]) !== null && _b !== void 0 ? _b : 0,
+                                ];
+                                i = dashGap.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /D property value");
+                            }
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$Q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class AppearanceDict extends PdfDict {
     constructor() {
         super(null);
         this._streamsMap = new Map();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new AppearanceDict();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$Q(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new AppearanceDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     getStream(key) {
         return this._streamsMap.get(key);
@@ -14033,142 +14442,149 @@ class AppearanceDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    fillStreamsMap(parseInfoGetter) {
-        this._streamsMap.clear();
-        for (const prop of ["N", "R", "D"]) {
-            if (this[prop]) {
-                if (this[prop] instanceof ObjectId) {
-                    const streamParseInfo = parseInfoGetter(this[prop].id);
-                    if (!streamParseInfo) {
-                        continue;
-                    }
-                    const stream = XFormStream.parse(streamParseInfo);
-                    if (!stream) {
-                        continue;
-                    }
-                    if (stream) {
-                        this._streamsMap.set(`/${prop}`, stream.value);
-                    }
-                }
-                else {
-                    for (const [name, objectId] of this[prop].getProps()) {
-                        const streamParseInfo = parseInfoGetter(objectId.id);
+    fillStreamsMapAsync(parseInfoGetterAsync) {
+        return __awaiter$Q(this, void 0, void 0, function* () {
+            this._streamsMap.clear();
+            for (const prop of ["N", "R", "D"]) {
+                if (this[prop]) {
+                    if (this[prop] instanceof ObjectId) {
+                        const streamParseInfo = yield parseInfoGetterAsync(this[prop].id);
                         if (!streamParseInfo) {
                             continue;
                         }
-                        const stream = XFormStream.parse(streamParseInfo);
+                        const stream = yield XFormStream.parseAsync(streamParseInfo);
+                        if (!stream) {
+                            continue;
+                        }
                         if (stream) {
-                            this._streamsMap.set(`/${prop}${name}`, stream.value);
+                            this._streamsMap.set(`/${prop}`, stream.value);
+                        }
+                    }
+                    else {
+                        for (const [name, objectId] of this[prop].getProps()) {
+                            const streamParseInfo = yield parseInfoGetterAsync(objectId.id);
+                            if (!streamParseInfo) {
+                                continue;
+                            }
+                            const stream = yield XFormStream.parseAsync(streamParseInfo);
+                            if (stream) {
+                                this._streamsMap.set(`/${prop}${name}`, stream.value);
+                            }
                         }
                     }
                 }
             }
-        }
+        });
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/N":
-                        const nEntryType = parser.getValueTypeAt(i);
-                        if (nEntryType === valueTypes.REF) {
-                            const nRefId = ObjectId.parseRef(parser, i);
-                            if (nRefId) {
-                                this.N = nRefId.value;
-                                i = nRefId.end + 1;
-                                break;
-                            }
-                        }
-                        else if (nEntryType === valueTypes.DICTIONARY) {
-                            const nDictBounds = parser.getDictBoundsAt(i);
-                            if (nDictBounds) {
-                                const nSubDict = ObjectMapDict.parse({ parser, bounds: nDictBounds });
-                                if (nSubDict) {
-                                    this.N = nSubDict.value;
-                                    i = nSubDict.end + 1;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$Q(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/N":
+                            const nEntryType = parser.getValueTypeAt(i);
+                            if (nEntryType === valueTypes.REF) {
+                                const nRefId = yield ObjectId.parseRefAsync(parser, i);
+                                if (nRefId) {
+                                    this.N = nRefId.value;
+                                    i = nRefId.end + 1;
                                     break;
                                 }
                             }
-                        }
-                        else {
-                            throw new Error(`Unsupported /N property value type: ${nEntryType}`);
-                        }
-                        throw new Error("Can't parse /N property value");
-                    case "/R":
-                        const rEntryType = parser.getValueTypeAt(i);
-                        if (rEntryType === valueTypes.REF) {
-                            const rRefId = ObjectId.parseRef(parser, i);
-                            if (rRefId) {
-                                this.R = rRefId.value;
-                                i = rRefId.end + 1;
-                                break;
+                            else if (nEntryType === valueTypes.DICTIONARY) {
+                                const nDictBounds = parser.getDictBoundsAt(i);
+                                if (nDictBounds) {
+                                    const nSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: nDictBounds });
+                                    if (nSubDict) {
+                                        this.N = nSubDict.value;
+                                        i = nSubDict.end + 1;
+                                        break;
+                                    }
+                                }
                             }
-                        }
-                        else if (rEntryType === valueTypes.DICTIONARY) {
-                            const rDictBounds = parser.getDictBoundsAt(i);
-                            if (rDictBounds) {
-                                const rSubDict = ObjectMapDict.parse({ parser, bounds: rDictBounds });
-                                if (rSubDict) {
-                                    this.R = rSubDict.value;
-                                    i = rSubDict.end + 1;
+                            else {
+                                throw new Error(`Unsupported /N property value type: ${nEntryType}`);
+                            }
+                            throw new Error("Can't parse /N property value");
+                        case "/R":
+                            const rEntryType = parser.getValueTypeAt(i);
+                            if (rEntryType === valueTypes.REF) {
+                                const rRefId = yield ObjectId.parseRefAsync(parser, i);
+                                if (rRefId) {
+                                    this.R = rRefId.value;
+                                    i = rRefId.end + 1;
                                     break;
                                 }
                             }
-                        }
-                        else {
-                            throw new Error(`Unsupported /R property value type: ${rEntryType}`);
-                        }
-                        throw new Error("Can't parse /R property value");
-                    case "/D":
-                        const dEntryType = parser.getValueTypeAt(i);
-                        if (dEntryType === valueTypes.REF) {
-                            const dRefId = ObjectId.parseRef(parser, i);
-                            if (dRefId) {
-                                this.D = dRefId.value;
-                                i = dRefId.end + 1;
-                                break;
+                            else if (rEntryType === valueTypes.DICTIONARY) {
+                                const rDictBounds = parser.getDictBoundsAt(i);
+                                if (rDictBounds) {
+                                    const rSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: rDictBounds });
+                                    if (rSubDict) {
+                                        this.R = rSubDict.value;
+                                        i = rSubDict.end + 1;
+                                        break;
+                                    }
+                                }
                             }
-                        }
-                        else if (dEntryType === valueTypes.DICTIONARY) {
-                            const dDictBounds = parser.getDictBoundsAt(i);
-                            if (dDictBounds) {
-                                const dSubDict = ObjectMapDict.parse({ parser, bounds: dDictBounds });
-                                if (dSubDict) {
-                                    this.D = dSubDict.value;
-                                    i = dSubDict.end + 1;
+                            else {
+                                throw new Error(`Unsupported /R property value type: ${rEntryType}`);
+                            }
+                            throw new Error("Can't parse /R property value");
+                        case "/D":
+                            const dEntryType = parser.getValueTypeAt(i);
+                            if (dEntryType === valueTypes.REF) {
+                                const dRefId = yield ObjectId.parseRefAsync(parser, i);
+                                if (dRefId) {
+                                    this.D = dRefId.value;
+                                    i = dRefId.end + 1;
                                     break;
                                 }
                             }
-                        }
-                        else {
-                            throw new Error(`Unsupported /D property value type: ${dEntryType}`);
-                        }
-                        throw new Error("Can't parse /D property value");
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            else if (dEntryType === valueTypes.DICTIONARY) {
+                                const dDictBounds = parser.getDictBoundsAt(i);
+                                if (dDictBounds) {
+                                    const dSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: dDictBounds });
+                                    if (dSubDict) {
+                                        this.D = dSubDict.value;
+                                        i = dSubDict.end + 1;
+                                        break;
+                                    }
+                                }
+                            }
+                            else {
+                                throw new Error(`Unsupported /D property value type: ${dEntryType}`);
+                            }
+                            throw new Error("Can't parse /D property value");
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.N) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.N) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (parseInfo.parseInfoGetter) {
-            this.fillStreamsMap(parseInfo.parseInfoGetter);
-        }
+            if (parseInfo.parseInfoGetterAsync) {
+                yield this.fillStreamsMapAsync(parseInfo.parseInfoGetterAsync);
+            }
+        });
     }
     initProxy() {
         return super.initProxy();
@@ -14178,25 +14594,36 @@ class AppearanceDict extends PdfDict {
     }
 }
 
+var __awaiter$P = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class BorderEffectDict extends PdfDict {
     constructor() {
         super(null);
         this.S = borderEffects.NONE;
         this.L = 0;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new BorderEffectDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$P(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new BorderEffectDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -14215,45 +14642,59 @@ class BorderEffectDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/S":
-                        const style = parser.parseNameAt(i, true);
-                        if (style && Object.values(borderEffects).includes(style.value)) {
-                            this.S = style.value;
-                            i = style.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /S property value");
-                        }
-                        break;
-                    case "/L":
-                        i = this.parseNumberProp(name, parser, i, true);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$P(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/S":
+                            const style = parser.parseNameAt(i, true);
+                            if (style && Object.values(borderEffects).includes(style.value)) {
+                                this.S = style.value;
+                                i = style.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /S property value");
+                            }
+                            break;
+                        case "/L":
+                            i = yield this.parseNumberPropAsync(name, parser, i, true);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$O = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class BorderArray {
     constructor(hCornerR, vCornerR, width, dash, gap) {
         this.hCornerR = hCornerR !== null && hCornerR !== void 0 ? hCornerR : 0;
@@ -14262,61 +14703,63 @@ class BorderArray {
         this.dash = dash !== null && dash !== void 0 ? dash : 3;
         this.gap = gap !== null && gap !== void 0 ? gap : 0;
     }
-    static parse(parser, start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = parser.findNonSpaceIndex(true, start);
-        }
-        if (start < 0 || start > parser.maxIndex
-            || parser.getCharCode(start) !== codes.L_BRACKET) {
-            return null;
-        }
-        const hCornerR = parser.parseNumberAt(start + 1);
-        if (!hCornerR || isNaN(hCornerR.value)) {
-            return null;
-        }
-        const vCornerR = parser.parseNumberAt(hCornerR.end + 2);
-        if (!vCornerR || isNaN(vCornerR.value)) {
-            return null;
-        }
-        const width = parser.parseNumberAt(vCornerR.end + 2);
-        if (!width || isNaN(width.value)) {
-            return null;
-        }
-        const next = parser.findNonSpaceIndex(true, width.end + 1);
-        if (!next) {
-            return null;
-        }
-        else if (parser.getCharCode(next) === codes.R_BRACKET) {
-            return {
-                value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
-                start,
-                end: next,
-            };
-        }
-        else if (parser.getCharCode(next) === codes.L_BRACKET) {
-            const dash = parser.parseNumberAt(next + 1);
-            if (!dash || isNaN(dash.value)) {
+    static parseAsync(parser, start, skipEmpty = true) {
+        return __awaiter$O(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = parser.findNonSpaceIndex(true, start);
+            }
+            if (start < 0 || start > parser.maxIndex
+                || parser.getCharCode(start) !== codes.L_BRACKET) {
                 return null;
             }
-            const gap = parser.parseNumberAt(dash.end + 2);
-            if (!gap || isNaN(gap.value)) {
+            const hCornerR = parser.parseNumberAt(start + 1);
+            if (!hCornerR || isNaN(hCornerR.value)) {
                 return null;
             }
-            const dashEnd = parser.findNonSpaceIndex(true, gap.end + 1);
-            if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
+            const vCornerR = parser.parseNumberAt(hCornerR.end + 2);
+            if (!vCornerR || isNaN(vCornerR.value)) {
                 return null;
             }
-            const arrayEnd = parser.findNonSpaceIndex(true, dashEnd + 1);
-            if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
+            const width = parser.parseNumberAt(vCornerR.end + 2);
+            if (!width || isNaN(width.value)) {
                 return null;
             }
-            return {
-                value: new BorderArray(hCornerR.value, vCornerR.value, width.value, dash.value, gap.value),
-                start,
-                end: arrayEnd,
-            };
-        }
-        return null;
+            const next = parser.findNonSpaceIndex(true, width.end + 1);
+            if (!next) {
+                return null;
+            }
+            else if (parser.getCharCode(next) === codes.R_BRACKET) {
+                return {
+                    value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
+                    start,
+                    end: next,
+                };
+            }
+            else if (parser.getCharCode(next) === codes.L_BRACKET) {
+                const dash = parser.parseNumberAt(next + 1);
+                if (!dash || isNaN(dash.value)) {
+                    return null;
+                }
+                const gap = parser.parseNumberAt(dash.end + 2);
+                if (!gap || isNaN(gap.value)) {
+                    return null;
+                }
+                const dashEnd = parser.findNonSpaceIndex(true, gap.end + 1);
+                if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
+                    return null;
+                }
+                const arrayEnd = parser.findNonSpaceIndex(true, dashEnd + 1);
+                if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
+                    return null;
+                }
+                return {
+                    value: new BorderArray(hCornerR.value, vCornerR.value, width.value, dash.value, gap.value),
+                    start,
+                    end: arrayEnd,
+                };
+            }
+            return null;
+        });
     }
     toArray(cryptInfo) {
         const source = this.dash && this.gap
@@ -14326,7 +14769,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$N = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -14624,7 +15067,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(viewBox) {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             if (!viewBox) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -14633,7 +15076,7 @@ class AnnotationDict extends PdfDict {
                 this._renderedControls = this.renderControls();
             }
             yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$u(this, void 0, void 0, function* () {
+                setTimeout(() => __awaiter$N(this, void 0, void 0, function* () {
                     yield this.updateRenderAsync();
                     resolve();
                 }), 0);
@@ -14642,7 +15085,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -14657,7 +15100,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     moveToAsync(point) {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             const width = this.Rect[2] - this.Rect[0];
             const height = this.Rect[3] - this.Rect[1];
             const x = point.x - width / 2;
@@ -14667,7 +15110,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             if (!center) {
                 const [x0, y0, x1, y1] = this.Rect;
                 center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
@@ -14699,7 +15142,7 @@ class AnnotationDict extends PdfDict {
     }
     setTextContentAsync(text, undoable = true) {
         var _a;
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             const oldText = (_a = dict.Contents) === null || _a === void 0 ? void 0 : _a.literal;
             if (!text) {
@@ -14712,194 +15155,199 @@ class AnnotationDict extends PdfDict {
             dict.M = DateString.fromDate(new Date());
             if (dict.$onEditAction) {
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$u(this, void 0, void 0, function* () {
-                        dict.setTextContentAsync(oldText, false);
+                    ? () => __awaiter$N(this, void 0, void 0, function* () {
+                        yield dict.setTextContentAsync(oldText, false);
                     })
                     : undefined);
             }
         });
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Subtype":
-                        const subtype = parser.parseNameAt(i);
-                        if (subtype) {
-                            if (this.Subtype && this.Subtype !== subtype.value) {
-                                throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+        return __awaiter$N(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Subtype":
+                            const subtype = parser.parseNameAt(i);
+                            if (subtype) {
+                                if (this.Subtype && this.Subtype !== subtype.value) {
+                                    throw new Error(`Ivalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
+                                }
+                                i = subtype.end + 1;
                             }
-                            i = subtype.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Subtype property value");
-                        }
-                        break;
-                    case "/Rect":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/P":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Contents":
-                    case "/NM":
-                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/M":
-                        const date = DateString.parse(parser, i, parseInfo.cryptInfo);
-                        if (date) {
-                            this.M = date.value;
-                            i = date.end + 1;
+                            else {
+                                throw new Error("Can't parse /Subtype property value");
+                            }
                             break;
-                        }
-                        else {
-                            const dateLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                            if (dateLiteral) {
-                                this.M = dateLiteral.value;
-                                i = dateLiteral.end + 1;
+                        case "/Rect":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/P":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Contents":
+                        case "/NM":
+                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/M":
+                            const date = yield DateString.parseAsync(parser, i, parseInfo.cryptInfo);
+                            if (date) {
+                                this.M = date.value;
+                                i = date.end + 1;
                                 break;
                             }
-                        }
-                        throw new Error("Can't parse /M property value");
-                    case "/C":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/F":
-                    case "/StructParent":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Border":
-                        const borderArray = BorderArray.parse(parser, i);
-                        if (borderArray) {
-                            this.Border = borderArray.value;
-                            i = borderArray.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Border property value");
-                        }
-                        break;
-                    case "/BS":
-                        const bsEntryType = parser.getValueTypeAt(i);
-                        if (bsEntryType === valueTypes.REF) {
-                            const bsDictId = ObjectId.parseRef(parser, i);
-                            if (bsDictId && parseInfo.parseInfoGetter) {
-                                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
-                                if (bsParseInfo) {
-                                    const bsDict = BorderStyleDict.parse(bsParseInfo);
+                            else {
+                                const dateLiteral = yield LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
+                                if (dateLiteral) {
+                                    this.M = dateLiteral.value;
+                                    i = dateLiteral.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /M property value");
+                        case "/C":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/F":
+                        case "/StructParent":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Border":
+                            const borderArray = yield BorderArray.parseAsync(parser, i);
+                            if (borderArray) {
+                                this.Border = borderArray.value;
+                                i = borderArray.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /Border property value");
+                            }
+                            break;
+                        case "/BS":
+                            const bsEntryType = parser.getValueTypeAt(i);
+                            if (bsEntryType === valueTypes.REF) {
+                                const bsDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (bsDictId && parseInfo.parseInfoGetterAsync) {
+                                    const bsParseInfo = yield parseInfo.parseInfoGetterAsync(bsDictId.value.id);
+                                    if (bsParseInfo) {
+                                        const bsDict = yield BorderStyleDict.parseAsync(bsParseInfo);
+                                        if (bsDict) {
+                                            this.BS = bsDict.value;
+                                            i = bsDict.end + 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                throw new Error("Can't parse /BS value reference");
+                            }
+                            else if (bsEntryType === valueTypes.DICTIONARY) {
+                                const bsDictBounds = parser.getDictBoundsAt(i);
+                                if (bsDictBounds) {
+                                    const bsDict = yield BorderStyleDict.parseAsync({ parser, bounds: bsDictBounds });
                                     if (bsDict) {
                                         this.BS = bsDict.value;
                                         i = bsDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /BS value dictionary");
                             }
-                            throw new Error("Can't parse /BS value reference");
-                        }
-                        else if (bsEntryType === valueTypes.DICTIONARY) {
-                            const bsDictBounds = parser.getDictBoundsAt(i);
-                            if (bsDictBounds) {
-                                const bsDict = BorderStyleDict.parse({ parser, bounds: bsDictBounds });
-                                if (bsDict) {
-                                    this.BS = bsDict.value;
-                                    i = bsDict.end + 1;
-                                    break;
+                            throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
+                        case "/BE":
+                            const beEntryType = parser.getValueTypeAt(i);
+                            if (beEntryType === valueTypes.REF) {
+                                const bsDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (bsDictId && parseInfo.parseInfoGetterAsync) {
+                                    const bsParseInfo = yield parseInfo.parseInfoGetterAsync(bsDictId.value.id);
+                                    if (bsParseInfo) {
+                                        const bsDict = yield BorderEffectDict.parseAsync(bsParseInfo);
+                                        if (bsDict) {
+                                            this.BE = bsDict.value;
+                                            i = bsDict.end + 1;
+                                            break;
+                                        }
+                                    }
                                 }
+                                throw new Error("Can't parse /BE value reference");
                             }
-                            throw new Error("Can't parse /BS value dictionary");
-                        }
-                        throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
-                    case "/BE":
-                        const beEntryType = parser.getValueTypeAt(i);
-                        if (beEntryType === valueTypes.REF) {
-                            const bsDictId = ObjectId.parseRef(parser, i);
-                            if (bsDictId && parseInfo.parseInfoGetter) {
-                                const bsParseInfo = parseInfo.parseInfoGetter(bsDictId.value.id);
-                                if (bsParseInfo) {
-                                    const bsDict = BorderEffectDict.parse(bsParseInfo);
+                            else if (beEntryType === valueTypes.DICTIONARY) {
+                                const bsDictBounds = parser.getDictBoundsAt(i);
+                                if (bsDictBounds) {
+                                    const bsDict = yield BorderEffectDict.parseAsync({ parser, bounds: bsDictBounds });
                                     if (bsDict) {
                                         this.BE = bsDict.value;
                                         i = bsDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /BE value dictionary");
                             }
-                            throw new Error("Can't parse /BE value reference");
-                        }
-                        else if (beEntryType === valueTypes.DICTIONARY) {
-                            const bsDictBounds = parser.getDictBoundsAt(i);
-                            if (bsDictBounds) {
-                                const bsDict = BorderEffectDict.parse({ parser, bounds: bsDictBounds });
-                                if (bsDict) {
-                                    this.BE = bsDict.value;
-                                    i = bsDict.end + 1;
-                                    break;
+                            throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
+                        case "/AP":
+                            const apEntryType = parser.getValueTypeAt(i);
+                            if (apEntryType === valueTypes.REF) {
+                                const apDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (apDictId && parseInfo.parseInfoGetterAsync) {
+                                    const apParseInfo = yield parseInfo.parseInfoGetterAsync(apDictId.value.id);
+                                    if (apParseInfo) {
+                                        const apDict = yield AppearanceDict.parseAsync(apParseInfo);
+                                        if (apDict) {
+                                            this.AP = apDict.value;
+                                            i = apDict.end + 1;
+                                            break;
+                                        }
+                                    }
                                 }
+                                throw new Error("Can't parse /AP value reference");
                             }
-                            throw new Error("Can't parse /BE value dictionary");
-                        }
-                        throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
-                    case "/AP":
-                        const apEntryType = parser.getValueTypeAt(i);
-                        if (apEntryType === valueTypes.REF) {
-                            const apDictId = ObjectId.parseRef(parser, i);
-                            if (apDictId && parseInfo.parseInfoGetter) {
-                                const apParseInfo = parseInfo.parseInfoGetter(apDictId.value.id);
-                                if (apParseInfo) {
-                                    const apDict = AppearanceDict.parse(apParseInfo);
+                            else if (apEntryType === valueTypes.DICTIONARY) {
+                                const apDictBounds = parser.getDictBoundsAt(i);
+                                if (apDictBounds) {
+                                    const apDict = yield AppearanceDict.parseAsync({
+                                        parser,
+                                        bounds: apDictBounds,
+                                        parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
+                                    });
                                     if (apDict) {
                                         this.AP = apDict.value;
                                         i = apDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /AP value dictionary");
                             }
-                            throw new Error("Can't parse /AP value reference");
-                        }
-                        else if (apEntryType === valueTypes.DICTIONARY) {
-                            const apDictBounds = parser.getDictBoundsAt(i);
-                            if (apDictBounds) {
-                                const apDict = AppearanceDict.parse({
-                                    parser,
-                                    bounds: apDictBounds,
-                                    parseInfoGetter: parseInfo.parseInfoGetter,
-                                });
-                                if (apDict) {
-                                    this.AP = apDict.value;
-                                    i = apDict.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /AP value dictionary");
-                        }
-                        throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
-                    case "/AS":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    case "/OC":
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
+                        case "/AS":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        case "/OC":
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Subtype || !this.Rect) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Subtype || !this.Rect) {
-            throw new Error("Not all required properties parsed");
-        }
-        this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
+            this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || getRandomUuid();
+        });
     }
     getColorString() {
         var _a;
@@ -14997,7 +15445,7 @@ class AnnotationDict extends PdfDict {
         this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
             const stream = dict.apStream;
@@ -15009,7 +15457,7 @@ class AnnotationDict extends PdfDict {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$u(this, void 0, void 0, function* () {
+                    ? () => __awaiter$N(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -15018,7 +15466,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -15027,7 +15475,7 @@ class AnnotationDict extends PdfDict {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$u(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$N(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
@@ -15151,7 +15599,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -15184,7 +15632,7 @@ class AnnotationDict extends PdfDict {
     }
 }
 
-var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$M = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -15233,103 +15681,108 @@ class MarkupAnnotation extends AnnotationDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/T":
-                    case "/Subj":
-                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/Popup":
-                    case "/IRT":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/RC":
-                        const rcEntryType = parser.getValueTypeAt(i);
-                        if (rcEntryType === valueTypes.REF) {
-                            const rsObjectId = ObjectId.parseRef(parser, i);
-                            if (rsObjectId && parseInfo.parseInfoGetter) {
-                                const rcParseInfo = parseInfo.parseInfoGetter(rsObjectId.value.id);
-                                if (rcParseInfo) {
-                                    const rcObjectType = rcParseInfo.type
-                                        || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
-                                    if (rcObjectType === valueTypes.STRING_LITERAL) {
-                                        const popupTextFromIndirectLiteral = LiteralString
-                                            .parse(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
-                                        if (popupTextFromIndirectLiteral) {
-                                            this.RC = popupTextFromIndirectLiteral.value;
-                                            i = rsObjectId.end + 1;
-                                            break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$M(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/T":
+                        case "/Subj":
+                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/Popup":
+                        case "/IRT":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/RC":
+                            const rcEntryType = parser.getValueTypeAt(i);
+                            if (rcEntryType === valueTypes.REF) {
+                                const rsObjectId = yield ObjectId.parseRefAsync(parser, i);
+                                if (rsObjectId && parseInfo.parseInfoGetterAsync) {
+                                    const rcParseInfo = yield parseInfo.parseInfoGetterAsync(rsObjectId.value.id);
+                                    if (rcParseInfo) {
+                                        const rcObjectType = rcParseInfo.type
+                                            || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
+                                        if (rcObjectType === valueTypes.STRING_LITERAL) {
+                                            const popupTextFromIndirectLiteral = yield LiteralString
+                                                .parseAsync(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
+                                            if (popupTextFromIndirectLiteral) {
+                                                this.RC = popupTextFromIndirectLiteral.value;
+                                                i = rsObjectId.end + 1;
+                                                break;
+                                            }
                                         }
-                                    }
-                                    else if (rcObjectType === valueTypes.DICTIONARY) {
-                                        const popupTextStream = TextStream.parse(rcParseInfo);
-                                        if (popupTextStream) {
-                                            const popupTextFromStream = popupTextStream.value.getText();
-                                            this.RC = LiteralString.fromString(popupTextFromStream);
-                                            i = rsObjectId.end + 1;
-                                            break;
+                                        else if (rcObjectType === valueTypes.DICTIONARY) {
+                                            const popupTextStream = yield TextStream.parseAsync(rcParseInfo);
+                                            if (popupTextStream) {
+                                                const popupTextFromStream = popupTextStream.value.getText();
+                                                this.RC = LiteralString.fromString(popupTextFromStream);
+                                                i = rsObjectId.end + 1;
+                                                break;
+                                            }
                                         }
-                                    }
-                                    else {
-                                        throw new Error(`Unsupported /RC property value type: ${rcObjectType}`);
+                                        else {
+                                            throw new Error(`Unsupported /RC property value type: ${rcObjectType}`);
+                                        }
                                     }
                                 }
+                                throw new Error("Can't parse /RC value reference");
                             }
-                            throw new Error("Can't parse /RC value reference");
-                        }
-                        else if (rcEntryType === valueTypes.STRING_LITERAL) {
-                            const popupTextFromLiteral = LiteralString.parse(parser, i, parseInfo.cryptInfo);
-                            if (popupTextFromLiteral) {
-                                this.RC = popupTextFromLiteral.value;
-                                i = popupTextFromLiteral.end + 1;
-                                break;
+                            else if (rcEntryType === valueTypes.STRING_LITERAL) {
+                                const popupTextFromLiteral = yield LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
+                                if (popupTextFromLiteral) {
+                                    this.RC = popupTextFromLiteral.value;
+                                    i = popupTextFromLiteral.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /RC property value");
                             }
-                            throw new Error("Can't parse /RC property value");
-                        }
-                        throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
-                    case "/CA":
-                        i = this.parseNumberProp(name, parser, i, true);
-                        break;
-                    case "/CreationDate":
-                        i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/RT":
-                        const replyType = parser.parseNameAt(i, true);
-                        if (replyType && Object.values(markupAnnotationReplyTypes)
-                            .includes(replyType.value)) {
-                            this.RT = replyType.value;
-                            i = replyType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /RT property value");
-                        }
-                        break;
-                    case "/ExData":
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
+                        case "/CA":
+                            i = yield this.parseNumberPropAsync(name, parser, i, true);
+                            break;
+                        case "/CreationDate":
+                            i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/RT":
+                            const replyType = parser.parseNameAt(i, true);
+                            if (replyType && Object.values(markupAnnotationReplyTypes)
+                                .includes(replyType.value)) {
+                                this.RT = replyType.value;
+                                i = replyType.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /RT property value");
+                            }
+                            break;
+                        case "/ExData":
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Subtype || !this.Rect) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Subtype || !this.Rect) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
     getColorRect() {
         let r = 0;
@@ -15359,7 +15812,7 @@ class MarkupAnnotation extends AnnotationDict {
     }
     updateTextDataAsync(options) {
         var _a;
-        return __awaiter$t(this, void 0, void 0, function* () {
+        return __awaiter$M(this, void 0, void 0, function* () {
             const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
             if (text) {
                 const pTemp = document.createElement("p");
@@ -16181,107 +16634,120 @@ class DataCryptHandler {
     }
 }
 
+var __awaiter$L = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class ObjectStream extends PdfStream {
     constructor() {
         super(streamTypes.OBJECT_STREAM);
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new ObjectStream();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$L(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new ObjectStream();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
-    getObjectData(id, dataParserConstructor) {
-        dataParserConstructor || (dataParserConstructor = PdfStream.dataParserConstructor);
-        if (!this._streamData || !this.N || !this.First) {
-            return null;
-        }
-        const parser = this.streamDataParser;
-        const offsetMap = new Map();
-        let temp;
-        let objectId;
-        let byteOffset;
-        let position = 0;
-        for (let n = 0; n < this.N; n++) {
-            temp = parser.parseNumberAt(position, false, false);
-            objectId = temp.value;
-            position = temp.end + 2;
-            temp = parser.parseNumberAt(position, false, false);
-            byteOffset = temp.value;
-            position = temp.end + 2;
-            offsetMap.set(objectId, byteOffset);
-        }
-        if (!offsetMap.has(id)) {
-            return null;
-        }
-        const objectStart = this.First + offsetMap.get(id);
-        const objectType = parser.getValueTypeAt(objectStart);
-        if (objectType === null) {
-            return;
-        }
-        let bounds;
-        let value;
-        switch (objectType) {
-            case objectTypes.DICTIONARY:
-                bounds = parser.getDictBoundsAt(objectStart, false);
-                break;
-            case objectTypes.ARRAY:
-                bounds = parser.getArrayBoundsAt(objectStart, false);
-                break;
-            case objectTypes.STRING_LITERAL:
-                const literalValue = LiteralString.parse(parser, objectStart);
-                if (literalValue) {
-                    bounds = { start: literalValue.start, end: literalValue.end };
-                    value = literalValue;
-                }
-                break;
-            case objectTypes.STRING_HEX:
-                const hexValue = HexString.parse(parser, objectStart);
-                if (hexValue) {
-                    bounds = { start: hexValue.start, end: hexValue.end };
-                    value = hexValue;
-                }
-                break;
-            case objectTypes.NUMBER:
-                const numValue = parser.parseNumberAt(objectStart);
-                if (numValue) {
-                    bounds = { start: numValue.start, end: numValue.end };
-                    value = numValue;
-                }
-                break;
-        }
-        if (!bounds) {
-            return null;
-        }
-        const bytes = parser.sliceCharCodes(bounds.start, bounds.end);
-        if (!bytes.length) {
-            throw new Error("Object byte array is empty");
-        }
-        return {
-            parser: new dataParserConstructor(bytes),
-            bounds: {
-                start: 0,
-                end: bytes.length - 1,
-                contentStart: bounds.contentStart
-                    ? bounds.contentStart - bounds.start
-                    : undefined,
-                contentEnd: bounds.contentEnd
-                    ? bytes.length - 1 - (bounds.end - bounds.contentEnd)
-                    : undefined,
-            },
-            type: objectType,
-            value,
-            cryptInfo: { ref: { id, generation: 0 } },
-            streamId: this.id,
-        };
+    getObjectDataAsync(id, dataParserConstructor) {
+        return __awaiter$L(this, void 0, void 0, function* () {
+            dataParserConstructor || (dataParserConstructor = PdfStream.dataParserConstructor);
+            if (!this._streamData || !this.N || !this.First) {
+                return null;
+            }
+            const parser = this.streamDataParser;
+            const offsetMap = new Map();
+            let temp;
+            let objectId;
+            let byteOffset;
+            let position = 0;
+            for (let n = 0; n < this.N; n++) {
+                temp = parser.parseNumberAt(position, false, false);
+                objectId = temp.value;
+                position = temp.end + 2;
+                temp = parser.parseNumberAt(position, false, false);
+                byteOffset = temp.value;
+                position = temp.end + 2;
+                offsetMap.set(objectId, byteOffset);
+            }
+            if (!offsetMap.has(id)) {
+                return null;
+            }
+            const objectStart = this.First + offsetMap.get(id);
+            const objectType = parser.getValueTypeAt(objectStart);
+            if (objectType === null) {
+                return;
+            }
+            let bounds;
+            let value;
+            switch (objectType) {
+                case objectTypes.DICTIONARY:
+                    bounds = parser.getDictBoundsAt(objectStart, false);
+                    break;
+                case objectTypes.ARRAY:
+                    bounds = parser.getArrayBoundsAt(objectStart, false);
+                    break;
+                case objectTypes.STRING_LITERAL:
+                    const literalValue = yield LiteralString.parseAsync(parser, objectStart);
+                    if (literalValue) {
+                        bounds = { start: literalValue.start, end: literalValue.end };
+                        value = literalValue;
+                    }
+                    break;
+                case objectTypes.STRING_HEX:
+                    const hexValue = yield HexString.parseAsync(parser, objectStart);
+                    if (hexValue) {
+                        bounds = { start: hexValue.start, end: hexValue.end };
+                        value = hexValue;
+                    }
+                    break;
+                case objectTypes.NUMBER:
+                    const numValue = parser.parseNumberAt(objectStart);
+                    if (numValue) {
+                        bounds = { start: numValue.start, end: numValue.end };
+                        value = numValue;
+                    }
+                    break;
+            }
+            if (!bounds) {
+                return null;
+            }
+            const bytes = parser.sliceCharCodes(bounds.start, bounds.end);
+            if (!bytes.length) {
+                throw new Error("Object byte array is empty");
+            }
+            return {
+                parser: new dataParserConstructor(bytes),
+                bounds: {
+                    start: 0,
+                    end: bytes.length - 1,
+                    contentStart: bounds.contentStart
+                        ? bounds.contentStart - bounds.start
+                        : undefined,
+                    contentEnd: bounds.contentEnd
+                        ? bytes.length - 1 - (bounds.end - bounds.contentEnd)
+                        : undefined,
+                },
+                type: objectType,
+                value,
+                cryptInfo: { ref: { id, generation: 0 } },
+                streamId: this.id,
+            };
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -16303,39 +16769,53 @@ class ObjectStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const dictBounds = parser.getDictBoundsAt(start);
-        let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/N":
-                    case "/First":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Extends":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, dictBounds.contentEnd);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$L(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const dictBounds = parser.getDictBoundsAt(start);
+            let i = parser.skipToNextName(dictBounds.contentStart, dictBounds.contentEnd);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/N":
+                        case "/First":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Extends":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, dictBounds.contentEnd);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$K = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class CryptFilterDict extends PdfDict {
     constructor() {
         super(dictTypes.CRYPT_FILTER);
@@ -16344,19 +16824,21 @@ class CryptFilterDict extends PdfDict {
         this.Length = 40;
         this.EncryptMetadata = true;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new CryptFilterDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$K(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new CryptFilterDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -16389,103 +16871,119 @@ class CryptFilterDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/CFM":
-                        const method = parser.parseNameAt(i, true);
-                        if (method && Object.values(cryptMethods)
-                            .includes(method.value)) {
-                            this.CFM = method.value;
-                            i = method.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CFM property value");
-                        }
-                        break;
-                    case "/AuthEvent":
-                        const authEvent = parser.parseNameAt(i, true);
-                        if (authEvent && Object.values(authEvents)
-                            .includes(authEvent.value)) {
-                            this.AuthEvent = authEvent.value;
-                            i = authEvent.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /AuthEvent property value");
-                        }
-                        break;
-                    case "/Length":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/EncryptMetadata":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    case "/Recipients":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.STRING_HEX) {
-                            const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);
-                            if (recipient) {
-                                this.Recipients = recipient.value;
-                                i = recipient.end + 1;
-                                break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$K(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/CFM":
+                            const method = parser.parseNameAt(i, true);
+                            if (method && Object.values(cryptMethods)
+                                .includes(method.value)) {
+                                this.CFM = method.value;
+                                i = method.end + 1;
                             }
                             else {
-                                throw new Error("Can't parse /Recipients property value");
+                                throw new Error("Can't parse /CFM property value");
                             }
-                        }
-                        else if (entryType === valueTypes.ARRAY) {
-                            const recipients = HexString.parseArray(parser, i);
-                            if (recipients) {
-                                this.Recipients = recipients.value;
-                                i = recipients.end + 1;
-                                break;
+                            break;
+                        case "/AuthEvent":
+                            const authEvent = parser.parseNameAt(i, true);
+                            if (authEvent && Object.values(authEvents)
+                                .includes(authEvent.value)) {
+                                this.AuthEvent = authEvent.value;
+                                i = authEvent.end + 1;
                             }
                             else {
-                                throw new Error("Can't parse /Recipients property value");
+                                throw new Error("Can't parse /AuthEvent property value");
                             }
-                        }
-                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            break;
+                        case "/Length":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/EncryptMetadata":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        case "/Recipients":
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.STRING_HEX) {
+                                const recipient = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
+                                if (recipient) {
+                                    this.Recipients = recipient.value;
+                                    i = recipient.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error("Can't parse /Recipients property value");
+                                }
+                            }
+                            else if (entryType === valueTypes.ARRAY) {
+                                const recipients = yield HexString.parseArrayAsync(parser, i);
+                                if (recipients) {
+                                    this.Recipients = recipients.value;
+                                    i = recipients.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error("Can't parse /Recipients property value");
+                                }
+                            }
+                            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$J = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class CryptMapDict extends PdfDict {
     constructor() {
         super(null);
         this._filtersMap = new Map();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new CryptMapDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$J(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new CryptMapDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     getProp(name) {
         return this._filtersMap.get(name);
@@ -16504,44 +17002,58 @@ class CryptMapDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    default:
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.DICTIONARY) {
-                            const dictBounds = parser.getDictBoundsAt(i);
-                            if (dictBounds) {
-                                const filter = CryptFilterDict.parse({ parser, bounds: dictBounds });
-                                if (filter) {
-                                    this._filtersMap.set(name, filter.value);
-                                    i = filter.end + 1;
-                                    break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$J(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        default:
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.DICTIONARY) {
+                                const dictBounds = parser.getDictBoundsAt(i);
+                                if (dictBounds) {
+                                    const filter = yield CryptFilterDict.parseAsync({ parser, bounds: dictBounds });
+                                    if (filter) {
+                                        this._filtersMap.set(name, filter.value);
+                                        i = filter.end + 1;
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
+var __awaiter$I = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class EncryptionDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
@@ -16551,19 +17063,21 @@ class EncryptionDict extends PdfDict {
         this.StrF = "/Identity";
         this.EncryptMetadata = true;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new EncryptionDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$I(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new EncryptionDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -16658,152 +17172,168 @@ class EncryptionDict extends PdfDict {
             perms: (_j = this.Perms) === null || _j === void 0 ? void 0 : _j.bytes,
         };
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a, _b;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Filter":
-                    case "/SubFilter":
-                    case "/StmF":
-                    case "/StrF":
-                    case "/EFF":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    case "/V":
-                        const algorithm = parser.parseNumberAt(i, false);
-                        if (algorithm && Object.values(cryptVersions)
-                            .includes(algorithm.value)) {
-                            this.V = algorithm.value;
-                            i = algorithm.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /V property value");
-                        }
-                        break;
-                    case "/R":
-                        const revision = parser.parseNumberAt(i, false);
-                        if (revision && Object.values(cryptRevisions)
-                            .includes(revision.value)) {
-                            this.R = revision.value;
-                            i = revision.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /R property value");
-                        }
-                        break;
-                    case "/Length":
-                    case "/P":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/O":
-                    case "/U":
-                    case "/OE":
-                    case "/UE":
-                    case "/Perms":
-                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/EncryptMetadata":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    case "/CF":
-                        const dictBounds = parser.getDictBoundsAt(i);
-                        if (bounds) {
-                            const cryptMap = CryptMapDict.parse({ parser, bounds: dictBounds });
-                            if (cryptMap) {
-                                this.CF = cryptMap.value;
-                                i = cryptMap.end + 1;
-                            }
-                        }
-                        else {
-                            throw new Error("Can't parse /CF property value");
-                        }
-                        break;
-                    case "/Recipients":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.STRING_HEX) {
-                            const recipient = HexString.parse(parser, i, parseInfo.cryptInfo);
-                            if (recipient) {
-                                this.Recipients = recipient.value;
-                                i = recipient.end + 1;
-                                break;
+        return __awaiter$I(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Filter":
+                        case "/SubFilter":
+                        case "/StmF":
+                        case "/StrF":
+                        case "/EFF":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        case "/V":
+                            const algorithm = parser.parseNumberAt(i, false);
+                            if (algorithm && Object.values(cryptVersions)
+                                .includes(algorithm.value)) {
+                                this.V = algorithm.value;
+                                i = algorithm.end + 1;
                             }
                             else {
-                                throw new Error("Can't parse /Recipients property value");
+                                throw new Error("Can't parse /V property value");
                             }
-                        }
-                        else if (entryType === valueTypes.ARRAY) {
-                            const recipients = HexString.parseArray(parser, i);
-                            if (recipients) {
-                                this.Recipients = recipients.value;
-                                i = recipients.end + 1;
-                                break;
+                            break;
+                        case "/R":
+                            const revision = parser.parseNumberAt(i, false);
+                            if (revision && Object.values(cryptRevisions)
+                                .includes(revision.value)) {
+                                this.R = revision.value;
+                                i = revision.end + 1;
                             }
                             else {
-                                throw new Error("Can't parse /Recipients property value");
+                                throw new Error("Can't parse /R property value");
                             }
-                        }
-                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            break;
+                        case "/Length":
+                        case "/P":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/O":
+                        case "/U":
+                        case "/OE":
+                        case "/UE":
+                        case "/Perms":
+                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/EncryptMetadata":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        case "/CF":
+                            const dictBounds = parser.getDictBoundsAt(i);
+                            if (bounds) {
+                                const cryptMap = yield CryptMapDict.parseAsync({ parser, bounds: dictBounds });
+                                if (cryptMap) {
+                                    this.CF = cryptMap.value;
+                                    i = cryptMap.end + 1;
+                                }
+                            }
+                            else {
+                                throw new Error("Can't parse /CF property value");
+                            }
+                            break;
+                        case "/Recipients":
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.STRING_HEX) {
+                                const recipient = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
+                                if (recipient) {
+                                    this.Recipients = recipient.value;
+                                    i = recipient.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error("Can't parse /Recipients property value");
+                                }
+                            }
+                            else if (entryType === valueTypes.ARRAY) {
+                                const recipients = yield HexString.parseArrayAsync(parser, i);
+                                if (recipients) {
+                                    this.Recipients = recipients.value;
+                                    i = recipients.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error("Can't parse /Recipients property value");
+                                }
+                            }
+                            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Filter) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Filter) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (this.Filter === "/Standard"
-            && (!this.R
-                || !this.O
-                || !this.U
-                || isNaN(this.P)
-                || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms)))) {
-            throw new Error("Not all required properties parsed");
-        }
-        if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
-            && !this.Recipients) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (this.StrF !== "/Identity") {
-            this.stringFilter = (_a = this.CF) === null || _a === void 0 ? void 0 : _a.getProp(this.StrF);
-        }
-        if (this.StmF !== "/Identity") {
-            this.streamFilter = (_b = this.CF) === null || _b === void 0 ? void 0 : _b.getProp(this.StmF);
-        }
+            if (this.Filter === "/Standard"
+                && (!this.R
+                    || !this.O
+                    || !this.U
+                    || isNaN(this.P)
+                    || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms)))) {
+                throw new Error("Not all required properties parsed");
+            }
+            if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
+                && !this.Recipients) {
+                throw new Error("Not all required properties parsed");
+            }
+            if (this.StrF !== "/Identity") {
+                this.stringFilter = (_a = this.CF) === null || _a === void 0 ? void 0 : _a.getProp(this.StrF);
+            }
+            if (this.StmF !== "/Identity") {
+                this.streamFilter = (_b = this.CF) === null || _b === void 0 ? void 0 : _b.getProp(this.StmF);
+            }
+        });
     }
 }
 
+var __awaiter$H = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TrailerDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new TrailerDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$H(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new TrailerDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -16834,77 +17364,91 @@ class TrailerDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Size":
-                    case "/Prev":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Root":
-                    case "/Info":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Encrypt":
-                        const entryType = parser.getValueTypeAt(i);
-                        if (entryType === valueTypes.REF) {
-                            const encryptId = ObjectId.parseRef(parser, i);
-                            if (encryptId) {
-                                this.Encrypt = encryptId.value;
-                                i = encryptId.end + 1;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$H(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Size":
+                        case "/Prev":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Root":
+                        case "/Info":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Encrypt":
+                            const entryType = parser.getValueTypeAt(i);
+                            if (entryType === valueTypes.REF) {
+                                const encryptId = yield ObjectId.parseRefAsync(parser, i);
+                                if (encryptId) {
+                                    this.Encrypt = encryptId.value;
+                                    i = encryptId.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error("Can't parse /Encrypt property value");
+                                }
+                            }
+                            throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
+                        case "/ID":
+                            const hexIds = yield HexString.parseArrayAsync(parser, i);
+                            if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+                                this.ID = [
+                                    hexIds.value[0],
+                                    hexIds.value[1],
+                                ];
+                                i = hexIds.end + 1;
                                 break;
                             }
-                            else {
-                                throw new Error("Can't parse /Encrypt property value");
+                            const literalIds = yield LiteralString.parseArrayAsync(parser, i);
+                            if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+                                this.ID = [
+                                    HexString.fromHexBytes(literalIds.value[0].bytes),
+                                    HexString.fromHexBytes(literalIds.value[1].bytes),
+                                ];
+                                i = literalIds.end + 1;
+                                break;
                             }
-                        }
-                        throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                    case "/ID":
-                        const hexIds = HexString.parseArray(parser, i);
-                        if (hexIds && hexIds.value[0] && hexIds.value[1]) {
-                            this.ID = [
-                                hexIds.value[0],
-                                hexIds.value[1],
-                            ];
-                            i = hexIds.end + 1;
+                            throw new Error("Can't parse /ID property value");
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
                             break;
-                        }
-                        const literalIds = LiteralString.parseArray(parser, i);
-                        if (literalIds && literalIds.value[0] && literalIds.value[1]) {
-                            this.ID = [
-                                HexString.fromHexBytes(literalIds.value[0].bytes),
-                                HexString.fromHexBytes(literalIds.value[1].bytes),
-                            ];
-                            i = literalIds.end + 1;
-                            break;
-                        }
-                        throw new Error("Can't parse /ID property value");
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Size || !this.Root || (this.Encrypt && !this.ID)) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
 }
 
+var __awaiter$G = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class XRefTable extends XRef {
     constructor(table, trailer, offset) {
         super(xRefTypes.TABLE);
@@ -16959,29 +17503,31 @@ class XRefTable extends XRef {
         const table = new XRefTable(data, trailer, offset);
         return table;
     }
-    static parse(parser, start, offset) {
-        if (!parser || isNaN(start)) {
-            return null;
-        }
-        const xrefTableBounds = parser.getXrefTableBoundsAt(start);
-        if (!xrefTableBounds) {
-            return null;
-        }
-        const trailerDictBounds = parser.getDictBoundsAt(xrefTableBounds.end + 1);
-        if (!trailerDictBounds) {
-            return null;
-        }
-        const table = parser.sliceCharCodes(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
-        const trailerDict = TrailerDict.parse({ parser, bounds: trailerDictBounds });
-        if (!trailerDict) {
-            return null;
-        }
-        const xrefTable = new XRefTable(table, trailerDict.value, offset);
-        return {
-            value: xrefTable,
-            start: null,
-            end: null,
-        };
+    static parseAsync(parser, start, offset) {
+        return __awaiter$G(this, void 0, void 0, function* () {
+            if (!parser || isNaN(start)) {
+                return null;
+            }
+            const xrefTableBounds = parser.getXrefTableBoundsAt(start);
+            if (!xrefTableBounds) {
+                return null;
+            }
+            const trailerDictBounds = parser.getDictBoundsAt(xrefTableBounds.end + 1);
+            if (!trailerDictBounds) {
+                return null;
+            }
+            const table = parser.sliceCharCodes(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
+            const trailerDict = yield TrailerDict.parseAsync({ parser, bounds: trailerDictBounds });
+            if (!trailerDict) {
+                return null;
+            }
+            const xrefTable = new XRefTable(table, trailerDict.value, offset);
+            return {
+                value: xrefTable,
+                start: null,
+                end: null,
+            };
+        });
     }
     createUpdate(entries, offset) {
         return XRefTable.createFrom(this, entries, offset);
@@ -17005,6 +17551,15 @@ class XRefTable extends XRef {
     }
 }
 
+var __awaiter$F = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class XrefParser {
     constructor(parser) {
         if (!parser) {
@@ -17035,53 +17590,57 @@ class XrefParser {
         }
         return xrefIndex;
     }
-    parseXref(start, max) {
-        if (!start) {
-            return null;
-        }
-        const offset = start;
-        const xrefTableIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
-        if (xrefTableIndex && xrefTableIndex.start === start) {
-            const xrefStmIndexProp = this._dataParser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
-            if (xrefStmIndexProp) {
-                const streamXrefIndex = this._dataParser.parseNumberAt(xrefStmIndexProp.end + 1);
-                if (!streamXrefIndex) {
-                    return null;
+    parseXrefAsync(start, max) {
+        return __awaiter$F(this, void 0, void 0, function* () {
+            if (!start) {
+                return null;
+            }
+            const offset = start;
+            const xrefTableIndex = this._dataParser.findSubarrayIndex(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
+            if (xrefTableIndex && xrefTableIndex.start === start) {
+                const xrefStmIndexProp = this._dataParser.findSubarrayIndex(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
+                if (xrefStmIndexProp) {
+                    const streamXrefIndex = this._dataParser.parseNumberAt(xrefStmIndexProp.end + 1);
+                    if (!streamXrefIndex) {
+                        return null;
+                    }
+                    start = streamXrefIndex.value;
                 }
-                start = streamXrefIndex.value;
+                else {
+                    const xrefTable = yield XRefTable.parseAsync(this._dataParser, start, offset);
+                    return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
+                }
             }
-            else {
-                const xrefTable = XRefTable.parse(this._dataParser, start, offset);
-                return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
+            const id = yield ObjectId.parseAsync(this._dataParser, start, false);
+            if (!id) {
+                return null;
             }
-        }
-        const id = ObjectId.parse(this._dataParser, start, false);
-        if (!id) {
-            return null;
-        }
-        const xrefStreamBounds = this._dataParser.getIndirectObjectBoundsAt(id.end + 1);
-        if (!xrefStreamBounds) {
-            return null;
-        }
-        const xrefStream = XRefStream.parse({ parser: this._dataParser, bounds: xrefStreamBounds }, offset);
-        return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
+            const xrefStreamBounds = this._dataParser.getIndirectObjectBoundsAt(id.end + 1);
+            if (!xrefStreamBounds) {
+                return null;
+            }
+            const xrefStream = yield XRefStream.parseAsync({ parser: this._dataParser, bounds: xrefStreamBounds }, offset);
+            return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
+        });
     }
-    parseAllXrefs(start) {
-        const xrefs = [];
-        let max = this._dataParser.maxIndex;
-        let xref;
-        while (start) {
-            xref = this.parseXref(start, max);
-            if (xref) {
-                xrefs.push(xref);
-                max = start;
-                start = xref.prev;
+    parseAllXrefsAsync(start) {
+        return __awaiter$F(this, void 0, void 0, function* () {
+            const xrefs = [];
+            let max = this._dataParser.maxIndex;
+            let xref;
+            while (start) {
+                xref = yield this.parseXrefAsync(start, max);
+                if (xref) {
+                    xrefs.push(xref);
+                    max = start;
+                    start = xref.prev;
+                }
+                else {
+                    break;
+                }
             }
-            else {
-                break;
-            }
-        }
-        return xrefs;
+            return xrefs;
+        });
     }
 }
 
@@ -17207,23 +17766,34 @@ class ReferenceData {
     }
 }
 
+var __awaiter$E = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class CatalogDict extends PdfDict {
     constructor() {
         super(dictTypes.CATALOG);
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new CatalogDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$E(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new CatalogDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17245,62 +17815,78 @@ class CatalogDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Version":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    case "/Pages":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Lang":
-                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$E(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Version":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        case "/Pages":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Lang":
+                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Pages) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Pages) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
 }
 
+var __awaiter$D = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PageDict extends PdfDict {
     constructor() {
         super(dictTypes.PAGE);
         this.Rotate = 0;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new PageDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$D(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new PageDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17391,149 +17977,165 @@ class PageDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Parent":
-                    case "/Thumb":
-                    case "/Metadata":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/LastModified":
-                        i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/Resources":
-                        const resEntryType = parser.getValueTypeAt(i);
-                        if (resEntryType === valueTypes.REF) {
-                            const resDictId = ObjectId.parseRef(parser, i);
-                            if (resDictId && parseInfo.parseInfoGetter) {
-                                this.Resources = parser.sliceCharCodes(resDictId.start, resDictId.end);
-                                i = resDictId.end + 1;
-                                break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$D(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Parent":
+                        case "/Thumb":
+                        case "/Metadata":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/LastModified":
+                            i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/Resources":
+                            const resEntryType = parser.getValueTypeAt(i);
+                            if (resEntryType === valueTypes.REF) {
+                                const resDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (resDictId && parseInfo.parseInfoGetterAsync) {
+                                    this.Resources = parser.sliceCharCodes(resDictId.start, resDictId.end);
+                                    i = resDictId.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /Resources value reference");
                             }
-                            throw new Error("Can't parse /Resources value reference");
-                        }
-                        else if (resEntryType === valueTypes.DICTIONARY) {
-                            const resDictBounds = parser.getDictBoundsAt(i);
-                            if (resDictBounds) {
-                                this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
-                                i = resDictBounds.end + 1;
-                                break;
+                            else if (resEntryType === valueTypes.DICTIONARY) {
+                                const resDictBounds = parser.getDictBoundsAt(i);
+                                if (resDictBounds) {
+                                    this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
+                                    i = resDictBounds.end + 1;
+                                    break;
+                                }
+                                throw new Error("Can't parse /Resources dictionary bounds");
                             }
-                            throw new Error("Can't parse /Resources dictionary bounds");
-                        }
-                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
-                    case "/MediaBox":
-                    case "/CropBox":
-                    case "/BleedBox":
-                    case "/TrimBox":
-                    case "/ArtBox":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/Contents":
-                    case "/B":
-                    case "/Annots":
-                        const refEntryType = parser.getValueTypeAt(i);
-                        if (refEntryType === valueTypes.REF) {
-                            const refArrayId = ObjectId.parseRef(parser, i);
-                            if (refArrayId) {
-                                this[name.slice(1)] = refArrayId.value;
-                                i = refArrayId.end + 1;
-                                break;
+                            throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
+                        case "/MediaBox":
+                        case "/CropBox":
+                        case "/BleedBox":
+                        case "/TrimBox":
+                        case "/ArtBox":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/Contents":
+                        case "/B":
+                        case "/Annots":
+                            const refEntryType = parser.getValueTypeAt(i);
+                            if (refEntryType === valueTypes.REF) {
+                                const refArrayId = yield ObjectId.parseRefAsync(parser, i);
+                                if (refArrayId) {
+                                    this[name.slice(1)] = refArrayId.value;
+                                    i = refArrayId.end + 1;
+                                    break;
+                                }
                             }
-                        }
-                        else if (refEntryType === valueTypes.ARRAY) {
-                            const refIds = ObjectId.parseRefArray(parser, i);
-                            if (refIds) {
-                                this[name.slice(1)] = refIds.value;
-                                i = refIds.end + 1;
-                                break;
+                            else if (refEntryType === valueTypes.ARRAY) {
+                                const refIds = yield ObjectId.parseRefArrayAsync(parser, i);
+                                if (refIds) {
+                                    this[name.slice(1)] = refIds.value;
+                                    i = refIds.end + 1;
+                                    break;
+                                }
                             }
-                        }
-                        throw new Error(`Unsupported ${name} property value type: ${refEntryType}`);
-                    case "/Rotate":
-                    case "/Dur":
-                    case "/StructParent":
-                    case "/PZ":
-                    case "/UserUnit":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/ID":
-                        const webCaptureIdEntryType = parser.getValueTypeAt(i);
-                        if (webCaptureIdEntryType === valueTypes.REF) {
-                            const webCaptureRefId = ObjectId.parseRef(parser, i);
-                            if (webCaptureRefId) {
-                                if (webCaptureRefId && parseInfo.parseInfoGetter) {
-                                    const webCaptureIdParseInfo = parseInfo.parseInfoGetter(webCaptureRefId.value.id);
-                                    if (webCaptureIdParseInfo) {
-                                        const webCaptureId = HexString.parse(webCaptureIdParseInfo.parser, webCaptureIdParseInfo.bounds.start, webCaptureIdParseInfo.cryptInfo);
-                                        if (webCaptureId) {
-                                            this.ID = webCaptureId.value;
-                                            i = webCaptureRefId.end + 1;
-                                            break;
+                            throw new Error(`Unsupported ${name} property value type: ${refEntryType}`);
+                        case "/Rotate":
+                        case "/Dur":
+                        case "/StructParent":
+                        case "/PZ":
+                        case "/UserUnit":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/ID":
+                            const webCaptureIdEntryType = parser.getValueTypeAt(i);
+                            if (webCaptureIdEntryType === valueTypes.REF) {
+                                const webCaptureRefId = yield ObjectId.parseRefAsync(parser, i);
+                                if (webCaptureRefId) {
+                                    if (webCaptureRefId && parseInfo.parseInfoGetterAsync) {
+                                        const webCaptureIdParseInfo = yield parseInfo.parseInfoGetterAsync(webCaptureRefId.value.id);
+                                        if (webCaptureIdParseInfo) {
+                                            const webCaptureId = yield HexString.parseAsync(webCaptureIdParseInfo.parser, webCaptureIdParseInfo.bounds.start, webCaptureIdParseInfo.cryptInfo);
+                                            if (webCaptureId) {
+                                                this.ID = webCaptureId.value;
+                                                i = webCaptureRefId.end + 1;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
+                                throw new Error("Can't parse /ID property value");
                             }
-                            throw new Error("Can't parse /ID property value");
-                        }
-                        else if (webCaptureIdEntryType === valueTypes.STRING_HEX) {
-                            const webCaptureId = HexString.parse(parser, i, parseInfo.cryptInfo);
-                            if (webCaptureId) {
-                                this.ID = webCaptureId.value;
-                                i = webCaptureId.end + 1;
-                                break;
+                            else if (webCaptureIdEntryType === valueTypes.STRING_HEX) {
+                                const webCaptureId = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
+                                if (webCaptureId) {
+                                    this.ID = webCaptureId.value;
+                                    i = webCaptureId.end + 1;
+                                    break;
+                                }
                             }
-                        }
-                        throw new Error(`Unsupported /ID property value type: ${webCaptureIdEntryType}`);
-                    case "/Tabs":
-                    case "/TemplateInstantiated":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /ID property value type: ${webCaptureIdEntryType}`);
+                        case "/Tabs":
+                        case "/TemplateInstantiated":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Parent) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Parent) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
 }
 
+var __awaiter$C = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PageTreeDict extends PdfDict {
     constructor() {
         super(dictTypes.PAGE_TREE);
         this.Rotate = 0;
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new PageTreeDict();
-            pdfObject.parseProps(parseInfo);
-            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$C(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new PageTreeDict();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17561,45 +18163,50 @@ class PageTreeDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Parent":
-                        i = this.parseRefProp(name, parser, i);
-                        break;
-                    case "/Kids":
-                        i = this.parseRefArrayProp(name, parser, i);
-                        break;
-                    case "/Count":
-                    case "/Rotate":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/MediaBox":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$C(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Parent":
+                            i = yield this.parseRefPropAsync(name, parser, i);
+                            break;
+                        case "/Kids":
+                            i = yield this.parseRefArrayPropAsync(name, parser, i);
+                            break;
+                        case "/Count":
+                        case "/Rotate":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/MediaBox":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Kids || isNaN(this.Count)) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Kids || isNaN(this.Count)) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
 }
 
@@ -20397,6 +21004,15 @@ const standardStampCreationInfos = {
     },
 };
 
+var __awaiter$B = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class StampAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.STAMP);
@@ -20495,23 +21111,25 @@ class StampAnnotation extends MarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new StampAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$B(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new StampAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -20552,35 +21170,40 @@ class StampAnnotation extends MarkupAnnotation {
             stampImageData: null,
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Name":
-                        i = this.parseNameProp(name, parser, i);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$B(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Name":
+                            i = yield this.parseNamePropAsync(name, parser, i);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Name) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Name) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
     initProxy() {
         return super.initProxy();
@@ -20590,6 +21213,15 @@ class StampAnnotation extends MarkupAnnotation {
     }
 }
 
+var __awaiter$A = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 const textNoteForms = {
     NOTE: `25 10 m
   175 10 l
@@ -20707,23 +21339,25 @@ class TextAnnotation extends MarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new TextAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$A(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new TextAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -20772,66 +21406,71 @@ class TextAnnotation extends MarkupAnnotation {
             textNoteStateModel: this.StateModel,
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Open":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    case "/Name":
-                        const iconType = parser.parseNameAt(i, true);
-                        if (iconType && Object.values(annotationIconTypes)
-                            .includes(iconType.value)) {
-                            this.Name = iconType.value;
-                            i = iconType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Name property value");
-                        }
-                        break;
-                    case "/State":
-                        const state = parser.parseNameAt(i, true);
-                        if (state && Object.values(annotationMarkedStates)
-                            .concat(Object.values(annotationReviewStates))
-                            .includes(state.value)) {
-                            this.State = state.value;
-                            i = state.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /State property value");
-                        }
-                        break;
-                    case "/StateModel":
-                        const stateModelType = parser.parseNameAt(i, true);
-                        if (stateModelType && Object.values(annotationStateModelTypes)
-                            .includes(stateModelType.value)) {
-                            this.StateModel = stateModelType.value;
-                            i = stateModelType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /StateModel property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$A(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Open":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        case "/Name":
+                            const iconType = parser.parseNameAt(i, true);
+                            if (iconType && Object.values(annotationIconTypes)
+                                .includes(iconType.value)) {
+                                this.Name = iconType.value;
+                                i = iconType.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /Name property value");
+                            }
+                            break;
+                        case "/State":
+                            const state = parser.parseNameAt(i, true);
+                            if (state && Object.values(annotationMarkedStates)
+                                .concat(Object.values(annotationReviewStates))
+                                .includes(state.value)) {
+                                this.State = state.value;
+                                i = state.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /State property value");
+                            }
+                            break;
+                        case "/StateModel":
+                            const stateModelType = parser.parseNameAt(i, true);
+                            if (stateModelType && Object.values(annotationStateModelTypes)
+                                .includes(stateModelType.value)) {
+                                this.StateModel = stateModelType.value;
+                                i = stateModelType.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /StateModel property value");
+                            }
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
     renderHandles() {
         return [];
@@ -20844,7 +21483,7 @@ class TextAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -20884,23 +21523,25 @@ class InkAnnotation extends MarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new InkAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$z(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new InkAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -20940,52 +21581,57 @@ class InkAnnotation extends MarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/InkList":
-                        i = parser.skipEmpty(i);
-                        const inkType = parser.getValueTypeAt(i);
-                        if (inkType === valueTypes.ARRAY) {
-                            const inkList = [];
-                            let inkArrayPos = ++i;
-                            while (true) {
-                                const sublist = parser.parseNumberArrayAt(inkArrayPos);
-                                if (!sublist) {
-                                    break;
+        return __awaiter$z(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/InkList":
+                            i = parser.skipEmpty(i);
+                            const inkType = parser.getValueTypeAt(i);
+                            if (inkType === valueTypes.ARRAY) {
+                                const inkList = [];
+                                let inkArrayPos = ++i;
+                                while (true) {
+                                    const sublist = parser.parseNumberArrayAt(inkArrayPos);
+                                    if (!sublist) {
+                                        break;
+                                    }
+                                    inkList.push(sublist.value);
+                                    inkArrayPos = sublist.end + 1;
                                 }
-                                inkList.push(sublist.value);
-                                inkArrayPos = sublist.end + 1;
+                                this.InkList = inkList;
+                                break;
                             }
-                            this.InkList = inkList;
+                            throw new Error("Can't parse /InkList property value");
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
                             break;
-                        }
-                        throw new Error("Can't parse /InkList property value");
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
-            throw new Error("Not all required properties parsed");
-        }
-        this.bakeRotationAsync();
+            yield this.bakeRotationAsync();
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -21029,7 +21675,7 @@ class InkAnnotation extends MarkupAnnotation {
     }
     applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$z(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             let x;
             let y;
@@ -21077,7 +21723,7 @@ class InkAnnotation extends MarkupAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$s(this, void 0, void 0, function* () {
+                    ? () => __awaiter$z(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -21086,7 +21732,7 @@ class InkAnnotation extends MarkupAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$z(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -21180,6 +21826,15 @@ function buildCloudCurveFromEllipse(rx, ry, maxArcSize, matrix) {
     return curveData;
 }
 
+var __awaiter$y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
@@ -21198,36 +21853,41 @@ class GeometricAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/IC":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$y(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/IC":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
 }
 
-var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$x = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21268,23 +21928,25 @@ class SquareAnnotation extends GeometricAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new SquareAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$x(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new SquareAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -21325,32 +21987,37 @@ class SquareAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/RD":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$x(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/RD":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
     generateApStream(bbox, matrix) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -21434,7 +22101,7 @@ class SquareAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$x(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
             const stream = dict.apStream;
@@ -21446,7 +22113,7 @@ class SquareAnnotation extends GeometricAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$r(this, void 0, void 0, function* () {
+                    ? () => __awaiter$x(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -21463,7 +22130,7 @@ class SquareAnnotation extends GeometricAnnotation {
 }
 SquareAnnotation.cloudArcSize = 20;
 
-var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$w = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21504,23 +22171,25 @@ class CircleAnnotation extends GeometricAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new CircleAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$w(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new CircleAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -21561,32 +22230,37 @@ class CircleAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/RD":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$w(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/RD":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
+        });
     }
     generateApStream(bbox, matrix) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -21681,7 +22355,7 @@ class CircleAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$w(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
             const stream = dict.apStream;
@@ -21693,7 +22367,7 @@ class CircleAnnotation extends GeometricAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$q(this, void 0, void 0, function* () {
+                    ? () => __awaiter$w(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -21710,6 +22384,15 @@ class CircleAnnotation extends GeometricAnnotation {
 }
 CircleAnnotation.cloudArcSize = 20;
 
+var __awaiter$v = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class PolyAnnotation extends GeometricAnnotation {
     constructor(type) {
         super(type);
@@ -21734,79 +22417,84 @@ class PolyAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/Vertices":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/IT":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent) {
-                            if (Object.values(polyIntents).includes(intent.value)) {
-                                this.IT = intent.value;
-                                i = intent.end + 1;
-                                break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$v(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/Vertices":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/IT":
+                            const intent = parser.parseNameAt(i, true);
+                            if (intent) {
+                                if (Object.values(polyIntents).includes(intent.value)) {
+                                    this.IT = intent.value;
+                                    i = intent.end + 1;
+                                    break;
+                                }
                             }
-                        }
-                        throw new Error("Can't parse /IT property value");
-                    case "/Measure":
-                        const measureEntryType = parser.getValueTypeAt(i);
-                        if (measureEntryType === valueTypes.REF) {
-                            const measureDictId = ObjectId.parseRef(parser, i);
-                            if (measureDictId && parseInfo.parseInfoGetter) {
-                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
-                                if (measureParseInfo) {
-                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                            throw new Error("Can't parse /IT property value");
+                        case "/Measure":
+                            const measureEntryType = parser.getValueTypeAt(i);
+                            if (measureEntryType === valueTypes.REF) {
+                                const measureDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                                    const measureParseInfo = yield parseInfo.parseInfoGetterAsync(measureDictId.value.id);
+                                    if (measureParseInfo) {
+                                        const measureDict = yield MeasureDict.parseAsync(measureParseInfo);
+                                        if (measureDict) {
+                                            this.Measure = measureDict.value;
+                                            i = measureDict.end + 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                throw new Error("Can't parse /Measure value reference");
+                            }
+                            else if (measureEntryType === valueTypes.DICTIONARY) {
+                                const measureDictBounds = parser.getDictBoundsAt(i);
+                                if (measureDictBounds) {
+                                    const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
                                     if (measureDict) {
                                         this.Measure = measureDict.value;
                                         i = measureDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /Measure value dictionary");
                             }
-                            throw new Error("Can't parse /Measure value reference");
-                        }
-                        else if (measureEntryType === valueTypes.DICTIONARY) {
-                            const measureDictBounds = parser.getDictBoundsAt(i);
-                            if (measureDictBounds) {
-                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
-                                if (measureDict) {
-                                    this.Measure = measureDict.value;
-                                    i = measureDict.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Measure value dictionary");
-                        }
-                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.Vertices) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.Vertices) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
 }
 
-var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21849,23 +22537,25 @@ class PolygonAnnotation extends PolyAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new PolygonAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$u(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new PolygonAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -21896,9 +22586,14 @@ class PolygonAnnotation extends PolyAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        this.bakeRotationAsync();
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$u(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            yield this.bakeRotationAsync();
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -21959,7 +22654,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
     applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             let x;
             let y;
@@ -22009,7 +22704,7 @@ class PolygonAnnotation extends PolyAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$p(this, void 0, void 0, function* () {
+                    ? () => __awaiter$u(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -22018,7 +22713,7 @@ class PolygonAnnotation extends PolyAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -22038,7 +22733,7 @@ class PolygonAnnotation extends PolyAnnotation {
 }
 PolygonAnnotation.cloudArcSize = 20;
 
-var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22081,23 +22776,25 @@ class PolylineAnnotation extends PolyAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new PolylineAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$t(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new PolylineAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -22138,45 +22835,50 @@ class PolylineAnnotation extends PolyAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/LE":
-                        const lineEndings = parser.parseNameArrayAt(i, true);
-                        if (lineEndings
-                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
-                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
-                            this.LE = [
-                                lineEndings.value[0],
-                                lineEndings.value[1],
-                            ];
-                            i = lineEndings.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LE property value");
-                        }
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$t(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/LE":
+                            const lineEndings = parser.parseNameArrayAt(i, true);
+                            if (lineEndings
+                                && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                                && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                                this.LE = [
+                                    lineEndings.value[0],
+                                    lineEndings.value[1],
+                                ];
+                                i = lineEndings.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /LE property value");
+                            }
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
-            }
-        }
-        this.bakeRotationAsync();
+            yield this.bakeRotationAsync();
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -22220,7 +22922,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
     applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$o(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             let x;
             let y;
@@ -22267,7 +22969,7 @@ class PolylineAnnotation extends PolyAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$o(this, void 0, void 0, function* () {
+                    ? () => __awaiter$t(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -22276,7 +22978,7 @@ class PolylineAnnotation extends PolyAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$o(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -22328,7 +23030,7 @@ class SvgTempPath {
     }
 }
 
-var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22427,7 +23129,7 @@ class LineAnnotation extends GeometricAnnotation {
         return marginMin;
     }
     static createFromDtoAsync(dto, fontMap) {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (dto.annotationType !== "/Line") {
                 throw new Error("Invalid annotation type");
             }
@@ -22464,24 +23166,26 @@ class LineAnnotation extends GeometricAnnotation {
             return annotation.initProxy();
         });
     }
-    static parse(parseInfo, fontMap) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new LineAnnotation();
-            pdfObject.parseProps(parseInfo);
-            pdfObject._fontMap = fontMap;
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo, fontMap) {
+        return __awaiter$s(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new LineAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                pdfObject._fontMap = fontMap;
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -22560,126 +23264,131 @@ class LineAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             setTextContentAsync: { get: () => super.setTextContentAsync }
         });
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             yield _super.setTextContentAsync.call(this, text, undoable);
             yield this.updateStreamAsync();
         });
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/L":
-                    case "/CO":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/LE":
-                        const lineEndings = parser.parseNameArrayAt(i, true);
-                        if (lineEndings
-                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
-                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
-                            this.LE = [
-                                lineEndings.value[0],
-                                lineEndings.value[1],
-                            ];
-                            i = lineEndings.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LE property value");
-                        }
-                        break;
-                    case "/IT":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent) {
-                            if (Object.values(lineIntents).includes(intent.value)) {
-                                this.IT = intent.value;
-                                i = intent.end + 1;
-                                break;
+        return __awaiter$s(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/L":
+                        case "/CO":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/LE":
+                            const lineEndings = parser.parseNameArrayAt(i, true);
+                            if (lineEndings
+                                && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                                && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                                this.LE = [
+                                    lineEndings.value[0],
+                                    lineEndings.value[1],
+                                ];
+                                i = lineEndings.end + 1;
                             }
-                        }
-                        throw new Error("Can't parse /IT property value");
-                    case "/CP":
-                        const captionPosition = parser.parseNameAt(i, true);
-                        if (captionPosition && Object.values(lineCaptionPositions)
-                            .includes(captionPosition.value)) {
-                            this.CP = captionPosition.value;
-                            i = captionPosition.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /CP property value");
-                        }
-                        break;
-                    case "/LL":
-                    case "/LLE":
-                    case "/LLO":
-                        i = this.parseNumberProp(name, parser, i, false);
-                        break;
-                    case "/Cap":
-                        i = this.parseBoolProp(name, parser, i);
-                        break;
-                    case "/Measure":
-                        const measureEntryType = parser.getValueTypeAt(i);
-                        if (measureEntryType === valueTypes.REF) {
-                            const measureDictId = ObjectId.parseRef(parser, i);
-                            if (measureDictId && parseInfo.parseInfoGetter) {
-                                const measureParseInfo = parseInfo.parseInfoGetter(measureDictId.value.id);
-                                if (measureParseInfo) {
-                                    const measureDict = MeasureDict.parse(measureParseInfo);
+                            else {
+                                throw new Error("Can't parse /LE property value");
+                            }
+                            break;
+                        case "/IT":
+                            const intent = parser.parseNameAt(i, true);
+                            if (intent) {
+                                if (Object.values(lineIntents).includes(intent.value)) {
+                                    this.IT = intent.value;
+                                    i = intent.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /IT property value");
+                        case "/CP":
+                            const captionPosition = parser.parseNameAt(i, true);
+                            if (captionPosition && Object.values(lineCaptionPositions)
+                                .includes(captionPosition.value)) {
+                                this.CP = captionPosition.value;
+                                i = captionPosition.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /CP property value");
+                            }
+                            break;
+                        case "/LL":
+                        case "/LLE":
+                        case "/LLO":
+                            i = yield this.parseNumberPropAsync(name, parser, i, false);
+                            break;
+                        case "/Cap":
+                            i = yield this.parseBoolPropAsync(name, parser, i);
+                            break;
+                        case "/Measure":
+                            const measureEntryType = parser.getValueTypeAt(i);
+                            if (measureEntryType === valueTypes.REF) {
+                                const measureDictId = yield ObjectId.parseRefAsync(parser, i);
+                                if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                                    const measureParseInfo = yield parseInfo.parseInfoGetterAsync(measureDictId.value.id);
+                                    if (measureParseInfo) {
+                                        const measureDict = yield MeasureDict.parseAsync(measureParseInfo);
+                                        if (measureDict) {
+                                            this.Measure = measureDict.value;
+                                            i = measureDict.end + 1;
+                                            break;
+                                        }
+                                    }
+                                }
+                                throw new Error("Can't parse /BS value reference");
+                            }
+                            else if (measureEntryType === valueTypes.DICTIONARY) {
+                                const measureDictBounds = parser.getDictBoundsAt(i);
+                                if (measureDictBounds) {
+                                    const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
                                     if (measureDict) {
                                         this.Measure = measureDict.value;
                                         i = measureDict.end + 1;
                                         break;
                                     }
                                 }
+                                throw new Error("Can't parse /Measure value dictionary");
                             }
-                            throw new Error("Can't parse /BS value reference");
-                        }
-                        else if (measureEntryType === valueTypes.DICTIONARY) {
-                            const measureDictBounds = parser.getDictBoundsAt(i);
-                            if (measureDictBounds) {
-                                const measureDict = MeasureDict.parse({ parser, bounds: measureDictBounds });
-                                if (measureDict) {
-                                    this.Measure = measureDict.value;
-                                    i = measureDict.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /Measure value dictionary");
-                        }
-                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (this.RC) {
+                const domParser = new DOMParser();
+                const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
+                if (body) {
+                    const style = body.getAttribute("style");
+                    const p = body.querySelector("p");
+                    this._rtStyle = style || "";
+                    this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
+                }
             }
-        }
-        if (this.RC) {
-            const domParser = new DOMParser();
-            const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
-            if (body) {
-                const style = body.getAttribute("style");
-                const p = body.querySelector("p");
-                this._rtStyle = style || "";
-                this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
-            }
-        }
+        });
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             const [x1, y1, x2, y2] = dict.L;
             const start = new Vec2(x1, y1).applyMat3(matrix);
@@ -22690,7 +23399,7 @@ class LineAnnotation extends GeometricAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$n(this, void 0, void 0, function* () {
+                    ? () => __awaiter$s(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -22699,14 +23408,14 @@ class LineAnnotation extends GeometricAnnotation {
         });
     }
     updateStreamAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             yield dict.generateApStreamAsync();
             yield dict.updateRenderAsync();
         });
     }
     calculateStreamBboxAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const [x1, y1, x2, y2] = this.L;
             const length = new Vec2(x2 - x1, y2 - y1).getMagnitude();
             const strokeWidth = this.strokeWidth;
@@ -22807,7 +23516,7 @@ class LineAnnotation extends GeometricAnnotation {
         return lineStream;
     }
     getTextStreamPartAsync(pivotPoint, font) {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             const textData = this._textData;
             if (!textData) {
                 return "";
@@ -22847,7 +23556,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
     generateApStreamAsync() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (!this.L) {
                 return;
             }
@@ -22922,6 +23631,15 @@ class LineAnnotation extends GeometricAnnotation {
     }
 }
 
+var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class TextMarkupAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
@@ -22941,41 +23659,55 @@ class TextMarkupAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/QuadPoints":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$r(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/QuadPoints":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (!this.QuadPoints) {
+                throw new Error("Not all required properties parsed");
             }
-        }
-        if (!this.QuadPoints) {
-            throw new Error("Not all required properties parsed");
-        }
+        });
     }
     renderHandles() {
         return [];
     }
 }
 
+var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class HighlightAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.HIGHLIGHT);
@@ -23021,23 +23753,25 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new HighlightAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$q(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new HighlightAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23067,8 +23801,13 @@ class HighlightAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$q(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -23125,6 +23864,15 @@ class HighlightAnnotation extends TextMarkupAnnotation {
     }
 }
 
+var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class UnderlineAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.UNDERLINE);
@@ -23173,23 +23921,25 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new UnderlineAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$p(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new UnderlineAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23219,8 +23969,13 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$p(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -23270,6 +24025,15 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
     }
 }
 
+var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class StrikeoutAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.STRIKEOUT);
@@ -23315,23 +24079,25 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new StrikeoutAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$o(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new StrikeoutAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23361,8 +24127,13 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$o(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -23420,6 +24191,15 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
     }
 }
 
+var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class SquigglyAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.SQUIGGLY);
@@ -23466,23 +24246,25 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parse(parseInfo) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new SquigglyAnnotation();
-            pdfObject.parseProps(parseInfo);
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo) {
+        return __awaiter$n(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new SquigglyAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23512,8 +24294,13 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parseProps(parseInfo) {
-        super.parseProps(parseInfo);
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
+        return __awaiter$n(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+        });
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -23872,24 +24659,26 @@ class FreeTextAnnotation extends MarkupAnnotation {
             return annotation.initProxy();
         });
     }
-    static parse(parseInfo, fontMap) {
-        if (!parseInfo) {
-            throw new Error("Parsing information not passed");
-        }
-        try {
-            const pdfObject = new FreeTextAnnotation();
-            pdfObject.parseProps(parseInfo);
-            pdfObject._fontMap = fontMap;
-            return {
-                value: pdfObject.initProxy(),
-                start: parseInfo.bounds.start,
-                end: parseInfo.bounds.end,
-            };
-        }
-        catch (e) {
-            console.log(e.message);
-            return null;
-        }
+    static parseAsync(parseInfo, fontMap) {
+        return __awaiter$m(this, void 0, void 0, function* () {
+            if (!parseInfo) {
+                throw new Error("Parsing information not passed");
+            }
+            try {
+                const pdfObject = new FreeTextAnnotation();
+                yield pdfObject.parsePropsAsync(parseInfo);
+                pdfObject._fontMap = fontMap;
+                return {
+                    value: pdfObject.initProxy(),
+                    start: parseInfo.bounds.start,
+                    end: parseInfo.bounds.end,
+                };
+            }
+            catch (e) {
+                console.log(e.message);
+                return null;
+            }
+        });
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23976,95 +24765,100 @@ class FreeTextAnnotation extends MarkupAnnotation {
             yield this.updateStreamAsync(null);
         });
     }
-    parseProps(parseInfo) {
+    parsePropsAsync(parseInfo) {
+        const _super = Object.create(null, {
+            parsePropsAsync: { get: () => super.parsePropsAsync }
+        });
         var _a;
-        super.parseProps(parseInfo);
-        const { parser, bounds } = parseInfo;
-        const start = bounds.contentStart || bounds.start;
-        const end = bounds.contentEnd || bounds.end;
-        let i = parser.skipToNextName(start, end - 1);
-        let name;
-        let parseResult;
-        while (true) {
-            parseResult = parser.parseNameAt(i);
-            if (parseResult) {
-                i = parseResult.end + 1;
-                name = parseResult.value;
-                switch (name) {
-                    case "/DA":
-                    case "/DS":
-                    case "/RC":
-                        i = this.parseLiteralProp(name, parser, i, parseInfo.cryptInfo);
-                        break;
-                    case "/Q":
-                        const justification = parser.parseNumberAt(i, true);
-                        if (justification && Object.values(justificationTypes)
-                            .includes(justification.value)) {
-                            this.Q = justification.value;
-                            i = justification.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /Q property value");
-                        }
-                        break;
-                    case "/LE":
-                        const lineEndingType = parser.parseNameAt(i, true);
-                        if (lineEndingType && Object.values(lineEndingTypes)
-                            .includes(lineEndingType.value)) {
-                            this.LE = lineEndingType.value;
-                            i = lineEndingType.end + 1;
-                        }
-                        else {
-                            throw new Error("Can't parse /LE property value");
-                        }
-                        break;
-                    case "/CL":
-                    case "/RD":
-                        i = this.parseNumberArrayProp(name, parser, i, true);
-                        break;
-                    case "/IT":
-                        const intent = parser.parseNameAt(i, true);
-                        if (intent) {
-                            if (intent.value === "/FreeTextTypewriter") {
-                                this.IT = freeTextIntents.CLICK_TO_TYPE;
-                                i = intent.end + 1;
-                                break;
+        return __awaiter$m(this, void 0, void 0, function* () {
+            yield _super.parsePropsAsync.call(this, parseInfo);
+            const { parser, bounds } = parseInfo;
+            const start = bounds.contentStart || bounds.start;
+            const end = bounds.contentEnd || bounds.end;
+            let i = parser.skipToNextName(start, end - 1);
+            let name;
+            let parseResult;
+            while (true) {
+                parseResult = parser.parseNameAt(i);
+                if (parseResult) {
+                    i = parseResult.end + 1;
+                    name = parseResult.value;
+                    switch (name) {
+                        case "/DA":
+                        case "/DS":
+                        case "/RC":
+                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            break;
+                        case "/Q":
+                            const justification = parser.parseNumberAt(i, true);
+                            if (justification && Object.values(justificationTypes)
+                                .includes(justification.value)) {
+                                this.Q = justification.value;
+                                i = justification.end + 1;
                             }
-                            else if (Object.values(freeTextIntents).includes(intent.value)) {
-                                this.IT = intent.value;
-                                i = intent.end + 1;
-                                break;
+                            else {
+                                throw new Error("Can't parse /Q property value");
                             }
-                        }
-                        throw new Error("Can't parse /IT property value");
-                    default:
-                        i = parser.skipToNextName(i, end - 1);
-                        break;
+                            break;
+                        case "/LE":
+                            const lineEndingType = parser.parseNameAt(i, true);
+                            if (lineEndingType && Object.values(lineEndingTypes)
+                                .includes(lineEndingType.value)) {
+                                this.LE = lineEndingType.value;
+                                i = lineEndingType.end + 1;
+                            }
+                            else {
+                                throw new Error("Can't parse /LE property value");
+                            }
+                            break;
+                        case "/CL":
+                        case "/RD":
+                            i = this.parseNumberArrayProp(name, parser, i, true);
+                            break;
+                        case "/IT":
+                            const intent = parser.parseNameAt(i, true);
+                            if (intent) {
+                                if (intent.value === "/FreeTextTypewriter") {
+                                    this.IT = freeTextIntents.CLICK_TO_TYPE;
+                                    i = intent.end + 1;
+                                    break;
+                                }
+                                else if (Object.values(freeTextIntents).includes(intent.value)) {
+                                    this.IT = intent.value;
+                                    i = intent.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /IT property value");
+                        default:
+                            i = parser.skipToNextName(i, end - 1);
+                            break;
+                    }
+                }
+                else {
+                    break;
                 }
             }
-            else {
-                break;
+            if (this.DS) {
+                this._defaultStyle = this.DS.literal;
             }
-        }
-        if (this.DS) {
-            this._defaultStyle = this.DS.literal;
-        }
-        if (this.RC) {
-            const domParser = new DOMParser();
-            const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
-            if (body) {
-                const style = body.getAttribute("style");
-                const p = body.querySelector("p");
-                this._rtStyle = style || "";
-                this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
+            if (this.RC) {
+                const domParser = new DOMParser();
+                const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
+                if (body) {
+                    const style = body.getAttribute("style");
+                    const p = body.querySelector("p");
+                    this._rtStyle = style || "";
+                    this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
+                }
             }
-        }
-        if (!this.DA) {
-            throw new Error("Not all required properties parsed");
-        }
-        if (!this.C || (this.C[0] === 1 && this.C[1] === 1 && this.C[2] === 1)) {
-            this.C = [1, 0, 0];
-        }
+            if (!this.DA) {
+                throw new Error("Not all required properties parsed");
+            }
+            if (!this.C || (this.C[0] === 1 && this.C[1] === 1 && this.C[2] === 1)) {
+                this.C = [1, 0, 0];
+            }
+        });
     }
     calculateStreamMatrix(tbTopLeftPage, tbTopRightPage) {
         const length = Vec2.subtract(tbTopRightPage, tbTopLeftPage).getMagnitude();
@@ -24374,51 +25168,53 @@ var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class AnnotationParser {
-    static ParseAnnotationFromInfo(info, fontMap) {
-        const annotationType = info.parser.parseDictSubtype(info.bounds);
-        let annot;
-        switch (annotationType) {
-            case annotationTypes.STAMP:
-                annot = StampAnnotation.parse(info);
-                break;
-            case annotationTypes.TEXT:
-                annot = TextAnnotation.parse(info);
-                break;
-            case annotationTypes.INK:
-                annot = InkAnnotation.parse(info);
-                break;
-            case annotationTypes.SQUARE:
-                annot = SquareAnnotation.parse(info);
-                break;
-            case annotationTypes.CIRCLE:
-                annot = CircleAnnotation.parse(info);
-                break;
-            case annotationTypes.POLYGON:
-                annot = PolygonAnnotation.parse(info);
-                break;
-            case annotationTypes.POLYLINE:
-                annot = PolylineAnnotation.parse(info);
-                break;
-            case annotationTypes.LINE:
-                annot = LineAnnotation.parse(info, fontMap);
-                break;
-            case annotationTypes.HIGHLIGHT:
-                annot = HighlightAnnotation.parse(info);
-                break;
-            case annotationTypes.SQUIGGLY:
-                annot = SquigglyAnnotation.parse(info);
-                break;
-            case annotationTypes.STRIKEOUT:
-                annot = StrikeoutAnnotation.parse(info);
-                break;
-            case annotationTypes.UNDERLINE:
-                annot = UnderlineAnnotation.parse(info);
-                break;
-            case annotationTypes.FREE_TEXT:
-                annot = FreeTextAnnotation.parse(info, fontMap);
-                break;
-        }
-        return annot === null || annot === void 0 ? void 0 : annot.value;
+    static ParseAnnotationFromInfoAsync(info, fontMap) {
+        return __awaiter$l(this, void 0, void 0, function* () {
+            const annotationType = info.parser.parseDictSubtype(info.bounds);
+            let annot;
+            switch (annotationType) {
+                case annotationTypes.STAMP:
+                    annot = yield StampAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.TEXT:
+                    annot = yield TextAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.INK:
+                    annot = yield InkAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.SQUARE:
+                    annot = yield SquareAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.CIRCLE:
+                    annot = yield CircleAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.POLYGON:
+                    annot = yield PolygonAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.POLYLINE:
+                    annot = yield PolylineAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.LINE:
+                    annot = yield LineAnnotation.parseAsync(info, fontMap);
+                    break;
+                case annotationTypes.HIGHLIGHT:
+                    annot = yield HighlightAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.SQUIGGLY:
+                    annot = yield SquigglyAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.STRIKEOUT:
+                    annot = yield StrikeoutAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.UNDERLINE:
+                    annot = yield UnderlineAnnotation.parseAsync(info);
+                    break;
+                case annotationTypes.FREE_TEXT:
+                    annot = yield FreeTextAnnotation.parseAsync(info, fontMap);
+                    break;
+            }
+            return annot === null || annot === void 0 ? void 0 : annot.value;
+        });
     }
     static ParseAnnotationFromDtoAsync(dto, fontMap) {
         return __awaiter$l(this, void 0, void 0, function* () {
@@ -24506,7 +25302,7 @@ class DocumentService {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
         this._lastCommands = [];
-        this.getObjectParseInfo = (id) => {
+        this.getObjectParseInfoAsync = (id) => __awaiter$k(this, void 0, void 0, function* () {
             var _a, _b, _c;
             if (!id) {
                 return null;
@@ -24515,7 +25311,7 @@ class DocumentService {
             if (isNaN(offset)) {
                 return null;
             }
-            const objectId = ObjectId.parse(this._docParser, offset);
+            const objectId = yield ObjectId.parseAsync(this._docParser, offset);
             if (!objectId) {
                 return null;
             }
@@ -24523,11 +25319,11 @@ class DocumentService {
             if (!bounds) {
                 return null;
             }
-            const parseInfoGetter = this.getObjectParseInfo;
+            const parseInfoGetter = this.getObjectParseInfoAsync;
             const info = {
                 parser: this._docParser,
                 bounds,
-                parseInfoGetter,
+                parseInfoGetterAsync: parseInfoGetter,
                 cryptInfo: {
                     ref: { id: objectId.value.id, generation: objectId.value.generation },
                     stringCryptor: (_b = this._authResult) === null || _b === void 0 ? void 0 : _b.stringCryptor,
@@ -24537,17 +25333,17 @@ class DocumentService {
             if (objectId.value.id === id) {
                 return info;
             }
-            const stream = ObjectStream.parse(info);
+            const stream = yield ObjectStream.parseAsync(info);
             if (!stream) {
                 return;
             }
-            const objectParseInfo = stream.value.getObjectData(id, SyncDataParser);
+            const objectParseInfo = yield stream.value.getObjectDataAsync(id, SyncDataParser);
             if (objectParseInfo) {
-                objectParseInfo.parseInfoGetter = parseInfoGetter;
+                objectParseInfo.parseInfoGetterAsync = parseInfoGetter;
                 return objectParseInfo;
             }
             return null;
-        };
+        });
         this.onAnnotationSelectionRequest = (e) => {
             var _a;
             if ((_a = e.detail) === null || _a === void 0 ? void 0 : _a.annotation) {
@@ -24569,33 +25365,14 @@ class DocumentService {
         if (!eventService) {
             throw new Error("Event controller is not defined");
         }
-        this._eventService = eventService;
         this._data = data;
         this._docParser = new SyncDataParser(data);
-        const xrefParser = new XrefParser(this._docParser);
-        this._version = xrefParser.getPdfVersion();
-        if (!this._version) {
-            throw new Error("Error parsing PDF version number");
-        }
-        const lastXrefIndex = xrefParser.getLastXrefIndex();
-        if (!lastXrefIndex) {
-            {
-                throw new Error("File doesn't contain update section");
-            }
-        }
-        const xrefs = xrefParser.parseAllXrefs(lastXrefIndex.value);
-        if (!xrefs.length) {
-            {
-                throw new Error("Failed to parse cross-reference sections");
-            }
-        }
-        this._xrefs = xrefs;
-        this._referenceData = new ReferenceData(xrefs);
-        this.parseEncryption();
         this._userName = userName;
         this._fontMap = FontDict.newFontMap();
+        this._eventService = eventService;
         this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
         this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+        this._initPromise = this.initAsync();
     }
     get eventService() {
         return this._eventService;
@@ -24627,17 +25404,26 @@ class DocumentService {
     get authenticated() {
         return !this._encryption || !!this._authResult;
     }
+    static CreateNewAsync(eventService, data, userName) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const service = new DocumentService(eventService, data, userName);
+            yield service._initPromise;
+            return service;
+        });
+    }
     destroy() {
-        var _a;
-        this._lastCommands.length = 0;
-        this.emitStateChanged();
-        this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
-            x.$onEditAction = null;
-            x.$onRenderUpdatedAction = null;
-        }));
-        this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
-        this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
-        (_a = this._docParser) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._initPromise.then(() => {
+            var _a;
+            this._lastCommands.length = 0;
+            this.emitStateChanged();
+            this.getAllSupportedAnnotationsAsync().then(map => map.forEach(x => {
+                x.$onEditAction = null;
+                x.$onRenderUpdatedAction = null;
+            }));
+            this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
+            this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
+            (_a = this._docParser) === null || _a === void 0 ? void 0 : _a.destroy();
+        });
     }
     tryAuthenticate(password = "") {
         if (!this.authenticated) {
@@ -24650,7 +25436,7 @@ class DocumentService {
     }
     undoAsync() {
         return __awaiter$k(this, void 0, void 0, function* () {
-            this.undoCommandAsync();
+            yield this.undoCommandAsync();
         });
     }
     getDataWithoutSupportedAnnotationsAsync() {
@@ -24804,6 +25590,35 @@ class DocumentService {
             yield ((_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
         });
     }
+    parseXrefsAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const xrefParser = new XrefParser(this._docParser);
+            this._version = xrefParser.getPdfVersion();
+            if (!this._version) {
+                throw new Error("Error parsing PDF version number");
+            }
+            const lastXrefIndex = xrefParser.getLastXrefIndex();
+            if (!lastXrefIndex) {
+                {
+                    throw new Error("File doesn't contain update section");
+                }
+            }
+            const xrefs = yield xrefParser.parseAllXrefsAsync(lastXrefIndex.value);
+            if (!xrefs.length) {
+                {
+                    throw new Error("Failed to parse cross-reference sections");
+                }
+            }
+            this._xrefs = xrefs;
+            this._referenceData = new ReferenceData(xrefs);
+        });
+    }
+    initAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            yield this.parseXrefsAsync();
+            yield this.parseEncryptionAsync();
+        });
+    }
     pushCommand(command) {
         this._lastCommands.push(command);
         this.emitStateChanged();
@@ -24868,7 +25683,7 @@ class DocumentService {
             this.pushCommand({
                 timestamp: Date.now(),
                 undo: () => __awaiter$k(this, void 0, void 0, function* () {
-                    this.appendAnnotationAsync(annotation.$pageId, annotation, false);
+                    yield this.appendAnnotationAsync(annotation.$pageId, annotation, false);
                 })
             });
         }
@@ -24918,69 +25733,75 @@ class DocumentService {
             throw new Error("Unauthorized access to file data");
         }
     }
-    parseEncryption() {
-        const encryptionId = this._xrefs[0].encrypt;
-        if (!encryptionId) {
-            return;
-        }
-        const encryptionParseInfo = this.getObjectParseInfo(encryptionId.id);
-        const encryption = EncryptionDict.parse(encryptionParseInfo);
-        if (!encryption) {
-            throw new Error("Encryption dict can't be parsed");
-        }
-        this._encryption = encryption.value;
+    parseEncryptionAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const encryptionId = this._xrefs[0].encrypt;
+            if (!encryptionId) {
+                return;
+            }
+            const encryptionParseInfo = yield this.getObjectParseInfoAsync(encryptionId.id);
+            const encryption = yield EncryptionDict.parseAsync(encryptionParseInfo);
+            if (!encryption) {
+                throw new Error("Encryption dict can't be parsed");
+            }
+            this._encryption = encryption.value;
+        });
     }
-    parsePages(output, tree) {
-        if (!tree.Kids.length) {
-            return;
-        }
-        for (const kid of tree.Kids) {
-            const parseInfo = this.getObjectParseInfo(kid.id);
-            if (!parseInfo) {
-                continue;
+    parsePagesAsync(output, tree) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            if (!tree.Kids.length) {
+                return;
             }
-            const type = parseInfo.parser.parseDictType(parseInfo.bounds);
-            if (type === dictTypes.PAGE_TREE) {
-                const kidTree = PageTreeDict.parse(parseInfo);
-                if (kidTree) {
-                    this.parsePages(output, kidTree.value);
+            for (const kid of tree.Kids) {
+                const parseInfo = yield this.getObjectParseInfoAsync(kid.id);
+                if (!parseInfo) {
+                    continue;
+                }
+                const type = parseInfo.parser.parseDictType(parseInfo.bounds);
+                if (type === dictTypes.PAGE_TREE) {
+                    const kidTree = yield PageTreeDict.parseAsync(parseInfo);
+                    if (kidTree) {
+                        yield this.parsePagesAsync(output, kidTree.value);
+                    }
+                }
+                else if (type === dictTypes.PAGE) {
+                    const kidPage = yield PageDict.parseAsync(parseInfo);
+                    if (kidPage) {
+                        output.push(kidPage.value);
+                    }
                 }
             }
-            else if (type === dictTypes.PAGE) {
-                const kidPage = PageDict.parse(parseInfo);
-                if (kidPage) {
-                    output.push(kidPage.value);
-                }
-            }
-        }
+        });
     }
     ;
-    parsePageTree() {
-        const catalogId = this._xrefs[0].root;
-        const catalogParseInfo = this.getObjectParseInfo(catalogId.id);
-        const catalog = CatalogDict.parse(catalogParseInfo);
-        if (!catalog) {
-            throw new Error("Document root catalog not found");
-        }
-        this._catalog = catalog.value;
-        const pageRootId = catalog.value.Pages;
-        const pageRootParseInfo = this.getObjectParseInfo(pageRootId.id);
-        const pageRootTree = PageTreeDict.parse(pageRootParseInfo);
-        if (!pageRootTree) {
-            throw new Error("Document root page tree not found");
-        }
-        const pages = [];
-        this.parsePages(pages, pageRootTree.value);
-        this._pages = pages;
-        this._pageById.clear();
-        pages.forEach(x => this._pageById.set(x.ref.id, x));
+    parsePageTreeAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            const catalogId = this._xrefs[0].root;
+            const catalogParseInfo = yield this.getObjectParseInfoAsync(catalogId.id);
+            const catalog = yield CatalogDict.parseAsync(catalogParseInfo);
+            if (!catalog) {
+                throw new Error("Document root catalog not found");
+            }
+            this._catalog = catalog.value;
+            const pageRootId = catalog.value.Pages;
+            const pageRootParseInfo = yield this.getObjectParseInfoAsync(pageRootId.id);
+            const pageRootTree = yield PageTreeDict.parseAsync(pageRootParseInfo);
+            if (!pageRootTree) {
+                throw new Error("Document root page tree not found");
+            }
+            const pages = [];
+            yield this.parsePagesAsync(pages, pageRootTree.value);
+            this._pages = pages;
+            this._pageById.clear();
+            pages.forEach(x => this._pageById.set(x.ref.id, x));
+        });
     }
     parseSupportedAnnotationsAsync() {
         var _a;
         return __awaiter$k(this, void 0, void 0, function* () {
             this.checkAuthentication();
             if (!this._catalog) {
-                this.parsePageTree();
+                yield this.parsePageTreeAsync();
             }
             const annotIdsByPageId = new Map();
             const annotationMap = new Map();
@@ -24990,9 +25811,9 @@ class DocumentService {
                     annotationIds.push(...page.Annots);
                 }
                 else if (page.Annots instanceof ObjectId) {
-                    const parseInfo = this.getObjectParseInfo(page.Annots.id);
+                    const parseInfo = yield this.getObjectParseInfoAsync(page.Annots.id);
                     if (parseInfo) {
-                        const annotationRefs = ObjectId.parseRefArray(parseInfo.parser, parseInfo.bounds.contentStart);
+                        const annotationRefs = yield ObjectId.parseRefArrayAsync(parseInfo.parser, parseInfo.bounds.contentStart);
                         if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
                             annotationIds.push(...annotationRefs.value);
                         }
@@ -25001,12 +25822,12 @@ class DocumentService {
                 annotIdsByPageId.set(page.ref.id, annotationIds);
                 const annotations = [];
                 const processAnnotation = (objectId) => new Promise((resolve, reject) => {
-                    setTimeout(() => {
-                        const info = this.getObjectParseInfo(objectId.id);
+                    setTimeout(() => __awaiter$k(this, void 0, void 0, function* () {
+                        const info = yield this.getObjectParseInfoAsync(objectId.id);
                         info.rect = page.MediaBox;
-                        const annot = AnnotationParser.ParseAnnotationFromInfo(info, this._fontMap);
+                        const annot = yield AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
                         resolve(annot);
-                    }, 0);
+                    }), 0);
                 });
                 for (const objectId of annotationIds) {
                     const annot = yield processAnnotation(objectId);
@@ -27434,7 +28255,7 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
             const dtos = this.buildAnnotationDtos("/Squiggly");
             for (const dto of dtos) {
                 const annotation = SquigglyAnnotation.createFromDto(dto);
-                this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
             }
             this.clear();
         });
@@ -27728,7 +28549,7 @@ class FreeTextAnnotator extends TextAnnotator {
             const { min, max } = Vec2.minMax(this._down, new Vec2(px, py));
             this.redrawRect(min, max);
         };
-        this.onPointerUp = (e) => {
+        this.onPointerUp = (e) => __awaiter$6(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -27738,9 +28559,9 @@ class FreeTextAnnotator extends TextAnnotator {
             target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             if (this._rect) {
-                this.saveAnnotationAsync();
+                yield this.saveAnnotationAsync();
             }
-        };
+        });
         this._viewer = viewer;
         this.init();
     }
@@ -29747,7 +30568,7 @@ class TsPdfViewer {
                 this._loader.hide();
                 throw new Error(`Cannot load file data: ${e.message}`);
             }
-            const docService = new DocumentService(this._eventService, data, this._userName);
+            const docService = yield DocumentService.CreateNewAsync(this._eventService, data, this._userName);
             let password;
             while (true) {
                 const authenticated = docService.tryAuthenticate(password);

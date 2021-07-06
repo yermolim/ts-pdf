@@ -14,13 +14,13 @@ export class ExDataDict extends PdfDict {
     super(dictTypes.EXTERNAL_DATA);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<ExDataDict> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<ExDataDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new ExDataDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -47,8 +47,8 @@ export class ExDataDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 

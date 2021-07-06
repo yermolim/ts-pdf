@@ -150,13 +150,13 @@ export class PageDict extends PdfDict {
     super(dictTypes.PAGE);
   }  
   
-  static parse(parseInfo: ParserInfo): ParserResult<PageDict> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<PageDict>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new PageDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -254,8 +254,8 @@ export class PageDict extends PdfDict {
     return new Uint8Array(totalBytes);
   }
   
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end; 
@@ -275,11 +275,11 @@ export class PageDict extends PdfDict {
           case "/Parent":
           case "/Thumb":
           case "/Metadata":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
           
           case "/LastModified":
-            i = this.parseDateProp(name, parser, i, parseInfo.cryptInfo);
+            i = await this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
             break;           
           
           // there is no need to parse page resources
@@ -288,8 +288,8 @@ export class PageDict extends PdfDict {
           case "/Resources":  
             const resEntryType = parser.getValueTypeAt(i);
             if (resEntryType === valueTypes.REF) {              
-              const resDictId = ObjectId.parseRef(parser, i);
-              if (resDictId && parseInfo.parseInfoGetter) {
+              const resDictId = await ObjectId.parseRefAsync(parser, i);
+              if (resDictId && parseInfo.parseInfoGetterAsync) {
                 this.Resources = parser.sliceCharCodes(resDictId.start, resDictId.end);
                 i = resDictId.end + 1;
                 break;
@@ -319,14 +319,14 @@ export class PageDict extends PdfDict {
           case "/Annots":
             const refEntryType = parser.getValueTypeAt(i);
             if (refEntryType === valueTypes.REF) {              
-              const refArrayId = ObjectId.parseRef(parser, i);
+              const refArrayId = await ObjectId.parseRefAsync(parser, i);
               if (refArrayId) {
                 this[name.slice(1)] = refArrayId.value;
                 i = refArrayId.end + 1;
                 break;
               }
             } else if (refEntryType === valueTypes.ARRAY) {              
-              const refIds = ObjectId.parseRefArray(parser, i);
+              const refIds = await ObjectId.parseRefArrayAsync(parser, i);
               if (refIds) {
                 this[name.slice(1)] = refIds.value;
                 i = refIds.end + 1;
@@ -340,18 +340,18 @@ export class PageDict extends PdfDict {
           case "/StructParent":
           case "/PZ":
           case "/UserUnit":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break;
 
           case "/ID":
             const webCaptureIdEntryType = parser.getValueTypeAt(i);
             if (webCaptureIdEntryType === valueTypes.REF) {              
-              const webCaptureRefId = ObjectId.parseRef(parser, i);
+              const webCaptureRefId = await ObjectId.parseRefAsync(parser, i);
               if (webCaptureRefId) {
-                if (webCaptureRefId && parseInfo.parseInfoGetter) {
-                  const webCaptureIdParseInfo = parseInfo.parseInfoGetter(webCaptureRefId.value.id);
+                if (webCaptureRefId && parseInfo.parseInfoGetterAsync) {
+                  const webCaptureIdParseInfo = await parseInfo.parseInfoGetterAsync(webCaptureRefId.value.id);
                   if (webCaptureIdParseInfo) {
-                    const webCaptureId = HexString.parse(
+                    const webCaptureId = await HexString.parseAsync(
                       webCaptureIdParseInfo.parser, 
                       webCaptureIdParseInfo.bounds.start,
                       webCaptureIdParseInfo.cryptInfo);
@@ -365,7 +365,7 @@ export class PageDict extends PdfDict {
               }              
               throw new Error("Can't parse /ID property value");
             } else if (webCaptureIdEntryType === valueTypes.STRING_HEX) {              
-              const webCaptureId = HexString.parse(parser, i, parseInfo.cryptInfo);
+              const webCaptureId = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);
               if (webCaptureId) {
                 this.ID = webCaptureId.value;
                 i = webCaptureId.end + 1;
@@ -376,7 +376,7 @@ export class PageDict extends PdfDict {
 
           case "/Tabs":
           case "/TemplateInstantiated":
-            i = this.parseNameProp(name, parser, i);
+            i = await this.parseNamePropAsync(name, parser, i);
             break; 
 
           default:

@@ -118,13 +118,13 @@ export class GraphicsStateDict extends PdfDict {
     super(dictTypes.GRAPHICS_STATE);
   }
   
-  static parse(parseInfo: ParserInfo): ParserResult<GraphicsStateDict> {
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<GraphicsStateDict>> {
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new GraphicsStateDict();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {
         value: pdfObject.initProxy(), 
         start: parseInfo.bounds.start, 
@@ -329,8 +329,8 @@ export class GraphicsStateDict extends PdfDict {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const end = bounds.contentEnd || bounds.end;
@@ -406,7 +406,7 @@ export class GraphicsStateDict extends PdfDict {
             } else if (sMaskEntryType === valueTypes.DICTIONARY) { 
               const sMaskDictBounds = parser.getDictBoundsAt(i); 
               if (sMaskDictBounds) {
-                const sMaskDict = SoftMaskDict.parse({parser, bounds: sMaskDictBounds});
+                const sMaskDict = await SoftMaskDict.parseAsync({parser, bounds: sMaskDictBounds});
                 if (sMaskDict) {
                   this.SMask = sMaskDict.value;
                   i = sMaskDict.end + 1;
@@ -421,7 +421,7 @@ export class GraphicsStateDict extends PdfDict {
             if (fontEntryType === valueTypes.ARRAY) {
               const fontArrayBounds = parser.getArrayBoundsAt(i);
               if (fontArrayBounds) {
-                const fontRef = ObjectId.parse(parser, fontArrayBounds.start + 1);
+                const fontRef = await ObjectId.parseAsync(parser, fontArrayBounds.start + 1);
                 if (fontRef) {
                   const fontSize = parser.parseNumberAt(fontRef.end + 1);
                   if (fontSize) {
@@ -461,7 +461,7 @@ export class GraphicsStateDict extends PdfDict {
           case "/SA":
           case "/AIS":
           case "/TK":
-            i = this.parseBoolProp(name, parser, i);
+            i = await this.parseBoolPropAsync(name, parser, i);
             break;
           
           // number values
@@ -471,7 +471,7 @@ export class GraphicsStateDict extends PdfDict {
           case "/SM":
           case "/CA":
           case "/ca":
-            i = this.parseNumberProp(name, parser, i);
+            i = await this.parseNumberPropAsync(name, parser, i);
             break;
 
           // TODO: add cases for remaining properties

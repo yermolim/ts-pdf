@@ -26,13 +26,13 @@ export class ObjectStream extends PdfStream {
     super(streamTypes.OBJECT_STREAM);
   }  
   
-  static parse(parseInfo: ParserInfo): ParserResult<ObjectStream> { 
+  static async parseAsync(parseInfo: ParserInfo): Promise<ParserResult<ObjectStream>> { 
     if (!parseInfo) {
       throw new Error("Parsing information not passed");
     }
     try {
       const pdfObject = new ObjectStream();
-      pdfObject.parseProps(parseInfo);
+      await pdfObject.parsePropsAsync(parseInfo);
       return {value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end};
     } catch (e) {
       console.log(e.message);
@@ -40,7 +40,8 @@ export class ObjectStream extends PdfStream {
     }
   }
 
-  getObjectData(id: number, dataParserConstructor: new (data: Uint8Array) => DataParser): ParserInfo  { 
+  async getObjectDataAsync(id: number, 
+    dataParserConstructor: new (data: Uint8Array) => DataParser): Promise<ParserInfo> { 
     dataParserConstructor ||= PdfStream.dataParserConstructor;
 
     if (!this._streamData || !this.N || !this.First) {
@@ -87,14 +88,14 @@ export class ObjectStream extends PdfStream {
         bounds = parser.getArrayBoundsAt(objectStart, false);
         break;
       case objectTypes.STRING_LITERAL: 
-        const literalValue = LiteralString.parse(parser, objectStart);
+        const literalValue = await LiteralString.parseAsync(parser, objectStart);
         if (literalValue) {
           bounds = {start: literalValue.start, end: literalValue.end};
           value = literalValue;
         }
         break; 
       case objectTypes.STRING_HEX: 
-        const hexValue = HexString.parse(parser, objectStart);
+        const hexValue = await HexString.parseAsync(parser, objectStart);
         if (hexValue) {
           bounds = {start: hexValue.start, end: hexValue.end};
           value = hexValue;
@@ -166,8 +167,8 @@ export class ObjectStream extends PdfStream {
   /**
    * fill public properties from data using info/parser if available
    */
-  protected override parseProps(parseInfo: ParserInfo) {
-    super.parseProps(parseInfo);
+  protected override async parsePropsAsync(parseInfo: ParserInfo) {
+    await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
     const dictBounds = parser.getDictBoundsAt(start);
@@ -183,11 +184,11 @@ export class ObjectStream extends PdfStream {
         switch (name) {
           case "/N":
           case "/First":
-            i = this.parseNumberProp(name, parser, i, false);
+            i = await this.parseNumberPropAsync(name, parser, i, false);
             break;
 
           case "/Extends":
-            i = this.parseRefProp(name, parser, i);
+            i = await this.parseRefPropAsync(name, parser, i);
             break;
 
           default:
