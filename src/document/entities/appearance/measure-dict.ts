@@ -59,13 +59,13 @@ export class MeasureDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Subtype":
-            const subtype = parser.parseNameAt(i);
+            const subtype = await parser.parseNameAtAsync(i);
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);

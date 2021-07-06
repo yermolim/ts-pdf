@@ -75,8 +75,8 @@ export interface DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findNewLineIndex(direction?: boolean, 
-    start?: number): number;
+  findNewLineIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
   
   /**
    * find the nearest space char index
@@ -134,39 +134,40 @@ export interface DataParser {
   
   getXrefTableBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
-  getDictBoundsAt(start: number, skipEmpty?: boolean): ParserBounds;
+  getDictBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
   
-  getArrayBoundsAt(start: number, skipEmpty?: boolean): ParserBounds;
+  getArrayBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
       
   getHexBoundsAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
-  getLiteralBounds(start: number, skipEmpty?: boolean): ParserBounds;
+  getLiteralBoundsAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
   //#endregion
 
   //#region parse methods  
 
-  parseNumberAt(start: number, 
-    float?: boolean, skipEmpty?: boolean): ParserResult<number>;
+  parseNumberAtAsync(start: number, 
+    float?: boolean, skipEmpty?: boolean): Promise<ParserResult<number>>;
   
-  parseNameAt(start: number, 
-    includeSlash?: boolean, skipEmpty?: boolean): ParserResult<string>;
+  parseNameAtAsync(start: number, 
+    includeSlash?: boolean, skipEmpty?: boolean): Promise<ParserResult<string>>;
   
-  parseStringAt(start: number, skipEmpty?: boolean): ParserResult<string>;
+  parseStringAtAsync(start: number, skipEmpty?: boolean): Promise<ParserResult<string>>;
   
   parseBoolAtAsync(start: number, skipEmpty?: boolean): Promise<ParserResult<boolean>>;
   
-  parseNumberArrayAt(start: number, float?: boolean, 
-    skipEmpty?: boolean): ParserResult<number[]>;
+  parseNumberArrayAtAsync(start: number, float?: boolean, 
+    skipEmpty?: boolean): Promise<ParserResult<number[]>>;
   
-  parseNameArrayAt(start: number, includeSlash?: boolean, 
-    skipEmpty?: boolean): ParserResult<string[]>;
+  parseNameArrayAtAsync(start: number, includeSlash?: boolean, 
+    skipEmpty?: boolean): Promise<ParserResult<string[]>>;
   
-  parseDictType(bounds: ParserBounds): string;
+  parseDictTypeAsync(bounds: ParserBounds): Promise<string>;
   
-  parseDictSubtype(bounds: ParserBounds): string;
+  parseDictSubtypeAsync(bounds: ParserBounds): Promise<string>;
   
-  parseDictPropertyByName(propName: readonly number[] | number[], bounds: ParserBounds): string;
+  parseDictPropertyByNameAsync(propName: readonly number[] | number[], 
+    bounds: ParserBounds): Promise<string>;
 
   //#endregion
 
@@ -177,7 +178,7 @@ export interface DataParser {
    * @param start 
    * @returns first non-space char index (-1 if not found till the end of the data)
    */
-  skipEmpty(start: number): number;
+  skipEmptyAsync(start: number): Promise<number>;
 
   /**
    * get the nearest PDF name index

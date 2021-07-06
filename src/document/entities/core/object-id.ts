@@ -37,12 +37,12 @@ export class ObjectId implements Reference, IEncodable {
       return null;
     }    
     
-    const id = parser.parseNumberAt(start, false, false);
+    const id = await parser.parseNumberAtAsync(start, false, false);
     if (!id || isNaN(id.value)) {
       return null;
     }
 
-    const generation = parser.parseNumberAt(id.end + 2, false, false);
+    const generation = await parser.parseNumberAtAsync(id.end + 2, false, false);
     if (!generation || isNaN(generation.value)) {
       return null;
     }
@@ -92,7 +92,7 @@ export class ObjectId implements Reference, IEncodable {
    */
   static async parseRefArrayAsync(parser: DataParser, start: number, 
     skipEmpty = true): Promise<ParserResult<ObjectId[]>>  {
-    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }

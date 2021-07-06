@@ -146,13 +146,13 @@ export class PolylineAnnotation extends PolyAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/LE":
-            const lineEndings = parser.parseNameArrayAt(i, true);
+            const lineEndings = await parser.parseNameArrayAtAsync(i, true);
             if (lineEndings
                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[0])
                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[1])) {

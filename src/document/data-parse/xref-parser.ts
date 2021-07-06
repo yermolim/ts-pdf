@@ -29,7 +29,7 @@ export class XrefParser {
     if (!i) {
       return null;
     }
-    const version = this._dataParser.parseNumberAt(i.end + 1, true)?.value;
+    const version = (await this._dataParser.parseNumberAtAsync(i.end + 1, true))?.value;
     if (!version) {
       return null;
     }
@@ -48,7 +48,7 @@ export class XrefParser {
       return null;
     }
 
-    const xrefIndex = this._dataParser.parseNumberAt(xrefStartIndex.end + 1);
+    const xrefIndex = this._dataParser.parseNumberAtAsync(xrefStartIndex.end + 1);
     if (!xrefIndex) {
       return null;
     }
@@ -76,7 +76,7 @@ export class XrefParser {
         {minIndex: start, maxIndex: max, closedOnly: true});
       if (xrefStmIndexProp) {
         // HYBRID
-        const streamXrefIndex = this._dataParser.parseNumberAt(xrefStmIndexProp.end + 1);
+        const streamXrefIndex = await this._dataParser.parseNumberAtAsync(xrefStmIndexProp.end + 1);
         if (!streamXrefIndex) {
           return null;
         }

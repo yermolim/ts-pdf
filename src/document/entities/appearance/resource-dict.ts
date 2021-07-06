@@ -269,7 +269,7 @@ export class ResourceDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -297,7 +297,7 @@ export class ResourceDict extends PdfDict {
               }
               throw new Error(`Can't parse ${name} value reference`);
             } else if (mapEntryType === valueTypes.DICTIONARY) { 
-              const mapBounds = parser.getDictBoundsAt(i);
+              const mapBounds = await parser.getDictBoundsAtAsync(i);
               if (mapBounds) {
                 const map = await ObjectMapDict.parseAsync({parser, bounds: mapBounds});              
                 if (map) {

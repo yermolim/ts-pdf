@@ -146,19 +146,19 @@ export class InkAnnotation extends MarkupAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {          
           case "/InkList":
-            i = parser.skipEmpty(i);
+            i = await parser.skipEmptyAsync(i);
             const inkType = await parser.getValueTypeAtAsync(i);
             if (inkType === valueTypes.ARRAY) {
               const inkList: number[][] = [];
               let inkArrayPos = ++i;
               while (true) {
-                const sublist = parser.parseNumberArrayAt(inkArrayPos);
+                const sublist = await parser.parseNumberArrayAtAsync(inkArrayPos);
                 if (!sublist) {
                   break;
                 }

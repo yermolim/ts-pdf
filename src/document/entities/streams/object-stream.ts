@@ -56,11 +56,11 @@ export class ObjectStream extends PdfStream {
     let byteOffset: number;
     let position = 0;
     for (let n = 0; n < this.N; n++) {
-      temp = parser.parseNumberAt(position, false, false);
+      temp = await parser.parseNumberAtAsync(position, false, false);
       objectId = temp.value;
       position = temp.end + 2;    
 
-      temp = parser.parseNumberAt(position, false, false);
+      temp = await parser.parseNumberAtAsync(position, false, false);
       byteOffset = temp.value;
       position = temp.end + 2; 
       
@@ -82,10 +82,10 @@ export class ObjectStream extends PdfStream {
     let value: any;
     switch (objectType) {
       case objectTypes.DICTIONARY:
-        bounds = parser.getDictBoundsAt(objectStart, false);
+        bounds = await parser.getDictBoundsAtAsync(objectStart, false);
         break;
       case objectTypes.ARRAY:
-        bounds = parser.getArrayBoundsAt(objectStart, false);
+        bounds = await parser.getArrayBoundsAtAsync(objectStart, false);
         break;
       case objectTypes.STRING_LITERAL: 
         const literalValue = await LiteralString.parseAsync(parser, objectStart);
@@ -102,7 +102,7 @@ export class ObjectStream extends PdfStream {
         }
         break; 
       case objectTypes.NUMBER:
-        const numValue = parser.parseNumberAt(objectStart);
+        const numValue = await parser.parseNumberAtAsync(objectStart);
         if (numValue) {
           bounds = {start: numValue.start, end: numValue.end};
           value = numValue;
@@ -171,13 +171,13 @@ export class ObjectStream extends PdfStream {
     await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const dictBounds = parser.getDictBoundsAt(start);
+    const dictBounds = await parser.getDictBoundsAtAsync(start);
     
     let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;

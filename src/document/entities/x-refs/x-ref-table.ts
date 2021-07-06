@@ -121,7 +121,7 @@ export class XRefTable extends XRef {
       return null;
     }
 
-    const trailerDictBounds = parser.getDictBoundsAt(xrefTableBounds.end + 1);
+    const trailerDictBounds = await parser.getDictBoundsAtAsync(xrefTableBounds.end + 1);
     if (!trailerDictBounds) {
       return null;
     }

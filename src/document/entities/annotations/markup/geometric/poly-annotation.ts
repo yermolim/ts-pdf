@@ -65,7 +65,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -75,7 +75,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
             break;
 
           case "/IT":
-            const intent = parser.parseNameAt(i, true);
+            const intent = await parser.parseNameAtAsync(i, true);
             if (intent) {
               if ((<string[]>Object.values(polyIntents)).includes(intent.value)) {
                 this.IT = <PolyIntent>intent.value;
@@ -102,7 +102,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
               }              
               throw new Error("Can't parse /Measure value reference");
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
-              const measureDictBounds = parser.getDictBoundsAt(i); 
+              const measureDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (measureDictBounds) {
                 const measureDict = await MeasureDict.parseAsync({parser, bounds: measureDictBounds});
                 if (measureDict) {

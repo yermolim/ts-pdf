@@ -51,19 +51,19 @@ export class MetadataStream extends TextStream {
     await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const dictBounds = parser.getDictBoundsAt(start);
+    const dictBounds = await parser.getDictBoundsAtAsync(start);
     
     let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Subtype":
-            const subtype = parser.parseNameAt(i);
+            const subtype = await parser.parseNameAtAsync(i);
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype

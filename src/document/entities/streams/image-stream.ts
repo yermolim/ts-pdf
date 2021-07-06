@@ -326,19 +326,19 @@ export class ImageStream extends PdfStream {
     await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const dictBounds = parser.getDictBoundsAt(start);
+    const dictBounds = await parser.getDictBoundsAtAsync(start);
     
     let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Subtype":
-            const subtype = parser.parseNameAt(i);
+            const subtype = await parser.parseNameAtAsync(i);
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
@@ -378,7 +378,7 @@ export class ImageStream extends PdfStream {
           case "/ColorSpace":
             const colorSpaceEntryType = await parser.getValueTypeAtAsync(i);
             if (colorSpaceEntryType === valueTypes.NAME) {  
-              const colorSpaceName = parser.parseNameAt(i);  
+              const colorSpaceName = await parser.parseNameAtAsync(i);  
               if (colorSpaceName) {
                 this.ColorSpace = colorSpaceName.value;
                 i = colorSpaceName.end + 1;
@@ -386,7 +386,7 @@ export class ImageStream extends PdfStream {
               }
               throw new Error("Can't parse /ColorSpace name");
             } else if (colorSpaceEntryType === valueTypes.ARRAY) { 
-              const colorSpaceArrayBounds = parser.getArrayBoundsAt(i); 
+              const colorSpaceArrayBounds = await parser.getArrayBoundsAtAsync(i); 
               if (colorSpaceArrayBounds) {
                 const indexedColorSpace = await IndexedColorSpaceArray.parseAsync({
                   parser, 
@@ -462,7 +462,7 @@ export class ImageStream extends PdfStream {
               let j = 0;
               let value: ParserResult<number>;
               while (j <= maskParser.maxIndex) {
-                value = maskParser.parseNumberAt(j, true, true);
+                value = await maskParser.parseNumberAtAsync(j, true, true);
                 if (!value) {
                   break;
                 }
@@ -477,7 +477,7 @@ export class ImageStream extends PdfStream {
               i = maskStreamId.end + 1;
               break; 
             } else if (maskEntryType === valueTypes.ARRAY) {               
-              const maskArray = parser.parseNumberArrayAt(i, false);
+              const maskArray = await parser.parseNumberArrayAtAsync(i, false);
               if (maskArray) {
                 this.Mask = maskArray.value;
                 i = maskArray.end + 1;

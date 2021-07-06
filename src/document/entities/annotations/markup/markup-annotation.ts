@@ -125,7 +125,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -198,7 +198,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
             break;
 
           case "/RT":
-            const replyType = parser.parseNameAt(i, true);
+            const replyType = await parser.parseNameAtAsync(i, true);
             if (replyType && (<string[]>Object.values(markupAnnotationReplyTypes))
               .includes(replyType.value)) {
               this.RT = <MarkupAnnotationReplyType>replyType.value;

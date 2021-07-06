@@ -25,7 +25,7 @@ export class AnnotationParser {
 
   static async ParseAnnotationFromInfoAsync(info: ParserInfo, 
     fontMap: Map<string, FontDict>): Promise<AnnotationDict> {
-    const annotationType = info.parser.parseDictSubtype(info.bounds);
+    const annotationType = await info.parser.parseDictSubtypeAsync(info.bounds);
     let annot: ParserResult<AnnotationDict>;
     switch (annotationType) {
       case annotationTypes.STAMP:

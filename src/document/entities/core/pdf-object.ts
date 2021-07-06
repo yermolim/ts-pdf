@@ -166,25 +166,25 @@ export abstract class PdfObject implements IEncodable {
   
   protected async parseNamePropAsync(propName: string, 
     parser: DataParser, index: number, includeSlash = true): Promise<number> {
-    const parsed = parser.parseNameAt(index, includeSlash);
+    const parsed = await parser.parseNameAtAsync(index, includeSlash);
     return this.setParsedProp(propName, parsed);
   }
   
   protected async parseNameArrayPropAsync(propName: string, 
     parser: DataParser, index: number, includeSlash = true): Promise<number> {
-    const parsed = parser.parseNameArrayAt(index, includeSlash);
+    const parsed = await parser.parseNameArrayAtAsync(index, includeSlash);
     return this.setParsedProp(propName, parsed);
   }
 
   protected async parseNumberPropAsync(propName: string, 
     parser: DataParser, index: number, float = true): Promise<number> {
-    const parsed = parser.parseNumberAt(index, float);
+    const parsed = await parser.parseNumberAtAsync(index, float);
     return this.setParsedProp(propName, parsed);
   }
     
   protected async parseNumberArrayPropAsync(propName: string, 
     parser: DataParser, index: number, float = true): Promise<number> {
-    const parsed = parser.parseNumberArrayAt(index, float);
+    const parsed = await parser.parseNumberArrayAtAsync(index, float);
     return this.setParsedProp(propName, parsed);
   }
   

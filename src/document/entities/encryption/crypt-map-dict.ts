@@ -61,7 +61,7 @@ export class CryptMapDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -69,7 +69,7 @@ export class CryptMapDict extends PdfDict {
           default:
             const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.DICTIONARY) { 
-              const dictBounds = parser.getDictBoundsAt(i);
+              const dictBounds = await parser.getDictBoundsAtAsync(i);
               if (dictBounds) {
                 const filter = await CryptFilterDict.parseAsync({parser, bounds: dictBounds});
                 if (filter) {

@@ -59,7 +59,7 @@ export class IndexedColorSpaceArray implements IEncodable {
     }    
     i++;
     
-    const type = parser.parseNameAt(i);
+    const type = await parser.parseNameAtAsync(i);
     if (!type || type.value !== "/Indexed") {
       // not an indexed color space
       console.log("Array is not representing an indexed color space");
@@ -67,14 +67,14 @@ export class IndexedColorSpaceArray implements IEncodable {
     }    
     i = type.end + 1;
 
-    const base = parser.parseNameAt(i);
+    const base = await parser.parseNameAtAsync(i);
     if (!base) {
       console.log("Can't parse base color space name of the indexed color space");
       return null;
     }
     i = base.end + 2;
 
-    const highestValue = parser.parseNumberAt(i);
+    const highestValue = await parser.parseNumberAtAsync(i);
     if (!highestValue || isNaN(highestValue.value)) {
       console.log("Can't parse the highest value of the indexed color space");
       return null;

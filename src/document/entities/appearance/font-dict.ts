@@ -761,13 +761,13 @@ export class FontDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {     
           case "/Subtype":
-            const subtype = parser.parseNameAt(i, true);
+            const subtype = await parser.parseNameAtAsync(i, true);
             if (subtype) {
               this.Subtype = subtype.value;
               i = subtype.end + 1; 
@@ -832,7 +832,7 @@ export class FontDict extends PdfDict {
               }              
               throw new Error(`Can't parse ${name} value reference`);
             } else if (excludedEntryType === valueTypes.DICTIONARY) { 
-              const excludedDictBounds = parser.getDictBoundsAt(i); 
+              const excludedDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (excludedDictBounds) {
                 this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
                 i = excludedDictBounds.end + 1;

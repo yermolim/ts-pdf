@@ -275,7 +275,7 @@ export class TextAnnotation extends MarkupAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -285,7 +285,7 @@ export class TextAnnotation extends MarkupAnnotation {
             break;
           
           case "/Name":
-            const iconType = parser.parseNameAt(i, true);
+            const iconType = await parser.parseNameAtAsync(i, true);
             if (iconType && (<string[]>Object.values(annotationIconTypes))
               .includes(iconType.value)) {
               this.Name = <AnnotationIconType>iconType.value;
@@ -295,7 +295,7 @@ export class TextAnnotation extends MarkupAnnotation {
             }
             break;             
           case "/State":
-            const state = parser.parseNameAt(i, true);
+            const state = await parser.parseNameAtAsync(i, true);
             if (state && (<string[]>Object.values(annotationMarkedStates))
               .concat((<string[]>Object.values(annotationReviewStates)))
               .includes(state.value)) {
@@ -306,7 +306,7 @@ export class TextAnnotation extends MarkupAnnotation {
             }
             break;          
           case "/StateModel":
-            const stateModelType = parser.parseNameAt(i, true);
+            const stateModelType = await parser.parseNameAtAsync(i, true);
             if (stateModelType && (<string[]>Object.values(annotationStateModelTypes))
               .includes(stateModelType.value)) {
               this.StateModel = <AnnotationStateModelType>stateModelType.value;

@@ -97,7 +97,7 @@ export class EncodingDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -110,18 +110,18 @@ export class EncodingDict extends PdfDict {
             const differencesValueType = await parser.getValueTypeAtAsync(i, true);
             if (differencesValueType === valueTypes.ARRAY) {
               this.Differences = [];
-              const arrayBounds = parser.getArrayBoundsAt(i);          
+              const arrayBounds = await parser.getArrayBoundsAtAsync(i);          
               let j = arrayBounds.start + 1;
               while(j < arrayBounds.end - 1 && j !== -1) {
                 const nextArrayValueType = await parser.getValueTypeAtAsync(j, true);
                 switch (nextArrayValueType) {
                   case valueTypes.NAME:
-                    const arrayNameResult = parser.parseNameAt(j, true);
+                    const arrayNameResult = await parser.parseNameAtAsync(j, true);
                     this.Differences.push(arrayNameResult.value);
                     j = arrayNameResult.end + 1;
                     break;
                   case valueTypes.NUMBER:
-                    const arrayNumberResult = parser.parseNumberAt(j, true);
+                    const arrayNumberResult = await parser.parseNumberAtAsync(j, true);
                     this.Differences.push(arrayNumberResult.value);
                     j = arrayNumberResult.end + 1;
                     break;

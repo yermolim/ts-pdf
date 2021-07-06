@@ -84,7 +84,7 @@ export class ObjectMapDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -99,7 +99,7 @@ export class ObjectMapDict extends PdfDict {
                 break;
               }
             } else if (entryType === valueTypes.DICTIONARY) {
-              const dictBounds = parser.getDictBoundsAt(i);
+              const dictBounds = await parser.getDictBoundsAtAsync(i);
               if (dictBounds) {
                 const dictParseInfo: ParserInfo = {
                   parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)), 

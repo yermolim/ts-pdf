@@ -109,17 +109,17 @@ export class AppearanceStreamRenderer {
       const nextValueType = await parser.getValueTypeAtAsync(i, true);
       switch (nextValueType) {
         case valueTypes.NUMBER:
-          const numberResult = parser.parseNumberAt(i, true);
+          const numberResult = await parser.parseNumberAtAsync(i, true);
           parameters.push(numberResult.value);
           i = numberResult.end + 1;
           break;
         case valueTypes.NAME:
-          const nameResult = parser.parseNameAt(i, true);
+          const nameResult = await parser.parseNameAtAsync(i, true);
           parameters.push(nameResult.value);
           i = nameResult.end + 1;
           break;
         case valueTypes.ARRAY:
-          const arrayBounds = parser.getArrayBoundsAt(i);          
+          const arrayBounds = await parser.getArrayBoundsAtAsync(i);          
           let j = arrayBounds.start + 1;
           while(j < arrayBounds.end - 1 && j !== -1) {
             const nextArrayValueType = await parser.getValueTypeAtAsync(j, true);
@@ -130,7 +130,7 @@ export class AppearanceStreamRenderer {
                 j = arrayLiteralResult.end + 1;
                 break;
               case valueTypes.NUMBER:
-                const arrayNumberResult = parser.parseNumberAt(j, true);
+                const arrayNumberResult = await parser.parseNumberAtAsync(j, true);
                 parameters.push(arrayNumberResult.value);
                 j = arrayNumberResult.end + 1;
                 break;
@@ -154,7 +154,7 @@ export class AppearanceStreamRenderer {
           break;
         case valueTypes.UNKNOWN:
           // should be operator
-          const operatorResult = parser.parseStringAt(i);
+          const operatorResult = await parser.parseStringAtAsync(i);
           operator = operatorResult.value;
           i = operatorResult.end + 1;
           break command;
@@ -755,7 +755,7 @@ export class AppearanceStreamRenderer {
     while (i !== -1) {
       const {nextIndex, parameters, operator} = 
         await AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
-      i = parser.skipEmpty(nextIndex);
+      i = await parser.skipEmptyAsync(nextIndex);
         
       switch (operator) {
         //#region Text showing operators
@@ -809,7 +809,7 @@ export class AppearanceStreamRenderer {
     while (i !== -1) {
       const {nextIndex, parameters, operator} =
         await AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
-      i = parser.skipEmpty(nextIndex + 1);
+      i = await parser.skipEmptyAsync(nextIndex + 1);
   
       switch (operator) {  
         //#region Path operators  
@@ -919,7 +919,7 @@ export class AppearanceStreamRenderer {
             const textParser = parser.getSubParser(i, textObjectEnd.start - 1);
             const textGroup = await this.drawTextGroupAsync(textParser, stream.Resources);
             svgElements.push(...textGroup);
-            i = parser.skipEmpty(textObjectEnd.end + 1);
+            i = await parser.skipEmptyAsync(textObjectEnd.end + 1);
             break;
           }
           throw new Error("Can't find the appearance stream text object end");

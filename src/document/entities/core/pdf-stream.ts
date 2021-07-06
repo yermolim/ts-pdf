@@ -158,7 +158,7 @@ export abstract class PdfStream extends PdfObject {
       throw new Error("Stream start is out of the data bounds");
     }   
     
-    const dictBounds = parser.getDictBoundsAt(start);
+    const dictBounds = await parser.getDictBoundsAtAsync(start);
     let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     if (i === -1) {
       throw new Error("Dict is empty (has no properties)");
@@ -167,13 +167,13 @@ export abstract class PdfStream extends PdfObject {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {      
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Type":
-            const type = parser.parseNameAt(i);
+            const type = await parser.parseNameAtAsync(i);
             if (type) {
               if (this.Type && this.Type !== type.value) {
                 // wrong object type
@@ -193,7 +193,7 @@ export abstract class PdfStream extends PdfObject {
           case "/Filter":
             const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.NAME) {  
-              const filter = parser.parseNameAt(i);  
+              const filter = await parser.parseNameAtAsync(i);  
               if (filter && supportedFilters.has(filter.value)) {
                 this.Filter = <StreamFilter>filter.value;
                 i = filter.end + 1;
@@ -202,7 +202,7 @@ export abstract class PdfStream extends PdfObject {
                 throw new Error(`Unsupported /Filter property value: ${filter.value}`);
               }
             } else if (entryType === valueTypes.ARRAY) {              
-              const filterNames = parser.parseNameArrayAt(i);
+              const filterNames = await parser.parseNameArrayAtAsync(i);
               if (filterNames) {
                 const filterArray = filterNames.value;
                 // TODO: add support for multiple filters
@@ -219,7 +219,7 @@ export abstract class PdfStream extends PdfObject {
           case "/DecodeParms":
             const paramsEntryType = await parser.getValueTypeAtAsync(i);
             if (paramsEntryType === valueTypes.DICTIONARY) {  
-              const decodeParamsBounds = parser.getDictBoundsAt(i);
+              const decodeParamsBounds = await parser.getDictBoundsAtAsync(i);
               if (decodeParamsBounds) {
                 const params = await DecodeParamsDict.parseAsync({parser, 
                   bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo});
@@ -255,8 +255,8 @@ export abstract class PdfStream extends PdfObject {
       }
     };
     
-    const streamStart = parser.findNewLineIndex(true, streamStartIndex.end + 1);
-    const streamEnd = parser.findNewLineIndex(false, streamEndIndex.start - 1);
+    const streamStart = await parser.findNewLineIndexAsync(true, streamStartIndex.end + 1);
+    const streamEnd = await parser.findNewLineIndexAsync(false, streamEndIndex.start - 1);
     const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
     const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
       ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)

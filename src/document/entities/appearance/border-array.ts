@@ -32,17 +32,17 @@ export class BorderArray {
       return null;
     }    
     
-    const hCornerR = parser.parseNumberAt(start + 1);
+    const hCornerR = await parser.parseNumberAtAsync(start + 1);
     if (!hCornerR || isNaN(hCornerR.value)) {
       return null;
     }    
 
-    const vCornerR = parser.parseNumberAt(hCornerR.end + 2);
+    const vCornerR = await parser.parseNumberAtAsync(hCornerR.end + 2);
     if (!vCornerR || isNaN(vCornerR.value)) {
       return null;
     }
 
-    const width = parser.parseNumberAt(vCornerR.end + 2);
+    const width = await parser.parseNumberAtAsync(vCornerR.end + 2);
     if (!width || isNaN(width.value)) {
       return null;
     }
@@ -59,12 +59,12 @@ export class BorderArray {
       };
     } else if (parser.getCharCode(next) === codes.L_BRACKET) {      
       // dash array is present
-      const dash = parser.parseNumberAt(next + 1);
+      const dash = await parser.parseNumberAtAsync(next + 1);
       if (!dash || isNaN(dash.value)) {
         return null;
       }    
       
-      const gap = parser.parseNumberAt(dash.end + 2);
+      const gap = await parser.parseNumberAtAsync(dash.end + 2);
       if (!gap || isNaN(gap.value)) {
         return null;
       }   

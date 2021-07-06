@@ -61,13 +61,13 @@ export abstract class PdfDict extends PdfObject {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Type":
-            const type = parser.parseNameAt(i);
+            const type = await parser.parseNameAtAsync(i);
             if (type) {
               if (this.Type && this.Type !== type.value) {
                 // wrong object type

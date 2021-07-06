@@ -409,7 +409,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -421,7 +421,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
             break;
 
           case "/Q":
-            const justification = parser.parseNumberAt(i, true);
+            const justification = await parser.parseNumberAtAsync(i, true);
             if (justification && (<number[]>Object.values(justificationTypes))
               .includes(justification.value)) {
               this.Q = <JustificationType>justification.value;
@@ -431,7 +431,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
             }
             break;
           case "/LE":
-            const lineEndingType = parser.parseNameAt(i, true);
+            const lineEndingType = await parser.parseNameAtAsync(i, true);
             if (lineEndingType && (<string[]>Object.values(lineEndingTypes))
               .includes(lineEndingType.value)) {
               this.LE = <LineEndingType>lineEndingType.value;
@@ -447,7 +447,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
             break;
 
           case "/IT":
-            const intent = parser.parseNameAt(i, true);
+            const intent = await parser.parseNameAtAsync(i, true);
             if (intent) {
               if (intent.value === "/FreeTextTypewriter") { // common typo                
                 this.IT = freeTextIntents.CLICK_TO_TYPE;

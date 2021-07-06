@@ -68,7 +68,7 @@ export class BorderStyleDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -78,7 +78,7 @@ export class BorderStyleDict extends PdfDict {
             break;
 
           case "/S":
-            const style = parser.parseNameAt(i, true);
+            const style = await parser.parseNameAtAsync(i, true);
             if (style && (<string[]>Object.values(borderStyles)).includes(style.value)) {
               this.S = <BorderStyle>style.value;
               i = style.end + 1;              
@@ -88,7 +88,7 @@ export class BorderStyleDict extends PdfDict {
             break;  
 
           case "/D":
-            const dashGap = parser.parseNumberArrayAt(i, true);
+            const dashGap = await parser.parseNumberArrayAtAsync(i, true);
             if (dashGap) {
               this.D = [
                 dashGap.value[0] ?? 3,

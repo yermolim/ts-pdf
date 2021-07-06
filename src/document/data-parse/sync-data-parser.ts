@@ -152,7 +152,7 @@ export class SyncDataParser implements DataParser {
 
   async getValueTypeAtAsync(start: number, skipEmpty = true): Promise<ValueType>  {
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start)) {
       return null;
@@ -308,8 +308,8 @@ export class SyncDataParser implements DataParser {
     return -1; 
   }
 
-  findNewLineIndex(direction = true, 
-    start?: number): number {
+  async findNewLineIndexAsync(direction = true, 
+    start?: number): Promise<number> {
 
     let lineBreakIndex: number;     
 
@@ -523,7 +523,7 @@ export class SyncDataParser implements DataParser {
   
   async getIndirectObjectBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start)) {
       return null;
@@ -565,7 +565,7 @@ export class SyncDataParser implements DataParser {
   
   async getXrefTableBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) || this._data[start] !== codes.x) {
       return null;
@@ -600,9 +600,9 @@ export class SyncDataParser implements DataParser {
     };
   }
 
-  getDictBoundsAt(start: number, skipEmpty = true): ParserBounds {   
+  async getDictBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) 
       || this._data[start] !== codes.LESS
@@ -673,9 +673,9 @@ export class SyncDataParser implements DataParser {
     };
   }
   
-  getArrayBoundsAt(start: number, skipEmpty = true): ParserBounds {
+  async getArrayBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) || this._data[start] !== codes.L_BRACKET) {
       return null;
@@ -700,9 +700,9 @@ export class SyncDataParser implements DataParser {
     return {start, end: arrayEnd};
   }
       
-  async getHexBoundsAsync(start: number, skipEmpty = true): Promise<ParserBounds>  {   
+  async getHexBoundsAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
       return null;
@@ -716,9 +716,9 @@ export class SyncDataParser implements DataParser {
     return {start, end};
   }  
 
-  getLiteralBounds(start: number, skipEmpty = true): ParserBounds  {       
+  async getLiteralBoundsAsync(start: number, skipEmpty = true): Promise<ParserBounds> {       
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
       return null;
@@ -758,10 +758,10 @@ export class SyncDataParser implements DataParser {
 
   //#region parse methods  
 
-  parseNumberAt(start: number, 
-    float = false, skipEmpty = true): ParserResult<number>  {
+  async parseNumberAtAsync(start: number, 
+    float = false, skipEmpty = true): Promise<ParserResult<number>> {
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
       return null;
@@ -788,10 +788,10 @@ export class SyncDataParser implements DataParser {
       : null;
   }
   
-  parseNameAt(start: number, 
-    includeSlash = true, skipEmpty = true): ParserResult<string>  {
+  async parseNameAtAsync(start: number, 
+    includeSlash = true, skipEmpty = true): Promise<ParserResult<string>> {
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start) || this._data[start] !== codes.SLASH) {
       return null;
@@ -812,9 +812,9 @@ export class SyncDataParser implements DataParser {
       : null;
   } 
   
-  parseStringAt(start: number, skipEmpty = true): ParserResult<string>  {
+  async parseStringAtAsync(start: number, skipEmpty = true): Promise<ParserResult<string>> {
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }
     if (this.isOutside(start)) {
       return null;
@@ -835,7 +835,7 @@ export class SyncDataParser implements DataParser {
   
   async parseBoolAtAsync(start: number, skipEmpty = true): Promise<ParserResult<boolean>>  {
     if (skipEmpty) {
-      start = this.skipEmpty(start);
+      start = await this.skipEmptyAsync(start);
     }    
 
     if (this.isOutside(start)) {
@@ -863,9 +863,9 @@ export class SyncDataParser implements DataParser {
     return null;
   } 
   
-  parseNumberArrayAt(start: number, float = true, 
-    skipEmpty = true): ParserResult<number[]>  {
-    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
+  async parseNumberArrayAtAsync(start: number, float = true, 
+    skipEmpty = true): Promise<ParserResult<number[]>> {
+    const arrayBounds = await this.getArrayBoundsAtAsync(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
@@ -874,7 +874,7 @@ export class SyncDataParser implements DataParser {
     let current: ParserResult<number>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = this.parseNumberAt(i, float, true);
+      current = await this.parseNumberAtAsync(i, float, true);
       if (!current) {
         break;
       }
@@ -885,9 +885,9 @@ export class SyncDataParser implements DataParser {
     return {value: numbers, start: arrayBounds.start, end: arrayBounds.end};
   }  
   
-  parseNameArrayAt(start: number, includeSlash = true, 
-    skipEmpty = true): ParserResult<string[]>  {
-    const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
+  async parseNameArrayAtAsync(start: number, includeSlash = true, 
+    skipEmpty = true): Promise<ParserResult<string[]>> {
+    const arrayBounds = await this.getArrayBoundsAtAsync(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
@@ -896,7 +896,7 @@ export class SyncDataParser implements DataParser {
     let current: ParserResult<string>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      current = this.parseNameAt(i, includeSlash, true);
+      current = await this.parseNameAtAsync(i, includeSlash, true);
       if (!current) {
         break;
       }
@@ -907,15 +907,16 @@ export class SyncDataParser implements DataParser {
     return {value: names, start: arrayBounds.start, end: arrayBounds.end};
   }  
   
-  parseDictType(bounds: ParserBounds): string  {
-    return this.parseDictPropertyByName(keywordCodes.TYPE, bounds);   
+  async parseDictTypeAsync(bounds: ParserBounds): Promise<string> {
+    return await this.parseDictPropertyByNameAsync(keywordCodes.TYPE, bounds);   
   } 
   
-  parseDictSubtype(bounds: ParserBounds): string {
-    return this.parseDictPropertyByName(keywordCodes.SUBTYPE, bounds);   
+  async parseDictSubtypeAsync(bounds: ParserBounds): Promise<string> {
+    return await this.parseDictPropertyByNameAsync(keywordCodes.SUBTYPE, bounds);   
   } 
   
-  parseDictPropertyByName(propName: readonly number[] | number[], bounds: ParserBounds): string {
+  async parseDictPropertyByNameAsync(propName: readonly number[] | number[], 
+    bounds: ParserBounds): Promise<string> {
     const arr = this._data;
     if (!propName?.length) {
       return null;
@@ -994,7 +995,7 @@ export class SyncDataParser implements DataParser {
     }
 
     // parse the property value
-    const type = this.parseNameAt(propNameBounds.end + 1);
+    const type = await this.parseNameAtAsync(propNameBounds.end + 1);
     if (!type) {
       return null;
     }
@@ -1005,14 +1006,14 @@ export class SyncDataParser implements DataParser {
   
   //#region skip methods
 
-  skipEmpty(start: number): number {
+  async skipEmptyAsync(start: number): Promise<number> {
     let index = this.findNonSpaceIndex(true, start);
     if (index === -1) {
       return -1;
     }
     if (this._data[index] === codes.PERCENT) {
       // it's a comment. skip it
-      const afterComment = this.findNewLineIndex(true, index + 1);
+      const afterComment = await this.findNewLineIndexAsync(true, index + 1);
       if (afterComment === -1) {
         return -1;
       }
@@ -1037,19 +1038,19 @@ export class SyncDataParser implements DataParser {
         let skipValueBounds: ParserBounds;
         switch (value) {
           case valueTypes.DICTIONARY:
-            skipValueBounds = this.getDictBoundsAt(i, false);
+            skipValueBounds = await this.getDictBoundsAtAsync(i, false);
             break;
           case valueTypes.ARRAY:
-            skipValueBounds = this.getArrayBoundsAt(i, false);
+            skipValueBounds = await this.getArrayBoundsAtAsync(i, false);
             break;
           case valueTypes.STRING_LITERAL:            
-            skipValueBounds = this.getLiteralBounds(i, false);
+            skipValueBounds = await this.getLiteralBoundsAsync(i, false);
             break; 
           case valueTypes.STRING_HEX: 
             skipValueBounds = await this.getHexBoundsAsync(i, false);
             break; 
           case valueTypes.NUMBER:
-            const numberParseResult = this.parseNumberAt(i, true, false);
+            const numberParseResult = await this.parseNumberAtAsync(i, true, false);
             if (numberParseResult) {
               skipValueBounds = numberParseResult;
             }

@@ -97,13 +97,13 @@ export class SoftMaskDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {   
           case "/S":
-            const softMaskType = parser.parseNameAt(i, true);
+            const softMaskType = await parser.parseNameAtAsync(i, true);
             if (softMaskType && (<string[]>Object.values(softMaskTypes))
               .includes(softMaskType.value)) {
               this.S = <SoftMaskType>softMaskType.value;

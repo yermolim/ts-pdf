@@ -25,7 +25,7 @@ export class LiteralString implements IEncodable {
   static async parseAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): Promise<ParserResult<LiteralString>>  {  
       
-    const bounds = parser.getLiteralBounds(start, skipEmpty);
+    const bounds = await parser.getLiteralBoundsAsync(start, skipEmpty);
     if (!bounds) {
       return;
     }
@@ -41,7 +41,7 @@ export class LiteralString implements IEncodable {
 
   static async parseArrayAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): Promise<ParserResult<LiteralString[]>>  {
-    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }

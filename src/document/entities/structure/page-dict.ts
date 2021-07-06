@@ -267,7 +267,7 @@ export class PageDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -296,7 +296,7 @@ export class PageDict extends PdfDict {
               }              
               throw new Error("Can't parse /Resources value reference");
             } else if (resEntryType === valueTypes.DICTIONARY) { 
-              const resDictBounds = parser.getDictBoundsAt(i); 
+              const resDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (resDictBounds) {
                 this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
                 i = resDictBounds.end + 1;

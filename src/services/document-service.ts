@@ -648,7 +648,7 @@ export class DocumentService {
         continue;
       }
 
-      const type = parseInfo.parser.parseDictType(parseInfo.bounds);
+      const type = await parseInfo.parser.parseDictTypeAsync(parseInfo.bounds);
       if (type === dictTypes.PAGE_TREE) {          
         const kidTree = await PageTreeDict.parseAsync(parseInfo);
         if (kidTree) {

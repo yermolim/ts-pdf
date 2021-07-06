@@ -24,7 +24,7 @@ export class DateString implements IEncodable {
   static async parseAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): Promise<ParserResult<DateString>> {       
     if (skipEmpty) {
-      start = parser.skipEmpty(start);
+      start = await parser.skipEmptyAsync(start);
     }
     if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
       return null;

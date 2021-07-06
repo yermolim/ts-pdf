@@ -108,7 +108,7 @@ export class TransparencyGroupDict extends GroupDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -116,7 +116,7 @@ export class TransparencyGroupDict extends GroupDict {
           case "/CS":
             const colorSpaceEntryType = await parser.getValueTypeAtAsync(i);
             if (colorSpaceEntryType === valueTypes.NAME) {  
-              const colorSpaceName = parser.parseNameAt(i);  
+              const colorSpaceName = await parser.parseNameAtAsync(i);  
               if (colorSpaceName) {
                 this.CS = colorSpaceName.value;
                 i = colorSpaceName.end + 1;
@@ -124,7 +124,7 @@ export class TransparencyGroupDict extends GroupDict {
               }
               throw new Error("Can't parse /CS property name");
             } else if (colorSpaceEntryType === valueTypes.ARRAY) { 
-              const colorSpaceArrayBounds = parser.getArrayBoundsAt(i); 
+              const colorSpaceArrayBounds = await parser.getArrayBoundsAtAsync(i); 
               if (colorSpaceArrayBounds) {
                 // TODO: implement array-defined color spaces
                 i = colorSpaceArrayBounds.end + 1;

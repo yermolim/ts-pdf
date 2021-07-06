@@ -199,7 +199,7 @@ export class UnicodeCmapStream extends PdfStream {
    * fill public properties from data using info/parser if available
    */
   protected override async parsePropsAsync(parseInfo: ParserInfo) {
-    await await super.parsePropsAsync(parseInfo);    
+    await super.parsePropsAsync(parseInfo);    
     await this.fillMapAsync();
   }
 }

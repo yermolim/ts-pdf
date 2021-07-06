@@ -2565,7 +2565,7 @@ class SyncDataParser {
     getValueTypeAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = this.skipEmpty(start);
+                start = yield this.skipEmptyAsync(start);
             }
             if (this.isOutside(start)) {
                 return null;
@@ -2711,47 +2711,49 @@ class SyncDataParser {
             return -1;
         });
     }
-    findNewLineIndex(direction = true, start) {
-        let lineBreakIndex;
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isNewLineChar(arr[i])) {
-                    lineBreakIndex = i;
-                    break;
+    findNewLineIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            let lineBreakIndex;
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isNewLineChar(arr[i])) {
+                        lineBreakIndex = i;
+                        break;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isNewLineChar(arr[i])) {
-                    lineBreakIndex = i;
-                    break;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isNewLineChar(arr[i])) {
+                        lineBreakIndex = i;
+                        break;
+                    }
                 }
             }
-        }
-        if (lineBreakIndex === undefined) {
-            return -1;
-        }
-        if (direction) {
-            if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN
-                && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
-                lineBreakIndex++;
+            if (lineBreakIndex === undefined) {
+                return -1;
             }
-            return Math.min(lineBreakIndex + 1, this._maxIndex);
-        }
-        else {
-            if (this._data[lineBreakIndex] === codes.LINE_FEED
-                && this._data[lineBreakIndex - 1] === codes.CARRIAGE_RETURN) {
-                lineBreakIndex--;
+            if (direction) {
+                if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN
+                    && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
+                    lineBreakIndex++;
+                }
+                return Math.min(lineBreakIndex + 1, this._maxIndex);
             }
-            return Math.max(lineBreakIndex - 1, 0);
-        }
+            else {
+                if (this._data[lineBreakIndex] === codes.LINE_FEED
+                    && this._data[lineBreakIndex - 1] === codes.CARRIAGE_RETURN) {
+                    lineBreakIndex--;
+                }
+                return Math.max(lineBreakIndex - 1, 0);
+            }
+        });
     }
     findSpaceIndex(direction = true, start) {
         const arr = this._data;
@@ -2894,7 +2896,7 @@ class SyncDataParser {
     getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = this.skipEmpty(start);
+                start = yield this.skipEmptyAsync(start);
             }
             if (this.isOutside(start)) {
                 return null;
@@ -2930,7 +2932,7 @@ class SyncDataParser {
     getXrefTableBoundsAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = this.skipEmpty(start);
+                start = yield this.skipEmptyAsync(start);
             }
             if (this.isOutside(start) || this._data[start] !== codes.x) {
                 return null;
@@ -2959,97 +2961,101 @@ class SyncDataParser {
             };
         });
     }
-    getDictBoundsAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start)
-            || this._data[start] !== codes.LESS
-            || this._data[start + 1] !== codes.LESS) {
-            return null;
-        }
-        const contentStart = this.findNonSpaceIndex(true, start + 2);
-        if (contentStart === -1) {
-            return null;
-        }
-        let dictOpened = 1;
-        let dictBound = true;
-        let literalOpened = 0;
-        let i = contentStart;
-        let code;
-        let prevCode;
-        while (dictOpened) {
-            prevCode = code;
-            code = this._data[i++];
-            if (code === codes.L_PARENTHESE
-                && (!literalOpened || prevCode !== codes.BACKSLASH)) {
-                literalOpened++;
+    getDictBoundsAtAsync(start, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = yield this.skipEmptyAsync(start);
             }
-            if (code === codes.R_PARENTHESE
-                && (literalOpened && prevCode !== codes.BACKSLASH)) {
-                literalOpened--;
+            if (this.isOutside(start)
+                || this._data[start] !== codes.LESS
+                || this._data[start + 1] !== codes.LESS) {
+                return null;
             }
-            if (literalOpened) {
-                continue;
+            const contentStart = this.findNonSpaceIndex(true, start + 2);
+            if (contentStart === -1) {
+                return null;
             }
-            if (!dictBound) {
-                if (code === codes.LESS && code === prevCode) {
-                    dictOpened++;
-                    dictBound = true;
+            let dictOpened = 1;
+            let dictBound = true;
+            let literalOpened = 0;
+            let i = contentStart;
+            let code;
+            let prevCode;
+            while (dictOpened) {
+                prevCode = code;
+                code = this._data[i++];
+                if (code === codes.L_PARENTHESE
+                    && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+                    literalOpened++;
                 }
-                else if (code === codes.GREATER && code === prevCode) {
-                    dictOpened--;
-                    dictBound = true;
+                if (code === codes.R_PARENTHESE
+                    && (literalOpened && prevCode !== codes.BACKSLASH)) {
+                    literalOpened--;
+                }
+                if (literalOpened) {
+                    continue;
+                }
+                if (!dictBound) {
+                    if (code === codes.LESS && code === prevCode) {
+                        dictOpened++;
+                        dictBound = true;
+                    }
+                    else if (code === codes.GREATER && code === prevCode) {
+                        dictOpened--;
+                        dictBound = true;
+                    }
+                }
+                else {
+                    dictBound = false;
                 }
             }
-            else {
-                dictBound = false;
+            const end = i - 1;
+            const contentEnd = this.findNonSpaceIndex(false, end - 2);
+            if (contentEnd < contentStart) {
+                return {
+                    start,
+                    end,
+                };
             }
-        }
-        const end = i - 1;
-        const contentEnd = this.findNonSpaceIndex(false, end - 2);
-        if (contentEnd < contentStart) {
             return {
                 start,
                 end,
+                contentStart,
+                contentEnd,
             };
-        }
-        return {
-            start,
-            end,
-            contentStart,
-            contentEnd,
-        };
+        });
     }
-    getArrayBoundsAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || this._data[start] !== codes.L_BRACKET) {
-            return null;
-        }
-        let arraysOpened = 1;
-        let i = start + 1;
-        let code;
-        while (arraysOpened) {
-            code = this._data[i++];
-            if (code === codes.L_BRACKET) {
-                arraysOpened++;
+    getArrayBoundsAtAsync(start, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = yield this.skipEmptyAsync(start);
             }
-            else if (code === codes.R_BRACKET) {
-                arraysOpened--;
+            if (this.isOutside(start) || this._data[start] !== codes.L_BRACKET) {
+                return null;
             }
-        }
-        const arrayEnd = i - 1;
-        if (arrayEnd - start < 1) {
-            return null;
-        }
-        return { start, end: arrayEnd };
+            let arraysOpened = 1;
+            let i = start + 1;
+            let code;
+            while (arraysOpened) {
+                code = this._data[i++];
+                if (code === codes.L_BRACKET) {
+                    arraysOpened++;
+                }
+                else if (code === codes.R_BRACKET) {
+                    arraysOpened--;
+                }
+            }
+            const arrayEnd = i - 1;
+            if (arrayEnd - start < 1) {
+                return null;
+            }
+            return { start, end: arrayEnd };
+        });
     }
     getHexBoundsAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = this.skipEmpty(start);
+                start = yield this.skipEmptyAsync(start);
             }
             if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
                 return null;
@@ -3061,108 +3067,116 @@ class SyncDataParser {
             return { start, end };
         });
     }
-    getLiteralBounds(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
-            return null;
-        }
-        let i = start;
-        let code;
-        let escaped = false;
-        let opened = 0;
-        while (opened || code !== codes.R_PARENTHESE || escaped) {
-            if (i > this._maxIndex) {
+    getLiteralBoundsAsync(start, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = yield this.skipEmptyAsync(start);
+            }
+            if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
                 return null;
             }
-            code = this.getCharCode(i++);
-            if (!escaped) {
-                if (code === codes.L_PARENTHESE) {
-                    opened += 1;
+            let i = start;
+            let code;
+            let escaped = false;
+            let opened = 0;
+            while (opened || code !== codes.R_PARENTHESE || escaped) {
+                if (i > this._maxIndex) {
+                    return null;
                 }
-                else if (opened && code === codes.R_PARENTHESE) {
-                    opened -= 1;
+                code = this.getCharCode(i++);
+                if (!escaped) {
+                    if (code === codes.L_PARENTHESE) {
+                        opened += 1;
+                    }
+                    else if (opened && code === codes.R_PARENTHESE) {
+                        opened -= 1;
+                    }
+                }
+                if (!escaped && code === codes.BACKSLASH) {
+                    escaped = true;
+                }
+                else {
+                    escaped = false;
                 }
             }
-            if (!escaped && code === codes.BACKSLASH) {
-                escaped = true;
+            return { start, end: i - 1 };
+        });
+    }
+    parseNumberAtAsync(start, float = false, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = yield this.skipEmptyAsync(start);
             }
-            else {
-                escaped = false;
+            if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
+                return null;
             }
-        }
-        return { start, end: i - 1 };
+            let i = start;
+            let numberStr = "";
+            let value = this._data[i];
+            if (value === codes.MINUS) {
+                numberStr += "-";
+                value = this._data[++i];
+            }
+            else if (value === codes.DOT) {
+                numberStr += "0.";
+                value = this._data[++i];
+            }
+            while (SyncDataParser.isDigit(value)
+                || (float && value === codes.DOT)) {
+                numberStr += String.fromCharCode(value);
+                value = this._data[++i];
+            }
+            return numberStr
+                ? { value: +numberStr, start, end: i - 1 }
+                : null;
+        });
     }
-    parseNumberAt(start, float = false, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
-            return null;
-        }
-        let i = start;
-        let numberStr = "";
-        let value = this._data[i];
-        if (value === codes.MINUS) {
-            numberStr += "-";
-            value = this._data[++i];
-        }
-        else if (value === codes.DOT) {
-            numberStr += "0.";
-            value = this._data[++i];
-        }
-        while (SyncDataParser.isDigit(value)
-            || (float && value === codes.DOT)) {
-            numberStr += String.fromCharCode(value);
-            value = this._data[++i];
-        }
-        return numberStr
-            ? { value: +numberStr, start, end: i - 1 }
-            : null;
+    parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = yield this.skipEmptyAsync(start);
+            }
+            if (this.isOutside(start) || this._data[start] !== codes.SLASH) {
+                return null;
+            }
+            let i = start + 1;
+            let result = includeSlash
+                ? "/"
+                : "";
+            let value = this._data[i];
+            while (SyncDataParser.isRegularChar(value)) {
+                result += String.fromCharCode(value);
+                value = this._data[++i];
+            }
+            return result.length > 1
+                ? { value: result, start, end: i - 1 }
+                : null;
+        });
     }
-    parseNameAt(start, includeSlash = true, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || this._data[start] !== codes.SLASH) {
-            return null;
-        }
-        let i = start + 1;
-        let result = includeSlash
-            ? "/"
-            : "";
-        let value = this._data[i];
-        while (SyncDataParser.isRegularChar(value)) {
-            result += String.fromCharCode(value);
-            value = this._data[++i];
-        }
-        return result.length > 1
-            ? { value: result, start, end: i - 1 }
-            : null;
-    }
-    parseStringAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start)) {
-            return null;
-        }
-        let i = start;
-        let result = "";
-        let value = this._data[i];
-        while (SyncDataParser.isRegularChar(value)) {
-            result += String.fromCharCode(value);
-            value = this._data[++i];
-        }
-        return result.length !== 0
-            ? { value: result, start, end: i - 1 }
-            : null;
+    parseStringAtAsync(start, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = yield this.skipEmptyAsync(start);
+            }
+            if (this.isOutside(start)) {
+                return null;
+            }
+            let i = start;
+            let result = "";
+            let value = this._data[i];
+            while (SyncDataParser.isRegularChar(value)) {
+                result += String.fromCharCode(value);
+                value = this._data[++i];
+            }
+            return result.length !== 0
+                ? { value: result, start, end: i - 1 }
+                : null;
+        });
     }
     parseBoolAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = this.skipEmpty(start);
+                start = yield this.skipEmptyAsync(start);
             }
             if (this.isOutside(start)) {
                 return null;
@@ -3185,126 +3199,138 @@ class SyncDataParser {
             return null;
         });
     }
-    parseNumberArrayAt(start, float = true, skipEmpty = true) {
-        const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const numbers = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = this.parseNumberAt(i, float, true);
-            if (!current) {
-                break;
+    parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
+            if (!arrayBounds) {
+                return null;
             }
-            numbers.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
-    }
-    parseNameArrayAt(start, includeSlash = true, skipEmpty = true) {
-        const arrayBounds = this.getArrayBoundsAt(start, skipEmpty);
-        if (!arrayBounds) {
-            return null;
-        }
-        const names = [];
-        let current;
-        let i = arrayBounds.start + 1;
-        while (i < arrayBounds.end) {
-            current = this.parseNameAt(i, includeSlash, true);
-            if (!current) {
-                break;
+            const numbers = [];
+            let current;
+            let i = arrayBounds.start + 1;
+            while (i < arrayBounds.end) {
+                current = yield this.parseNumberAtAsync(i, float, true);
+                if (!current) {
+                    break;
+                }
+                numbers.push(current.value);
+                i = current.end + 1;
             }
-            names.push(current.value);
-            i = current.end + 1;
-        }
-        return { value: names, start: arrayBounds.start, end: arrayBounds.end };
+            return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
+        });
     }
-    parseDictType(bounds) {
-        return this.parseDictPropertyByName(keywordCodes.TYPE, bounds);
+    parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
+            if (!arrayBounds) {
+                return null;
+            }
+            const names = [];
+            let current;
+            let i = arrayBounds.start + 1;
+            while (i < arrayBounds.end) {
+                current = yield this.parseNameAtAsync(i, includeSlash, true);
+                if (!current) {
+                    break;
+                }
+                names.push(current.value);
+                i = current.end + 1;
+            }
+            return { value: names, start: arrayBounds.start, end: arrayBounds.end };
+        });
     }
-    parseDictSubtype(bounds) {
-        return this.parseDictPropertyByName(keywordCodes.SUBTYPE, bounds);
+    parseDictTypeAsync(bounds) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            return yield this.parseDictPropertyByNameAsync(keywordCodes.TYPE, bounds);
+        });
     }
-    parseDictPropertyByName(propName, bounds) {
+    parseDictSubtypeAsync(bounds) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            return yield this.parseDictPropertyByNameAsync(keywordCodes.SUBTYPE, bounds);
+        });
+    }
+    parseDictPropertyByNameAsync(propName, bounds) {
         var _a, _b;
-        const arr = this._data;
-        if (!(propName === null || propName === void 0 ? void 0 : propName.length)) {
-            return null;
-        }
-        const minIndex = Math.max(Math.min((_a = bounds.start) !== null && _a !== void 0 ? _a : 0, this._maxIndex), 0);
-        const maxIndex = Math.max(Math.min((_b = bounds.end) !== null && _b !== void 0 ? _b : this._maxIndex, this._maxIndex), 0);
-        let propNameBounds;
-        let i = minIndex;
-        let j;
-        let code;
-        let prevCode;
-        let dictOpened = 0;
-        let dictBound = true;
-        let literalOpened = 0;
-        outer_loop: for (i; i <= maxIndex; i++) {
-            prevCode = code;
-            code = arr[i];
-            if (code === codes.L_PARENTHESE
-                && (!literalOpened || prevCode !== codes.BACKSLASH)) {
-                literalOpened++;
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            if (!(propName === null || propName === void 0 ? void 0 : propName.length)) {
+                return null;
             }
-            if (code === codes.R_PARENTHESE
-                && (literalOpened && prevCode !== codes.BACKSLASH)) {
-                literalOpened--;
-            }
-            if (literalOpened) {
-                continue;
-            }
-            if (!dictBound) {
-                if (code === codes.LESS && code === prevCode) {
-                    dictOpened++;
-                    dictBound = true;
+            const minIndex = Math.max(Math.min((_a = bounds.start) !== null && _a !== void 0 ? _a : 0, this._maxIndex), 0);
+            const maxIndex = Math.max(Math.min((_b = bounds.end) !== null && _b !== void 0 ? _b : this._maxIndex, this._maxIndex), 0);
+            let propNameBounds;
+            let i = minIndex;
+            let j;
+            let code;
+            let prevCode;
+            let dictOpened = 0;
+            let dictBound = true;
+            let literalOpened = 0;
+            outer_loop: for (i; i <= maxIndex; i++) {
+                prevCode = code;
+                code = arr[i];
+                if (code === codes.L_PARENTHESE
+                    && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+                    literalOpened++;
                 }
-                else if (code === codes.GREATER && code === prevCode) {
-                    dictOpened--;
-                    dictBound = true;
+                if (code === codes.R_PARENTHESE
+                    && (literalOpened && prevCode !== codes.BACKSLASH)) {
+                    literalOpened--;
+                }
+                if (literalOpened) {
+                    continue;
+                }
+                if (!dictBound) {
+                    if (code === codes.LESS && code === prevCode) {
+                        dictOpened++;
+                        dictBound = true;
+                    }
+                    else if (code === codes.GREATER && code === prevCode) {
+                        dictOpened--;
+                        dictBound = true;
+                    }
+                }
+                else {
+                    dictBound = false;
+                }
+                for (j = 0; j < propName.length; j++) {
+                    if (arr[i + j] !== propName[j]) {
+                        continue outer_loop;
+                    }
+                }
+                if (dictOpened !== 1) {
+                    continue;
+                }
+                if (!SyncDataParser.isRegularChar(arr[i + j])) {
+                    propNameBounds = { start: i, end: i + j - 1 };
+                    break;
                 }
             }
-            else {
-                dictBound = false;
+            if (!propNameBounds) {
+                return null;
             }
-            for (j = 0; j < propName.length; j++) {
-                if (arr[i + j] !== propName[j]) {
-                    continue outer_loop;
-                }
+            const type = yield this.parseNameAtAsync(propNameBounds.end + 1);
+            if (!type) {
+                return null;
             }
-            if (dictOpened !== 1) {
-                continue;
-            }
-            if (!SyncDataParser.isRegularChar(arr[i + j])) {
-                propNameBounds = { start: i, end: i + j - 1 };
-                break;
-            }
-        }
-        if (!propNameBounds) {
-            return null;
-        }
-        const type = this.parseNameAt(propNameBounds.end + 1);
-        if (!type) {
-            return null;
-        }
-        return type.value;
+            return type.value;
+        });
     }
-    skipEmpty(start) {
-        let index = this.findNonSpaceIndex(true, start);
-        if (index === -1) {
-            return -1;
-        }
-        if (this._data[index] === codes.PERCENT) {
-            const afterComment = this.findNewLineIndex(true, index + 1);
-            if (afterComment === -1) {
+    skipEmptyAsync(start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            let index = this.findNonSpaceIndex(true, start);
+            if (index === -1) {
                 return -1;
             }
-            index = this.findNonSpaceIndex(true, afterComment);
-        }
-        return index;
+            if (this._data[index] === codes.PERCENT) {
+                const afterComment = yield this.findNewLineIndexAsync(true, index + 1);
+                if (afterComment === -1) {
+                    return -1;
+                }
+                index = this.findNonSpaceIndex(true, afterComment);
+            }
+            return index;
+        });
     }
     skipToNextNameAsync(start, max) {
         return __awaiter$1g(this, void 0, void 0, function* () {
@@ -3322,19 +3348,19 @@ class SyncDataParser {
                     let skipValueBounds;
                     switch (value) {
                         case valueTypes.DICTIONARY:
-                            skipValueBounds = this.getDictBoundsAt(i, false);
+                            skipValueBounds = yield this.getDictBoundsAtAsync(i, false);
                             break;
                         case valueTypes.ARRAY:
-                            skipValueBounds = this.getArrayBoundsAt(i, false);
+                            skipValueBounds = yield this.getArrayBoundsAtAsync(i, false);
                             break;
                         case valueTypes.STRING_LITERAL:
-                            skipValueBounds = this.getLiteralBounds(i, false);
+                            skipValueBounds = yield this.getLiteralBoundsAsync(i, false);
                             break;
                         case valueTypes.STRING_HEX:
                             skipValueBounds = yield this.getHexBoundsAsync(i, false);
                             break;
                         case valueTypes.NUMBER:
-                            const numberParseResult = this.parseNumberAt(i, true, false);
+                            const numberParseResult = yield this.parseNumberAtAsync(i, true, false);
                             if (numberParseResult) {
                                 skipValueBounds = numberParseResult;
                             }
@@ -4156,11 +4182,11 @@ class ObjectId {
             if (start < 0 || start > parser.maxIndex) {
                 return null;
             }
-            const id = parser.parseNumberAt(start, false, false);
+            const id = yield parser.parseNumberAtAsync(start, false, false);
             if (!id || isNaN(id.value)) {
                 return null;
             }
-            const generation = parser.parseNumberAt(id.end + 2, false, false);
+            const generation = yield parser.parseNumberAtAsync(id.end + 2, false, false);
             if (!generation || isNaN(generation.value)) {
                 return null;
             }
@@ -4191,7 +4217,7 @@ class ObjectId {
     }
     static parseRefArrayAsync(parser, start, skipEmpty = true) {
         return __awaiter$1f(this, void 0, void 0, function* () {
-            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
             }
@@ -4247,7 +4273,7 @@ class DateString {
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1e(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = parser.skipEmpty(start);
+                start = yield parser.skipEmptyAsync(start);
             }
             if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
                 return null;
@@ -4341,7 +4367,7 @@ class HexString {
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1d(this, void 0, void 0, function* () {
-            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
             }
@@ -4407,7 +4433,7 @@ class LiteralString {
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1c(this, void 0, void 0, function* () {
-            const bounds = parser.getLiteralBounds(start, skipEmpty);
+            const bounds = yield parser.getLiteralBoundsAsync(start, skipEmpty);
             if (!bounds) {
                 return;
             }
@@ -4421,7 +4447,7 @@ class LiteralString {
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1c(this, void 0, void 0, function* () {
-            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
             }
@@ -4670,25 +4696,25 @@ class PdfObject {
     }
     parseNamePropAsync(propName, parser, index, includeSlash = true) {
         return __awaiter$1b(this, void 0, void 0, function* () {
-            const parsed = parser.parseNameAt(index, includeSlash);
+            const parsed = yield parser.parseNameAtAsync(index, includeSlash);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNameArrayPropAsync(propName, parser, index, includeSlash = true) {
         return __awaiter$1b(this, void 0, void 0, function* () {
-            const parsed = parser.parseNameArrayAt(index, includeSlash);
+            const parsed = yield parser.parseNameArrayAtAsync(index, includeSlash);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNumberPropAsync(propName, parser, index, float = true) {
         return __awaiter$1b(this, void 0, void 0, function* () {
-            const parsed = parser.parseNumberAt(index, float);
+            const parsed = yield parser.parseNumberAtAsync(index, float);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNumberArrayPropAsync(propName, parser, index, float = true) {
         return __awaiter$1b(this, void 0, void 0, function* () {
-            const parsed = parser.parseNumberArrayAt(index, float);
+            const parsed = yield parser.parseNumberArrayAtAsync(index, float);
             return this.setParsedProp(propName, parsed);
         });
     }
@@ -4764,13 +4790,13 @@ class PdfDict extends PdfObject {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Type":
-                            const type = parser.parseNameAt(i);
+                            const type = yield parser.parseNameAtAsync(i);
                             if (type) {
                                 if (this.Type && this.Type !== type.value) {
                                     throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
@@ -4826,7 +4852,7 @@ class DecodeParamsDict extends PdfDict {
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$19(this, void 0, void 0, function* () {
-            const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
             }
@@ -4834,7 +4860,7 @@ class DecodeParamsDict extends PdfDict {
             let current;
             let i = arrayBounds.start + 1;
             while (i < arrayBounds.end) {
-                const paramsBounds = parser.getDictBoundsAt(i);
+                const paramsBounds = yield parser.getDictBoundsAtAsync(i);
                 current = yield DecodeParamsDict.parseAsync({ parser, bounds: paramsBounds, cryptInfo });
                 if (!current) {
                     break;
@@ -4897,14 +4923,14 @@ class DecodeParamsDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     const valueType = yield parser.getValueTypeAtAsync(i);
                     switch (valueType) {
                         case valueTypes.NUMBER:
-                            const intValue = parser.parseNumberAt(i, false);
+                            const intValue = yield parser.parseNumberAtAsync(i, false);
                             if (intValue) {
                                 this._intPropMap.set(name, intValue.value);
                                 i = intValue.end + 1;
@@ -4920,7 +4946,7 @@ class DecodeParamsDict extends PdfDict {
                             }
                             break;
                         case valueTypes.NAME:
-                            const nameValue = parser.parseNameAt(i);
+                            const nameValue = yield parser.parseNameAtAsync(i);
                             if (nameValue) {
                                 this._namePropMap.set(name, nameValue.value);
                                 i = nameValue.end + 1;
@@ -5732,7 +5758,7 @@ class PdfStream extends PdfObject {
             if (!streamStartIndex) {
                 throw new Error("Stream start is out of the data bounds");
             }
-            const dictBounds = parser.getDictBoundsAt(start);
+            const dictBounds = yield parser.getDictBoundsAtAsync(start);
             let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
             if (i === -1) {
                 throw new Error("Dict is empty (has no properties)");
@@ -5740,13 +5766,13 @@ class PdfStream extends PdfObject {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Type":
-                            const type = parser.parseNameAt(i);
+                            const type = yield parser.parseNameAtAsync(i);
                             if (type) {
                                 if (this.Type && this.Type !== type.value) {
                                     throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
@@ -5764,7 +5790,7 @@ class PdfStream extends PdfObject {
                         case "/Filter":
                             const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.NAME) {
-                                const filter = parser.parseNameAt(i);
+                                const filter = yield parser.parseNameAtAsync(i);
                                 if (filter && supportedFilters.has(filter.value)) {
                                     this.Filter = filter.value;
                                     i = filter.end + 1;
@@ -5775,7 +5801,7 @@ class PdfStream extends PdfObject {
                                 }
                             }
                             else if (entryType === valueTypes.ARRAY) {
-                                const filterNames = parser.parseNameArrayAt(i);
+                                const filterNames = yield parser.parseNameArrayAtAsync(i);
                                 if (filterNames) {
                                     const filterArray = filterNames.value;
                                     if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
@@ -5792,7 +5818,7 @@ class PdfStream extends PdfObject {
                         case "/DecodeParms":
                             const paramsEntryType = yield parser.getValueTypeAtAsync(i);
                             if (paramsEntryType === valueTypes.DICTIONARY) {
-                                const decodeParamsBounds = parser.getDictBoundsAt(i);
+                                const decodeParamsBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (decodeParamsBounds) {
                                     const params = yield DecodeParamsDict.parseAsync({ parser,
                                         bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo });
@@ -5826,8 +5852,8 @@ class PdfStream extends PdfObject {
                     break;
                 }
             }
-            const streamStart = parser.findNewLineIndex(true, streamStartIndex.end + 1);
-            const streamEnd = parser.findNewLineIndex(false, streamEndIndex.start - 1);
+            const streamStart = yield parser.findNewLineIndexAsync(true, streamStartIndex.end + 1);
+            const streamEnd = yield parser.findNewLineIndexAsync(false, streamEndIndex.start - 1);
             const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
             const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
                 ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
@@ -5958,12 +5984,12 @@ class TrailerStream extends PdfStream {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
-            const dictBounds = parser.getDictBoundsAt(start);
+            const dictBounds = yield parser.getDictBoundsAtAsync(start);
             let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -6242,19 +6268,19 @@ class IndexedColorSpaceArray {
                 return null;
             }
             i++;
-            const type = parser.parseNameAt(i);
+            const type = yield parser.parseNameAtAsync(i);
             if (!type || type.value !== "/Indexed") {
                 console.log("Array is not representing an indexed color space");
                 return null;
             }
             i = type.end + 1;
-            const base = parser.parseNameAt(i);
+            const base = yield parser.parseNameAtAsync(i);
             if (!base) {
                 console.log("Can't parse base color space name of the indexed color space");
                 return null;
             }
             i = base.end + 2;
-            const highestValue = parser.parseNumberAt(i);
+            const highestValue = yield parser.parseNumberAtAsync(i);
             if (!highestValue || isNaN(highestValue.value)) {
                 console.log("Can't parse the highest value of the indexed color space");
                 return null;
@@ -6487,18 +6513,18 @@ class ImageStream extends PdfStream {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
-            const dictBounds = parser.getDictBoundsAt(start);
+            const dictBounds = yield parser.getDictBoundsAtAsync(start);
             let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Subtype":
-                            const subtype = parser.parseNameAt(i);
+                            const subtype = yield parser.parseNameAtAsync(i);
                             if (subtype) {
                                 if (this.Subtype && this.Subtype !== subtype.value) {
                                     throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
@@ -6532,7 +6558,7 @@ class ImageStream extends PdfStream {
                         case "/ColorSpace":
                             const colorSpaceEntryType = yield parser.getValueTypeAtAsync(i);
                             if (colorSpaceEntryType === valueTypes.NAME) {
-                                const colorSpaceName = parser.parseNameAt(i);
+                                const colorSpaceName = yield parser.parseNameAtAsync(i);
                                 if (colorSpaceName) {
                                     this.ColorSpace = colorSpaceName.value;
                                     i = colorSpaceName.end + 1;
@@ -6541,7 +6567,7 @@ class ImageStream extends PdfStream {
                                 throw new Error("Can't parse /ColorSpace name");
                             }
                             else if (colorSpaceEntryType === valueTypes.ARRAY) {
-                                const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
+                                const colorSpaceArrayBounds = yield parser.getArrayBoundsAtAsync(i);
                                 if (colorSpaceArrayBounds) {
                                     const indexedColorSpace = yield IndexedColorSpaceArray.parseAsync({
                                         parser,
@@ -6612,7 +6638,7 @@ class ImageStream extends PdfStream {
                                 let j = 0;
                                 let value;
                                 while (j <= maskParser.maxIndex) {
-                                    value = maskParser.parseNumberAt(j, true, true);
+                                    value = yield maskParser.parseNumberAtAsync(j, true, true);
                                     if (!value) {
                                         break;
                                     }
@@ -6627,7 +6653,7 @@ class ImageStream extends PdfStream {
                                 break;
                             }
                             else if (maskEntryType === valueTypes.ARRAY) {
-                                const maskArray = parser.parseNumberArrayAt(i, false);
+                                const maskArray = yield parser.parseNumberArrayAtAsync(i, false);
                                 if (maskArray) {
                                     this.Mask = maskArray.value;
                                     i = maskArray.end + 1;
@@ -6876,7 +6902,7 @@ class ObjectMapDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -6892,7 +6918,7 @@ class ObjectMapDict extends PdfDict {
                                 }
                             }
                             else if (entryType === valueTypes.DICTIONARY) {
-                                const dictBounds = parser.getDictBoundsAt(i);
+                                const dictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (dictBounds) {
                                     const dictParseInfo = {
                                         parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
@@ -7087,7 +7113,7 @@ class UnicodeCmapStream extends PdfStream {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         return __awaiter$11(this, void 0, void 0, function* () {
-            yield yield _super.parsePropsAsync.call(this, parseInfo);
+            yield _super.parsePropsAsync.call(this, parseInfo);
             yield this.fillMapAsync();
         });
     }
@@ -11013,7 +11039,7 @@ class EncodingDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -11025,18 +11051,18 @@ class EncodingDict extends PdfDict {
                             const differencesValueType = yield parser.getValueTypeAtAsync(i, true);
                             if (differencesValueType === valueTypes.ARRAY) {
                                 this.Differences = [];
-                                const arrayBounds = parser.getArrayBoundsAt(i);
+                                const arrayBounds = yield parser.getArrayBoundsAtAsync(i);
                                 let j = arrayBounds.start + 1;
                                 while (j < arrayBounds.end - 1 && j !== -1) {
                                     const nextArrayValueType = yield parser.getValueTypeAtAsync(j, true);
                                     switch (nextArrayValueType) {
                                         case valueTypes.NAME:
-                                            const arrayNameResult = parser.parseNameAt(j, true);
+                                            const arrayNameResult = yield parser.parseNameAtAsync(j, true);
                                             this.Differences.push(arrayNameResult.value);
                                             j = arrayNameResult.end + 1;
                                             break;
                                         case valueTypes.NUMBER:
-                                            const arrayNumberResult = parser.parseNumberAt(j, true);
+                                            const arrayNumberResult = yield parser.parseNumberAtAsync(j, true);
                                             this.Differences.push(arrayNumberResult.value);
                                             j = arrayNumberResult.end + 1;
                                             break;
@@ -11210,7 +11236,7 @@ class FontDescriptorDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -11819,13 +11845,13 @@ class FontDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Subtype":
-                            const subtype = parser.parseNameAt(i, true);
+                            const subtype = yield parser.parseNameAtAsync(i, true);
                             if (subtype) {
                                 this.Subtype = subtype.value;
                                 i = subtype.end + 1;
@@ -11886,7 +11912,7 @@ class FontDict extends PdfDict {
                                 throw new Error(`Can't parse ${name} value reference`);
                             }
                             else if (excludedEntryType === valueTypes.DICTIONARY) {
-                                const excludedDictBounds = parser.getDictBoundsAt(i);
+                                const excludedDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (excludedDictBounds) {
                                     this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
                                     i = excludedDictBounds.end + 1;
@@ -12011,13 +12037,13 @@ class SoftMaskDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/S":
-                            const softMaskType = parser.parseNameAt(i, true);
+                            const softMaskType = yield parser.parseNameAtAsync(i, true);
                             if (softMaskType && Object.values(softMaskTypes)
                                 .includes(softMaskType.value)) {
                                 this.S = softMaskType.value;
@@ -12257,13 +12283,13 @@ class GraphicsStateDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/LC":
-                            const lineCap = parser.parseNumberAt(i, true);
+                            const lineCap = yield parser.parseNumberAtAsync(i, true);
                             if (lineCap && Object.values(lineCapStyles)
                                 .includes(lineCap.value)) {
                                 this.LC = lineCap.value;
@@ -12274,7 +12300,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             break;
                         case "/OPM":
-                            const overprintMode = parser.parseNumberAt(i, true);
+                            const overprintMode = yield parser.parseNumberAtAsync(i, true);
                             if (overprintMode && ([0, 1].includes(overprintMode.value))) {
                                 this.OPM = overprintMode.value;
                                 i = overprintMode.end + 1;
@@ -12284,7 +12310,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             break;
                         case "/LJ":
-                            const lineJoin = parser.parseNumberAt(i, true);
+                            const lineJoin = yield parser.parseNumberAtAsync(i, true);
                             if (lineJoin && Object.values(lineJoinStyles)
                                 .includes(lineJoin.value)) {
                                 this.LJ = lineJoin.value;
@@ -12295,7 +12321,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             break;
                         case "/RI":
-                            const intent = parser.parseNameAt(i, true);
+                            const intent = yield parser.parseNameAtAsync(i, true);
                             if (intent && Object.values(renderingIntents)
                                 .includes(intent.value)) {
                                 this.RI = intent.value;
@@ -12306,7 +12332,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             break;
                         case "/BM":
-                            const blendMode = parser.parseNameAt(i, true);
+                            const blendMode = yield parser.parseNameAtAsync(i, true);
                             if (blendMode && Object.values(blendModes)
                                 .includes(blendMode.value)) {
                                 this.BM = blendMode.value;
@@ -12319,7 +12345,7 @@ class GraphicsStateDict extends PdfDict {
                         case "/SMask":
                             const sMaskEntryType = yield parser.getValueTypeAtAsync(i);
                             if (sMaskEntryType === valueTypes.NAME) {
-                                const sMaskName = parser.parseNameAt(i);
+                                const sMaskName = yield parser.parseNameAtAsync(i);
                                 if (sMaskName) {
                                     this.SMask = sMaskName.value;
                                     i = sMaskName.end + 1;
@@ -12328,7 +12354,7 @@ class GraphicsStateDict extends PdfDict {
                                 throw new Error("Can't parse /SMask property name");
                             }
                             else if (sMaskEntryType === valueTypes.DICTIONARY) {
-                                const sMaskDictBounds = parser.getDictBoundsAt(i);
+                                const sMaskDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (sMaskDictBounds) {
                                     const sMaskDict = yield SoftMaskDict.parseAsync({ parser, bounds: sMaskDictBounds });
                                     if (sMaskDict) {
@@ -12343,11 +12369,11 @@ class GraphicsStateDict extends PdfDict {
                         case "/Font":
                             const fontEntryType = yield parser.getValueTypeAtAsync(i);
                             if (fontEntryType === valueTypes.ARRAY) {
-                                const fontArrayBounds = parser.getArrayBoundsAt(i);
+                                const fontArrayBounds = yield parser.getArrayBoundsAtAsync(i);
                                 if (fontArrayBounds) {
                                     const fontRef = yield ObjectId.parseAsync(parser, fontArrayBounds.start + 1);
                                     if (fontRef) {
-                                        const fontSize = parser.parseNumberAt(fontRef.end + 1);
+                                        const fontSize = yield parser.parseNumberAtAsync(fontRef.end + 1);
                                         if (fontSize) {
                                             this.Font = [fontRef.value, fontSize.value];
                                             i = fontArrayBounds.end + 1;
@@ -12363,11 +12389,11 @@ class GraphicsStateDict extends PdfDict {
                         case "/D":
                             const dashEntryType = yield parser.getValueTypeAtAsync(i);
                             if (dashEntryType === valueTypes.ARRAY) {
-                                const dashArrayBounds = parser.getArrayBoundsAt(i);
+                                const dashArrayBounds = yield parser.getArrayBoundsAtAsync(i);
                                 if (dashArrayBounds) {
-                                    const dashArray = parser.parseNumberArrayAt(dashArrayBounds.start + 1);
+                                    const dashArray = yield parser.parseNumberArrayAtAsync(dashArrayBounds.start + 1);
                                     if (dashArray) {
-                                        const dashPhase = parser.parseNumberAt(dashArray.end + 1);
+                                        const dashPhase = yield parser.parseNumberAtAsync(dashArray.end + 1);
                                         if (dashPhase) {
                                             this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
                                             i = dashArrayBounds.end + 1;
@@ -12624,7 +12650,7 @@ class ResourceDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -12653,7 +12679,7 @@ class ResourceDict extends PdfDict {
                                 throw new Error(`Can't parse ${name} value reference`);
                             }
                             else if (mapEntryType === valueTypes.DICTIONARY) {
-                                const mapBounds = parser.getDictBoundsAt(i);
+                                const mapBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (mapBounds) {
                                     const map = yield ObjectMapDict.parseAsync({ parser, bounds: mapBounds });
                                     if (map) {
@@ -12750,13 +12776,13 @@ class MeasureDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Subtype":
-                            const subtype = parser.parseNameAt(i);
+                            const subtype = yield parser.parseNameAtAsync(i);
                             if (subtype) {
                                 if (this.Subtype && this.Subtype !== subtype.value) {
                                     throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
@@ -12821,13 +12847,13 @@ class GroupDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/S":
-                            const intent = parser.parseNameAt(i, true);
+                            const intent = yield parser.parseNameAtAsync(i, true);
                             if (intent) {
                                 if (Object.values(groupDictTypes).includes(intent.value)) {
                                     this.S = intent.value;
@@ -12921,7 +12947,7 @@ class TransparencyGroupDict extends GroupDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -12929,7 +12955,7 @@ class TransparencyGroupDict extends GroupDict {
                         case "/CS":
                             const colorSpaceEntryType = yield parser.getValueTypeAtAsync(i);
                             if (colorSpaceEntryType === valueTypes.NAME) {
-                                const colorSpaceName = parser.parseNameAt(i);
+                                const colorSpaceName = yield parser.parseNameAtAsync(i);
                                 if (colorSpaceName) {
                                     this.CS = colorSpaceName.value;
                                     i = colorSpaceName.end + 1;
@@ -12938,7 +12964,7 @@ class TransparencyGroupDict extends GroupDict {
                                 throw new Error("Can't parse /CS property name");
                             }
                             else if (colorSpaceEntryType === valueTypes.ARRAY) {
-                                const colorSpaceArrayBounds = parser.getArrayBoundsAt(i);
+                                const colorSpaceArrayBounds = yield parser.getArrayBoundsAtAsync(i);
                                 if (colorSpaceArrayBounds) {
                                     i = colorSpaceArrayBounds.end + 1;
                                     break;
@@ -13093,18 +13119,18 @@ class XFormStream extends PdfStream {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
-            const dictBounds = parser.getDictBoundsAt(start);
+            const dictBounds = yield parser.getDictBoundsAtAsync(start);
             let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Subtype":
-                            const subtype = parser.parseNameAt(i);
+                            const subtype = yield parser.parseNameAtAsync(i);
                             if (subtype) {
                                 if (this.Subtype && this.Subtype !== subtype.value) {
                                     throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
@@ -13116,7 +13142,7 @@ class XFormStream extends PdfStream {
                             }
                             break;
                         case "/FormType":
-                            const formType = parser.parseNumberAt(i, false);
+                            const formType = yield parser.parseNumberAtAsync(i, false);
                             if (formType) {
                                 if (formType.value !== 1) {
                                     throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
@@ -13159,7 +13185,7 @@ class XFormStream extends PdfStream {
                                 throw new Error("Can't parse /Resources value reference");
                             }
                             else if (resEntryType === valueTypes.DICTIONARY) {
-                                const resDictBounds = parser.getDictBoundsAt(i);
+                                const resDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (resDictBounds) {
                                     if (resDictBounds.contentStart) {
                                         const resDict = yield ResourceDict.parseAsync({
@@ -13198,7 +13224,7 @@ class XFormStream extends PdfStream {
                                 throw new Error("Can't parse /Measure value reference");
                             }
                             else if (measureEntryType === valueTypes.DICTIONARY) {
-                                const measureDictBounds = parser.getDictBoundsAt(i);
+                                const measureDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (measureDictBounds) {
                                     const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo });
                                     if (measureDict) {
@@ -13228,7 +13254,7 @@ class XFormStream extends PdfStream {
                                 throw new Error("Can't parse /Group value reference");
                             }
                             else if (groupEntryType === valueTypes.DICTIONARY) {
-                                const groupDictBounds = parser.getDictBoundsAt(i);
+                                const groupDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (groupDictBounds) {
                                     const groupDict = yield TransparencyGroupDict.parseAsync({ parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo });
                                     if (groupDict) {
@@ -13505,17 +13531,17 @@ class AppearanceStreamRenderer {
                 const nextValueType = yield parser.getValueTypeAtAsync(i, true);
                 switch (nextValueType) {
                     case valueTypes.NUMBER:
-                        const numberResult = parser.parseNumberAt(i, true);
+                        const numberResult = yield parser.parseNumberAtAsync(i, true);
                         parameters.push(numberResult.value);
                         i = numberResult.end + 1;
                         break;
                     case valueTypes.NAME:
-                        const nameResult = parser.parseNameAt(i, true);
+                        const nameResult = yield parser.parseNameAtAsync(i, true);
                         parameters.push(nameResult.value);
                         i = nameResult.end + 1;
                         break;
                     case valueTypes.ARRAY:
-                        const arrayBounds = parser.getArrayBoundsAt(i);
+                        const arrayBounds = yield parser.getArrayBoundsAtAsync(i);
                         let j = arrayBounds.start + 1;
                         while (j < arrayBounds.end - 1 && j !== -1) {
                             const nextArrayValueType = yield parser.getValueTypeAtAsync(j, true);
@@ -13526,7 +13552,7 @@ class AppearanceStreamRenderer {
                                     j = arrayLiteralResult.end + 1;
                                     break;
                                 case valueTypes.NUMBER:
-                                    const arrayNumberResult = parser.parseNumberAt(j, true);
+                                    const arrayNumberResult = yield parser.parseNumberAtAsync(j, true);
                                     parameters.push(arrayNumberResult.value);
                                     j = arrayNumberResult.end + 1;
                                     break;
@@ -13549,7 +13575,7 @@ class AppearanceStreamRenderer {
                         i = hexResult.end + 1;
                         break;
                     case valueTypes.UNKNOWN:
-                        const operatorResult = parser.parseStringAt(i);
+                        const operatorResult = yield parser.parseStringAtAsync(i);
                         operator = operatorResult.value;
                         i = operatorResult.end + 1;
                         break command;
@@ -14064,7 +14090,7 @@ class AppearanceStreamRenderer {
             let i = 0;
             while (i !== -1) {
                 const { nextIndex, parameters, operator } = yield AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
-                i = parser.skipEmpty(nextIndex);
+                i = yield parser.skipEmptyAsync(nextIndex);
                 switch (operator) {
                     case "Tj":
                         svgElements.push(yield this.drawTextAsync(parameters[0], resources));
@@ -14112,7 +14138,7 @@ class AppearanceStreamRenderer {
             let i = 0;
             while (i !== -1) {
                 const { nextIndex, parameters, operator } = yield AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
-                i = parser.skipEmpty(nextIndex + 1);
+                i = yield parser.skipEmptyAsync(nextIndex + 1);
                 switch (operator) {
                     case "m":
                         const move = new Vec2(+parameters[0], +parameters[1]);
@@ -14210,7 +14236,7 @@ class AppearanceStreamRenderer {
                             const textParser = parser.getSubParser(i, textObjectEnd.start - 1);
                             const textGroup = yield this.drawTextGroupAsync(textParser, stream.Resources);
                             svgElements.push(...textGroup);
-                            i = parser.skipEmpty(textObjectEnd.end + 1);
+                            i = yield parser.skipEmptyAsync(textObjectEnd.end + 1);
                             break;
                         }
                         throw new Error("Can't find the appearance stream text object end");
@@ -14318,7 +14344,7 @@ class BorderStyleDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -14327,7 +14353,7 @@ class BorderStyleDict extends PdfDict {
                             i = yield this.parseNumberPropAsync(name, parser, i, true);
                             break;
                         case "/S":
-                            const style = parser.parseNameAt(i, true);
+                            const style = yield parser.parseNameAtAsync(i, true);
                             if (style && Object.values(borderStyles).includes(style.value)) {
                                 this.S = style.value;
                                 i = style.end + 1;
@@ -14337,7 +14363,7 @@ class BorderStyleDict extends PdfDict {
                             }
                             break;
                         case "/D":
-                            const dashGap = parser.parseNumberArrayAt(i, true);
+                            const dashGap = yield parser.parseNumberArrayAtAsync(i, true);
                             if (dashGap) {
                                 this.D = [
                                     (_a = dashGap.value[0]) !== null && _a !== void 0 ? _a : 3,
@@ -14513,7 +14539,7 @@ class AppearanceDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -14529,7 +14555,7 @@ class AppearanceDict extends PdfDict {
                                 }
                             }
                             else if (nEntryType === valueTypes.DICTIONARY) {
-                                const nDictBounds = parser.getDictBoundsAt(i);
+                                const nDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (nDictBounds) {
                                     const nSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: nDictBounds });
                                     if (nSubDict) {
@@ -14554,7 +14580,7 @@ class AppearanceDict extends PdfDict {
                                 }
                             }
                             else if (rEntryType === valueTypes.DICTIONARY) {
-                                const rDictBounds = parser.getDictBoundsAt(i);
+                                const rDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (rDictBounds) {
                                     const rSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: rDictBounds });
                                     if (rSubDict) {
@@ -14579,7 +14605,7 @@ class AppearanceDict extends PdfDict {
                                 }
                             }
                             else if (dEntryType === valueTypes.DICTIONARY) {
-                                const dDictBounds = parser.getDictBoundsAt(i);
+                                const dDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (dDictBounds) {
                                     const dSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: dDictBounds });
                                     if (dSubDict) {
@@ -14679,13 +14705,13 @@ class BorderEffectDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/S":
-                            const style = parser.parseNameAt(i, true);
+                            const style = yield parser.parseNameAtAsync(i, true);
                             if (style && Object.values(borderEffects).includes(style.value)) {
                                 this.S = style.value;
                                 i = style.end + 1;
@@ -14736,15 +14762,15 @@ class BorderArray {
                 || parser.getCharCode(start) !== codes.L_BRACKET) {
                 return null;
             }
-            const hCornerR = parser.parseNumberAt(start + 1);
+            const hCornerR = yield parser.parseNumberAtAsync(start + 1);
             if (!hCornerR || isNaN(hCornerR.value)) {
                 return null;
             }
-            const vCornerR = parser.parseNumberAt(hCornerR.end + 2);
+            const vCornerR = yield parser.parseNumberAtAsync(hCornerR.end + 2);
             if (!vCornerR || isNaN(vCornerR.value)) {
                 return null;
             }
-            const width = parser.parseNumberAt(vCornerR.end + 2);
+            const width = yield parser.parseNumberAtAsync(vCornerR.end + 2);
             if (!width || isNaN(width.value)) {
                 return null;
             }
@@ -14760,11 +14786,11 @@ class BorderArray {
                 };
             }
             else if (parser.getCharCode(next) === codes.L_BRACKET) {
-                const dash = parser.parseNumberAt(next + 1);
+                const dash = yield parser.parseNumberAtAsync(next + 1);
                 if (!dash || isNaN(dash.value)) {
                     return null;
                 }
-                const gap = parser.parseNumberAt(dash.end + 2);
+                const gap = yield parser.parseNumberAtAsync(dash.end + 2);
                 if (!gap || isNaN(gap.value)) {
                     return null;
                 }
@@ -15200,13 +15226,13 @@ class AnnotationDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/Subtype":
-                            const subtype = parser.parseNameAt(i);
+                            const subtype = yield parser.parseNameAtAsync(i);
                             if (subtype) {
                                 if (this.Subtype && this.Subtype !== subtype.value) {
                                     throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
@@ -15278,7 +15304,7 @@ class AnnotationDict extends PdfDict {
                                 throw new Error("Can't parse /BS value reference");
                             }
                             else if (bsEntryType === valueTypes.DICTIONARY) {
-                                const bsDictBounds = parser.getDictBoundsAt(i);
+                                const bsDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (bsDictBounds) {
                                     const bsDict = yield BorderStyleDict.parseAsync({ parser, bounds: bsDictBounds });
                                     if (bsDict) {
@@ -15308,7 +15334,7 @@ class AnnotationDict extends PdfDict {
                                 throw new Error("Can't parse /BE value reference");
                             }
                             else if (beEntryType === valueTypes.DICTIONARY) {
-                                const bsDictBounds = parser.getDictBoundsAt(i);
+                                const bsDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (bsDictBounds) {
                                     const bsDict = yield BorderEffectDict.parseAsync({ parser, bounds: bsDictBounds });
                                     if (bsDict) {
@@ -15338,7 +15364,7 @@ class AnnotationDict extends PdfDict {
                                 throw new Error("Can't parse /AP value reference");
                             }
                             else if (apEntryType === valueTypes.DICTIONARY) {
-                                const apDictBounds = parser.getDictBoundsAt(i);
+                                const apDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (apDictBounds) {
                                     const apDict = yield AppearanceDict.parseAsync({
                                         parser,
@@ -15718,7 +15744,7 @@ class MarkupAnnotation extends AnnotationDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -15781,7 +15807,7 @@ class MarkupAnnotation extends AnnotationDict {
                             i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
                             break;
                         case "/RT":
-                            const replyType = parser.parseNameAt(i, true);
+                            const replyType = yield parser.parseNameAtAsync(i, true);
                             if (replyType && Object.values(markupAnnotationReplyTypes)
                                 .includes(replyType.value)) {
                                 this.RT = replyType.value;
@@ -16699,10 +16725,10 @@ class ObjectStream extends PdfStream {
             let byteOffset;
             let position = 0;
             for (let n = 0; n < this.N; n++) {
-                temp = parser.parseNumberAt(position, false, false);
+                temp = yield parser.parseNumberAtAsync(position, false, false);
                 objectId = temp.value;
                 position = temp.end + 2;
-                temp = parser.parseNumberAt(position, false, false);
+                temp = yield parser.parseNumberAtAsync(position, false, false);
                 byteOffset = temp.value;
                 position = temp.end + 2;
                 offsetMap.set(objectId, byteOffset);
@@ -16719,10 +16745,10 @@ class ObjectStream extends PdfStream {
             let value;
             switch (objectType) {
                 case objectTypes.DICTIONARY:
-                    bounds = parser.getDictBoundsAt(objectStart, false);
+                    bounds = yield parser.getDictBoundsAtAsync(objectStart, false);
                     break;
                 case objectTypes.ARRAY:
-                    bounds = parser.getArrayBoundsAt(objectStart, false);
+                    bounds = yield parser.getArrayBoundsAtAsync(objectStart, false);
                     break;
                 case objectTypes.STRING_LITERAL:
                     const literalValue = yield LiteralString.parseAsync(parser, objectStart);
@@ -16739,7 +16765,7 @@ class ObjectStream extends PdfStream {
                     }
                     break;
                 case objectTypes.NUMBER:
-                    const numValue = parser.parseNumberAt(objectStart);
+                    const numValue = yield parser.parseNumberAtAsync(objectStart);
                     if (numValue) {
                         bounds = { start: numValue.start, end: numValue.end };
                         value = numValue;
@@ -16800,12 +16826,12 @@ class ObjectStream extends PdfStream {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
-            const dictBounds = parser.getDictBoundsAt(start);
+            const dictBounds = yield parser.getDictBoundsAtAsync(start);
             let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -16907,13 +16933,13 @@ class CryptFilterDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/CFM":
-                            const method = parser.parseNameAt(i, true);
+                            const method = yield parser.parseNameAtAsync(i, true);
                             if (method && Object.values(cryptMethods)
                                 .includes(method.value)) {
                                 this.CFM = method.value;
@@ -16924,7 +16950,7 @@ class CryptFilterDict extends PdfDict {
                             }
                             break;
                         case "/AuthEvent":
-                            const authEvent = parser.parseNameAt(i, true);
+                            const authEvent = yield parser.parseNameAtAsync(i, true);
                             if (authEvent && Object.values(authEvents)
                                 .includes(authEvent.value)) {
                                 this.AuthEvent = authEvent.value;
@@ -17038,7 +17064,7 @@ class CryptMapDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -17046,7 +17072,7 @@ class CryptMapDict extends PdfDict {
                         default:
                             const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.DICTIONARY) {
-                                const dictBounds = parser.getDictBoundsAt(i);
+                                const dictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (dictBounds) {
                                     const filter = yield CryptFilterDict.parseAsync({ parser, bounds: dictBounds });
                                     if (filter) {
@@ -17209,7 +17235,7 @@ class EncryptionDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -17222,7 +17248,7 @@ class EncryptionDict extends PdfDict {
                             i = yield this.parseNamePropAsync(name, parser, i);
                             break;
                         case "/V":
-                            const algorithm = parser.parseNumberAt(i, false);
+                            const algorithm = yield parser.parseNumberAtAsync(i, false);
                             if (algorithm && Object.values(cryptVersions)
                                 .includes(algorithm.value)) {
                                 this.V = algorithm.value;
@@ -17233,7 +17259,7 @@ class EncryptionDict extends PdfDict {
                             }
                             break;
                         case "/R":
-                            const revision = parser.parseNumberAt(i, false);
+                            const revision = yield parser.parseNumberAtAsync(i, false);
                             if (revision && Object.values(cryptRevisions)
                                 .includes(revision.value)) {
                                 this.R = revision.value;
@@ -17258,7 +17284,7 @@ class EncryptionDict extends PdfDict {
                             i = yield this.parseBoolPropAsync(name, parser, i);
                             break;
                         case "/CF":
-                            const dictBounds = parser.getDictBoundsAt(i);
+                            const dictBounds = yield parser.getDictBoundsAtAsync(i);
                             if (bounds) {
                                 const cryptMap = yield CryptMapDict.parseAsync({ parser, bounds: dictBounds });
                                 if (cryptMap) {
@@ -17400,7 +17426,7 @@ class TrailerDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -17535,7 +17561,7 @@ class XRefTable extends XRef {
             if (!xrefTableBounds) {
                 return null;
             }
-            const trailerDictBounds = parser.getDictBoundsAt(xrefTableBounds.end + 1);
+            const trailerDictBounds = yield parser.getDictBoundsAtAsync(xrefTableBounds.end + 1);
             if (!trailerDictBounds) {
                 return null;
             }
@@ -17597,7 +17623,7 @@ class XrefParser {
             if (!i) {
                 return null;
             }
-            const version = (_a = this._dataParser.parseNumberAt(i.end + 1, true)) === null || _a === void 0 ? void 0 : _a.value;
+            const version = (_a = (yield this._dataParser.parseNumberAtAsync(i.end + 1, true))) === null || _a === void 0 ? void 0 : _a.value;
             if (!version) {
                 return null;
             }
@@ -17610,7 +17636,7 @@ class XrefParser {
             if (!xrefStartIndex) {
                 return null;
             }
-            const xrefIndex = this._dataParser.parseNumberAt(xrefStartIndex.end + 1);
+            const xrefIndex = this._dataParser.parseNumberAtAsync(xrefStartIndex.end + 1);
             if (!xrefIndex) {
                 return null;
             }
@@ -17627,7 +17653,7 @@ class XrefParser {
             if (xrefTableIndex && xrefTableIndex.start === start) {
                 const xrefStmIndexProp = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
                 if (xrefStmIndexProp) {
-                    const streamXrefIndex = this._dataParser.parseNumberAt(xrefStmIndexProp.end + 1);
+                    const streamXrefIndex = yield this._dataParser.parseNumberAtAsync(xrefStmIndexProp.end + 1);
                     if (!streamXrefIndex) {
                         return null;
                     }
@@ -17855,7 +17881,7 @@ class CatalogDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -18017,7 +18043,7 @@ class PageDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -18042,7 +18068,7 @@ class PageDict extends PdfDict {
                                 throw new Error("Can't parse /Resources value reference");
                             }
                             else if (resEntryType === valueTypes.DICTIONARY) {
-                                const resDictBounds = parser.getDictBoundsAt(i);
+                                const resDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (resDictBounds) {
                                     this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
                                     i = resDictBounds.end + 1;
@@ -18203,7 +18229,7 @@ class PageTreeDict extends PdfDict {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -21210,7 +21236,7 @@ class StampAnnotation extends MarkupAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -21446,7 +21472,7 @@ class TextAnnotation extends MarkupAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -21455,7 +21481,7 @@ class TextAnnotation extends MarkupAnnotation {
                             i = yield this.parseBoolPropAsync(name, parser, i);
                             break;
                         case "/Name":
-                            const iconType = parser.parseNameAt(i, true);
+                            const iconType = yield parser.parseNameAtAsync(i, true);
                             if (iconType && Object.values(annotationIconTypes)
                                 .includes(iconType.value)) {
                                 this.Name = iconType.value;
@@ -21466,7 +21492,7 @@ class TextAnnotation extends MarkupAnnotation {
                             }
                             break;
                         case "/State":
-                            const state = parser.parseNameAt(i, true);
+                            const state = yield parser.parseNameAtAsync(i, true);
                             if (state && Object.values(annotationMarkedStates)
                                 .concat(Object.values(annotationReviewStates))
                                 .includes(state.value)) {
@@ -21478,7 +21504,7 @@ class TextAnnotation extends MarkupAnnotation {
                             }
                             break;
                         case "/StateModel":
-                            const stateModelType = parser.parseNameAt(i, true);
+                            const stateModelType = yield parser.parseNameAtAsync(i, true);
                             if (stateModelType && Object.values(annotationStateModelTypes)
                                 .includes(stateModelType.value)) {
                                 this.StateModel = stateModelType.value;
@@ -21622,19 +21648,19 @@ class InkAnnotation extends MarkupAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/InkList":
-                            i = parser.skipEmpty(i);
+                            i = yield parser.skipEmptyAsync(i);
                             const inkType = yield parser.getValueTypeAtAsync(i);
                             if (inkType === valueTypes.ARRAY) {
                                 const inkList = [];
                                 let inkArrayPos = ++i;
                                 while (true) {
-                                    const sublist = parser.parseNumberArrayAt(inkArrayPos);
+                                    const sublist = yield parser.parseNumberArrayAtAsync(inkArrayPos);
                                     if (!sublist) {
                                         break;
                                     }
@@ -21893,7 +21919,7 @@ class GeometricAnnotation extends MarkupAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -22027,7 +22053,7 @@ class SquareAnnotation extends GeometricAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -22270,7 +22296,7 @@ class CircleAnnotation extends GeometricAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -22457,7 +22483,7 @@ class PolyAnnotation extends GeometricAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -22466,7 +22492,7 @@ class PolyAnnotation extends GeometricAnnotation {
                             i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
                             break;
                         case "/IT":
-                            const intent = parser.parseNameAt(i, true);
+                            const intent = yield parser.parseNameAtAsync(i, true);
                             if (intent) {
                                 if (Object.values(polyIntents).includes(intent.value)) {
                                     this.IT = intent.value;
@@ -22493,7 +22519,7 @@ class PolyAnnotation extends GeometricAnnotation {
                                 throw new Error("Can't parse /Measure value reference");
                             }
                             else if (measureEntryType === valueTypes.DICTIONARY) {
-                                const measureDictBounds = parser.getDictBoundsAt(i);
+                                const measureDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (measureDictBounds) {
                                     const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
                                     if (measureDict) {
@@ -22875,13 +22901,13 @@ class PolylineAnnotation extends PolyAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
                     switch (name) {
                         case "/LE":
-                            const lineEndings = parser.parseNameArrayAt(i, true);
+                            const lineEndings = yield parser.parseNameArrayAtAsync(i, true);
                             if (lineEndings
                                 && Object.values(lineEndingTypes).includes(lineEndings.value[0])
                                 && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
@@ -23310,7 +23336,7 @@ class LineAnnotation extends GeometricAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -23320,7 +23346,7 @@ class LineAnnotation extends GeometricAnnotation {
                             i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
                             break;
                         case "/LE":
-                            const lineEndings = parser.parseNameArrayAt(i, true);
+                            const lineEndings = yield parser.parseNameArrayAtAsync(i, true);
                             if (lineEndings
                                 && Object.values(lineEndingTypes).includes(lineEndings.value[0])
                                 && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
@@ -23335,7 +23361,7 @@ class LineAnnotation extends GeometricAnnotation {
                             }
                             break;
                         case "/IT":
-                            const intent = parser.parseNameAt(i, true);
+                            const intent = yield parser.parseNameAtAsync(i, true);
                             if (intent) {
                                 if (Object.values(lineIntents).includes(intent.value)) {
                                     this.IT = intent.value;
@@ -23345,7 +23371,7 @@ class LineAnnotation extends GeometricAnnotation {
                             }
                             throw new Error("Can't parse /IT property value");
                         case "/CP":
-                            const captionPosition = parser.parseNameAt(i, true);
+                            const captionPosition = yield parser.parseNameAtAsync(i, true);
                             if (captionPosition && Object.values(lineCaptionPositions)
                                 .includes(captionPosition.value)) {
                                 this.CP = captionPosition.value;
@@ -23381,7 +23407,7 @@ class LineAnnotation extends GeometricAnnotation {
                                 throw new Error("Can't parse /BS value reference");
                             }
                             else if (measureEntryType === valueTypes.DICTIONARY) {
-                                const measureDictBounds = parser.getDictBoundsAt(i);
+                                const measureDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (measureDictBounds) {
                                     const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
                                     if (measureDict) {
@@ -23699,7 +23725,7 @@ class TextMarkupAnnotation extends MarkupAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -24806,7 +24832,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             let name;
             let parseResult;
             while (true) {
-                parseResult = parser.parseNameAt(i);
+                parseResult = yield parser.parseNameAtAsync(i);
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
@@ -24817,7 +24843,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                             i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
                             break;
                         case "/Q":
-                            const justification = parser.parseNumberAt(i, true);
+                            const justification = yield parser.parseNumberAtAsync(i, true);
                             if (justification && Object.values(justificationTypes)
                                 .includes(justification.value)) {
                                 this.Q = justification.value;
@@ -24828,7 +24854,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                             }
                             break;
                         case "/LE":
-                            const lineEndingType = parser.parseNameAt(i, true);
+                            const lineEndingType = yield parser.parseNameAtAsync(i, true);
                             if (lineEndingType && Object.values(lineEndingTypes)
                                 .includes(lineEndingType.value)) {
                                 this.LE = lineEndingType.value;
@@ -24843,7 +24869,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
                             i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
                             break;
                         case "/IT":
-                            const intent = parser.parseNameAt(i, true);
+                            const intent = yield parser.parseNameAtAsync(i, true);
                             if (intent) {
                                 if (intent.value === "/FreeTextTypewriter") {
                                     this.IT = freeTextIntents.CLICK_TO_TYPE;
@@ -25197,7 +25223,7 @@ var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _argu
 class AnnotationParser {
     static ParseAnnotationFromInfoAsync(info, fontMap) {
         return __awaiter$l(this, void 0, void 0, function* () {
-            const annotationType = info.parser.parseDictSubtype(info.bounds);
+            const annotationType = yield info.parser.parseDictSubtypeAsync(info.bounds);
             let annot;
             switch (annotationType) {
                 case annotationTypes.STAMP:
@@ -25784,7 +25810,7 @@ class DocumentService {
                 if (!parseInfo) {
                     continue;
                 }
-                const type = parseInfo.parser.parseDictType(parseInfo.bounds);
+                const type = yield parseInfo.parser.parseDictTypeAsync(parseInfo.bounds);
                 if (type === dictTypes.PAGE_TREE) {
                     const kidTree = yield PageTreeDict.parseAsync(parseInfo);
                     if (kidTree) {

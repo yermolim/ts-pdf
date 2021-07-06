@@ -308,7 +308,7 @@ export class LineAnnotation extends GeometricAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -319,7 +319,7 @@ export class LineAnnotation extends GeometricAnnotation {
             break;
           
           case "/LE":
-            const lineEndings = parser.parseNameArrayAt(i, true);
+            const lineEndings = await parser.parseNameArrayAtAsync(i, true);
             if (lineEndings
                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[0])
                 && (<string[]>Object.values(lineEndingTypes)).includes(lineEndings.value[1])) {
@@ -333,7 +333,7 @@ export class LineAnnotation extends GeometricAnnotation {
             }
             break;
           case "/IT":
-            const intent = parser.parseNameAt(i, true);
+            const intent = await parser.parseNameAtAsync(i, true);
             if (intent) {
               if ((<string[]>Object.values(lineIntents)).includes(intent.value)) {
                 this.IT = <LineIntent>intent.value;
@@ -343,7 +343,7 @@ export class LineAnnotation extends GeometricAnnotation {
             }
             throw new Error("Can't parse /IT property value");
           case "/CP":
-            const captionPosition = parser.parseNameAt(i, true);
+            const captionPosition = await parser.parseNameAtAsync(i, true);
             if (captionPosition && (<string[]>Object.values(lineCaptionPositions))
               .includes(captionPosition.value)) {
               this.CP = <LineCaptionPosition>captionPosition.value;
@@ -380,7 +380,7 @@ export class LineAnnotation extends GeometricAnnotation {
               }              
               throw new Error("Can't parse /BS value reference");
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
-              const measureDictBounds = parser.getDictBoundsAt(i); 
+              const measureDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (measureDictBounds) {
                 const measureDict = await MeasureDict.parseAsync({parser, bounds: measureDictBounds});
                 if (measureDict) {

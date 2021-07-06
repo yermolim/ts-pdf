@@ -70,13 +70,13 @@ export class CaretAnnotation extends MarkupAnnotation {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/RD":
-            const innerRect = parser.parseNumberArrayAt(i, true);
+            const innerRect = await parser.parseNumberArrayAtAsync(i, true);
             if (innerRect) {
               this.RD = [
                 innerRect.value[0],
@@ -90,7 +90,7 @@ export class CaretAnnotation extends MarkupAnnotation {
             }
             break;
           case "/Sy":
-            const symbolType = parser.parseNameAt(i, true);
+            const symbolType = await parser.parseNameAtAsync(i, true);
             if (symbolType && (<string[]>Object.values(caretSymbolTypes))
               .includes(symbolType.value)) {
               this.Sy = <CaretSymbolType>symbolType.value;

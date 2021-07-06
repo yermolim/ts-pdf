@@ -163,7 +163,7 @@ export class AppearanceDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -178,7 +178,7 @@ export class AppearanceDict extends PdfDict {
                 break;
               }
             } else if (nEntryType === valueTypes.DICTIONARY) {     
-              const nDictBounds = parser.getDictBoundsAt(i);
+              const nDictBounds = await parser.getDictBoundsAtAsync(i);
               if (nDictBounds) {
                 const nSubDict = await ObjectMapDict.parseAsync({parser, bounds: nDictBounds});
                 if (nSubDict) {
@@ -202,7 +202,7 @@ export class AppearanceDict extends PdfDict {
                 break;
               }
             } else if (rEntryType === valueTypes.DICTIONARY) {     
-              const rDictBounds = parser.getDictBoundsAt(i);
+              const rDictBounds = await parser.getDictBoundsAtAsync(i);
               if (rDictBounds) {
                 const rSubDict = await ObjectMapDict.parseAsync({parser, bounds: rDictBounds});
                 if (rSubDict) {
@@ -226,7 +226,7 @@ export class AppearanceDict extends PdfDict {
                 break;
               }
             } else if (dEntryType === valueTypes.DICTIONARY) {     
-              const dDictBounds = parser.getDictBoundsAt(i);
+              const dDictBounds = await parser.getDictBoundsAtAsync(i);
               if (dDictBounds) {
                 const dSubDict = await ObjectMapDict.parseAsync({parser, bounds: dDictBounds});
                 if (dSubDict) {

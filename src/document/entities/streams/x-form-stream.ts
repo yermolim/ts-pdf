@@ -205,19 +205,19 @@ export class XFormStream extends PdfStream {
     await super.parsePropsAsync(parseInfo);
     const {parser, bounds} = parseInfo;
     const start = bounds.contentStart || bounds.start;
-    const dictBounds = parser.getDictBoundsAt(start);
+    const dictBounds = await parser.getDictBoundsAtAsync(start);
     
     let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/Subtype":
-            const subtype = parser.parseNameAt(i);
+            const subtype = await parser.parseNameAtAsync(i);
             if (subtype) {
               if (this.Subtype && this.Subtype !== subtype.value) {
                 // wrong object subtype
@@ -229,7 +229,7 @@ export class XFormStream extends PdfStream {
             }
             break;
           case "/FormType":
-            const formType = parser.parseNumberAt(i, false);
+            const formType = await parser.parseNumberAtAsync(i, false);
             if (formType) {
               if (formType.value !== 1) {
                 // wrong form type
@@ -277,7 +277,7 @@ export class XFormStream extends PdfStream {
               }              
               throw new Error("Can't parse /Resources value reference");
             } else if (resEntryType === valueTypes.DICTIONARY) { 
-              const resDictBounds = parser.getDictBoundsAt(i); 
+              const resDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (resDictBounds) {
                 if (resDictBounds.contentStart) {
                   const resDict = await ResourceDict.parseAsync({
@@ -314,7 +314,7 @@ export class XFormStream extends PdfStream {
               }              
               throw new Error("Can't parse /Measure value reference");
             } else if (measureEntryType === valueTypes.DICTIONARY) { 
-              const measureDictBounds = parser.getDictBoundsAt(i); 
+              const measureDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (measureDictBounds) {
                 const measureDict = await MeasureDict.parseAsync(
                   {parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo});
@@ -344,7 +344,7 @@ export class XFormStream extends PdfStream {
               }              
               throw new Error("Can't parse /Group value reference");
             } else if (groupEntryType === valueTypes.DICTIONARY) { 
-              const groupDictBounds = parser.getDictBoundsAt(i); 
+              const groupDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (groupDictBounds) {
                 const groupDict = await TransparencyGroupDict.parseAsync(
                   {parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo});

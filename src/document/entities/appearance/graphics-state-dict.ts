@@ -339,13 +339,13 @@ export class GraphicsStateDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/LC":
-            const lineCap = parser.parseNumberAt(i, true);
+            const lineCap = await parser.parseNumberAtAsync(i, true);
             if (lineCap && (<number[]>Object.values(lineCapStyles))
               .includes(lineCap.value)) {
               this.LC = <LineCapStyle>lineCap.value;
@@ -355,7 +355,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             break;  
           case "/OPM":
-            const overprintMode = parser.parseNumberAt(i, true);
+            const overprintMode = await parser.parseNumberAtAsync(i, true);
             if (overprintMode && ([0, 1].includes(overprintMode.value))) {
               this.OPM = <0 | 1>overprintMode.value;
               i = overprintMode.end + 1;              
@@ -364,7 +364,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             break; 
           case "/LJ":
-            const lineJoin = parser.parseNumberAt(i, true);
+            const lineJoin = await parser.parseNumberAtAsync(i, true);
             if (lineJoin && (<number[]>Object.values(lineJoinStyles))
               .includes(lineJoin.value)) {
               this.LJ = <LineJoinStyle>lineJoin.value;
@@ -374,7 +374,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             break;
           case "/RI":
-            const intent = parser.parseNameAt(i, true);
+            const intent = await parser.parseNameAtAsync(i, true);
             if (intent && (<string[]>Object.values(renderingIntents))
               .includes(intent.value)) {
               this.RI = <RenderingIntent>intent.value;
@@ -384,7 +384,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             break;           
           case "/BM":
-            const blendMode = parser.parseNameAt(i, true);
+            const blendMode = await parser.parseNameAtAsync(i, true);
             if (blendMode && (<string[]>Object.values(blendModes))
               .includes(blendMode.value)) {
               this.BM = <BlendMode>blendMode.value;
@@ -396,7 +396,7 @@ export class GraphicsStateDict extends PdfDict {
           case "/SMask":
             const sMaskEntryType = await parser.getValueTypeAtAsync(i);
             if (sMaskEntryType === valueTypes.NAME) {  
-              const sMaskName = parser.parseNameAt(i);  
+              const sMaskName = await parser.parseNameAtAsync(i);  
               if (sMaskName) {
                 this.SMask = sMaskName.value;
                 i = sMaskName.end + 1;
@@ -404,7 +404,7 @@ export class GraphicsStateDict extends PdfDict {
               }
               throw new Error("Can't parse /SMask property name");
             } else if (sMaskEntryType === valueTypes.DICTIONARY) { 
-              const sMaskDictBounds = parser.getDictBoundsAt(i); 
+              const sMaskDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (sMaskDictBounds) {
                 const sMaskDict = await SoftMaskDict.parseAsync({parser, bounds: sMaskDictBounds});
                 if (sMaskDict) {
@@ -419,11 +419,11 @@ export class GraphicsStateDict extends PdfDict {
           case "/Font":
             const fontEntryType = await parser.getValueTypeAtAsync(i);
             if (fontEntryType === valueTypes.ARRAY) {
-              const fontArrayBounds = parser.getArrayBoundsAt(i);
+              const fontArrayBounds = await parser.getArrayBoundsAtAsync(i);
               if (fontArrayBounds) {
                 const fontRef = await ObjectId.parseAsync(parser, fontArrayBounds.start + 1);
                 if (fontRef) {
-                  const fontSize = parser.parseNumberAt(fontRef.end + 1);
+                  const fontSize = await parser.parseNumberAtAsync(fontRef.end + 1);
                   if (fontSize) {
                     this.Font = [fontRef.value, fontSize.value];
                     i = fontArrayBounds.end + 1;
@@ -438,11 +438,11 @@ export class GraphicsStateDict extends PdfDict {
           case "/D":
             const dashEntryType = await parser.getValueTypeAtAsync(i);
             if (dashEntryType === valueTypes.ARRAY) {
-              const dashArrayBounds = parser.getArrayBoundsAt(i);
+              const dashArrayBounds = await parser.getArrayBoundsAtAsync(i);
               if (dashArrayBounds) {
-                const dashArray = parser.parseNumberArrayAt(dashArrayBounds.start + 1);
+                const dashArray = await parser.parseNumberArrayAtAsync(dashArrayBounds.start + 1);
                 if (dashArray) {
-                  const dashPhase = parser.parseNumberAt(dashArray.end + 1);
+                  const dashPhase = await parser.parseNumberAtAsync(dashArray.end + 1);
                   if (dashPhase) {
                     this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
                     i = dashArrayBounds.end + 1;

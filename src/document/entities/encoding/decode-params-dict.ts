@@ -31,7 +31,7 @@ export class DecodeParamsDict extends PdfDict {
   
   static async parseArrayAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): Promise<ParserResult<DecodeParamsDict[]>> {
-    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }
@@ -40,7 +40,7 @@ export class DecodeParamsDict extends PdfDict {
     let current: ParserResult<DecodeParamsDict>;
     let i = arrayBounds.start + 1;
     while(i < arrayBounds.end) {
-      const paramsBounds = parser.getDictBoundsAt(i);
+      const paramsBounds = await parser.getDictBoundsAtAsync(i);
       current = await DecodeParamsDict.parseAsync({parser, bounds: paramsBounds, cryptInfo});
       if (!current) {
         break;
@@ -118,14 +118,14 @@ export class DecodeParamsDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         const valueType = await parser.getValueTypeAtAsync(i);
         switch (valueType) {
           case valueTypes.NUMBER:
-            const intValue = parser.parseNumberAt(i, false);
+            const intValue = await parser.parseNumberAtAsync(i, false);
             if (intValue) {
               this._intPropMap.set(name, intValue.value);
               i = intValue.end + 1;
@@ -141,7 +141,7 @@ export class DecodeParamsDict extends PdfDict {
             } 
             break; 
           case valueTypes.NAME:       
-            const nameValue = parser.parseNameAt(i);
+            const nameValue = await parser.parseNameAtAsync(i);
             if (nameValue) {
               this._namePropMap.set(name, nameValue.value);
               i = nameValue.end + 1;

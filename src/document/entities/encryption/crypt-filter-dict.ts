@@ -146,13 +146,13 @@ export class CryptFilterDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/CFM":
-            const method = parser.parseNameAt(i, true);
+            const method = await parser.parseNameAtAsync(i, true);
             if (method && (<string[]>Object.values(cryptMethods))
               .includes(method.value)) {
               this.CFM = <CryptMethod>method.value;
@@ -162,7 +162,7 @@ export class CryptFilterDict extends PdfDict {
             }
             break;   
           case "/AuthEvent":
-            const authEvent = parser.parseNameAt(i, true);
+            const authEvent = await parser.parseNameAtAsync(i, true);
             if (authEvent && (<string[]>Object.values(authEvents))
               .includes(authEvent.value)) {
               this.AuthEvent = <AuthEvent>authEvent.value;

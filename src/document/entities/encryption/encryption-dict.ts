@@ -284,7 +284,7 @@ export class EncryptionDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
@@ -298,7 +298,7 @@ export class EncryptionDict extends PdfDict {
             break; 
 
           case "/V":
-            const algorithm = parser.parseNumberAt(i, false);
+            const algorithm = await parser.parseNumberAtAsync(i, false);
             if (algorithm && (<number[]>Object.values(cryptVersions))
               .includes(algorithm.value)) {
               this.V = <CryptVersion>algorithm.value;
@@ -308,7 +308,7 @@ export class EncryptionDict extends PdfDict {
             }
             break;
           case "/R":
-            const revision = parser.parseNumberAt(i, false);
+            const revision = await parser.parseNumberAtAsync(i, false);
             if (revision && (<number[]>Object.values(cryptRevisions))
               .includes(revision.value)) {
               this.R = <CryptRevision>revision.value;
@@ -336,7 +336,7 @@ export class EncryptionDict extends PdfDict {
             break;  
 
           case "/CF":
-            const dictBounds = parser.getDictBoundsAt(i);
+            const dictBounds = await parser.getDictBoundsAtAsync(i);
             if (bounds) {
               const cryptMap = await CryptMapDict.parseAsync({parser, bounds: dictBounds});
               if (cryptMap) {

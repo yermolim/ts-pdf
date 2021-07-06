@@ -54,7 +54,7 @@ export class HexString implements IEncodable {
   
   static async parseArrayAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): Promise<ParserResult<HexString[]>>  {
-    const arrayBounds = parser.getArrayBoundsAt(start, skipEmpty);
+    const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
     if (!arrayBounds) {
       return null;
     }

@@ -46,13 +46,13 @@ export abstract class GroupDict extends PdfDict {
     let name: string;
     let parseResult: ParserResult<string>;
     while (true) {
-      parseResult = parser.parseNameAt(i);
+      parseResult = await parser.parseNameAtAsync(i);
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
         switch (name) {
           case "/S":
-            const intent = parser.parseNameAt(i, true);
+            const intent = await parser.parseNameAtAsync(i, true);
             if (intent) {
               if ((<string[]>Object.values(groupDictTypes)).includes(intent.value)) {
                 this.S = <GroupDictType>intent.value;
