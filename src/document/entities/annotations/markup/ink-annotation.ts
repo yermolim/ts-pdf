@@ -153,7 +153,7 @@ export class InkAnnotation extends MarkupAnnotation {
         switch (name) {          
           case "/InkList":
             i = parser.skipEmpty(i);
-            const inkType = parser.getValueTypeAt(i);
+            const inkType = await parser.getValueTypeAtAsync(i);
             if (inkType === valueTypes.ARRAY) {
               const inkList: number[][] = [];
               let inkArrayPos = ++i;

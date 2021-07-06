@@ -467,7 +467,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             }
             break;
           case "/BS":            
-            const bsEntryType = parser.getValueTypeAt(i);
+            const bsEntryType = await parser.getValueTypeAtAsync(i);
             if (bsEntryType === valueTypes.REF) {              
               const bsDictId = await ObjectId.parseRefAsync(parser, i);
               if (bsDictId && parseInfo.parseInfoGetterAsync) {
@@ -496,7 +496,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             }
             throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
           case "/BE":
-            const beEntryType = parser.getValueTypeAt(i);
+            const beEntryType = await parser.getValueTypeAtAsync(i);
             if (beEntryType === valueTypes.REF) {              
               const bsDictId = await ObjectId.parseRefAsync(parser, i);
               if (bsDictId && parseInfo.parseInfoGetterAsync) {
@@ -526,7 +526,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
             throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
           
           case "/AP":          
-            const apEntryType = parser.getValueTypeAt(i);
+            const apEntryType = await parser.getValueTypeAtAsync(i);
             if (apEntryType === valueTypes.REF) {              
               const apDictId = await ObjectId.parseRefAsync(parser, i);
               if (apDictId && parseInfo.parseInfoGetterAsync) {

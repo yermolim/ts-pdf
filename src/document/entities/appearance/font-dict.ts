@@ -778,7 +778,7 @@ export class FontDict extends PdfDict {
             i = await this.parseNamePropAsync(name, parser, i);
             break;          
           case "/Encoding":
-            const encodingPropType = parser.getValueTypeAt(i);
+            const encodingPropType = await parser.getValueTypeAtAsync(i);
             if (encodingPropType === valueTypes.NAME) {
               i = await this.parseNamePropAsync(name, parser, i);
             } else if (encodingPropType === valueTypes.REF) {              
@@ -803,7 +803,7 @@ export class FontDict extends PdfDict {
             break; 
 
           case "/Widths":
-            const widthPropType = parser.getValueTypeAt(i);
+            const widthPropType = await parser.getValueTypeAtAsync(i);
             if (widthPropType === valueTypes.ARRAY) {
               i = await this.parseNumberArrayPropAsync(name, parser, i, true);
             } else if (widthPropType === valueTypes.REF) {              
@@ -822,7 +822,7 @@ export class FontDict extends PdfDict {
           // the source bytes will be used when converting the dict to bytes
           case "/Resources":  
           case "/CharProcs":  
-            const excludedEntryType = parser.getValueTypeAt(i);
+            const excludedEntryType = await parser.getValueTypeAtAsync(i);
             if (excludedEntryType === valueTypes.REF) {              
               const excludedDictId = await ObjectId.parseRefAsync(parser, i);
               if (excludedDictId && parseInfo.parseInfoGetterAsync) {

@@ -73,7 +73,7 @@ export class ObjectStream extends PdfStream {
 
     const objectStart = this.First + offsetMap.get(id);
 
-    const objectType = parser.getValueTypeAt(objectStart);
+    const objectType = await parser.getValueTypeAtAsync(objectStart);
     if (objectType === null) {
       return;
     }

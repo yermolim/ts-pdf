@@ -114,7 +114,7 @@ export class TransparencyGroupDict extends GroupDict {
         name = parseResult.value;
         switch (name) {    
           case "/CS":
-            const colorSpaceEntryType = parser.getValueTypeAt(i);
+            const colorSpaceEntryType = await parser.getValueTypeAtAsync(i);
             if (colorSpaceEntryType === valueTypes.NAME) {  
               const colorSpaceName = parser.parseNameAt(i);  
               if (colorSpaceName) {

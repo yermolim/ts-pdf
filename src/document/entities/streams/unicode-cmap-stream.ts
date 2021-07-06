@@ -150,7 +150,7 @@ export class UnicodeCmapStream extends PdfStream {
         i = keyRangeEnd.end + 1;
         
         let key = parseIntFromBytes(keyRangeStart.value.hex);
-        const nextValueType = parser.getValueTypeAt(i, true);
+        const nextValueType = await parser.getValueTypeAtAsync(i, true);
         if (nextValueType === valueTypes.ARRAY) {
           // unicode value range is defined as array
           const valueArray = await HexString.parseArrayAsync(parser, i);

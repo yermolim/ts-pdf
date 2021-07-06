@@ -90,7 +90,7 @@ export class ObjectMapDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           default:
-            const entryType = parser.getValueTypeAt(i);
+            const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.REF) {              
               const id = await ObjectId.parseRefAsync(parser, i);
               if (id) {

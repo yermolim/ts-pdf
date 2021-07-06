@@ -169,7 +169,7 @@ export class AppearanceDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           case "/N":
-            const nEntryType = parser.getValueTypeAt(i);
+            const nEntryType = await parser.getValueTypeAtAsync(i);
             if (nEntryType === valueTypes.REF) {              
               const nRefId = await ObjectId.parseRefAsync(parser, i);
               if (nRefId) {
@@ -193,7 +193,7 @@ export class AppearanceDict extends PdfDict {
             throw new Error("Can't parse /N property value");
             
           case "/R":
-            const rEntryType = parser.getValueTypeAt(i);
+            const rEntryType = await parser.getValueTypeAtAsync(i);
             if (rEntryType === valueTypes.REF) {              
               const rRefId = await ObjectId.parseRefAsync(parser, i);
               if (rRefId) {
@@ -217,7 +217,7 @@ export class AppearanceDict extends PdfDict {
             throw new Error("Can't parse /R property value");
 
           case "/D":
-            const dEntryType = parser.getValueTypeAt(i);
+            const dEntryType = await parser.getValueTypeAtAsync(i);
             if (dEntryType === valueTypes.REF) {              
               const dRefId = await ObjectId.parseRefAsync(parser, i);
               if (dRefId) {

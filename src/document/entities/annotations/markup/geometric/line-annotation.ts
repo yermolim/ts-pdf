@@ -364,7 +364,7 @@ export class LineAnnotation extends GeometricAnnotation {
             break; 
 
           case "/Measure":            
-            const measureEntryType = parser.getValueTypeAt(i);
+            const measureEntryType = await parser.getValueTypeAtAsync(i);
             if (measureEntryType === valueTypes.REF) {              
               const measureDictId = await ObjectId.parseRefAsync(parser, i);
               if (measureDictId && parseInfo.parseInfoGetterAsync) {

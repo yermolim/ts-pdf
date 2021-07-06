@@ -2562,84 +2562,86 @@ class SyncDataParser {
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
-    getValueTypeAt(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start)) {
-            return null;
-        }
-        const arr = this._data;
-        const i = start;
-        const charCode = arr[i];
-        switch (charCode) {
-            case codes.SLASH:
-                if (SyncDataParser.isRegularChar(arr[i + 1])) {
-                    return valueTypes.NAME;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.L_BRACKET:
-                return valueTypes.ARRAY;
-            case codes.L_PARENTHESE:
-                return valueTypes.STRING_LITERAL;
-            case codes.LESS:
-                if (codes.LESS === arr[i + 1]) {
-                    return valueTypes.DICTIONARY;
-                }
-                return valueTypes.STRING_HEX;
-            case codes.PERCENT:
-                return valueTypes.COMMENT;
-            case codes.D_0:
-            case codes.D_1:
-            case codes.D_2:
-            case codes.D_3:
-            case codes.D_4:
-            case codes.D_5:
-            case codes.D_6:
-            case codes.D_7:
-            case codes.D_8:
-            case codes.D_9:
-                const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
-                if (nextDelimIndex !== -1) {
-                    const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
-                    if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
-                        return valueTypes.REF;
+    getValueTypeAtAsync(start, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = this.skipEmpty(start);
+            }
+            if (this.isOutside(start)) {
+                return null;
+            }
+            const arr = this._data;
+            const i = start;
+            const charCode = arr[i];
+            switch (charCode) {
+                case codes.SLASH:
+                    if (SyncDataParser.isRegularChar(arr[i + 1])) {
+                        return valueTypes.NAME;
                     }
-                }
-                return valueTypes.NUMBER;
-            case codes.DOT:
-            case codes.MINUS:
-                if (SyncDataParser.isDigit(arr[i + 1])) {
+                    return valueTypes.UNKNOWN;
+                case codes.L_BRACKET:
+                    return valueTypes.ARRAY;
+                case codes.L_PARENTHESE:
+                    return valueTypes.STRING_LITERAL;
+                case codes.LESS:
+                    if (codes.LESS === arr[i + 1]) {
+                        return valueTypes.DICTIONARY;
+                    }
+                    return valueTypes.STRING_HEX;
+                case codes.PERCENT:
+                    return valueTypes.COMMENT;
+                case codes.D_0:
+                case codes.D_1:
+                case codes.D_2:
+                case codes.D_3:
+                case codes.D_4:
+                case codes.D_5:
+                case codes.D_6:
+                case codes.D_7:
+                case codes.D_8:
+                case codes.D_9:
+                    const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
+                    if (nextDelimIndex !== -1) {
+                        const refEndIndex = yield this.findCharIndexAsync(codes.R, false, nextDelimIndex - 1);
+                        if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
+                            return valueTypes.REF;
+                        }
+                    }
                     return valueTypes.NUMBER;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.s:
-                if (arr[i + 1] === codes.t
-                    && arr[i + 2] === codes.r
-                    && arr[i + 3] === codes.e
-                    && arr[i + 4] === codes.a
-                    && arr[i + 5] === codes.m) {
-                    return valueTypes.STREAM;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.t:
-                if (arr[i + 1] === codes.r
-                    && arr[i + 2] === codes.u
-                    && arr[i + 3] === codes.e) {
-                    return valueTypes.BOOLEAN;
-                }
-                return valueTypes.UNKNOWN;
-            case codes.f:
-                if (arr[i + 1] === codes.a
-                    && arr[i + 2] === codes.l
-                    && arr[i + 3] === codes.s
-                    && arr[i + 4] === codes.e) {
-                    return valueTypes.BOOLEAN;
-                }
-                return valueTypes.UNKNOWN;
-            default:
-                return valueTypes.UNKNOWN;
-        }
+                case codes.DOT:
+                case codes.MINUS:
+                    if (SyncDataParser.isDigit(arr[i + 1])) {
+                        return valueTypes.NUMBER;
+                    }
+                    return valueTypes.UNKNOWN;
+                case codes.s:
+                    if (arr[i + 1] === codes.t
+                        && arr[i + 2] === codes.r
+                        && arr[i + 3] === codes.e
+                        && arr[i + 4] === codes.a
+                        && arr[i + 5] === codes.m) {
+                        return valueTypes.STREAM;
+                    }
+                    return valueTypes.UNKNOWN;
+                case codes.t:
+                    if (arr[i + 1] === codes.r
+                        && arr[i + 2] === codes.u
+                        && arr[i + 3] === codes.e) {
+                        return valueTypes.BOOLEAN;
+                    }
+                    return valueTypes.UNKNOWN;
+                case codes.f:
+                    if (arr[i + 1] === codes.a
+                        && arr[i + 2] === codes.l
+                        && arr[i + 3] === codes.s
+                        && arr[i + 4] === codes.e) {
+                        return valueTypes.BOOLEAN;
+                    }
+                    return valueTypes.UNKNOWN;
+                default:
+                    return valueTypes.UNKNOWN;
+            }
+        });
     }
     findSubarrayIndexAsync(sub, options) {
         var _a, _b, _c;
@@ -2684,28 +2686,30 @@ class SyncDataParser {
             return null;
         });
     }
-    findCharIndex(charCode, direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (arr[i] === charCode) {
-                    return i;
+    findCharIndexAsync(charCode, direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (arr[i] === charCode) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (arr[i] === charCode) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (arr[i] === charCode) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
     findNewLineIndex(direction = true, start) {
         let lineBreakIndex;
@@ -3042,18 +3046,20 @@ class SyncDataParser {
         }
         return { start, end: arrayEnd };
     }
-    getHexBounds(start, skipEmpty = true) {
-        if (skipEmpty) {
-            start = this.skipEmpty(start);
-        }
-        if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
-            return null;
-        }
-        const end = this.findCharIndex(codes.GREATER, true, start + 1);
-        if (end === -1) {
-            return null;
-        }
-        return { start, end };
+    getHexBoundsAsync(start, skipEmpty = true) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            if (skipEmpty) {
+                start = this.skipEmpty(start);
+            }
+            if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
+                return null;
+            }
+            const end = yield this.findCharIndexAsync(codes.GREATER, true, start + 1);
+            if (end === -1) {
+                return null;
+            }
+            return { start, end };
+        });
     }
     getLiteralBounds(start, skipEmpty = true) {
         if (skipEmpty) {
@@ -3311,7 +3317,7 @@ class SyncDataParser {
             }
             let i = start;
             while (i <= max) {
-                const value = this.getValueTypeAt(i, true);
+                const value = yield this.getValueTypeAtAsync(i, true);
                 if (value) {
                     let skipValueBounds;
                     switch (value) {
@@ -3325,7 +3331,7 @@ class SyncDataParser {
                             skipValueBounds = this.getLiteralBounds(i, false);
                             break;
                         case valueTypes.STRING_HEX:
-                            skipValueBounds = this.getHexBounds(i, false);
+                            skipValueBounds = yield this.getHexBoundsAsync(i, false);
                             break;
                         case valueTypes.NUMBER:
                             const numberParseResult = this.parseNumberAt(i, true, false);
@@ -4246,7 +4252,7 @@ class DateString {
             if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
                 return null;
             }
-            const end = parser.findCharIndex(codes.R_PARENTHESE, true, start);
+            const end = yield parser.findCharIndexAsync(codes.R_PARENTHESE, true, start);
             if (end === -1) {
                 return null;
             }
@@ -4321,7 +4327,7 @@ class HexString {
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1d(this, void 0, void 0, function* () {
-            const bounds = parser.getHexBounds(start, skipEmpty);
+            const bounds = yield parser.getHexBoundsAsync(start, skipEmpty);
             if (!bounds) {
                 return null;
             }
@@ -4895,7 +4901,7 @@ class DecodeParamsDict extends PdfDict {
                 if (parseResult) {
                     i = parseResult.end + 1;
                     name = parseResult.value;
-                    const valueType = parser.getValueTypeAt(i);
+                    const valueType = yield parser.getValueTypeAtAsync(i);
                     switch (valueType) {
                         case valueTypes.NUMBER:
                             const intValue = parser.parseNumberAt(i, false);
@@ -5756,7 +5762,7 @@ class PdfStream extends PdfObject {
                             i = yield this.parseNumberPropAsync(name, parser, i, false);
                             break;
                         case "/Filter":
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.NAME) {
                                 const filter = parser.parseNameAt(i);
                                 if (filter && supportedFilters.has(filter.value)) {
@@ -5784,7 +5790,7 @@ class PdfStream extends PdfObject {
                             }
                             throw new Error(`Unsupported /Filter property value type: ${entryType}`);
                         case "/DecodeParms":
-                            const paramsEntryType = parser.getValueTypeAt(i);
+                            const paramsEntryType = yield parser.getValueTypeAtAsync(i);
                             if (paramsEntryType === valueTypes.DICTIONARY) {
                                 const decodeParamsBounds = parser.getDictBoundsAt(i);
                                 if (decodeParamsBounds) {
@@ -5971,7 +5977,7 @@ class TrailerStream extends PdfStream {
                             i = yield this.parseRefPropAsync(name, parser, i);
                             break;
                         case "/Encrypt":
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.REF) {
                                 const encryptId = yield ObjectId.parseRefAsync(parser, i);
                                 if (encryptId) {
@@ -6255,7 +6261,7 @@ class IndexedColorSpaceArray {
             }
             i = highestValue.end + 1;
             let lookupArray;
-            const lookupEntryType = parser.getValueTypeAt(i);
+            const lookupEntryType = yield parser.getValueTypeAtAsync(i);
             if (lookupEntryType === valueTypes.REF) {
                 try {
                     const lookupId = yield ObjectId.parseRefAsync(parser, i);
@@ -6524,7 +6530,7 @@ class ImageStream extends PdfStream {
                             i = yield this.parseRefPropAsync(name, parser, i);
                             break;
                         case "/ColorSpace":
-                            const colorSpaceEntryType = parser.getValueTypeAt(i);
+                            const colorSpaceEntryType = yield parser.getValueTypeAtAsync(i);
                             if (colorSpaceEntryType === valueTypes.NAME) {
                                 const colorSpaceName = parser.parseNameAt(i);
                                 if (colorSpaceName) {
@@ -6587,7 +6593,7 @@ class ImageStream extends PdfStream {
                             }
                             break;
                         case "/Mask":
-                            const maskEntryType = parser.getValueTypeAt(i);
+                            const maskEntryType = yield parser.getValueTypeAtAsync(i);
                             if (maskEntryType === valueTypes.REF) {
                                 const maskStreamId = yield ObjectId.parseRefAsync(parser, i);
                                 if (!maskStreamId) {
@@ -6876,7 +6882,7 @@ class ObjectMapDict extends PdfDict {
                     name = parseResult.value;
                     switch (name) {
                         default:
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.REF) {
                                 const id = yield ObjectId.parseRefAsync(parser, i);
                                 if (id) {
@@ -7040,7 +7046,7 @@ class UnicodeCmapStream extends PdfStream {
                     const keyRangeEnd = yield HexString.parseAsync(parser, i);
                     i = keyRangeEnd.end + 1;
                     let key = parseIntFromBytes(keyRangeStart.value.hex);
-                    const nextValueType = parser.getValueTypeAt(i, true);
+                    const nextValueType = yield parser.getValueTypeAtAsync(i, true);
                     if (nextValueType === valueTypes.ARRAY) {
                         const valueArray = yield HexString.parseArrayAsync(parser, i);
                         i = valueArray.end + 1;
@@ -11016,13 +11022,13 @@ class EncodingDict extends PdfDict {
                             i = yield this.parseNamePropAsync(name, parser, i);
                             break;
                         case "/Differences":
-                            const differencesValueType = parser.getValueTypeAt(i, true);
+                            const differencesValueType = yield parser.getValueTypeAtAsync(i, true);
                             if (differencesValueType === valueTypes.ARRAY) {
                                 this.Differences = [];
                                 const arrayBounds = parser.getArrayBoundsAt(i);
                                 let j = arrayBounds.start + 1;
                                 while (j < arrayBounds.end - 1 && j !== -1) {
-                                    const nextArrayValueType = parser.getValueTypeAt(j, true);
+                                    const nextArrayValueType = yield parser.getValueTypeAtAsync(j, true);
                                     switch (nextArrayValueType) {
                                         case valueTypes.NAME:
                                             const arrayNameResult = parser.parseNameAt(j, true);
@@ -11240,7 +11246,7 @@ class FontDescriptorDict extends PdfDict {
                             break;
                         case "/CharSet":
                         case "/FontFamily":
-                            const propType = parser.getValueTypeAt(i);
+                            const propType = yield parser.getValueTypeAtAsync(i);
                             if (propType === valueTypes.STRING_HEX) {
                                 i = yield this.parseHexPropAsync(name, parser, i);
                             }
@@ -11830,7 +11836,7 @@ class FontDict extends PdfDict {
                             i = yield this.parseNamePropAsync(name, parser, i);
                             break;
                         case "/Encoding":
-                            const encodingPropType = parser.getValueTypeAt(i);
+                            const encodingPropType = yield parser.getValueTypeAtAsync(i);
                             if (encodingPropType === valueTypes.NAME) {
                                 i = yield this.parseNamePropAsync(name, parser, i);
                             }
@@ -11853,7 +11859,7 @@ class FontDict extends PdfDict {
                             i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
                             break;
                         case "/Widths":
-                            const widthPropType = parser.getValueTypeAt(i);
+                            const widthPropType = yield parser.getValueTypeAtAsync(i);
                             if (widthPropType === valueTypes.ARRAY) {
                                 i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
                             }
@@ -11869,7 +11875,7 @@ class FontDict extends PdfDict {
                             break;
                         case "/Resources":
                         case "/CharProcs":
-                            const excludedEntryType = parser.getValueTypeAt(i);
+                            const excludedEntryType = yield parser.getValueTypeAtAsync(i);
                             if (excludedEntryType === valueTypes.REF) {
                                 const excludedDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (excludedDictId && parseInfo.parseInfoGetterAsync) {
@@ -12311,7 +12317,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             break;
                         case "/SMask":
-                            const sMaskEntryType = parser.getValueTypeAt(i);
+                            const sMaskEntryType = yield parser.getValueTypeAtAsync(i);
                             if (sMaskEntryType === valueTypes.NAME) {
                                 const sMaskName = parser.parseNameAt(i);
                                 if (sMaskName) {
@@ -12335,7 +12341,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
                         case "/Font":
-                            const fontEntryType = parser.getValueTypeAt(i);
+                            const fontEntryType = yield parser.getValueTypeAtAsync(i);
                             if (fontEntryType === valueTypes.ARRAY) {
                                 const fontArrayBounds = parser.getArrayBoundsAt(i);
                                 if (fontArrayBounds) {
@@ -12355,7 +12361,7 @@ class GraphicsStateDict extends PdfDict {
                             }
                             throw new Error("Can't parse /Font property value");
                         case "/D":
-                            const dashEntryType = parser.getValueTypeAt(i);
+                            const dashEntryType = yield parser.getValueTypeAtAsync(i);
                             if (dashEntryType === valueTypes.ARRAY) {
                                 const dashArrayBounds = parser.getArrayBoundsAt(i);
                                 if (dashArrayBounds) {
@@ -12630,7 +12636,7 @@ class ResourceDict extends PdfDict {
                         case "/XObject":
                         case "/Font":
                         case "/Properties":
-                            const mapEntryType = parser.getValueTypeAt(i);
+                            const mapEntryType = yield parser.getValueTypeAtAsync(i);
                             if (mapEntryType === valueTypes.REF) {
                                 const mapDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (mapDictId && parseInfo.parseInfoGetterAsync) {
@@ -12921,7 +12927,7 @@ class TransparencyGroupDict extends GroupDict {
                     name = parseResult.value;
                     switch (name) {
                         case "/CS":
-                            const colorSpaceEntryType = parser.getValueTypeAt(i);
+                            const colorSpaceEntryType = yield parser.getValueTypeAtAsync(i);
                             if (colorSpaceEntryType === valueTypes.NAME) {
                                 const colorSpaceName = parser.parseNameAt(i);
                                 if (colorSpaceName) {
@@ -13136,7 +13142,7 @@ class XFormStream extends PdfStream {
                             i = yield this.parseNumberPropAsync(name, parser, i, false);
                             break;
                         case "/Resources":
-                            const resEntryType = parser.getValueTypeAt(i);
+                            const resEntryType = yield parser.getValueTypeAtAsync(i);
                             if (resEntryType === valueTypes.REF) {
                                 const resDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (resDictId && parseInfo.parseInfoGetterAsync) {
@@ -13175,7 +13181,7 @@ class XFormStream extends PdfStream {
                             }
                             throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
                         case "/Measure":
-                            const measureEntryType = parser.getValueTypeAt(i);
+                            const measureEntryType = yield parser.getValueTypeAtAsync(i);
                             if (measureEntryType === valueTypes.REF) {
                                 const measureDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (measureDictId && parseInfo.parseInfoGetterAsync) {
@@ -13205,7 +13211,7 @@ class XFormStream extends PdfStream {
                             }
                             throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
                         case "/Group":
-                            const groupEntryType = parser.getValueTypeAt(i);
+                            const groupEntryType = yield parser.getValueTypeAtAsync(i);
                             if (groupEntryType === valueTypes.REF) {
                                 const groupDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (groupDictId && parseInfo.parseInfoGetterAsync) {
@@ -13496,7 +13502,7 @@ class AppearanceStreamRenderer {
             const parameters = [];
             let operator;
             command: while (!operator) {
-                const nextValueType = parser.getValueTypeAt(i, true);
+                const nextValueType = yield parser.getValueTypeAtAsync(i, true);
                 switch (nextValueType) {
                     case valueTypes.NUMBER:
                         const numberResult = parser.parseNumberAt(i, true);
@@ -13512,7 +13518,7 @@ class AppearanceStreamRenderer {
                         const arrayBounds = parser.getArrayBoundsAt(i);
                         let j = arrayBounds.start + 1;
                         while (j < arrayBounds.end - 1 && j !== -1) {
-                            const nextArrayValueType = parser.getValueTypeAt(j, true);
+                            const nextArrayValueType = yield parser.getValueTypeAtAsync(j, true);
                             switch (nextArrayValueType) {
                                 case valueTypes.STRING_LITERAL:
                                     const arrayLiteralResult = yield LiteralString.parseAsync(parser, j);
@@ -14513,7 +14519,7 @@ class AppearanceDict extends PdfDict {
                     name = parseResult.value;
                     switch (name) {
                         case "/N":
-                            const nEntryType = parser.getValueTypeAt(i);
+                            const nEntryType = yield parser.getValueTypeAtAsync(i);
                             if (nEntryType === valueTypes.REF) {
                                 const nRefId = yield ObjectId.parseRefAsync(parser, i);
                                 if (nRefId) {
@@ -14538,7 +14544,7 @@ class AppearanceDict extends PdfDict {
                             }
                             throw new Error("Can't parse /N property value");
                         case "/R":
-                            const rEntryType = parser.getValueTypeAt(i);
+                            const rEntryType = yield parser.getValueTypeAtAsync(i);
                             if (rEntryType === valueTypes.REF) {
                                 const rRefId = yield ObjectId.parseRefAsync(parser, i);
                                 if (rRefId) {
@@ -14563,7 +14569,7 @@ class AppearanceDict extends PdfDict {
                             }
                             throw new Error("Can't parse /R property value");
                         case "/D":
-                            const dEntryType = parser.getValueTypeAt(i);
+                            const dEntryType = yield parser.getValueTypeAtAsync(i);
                             if (dEntryType === valueTypes.REF) {
                                 const dRefId = yield ObjectId.parseRefAsync(parser, i);
                                 if (dRefId) {
@@ -15255,7 +15261,7 @@ class AnnotationDict extends PdfDict {
                             }
                             break;
                         case "/BS":
-                            const bsEntryType = parser.getValueTypeAt(i);
+                            const bsEntryType = yield parser.getValueTypeAtAsync(i);
                             if (bsEntryType === valueTypes.REF) {
                                 const bsDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (bsDictId && parseInfo.parseInfoGetterAsync) {
@@ -15285,7 +15291,7 @@ class AnnotationDict extends PdfDict {
                             }
                             throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
                         case "/BE":
-                            const beEntryType = parser.getValueTypeAt(i);
+                            const beEntryType = yield parser.getValueTypeAtAsync(i);
                             if (beEntryType === valueTypes.REF) {
                                 const bsDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (bsDictId && parseInfo.parseInfoGetterAsync) {
@@ -15315,7 +15321,7 @@ class AnnotationDict extends PdfDict {
                             }
                             throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
                         case "/AP":
-                            const apEntryType = parser.getValueTypeAt(i);
+                            const apEntryType = yield parser.getValueTypeAtAsync(i);
                             if (apEntryType === valueTypes.REF) {
                                 const apDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (apDictId && parseInfo.parseInfoGetterAsync) {
@@ -15726,14 +15732,14 @@ class MarkupAnnotation extends AnnotationDict {
                             i = yield this.parseRefPropAsync(name, parser, i);
                             break;
                         case "/RC":
-                            const rcEntryType = parser.getValueTypeAt(i);
+                            const rcEntryType = yield parser.getValueTypeAtAsync(i);
                             if (rcEntryType === valueTypes.REF) {
                                 const rsObjectId = yield ObjectId.parseRefAsync(parser, i);
                                 if (rsObjectId && parseInfo.parseInfoGetterAsync) {
                                     const rcParseInfo = yield parseInfo.parseInfoGetterAsync(rsObjectId.value.id);
                                     if (rcParseInfo) {
                                         const rcObjectType = rcParseInfo.type
-                                            || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
+                                            || rcParseInfo.parser.getValueTypeAtAsync(rcParseInfo.bounds.contentStart);
                                         if (rcObjectType === valueTypes.STRING_LITERAL) {
                                             const popupTextFromIndirectLiteral = yield LiteralString.parseAsync(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
                                             if (popupTextFromIndirectLiteral) {
@@ -16705,7 +16711,7 @@ class ObjectStream extends PdfStream {
                 return null;
             }
             const objectStart = this.First + offsetMap.get(id);
-            const objectType = parser.getValueTypeAt(objectStart);
+            const objectType = yield parser.getValueTypeAtAsync(objectStart);
             if (objectType === null) {
                 return;
             }
@@ -16935,7 +16941,7 @@ class CryptFilterDict extends PdfDict {
                             i = yield this.parseBoolPropAsync(name, parser, i);
                             break;
                         case "/Recipients":
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.STRING_HEX) {
                                 const recipient = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
                                 if (recipient) {
@@ -17038,7 +17044,7 @@ class CryptMapDict extends PdfDict {
                     name = parseResult.value;
                     switch (name) {
                         default:
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.DICTIONARY) {
                                 const dictBounds = parser.getDictBoundsAt(i);
                                 if (dictBounds) {
@@ -17265,7 +17271,7 @@ class EncryptionDict extends PdfDict {
                             }
                             break;
                         case "/Recipients":
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.STRING_HEX) {
                                 const recipient = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
                                 if (recipient) {
@@ -17408,7 +17414,7 @@ class TrailerDict extends PdfDict {
                             i = yield this.parseRefPropAsync(name, parser, i);
                             break;
                         case "/Encrypt":
-                            const entryType = parser.getValueTypeAt(i);
+                            const entryType = yield parser.getValueTypeAtAsync(i);
                             if (entryType === valueTypes.REF) {
                                 const encryptId = yield ObjectId.parseRefAsync(parser, i);
                                 if (encryptId) {
@@ -18025,7 +18031,7 @@ class PageDict extends PdfDict {
                             i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
                             break;
                         case "/Resources":
-                            const resEntryType = parser.getValueTypeAt(i);
+                            const resEntryType = yield parser.getValueTypeAtAsync(i);
                             if (resEntryType === valueTypes.REF) {
                                 const resDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (resDictId && parseInfo.parseInfoGetterAsync) {
@@ -18055,7 +18061,7 @@ class PageDict extends PdfDict {
                         case "/Contents":
                         case "/B":
                         case "/Annots":
-                            const refEntryType = parser.getValueTypeAt(i);
+                            const refEntryType = yield parser.getValueTypeAtAsync(i);
                             if (refEntryType === valueTypes.REF) {
                                 const refArrayId = yield ObjectId.parseRefAsync(parser, i);
                                 if (refArrayId) {
@@ -18081,7 +18087,7 @@ class PageDict extends PdfDict {
                             i = yield this.parseNumberPropAsync(name, parser, i, false);
                             break;
                         case "/ID":
-                            const webCaptureIdEntryType = parser.getValueTypeAt(i);
+                            const webCaptureIdEntryType = yield parser.getValueTypeAtAsync(i);
                             if (webCaptureIdEntryType === valueTypes.REF) {
                                 const webCaptureRefId = yield ObjectId.parseRefAsync(parser, i);
                                 if (webCaptureRefId) {
@@ -21623,7 +21629,7 @@ class InkAnnotation extends MarkupAnnotation {
                     switch (name) {
                         case "/InkList":
                             i = parser.skipEmpty(i);
-                            const inkType = parser.getValueTypeAt(i);
+                            const inkType = yield parser.getValueTypeAtAsync(i);
                             if (inkType === valueTypes.ARRAY) {
                                 const inkList = [];
                                 let inkArrayPos = ++i;
@@ -22470,7 +22476,7 @@ class PolyAnnotation extends GeometricAnnotation {
                             }
                             throw new Error("Can't parse /IT property value");
                         case "/Measure":
-                            const measureEntryType = parser.getValueTypeAt(i);
+                            const measureEntryType = yield parser.getValueTypeAtAsync(i);
                             if (measureEntryType === valueTypes.REF) {
                                 const measureDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (measureDictId && parseInfo.parseInfoGetterAsync) {
@@ -23358,7 +23364,7 @@ class LineAnnotation extends GeometricAnnotation {
                             i = yield this.parseBoolPropAsync(name, parser, i);
                             break;
                         case "/Measure":
-                            const measureEntryType = parser.getValueTypeAt(i);
+                            const measureEntryType = yield parser.getValueTypeAtAsync(i);
                             if (measureEntryType === valueTypes.REF) {
                                 const measureDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (measureDictId && parseInfo.parseInfoGetterAsync) {

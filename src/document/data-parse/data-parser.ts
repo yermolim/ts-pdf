@@ -47,7 +47,7 @@ export interface DataParser {
    * @param skipEmpty 
    * @returns 
    */
-  getValueTypeAt(start: number, skipEmpty?: boolean): ValueType;
+  getValueTypeAtAsync(start: number, skipEmpty?: boolean): Promise<ValueType>;
 
   //#region search methods
 
@@ -67,8 +67,8 @@ export interface DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findCharIndex(charCode: number, direction?: boolean, 
-    start?: number): number;
+  findCharIndexAsync(charCode: number, direction?: boolean, 
+    start?: number): Promise<number>;
 
   /**
    * find the nearest char index after or before EOL
@@ -138,7 +138,7 @@ export interface DataParser {
   
   getArrayBoundsAt(start: number, skipEmpty?: boolean): ParserBounds;
       
-  getHexBounds(start: number, skipEmpty?: boolean): ParserBounds;
+  getHexBoundsAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
   getLiteralBounds(start: number, skipEmpty?: boolean): ParserBounds;
 

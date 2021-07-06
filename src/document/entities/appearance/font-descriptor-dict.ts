@@ -285,7 +285,7 @@ export class FontDescriptorDict extends PdfDict {
             
           case "/CharSet":
           case "/FontFamily":
-            const propType = parser.getValueTypeAt(i);
+            const propType = await parser.getValueTypeAtAsync(i);
             if (propType === valueTypes.STRING_HEX) {
               i = await this.parseHexPropAsync(name, parser, i);
             } else if (propType === valueTypes.STRING_LITERAL) {

@@ -281,7 +281,7 @@ export class ResourceDict extends PdfDict {
           case "/XObject": 
           case "/Font": 
           case "/Properties":
-            const mapEntryType = parser.getValueTypeAt(i);
+            const mapEntryType = await parser.getValueTypeAtAsync(i);
             if (mapEntryType === valueTypes.REF) {              
               const mapDictId = await ObjectId.parseRefAsync(parser, i);
               if (mapDictId && parseInfo.parseInfoGetterAsync) {

@@ -150,7 +150,7 @@ export class SyncDataParser implements DataParser {
     return (index < 0 || index > this._maxIndex);
   }
 
-  getValueTypeAt(start: number, skipEmpty = true): ValueType  {
+  async getValueTypeAtAsync(start: number, skipEmpty = true): Promise<ValueType>  {
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -190,7 +190,7 @@ export class SyncDataParser implements DataParser {
       case codes.D_9:
         const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
         if (nextDelimIndex !== -1) {
-          const refEndIndex = this.findCharIndex(codes.R, false, nextDelimIndex - 1);
+          const refEndIndex = await this.findCharIndexAsync(codes.R, false, nextDelimIndex - 1);
           if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
             return valueTypes.REF;
           }
@@ -281,8 +281,8 @@ export class SyncDataParser implements DataParser {
     return null;
   }
 
-  findCharIndex(charCode: number, direction = true, 
-    start?: number): number {    
+  async findCharIndexAsync(charCode: number, direction = true, 
+    start?: number): Promise<number> {    
 
     const arr = this._data;
     let i = isNaN(start)
@@ -700,7 +700,7 @@ export class SyncDataParser implements DataParser {
     return {start, end: arrayEnd};
   }
       
-  getHexBounds(start: number, skipEmpty = true): ParserBounds  {   
+  async getHexBoundsAsync(start: number, skipEmpty = true): Promise<ParserBounds>  {   
     if (skipEmpty) {
       start = this.skipEmpty(start);
     }
@@ -708,7 +708,7 @@ export class SyncDataParser implements DataParser {
       return null;
     }
 
-    const end = this.findCharIndex(codes.GREATER, true, start + 1);
+    const end = await this.findCharIndexAsync(codes.GREATER, true, start + 1);
     if (end === -1) {
       return null;
     }
@@ -1032,7 +1032,7 @@ export class SyncDataParser implements DataParser {
 
     let i = start;
     while (i <= max) {      
-      const value = this.getValueTypeAt(i, true);
+      const value = await this.getValueTypeAtAsync(i, true);
       if (value) {
         let skipValueBounds: ParserBounds;
         switch (value) {
@@ -1046,7 +1046,7 @@ export class SyncDataParser implements DataParser {
             skipValueBounds = this.getLiteralBounds(i, false);
             break; 
           case valueTypes.STRING_HEX: 
-            skipValueBounds = this.getHexBounds(i, false);
+            skipValueBounds = await this.getHexBoundsAsync(i, false);
             break; 
           case valueTypes.NUMBER:
             const numberParseResult = this.parseNumberAt(i, true, false);

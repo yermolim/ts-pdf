@@ -191,7 +191,7 @@ export abstract class PdfStream extends PdfObject {
             break;
             
           case "/Filter":
-            const entryType = parser.getValueTypeAt(i);
+            const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.NAME) {  
               const filter = parser.parseNameAt(i);  
               if (filter && supportedFilters.has(filter.value)) {
@@ -217,7 +217,7 @@ export abstract class PdfStream extends PdfObject {
             }
             throw new Error(`Unsupported /Filter property value type: ${entryType}`);
           case "/DecodeParms":
-            const paramsEntryType = parser.getValueTypeAt(i);
+            const paramsEntryType = await parser.getValueTypeAtAsync(i);
             if (paramsEntryType === valueTypes.DICTIONARY) {  
               const decodeParamsBounds = parser.getDictBoundsAt(i);
               if (decodeParamsBounds) {

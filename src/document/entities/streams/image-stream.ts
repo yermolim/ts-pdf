@@ -376,7 +376,7 @@ export class ImageStream extends PdfStream {
             break;
              
           case "/ColorSpace":
-            const colorSpaceEntryType = parser.getValueTypeAt(i);
+            const colorSpaceEntryType = await parser.getValueTypeAtAsync(i);
             if (colorSpaceEntryType === valueTypes.NAME) {  
               const colorSpaceName = parser.parseNameAt(i);  
               if (colorSpaceName) {
@@ -442,7 +442,7 @@ export class ImageStream extends PdfStream {
             break; 
           
           case "/Mask":
-            const maskEntryType = parser.getValueTypeAt(i);            
+            const maskEntryType = await parser.getValueTypeAtAsync(i);            
             if (maskEntryType === valueTypes.REF) {                  
               const maskStreamId = await ObjectId.parseRefAsync(parser, i);
               if (!maskStreamId) {                

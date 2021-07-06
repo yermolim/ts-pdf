@@ -142,7 +142,7 @@ export class TrailerStream extends PdfStream {
             break;
 
           case "/Encrypt":
-            const entryType = parser.getValueTypeAt(i);
+            const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.REF) {              
               const encryptId = await ObjectId.parseRefAsync(parser, i);
               if (encryptId) {

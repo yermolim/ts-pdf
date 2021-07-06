@@ -260,7 +260,7 @@ export class XFormStream extends PdfStream {
             break;
 
           case "/Resources":
-            const resEntryType = parser.getValueTypeAt(i);
+            const resEntryType = await parser.getValueTypeAtAsync(i);
             if (resEntryType === valueTypes.REF) {              
               const resDictId = await ObjectId.parseRefAsync(parser, i);
               if (resDictId && parseInfo.parseInfoGetterAsync) {
@@ -298,7 +298,7 @@ export class XFormStream extends PdfStream {
             }
             throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);         
           case "/Measure":            
-            const measureEntryType = parser.getValueTypeAt(i);
+            const measureEntryType = await parser.getValueTypeAtAsync(i);
             if (measureEntryType === valueTypes.REF) {              
               const measureDictId = await ObjectId.parseRefAsync(parser, i);
               if (measureDictId && parseInfo.parseInfoGetterAsync) {
@@ -328,7 +328,7 @@ export class XFormStream extends PdfStream {
             }
             throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
           case "/Group":            
-            const groupEntryType = parser.getValueTypeAt(i);
+            const groupEntryType = await parser.getValueTypeAtAsync(i);
             if (groupEntryType === valueTypes.REF) {              
               const groupDictId = await ObjectId.parseRefAsync(parser, i);
               if (groupDictId && parseInfo.parseInfoGetterAsync) {

@@ -181,7 +181,7 @@ export class CryptFilterDict extends PdfDict {
             break;
 
           case "/Recipients":            
-            const entryType = parser.getValueTypeAt(i);
+            const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.STRING_HEX) {  
               const recipient = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);  
               if (recipient) {

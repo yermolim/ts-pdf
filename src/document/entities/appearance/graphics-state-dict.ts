@@ -394,7 +394,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             break;             
           case "/SMask":
-            const sMaskEntryType = parser.getValueTypeAt(i);
+            const sMaskEntryType = await parser.getValueTypeAtAsync(i);
             if (sMaskEntryType === valueTypes.NAME) {  
               const sMaskName = parser.parseNameAt(i);  
               if (sMaskName) {
@@ -417,7 +417,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
           case "/Font":
-            const fontEntryType = parser.getValueTypeAt(i);
+            const fontEntryType = await parser.getValueTypeAtAsync(i);
             if (fontEntryType === valueTypes.ARRAY) {
               const fontArrayBounds = parser.getArrayBoundsAt(i);
               if (fontArrayBounds) {
@@ -436,7 +436,7 @@ export class GraphicsStateDict extends PdfDict {
             }
             throw new Error("Can't parse /Font property value");
           case "/D":
-            const dashEntryType = parser.getValueTypeAt(i);
+            const dashEntryType = await parser.getValueTypeAtAsync(i);
             if (dashEntryType === valueTypes.ARRAY) {
               const dashArrayBounds = parser.getArrayBoundsAt(i);
               if (dashArrayBounds) {

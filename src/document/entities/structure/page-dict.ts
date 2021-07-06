@@ -286,7 +286,7 @@ export class PageDict extends PdfDict {
           // so just save the resource property source bytes
           // the source bytes will be used when converting the page to bytes
           case "/Resources":  
-            const resEntryType = parser.getValueTypeAt(i);
+            const resEntryType = await parser.getValueTypeAtAsync(i);
             if (resEntryType === valueTypes.REF) {              
               const resDictId = await ObjectId.parseRefAsync(parser, i);
               if (resDictId && parseInfo.parseInfoGetterAsync) {
@@ -317,7 +317,7 @@ export class PageDict extends PdfDict {
           case "/Contents":
           case "/B":
           case "/Annots":
-            const refEntryType = parser.getValueTypeAt(i);
+            const refEntryType = await parser.getValueTypeAtAsync(i);
             if (refEntryType === valueTypes.REF) {              
               const refArrayId = await ObjectId.parseRefAsync(parser, i);
               if (refArrayId) {
@@ -344,7 +344,7 @@ export class PageDict extends PdfDict {
             break;
 
           case "/ID":
-            const webCaptureIdEntryType = parser.getValueTypeAt(i);
+            const webCaptureIdEntryType = await parser.getValueTypeAtAsync(i);
             if (webCaptureIdEntryType === valueTypes.REF) {              
               const webCaptureRefId = await ObjectId.parseRefAsync(parser, i);
               if (webCaptureRefId) {

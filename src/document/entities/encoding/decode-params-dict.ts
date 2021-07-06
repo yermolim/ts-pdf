@@ -122,7 +122,7 @@ export class DecodeParamsDict extends PdfDict {
       if (parseResult) {
         i = parseResult.end + 1;
         name = parseResult.value;
-        const valueType = parser.getValueTypeAt(i);
+        const valueType = await parser.getValueTypeAtAsync(i);
         switch (valueType) {
           case valueTypes.NUMBER:
             const intValue = parser.parseNumberAt(i, false);

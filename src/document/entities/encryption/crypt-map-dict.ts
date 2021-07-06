@@ -67,7 +67,7 @@ export class CryptMapDict extends PdfDict {
         name = parseResult.value;
         switch (name) {
           default:
-            const entryType = parser.getValueTypeAt(i);
+            const entryType = await parser.getValueTypeAtAsync(i);
             if (entryType === valueTypes.DICTIONARY) { 
               const dictBounds = parser.getDictBoundsAt(i);
               if (dictBounds) {

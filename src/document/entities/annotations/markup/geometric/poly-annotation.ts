@@ -86,7 +86,7 @@ export abstract class PolyAnnotation extends GeometricAnnotation {
             throw new Error("Can't parse /IT property value");
 
           case "/Measure":            
-            const measureEntryType = parser.getValueTypeAt(i);
+            const measureEntryType = await parser.getValueTypeAtAsync(i);
             if (measureEntryType === valueTypes.REF) {              
               const measureDictId = await ObjectId.parseRefAsync(parser, i);
               if (measureDictId && parseInfo.parseInfoGetterAsync) {

@@ -142,7 +142,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
 
           case "/RC":    
             // TODO: test it   
-            const rcEntryType = parser.getValueTypeAt(i);
+            const rcEntryType = await parser.getValueTypeAtAsync(i);
             if (rcEntryType === valueTypes.REF) {    
               // should be reference to text stream or literal string           
               const rsObjectId = await ObjectId.parseRefAsync(parser, i);
@@ -150,7 +150,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
                 const rcParseInfo = await parseInfo.parseInfoGetterAsync(rsObjectId.value.id);
                 if (rcParseInfo) {
                   const rcObjectType = rcParseInfo.type 
-                    || rcParseInfo.parser.getValueTypeAt(rcParseInfo.bounds.contentStart);
+                    || rcParseInfo.parser.getValueTypeAtAsync(rcParseInfo.bounds.contentStart);
                   if (rcObjectType === valueTypes.STRING_LITERAL) {
                     // reference is to the indirect literal string 
                     // or to the string in an object stream 

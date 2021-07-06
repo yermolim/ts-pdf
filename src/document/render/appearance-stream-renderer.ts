@@ -106,7 +106,7 @@ export class AppearanceStreamRenderer {
     let operator: string;
     // parse parameters and operator
     command: while (!operator) {
-      const nextValueType = parser.getValueTypeAt(i, true);
+      const nextValueType = await parser.getValueTypeAtAsync(i, true);
       switch (nextValueType) {
         case valueTypes.NUMBER:
           const numberResult = parser.parseNumberAt(i, true);
@@ -122,7 +122,7 @@ export class AppearanceStreamRenderer {
           const arrayBounds = parser.getArrayBoundsAt(i);          
           let j = arrayBounds.start + 1;
           while(j < arrayBounds.end - 1 && j !== -1) {
-            const nextArrayValueType = parser.getValueTypeAt(j, true);
+            const nextArrayValueType = await parser.getValueTypeAtAsync(j, true);
             switch (nextArrayValueType) {
               case valueTypes.STRING_LITERAL:
                 const arrayLiteralResult = await LiteralString.parseAsync(parser, j);

@@ -82,7 +82,7 @@ export class IndexedColorSpaceArray implements IEncodable {
     i = highestValue.end + 1;
 
     let lookupArray: Uint8Array;
-    const lookupEntryType = parser.getValueTypeAt(i);
+    const lookupEntryType = await parser.getValueTypeAtAsync(i);
     if (lookupEntryType === valueTypes.REF) {  
       try {
         const lookupId = await ObjectId.parseRefAsync(parser, i); 

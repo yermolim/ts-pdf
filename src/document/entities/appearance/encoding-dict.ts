@@ -107,13 +107,13 @@ export class EncodingDict extends PdfDict {
             break; 
 
           case "/Differences": 
-            const differencesValueType = parser.getValueTypeAt(i, true);
+            const differencesValueType = await parser.getValueTypeAtAsync(i, true);
             if (differencesValueType === valueTypes.ARRAY) {
               this.Differences = [];
               const arrayBounds = parser.getArrayBoundsAt(i);          
               let j = arrayBounds.start + 1;
               while(j < arrayBounds.end - 1 && j !== -1) {
-                const nextArrayValueType = parser.getValueTypeAt(j, true);
+                const nextArrayValueType = await parser.getValueTypeAtAsync(j, true);
                 switch (nextArrayValueType) {
                   case valueTypes.NAME:
                     const arrayNameResult = parser.parseNameAt(j, true);
