@@ -136,7 +136,7 @@ export class AppearanceStreamRenderer {
                 break;
               default:
                 console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`); 
-                j = parser.findDelimiterIndex(true, j + 1);                  
+                j = await parser.findDelimiterIndexAsync(true, j + 1);                  
                 break;
             }
           }
@@ -916,7 +916,7 @@ export class AppearanceStreamRenderer {
             minIndex: i,
           });
           if (textObjectEnd) {     
-            const textParser = parser.getSubParser(i, textObjectEnd.start - 1);
+            const textParser = await parser.getSubParserAsync(i, textObjectEnd.start - 1);
             const textGroup = await this.drawTextGroupAsync(textParser, stream.Resources);
             svgElements.push(...textGroup);
             i = await parser.skipEmptyAsync(textObjectEnd.end + 1);

@@ -26,7 +26,7 @@ export class DateString implements IEncodable {
     if (skipEmpty) {
       start = await parser.skipEmptyAsync(start);
     }
-    if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+    if (parser.isOutside(start) || !(await parser.isCodeAtAsync(start, codes.L_PARENTHESE))) {
       return null;
     }
 
@@ -35,7 +35,7 @@ export class DateString implements IEncodable {
       return null;
     }
 
-    let bytes = parser.sliceCharCodes(start + 1, end - 1);
+    let bytes = await parser.sliceCharCodesAsync(start + 1, end - 1);
     if (cryptInfo?.ref && cryptInfo.stringCryptor) {
       bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
     }

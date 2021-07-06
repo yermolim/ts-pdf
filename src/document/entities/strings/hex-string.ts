@@ -43,7 +43,7 @@ export class HexString implements IEncodable {
       return null;
     }
     
-    let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+    let bytes = await parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1);
     if (cryptInfo?.ref && cryptInfo.stringCryptor) {
       bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
     }

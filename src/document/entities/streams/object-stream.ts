@@ -117,7 +117,7 @@ export class ObjectStream extends PdfStream {
       return null;
     }    
 
-    const bytes = parser.sliceCharCodes(bounds.start, bounds.end);
+    const bytes = await parser.sliceCharCodesAsync(bounds.start, bounds.end);
     if (!bytes.length) {
       // execution should not get here
       throw new Error("Object byte array is empty");

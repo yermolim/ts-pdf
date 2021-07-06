@@ -29,6 +29,12 @@ export interface DataParser {
   get maxIndex(): number;
 
   destroy(): void;
+  
+  /**check if index is outside of the underlying data byte array bounds */
+  isOutside(index: number): boolean;
+
+  /**chack if code at index is equal to the specified one */
+  isCodeAtAsync(index: number, code: number): Promise<boolean>;
 
   /**
    * get a new parser instance which inner data array is a subarray of the source parser data
@@ -36,10 +42,7 @@ export interface DataParser {
    * @param end subarray end index (char at the end index is INCLUDED into the subarray)
    * @returns 
    */
-  getSubParser(start: number, end?: number): DataParser;
-  
-  /**check if index is outside of the underlying data byte array bounds */
-  isOutside(index: number): boolean;
+  getSubParserAsync(start: number, end?: number): Promise<DataParser>;
 
   /**
    * get the type of the byte sequence starting at the index
@@ -83,48 +86,48 @@ export interface DataParser {
    * @param direction search direction
    * @param start starting index
    */
-  findSpaceIndex(direction?: boolean, 
-    start?: number): number;
+  findSpaceIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
 
   /**
    * find the nearest non-space char index
    * @param direction search direction
    * @param start starting index
    */
-  findNonSpaceIndex(direction?: boolean, 
-    start?: number): number;
+  findNonSpaceIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
   
   /**
    * find the nearest delimiter char index
    * @param direction search direction
    * @param start starting index
    */
-  findDelimiterIndex(direction?: boolean, 
-    start?: number): number;
+  findDelimiterIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
   
   /**
    * find the nearest non-delimiter char index
    * @param direction search direction
    * @param start starting index
    */
-  findNonDelimiterIndex(direction?: boolean, 
-    start?: number): number;
+  findNonDelimiterIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
 
   /**
    * find the nearest regular (non-space and non-delimiter) char index
    * @param direction search direction
    * @param start starting index
    */
-  findRegularIndex(direction?: boolean, 
-    start?: number): number;
+  findRegularIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
 
   /**
    * find the nearest space or delimiter char index
    * @param direction search direction
    * @param start starting index
    */
-  findIrregularIndex(direction?: boolean, 
-    start?: number): number;
+  findIrregularIndexAsync(direction?: boolean, 
+    start?: number): Promise<number>;
 
   //#endregion
 
@@ -192,16 +195,14 @@ export interface DataParser {
 
   //#region get chars/codes methods
 
-  getCharCode(index: number): number;
-
-  getChar(index: number): string;
-
   /** slice the inner data array from the start index to the end index including BOTH ends */
-  sliceCharCodes(start: number, end?: number): Uint8Array;
+  sliceCharCodesAsync(start: number, end?: number): Promise<Uint8Array>;
 
   /** 
    * slice the inner data array from the start index to the end index including BOTH ends 
    * and convert it to string
    */
-  sliceChars(start: number, end?: number): string;
+  sliceCharsAsync(start: number, end?: number): Promise<string>;
+
+  //#endregion
 }

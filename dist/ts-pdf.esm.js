@@ -2556,11 +2556,18 @@ class SyncDataParser {
     }
     destroy() {
     }
-    getSubParser(start, end) {
-        return new SyncDataParser(this.subCharCodes(start, end));
+    getSubParserAsync(start, end) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            return new SyncDataParser(yield this.sliceCharCodesAsync(start, end));
+        });
     }
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
+    }
+    isCodeAtAsync(index, code) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            return this.getCharCode(index) === code;
+        });
     }
     getValueTypeAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
@@ -2600,7 +2607,7 @@ class SyncDataParser {
                 case codes.D_7:
                 case codes.D_8:
                 case codes.D_9:
-                    const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
+                    const nextDelimIndex = yield this.findDelimiterIndexAsync(true, i + 1);
                     if (nextDelimIndex !== -1) {
                         const refEndIndex = yield this.findCharIndexAsync(codes.R, false, nextDelimIndex - 1);
                         if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
@@ -2755,143 +2762,155 @@ class SyncDataParser {
             }
         });
     }
-    findSpaceIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isSpaceChar(arr[i])) {
-                    return i;
+    findSpaceIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isSpaceChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isSpaceChar(arr[i])) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isSpaceChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
-    findNonSpaceIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isNotSpaceChar(arr[i])) {
-                    return i;
+    findNonSpaceIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isNotSpaceChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isNotSpaceChar(arr[i])) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isNotSpaceChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
-    findDelimiterIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isDelimiterChar(arr[i])) {
-                    return i;
+    findDelimiterIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isDelimiterChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isDelimiterChar(arr[i])) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isDelimiterChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
-    findNonDelimiterIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isNotDelimiterChar(arr[i])) {
-                    return i;
+    findNonDelimiterIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isNotDelimiterChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isNotDelimiterChar(arr[i])) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isNotDelimiterChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
-    findRegularIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isRegularChar(arr[i])) {
-                    return i;
+    findRegularIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isRegularChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isRegularChar(arr[i])) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isRegularChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
-    findIrregularIndex(direction = true, start) {
-        const arr = this._data;
-        let i = isNaN(start)
-            ? direction
-                ? 0
-                : this._maxIndex
-            : start;
-        if (direction) {
-            for (i; i <= this._maxIndex; i++) {
-                if (SyncDataParser.isNotRegularChar(arr[i])) {
-                    return i;
+    findIrregularIndexAsync(direction = true, start) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            const arr = this._data;
+            let i = isNaN(start)
+                ? direction
+                    ? 0
+                    : this._maxIndex
+                : start;
+            if (direction) {
+                for (i; i <= this._maxIndex; i++) {
+                    if (SyncDataParser.isNotRegularChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        else {
-            for (i; i >= 0; i--) {
-                if (SyncDataParser.isNotRegularChar(arr[i])) {
-                    return i;
+            else {
+                for (i; i >= 0; i--) {
+                    if (SyncDataParser.isNotRegularChar(arr[i])) {
+                        return i;
+                    }
                 }
             }
-        }
-        return -1;
+            return -1;
+        });
     }
     getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
@@ -2905,7 +2924,7 @@ class SyncDataParser {
             if (!objStartIndex) {
                 return null;
             }
-            let contentStart = this.findNonSpaceIndex(true, objStartIndex.end + 1);
+            let contentStart = yield this.findNonSpaceIndexAsync(true, objStartIndex.end + 1);
             if (contentStart === -1) {
                 return null;
             }
@@ -2913,7 +2932,7 @@ class SyncDataParser {
             if (!objEndIndex) {
                 return null;
             }
-            let contentEnd = this.findNonSpaceIndex(false, objEndIndex.start - 1);
+            let contentEnd = yield this.findNonSpaceIndexAsync(false, objEndIndex.start - 1);
             if (this.getCharCode(contentStart) === codes.LESS
                 && this.getCharCode(contentStart + 1) === codes.LESS
                 && this.getCharCode(contentEnd - 1) === codes.GREATER
@@ -2941,7 +2960,7 @@ class SyncDataParser {
             if (!xrefStart) {
                 return null;
             }
-            const contentStart = this.findNonSpaceIndex(true, xrefStart.end + 1);
+            const contentStart = yield this.findNonSpaceIndexAsync(true, xrefStart.end + 1);
             if (contentStart === -1) {
                 return null;
             }
@@ -2949,7 +2968,7 @@ class SyncDataParser {
             if (!xrefEnd) {
                 return null;
             }
-            const contentEnd = this.findNonSpaceIndex(false, xrefEnd.start - 1);
+            const contentEnd = yield this.findNonSpaceIndexAsync(false, xrefEnd.start - 1);
             if (contentEnd < contentStart) {
                 return null;
             }
@@ -2971,7 +2990,7 @@ class SyncDataParser {
                 || this._data[start + 1] !== codes.LESS) {
                 return null;
             }
-            const contentStart = this.findNonSpaceIndex(true, start + 2);
+            const contentStart = yield this.findNonSpaceIndexAsync(true, start + 2);
             if (contentStart === -1) {
                 return null;
             }
@@ -3010,7 +3029,7 @@ class SyncDataParser {
                 }
             }
             const end = i - 1;
-            const contentEnd = this.findNonSpaceIndex(false, end - 2);
+            const contentEnd = yield this.findNonSpaceIndexAsync(false, end - 2);
             if (contentEnd < contentStart) {
                 return {
                     start,
@@ -3181,7 +3200,7 @@ class SyncDataParser {
             if (this.isOutside(start)) {
                 return null;
             }
-            const nearestDelimiter = this.findDelimiterIndex(true, start);
+            const nearestDelimiter = yield this.findDelimiterIndexAsync(true, start);
             const isTrue = yield this.findSubarrayIndexAsync(keywordCodes.TRUE, {
                 minIndex: start,
                 maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
@@ -3318,7 +3337,7 @@ class SyncDataParser {
     }
     skipEmptyAsync(start) {
         return __awaiter$1g(this, void 0, void 0, function* () {
-            let index = this.findNonSpaceIndex(true, start);
+            let index = yield this.findNonSpaceIndexAsync(true, start);
             if (index === -1) {
                 return -1;
             }
@@ -3327,7 +3346,7 @@ class SyncDataParser {
                 if (afterComment === -1) {
                     return -1;
                 }
-                index = this.findNonSpaceIndex(true, afterComment);
+                index = yield this.findNonSpaceIndexAsync(true, afterComment);
             }
             return index;
         });
@@ -3390,24 +3409,18 @@ class SyncDataParser {
             return -1;
         });
     }
+    sliceCharCodesAsync(start, end) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            return this._data.slice(start, (end || start) + 1);
+        });
+    }
+    sliceCharsAsync(start, end) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
+        });
+    }
     getCharCode(index) {
         return this._data[index];
-    }
-    getChar(index) {
-        const code = this._data[index];
-        if (!isNaN(code)) {
-            return String.fromCharCode(code);
-        }
-        return null;
-    }
-    sliceCharCodes(start, end) {
-        return this._data.slice(start, (end || start) + 1);
-    }
-    sliceChars(start, end) {
-        return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
-    }
-    subCharCodes(start, end) {
-        return this._data.subarray(start, (end || start) + 1);
     }
 }
 SyncDataParser.EOL = [
@@ -4177,7 +4190,7 @@ class ObjectId {
     static parseAsync(parser, start, skipEmpty = true) {
         return __awaiter$1f(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = parser.findRegularIndex(true, start);
+                start = yield parser.findRegularIndexAsync(true, start);
             }
             if (start < 0 || start > parser.maxIndex) {
                 return null;
@@ -4275,14 +4288,14 @@ class DateString {
             if (skipEmpty) {
                 start = yield parser.skipEmptyAsync(start);
             }
-            if (parser.isOutside(start) || parser.getCharCode(start) !== codes.L_PARENTHESE) {
+            if (parser.isOutside(start) || !(yield parser.isCodeAtAsync(start, codes.L_PARENTHESE))) {
                 return null;
             }
             const end = yield parser.findCharIndexAsync(codes.R_PARENTHESE, true, start);
             if (end === -1) {
                 return null;
             }
-            let bytes = parser.sliceCharCodes(start + 1, end - 1);
+            let bytes = yield parser.sliceCharCodesAsync(start + 1, end - 1);
             if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
                 bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
             }
@@ -4357,7 +4370,7 @@ class HexString {
             if (!bounds) {
                 return null;
             }
-            let bytes = parser.sliceCharCodes(bounds.start + 1, bounds.end - 1);
+            let bytes = yield parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1);
             if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
                 bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
             }
@@ -4437,7 +4450,7 @@ class LiteralString {
             if (!bounds) {
                 return;
             }
-            let bytes = LiteralString.unescape(parser.sliceCharCodes(bounds.start + 1, bounds.end - 1));
+            let bytes = LiteralString.unescape(yield parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1));
             if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
                 bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
             }
@@ -4782,7 +4795,7 @@ class PdfDict extends PdfObject {
             const end = bounds.contentEnd || bounds.end;
             this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
             this._streamId = parseInfo.streamId;
-            this._sourceBytes = parser.sliceCharCodes(start, end);
+            this._sourceBytes = yield parser.sliceCharCodesAsync(start, end);
             let i = yield parser.skipToNextNameAsync(start, end - 1);
             if (i === -1) {
                 throw new Error("Dict is empty (has no properties)");
@@ -5739,7 +5752,7 @@ class PdfStream extends PdfObject {
             const start = bounds.contentStart || bounds.start;
             const end = bounds.contentEnd || bounds.end;
             this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
-            this._sourceBytes = parser.sliceCharCodes(start, end);
+            this._sourceBytes = yield parser.sliceCharCodesAsync(start, end);
             const streamEndIndex = yield parser.findSubarrayIndexAsync(keywordCodes.STREAM_END, {
                 direction: false,
                 minIndex: start,
@@ -5854,7 +5867,7 @@ class PdfStream extends PdfObject {
             }
             const streamStart = yield parser.findNewLineIndexAsync(true, streamStartIndex.end + 1);
             const streamEnd = yield parser.findNewLineIndexAsync(false, streamEndIndex.start - 1);
-            const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
+            const streamBytes = yield parser.sliceCharCodesAsync(streamStart, streamEnd);
             const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
                 ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
                 : streamBytes;
@@ -6259,11 +6272,11 @@ class IndexedColorSpaceArray {
             const { parser, bounds, cryptInfo } = parseInfo;
             let i;
             if (skipEmpty) {
-                i = parser.findNonSpaceIndex(true, bounds.start);
+                i = yield parser.findNonSpaceIndexAsync(true, bounds.start);
             }
             const start = i;
             if (i < 0 || i > parser.maxIndex
-                || parser.getCharCode(i) !== codes.L_BRACKET) {
+                || !(yield parser.isCodeAtAsync(start, codes.L_BRACKET))) {
                 console.log("Color space array start not found");
                 return null;
             }
@@ -6582,7 +6595,7 @@ class ImageStream extends PdfStream {
                                         break;
                                     }
                                     throw new Error("Can't parse /ColorSpace object:" +
-                                        parser.sliceChars(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
+                                        parser.sliceCharsAsync(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
                                 }
                                 throw new Error("Can't parse /ColorSpace value array");
                             }
@@ -6599,7 +6612,7 @@ class ImageStream extends PdfStream {
                                             break;
                                         }
                                         throw new Error("Can't parse /ColorSpace object:" +
-                                            colorSpaceParseInfo.parser.sliceChars(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end));
+                                            (yield colorSpaceParseInfo.parser.sliceCharsAsync(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end)));
                                     }
                                 }
                                 throw new Error("Can't parse /ColorSpace ref");
@@ -6921,7 +6934,7 @@ class ObjectMapDict extends PdfDict {
                                 const dictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (dictBounds) {
                                     const dictParseInfo = {
-                                        parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)),
+                                        parser: new ObjectMapDict.dataParserConstructor(yield parser.sliceCharCodesAsync(dictBounds.start, dictBounds.end)),
                                         bounds: {
                                             start: 0,
                                             end: dictBounds.end - dictBounds.start,
@@ -11905,7 +11918,7 @@ class FontDict extends PdfDict {
                             if (excludedEntryType === valueTypes.REF) {
                                 const excludedDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (excludedDictId && parseInfo.parseInfoGetterAsync) {
-                                    this[name.slice(1)] = parser.sliceCharCodes(excludedDictId.start, excludedDictId.end);
+                                    this[name.slice(1)] = yield parser.sliceCharCodesAsync(excludedDictId.start, excludedDictId.end);
                                     i = excludedDictId.end + 1;
                                     break;
                                 }
@@ -11914,7 +11927,7 @@ class FontDict extends PdfDict {
                             else if (excludedEntryType === valueTypes.DICTIONARY) {
                                 const excludedDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (excludedDictBounds) {
-                                    this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
+                                    this[name.slice(1)] = yield parser.sliceCharCodesAsync(excludedDictBounds.start, excludedDictBounds.end);
                                     i = excludedDictBounds.end + 1;
                                     break;
                                 }
@@ -13558,7 +13571,7 @@ class AppearanceStreamRenderer {
                                     break;
                                 default:
                                     console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
-                                    j = parser.findDelimiterIndex(true, j + 1);
+                                    j = yield parser.findDelimiterIndexAsync(true, j + 1);
                                     break;
                             }
                         }
@@ -14233,7 +14246,7 @@ class AppearanceStreamRenderer {
                             minIndex: i,
                         });
                         if (textObjectEnd) {
-                            const textParser = parser.getSubParser(i, textObjectEnd.start - 1);
+                            const textParser = yield parser.getSubParserAsync(i, textObjectEnd.start - 1);
                             const textGroup = yield this.drawTextGroupAsync(textParser, stream.Resources);
                             svgElements.push(...textGroup);
                             i = yield parser.skipEmptyAsync(textObjectEnd.end + 1);
@@ -14756,10 +14769,10 @@ class BorderArray {
     static parseAsync(parser, start, skipEmpty = true) {
         return __awaiter$O(this, void 0, void 0, function* () {
             if (skipEmpty) {
-                start = parser.findNonSpaceIndex(true, start);
+                start = yield parser.findNonSpaceIndexAsync(true, start);
             }
             if (start < 0 || start > parser.maxIndex
-                || parser.getCharCode(start) !== codes.L_BRACKET) {
+                || !(yield parser.isCodeAtAsync(start, codes.L_BRACKET))) {
                 return null;
             }
             const hCornerR = yield parser.parseNumberAtAsync(start + 1);
@@ -14774,18 +14787,18 @@ class BorderArray {
             if (!width || isNaN(width.value)) {
                 return null;
             }
-            const next = parser.findNonSpaceIndex(true, width.end + 1);
+            const next = yield parser.findNonSpaceIndexAsync(true, width.end + 1);
             if (!next) {
                 return null;
             }
-            else if (parser.getCharCode(next) === codes.R_BRACKET) {
+            else if (yield parser.isCodeAtAsync(next, codes.R_BRACKET)) {
                 return {
                     value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
                     start,
                     end: next,
                 };
             }
-            else if (parser.getCharCode(next) === codes.L_BRACKET) {
+            else if (yield parser.isCodeAtAsync(next, codes.L_BRACKET)) {
                 const dash = yield parser.parseNumberAtAsync(next + 1);
                 if (!dash || isNaN(dash.value)) {
                     return null;
@@ -14794,12 +14807,12 @@ class BorderArray {
                 if (!gap || isNaN(gap.value)) {
                     return null;
                 }
-                const dashEnd = parser.findNonSpaceIndex(true, gap.end + 1);
-                if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
+                const dashEnd = yield parser.findNonSpaceIndexAsync(true, gap.end + 1);
+                if (!dashEnd || !(yield parser.isCodeAtAsync(dashEnd, codes.R_BRACKET))) {
                     return null;
                 }
-                const arrayEnd = parser.findNonSpaceIndex(true, dashEnd + 1);
-                if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
+                const arrayEnd = yield parser.findNonSpaceIndexAsync(true, dashEnd + 1);
+                if (!arrayEnd || !(yield parser.isCodeAtAsync(arrayEnd, codes.R_BRACKET))) {
                     return null;
                 }
                 return {
@@ -16775,7 +16788,7 @@ class ObjectStream extends PdfStream {
             if (!bounds) {
                 return null;
             }
-            const bytes = parser.sliceCharCodes(bounds.start, bounds.end);
+            const bytes = yield parser.sliceCharCodesAsync(bounds.start, bounds.end);
             if (!bytes.length) {
                 throw new Error("Object byte array is empty");
             }
@@ -17565,7 +17578,7 @@ class XRefTable extends XRef {
             if (!trailerDictBounds) {
                 return null;
             }
-            const table = parser.sliceCharCodes(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
+            const table = yield parser.sliceCharCodesAsync(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
             const trailerDict = yield TrailerDict.parseAsync({ parser, bounds: trailerDictBounds });
             if (!trailerDict) {
                 return null;
@@ -18061,7 +18074,7 @@ class PageDict extends PdfDict {
                             if (resEntryType === valueTypes.REF) {
                                 const resDictId = yield ObjectId.parseRefAsync(parser, i);
                                 if (resDictId && parseInfo.parseInfoGetterAsync) {
-                                    this.Resources = parser.sliceCharCodes(resDictId.start, resDictId.end);
+                                    this.Resources = yield parser.sliceCharCodesAsync(resDictId.start, resDictId.end);
                                     i = resDictId.end + 1;
                                     break;
                                 }
@@ -18070,7 +18083,7 @@ class PageDict extends PdfDict {
                             else if (resEntryType === valueTypes.DICTIONARY) {
                                 const resDictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (resDictBounds) {
-                                    this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
+                                    this.Resources = yield parser.sliceCharCodesAsync(resDictBounds.start, resDictBounds.end);
                                     i = resDictBounds.end + 1;
                                     break;
                                 }

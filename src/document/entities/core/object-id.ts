@@ -31,7 +31,7 @@ export class ObjectId implements Reference, IEncodable {
   static async parseAsync(parser: DataParser, start: number, 
     skipEmpty = true): Promise<ParserResult<ObjectId>> {  
     if (skipEmpty) {
-      start = parser.findRegularIndex(true, start);
+      start = await parser.findRegularIndexAsync(true, start);
     }
     if (start < 0 || start > parser.maxIndex) {
       return null;

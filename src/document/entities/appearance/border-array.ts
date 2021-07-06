@@ -25,10 +25,10 @@ export class BorderArray {
   static async parseAsync(parser: DataParser, start: number, 
     skipEmpty = true): Promise<ParserResult<BorderArray>> {
     if (skipEmpty) {
-      start = parser.findNonSpaceIndex(true, start);
+      start = await parser.findNonSpaceIndexAsync(true, start);
     }
     if (start < 0 || start > parser.maxIndex 
-      || parser.getCharCode(start) !== codes.L_BRACKET) {
+      || !(await parser.isCodeAtAsync(start, codes.L_BRACKET))) {
       return null;
     }    
     
@@ -47,17 +47,17 @@ export class BorderArray {
       return null;
     }
 
-    const next = parser.findNonSpaceIndex(true, width.end + 1);
+    const next = await parser.findNonSpaceIndexAsync(true, width.end + 1);
     if (!next) {
       return null;
-    } else if (parser.getCharCode(next) === codes.R_BRACKET) {
+    } else if (await parser.isCodeAtAsync(next, codes.R_BRACKET)) {
       // dash array is absent
       return {
         value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
         start,
         end: next,
       };
-    } else if (parser.getCharCode(next) === codes.L_BRACKET) {      
+    } else if (await parser.isCodeAtAsync(next, codes.L_BRACKET)) {      
       // dash array is present
       const dash = await parser.parseNumberAtAsync(next + 1);
       if (!dash || isNaN(dash.value)) {
@@ -69,13 +69,13 @@ export class BorderArray {
         return null;
       }   
 
-      const dashEnd = parser.findNonSpaceIndex(true, gap.end + 1);
-      if (!dashEnd || parser.getCharCode(dashEnd) !== codes.R_BRACKET) {
+      const dashEnd = await parser.findNonSpaceIndexAsync(true, gap.end + 1);
+      if (!dashEnd || !(await parser.isCodeAtAsync(dashEnd, codes.R_BRACKET))) {
         return null;
       }
 
-      const arrayEnd = parser.findNonSpaceIndex(true, dashEnd + 1);
-      if (!arrayEnd || parser.getCharCode(arrayEnd) !== codes.R_BRACKET) {
+      const arrayEnd = await parser.findNonSpaceIndexAsync(true, dashEnd + 1);
+      if (!arrayEnd || !(await parser.isCodeAtAsync(arrayEnd, codes.R_BRACKET))) {
         return null;
       }
       

@@ -137,17 +137,21 @@ export class SyncDataParser implements DataParser {
   }
 
   /**
-   * get a new parser instance which inner data array is a subarray of the source parser data
-   * @param start subarray start index
-   * @param end subarray end index (chat at the end index is INCLUDED into the subarray)
+   * get a new parser instance which inner data array is a slice of the source parser data
+   * @param start slice start index
+   * @param end slice end index (char at the end index is INCLUDED into the slice)
    * @returns 
    */
-  getSubParser(start: number, end?: number): DataParser {
-    return new SyncDataParser(this.subCharCodes(start, end)); 
+  async getSubParserAsync(start: number, end?: number): Promise<DataParser> {
+    return new SyncDataParser(await this.sliceCharCodesAsync(start, end)); 
   }
   
   isOutside(index: number): boolean {
     return (index < 0 || index > this._maxIndex);
+  }
+
+  async isCodeAtAsync(index: number, code: number): Promise<boolean> {
+    return this.getCharCode(index) === code;
   }
 
   async getValueTypeAtAsync(start: number, skipEmpty = true): Promise<ValueType>  {
@@ -188,7 +192,7 @@ export class SyncDataParser implements DataParser {
       case codes.D_7:
       case codes.D_8:
       case codes.D_9:
-        const nextDelimIndex = this.findDelimiterIndex(true, i + 1);
+        const nextDelimIndex = await this.findDelimiterIndexAsync(true, i + 1);
         if (nextDelimIndex !== -1) {
           const refEndIndex = await this.findCharIndexAsync(codes.R, false, nextDelimIndex - 1);
           if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
@@ -355,8 +359,8 @@ export class SyncDataParser implements DataParser {
     }
   }
   
-  findSpaceIndex(direction = true, 
-    start?: number): number {
+  async findSpaceIndexAsync(direction = true, 
+    start?: number): Promise<number> {
 
     const arr = this._data;
     let i = isNaN(start)
@@ -382,8 +386,8 @@ export class SyncDataParser implements DataParser {
     return -1;
   }
 
-  findNonSpaceIndex(direction = true, 
-    start?: number): number {
+  async findNonSpaceIndexAsync(direction = true, 
+    start?: number): Promise<number> {
 
     const arr = this._data;
     let i = isNaN(start)
@@ -409,8 +413,8 @@ export class SyncDataParser implements DataParser {
     return -1;
   }
   
-  findDelimiterIndex(direction = true, 
-    start?: number): number {
+  async findDelimiterIndexAsync(direction = true, 
+    start?: number): Promise<number> {
 
     const arr = this._data;
     let i = isNaN(start)
@@ -436,8 +440,8 @@ export class SyncDataParser implements DataParser {
     return -1; 
   }
   
-  findNonDelimiterIndex(direction = true, 
-    start?: number): number {
+  async findNonDelimiterIndexAsync(direction = true, 
+    start?: number): Promise<number> {
       
     const arr = this._data;
     let i = isNaN(start)
@@ -463,8 +467,8 @@ export class SyncDataParser implements DataParser {
     return -1;
   }
 
-  findRegularIndex(direction = true, 
-    start?: number): number {
+  async findRegularIndexAsync(direction = true, 
+    start?: number): Promise<number> {
 
     const arr = this._data;
     let i = isNaN(start)
@@ -490,8 +494,8 @@ export class SyncDataParser implements DataParser {
     return -1;
   }
 
-  findIrregularIndex(direction = true, 
-    start?: number): number {
+  async findIrregularIndexAsync(direction = true, 
+    start?: number): Promise<number> {
     
     const arr = this._data;
     let i = isNaN(start)
@@ -535,7 +539,7 @@ export class SyncDataParser implements DataParser {
       return null;
     }      
 
-    let contentStart = this.findNonSpaceIndex(true, objStartIndex.end + 1);
+    let contentStart = await this.findNonSpaceIndexAsync(true, objStartIndex.end + 1);
     if (contentStart === -1){
       return null;
     }    
@@ -544,7 +548,7 @@ export class SyncDataParser implements DataParser {
     if (!objEndIndex) {
       return null;
     }
-    let contentEnd = this.findNonSpaceIndex(false, objEndIndex.start - 1);
+    let contentEnd = await this.findNonSpaceIndexAsync(false, objEndIndex.start - 1);
 
     if (this.getCharCode(contentStart) === codes.LESS
       && this.getCharCode(contentStart + 1) === codes.LESS
@@ -576,7 +580,7 @@ export class SyncDataParser implements DataParser {
     if (!xrefStart) {
       return null;
     }     
-    const contentStart = this.findNonSpaceIndex(true, xrefStart.end + 1);
+    const contentStart = await this.findNonSpaceIndexAsync(true, xrefStart.end + 1);
     if (contentStart === -1){
       return null;
     }   
@@ -585,7 +589,7 @@ export class SyncDataParser implements DataParser {
     if (!xrefEnd) {
       return null;
     } 
-    const contentEnd = this.findNonSpaceIndex(false, xrefEnd.start - 1);
+    const contentEnd = await this.findNonSpaceIndexAsync(false, xrefEnd.start - 1);
 
     if (contentEnd < contentStart) {
       // should be only possible in an empty xref, which is not allowed
@@ -610,7 +614,7 @@ export class SyncDataParser implements DataParser {
       return null;
     }
      
-    const contentStart = this.findNonSpaceIndex(true, start + 2);
+    const contentStart = await this.findNonSpaceIndexAsync(true, start + 2);
     if (contentStart === -1){
       return null;
     }  
@@ -656,7 +660,7 @@ export class SyncDataParser implements DataParser {
     }
     const end = i - 1;
  
-    const contentEnd = this.findNonSpaceIndex(false, end - 2);
+    const contentEnd = await this.findNonSpaceIndexAsync(false, end - 2);
     if (contentEnd < contentStart) {
       // should be possible only in an empty dict
       return {
@@ -842,7 +846,7 @@ export class SyncDataParser implements DataParser {
       return null;
     }
 
-    const nearestDelimiter = this.findDelimiterIndex(true, start);
+    const nearestDelimiter = await this.findDelimiterIndexAsync(true, start);
 
     const isTrue = await this.findSubarrayIndexAsync(keywordCodes.TRUE, {
       minIndex: start, 
@@ -1007,7 +1011,7 @@ export class SyncDataParser implements DataParser {
   //#region skip methods
 
   async skipEmptyAsync(start: number): Promise<number> {
-    let index = this.findNonSpaceIndex(true, start);
+    let index = await this.findNonSpaceIndexAsync(true, start);
     if (index === -1) {
       return -1;
     }
@@ -1017,7 +1021,7 @@ export class SyncDataParser implements DataParser {
       if (afterComment === -1) {
         return -1;
       }
-      index = this.findNonSpaceIndex(true, afterComment);
+      index = await this.findNonSpaceIndexAsync(true, afterComment);
     }
     return index;
   }
@@ -1085,28 +1089,16 @@ export class SyncDataParser implements DataParser {
 
   //#region get chars/codes methods
 
-  getCharCode(index: number): number {    
-    return this._data[index];
-  }
-
-  getChar(index: number): string {    
-    const code = this._data[index];
-    if (!isNaN(code)) {
-      return String.fromCharCode(code);
-    }
-    return null;
-  }
-
-  sliceCharCodes(start: number, end?: number): Uint8Array {
+  async sliceCharCodesAsync(start: number, end?: number): Promise<Uint8Array> {
     return this._data.slice(start, (end || start) + 1);
   }
 
-  sliceChars(start: number, end?: number): string {
+  async sliceCharsAsync(start: number, end?: number): Promise<string> {
     return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
   }
-  
-  private subCharCodes(start: number, end?: number): Uint8Array {
-    return this._data.subarray(start, (end || start) + 1);
+
+  private getCharCode(index: number): number {    
+    return this._data[index];
   }
   
   //#endregion

@@ -126,7 +126,7 @@ export class XRefTable extends XRef {
       return null;
     }
     
-    const table = parser.sliceCharCodes(xrefTableBounds.contentStart, 
+    const table = await parser.sliceCharCodesAsync(xrefTableBounds.contentStart, 
       xrefTableBounds.contentEnd);    
 
     const trailerDict = await TrailerDict.parseAsync({parser, bounds: trailerDictBounds});   

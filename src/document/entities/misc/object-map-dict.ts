@@ -102,7 +102,8 @@ export class ObjectMapDict extends PdfDict {
               const dictBounds = await parser.getDictBoundsAtAsync(i);
               if (dictBounds) {
                 const dictParseInfo: ParserInfo = {
-                  parser: new ObjectMapDict.dataParserConstructor(parser.sliceCharCodes(dictBounds.start, dictBounds.end)), 
+                  parser: new ObjectMapDict.dataParserConstructor(
+                    await parser.sliceCharCodesAsync(dictBounds.start, dictBounds.end)), 
                   bounds: {
                     start: 0, 
                     end: dictBounds.end - dictBounds.start, 

@@ -137,7 +137,7 @@ export abstract class PdfStream extends PdfObject {
     const end = bounds.contentEnd || bounds.end;
 
     this._ref = parseInfo.cryptInfo?.ref;
-    this._sourceBytes = parser.sliceCharCodes(start, end);
+    this._sourceBytes = await parser.sliceCharCodesAsync(start, end);
 
     const streamEndIndex = await parser.findSubarrayIndexAsync(keywordCodes.STREAM_END, { 
       direction: false, 
@@ -257,7 +257,7 @@ export abstract class PdfStream extends PdfObject {
     
     const streamStart = await parser.findNewLineIndexAsync(true, streamStartIndex.end + 1);
     const streamEnd = await parser.findNewLineIndexAsync(false, streamEndIndex.start - 1);
-    const streamBytes = parser.sliceCharCodes(streamStart, streamEnd);
+    const streamBytes = await parser.sliceCharCodesAsync(streamStart, streamEnd);
     const encodedData = parseInfo.cryptInfo?.ref && parseInfo.cryptInfo.streamCryptor
       ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
       : streamBytes;

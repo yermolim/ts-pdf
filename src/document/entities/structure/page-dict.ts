@@ -290,7 +290,7 @@ export class PageDict extends PdfDict {
             if (resEntryType === valueTypes.REF) {              
               const resDictId = await ObjectId.parseRefAsync(parser, i);
               if (resDictId && parseInfo.parseInfoGetterAsync) {
-                this.Resources = parser.sliceCharCodes(resDictId.start, resDictId.end);
+                this.Resources = await parser.sliceCharCodesAsync(resDictId.start, resDictId.end);
                 i = resDictId.end + 1;
                 break;
               }              
@@ -298,7 +298,7 @@ export class PageDict extends PdfDict {
             } else if (resEntryType === valueTypes.DICTIONARY) { 
               const resDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (resDictBounds) {
-                this.Resources = parser.sliceCharCodes(resDictBounds.start, resDictBounds.end);
+                this.Resources = await parser.sliceCharCodesAsync(resDictBounds.start, resDictBounds.end);
                 i = resDictBounds.end + 1;
                 break;
               }

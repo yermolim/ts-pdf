@@ -402,7 +402,7 @@ export class ImageStream extends PdfStream {
                 }
                 // TODO: add support for other special color spaces
                 throw new Error("Can't parse /ColorSpace object:" +
-                  parser.sliceChars(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end)); 
+                  parser.sliceCharsAsync(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end)); 
               }  
               throw new Error("Can't parse /ColorSpace value array");  
             } else if (colorSpaceEntryType === valueTypes.REF) { 
@@ -419,7 +419,7 @@ export class ImageStream extends PdfStream {
                   }
                   // TODO: add support for other special color spaces
                   throw new Error("Can't parse /ColorSpace object:" +
-                    colorSpaceParseInfo.parser.sliceChars(
+                    await colorSpaceParseInfo.parser.sliceCharsAsync(
                       colorSpaceParseInfo.bounds.start, 
                       colorSpaceParseInfo.bounds.end)); 
                 }

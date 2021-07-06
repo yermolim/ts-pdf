@@ -826,7 +826,7 @@ export class FontDict extends PdfDict {
             if (excludedEntryType === valueTypes.REF) {              
               const excludedDictId = await ObjectId.parseRefAsync(parser, i);
               if (excludedDictId && parseInfo.parseInfoGetterAsync) {
-                this[name.slice(1)] = parser.sliceCharCodes(excludedDictId.start, excludedDictId.end);
+                this[name.slice(1)] = await parser.sliceCharCodesAsync(excludedDictId.start, excludedDictId.end);
                 i = excludedDictId.end + 1;
                 break;
               }              
@@ -834,7 +834,7 @@ export class FontDict extends PdfDict {
             } else if (excludedEntryType === valueTypes.DICTIONARY) { 
               const excludedDictBounds = await parser.getDictBoundsAtAsync(i); 
               if (excludedDictBounds) {
-                this[name.slice(1)] = parser.sliceCharCodes(excludedDictBounds.start, excludedDictBounds.end);
+                this[name.slice(1)] = await parser.sliceCharCodesAsync(excludedDictBounds.start, excludedDictBounds.end);
                 i = excludedDictBounds.end + 1;
                 break;
               }

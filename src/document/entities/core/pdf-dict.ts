@@ -52,7 +52,7 @@ export abstract class PdfDict extends PdfObject {
 
     this._ref = parseInfo.cryptInfo?.ref;
     this._streamId = parseInfo.streamId;
-    this._sourceBytes = parser.sliceCharCodes(start, end);
+    this._sourceBytes = await parser.sliceCharCodesAsync(start, end);
 
     let i = await parser.skipToNextNameAsync(start, end - 1);
     if (i === -1) {     

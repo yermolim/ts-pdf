@@ -30,7 +30,8 @@ export class LiteralString implements IEncodable {
       return;
     }
 
-    let bytes = LiteralString.unescape(parser.sliceCharCodes(bounds.start + 1, bounds.end - 1));
+    let bytes = LiteralString.unescape(
+      await parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1));
     if (cryptInfo?.ref && cryptInfo.stringCryptor) {
       bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
     }

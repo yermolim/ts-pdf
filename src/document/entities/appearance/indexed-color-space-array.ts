@@ -49,11 +49,11 @@ export class IndexedColorSpaceArray implements IEncodable {
 
     let i: number;
     if (skipEmpty) {
-      i = parser.findNonSpaceIndex(true, bounds.start);
+      i = await parser.findNonSpaceIndexAsync(true, bounds.start);
     }
     const start = i;
     if (i < 0 || i > parser.maxIndex 
-      || parser.getCharCode(i) !== codes.L_BRACKET) {
+      || !(await parser.isCodeAtAsync(start, codes.L_BRACKET))) {
       console.log("Color space array start not found");
       return null;
     }    
