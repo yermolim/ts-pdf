@@ -1,5 +1,4 @@
 import { Vec2 } from "mathador";
-import { Quadruple } from "../../common/types";
 
 export interface SmoothPathData {
   positions: Vec2[];

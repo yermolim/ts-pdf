@@ -337,7 +337,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
    */
   toDto(): AnnotationDto {
     return {
-      annotationType: "/Ink",
+      annotationType: this.Type,
       uuid: this.$name,
       pageId: this.$pageId,
 
@@ -831,14 +831,18 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     content.id = this._svgId;
     content.classList.add("annotation-content");
     content.setAttribute("data-annotation-name", this.$name); 
+
+    const [x0, y0, x1, y1] = this._viewBox;
     
     if (renderResult.clipPaths?.length) {
       const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       clipPathsContainer.append(...renderResult.clipPaths);
+      clipPathsContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+      // flip Y to match PDF coords where 0,0 is the lower-left corner
+      clipPathsContainer.setAttribute("transform", "scale(1, -1)");
       content.append(clipPathsContainer);
     }
       
-    const [x0, y0, x1, y1] = this._viewBox;
     renderResult.elements.forEach(x => {      
       const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       elementContainer.classList.add("annotation-content-element");

@@ -80,7 +80,7 @@ export declare class TsPdfViewer {
 	private readonly _previewer;
 	private _fileName;
 	private _docService;
-	private _annotationService;
+	private _annotatorService;
 	private _fileOpenAction;
 	private _fileSaveAction;
 	private _fileCloseAction;

@@ -480,6 +480,9 @@ export class DocumentService {
         timestamp: Date.now(),
         undo: async () => {
           this.removeAnnotation(annotation, false);
+          if (this.selectedAnnotation === annotation) {
+            this.setSelectedAnnotation(null);
+          }
         }
       });
     }

@@ -114,7 +114,7 @@ export class TsPdfViewer {
   private _fileName: string; 
 
   private _docService: DocumentService;  
-  private _annotationService: AnnotatorService;
+  private _annotatorService: AnnotatorService;
 
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
@@ -207,7 +207,7 @@ export class TsPdfViewer {
 
     this._pdfLoadingTask?.destroy();    
 
-    this._annotationService?.destroy();
+    this._annotatorService?.destroy();
 
     this._viewer.destroy();
     this._previewer.destroy();
@@ -307,7 +307,7 @@ export class TsPdfViewer {
     await this.refreshPagesAsync();
 
     // create an annotation builder and set its mode to 'select'
-    this._annotationService = new AnnotatorService(this._docService, 
+    this._annotatorService = new AnnotatorService(this._docService, 
       this._pageService, this._customStampsService, this._viewer);
     this.setAnnotationMode("select");
 
@@ -337,7 +337,7 @@ export class TsPdfViewer {
       this._pdfDocument.destroy();
       this._pdfDocument = null;
 
-      this._annotationService?.destroy();
+      this._annotatorService?.destroy();
       
       this._docService?.destroy();
       this._docService = null;
@@ -680,12 +680,12 @@ export class TsPdfViewer {
   //#region page rotation
   private onRotateCounterClockwiseClick = () => {
     this._pageService.getCurrentPage().rotateCounterClockwise();
-    this.setAnnotationMode(this._annotationService.mode);
+    this.setAnnotationMode(this._annotatorService.mode);
   };
   
   private onRotateClockwiseClick = () => {
     this._pageService.getCurrentPage().rotateCounterClockwise();
-    this.setAnnotationMode(this._annotationService.mode);
+    this.setAnnotationMode(this._annotatorService.mode);
   };
   //#endregion
 
@@ -726,15 +726,15 @@ export class TsPdfViewer {
 
   //#region annotations
   private annotatorUndo = () => {
-    this._annotationService.annotator?.undo();
+    this._annotatorService.annotator?.undo();
   };
 
   private annotatorClear = () => {
-    this._annotationService.annotator?.clear();
+    this._annotatorService.annotator?.clear();
   };
   
   private annotatorSave = () => {
-    this._annotationService.annotator?.saveAnnotationAsync();
+    this._annotatorService.annotator?.saveAnnotationAsync();
   };
   
   private onCustomStampChanged = (e: CustomStampEvent) => {
@@ -826,15 +826,15 @@ export class TsPdfViewer {
   };
 
   private setAnnotationMode(mode: AnnotatorMode) {
-    if (!this._annotationService || !mode) {
+    if (!this._annotatorService || !mode) {
       return;
     }
 
-    const prevMode = this._annotationService.mode;
+    const prevMode = this._annotatorService.mode;
     this._shadowRoot.querySelector(`#button-annotation-mode-${prevMode}`)?.classList.remove("on");
     this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)?.classList.add("on");
 
-    this._annotationService.mode = mode;
+    this._annotatorService.mode = mode;
   }
    
   private onAnnotationEditTextButtonClick = async () => {

@@ -80,6 +80,12 @@ export class Viewer {
   destroy() {  
     this._pageService.eventService.removeListener(pagesLoadedEvent, this.onPagesLoaded);
     this._pageService.eventService.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
+    
+    this._container.removeEventListener("scroll", this.onScroll);
+    this._container.removeEventListener("wheel", this.onWheelZoom);
+    this._container.removeEventListener("pointermove", this.onPointerMove);
+    this._container.removeEventListener("pointerdown", this.onPointerDownScroll);    
+    this._container.removeEventListener("touchstart", this.onTouchZoom);  
   }
 
   zoomOut() {

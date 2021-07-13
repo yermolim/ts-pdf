@@ -1841,7 +1841,7 @@ class PageService {
         this._pages = [];
         this._renderedPages = [];
         if (!eventService) {
-            throw new Error("Event controller is not defined");
+            throw new Error("Event service is not defined");
         }
         this._eventService = eventService;
         this._visibleAdjPages = (options === null || options === void 0 ? void 0 : options.visibleAdjPages) || 0;
@@ -15188,7 +15188,7 @@ class AnnotationDict extends PdfDict {
     toDto() {
         var _a, _b, _c, _d, _e;
         return {
-            annotationType: "/Ink",
+            annotationType: this.Type,
             uuid: this.$name,
             pageId: this.$pageId,
             dateCreated: ((_b = (_a = this["CreationDate"]) === null || _a === void 0 ? void 0 : _a.date) === null || _b === void 0 ? void 0 : _b.toISOString()) || new Date().toISOString(),
@@ -15587,12 +15587,14 @@ class AnnotationDict extends PdfDict {
         content.id = this._svgId;
         content.classList.add("annotation-content");
         content.setAttribute("data-annotation-name", this.$name);
+        const [x0, y0, x1, y1] = this._viewBox;
         if ((_a = renderResult.clipPaths) === null || _a === void 0 ? void 0 : _a.length) {
             const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             clipPathsContainer.append(...renderResult.clipPaths);
+            clipPathsContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+            clipPathsContainer.setAttribute("transform", "scale(1, -1)");
             content.append(clipPathsContainer);
         }
-        const [x0, y0, x1, y1] = this._viewBox;
         renderResult.elements.forEach(x => {
             const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             elementContainer.classList.add("annotation-content-element");
@@ -25730,6 +25732,9 @@ class DocumentService {
                     timestamp: Date.now(),
                     undo: () => __awaiter$k(this, void 0, void 0, function* () {
                         this.removeAnnotation(annotation, false);
+                        if (this.selectedAnnotation === annotation) {
+                            this.setSelectedAnnotation(null);
+                        }
                     })
                 });
             }
@@ -29535,6 +29540,11 @@ class Viewer {
     destroy() {
         this._pageService.eventService.removeListener(pagesLoadedEvent, this.onPagesLoaded);
         this._pageService.eventService.removeListener(currentPageChangeRequestEvent, this.onScrollRequest);
+        this._container.removeEventListener("scroll", this.onScroll);
+        this._container.removeEventListener("wheel", this.onWheelZoom);
+        this._container.removeEventListener("pointermove", this.onPointerMove);
+        this._container.removeEventListener("pointerdown", this.onPointerDownScroll);
+        this._container.removeEventListener("touchstart", this.onTouchZoom);
     }
     zoomOut() {
         this.zoomOutCentered();
@@ -30334,11 +30344,11 @@ class TsPdfViewer {
         };
         this.onRotateCounterClockwiseClick = () => {
             this._pageService.getCurrentPage().rotateCounterClockwise();
-            this.setAnnotationMode(this._annotationService.mode);
+            this.setAnnotationMode(this._annotatorService.mode);
         };
         this.onRotateClockwiseClick = () => {
             this._pageService.getCurrentPage().rotateCounterClockwise();
-            this.setAnnotationMode(this._annotationService.mode);
+            this.setAnnotationMode(this._annotatorService.mode);
         };
         this.onPaginatorInput = (event) => {
             if (event.target instanceof HTMLInputElement) {
@@ -30368,15 +30378,15 @@ class TsPdfViewer {
         };
         this.annotatorUndo = () => {
             var _a;
-            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.undo();
+            (_a = this._annotatorService.annotator) === null || _a === void 0 ? void 0 : _a.undo();
         };
         this.annotatorClear = () => {
             var _a;
-            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.clear();
+            (_a = this._annotatorService.annotator) === null || _a === void 0 ? void 0 : _a.clear();
         };
         this.annotatorSave = () => {
             var _a;
-            (_a = this._annotationService.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotationAsync();
+            (_a = this._annotatorService.annotator) === null || _a === void 0 ? void 0 : _a.saveAnnotationAsync();
         };
         this.onCustomStampChanged = (e) => {
             this.setAnnotationMode("stamp");
@@ -30592,7 +30602,7 @@ class TsPdfViewer {
         var _a, _b, _c, _d;
         this._annotChangeCallback = null;
         (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
-        (_b = this._annotationService) === null || _b === void 0 ? void 0 : _b.destroy();
+        (_b = this._annotatorService) === null || _b === void 0 ? void 0 : _b.destroy();
         this._viewer.destroy();
         this._previewer.destroy();
         this._pageService.destroy();
@@ -30670,7 +30680,7 @@ class TsPdfViewer {
             this._docService = docService;
             this._fileName = fileName;
             yield this.refreshPagesAsync();
-            this._annotationService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
+            this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
             this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
             this._loader.hide();
@@ -30692,7 +30702,7 @@ class TsPdfViewer {
             if (this._pdfDocument) {
                 this._pdfDocument.destroy();
                 this._pdfDocument = null;
-                (_a = this._annotationService) === null || _a === void 0 ? void 0 : _a.destroy();
+                (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
                 (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
                 this._docService = null;
                 this._fileName = null;
@@ -30905,13 +30915,13 @@ class TsPdfViewer {
     }
     setAnnotationMode(mode) {
         var _a, _b;
-        if (!this._annotationService || !mode) {
+        if (!this._annotatorService || !mode) {
             return;
         }
-        const prevMode = this._annotationService.mode;
+        const prevMode = this._annotatorService.mode;
         (_a = this._shadowRoot.querySelector(`#button-annotation-mode-${prevMode}`)) === null || _a === void 0 ? void 0 : _a.classList.remove("on");
         (_b = this._shadowRoot.querySelector(`#button-annotation-mode-${mode}`)) === null || _b === void 0 ? void 0 : _b.classList.add("on");
-        this._annotationService.mode = mode;
+        this._annotatorService.mode = mode;
     }
     refreshPagesAsync() {
         var _a;

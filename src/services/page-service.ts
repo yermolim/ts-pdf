@@ -136,7 +136,7 @@ export class PageService {
 
   constructor(eventService: ElementEventService, options?: PageServiceOptions) {   
     if (!eventService) {
-      throw new Error("Event controller is not defined");
+      throw new Error("Event service is not defined");
     } 
     this._eventService = eventService;
 
