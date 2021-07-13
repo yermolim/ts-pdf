@@ -1,13 +1,14 @@
 import { Vec2 } from "mathador";
 import { Quadruple } from "../../common/types";
 import { RenderableAnnotation, AnnotationRenderResult } from "../../common/annotation";
+import { PageInfo } from "../../common/page";
 
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
   from "../../services/document-service";
 
 export class PageAnnotationView {
-  private readonly _pageId: number;
+  private readonly _pageInfo: PageInfo;
   private readonly _viewbox: Quadruple;
 
   private _docService: DocumentService;
@@ -18,11 +19,11 @@ export class PageAnnotationView {
 
   private _destroyed: boolean;
 
-  constructor(docService: DocumentService, pageId: number, pageDimensions: Vec2) {
-    if (!docService || isNaN(pageId) || !pageDimensions) {
+  constructor(docService: DocumentService, pageInfo: PageInfo, pageDimensions: Vec2) {
+    if (!docService || !pageInfo || !pageDimensions) {
       throw new Error("Required argument not found");
     }
-    this._pageId = pageId;
+    this._pageInfo = pageInfo;
     this._viewbox = [0, 0, pageDimensions.x, pageDimensions.y];
 
     this._docService = docService;
@@ -32,7 +33,7 @@ export class PageAnnotationView {
 
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this._svg.classList.add("page-annotations-controls");
-    this._svg.setAttribute("data-page-id", pageId + "");
+    this._svg.setAttribute("data-page-id", pageInfo + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     // flip Y to match PDF coords where 0,0 is the lower-left corner
     this._svg.setAttribute("transform", "scale(1, -1)");
@@ -82,7 +83,7 @@ export class PageAnnotationView {
   private async renderAnnotationsAsync(): Promise<boolean> {    
     this.clear();
 
-    const annotations = await this._docService.getPageAnnotationsAsync(this._pageId) || [];
+    const annotations = await this._docService.getPageAnnotationsAsync(this._pageInfo.id) || [];
 
     for (let i = 0; i < annotations.length || 0; i++) {
       const annotation = annotations[i];
@@ -102,9 +103,9 @@ export class PageAnnotationView {
         annotation.$onPointerLeaveAction = (e: PointerEvent) => {
           this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({annotation: null}));
         };
-        renderResult = await annotation.renderAsync(this._viewbox);
+        renderResult = await annotation.renderAsync(this._pageInfo);
       } else {
-        renderResult = annotation.lastRenderResult || await annotation.renderAsync(this._viewbox);
+        renderResult = annotation.lastRenderResult || await annotation.renderAsync(this._pageInfo);
       }   
 
       if (!renderResult) {

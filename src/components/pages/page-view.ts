@@ -4,12 +4,13 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 
 import { Vec2 } from "mathador";
 
+import { PageInfo } from "../../common/page";
 import { DocumentService } from "../../services/document-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
 
-export class PageView { 
+export class PageView implements PageInfo { 
   static readonly validRotationValues = [0, 90, 180, 270];
 
   /**number of the page in the pdf file */
@@ -86,6 +87,13 @@ export class PageView {
     }
     this._scale = value;
     this.refreshDimensions();
+  }
+
+  get width(): number {
+    return this._dimensions.width;
+  }
+  get height(): number {
+    return this._dimensions.height;
   }
 
   private _dimensionsIsValid: boolean;
@@ -368,7 +376,7 @@ export class PageView {
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationView(this._docService, this.id, new Vec2(x, y));
+      this._annotations = new PageAnnotationView(this._docService, this, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this._viewInnerContainer);
 

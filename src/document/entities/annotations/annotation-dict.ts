@@ -23,6 +23,7 @@ import { AppearanceDict } from "../appearance/appearance-dict";
 import { BorderEffectDict } from "../appearance/border-effect-dict";
 import { BorderArray } from "../appearance/border-array";
 import { XFormStream } from "../streams/x-form-stream";
+import { PageInfo } from "../../../common/page";
 
 export abstract class AnnotationDict extends PdfDict implements RenderableAnnotation {
   /**annotation name (should be a uuid) */
@@ -145,8 +146,8 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
   //#region render-related properties
   protected readonly _svgId = getRandomUuid(); 
   
-  /**view box used for rendering */
-  protected _viewBox: Quadruple;
+  /**page information used for rendering */
+  protected _pageInfo: PageInfo;
 
   /**rendered box showing the annotation dimensions */
   protected _renderedBox: SVGGraphicsElement;
@@ -255,14 +256,14 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
   
   /**
    * render current annotation using SVG
-   * @param viewBox view box used for SVG elements
+   * @param pageInfo view box used for SVG elements
    * @returns 
    */
-  async renderAsync(viewBox: Quadruple): Promise<AnnotationRenderResult> {
-    if (!viewBox) {
+  async renderAsync(pageInfo: PageInfo): Promise<AnnotationRenderResult> {
+    if (!pageInfo) {
       throw new Error("Can't render the annotation: view box is not defined");
     }
-    this._viewBox = viewBox;
+    this._pageInfo = pageInfo;
     
     if (!this._renderedControls) {
       this._renderedControls = this.renderControls();
@@ -665,37 +666,149 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
    * @param clientY 
    */
   protected convertClientCoordsToPage(clientX: number, clientY: number): Vec2 {
-    // html coords (0,0 is top-left corner)
-    const {x, y, width, height} = this._renderedBox.getBoundingClientRect();
-    const rectMinScaled = new Vec2(x, y);
-    const rectMaxScaled = new Vec2(x + width, y + height);
-    const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
-    // the lower-left corner of the page. keep in mind that PDF Rect uses inversed coords
-    const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
-    // invert Y coord
-    const position = new Vec2(
-      (clientX - pageLowerLeft.x) / pageScale,
-      (pageLowerLeft.y - clientY) / pageScale,
-    );
+    if (!this._pageInfo) {
+      throw new Error("Can't get exact page coords without page info");
+    }
+    const scale = this._pageInfo.scale;
+    const rotation = this._pageInfo.rotation;
+    
+    const [annotPageXMin, annotPageYMin] = this.Rect;  
+    const {x: annotClientXMin, y: annotClientYMin, 
+      width: annotClientHorLength, height: annotClientVertLength} = 
+      this._renderedBox.getBoundingClientRect();
 
-    return position;
+    // current client position of the page corner with the page coords of 0,0
+    const clientPageZero = new Vec2(); 
+    // result in page coordinates
+    const pageResult = new Vec2();
+    
+    switch(rotation) {
+      // rotated clockwise around the image top-left corner
+      case 0:
+        // bottom-left page corner
+        clientPageZero.set(
+          annotClientXMin - annotPageXMin * scale,
+          annotClientYMin + annotClientVertLength + annotPageYMin * scale
+        );
+        pageResult.set(          
+          (clientX - clientPageZero.x) / scale,
+          (clientPageZero.y - clientY) / scale
+        );
+        break;
+      case 90:
+        // rotate(90deg) translateY(-100%)
+        // top-left page corner
+        clientPageZero.set(
+          annotClientXMin - annotPageYMin * scale,
+          annotClientYMin - annotPageXMin * scale
+        );
+        pageResult.set(          
+          (clientY - clientPageZero.y) / scale,
+          (clientX - clientPageZero.x) / scale
+        );
+        break;
+      case 180:
+        // rotate(180deg) translateX(-100%) translateY(-100%)
+        // top-right page corner
+        clientPageZero.set(
+          annotClientXMin + annotClientHorLength + annotPageXMin * scale,
+          annotClientYMin - annotPageYMin * scale
+        );
+        pageResult.set(          
+          (clientPageZero.x - clientX) / scale,
+          (clientY - clientPageZero.y) / scale
+        );
+        break;
+      case 270:
+        // rotate(270deg) translateX(-100%)
+        // bottom-right page corner
+        clientPageZero.set(
+          annotClientXMin + annotClientHorLength + annotPageYMin * scale,
+          annotClientYMin + annotClientVertLength + annotPageXMin * scale
+        );
+        pageResult.set(          
+          (clientPageZero.y - clientY) / scale,
+          (clientPageZero.x - clientX) / scale
+        );
+        break;
+      default:
+        throw new Error(`Invalid page rotation value: ${rotation}`);
+    }
+
+    return pageResult;
   }
   
   protected convertPageCoordsToClient(pageX: number, pageY: number): Vec2 {
-    // html coords (0,0 is top-left corner)
-    const {x, y, width, height} = this._renderedBox.getBoundingClientRect();
-    const rectMinScaled = new Vec2(x, y);
-    const rectMaxScaled = new Vec2(x + width, y + height);
-    const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
-    // the lower-left corner of the page. keep in mind that PDF Rect uses inversed coords
-    const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
-    // invert Y coord
-    const position = new Vec2(
-      pageLowerLeft.x + (pageX * pageScale),
-      pageLowerLeft.y - (pageY * pageScale),
-    );
+    if (!this._pageInfo) {
+      throw new Error("Can't get exact page coords without page info");
+    }
+    const scale = this._pageInfo.scale;
+    const rotation = this._pageInfo.rotation;
+    
+    const [annotPageXMin, annotPageYMin] = this.Rect;  
+    const {x: annotClientXMin, y: annotClientYMin, 
+      width: annotClientHorLength, height: annotClientVertLength} = 
+      this._renderedBox.getBoundingClientRect();
 
-    return position;
+    // current client position of the page corner with the page coords of 0,0
+    const clientPageZero = new Vec2(); 
+    // result in client coordinates
+    const clientResult = new Vec2();
+    
+    switch(rotation) {
+      // rotated clockwise around the image top-left corner
+      case 0:
+        // bottom-left page corner
+        clientPageZero.set(
+          annotClientXMin - annotPageXMin * scale,
+          annotClientYMin + annotClientVertLength + annotPageYMin * scale
+        );
+        clientResult.set(          
+          pageX * scale + clientPageZero.x,
+          clientPageZero.y - pageY * scale
+        );
+        break;
+      case 90:
+        // rotate(90deg) translateY(-100%)
+        // top-left page corner
+        clientPageZero.set(
+          annotClientXMin - annotPageYMin * scale,
+          annotClientYMin - annotPageXMin * scale
+        );
+        clientResult.set(          
+          pageY * scale + clientPageZero.x,
+          pageX * scale + clientPageZero.y
+        );
+        break;
+      case 180:
+        // rotate(180deg) translateX(-100%) translateY(-100%)
+        // top-right page corner
+        clientPageZero.set(
+          annotClientXMin + annotClientHorLength + annotPageXMin * scale,
+          annotClientYMin - annotPageYMin * scale
+        );
+        clientResult.set(          
+          clientPageZero.x - pageX * scale,
+          pageY * scale + clientPageZero.y
+        );
+        break;
+      case 270:
+        // rotate(270deg) translateX(-100%)
+        // bottom-right page corner
+        clientPageZero.set(
+          annotClientXMin + annotClientHorLength + annotPageYMin * scale,
+          annotClientYMin + annotClientVertLength + annotPageXMin * scale
+        );
+        clientResult.set(    
+          clientPageZero.x - pageY * scale,      
+          clientPageZero.y - pageX * scale
+        );
+        break;
+      default:
+        throw new Error(`Invalid page rotation value: ${rotation}`);
+    }
+
+    return clientResult;
   }
   //#endregion
 
@@ -832,12 +945,12 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     content.classList.add("annotation-content");
     content.setAttribute("data-annotation-name", this.$name); 
 
-    const [x0, y0, x1, y1] = this._viewBox;
+    const {width, height} = this._pageInfo;
     
     if (renderResult.clipPaths?.length) {
       const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       clipPathsContainer.append(...renderResult.clipPaths);
-      clipPathsContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+      clipPathsContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
       // flip Y to match PDF coords where 0,0 is the lower-left corner
       clipPathsContainer.setAttribute("transform", "scale(1, -1)");
       content.append(clipPathsContainer);
@@ -846,7 +959,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     renderResult.elements.forEach(x => {      
       const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       elementContainer.classList.add("annotation-content-element");
-      elementContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+      elementContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
       // flip Y to match PDF coords where 0,0 is the lower-left corner
       elementContainer.setAttribute("transform", "scale(1, -1)");
 

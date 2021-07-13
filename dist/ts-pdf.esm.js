@@ -15129,12 +15129,12 @@ class AnnotationDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    renderAsync(viewBox) {
+    renderAsync(pageInfo) {
         return __awaiter$N(this, void 0, void 0, function* () {
-            if (!viewBox) {
+            if (!pageInfo) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
-            this._viewBox = viewBox;
+            this._pageInfo = pageInfo;
             if (!this._renderedControls) {
                 this._renderedControls = this.renderControls();
             }
@@ -15481,22 +15481,68 @@ class AnnotationDict extends PdfDict {
         return this._bBox;
     }
     convertClientCoordsToPage(clientX, clientY) {
-        const { x, y, width, height } = this._renderedBox.getBoundingClientRect();
-        const rectMinScaled = new Vec2(x, y);
-        const rectMaxScaled = new Vec2(x + width, y + height);
-        const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
-        const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
-        const position = new Vec2((clientX - pageLowerLeft.x) / pageScale, (pageLowerLeft.y - clientY) / pageScale);
-        return position;
+        if (!this._pageInfo) {
+            throw new Error("Can't get exact page coords without page info");
+        }
+        const scale = this._pageInfo.scale;
+        const rotation = this._pageInfo.rotation;
+        const [annotPageXMin, annotPageYMin] = this.Rect;
+        const { x: annotClientXMin, y: annotClientYMin, width: annotClientHorLength, height: annotClientVertLength } = this._renderedBox.getBoundingClientRect();
+        const clientPageZero = new Vec2();
+        const pageResult = new Vec2();
+        switch (rotation) {
+            case 0:
+                clientPageZero.set(annotClientXMin - annotPageXMin * scale, annotClientYMin + annotClientVertLength + annotPageYMin * scale);
+                pageResult.set((clientX - clientPageZero.x) / scale, (clientPageZero.y - clientY) / scale);
+                break;
+            case 90:
+                clientPageZero.set(annotClientXMin - annotPageYMin * scale, annotClientYMin - annotPageXMin * scale);
+                pageResult.set((clientY - clientPageZero.y) / scale, (clientX - clientPageZero.x) / scale);
+                break;
+            case 180:
+                clientPageZero.set(annotClientXMin + annotClientHorLength + annotPageXMin * scale, annotClientYMin - annotPageYMin * scale);
+                pageResult.set((clientPageZero.x - clientX) / scale, (clientY - clientPageZero.y) / scale);
+                break;
+            case 270:
+                clientPageZero.set(annotClientXMin + annotClientHorLength + annotPageYMin * scale, annotClientYMin + annotClientVertLength + annotPageXMin * scale);
+                pageResult.set((clientPageZero.y - clientY) / scale, (clientPageZero.x - clientX) / scale);
+                break;
+            default:
+                throw new Error(`Invalid page rotation value: ${rotation}`);
+        }
+        return pageResult;
     }
     convertPageCoordsToClient(pageX, pageY) {
-        const { x, y, width, height } = this._renderedBox.getBoundingClientRect();
-        const rectMinScaled = new Vec2(x, y);
-        const rectMaxScaled = new Vec2(x + width, y + height);
-        const pageScale = (rectMaxScaled.x - rectMinScaled.x) / (this.Rect[2] - this.Rect[0]);
-        const pageLowerLeft = new Vec2(x - this.Rect[0] * pageScale, y + height + (this.Rect[1] * pageScale));
-        const position = new Vec2(pageLowerLeft.x + (pageX * pageScale), pageLowerLeft.y - (pageY * pageScale));
-        return position;
+        if (!this._pageInfo) {
+            throw new Error("Can't get exact page coords without page info");
+        }
+        const scale = this._pageInfo.scale;
+        const rotation = this._pageInfo.rotation;
+        const [annotPageXMin, annotPageYMin] = this.Rect;
+        const { x: annotClientXMin, y: annotClientYMin, width: annotClientHorLength, height: annotClientVertLength } = this._renderedBox.getBoundingClientRect();
+        const clientPageZero = new Vec2();
+        const clientResult = new Vec2();
+        switch (rotation) {
+            case 0:
+                clientPageZero.set(annotClientXMin - annotPageXMin * scale, annotClientYMin + annotClientVertLength + annotPageYMin * scale);
+                clientResult.set(pageX * scale + clientPageZero.x, clientPageZero.y - pageY * scale);
+                break;
+            case 90:
+                clientPageZero.set(annotClientXMin - annotPageYMin * scale, annotClientYMin - annotPageXMin * scale);
+                clientResult.set(pageY * scale + clientPageZero.x, pageX * scale + clientPageZero.y);
+                break;
+            case 180:
+                clientPageZero.set(annotClientXMin + annotClientHorLength + annotPageXMin * scale, annotClientYMin - annotPageYMin * scale);
+                clientResult.set(clientPageZero.x - pageX * scale, pageY * scale + clientPageZero.y);
+                break;
+            case 270:
+                clientPageZero.set(annotClientXMin + annotClientHorLength + annotPageYMin * scale, annotClientYMin + annotClientVertLength + annotPageXMin * scale);
+                clientResult.set(clientPageZero.x - pageY * scale, clientPageZero.y - pageX * scale);
+                break;
+            default:
+                throw new Error(`Invalid page rotation value: ${rotation}`);
+        }
+        return clientResult;
     }
     applyRectTransform(matrix) {
         const bBox = this.getLocalBB();
@@ -15587,18 +15633,18 @@ class AnnotationDict extends PdfDict {
         content.id = this._svgId;
         content.classList.add("annotation-content");
         content.setAttribute("data-annotation-name", this.$name);
-        const [x0, y0, x1, y1] = this._viewBox;
+        const { width, height } = this._pageInfo;
         if ((_a = renderResult.clipPaths) === null || _a === void 0 ? void 0 : _a.length) {
             const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             clipPathsContainer.append(...renderResult.clipPaths);
-            clipPathsContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+            clipPathsContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
             clipPathsContainer.setAttribute("transform", "scale(1, -1)");
             content.append(clipPathsContainer);
         }
         renderResult.elements.forEach(x => {
             const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             elementContainer.classList.add("annotation-content-element");
-            elementContainer.setAttribute("viewBox", `${x0} ${y0} ${x1} ${y1}`);
+            elementContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
             elementContainer.setAttribute("transform", "scale(1, -1)");
             elementContainer.style["mixBlendMode"] = x.blendMode;
             elementContainer.append(x.element);
@@ -29884,7 +29930,7 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class PageAnnotationView {
-    constructor(docService, pageId, pageDimensions) {
+    constructor(docService, pageInfo, pageDimensions) {
         this._rendered = new Set();
         this.onAnnotationSelectionChange = (e) => {
             var _a;
@@ -29897,17 +29943,17 @@ class PageAnnotationView {
                 }
             }
         };
-        if (!docService || isNaN(pageId) || !pageDimensions) {
+        if (!docService || !pageInfo || !pageDimensions) {
             throw new Error("Required argument not found");
         }
-        this._pageId = pageId;
+        this._pageInfo = pageInfo;
         this._viewbox = [0, 0, pageDimensions.x, pageDimensions.y];
         this._docService = docService;
         this._container = document.createElement("div");
         this._container.classList.add("page-annotations");
         this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this._svg.classList.add("page-annotations-controls");
-        this._svg.setAttribute("data-page-id", pageId + "");
+        this._svg.setAttribute("data-page-id", pageInfo + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
         this._svg.setAttribute("transform", "scale(1, -1)");
         this._svg.addEventListener("pointerdown", (e) => {
@@ -29946,7 +29992,7 @@ class PageAnnotationView {
         var _a, _b;
         return __awaiter$2(this, void 0, void 0, function* () {
             this.clear();
-            const annotations = (yield this._docService.getPageAnnotationsAsync(this._pageId)) || [];
+            const annotations = (yield this._docService.getPageAnnotationsAsync(this._pageInfo.id)) || [];
             for (let i = 0; i < annotations.length || 0; i++) {
                 const annotation = annotations[i];
                 if (annotation.deleted) {
@@ -29963,10 +30009,10 @@ class PageAnnotationView {
                     annotation.$onPointerLeaveAction = (e) => {
                         this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
                     };
-                    renderResult = yield annotation.renderAsync(this._viewbox);
+                    renderResult = yield annotation.renderAsync(this._pageInfo);
                 }
                 else {
-                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync(this._viewbox));
+                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync(this._pageInfo));
                 }
                 if (!renderResult) {
                     continue;
@@ -30068,6 +30114,12 @@ class PageView {
         }
         this._scale = value;
         this.refreshDimensions();
+    }
+    get width() {
+        return this._dimensions.width;
+    }
+    get height() {
+        return this._dimensions.height;
     }
     get viewValid() {
         return this._dimensionsIsValid && this._viewRendered;
@@ -30265,7 +30317,7 @@ class PageView {
             this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._docService, this.id, new Vec2(x, y));
+                this._annotations = new PageAnnotationView(this._docService, this, new Vec2(x, y));
             }
             yield this._annotations.appendAsync(this._viewInnerContainer);
             if (scale === this._scale) {

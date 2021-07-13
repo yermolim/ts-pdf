@@ -1,3 +1,4 @@
+import { PageInfo } from "./page";
 import { Hextuple, Quadruple } from "./types";
 
 export interface AnnotationRenderResult {
@@ -47,10 +48,10 @@ export interface RenderableAnnotation {
 
   /**
    * render current annotation using SVG
-   * @param viewBox view box used for SVG elements
+   * @param pageInfo page information
    * @returns 
    */
-  renderAsync(viewBox: Quadruple): Promise<AnnotationRenderResult>;
+  renderAsync(pageInfo: PageInfo): Promise<AnnotationRenderResult>;
   
   /**
    * serialize the annotation to a data transfer object
