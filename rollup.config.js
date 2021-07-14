@@ -19,7 +19,7 @@ export default [
       license({
         banner: `
           A PDF.js-based PDF viewer written in TypeScript.
-          Copyright (C) 2021-present, Volodymyr Yermolenko (yermolim@gmail.com)
+          Copyright (C) 2021-present, Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
       
           This program is free software: you can redistribute it and/or modify
           it under the terms of the GNU Affero General Public License as published
