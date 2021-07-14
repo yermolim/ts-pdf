@@ -712,18 +712,22 @@ export class LineAnnotation extends GeometricAnnotation {
   } 
   
   protected renderLineEndHandles(): SVGGraphicsElement[] {
-    const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
     startHandle.classList.add("annotation-handle", "scale");
     startHandle.setAttribute("data-handle-name", "start");
-    startHandle.setAttribute("cx", this.L[0] + "");
-    startHandle.setAttribute("cy", this.L[1] + ""); 
+    startHandle.setAttribute("x1", this.L[0] + "");
+    startHandle.setAttribute("y1", this.L[1] + ""); 
+    startHandle.setAttribute("x2", this.L[0] + "");
+    startHandle.setAttribute("y2", this.L[1] + 0.1 + ""); 
     startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
     
-    const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
     endHandle.classList.add("annotation-handle", "scale");
     endHandle.setAttribute("data-handle-name", "end");
-    endHandle.setAttribute("cx", this.L[2] + "");
-    endHandle.setAttribute("cy", this.L[3] + ""); 
+    endHandle.setAttribute("x1", this.L[2] + "");
+    endHandle.setAttribute("y1", this.L[3] + ""); 
+    endHandle.setAttribute("x2", this.L[2] + "");
+    endHandle.setAttribute("y2", this.L[3] + 0.1 + ""); 
     endHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
 
     return [startHandle, endHandle];

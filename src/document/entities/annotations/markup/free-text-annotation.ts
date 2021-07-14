@@ -845,11 +845,13 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const handles: SVGGraphicsElement[] = [];
     ["tb-bl", "tb-br", "tb-tr", "tb-tl"].forEach(x => {
       const {x: cx, y: cy} = cornerMap.get(x);
-      const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      const handle = document.createElementNS("http://www.w3.org/2000/svg", "line");
       handle.classList.add("annotation-handle", "scale");
       handle.setAttribute("data-handle-name", x);
-      handle.setAttribute("cx", cx + "");
-      handle.setAttribute("cy", cy + ""); 
+      handle.setAttribute("x1", cx + "");
+      handle.setAttribute("y1", cy + ""); 
+      handle.setAttribute("x2", cx + "");
+      handle.setAttribute("y2", cy + 0.1 + ""); 
       handle.addEventListener("pointerdown", this.onTextBoxCornerHandlePointerDown);
       handles.push(handle);   
     });
@@ -988,32 +990,38 @@ export class FreeTextAnnotation extends MarkupAnnotation {
 
     ["l", "t", "r", "b"].forEach(x => {    
       const side = points[x];  
-      const sideHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      const sideHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
       sideHandle.classList.add("annotation-handle", "helper");
       sideHandle.setAttribute("data-handle-name", `co-pivot-${x}`);
-      sideHandle.setAttribute("cx", side.x + "");
-      sideHandle.setAttribute("cy", side.y + ""); 
+      sideHandle.setAttribute("x1", side.x + "");
+      sideHandle.setAttribute("y1", side.y + ""); 
+      sideHandle.setAttribute("x2", side.x + "");
+      sideHandle.setAttribute("y2", side.y + 0.1 + ""); 
       sideHandle.addEventListener("pointerdown", this.onSideHandlePointerUp);
       handles.push(sideHandle); 
     });
 
     if (points.cok) {
       const pCoKnee = points.cok;
-      const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
       kneeHandle.classList.add("annotation-handle", "translation");
       kneeHandle.setAttribute("data-handle-name", "co-knee");
-      kneeHandle.setAttribute("cx", pCoKnee.x + "");
-      kneeHandle.setAttribute("cy", pCoKnee.y + ""); 
+      kneeHandle.setAttribute("x1", pCoKnee.x + "");
+      kneeHandle.setAttribute("y1", pCoKnee.y + ""); 
+      kneeHandle.setAttribute("x2", pCoKnee.x + "");
+      kneeHandle.setAttribute("y2", pCoKnee.y + 0.1 + ""); 
       kneeHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
       handles.push(kneeHandle);   
     }
 
     const pCoPointer = points.cop;
-    const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
     pointerHandle.classList.add("annotation-handle", "translation");
     pointerHandle.setAttribute("data-handle-name", "co-pointer");
-    pointerHandle.setAttribute("cx", pCoPointer.x + "");
-    pointerHandle.setAttribute("cy", pCoPointer.y + ""); 
+    pointerHandle.setAttribute("x1", pCoPointer.x + "");
+    pointerHandle.setAttribute("y1", pCoPointer.y + ""); 
+    pointerHandle.setAttribute("x2", pCoPointer.x + "");
+    pointerHandle.setAttribute("y2", pCoPointer.y + 0.1 + ""); 
     pointerHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
     handles.push(pointerHandle);
 

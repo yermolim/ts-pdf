@@ -990,11 +990,13 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
 
     const handles: SVGGraphicsElement[] = [];
     ["ll", "lr", "ur", "ul"].forEach(x => {
-      const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      const handle = document.createElementNS("http://www.w3.org/2000/svg", "line");
       handle.classList.add("annotation-handle", "scale");
       handle.setAttribute("data-handle-name", x);
-      handle.setAttribute("cx", bBox[x].x + "");
-      handle.setAttribute("cy", bBox[x].y + ""); 
+      handle.setAttribute("x1", bBox[x].x + "");
+      handle.setAttribute("y1", bBox[x].y + ""); 
+      handle.setAttribute("x2", bBox[x].x + "");
+      handle.setAttribute("y2", bBox[x].y + 0.1 + ""); 
       handle.addEventListener("pointerdown", this.onScaleHandlePointerDown); 
       handles.push(handle);   
     });
@@ -1029,11 +1031,13 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     rotationGroupLine.setAttribute("x2", handleCenter.x + "");
     rotationGroupLine.setAttribute("y2", handleCenter.y + "");
     
-    const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
     centerRectHandle.classList.add("annotation-handle", "rotation");
     centerRectHandle.setAttribute("data-handle-name", "center");
-    centerRectHandle.setAttribute("cx", handleCenter.x + "");
-    centerRectHandle.setAttribute("cy", handleCenter.y + "");
+    centerRectHandle.setAttribute("x1", handleCenter.x + "");
+    centerRectHandle.setAttribute("y1", handleCenter.y + "");
+    centerRectHandle.setAttribute("x2", handleCenter.x + "");
+    centerRectHandle.setAttribute("y2", handleCenter.y + 0.1 + "");
     centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
 
     rotationGroup.append(rotationGroupCircle, rotationGroupLine, centerRectHandle);

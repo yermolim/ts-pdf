@@ -1257,21 +1257,23 @@ const styles = `
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle {
-    r: 8;
+    stroke-width: 16;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
     cursor: pointer;
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.helper {
-    r: 4;
-    fill: rgba(200, 200, 50, 0.75);
+    stroke-width: 12;
+    stroke: rgba(200, 200, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.scale {
-    fill: rgba(0, 0, 0, 0.75);
+    stroke: rgba(0, 0, 0, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
-    fill: rgba(50, 100, 50, 0.75);
+    stroke: rgba(50, 100, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.translation {
-    fill: rgba(100, 100, 200, 0.75);
+    stroke: rgba(100, 100, 200, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
@@ -15664,11 +15666,13 @@ class AnnotationDict extends PdfDict {
         const bBox = this.getLocalBB();
         const handles = [];
         ["ll", "lr", "ur", "ul"].forEach(x => {
-            const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "line");
             handle.classList.add("annotation-handle", "scale");
             handle.setAttribute("data-handle-name", x);
-            handle.setAttribute("cx", bBox[x].x + "");
-            handle.setAttribute("cy", bBox[x].y + "");
+            handle.setAttribute("x1", bBox[x].x + "");
+            handle.setAttribute("y1", bBox[x].y + "");
+            handle.setAttribute("x2", bBox[x].x + "");
+            handle.setAttribute("y2", bBox[x].y + 0.1 + "");
             handle.addEventListener("pointerdown", this.onScaleHandlePointerDown);
             handles.push(handle);
         });
@@ -15696,11 +15700,13 @@ class AnnotationDict extends PdfDict {
         rotationGroupLine.setAttribute("y1", centerY + "");
         rotationGroupLine.setAttribute("x2", handleCenter.x + "");
         rotationGroupLine.setAttribute("y2", handleCenter.y + "");
-        const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const centerRectHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
         centerRectHandle.classList.add("annotation-handle", "rotation");
         centerRectHandle.setAttribute("data-handle-name", "center");
-        centerRectHandle.setAttribute("cx", handleCenter.x + "");
-        centerRectHandle.setAttribute("cy", handleCenter.y + "");
+        centerRectHandle.setAttribute("x1", handleCenter.x + "");
+        centerRectHandle.setAttribute("y1", handleCenter.y + "");
+        centerRectHandle.setAttribute("x2", handleCenter.x + "");
+        centerRectHandle.setAttribute("y2", handleCenter.y + 0.1 + "");
         centerRectHandle.addEventListener("pointerdown", this.onRotationHandlePointerDown);
         rotationGroup.append(rotationGroupCircle, rotationGroupLine, centerRectHandle);
         return rotationGroup;
@@ -23723,17 +23729,21 @@ class LineAnnotation extends GeometricAnnotation {
         return [...this.renderLineEndHandles(), this.renderRotationHandle()];
     }
     renderLineEndHandles() {
-        const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const startHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
         startHandle.classList.add("annotation-handle", "scale");
         startHandle.setAttribute("data-handle-name", "start");
-        startHandle.setAttribute("cx", this.L[0] + "");
-        startHandle.setAttribute("cy", this.L[1] + "");
+        startHandle.setAttribute("x1", this.L[0] + "");
+        startHandle.setAttribute("y1", this.L[1] + "");
+        startHandle.setAttribute("x2", this.L[0] + "");
+        startHandle.setAttribute("y2", this.L[1] + 0.1 + "");
         startHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
-        const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const endHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
         endHandle.classList.add("annotation-handle", "scale");
         endHandle.setAttribute("data-handle-name", "end");
-        endHandle.setAttribute("cx", this.L[2] + "");
-        endHandle.setAttribute("cy", this.L[3] + "");
+        endHandle.setAttribute("x1", this.L[2] + "");
+        endHandle.setAttribute("y1", this.L[3] + "");
+        endHandle.setAttribute("x2", this.L[2] + "");
+        endHandle.setAttribute("y2", this.L[3] + 0.1 + "");
         endHandle.addEventListener("pointerdown", this.onLineEndHandlePointerDown);
         return [startHandle, endHandle];
     }
@@ -25219,11 +25229,13 @@ class FreeTextAnnotation extends MarkupAnnotation {
         const handles = [];
         ["tb-bl", "tb-br", "tb-tr", "tb-tl"].forEach(x => {
             const { x: cx, y: cy } = cornerMap.get(x);
-            const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            const handle = document.createElementNS("http://www.w3.org/2000/svg", "line");
             handle.classList.add("annotation-handle", "scale");
             handle.setAttribute("data-handle-name", x);
-            handle.setAttribute("cx", cx + "");
-            handle.setAttribute("cy", cy + "");
+            handle.setAttribute("x1", cx + "");
+            handle.setAttribute("y1", cy + "");
+            handle.setAttribute("x2", cx + "");
+            handle.setAttribute("y2", cy + 0.1 + "");
             handle.addEventListener("pointerdown", this.onTextBoxCornerHandlePointerDown);
             handles.push(handle);
         });
@@ -25236,30 +25248,36 @@ class FreeTextAnnotation extends MarkupAnnotation {
         }
         ["l", "t", "r", "b"].forEach(x => {
             const side = points[x];
-            const sideHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            const sideHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
             sideHandle.classList.add("annotation-handle", "helper");
             sideHandle.setAttribute("data-handle-name", `co-pivot-${x}`);
-            sideHandle.setAttribute("cx", side.x + "");
-            sideHandle.setAttribute("cy", side.y + "");
+            sideHandle.setAttribute("x1", side.x + "");
+            sideHandle.setAttribute("y1", side.y + "");
+            sideHandle.setAttribute("x2", side.x + "");
+            sideHandle.setAttribute("y2", side.y + 0.1 + "");
             sideHandle.addEventListener("pointerdown", this.onSideHandlePointerUp);
             handles.push(sideHandle);
         });
         if (points.cok) {
             const pCoKnee = points.cok;
-            const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            const kneeHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
             kneeHandle.classList.add("annotation-handle", "translation");
             kneeHandle.setAttribute("data-handle-name", "co-knee");
-            kneeHandle.setAttribute("cx", pCoKnee.x + "");
-            kneeHandle.setAttribute("cy", pCoKnee.y + "");
+            kneeHandle.setAttribute("x1", pCoKnee.x + "");
+            kneeHandle.setAttribute("y1", pCoKnee.y + "");
+            kneeHandle.setAttribute("x2", pCoKnee.x + "");
+            kneeHandle.setAttribute("y2", pCoKnee.y + 0.1 + "");
             kneeHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
             handles.push(kneeHandle);
         }
         const pCoPointer = points.cop;
-        const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        const pointerHandle = document.createElementNS("http://www.w3.org/2000/svg", "line");
         pointerHandle.classList.add("annotation-handle", "translation");
         pointerHandle.setAttribute("data-handle-name", "co-pointer");
-        pointerHandle.setAttribute("cx", pCoPointer.x + "");
-        pointerHandle.setAttribute("cy", pCoPointer.y + "");
+        pointerHandle.setAttribute("x1", pCoPointer.x + "");
+        pointerHandle.setAttribute("y1", pCoPointer.y + "");
+        pointerHandle.setAttribute("x2", pCoPointer.x + "");
+        pointerHandle.setAttribute("y2", pCoPointer.y + 0.1 + "");
         pointerHandle.addEventListener("pointerdown", this.onCalloutHandlePointerDown);
         handles.push(pointerHandle);
         return handles;

@@ -816,21 +816,23 @@ export const styles = /*html*/`
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle {
-    r: 8;
+    stroke-width: 16;
+    stroke-linecap: round;
+    vector-effect: non-scaling-stroke;
     cursor: pointer;
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.helper {
-    r: 4;
-    fill: rgba(200, 200, 50, 0.75);
+    stroke-width: 12;
+    stroke: rgba(200, 200, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.scale {
-    fill: rgba(0, 0, 0, 0.75);
+    stroke: rgba(0, 0, 0, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.rotation {
-    fill: rgba(50, 100, 50, 0.75);
+    stroke: rgba(50, 100, 50, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.translation {
-    fill: rgba(100, 100, 200, 0.75);
+    stroke: rgba(100, 100, 200, 0.75);
   }
   .mode-annotation .annotation-controls.selected .annotation-rotator {
     fill: none;
