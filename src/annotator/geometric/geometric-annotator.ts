@@ -1,7 +1,11 @@
+import { Vec2 } from "mathador";
+
 import { Quadruple } from "../../common/types";
+import { LINE_END_MULTIPLIER, LINE_END_MIN_SIZE, BEZIER_CONSTANT } from "../../drawing/utils";
 
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
+import { LineEndingType, lineEndingTypes } from "../../document/spec-constants";
 
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 export interface GeometricAnnotatorOptions {
@@ -103,6 +107,102 @@ export abstract class GeometricAnnotator extends Annotator {
     }
     this._svgGroup.setAttribute("transform",
       `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
+  }  
+
+  protected buildLineEndingPath(point: Vec2, type: LineEndingType, 
+    strokeWidth: number, side: "left" | "right"): string {
+    const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, 
+      LINE_END_MIN_SIZE);
+    let text = "";
+    switch (type) {
+      case lineEndingTypes.ARROW_OPEN:
+        if (side === "left") {      
+          text += `M${point.x + size},${point.y + size / 2}`;
+          text += ` L${point.x},${point.y}`;
+          text += ` L${point.x + size},${point.y - size / 2}`;
+        } else {
+          text += `M${point.x - size},${point.y + size / 2}`;
+          text += ` L${point.x},${point.y}`;
+          text += ` L${point.x - size},${point.y - size / 2}`;
+        }
+        return text;
+      case lineEndingTypes.ARROW_OPEN_R:
+        if (side === "left") {      
+          text += `M${point.x},${point.y + size / 2}`;
+          text += ` L${point.x + size},${point.y}`;
+          text += ` L${point.x},${point.y - size / 2}`;
+        } else {
+          text += `M${point.x},${point.y + size / 2}`;
+          text += ` L${point.x - size},${point.y}`;
+          text += ` L${point.x},${point.y - size / 2}`;
+        }
+        return text;
+      case lineEndingTypes.ARROW_CLOSED:
+        if (side === "left") {      
+          text += `M${point.x + size},${point.y + size / 2}`;
+          text += ` L${point.x},${point.y}`;
+          text += ` L${point.x + size},${point.y - size / 2}`;
+        } else {
+          text += `M${point.x - size},${point.y + size / 2}`;
+          text += ` L${point.x},${point.y}`;
+          text += ` L${point.x - size},${point.y - size / 2}`;
+        }
+        text += " Z";
+        return text;
+      case lineEndingTypes.ARROW_CLOSED_R:
+        if (side === "left") {  
+          text += `M${point.x + size},${point.y}`; 
+          text += ` L${point.x},${point.y + size / 2}`;
+          text += ` L${point.x},${point.y - size / 2}`;
+        } else { 
+          text += `M${point.x - size},${point.y}`;
+          text += ` L${point.x},${point.y - size / 2}`;
+          text += ` L${point.x},${point.y + size / 2}`;
+        }
+        text += " Z";
+        return text;
+      case lineEndingTypes.BUTT:     
+        text += `M${point.x},${point.y + size / 2}`;
+        text += ` L${point.x},${point.y - size / 2}`;
+        return text;
+      case lineEndingTypes.SLASH:     
+        text += `M${point.x + size / 2},${point.y + size / 2}`;
+        text += ` L${point.x - size / 2},${point.y - size / 2}`;
+        return text;        
+      case lineEndingTypes.DIAMOND:     
+        text += `M${point.x},${point.y + size / 2}`;
+        text += ` L${point.x + size / 2},${point.y}`;
+        text += ` L${point.x},${point.y - size / 2}`;
+        text += ` L${point.x - size / 2},${point.y}`;
+        text += " Z";
+        return text;       
+      case lineEndingTypes.SQUARE:     
+        text += `M${point.x - size / 2},${point.y + size / 2}`;
+        text += ` L${point.x + size / 2},${point.y + size / 2}`;
+        text += ` L${point.x + size / 2},${point.y - size / 2}`;
+        text += ` L${point.x - size / 2},${point.y - size / 2}`;
+        text += " Z";
+        return text;       
+      case lineEndingTypes.CIRCLE:
+        const c = BEZIER_CONSTANT;
+        const r = size / 2;       
+        const cw = c * r;
+        const xmin = point.x - r;
+        const ymin = point.y - r;
+        const xmax = point.x + r;
+        const ymax = point.y + r;
+        // drawing four cubic bezier curves starting at the top tangent
+        text += `M${point.x},${ymax}`;
+        text += ` C${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y}`;
+        text += ` C${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin}`;
+        text += ` C${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y}`;
+        text += ` C${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax}`;
+        text += " Z";
+        return text;
+      case lineEndingTypes.NONE:
+      default:
+        return "";
+    }
   }
   
   abstract override undo(): void;

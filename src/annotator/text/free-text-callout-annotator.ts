@@ -1,7 +1,7 @@
 import { Vec2 } from "mathador";
 import { Double, Quadruple } from "../../common/types";
 import { getRandomUuid } from "../../common/uuid";
-import { lineEndingMinimalSize, lineEndingMultiplier } from "../../drawing/utils";
+import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
@@ -322,7 +322,7 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
     if (this._points.cob) {
       // annotation has a callout with special line ending
       const endingSizeWoStroke = Math.max(
-        this._strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+        this._strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
       // '+ strokeWidth' is used to include the ending figure stroke width
       const endingSize = endingSizeWoStroke + this._strokeWidth;
       margin = endingSize / 2;      

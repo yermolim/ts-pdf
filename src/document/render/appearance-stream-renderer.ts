@@ -1,6 +1,6 @@
 import { Quadruple } from "../../common/types";
 import { Mat3, Vec2 } from "mathador";
-import { calcPdfBBoxToRectMatrices, selectionStrokeWidth, 
+import { calcPdfBBoxToRectMatrices, SELECTION_STROKE_WIDTH, 
   CssMixBlendMode } from "../../drawing/utils";
 
 import { keywordCodes } from "../encoding/char-codes";
@@ -565,8 +565,8 @@ export class AppearanceStreamRenderer {
     const clonedSvg = this.createSvgElement();
     clonedSvg.classList.add("annotation-pick-helper");
     const clonedPath = path.cloneNode(true) as SVGPathElement;
-    const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
-      ? selectionStrokeWidth
+    const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
+      ? SELECTION_STROKE_WIDTH
       : this.state.strokeWidth;
     clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
     clonedPath.setAttribute("stroke", "transparent");
@@ -733,8 +733,8 @@ export class AppearanceStreamRenderer {
     const clonedSvg = this.createSvgElement();
     clonedSvg.classList.add("annotation-pick-helper");
     const clonedPath = svgText.cloneNode(true) as SVGPathElement;
-    const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
-      ? selectionStrokeWidth
+    const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
+      ? SELECTION_STROKE_WIDTH
       : this.state.strokeWidth;
     clonedPath.style.strokeWidth = clonedPathStrokeWidth + "";
     clonedPath.style.stroke = "transparent";

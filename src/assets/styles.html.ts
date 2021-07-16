@@ -804,22 +804,25 @@ export const styles = /*html*/`
     cursor: grab;
   } 
   .mode-annotation .annotation-controls.selected .annotation-rect {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(80, 80, 80, 0.5);
     stroke-dasharray: 3 3;
   }
   .mode-annotation .annotation-controls.selected .annotation-bbox {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle {
+    cursor: pointer;
     stroke-width: 16;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
-    cursor: pointer;
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.helper {
     stroke-width: 12;

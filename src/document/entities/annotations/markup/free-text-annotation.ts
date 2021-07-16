@@ -5,7 +5,7 @@ import { AnnotationDto } from "../../../../common/annotation";
 
 import { SvgTempPath } from "../../../../drawing/paths/svg-temp-path";
 import { calcPdfBBoxToRectMatrices, VecMinMax, 
-  lineEndingMinimalSize, lineEndingMultiplier } from "../../../../drawing/utils";
+  LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../../../drawing/utils";
 
 import { CryptInfo } from "../../../encryption/interfaces";
 import { annotationTypes, JustificationType, justificationTypes, 
@@ -215,7 +215,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     let marginMin: number;
     if (this.LE && this.LE !== lineEndingTypes.NONE) {
       // annotation has a callout with special line ending
-      const endingSizeWoStroke = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+      const endingSizeWoStroke = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
       // '+ strokeWidth' is used to include the ending figure stroke width
       const endingSize = endingSizeWoStroke + strokeWidth;
       marginMin = endingSize / 2;      
@@ -698,6 +698,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
     const textData = await this.updateTextDataAsync({
       maxWidth: textMaxWidth, // prevent text to intersect with border
       fontSize,
+      strokeWidth: w,
       textAlign: textAlign,
       pivotPoint: "top-left",
     });

@@ -1,7 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
 import { Quadruple, Double, Hextuple } from "../../../../../common/types";
-import { VecMinMax, lineEndingMinimalSize, 
-  lineEndingMultiplier } from "../../../../../drawing/utils";
+import { VecMinMax, LINE_END_MIN_SIZE, 
+  LINE_END_MULTIPLIER } from "../../../../../drawing/utils";
 import { SvgTempPath } from "../../../../../drawing/paths/svg-temp-path";
 
 import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
@@ -131,8 +131,8 @@ export class LineAnnotation extends GeometricAnnotation {
     let marginMin = 0;
     // calculate ending margin if any other line ending type except 'none' is used
     if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
-      const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, 
-        lineEndingMinimalSize);
+      const endingSizeInner = Math.max(strokeWidth * LINE_END_MULTIPLIER, 
+        LINE_END_MIN_SIZE);
       // '+ strokeWidth' is used to include the ending figure stroke width
       const endingSize = endingSizeInner + strokeWidth;
       marginMin = endingSize / 2;
@@ -464,6 +464,7 @@ export class LineAnnotation extends GeometricAnnotation {
     const textData = await this.updateTextDataAsync({
       maxWidth: textMaxWidth,
       fontSize: 9,
+      strokeWidth,
       textAlign: "center",
       pivotPoint: this.CP === lineCaptionPositions.INLINE
         ? "center"

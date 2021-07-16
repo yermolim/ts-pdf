@@ -1,7 +1,7 @@
 import { Hextuple, Quadruple } from "../../../../../common/types";
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { Mat3, Vec2 } from "mathador";
-import { bezierConstant, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
+import { BEZIER_CONSTANT, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
 import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 
 import { CryptInfo } from "../../../../encryption/interfaces";
@@ -265,7 +265,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     } else {
       // draw ellipse using four cubic bezier curves
       // calculate the curves control points
-      const c = bezierConstant;
+      const c = BEZIER_CONSTANT;
       const cx = Vec2.multiplyByScalar(rx, c);
       const cy = Vec2.multiplyByScalar(ry, c);
       const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);

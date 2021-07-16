@@ -7,14 +7,14 @@ export type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "da
 export type VecMinMax = readonly [min: Vec2, max: Vec2];
 
 /**width (in PDF page units) of the transparent lines rendered to simplify annotation selection */
-export const selectionStrokeWidth = 20;
+export const SELECTION_STROKE_WIDTH = 20;
 
 /**constant used to imitate circle using four cubic bezier curves */
-export const bezierConstant = 0.551915;
+export const BEZIER_CONSTANT = 0.551915;
 
 /**defines how many times the line ending size is larger than the line width */
-export const lineEndingMultiplier = 3;
-export const lineEndingMinimalSize = 10;
+export const LINE_END_MULTIPLIER = 3;
+export const LINE_END_MIN_SIZE = 10;
 
 export function buildSquigglyLine(start: Vec2, end: Vec2, maxWaveSize: number): Vec2[] {
   if (!start || !end) {

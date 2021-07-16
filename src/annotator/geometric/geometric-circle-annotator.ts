@@ -1,7 +1,7 @@
 import { Quadruple } from "../../common/types";
 import { Mat3, Vec2 } from "mathador";
 import { getRandomUuid } from "../../common/uuid";
-import { bezierConstant } from "../../drawing/utils";
+import { BEZIER_CONSTANT } from "../../drawing/utils";
 import { buildCloudCurveFromEllipse } from "../../drawing/clouds";
 
 import { PageService } from "../../services/page-service";
@@ -99,7 +99,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
         pathString += ` C${x[0].x},${x[0].y} ${x[1].x},${x[1].y} ${x[2].x},${x[2].y}`;
       });
     } else {      
-      const c = bezierConstant;
+      const c = BEZIER_CONSTANT;
       const cw = c * rx;
       const ch = c * ry;
       // drawing four cubic bezier curves starting at the top tangent

@@ -1,6 +1,6 @@
 import { Vec2, Mat3 } from "mathador";
 import { getRandomUuid } from "../../common/uuid";
-import { lineEndingMinimalSize, lineEndingMultiplier } from "../../drawing/utils";
+import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -37,8 +37,8 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     // draw a line
     let pathString = `M ${xAlignedStart.x},${xAlignedStart.y} L ${xAlignedEnd.x},${xAlignedEnd.y}`;
     // draw an arrow
-    const arrowSize = Math.max(this._strokeWidth * lineEndingMultiplier, 
-      lineEndingMinimalSize);
+    const arrowSize = Math.max(this._strokeWidth * LINE_END_MULTIPLIER, 
+      LINE_END_MIN_SIZE);
     pathString += ` M ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y + arrowSize / 2}`;
     pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
     pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;

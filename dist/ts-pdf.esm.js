@@ -1250,22 +1250,25 @@ const styles = `
     cursor: grab;
   } 
   .mode-annotation .annotation-controls.selected .annotation-rect {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(80, 80, 80, 0.5);
     stroke-dasharray: 3 3;
   }
   .mode-annotation .annotation-controls.selected .annotation-bbox {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(80, 80, 80, 1);
     stroke-dasharray: 3 3;
   }   
   .mode-annotation .annotation-controls.focused .annotation-bbox {
+    vector-effect: non-scaling-stroke;
     stroke: rgba(255, 165, 0, 1);
     stroke-dasharray: 3 0;
   } 
   .mode-annotation .annotation-controls.selected .annotation-handle {
+    cursor: pointer;
     stroke-width: 16;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
-    cursor: pointer;
   }
   .mode-annotation .annotation-controls.selected .annotation-handle.helper {
     stroke-width: 12;
@@ -1580,7 +1583,7 @@ const styles = `
 </style>
 `;
 
-var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -1601,7 +1604,7 @@ function htmlToElements(html) {
     return nodes;
 }
 function promisify(callback) {
-    return __awaiter$1h(this, void 0, void 0, function* () {
+    return __awaiter$1i(this, void 0, void 0, function* () {
         return new Promise(resolve => {
             setTimeout(() => {
                 const result = callback();
@@ -1611,7 +1614,7 @@ function promisify(callback) {
     });
 }
 function runEmptyTimeout() {
-    return __awaiter$1h(this, void 0, void 0, function* () {
+    return __awaiter$1i(this, void 0, void 0, function* () {
         yield promisify(() => undefined);
     });
 }
@@ -2511,7 +2514,7 @@ const keywordCodes = {
     AP_STREAM_TEXT_END: [codes.E, codes.T],
 };
 
-var __awaiter$1g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2564,7 +2567,7 @@ class SyncDataParser {
     destroy() {
     }
     getSubParserAsync(start, end) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             return new SyncDataParser(yield this.sliceCharCodesAsync(start, end));
         });
     }
@@ -2572,12 +2575,12 @@ class SyncDataParser {
         return (index < 0 || index > this._maxIndex);
     }
     isCodeAtAsync(index, code) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             return this.getCharCode(index) === code;
         });
     }
     getValueTypeAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -2659,7 +2662,7 @@ class SyncDataParser {
     }
     findSubarrayIndexAsync(sub, options) {
         var _a, _b, _c;
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
                 return null;
@@ -2701,7 +2704,7 @@ class SyncDataParser {
         });
     }
     findCharIndexAsync(charCode, direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2726,7 +2729,7 @@ class SyncDataParser {
         });
     }
     findNewLineIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             let lineBreakIndex;
             const arr = this._data;
             let i = isNaN(start)
@@ -2770,7 +2773,7 @@ class SyncDataParser {
         });
     }
     findSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2795,7 +2798,7 @@ class SyncDataParser {
         });
     }
     findNonSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2820,7 +2823,7 @@ class SyncDataParser {
         });
     }
     findDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2845,7 +2848,7 @@ class SyncDataParser {
         });
     }
     findNonDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2870,7 +2873,7 @@ class SyncDataParser {
         });
     }
     findRegularIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2895,7 +2898,7 @@ class SyncDataParser {
         });
     }
     findIrregularIndexAsync(direction = true, start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -2920,7 +2923,7 @@ class SyncDataParser {
         });
     }
     getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -2956,7 +2959,7 @@ class SyncDataParser {
         });
     }
     getXrefTableBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -2988,7 +2991,7 @@ class SyncDataParser {
         });
     }
     getDictBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3052,7 +3055,7 @@ class SyncDataParser {
         });
     }
     getArrayBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3079,7 +3082,7 @@ class SyncDataParser {
         });
     }
     getHexBoundsAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3094,7 +3097,7 @@ class SyncDataParser {
         });
     }
     getLiteralBoundsAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3129,7 +3132,7 @@ class SyncDataParser {
         });
     }
     parseNumberAtAsync(start, float = false, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3158,7 +3161,7 @@ class SyncDataParser {
         });
     }
     parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3180,7 +3183,7 @@ class SyncDataParser {
         });
     }
     parseStringAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3200,7 +3203,7 @@ class SyncDataParser {
         });
     }
     parseBoolAtAsync(start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3226,7 +3229,7 @@ class SyncDataParser {
         });
     }
     parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -3246,7 +3249,7 @@ class SyncDataParser {
         });
     }
     parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -3266,18 +3269,18 @@ class SyncDataParser {
         });
     }
     parseDictTypeAsync(bounds) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             return yield this.parseDictPropertyByNameAsync(keywordCodes.TYPE, bounds);
         });
     }
     parseDictSubtypeAsync(bounds) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             return yield this.parseDictPropertyByNameAsync(keywordCodes.SUBTYPE, bounds);
         });
     }
     parseDictPropertyByNameAsync(propName, bounds) {
         var _a, _b;
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             const arr = this._data;
             if (!(propName === null || propName === void 0 ? void 0 : propName.length)) {
                 return null;
@@ -3343,7 +3346,7 @@ class SyncDataParser {
         });
     }
     skipEmptyAsync(start) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             let index = yield this.findNonSpaceIndexAsync(true, start);
             if (index === -1) {
                 return -1;
@@ -3359,7 +3362,7 @@ class SyncDataParser {
         });
     }
     skipToNextNameAsync(start, max) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             start || (start = 0);
             max = max
                 ? Math.min(max, this._maxIndex)
@@ -3417,12 +3420,12 @@ class SyncDataParser {
         });
     }
     sliceCharCodesAsync(start, end) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             return this._data.slice(start, (end || start) + 1);
         });
     }
     sliceCharsAsync(start, end) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
         });
     }
@@ -4180,7 +4183,7 @@ class ReferenceDataChange {
     }
 }
 
-var __awaiter$1f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4195,7 +4198,7 @@ class ObjectId {
         this.generation = generation !== null && generation !== void 0 ? generation : 0;
     }
     static parseAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
+        return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield parser.findRegularIndexAsync(true, start);
             }
@@ -4218,7 +4221,7 @@ class ObjectId {
         });
     }
     static parseRefAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
+        return __awaiter$1g(this, void 0, void 0, function* () {
             const id = yield ObjectId.parseAsync(parser, start, skipEmpty);
             if (!id) {
                 return null;
@@ -4236,7 +4239,7 @@ class ObjectId {
         });
     }
     static parseRefArrayAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
+        return __awaiter$1g(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4270,7 +4273,7 @@ class ObjectId {
     }
 }
 
-var __awaiter$1e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4291,7 +4294,7 @@ class DateString {
         return new Date(this._date);
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1e(this, void 0, void 0, function* () {
+        return __awaiter$1f(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield parser.skipEmptyAsync(start);
             }
@@ -4347,7 +4350,7 @@ class DateString {
     }
 }
 
-var __awaiter$1d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4372,7 +4375,7 @@ class HexString {
         return this._bytes.slice();
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1d(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const bounds = yield parser.getHexBoundsAsync(start, skipEmpty);
             if (!bounds) {
                 return null;
@@ -4386,7 +4389,7 @@ class HexString {
         });
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1d(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4431,7 +4434,7 @@ class HexString {
     }
 }
 
-var __awaiter$1c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4452,7 +4455,7 @@ class LiteralString {
         return this._bytes.slice();
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1d(this, void 0, void 0, function* () {
             const bounds = yield parser.getLiteralBoundsAsync(start, skipEmpty);
             if (!bounds) {
                 return;
@@ -4466,7 +4469,7 @@ class LiteralString {
         });
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1d(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4602,7 +4605,7 @@ class LiteralString {
     }
 }
 
-var __awaiter$1b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4697,61 +4700,61 @@ class PdfObject {
         return bytes;
     }
     parseRefPropAsync(propName, parser, index) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield ObjectId.parseRefAsync(parser, index);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseRefArrayPropAsync(propName, parser, index) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield ObjectId.parseRefArrayAsync(parser, index);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseBoolPropAsync(propName, parser, index) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield parser.parseBoolAtAsync(index);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNamePropAsync(propName, parser, index, includeSlash = true) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNameAtAsync(index, includeSlash);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNameArrayPropAsync(propName, parser, index, includeSlash = true) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNameArrayAtAsync(index, includeSlash);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNumberPropAsync(propName, parser, index, float = true) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNumberAtAsync(index, float);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNumberArrayPropAsync(propName, parser, index, float = true) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNumberArrayAtAsync(index, float);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseDatePropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield DateString.parseAsync(parser, index, cryptInfo);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseLiteralPropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield LiteralString.parseAsync(parser, index, cryptInfo);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseHexPropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const parsed = yield HexString.parseAsync(parser, index, cryptInfo);
             return this.setParsedProp(propName, parsed);
         });
@@ -4765,7 +4768,7 @@ class PdfObject {
     }
 }
 
-var __awaiter$1a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4793,7 +4796,7 @@ class PdfDict extends PdfObject {
     }
     parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$1a(this, void 0, void 0, function* () {
+        return __awaiter$1b(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parse info is empty");
             }
@@ -4837,7 +4840,7 @@ class PdfDict extends PdfObject {
     }
 }
 
-var __awaiter$19 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4855,7 +4858,7 @@ class DecodeParamsDict extends PdfDict {
         this._refPropMap = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$19(this, void 0, void 0, function* () {
+        return __awaiter$1a(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -4871,7 +4874,7 @@ class DecodeParamsDict extends PdfDict {
         });
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$19(this, void 0, void 0, function* () {
+        return __awaiter$1a(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4934,7 +4937,7 @@ class DecodeParamsDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$19(this, void 0, void 0, function* () {
+        return __awaiter$1a(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -5687,7 +5690,7 @@ class FlateDecoder {
     }
 }
 
-var __awaiter$18 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$19 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5751,7 +5754,7 @@ class PdfStream extends PdfObject {
     }
     parsePropsAsync(parseInfo) {
         var _a, _b;
-        return __awaiter$18(this, void 0, void 0, function* () {
+        return __awaiter$19(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parse info is empty");
             }
@@ -5931,7 +5934,7 @@ class PdfStream extends PdfObject {
 }
 PdfStream.dataParserConstructor = SyncDataParser;
 
-var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$18 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5945,7 +5948,7 @@ class TrailerStream extends PdfStream {
         super(streamTypes.XREF);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$17(this, void 0, void 0, function* () {
+        return __awaiter$18(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6000,7 +6003,7 @@ class TrailerStream extends PdfStream {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a;
-        return __awaiter$17(this, void 0, void 0, function* () {
+        return __awaiter$18(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -6091,7 +6094,7 @@ class XRef {
     }
 }
 
-var __awaiter$16 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6166,7 +6169,7 @@ class XRefStream extends XRef {
         return stream;
     }
     static parseAsync(parseInfo, offset) {
-        return __awaiter$16(this, void 0, void 0, function* () {
+        return __awaiter$17(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 return null;
             }
@@ -6197,7 +6200,7 @@ class XRefStream extends XRef {
     }
 }
 
-var __awaiter$15 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$16 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6211,7 +6214,7 @@ class TextStream extends PdfStream {
         super(type);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$15(this, void 0, void 0, function* () {
+        return __awaiter$16(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6237,13 +6240,13 @@ class TextStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$15(this, void 0, void 0, function* () {
+        return __awaiter$16(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
         });
     }
 }
 
-var __awaiter$14 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$15 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6275,7 +6278,7 @@ class IndexedColorSpaceArray {
         this.lookupArray = lookupArray;
     }
     static parseAsync(parseInfo, skipEmpty = true) {
-        return __awaiter$14(this, void 0, void 0, function* () {
+        return __awaiter$15(this, void 0, void 0, function* () {
             const { parser, bounds, cryptInfo } = parseInfo;
             let i;
             if (skipEmpty) {
@@ -6375,7 +6378,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$13 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$14 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6399,7 +6402,7 @@ class ImageStream extends PdfStream {
         this._sMask = value;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$13(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6469,7 +6472,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$13(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -6529,7 +6532,7 @@ class ImageStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$13(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -6846,7 +6849,7 @@ class ImageStream extends PdfStream {
     }
 }
 
-var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$13 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6862,7 +6865,7 @@ class ObjectMapDict extends PdfDict {
         this._dictParserMap = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$13(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6913,7 +6916,7 @@ class ObjectMapDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$13(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -6968,7 +6971,7 @@ class ObjectMapDict extends PdfDict {
 }
 ObjectMapDict.dataParserConstructor = SyncDataParser;
 
-var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6984,7 +6987,7 @@ class UnicodeCmapStream extends PdfStream {
         this._map = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -7033,7 +7036,7 @@ class UnicodeCmapStream extends PdfStream {
     }
     parseCodeRangesAsync(parser) {
         var _a, _b;
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             let i = 0;
             const codeRangeStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true }))) === null || _a === void 0 ? void 0 : _a.end;
             if (!codeRangeStart) {
@@ -7056,7 +7059,7 @@ class UnicodeCmapStream extends PdfStream {
     }
     parseCharMapAsync(parser, decoder) {
         var _a, _b;
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             let i = 0;
             while (true) {
                 const charMapStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
@@ -7077,7 +7080,7 @@ class UnicodeCmapStream extends PdfStream {
     }
     parseCharRangesMapAsync(parser, decoder) {
         var _a, _b;
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             let i = 0;
             while (true) {
                 const rangeMapStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
@@ -7118,7 +7121,7 @@ class UnicodeCmapStream extends PdfStream {
         });
     }
     fillMapAsync() {
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             this._codeRanges.length = 0;
             this._map.clear();
             const parser = this.streamDataParser;
@@ -7132,7 +7135,7 @@ class UnicodeCmapStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             yield this.fillMapAsync();
         });
@@ -10988,7 +10991,7 @@ function getCharCodesMapByCode(encoding) {
     return map;
 }
 
-var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11014,7 +11017,7 @@ class EncodingDict extends PdfDict {
         return this._codeMap;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$10(this, void 0, void 0, function* () {
+        return __awaiter$11(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -11050,7 +11053,7 @@ class EncodingDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$10(this, void 0, void 0, function* () {
+        return __awaiter$11(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -11134,7 +11137,7 @@ class EncodingDict extends PdfDict {
     }
 }
 
-var __awaiter$$ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11154,7 +11157,7 @@ class FontDescriptorDict extends PdfDict {
         this.XHeight = 0;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$$(this, void 0, void 0, function* () {
+        return __awaiter$10(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -11247,7 +11250,7 @@ class FontDescriptorDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$$(this, void 0, void 0, function* () {
+        return __awaiter$10(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -11321,7 +11324,7 @@ class FontDescriptorDict extends PdfDict {
     }
 }
 
-var __awaiter$_ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$$ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11549,7 +11552,7 @@ class FontDict extends PdfDict {
         return map;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$_(this, void 0, void 0, function* () {
+        return __awaiter$$(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -11856,7 +11859,7 @@ class FontDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$_(this, void 0, void 0, function* () {
+        return __awaiter$$(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -11991,7 +11994,7 @@ class FontDict extends PdfDict {
     }
 }
 
-var __awaiter$Z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$_ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12006,7 +12009,7 @@ class SoftMaskDict extends PdfDict {
         this.TR = "/Identity";
     }
     static parseAsync(parseInfo) {
-        return __awaiter$Z(this, void 0, void 0, function* () {
+        return __awaiter$_(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12048,7 +12051,7 @@ class SoftMaskDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$Z(this, void 0, void 0, function* () {
+        return __awaiter$_(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12093,7 +12096,7 @@ class SoftMaskDict extends PdfDict {
     }
 }
 
-var __awaiter$Y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$Z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12107,7 +12110,7 @@ class GraphicsStateDict extends PdfDict {
         super(dictTypes.GRAPHICS_STATE);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$Y(this, void 0, void 0, function* () {
+        return __awaiter$Z(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12294,7 +12297,7 @@ class GraphicsStateDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$Y(this, void 0, void 0, function* () {
+        return __awaiter$Z(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12460,7 +12463,7 @@ class GraphicsStateDict extends PdfDict {
     }
 }
 
-var __awaiter$X = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$Y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12478,7 +12481,7 @@ class ResourceDict extends PdfDict {
         this._streamParsers = streamParsers;
     }
     static parseAsync(parseInfo, streamParsers) {
-        return __awaiter$X(this, void 0, void 0, function* () {
+        return __awaiter$Y(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12603,7 +12606,7 @@ class ResourceDict extends PdfDict {
         this._edited = true;
     }
     fillMapsAsync(parseInfoGetterAsync, cryptInfo) {
-        return __awaiter$X(this, void 0, void 0, function* () {
+        return __awaiter$Y(this, void 0, void 0, function* () {
             this._gsMap.clear();
             this._fontsMap.clear();
             this._xObjectsMap.clear();
@@ -12661,7 +12664,7 @@ class ResourceDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$X(this, void 0, void 0, function* () {
+        return __awaiter$Y(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12739,7 +12742,7 @@ class ResourceDict extends PdfDict {
     }
 }
 
-var __awaiter$W = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$X = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12754,7 +12757,7 @@ class MeasureDict extends PdfDict {
         this.Subtype = "/RL";
     }
     static parseAsync(parseInfo) {
-        return __awaiter$W(this, void 0, void 0, function* () {
+        return __awaiter$X(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12787,7 +12790,7 @@ class MeasureDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$W(this, void 0, void 0, function* () {
+        return __awaiter$X(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12826,7 +12829,7 @@ class MeasureDict extends PdfDict {
     }
 }
 
-var __awaiter$V = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$W = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12858,7 +12861,7 @@ class GroupDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$V(this, void 0, void 0, function* () {
+        return __awaiter$W(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12900,7 +12903,7 @@ class GroupDict extends PdfDict {
     }
 }
 
-var __awaiter$U = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$V = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12916,7 +12919,7 @@ class TransparencyGroupDict extends GroupDict {
         this.K = false;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$U(this, void 0, void 0, function* () {
+        return __awaiter$V(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12955,7 +12958,7 @@ class TransparencyGroupDict extends GroupDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$U(this, void 0, void 0, function* () {
+        return __awaiter$V(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             if (this.S !== "/Transparency") {
                 throw new Error("Not a transparency dict");
@@ -13009,7 +13012,7 @@ class TransparencyGroupDict extends GroupDict {
     }
 }
 
-var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$U = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -13068,7 +13071,7 @@ class XFormStream extends PdfStream {
         return this._edited || this.Resources.edited;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$T(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -13135,7 +13138,7 @@ class XFormStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$T(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -13310,10 +13313,138 @@ class XFormStream extends PdfStream {
     }
 }
 
-const selectionStrokeWidth = 20;
-const bezierConstant = 0.551915;
-const lineEndingMultiplier = 3;
-const lineEndingMinimalSize = 10;
+var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+function buildTextDataAsync(text, options) {
+    return __awaiter$T(this, void 0, void 0, function* () {
+        let result;
+        if (text) {
+            const pTemp = document.createElement("p");
+            pTemp.style.color = "black";
+            pTemp.style.fontSize = options.fontSize + "px";
+            pTemp.style.fontFamily = "arial";
+            pTemp.style.fontWeight = "normal";
+            pTemp.style.fontStyle = "normal";
+            pTemp.style.lineHeight = "normal";
+            pTemp.style.overflowWrap = "normal";
+            pTemp.style.textAlign = options.textAlign;
+            pTemp.style.textDecoration = "none";
+            pTemp.style.verticalAlign = "top";
+            pTemp.style.whiteSpace = "pre-wrap";
+            pTemp.style.wordBreak = "normal";
+            pTemp.style.position = "fixed";
+            pTemp.style.left = "0";
+            pTemp.style.top = "0";
+            pTemp.style.margin = "0";
+            pTemp.style.padding = "0";
+            pTemp.style.maxWidth = options.maxWidth.toFixed() + "px";
+            pTemp.style.visibility = "hidden";
+            pTemp.style.transform = "scale(0.1)";
+            pTemp.style.transformOrigin = "top left";
+            document.body.append(pTemp);
+            const words = text.split(/([- \n\r])/u);
+            const lines = [];
+            let currentLineText = "";
+            let previousHeight = 0;
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                pTemp.textContent += word;
+                yield runEmptyTimeout();
+                const currentHeight = pTemp.offsetHeight;
+                previousHeight || (previousHeight = currentHeight);
+                if (currentHeight > previousHeight) {
+                    lines.push(currentLineText);
+                    currentLineText = word;
+                    previousHeight = currentHeight;
+                }
+                else {
+                    currentLineText += word;
+                }
+            }
+            lines.push(currentLineText);
+            pTemp.innerHTML = "";
+            const lineSpans = [];
+            for (const line of lines) {
+                const lineSpan = document.createElement("span");
+                lineSpan.style.position = "relative";
+                lineSpan.textContent = line;
+                lineSpans.push(lineSpan);
+                pTemp.append(lineSpan);
+            }
+            yield runEmptyTimeout();
+            const textWidth = pTemp.offsetWidth;
+            const textHeight = pTemp.offsetHeight;
+            let pivotPoint;
+            switch (options.pivotPoint) {
+                case "top-left":
+                    pivotPoint = new Vec2(0, textHeight);
+                    break;
+                case "bottom-margin":
+                    pivotPoint = new Vec2(textWidth / 2, options.strokeWidth);
+                    break;
+                case "center":
+                default:
+                    pivotPoint = new Vec2(textWidth / 2, textHeight / 2);
+                    break;
+            }
+            const lineData = [];
+            for (let i = 0; i < lines.length; i++) {
+                const span = lineSpans[i];
+                const x = span.offsetLeft;
+                const y = span.offsetTop;
+                const width = span.offsetWidth;
+                const height = span.offsetHeight;
+                const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
+                const lineTopRightPdf = new Vec2(x + width, textHeight - y);
+                const lineRect = [
+                    lineBottomLeftPdf.x, lineBottomLeftPdf.y,
+                    lineTopRightPdf.x, lineTopRightPdf.y
+                ];
+                const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
+                const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
+                const lineRelativeRect = [
+                    lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
+                    lineTopRightPdfRel.x, lineTopRightPdfRel.y
+                ];
+                lineData.push({
+                    text: lines[i],
+                    rect: lineRect,
+                    relativeRect: lineRelativeRect,
+                });
+            }
+            const textRect = [0, 0, textWidth, textHeight];
+            const textRelativeRect = [
+                0 - pivotPoint.x, 0 - pivotPoint.y,
+                textWidth - pivotPoint.x, textHeight - pivotPoint.y
+            ];
+            const textData = {
+                width: textWidth,
+                height: textHeight,
+                rect: textRect,
+                relativeRect: textRelativeRect,
+                lines: lineData,
+            };
+            pTemp.remove();
+            result = textData;
+        }
+        else {
+            result = null;
+        }
+        return result;
+    });
+}
+
+const SELECTION_STROKE_WIDTH = 20;
+const BEZIER_CONSTANT = 0.551915;
+const LINE_END_MULTIPLIER = 3;
+const LINE_END_MIN_SIZE = 10;
 function buildSquigglyLine(start, end, maxWaveSize) {
     if (!start || !end) {
         return null;
@@ -13941,8 +14072,8 @@ class AppearanceStreamRenderer {
         const clonedSvg = this.createSvgElement();
         clonedSvg.classList.add("annotation-pick-helper");
         const clonedPath = path.cloneNode(true);
-        const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
-            ? selectionStrokeWidth
+        const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
+            ? SELECTION_STROKE_WIDTH
             : this.state.strokeWidth;
         clonedPath.setAttribute("stroke-width", clonedPathStrokeWidth + "");
         clonedPath.setAttribute("stroke", "transparent");
@@ -14092,8 +14223,8 @@ class AppearanceStreamRenderer {
             const clonedSvg = this.createSvgElement();
             clonedSvg.classList.add("annotation-pick-helper");
             const clonedPath = svgText.cloneNode(true);
-            const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < selectionStrokeWidth
-                ? selectionStrokeWidth
+            const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
+                ? SELECTION_STROKE_WIDTH
                 : this.state.strokeWidth;
             clonedPath.style.strokeWidth = clonedPathStrokeWidth + "";
             clonedPath.style.stroke = "transparent";
@@ -15935,123 +16066,13 @@ class MarkupAnnotation extends AnnotationDict {
         var _a;
         return __awaiter$M(this, void 0, void 0, function* () {
             const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
-            if (text) {
-                const pTemp = document.createElement("p");
-                pTemp.style.color = "black";
-                pTemp.style.fontSize = options.fontSize + "px";
-                pTemp.style.fontFamily = "arial";
-                pTemp.style.fontWeight = "normal";
-                pTemp.style.fontStyle = "normal";
-                pTemp.style.lineHeight = "normal";
-                pTemp.style.overflowWrap = "normal";
-                pTemp.style.textAlign = options.textAlign;
-                pTemp.style.textDecoration = "none";
-                pTemp.style.verticalAlign = "top";
-                pTemp.style.whiteSpace = "pre-wrap";
-                pTemp.style.wordBreak = "normal";
-                pTemp.style.position = "fixed";
-                pTemp.style.left = "0";
-                pTemp.style.top = "0";
-                pTemp.style.margin = "0";
-                pTemp.style.padding = "0";
-                pTemp.style.maxWidth = options.maxWidth.toFixed() + "px";
-                pTemp.style.visibility = "hidden";
-                pTemp.style.transform = "scale(0.1)";
-                pTemp.style.transformOrigin = "top left";
-                document.body.append(pTemp);
-                const words = text.split(/([- \n\r])/u);
-                const lines = [];
-                let currentLineText = "";
-                let previousHeight = 0;
-                for (let i = 0; i < words.length; i++) {
-                    const word = words[i];
-                    pTemp.textContent += word;
-                    yield runEmptyTimeout();
-                    const currentHeight = pTemp.offsetHeight;
-                    previousHeight || (previousHeight = currentHeight);
-                    if (currentHeight > previousHeight) {
-                        lines.push(currentLineText);
-                        currentLineText = word;
-                        previousHeight = currentHeight;
-                    }
-                    else {
-                        currentLineText += word;
-                    }
-                }
-                lines.push(currentLineText);
-                pTemp.innerHTML = "";
-                const lineSpans = [];
-                for (const line of lines) {
-                    const lineSpan = document.createElement("span");
-                    lineSpan.style.position = "relative";
-                    lineSpan.textContent = line;
-                    lineSpans.push(lineSpan);
-                    pTemp.append(lineSpan);
-                }
-                yield runEmptyTimeout();
-                const textWidth = pTemp.offsetWidth;
-                const textHeight = pTemp.offsetHeight;
-                let pivotPoint;
-                switch (options.pivotPoint) {
-                    case "top-left":
-                        pivotPoint = new Vec2(0, textHeight);
-                        break;
-                    case "bottom-margin":
-                        pivotPoint = new Vec2(textWidth / 2, -this.strokeWidth);
-                        break;
-                    case "center":
-                    default:
-                        pivotPoint = new Vec2(textWidth / 2, textHeight / 2);
-                        break;
-                }
-                const lineData = [];
-                for (let i = 0; i < lines.length; i++) {
-                    const span = lineSpans[i];
-                    const x = span.offsetLeft;
-                    const y = span.offsetTop;
-                    const width = span.offsetWidth;
-                    const height = span.offsetHeight;
-                    const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
-                    const lineTopRightPdf = new Vec2(x + width, textHeight - y);
-                    const lineRect = [
-                        lineBottomLeftPdf.x, lineBottomLeftPdf.y,
-                        lineTopRightPdf.x, lineTopRightPdf.y
-                    ];
-                    const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
-                    const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
-                    const lineRelativeRect = [
-                        lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
-                        lineTopRightPdfRel.x, lineTopRightPdfRel.y
-                    ];
-                    lineData.push({
-                        text: lines[i],
-                        rect: lineRect,
-                        relativeRect: lineRelativeRect,
-                    });
-                }
-                const textRect = [0, 0, textWidth, textHeight];
-                const textRelativeRect = [
-                    0 - pivotPoint.x, 0 - pivotPoint.y,
-                    textWidth - pivotPoint.x, textHeight - pivotPoint.y
-                ];
-                const textData = {
-                    width: textWidth,
-                    height: textHeight,
-                    rect: textRect,
-                    relativeRect: textRelativeRect,
-                    lines: lineData,
-                };
-                pTemp.remove();
-                this._textData = textData;
-            }
-            else {
-                this._textData = null;
-            }
+            const textData = yield buildTextDataAsync(text, options);
+            this._textData = textData;
             return this._textData;
         });
     }
     getLineEndingStreamPart(point, type, strokeWidth, side) {
-        const size = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+        const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
         let text = "";
         switch (type) {
             case lineEndingTypes.ARROW_OPEN:
@@ -16131,7 +16152,7 @@ class MarkupAnnotation extends AnnotationDict {
                 text += "\ns";
                 return text;
             case lineEndingTypes.CIRCLE:
-                const c = bezierConstant;
+                const c = BEZIER_CONSTANT;
                 const r = size / 2;
                 const cw = c * r;
                 const xmin = point.x - r;
@@ -22455,7 +22476,7 @@ class CircleAnnotation extends GeometricAnnotation {
             streamTextData += "\nS";
         }
         else {
-            const c = bezierConstant;
+            const c = BEZIER_CONSTANT;
             const cx = Vec2.multiplyByScalar(rx, c);
             const cy = Vec2.multiplyByScalar(ry, c);
             const controlTR1 = Vec2.add(Vec2.add(trBoxCenter, ry), cx);
@@ -23244,7 +23265,7 @@ class LineAnnotation extends GeometricAnnotation {
         const halfStrokeWidth = strokeWidth / 2;
         let marginMin = 0;
         if (this.LE[0] !== lineEndingTypes.NONE || this.LE[1] !== lineEndingTypes.NONE) {
-            const endingSizeInner = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+            const endingSizeInner = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
             const endingSize = endingSizeInner + strokeWidth;
             marginMin = endingSize / 2;
         }
@@ -23553,6 +23574,7 @@ class LineAnnotation extends GeometricAnnotation {
             const textData = yield this.updateTextDataAsync({
                 maxWidth: textMaxWidth,
                 fontSize: 9,
+                strokeWidth,
                 textAlign: "center",
                 pivotPoint: this.CP === lineCaptionPositions.INLINE
                     ? "center"
@@ -24733,7 +24755,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         const halfStrokeWidth = strokeWidth / 2;
         let marginMin;
         if (this.LE && this.LE !== lineEndingTypes.NONE) {
-            const endingSizeWoStroke = Math.max(strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+            const endingSizeWoStroke = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
             const endingSize = endingSizeWoStroke + strokeWidth;
             marginMin = endingSize / 2;
         }
@@ -25117,6 +25139,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             const textData = yield this.updateTextDataAsync({
                 maxWidth: textMaxWidth,
                 fontSize,
+                strokeWidth: w,
                 textAlign: textAlign,
                 pivotPoint: "top-left",
             });
@@ -26878,6 +26901,102 @@ class GeometricAnnotator extends Annotator {
         }
         this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
     }
+    buildLineEndingPath(point, type, strokeWidth, side) {
+        const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
+        let text = "";
+        switch (type) {
+            case lineEndingTypes.ARROW_OPEN:
+                if (side === "left") {
+                    text += `M${point.x + size},${point.y + size / 2}`;
+                    text += ` L${point.x},${point.y}`;
+                    text += ` L${point.x + size},${point.y - size / 2}`;
+                }
+                else {
+                    text += `M${point.x - size},${point.y + size / 2}`;
+                    text += ` L${point.x},${point.y}`;
+                    text += ` L${point.x - size},${point.y - size / 2}`;
+                }
+                return text;
+            case lineEndingTypes.ARROW_OPEN_R:
+                if (side === "left") {
+                    text += `M${point.x},${point.y + size / 2}`;
+                    text += ` L${point.x + size},${point.y}`;
+                    text += ` L${point.x},${point.y - size / 2}`;
+                }
+                else {
+                    text += `M${point.x},${point.y + size / 2}`;
+                    text += ` L${point.x - size},${point.y}`;
+                    text += ` L${point.x},${point.y - size / 2}`;
+                }
+                return text;
+            case lineEndingTypes.ARROW_CLOSED:
+                if (side === "left") {
+                    text += `M${point.x + size},${point.y + size / 2}`;
+                    text += ` L${point.x},${point.y}`;
+                    text += ` L${point.x + size},${point.y - size / 2}`;
+                }
+                else {
+                    text += `M${point.x - size},${point.y + size / 2}`;
+                    text += ` L${point.x},${point.y}`;
+                    text += ` L${point.x - size},${point.y - size / 2}`;
+                }
+                text += " Z";
+                return text;
+            case lineEndingTypes.ARROW_CLOSED_R:
+                if (side === "left") {
+                    text += `M${point.x + size},${point.y}`;
+                    text += ` L${point.x},${point.y + size / 2}`;
+                    text += ` L${point.x},${point.y - size / 2}`;
+                }
+                else {
+                    text += `M${point.x - size},${point.y}`;
+                    text += ` L${point.x},${point.y - size / 2}`;
+                    text += ` L${point.x},${point.y + size / 2}`;
+                }
+                text += " Z";
+                return text;
+            case lineEndingTypes.BUTT:
+                text += `M${point.x},${point.y + size / 2}`;
+                text += ` L${point.x},${point.y - size / 2}`;
+                return text;
+            case lineEndingTypes.SLASH:
+                text += `M${point.x + size / 2},${point.y + size / 2}`;
+                text += ` L${point.x - size / 2},${point.y - size / 2}`;
+                return text;
+            case lineEndingTypes.DIAMOND:
+                text += `M${point.x},${point.y + size / 2}`;
+                text += ` L${point.x + size / 2},${point.y}`;
+                text += ` L${point.x},${point.y - size / 2}`;
+                text += ` L${point.x - size / 2},${point.y}`;
+                text += " Z";
+                return text;
+            case lineEndingTypes.SQUARE:
+                text += `M${point.x - size / 2},${point.y + size / 2}`;
+                text += ` L${point.x + size / 2},${point.y + size / 2}`;
+                text += ` L${point.x + size / 2},${point.y - size / 2}`;
+                text += ` L${point.x - size / 2},${point.y - size / 2}`;
+                text += " Z";
+                return text;
+            case lineEndingTypes.CIRCLE:
+                const c = BEZIER_CONSTANT;
+                const r = size / 2;
+                const cw = c * r;
+                const xmin = point.x - r;
+                const ymin = point.y - r;
+                const xmax = point.x + r;
+                const ymax = point.y + r;
+                text += `M${point.x},${ymax}`;
+                text += ` C${point.x + cw},${ymax} ${xmax},${point.y + cw} ${xmax},${point.y}`;
+                text += ` C${xmax},${point.y - cw} ${point.x + cw},${ymin} ${point.x},${ymin}`;
+                text += ` C${point.x - cw},${ymin} ${xmin},${point.y - cw} ${xmin},${point.y}`;
+                text += ` C${xmin},${point.y + cw} ${point.x - cw},${ymax} ${point.x},${ymax}`;
+                text += " Z";
+                return text;
+            case lineEndingTypes.NONE:
+            default:
+                return "";
+        }
+    }
 }
 
 var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -27022,7 +27141,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
         path.setAttribute("stroke-width", this._strokeWidth + "");
         path.setAttribute("stroke-linecap", "square");
         let pathString = `M ${xAlignedStart.x},${xAlignedStart.y} L ${xAlignedEnd.x},${xAlignedEnd.y}`;
-        const arrowSize = Math.max(this._strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+        const arrowSize = Math.max(this._strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
         pathString += ` M ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y + arrowSize / 2}`;
         pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
         pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;
@@ -27168,7 +27287,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
             });
         }
         else {
-            const c = bezierConstant;
+            const c = BEZIER_CONSTANT;
             const cw = c * rx;
             const ch = c * ry;
             pathString = "M" + center.x + "," + max.y;
@@ -29074,7 +29193,7 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
     buildAnnotationDto(text) {
         let margin;
         if (this._points.cob) {
-            const endingSizeWoStroke = Math.max(this._strokeWidth * lineEndingMultiplier, lineEndingMinimalSize);
+            const endingSizeWoStroke = Math.max(this._strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
             const endingSize = endingSizeWoStroke + this._strokeWidth;
             margin = endingSize / 2;
         }
