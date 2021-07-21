@@ -19,7 +19,7 @@ export default [
       license({
         banner: `
           A PDF.js-based PDF viewer written in TypeScript.
-          Copyright (C) 2021-present, Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
+          Copyright (C) 2021-present Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
       
           This program is free software: you can redistribute it and/or modify
           it under the terms of the GNU Affero General Public License as published
@@ -33,6 +33,11 @@ export default [
       
           You should have received a copy of the GNU Affero General Public License
           along with this program.  If not, see <https://www.gnu.org/licenses/>.
+          
+          You can be released from the requirements of the license by purchasing
+          a commercial license. Buying such a license is mandatory as soon as you
+          develop commercial activities involving this program without
+          disclosing the source code of your own applications.
 
           -//-//-//-//-//-//-//-//-//-//-//-//-//-//-
           
