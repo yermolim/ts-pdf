@@ -50,7 +50,7 @@
 
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import { Vec2, clamp, Mat3, Vec3, getDistance2D } from 'mathador';
-import { Icons, getCommonStyles, ByteUtils, LinkedList, DomUtils, UUID, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
+import { Icons, getCommonStyles, ByteUtils, LinkedList, DomUtils, UUID, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
 export { CustomStampEvent } from 'ts-viewers-core';
 import Pako from 'pako';
 import CryptoES from 'crypto-es';
@@ -243,34 +243,6 @@ const passwordDialogHtml = `
           <img src="${Icons.icon_close}"/>
         </div>
       </div>
-    </div>
-  </div>
-`;
-const textDialogHtml = `
-  <div class="abs-full-size-overlay text-dialog">
-    <div class="form">
-      <textarea class="text-input" maxlength="1024"></textarea>
-      <div class="buttons">
-        <div class="panel-button text-ok">
-          <img src="${Icons.icon_ok}"/>
-        </div>
-        <div class="panel-button text-cancel">
-          <img src="${Icons.icon_close}"/>
-        </div>
-      </div>
-    </div>
-  </div>
-`;
-const stampContextButtonsHtml = `
-  <div class="context-menu-content row">
-    <div class="panel-button stamp-load-image">
-      <img src="${Icons.icon_load}"/>
-    </div>
-    <div class="panel-button stamp-draw-image">
-      <img src="${Icons.icon_pen}"/>
-    </div>
-    <div class="panel-button stamp-delete disabled">
-      <img src="${Icons.icon_delete}"/>
     </div>
   </div>
 `;
@@ -27033,7 +27005,7 @@ class AnnotatorService {
         }
     }
     buildCustomStampButtons() {
-        const buttonsContainer = DomUtils.htmlToElements(stampContextButtonsHtml)[0];
+        const buttonsContainer = DomUtils.htmlToElements(HtmlTemplates.stampContextButtonsHtml)[0];
         buttonsContainer.querySelector(".stamp-load-image").addEventListener("click", () => {
             this._customStampService.startLoadingImage();
         });
@@ -27368,7 +27340,7 @@ class Viewer {
             if (this._dialogClose) {
                 return;
             }
-            const dialog = DomUtils.htmlToElements(textDialogHtml)[0];
+            const dialog = DomUtils.htmlToElements(HtmlTemplates.textDialogHtml)[0];
             dialog.style.top = this._container.scrollTop + "px";
             dialog.style.left = this._container.scrollLeft + "px";
             this._container.append(dialog);
