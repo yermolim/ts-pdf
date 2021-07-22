@@ -1,9 +1,8 @@
 import { Mat3, Vec2 } from "mathador";
 
-import { Double, Hextuple, Quadruple } from "../../../../common/types";
-import { AnnotationDto } from "../../../../common/annotation";
+import { Double, Hextuple, Quadruple, SvgTempPath } from "ts-viewers-core";
 
-import { SvgTempPath } from "../../../../drawing/paths/svg-temp-path";
+import { AnnotationDto } from "../../../../common/annotation";
 import { calcPdfBBoxToRectMatrices, VecMinMax, 
   LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../../../drawing/utils";
 

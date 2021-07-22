@@ -1,14 +1,9 @@
+
+import { DomUtils, UUID , EventService, CanvasSmoothPathEditor, Loader } from "ts-viewers-core";
+
 import { stampDesignerHtml, stampImageLoaderHtml } from "../assets/index.html";
 
-import { htmlToElements } from "../common/dom";
-import { getRandomUuid } from "../common/uuid";
-
 import { CustomStampCreationInfo } from "../drawing/stamps";
-import { CanvasSmoothPathEditor } from "../drawing/paths/canvas-smooth-path-editor";
-
-import { Loader } from "../components/loader";
-
-import { ElementEventService } from "./element-event-service";
 
 //#region custom events
 export const customStampEvent = "tspdf-customstampchange" as const;
@@ -36,7 +31,7 @@ declare global {
  */
 export class CustomStampService {
   private readonly _container: HTMLElement;
-  private readonly _eventService: ElementEventService;
+  private readonly _eventService: EventService;
 
   private readonly _customStampsByType = new Map<string, CustomStampCreationInfo>();
   private readonly _fileInput: HTMLInputElement;
@@ -45,7 +40,7 @@ export class CustomStampService {
 
   private _overlay: HTMLElement;
 
-  constructor(container: HTMLElement, eventService: ElementEventService) {
+  constructor(container: HTMLElement, eventService: EventService) {
     if (!container) {
       throw new Error("Container is not defined");
     }
@@ -179,7 +174,7 @@ export class CustomStampService {
     const imageRatio = image.width / image.height;
 
     // build an overlay
-    const overlay = htmlToElements(stampImageLoaderHtml)[0];
+    const overlay = DomUtils.htmlToElements(stampImageLoaderHtml)[0];
 
     // select the overlay elements
     const canvas = overlay.querySelector("canvas") as HTMLCanvasElement;
@@ -253,7 +248,7 @@ export class CustomStampService {
         imageDataArray[i] = imgData[i];
       }
       const stamp: CustomStampCreationInfo = {
-        type: "/" + getRandomUuid(),
+        type: "/" + UUID.getRandomUuid(),
         name: stampName,
         subject: stampSubject,
         rect: [0, 0, stampWidth, stampHeight],
@@ -275,7 +270,7 @@ export class CustomStampService {
     // load the image
 
     // build an overlay
-    const overlay = htmlToElements(stampDesignerHtml)[0];
+    const overlay = DomUtils.htmlToElements(stampDesignerHtml)[0];
 
     // select the overlay elements
     const canvasContainer = overlay.querySelector(".form-canvas-wrapper") as HTMLElement;
@@ -354,7 +349,7 @@ export class CustomStampService {
         imageDataArray[i] = imgData[i];
       }
       const stamp: CustomStampCreationInfo = {
-        type: "/" + getRandomUuid(),
+        type: "/" + UUID.getRandomUuid(),
         name: stampName,
         subject: stampSubject,
         rect: [0, 0, stampWidth, stampHeight],

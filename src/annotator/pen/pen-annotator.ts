@@ -1,6 +1,5 @@
 import { Vec2 } from "mathador";
-import { Quadruple } from "../../common/types";
-import { getRandomUuid } from "../../common/uuid";
+import { UUID , Quadruple, SvgSmoothPath } from "ts-viewers-core";
 
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
@@ -8,7 +7,6 @@ import { InkAnnotation, InkAnnotationDto }
   from "../../document/entities/annotations/markup/ink-annotation";
 
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
-import { SvgSmoothPath } from "../../drawing/paths/svg-smooth-path";
 
 export interface PenAnnotatorOptions {
   strokeWidth?: number;  
@@ -247,7 +245,7 @@ export class PenAnnotator extends Annotator {
 
     const nowString = new Date().toISOString();
     const dto: InkAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Ink",
       pageId: null,
 

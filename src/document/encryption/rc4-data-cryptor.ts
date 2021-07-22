@@ -1,4 +1,5 @@
-import { int32ToBytes } from "../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
 import { md5, rc4, wordArrayToBytes } from "../../common/crypto";
 import { IDataCryptor } from "./interfaces";
 import { Reference } from "../references/reference";
@@ -38,8 +39,8 @@ export class RC4DataCryptor implements IDataCryptor {
     (n is 5 unless the value of V in the encryption dictionary is greater than 1, 
       in which case n is the value of Length divided by 8.)
     */
-    const idBytes = int32ToBytes(ref.id, true); 
-    const genBytes = int32ToBytes(ref.generation, true); 
+    const idBytes = ByteUtils.int32ToBytes(ref.id, true); 
+    const genBytes = ByteUtils.int32ToBytes(ref.generation, true); 
     this._tempKey.set(this._key, 0);
     this._tempKey.set(idBytes.slice(0, 3), this._n);
     this._tempKey.set(genBytes.slice(0, 2), this._n + 3);

@@ -1,15 +1,15 @@
 /* eslint-disable no-bitwise */
 import CryptoES from "crypto-es";
 // import * as CryptoJs from "crypto-js";
-import { bytesToInt32Array, hexStringToBytes, int32ArrayToBytes } from "./byte";
+import { ByteUtils } from "ts-viewers-core";
 
 export function bytesToWordArray(data: Uint8Array): CryptoES.lib.WordArray {
-  // return CryptoES.lib.WordArray.create(Array.from(bytesToInt32Array(data)));
+  // return CryptoES.lib.WordArray.create(Array.from(ByteUtils.bytesToInt32Array(data)));
   return CryptoES.lib.WordArray.create(data);
 }
 
 export function wordArrayToBytes(wordArray: CryptoES.lib.WordArray): Uint8Array {
-  return int32ArrayToBytes(wordArray.words).slice(0, wordArray.sigBytes);
+  return ByteUtils.int32ArrayToBytes(wordArray.words).slice(0, wordArray.sigBytes);
 }
 
 export function md5(data: Uint8Array | CryptoES.lib.WordArray): CryptoES.lib.WordArray {

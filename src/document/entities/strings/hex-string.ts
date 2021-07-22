@@ -1,5 +1,6 @@
 /* eslint-disable no-bitwise */
-import { hexStringToBytes } from "../../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
 import { keywordCodes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
 import { DataParser, ParserResult } from "../../data-parse/data-parser";
@@ -81,7 +82,7 @@ export class HexString implements IEncodable {
    */
   static fromBytes(bytes: Uint8Array): HexString {  
     const literal = new TextDecoder().decode(bytes);  
-    const hex = hexStringToBytes(literal);
+    const hex = ByteUtils.hexStringToBytes(literal);
     return new HexString(literal, hex, bytes);
   }
 
@@ -98,7 +99,7 @@ export class HexString implements IEncodable {
   }
 
   static fromString(literal: string): HexString {
-    const hex = hexStringToBytes(literal);
+    const hex = ByteUtils.hexStringToBytes(literal);
     const bytes = new TextEncoder().encode(literal);
     return new HexString(literal, hex, bytes);
   };

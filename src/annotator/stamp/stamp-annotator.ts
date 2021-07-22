@@ -1,7 +1,7 @@
 import { getDistance2D, Vec2 } from "mathador";
-import { getRandomUuid } from "../../common/uuid";
-import { CustomStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
+import { UUID } from "ts-viewers-core";
 
+import { CustomStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 import { StampAnnotation, StampAnnotationDto } 
@@ -94,7 +94,7 @@ export class StampAnnotator extends Annotator {
     userName?: string): StampAnnotation {
     const nowString = new Date().toISOString();
     const dto: StampAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Stamp",
       pageId: null,
 
@@ -119,7 +119,7 @@ export class StampAnnotator extends Annotator {
     userName?: string): StampAnnotation {
     const nowString = new Date().toISOString();
     const dto: StampAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Stamp",
       pageId: null,
 

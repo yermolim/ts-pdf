@@ -3,16 +3,15 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
 import { clamp } from "mathador";
+import { DomUtils, EventService, Loader } from "ts-viewers-core";
 
 import { mainHtml, passwordDialogHtml } from "./assets/index.html";
 import { styles } from "./assets/styles.html";
 
-import { downloadFile, htmlToElements } from "./common/dom";
 import { getSelectionInfosFromSelection } from "./common/text-selection";
 import { AnnotationDto } from "./common/annotation";
 import { CustomStampCreationInfo } from "./drawing/stamps";
 
-import { ElementEventService } from "./services/element-event-service";
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
 import { DocumentService, annotChangeEvent, AnnotEvent, 
@@ -22,10 +21,9 @@ import { customStampEvent, CustomStampEvent, CustomStampEventDetail,
   CustomStampService } from "./services/custom-stamp-service";
 import { AnnotatorService } from "./services/annotator-service";
 
-import { Loader } from "./components/loader";
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { Previewer } from "./components/previewer";
-import { PageView } from "./components/pages/page-view";
+import { PageView } from "./components/page-view";
 
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
   annotatorTypes, 
@@ -103,7 +101,7 @@ export class TsPdfViewer {
   private readonly _shadowRoot: ShadowRoot;
   private readonly _mainContainer: HTMLDivElement;
   
-  private readonly _eventService: ElementEventService;
+  private readonly _eventService: EventService;
   private readonly _pageService: PageService;
   private readonly _customStampsService: CustomStampService;
 
@@ -171,7 +169,7 @@ export class TsPdfViewer {
     this._shadowRoot.innerHTML = styles + mainHtml;    
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
-    this._eventService = new ElementEventService(this._mainContainer);
+    this._eventService = new EventService(this._mainContainer);
     this._pageService = new PageService(this._eventService,
       {visibleAdjPages: visibleAdjPages});      
 
@@ -556,7 +554,7 @@ export class TsPdfViewer {
     // DEBUG
     // this.openPdfAsync(blob);
 
-    downloadFile(blob, this._fileName || `file_${new Date().toISOString()}.pdf`);
+    DomUtils.downloadFile(blob, this._fileName || `file_${new Date().toISOString()}.pdf`);
   };
   
   private onCloseFileButtonClick = () => {
@@ -958,7 +956,7 @@ export class TsPdfViewer {
   private async showPasswordDialogAsync(): Promise<string> {
     const passwordPromise = new Promise<string>((resolve, reject) => {
 
-      const dialog = htmlToElements(passwordDialogHtml)[0];
+      const dialog = DomUtils.htmlToElements(passwordDialogHtml)[0];
       this._mainContainer.append(dialog);
 
       let value = "";      

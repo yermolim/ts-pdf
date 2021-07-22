@@ -1,7 +1,7 @@
 import { Vec2 } from "mathador";
-import { Quadruple } from "../../common/types";
-import { getRandomUuid } from "../../common/uuid";
+import { UUID } from "ts-viewers-core";
 
+import { Quadruple } from "ts-viewers-core";
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
@@ -243,7 +243,7 @@ export class FreeTextAnnotator extends TextAnnotator {
 
     const nowString = new Date().toISOString();
     const dto: FreeTextAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/FreeText",
       pageId: null,
 

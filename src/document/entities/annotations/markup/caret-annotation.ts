@@ -3,7 +3,7 @@ import { CryptInfo } from "../../../encryption/interfaces";
 import { ParserResult } from "../../../data-parse/data-parser";
 import { ParserInfo } from "../../../data-parse/parser-info";
 import { MarkupAnnotation } from "./markup-annotation";
-import { Quadruple } from "../../../../common/types";
+import { Quadruple } from "ts-viewers-core";
 
 export class CaretAnnotation extends MarkupAnnotation {
   /**

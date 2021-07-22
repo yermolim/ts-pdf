@@ -1,4 +1,5 @@
-import { hexStringToBytes, parseIntFromBytes } from "../../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
 import { StreamType, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { DataParser, ParserResult } from "../../data-parse/data-parser";
@@ -52,7 +53,7 @@ export class UnicodeCmapStream extends PdfStream {
       for (let j = 1; i + j <= bytes.length && j <= 4; j++) {
         const sub = bytes.subarray(i, i + j);
         if (this.isInsideAnyRange(sub)) {          
-          result += this._map.get(parseIntFromBytes(sub)) || "";
+          result += this._map.get(ByteUtils.parseIntFromBytes(sub)) || "";
           continue outer;
         }
       }
@@ -124,7 +125,7 @@ export class UnicodeCmapStream extends PdfStream {
         i = hexKey.end + 1;
         const unicodeValue = await HexString.parseAsync(parser, i);
         i = unicodeValue.end + 1;        
-        this._map.set(parseIntFromBytes(hexKey.value.hex), 
+        this._map.set(ByteUtils.parseIntFromBytes(hexKey.value.hex), 
           decoder.decode(unicodeValue.value.hex));
       }   
     } 
@@ -149,7 +150,7 @@ export class UnicodeCmapStream extends PdfStream {
         const keyRangeEnd = await HexString.parseAsync(parser, i);
         i = keyRangeEnd.end + 1;
         
-        let key = parseIntFromBytes(keyRangeStart.value.hex);
+        let key = ByteUtils.parseIntFromBytes(keyRangeStart.value.hex);
         const nextValueType = await parser.getValueTypeAtAsync(i, true);
         if (nextValueType === valueTypes.ARRAY) {
           // unicode value range is defined as array
@@ -162,14 +163,14 @@ export class UnicodeCmapStream extends PdfStream {
           // unicode value range is defined by the starting value          
           const startingValue = await HexString.parseAsync(parser, i);
           i = startingValue.end + 1;
-          let startingUtf = parseIntFromBytes(startingValue.value.hex);
-          while (key <= parseIntFromBytes(keyRangeEnd.value.hex)) {
+          let startingUtf = ByteUtils.parseIntFromBytes(startingValue.value.hex);
+          while (key <= ByteUtils.parseIntFromBytes(keyRangeEnd.value.hex)) {
             const hexStringUnpadded = (startingUtf++).toString(16);
             const padding = hexStringUnpadded.length % 2
               ? "0"
               : "";
             const hexString = padding + hexStringUnpadded;
-            this._map.set(key++, decoder.decode(hexStringToBytes(hexString)));
+            this._map.set(key++, decoder.decode(ByteUtils.hexStringToBytes(hexString)));
           }
         }
       }   

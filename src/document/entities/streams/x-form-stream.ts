@@ -1,6 +1,5 @@
 import { Mat3, Vec2 } from "mathador";
-import { Hextuple, Quadruple } from "../../../common/types";
-import { BBox } from "../../../drawing/utils";
+import { Hextuple, Quadruple, BBox } from "ts-viewers-core";
 
 import { CryptInfo } from "../../encryption/interfaces";
 import { streamTypes, valueTypes } from "../../spec-constants";

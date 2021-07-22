@@ -1,10 +1,9 @@
-import { getRandomUuid } from "../../common/uuid";
 import { Vec2 } from "mathador";
+import { UUID } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 
-import { PageView } from "../../components/pages/page-view";
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { PolylineAnnotation, PolylineAnnotationDto } from "../../document/entities/annotations/markup/geometric/polyline-annotation";
 
@@ -188,7 +187,7 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
 
     const nowString = new Date().toISOString();
     const dto: PolylineAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Polyline",
       pageId: null,
 

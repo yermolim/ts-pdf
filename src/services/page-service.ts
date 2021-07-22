@@ -1,7 +1,7 @@
 import { clamp } from "mathador";
 
-import { ElementEventService } from "./element-event-service";
-import { PageView } from "../components/pages/page-view";
+import { EventService } from "ts-viewers-core";
+import { PageView } from "../components/page-view";
 
 //#region custom events
 export const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest" as const;
@@ -91,8 +91,8 @@ export interface PageCoords {
 //#endregion
 
 export class PageService {
-  private readonly _eventService: ElementEventService;
-  get eventService(): ElementEventService {
+  private readonly _eventService: EventService;
+  get eventService(): EventService {
     return this._eventService;
   }
 
@@ -134,7 +134,7 @@ export class PageService {
     this._eventService.dispatchEvent(new ScaleChangedEvent({scale: value}));
   }
 
-  constructor(eventService: ElementEventService, options?: PageServiceOptions) {   
+  constructor(eventService: EventService, options?: PageServiceOptions) {   
     if (!eventService) {
       throw new Error("Event service is not defined");
     } 

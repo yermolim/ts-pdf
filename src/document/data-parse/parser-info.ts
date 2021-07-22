@@ -1,4 +1,4 @@
-import { Quadruple } from "../../common/types";
+import { Quadruple } from "ts-viewers-core";
 import { CryptInfo } from "../encryption/interfaces";
 import { ObjectType } from "../spec-constants";
 import { DataParser, ParserBounds } from "./data-parser";

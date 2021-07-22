@@ -1,4 +1,5 @@
-import { int32ToBytes } from "../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
 import { md5, aes, wordArrayToBytes } from "../../common/crypto";
 import { IDataCryptor } from "./interfaces";
 import { Reference } from "../references/reference";
@@ -59,8 +60,8 @@ export class AESV2DataCryptor implements IDataCryptor {
     by adding the value "sAlT", which corresponds to the hexadecimal values 0x73, 0x41, 0x6C, 0x54. 
     (This addition is done for backward compatibility and is not intended to provide additional security.)
     */
-    const idBytes = int32ToBytes(id, true); 
-    const genBytes = int32ToBytes(generation, true); 
+    const idBytes = ByteUtils.int32ToBytes(id, true); 
+    const genBytes = ByteUtils.int32ToBytes(generation, true); 
     this._tempKey.set(this._key, 0);
     this._tempKey.set(idBytes.subarray(0, 3), this._n);
     this._tempKey.set(genBytes.subarray(0, 2), this._n + 3);

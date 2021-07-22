@@ -1,4 +1,4 @@
-import { LinkedList } from "../../common/types";
+import { LinkedList } from "ts-viewers-core";
 
 import { xRefEntryTypes } from "../spec-constants";
 import { XRefEntry } from "../entities/x-refs/x-ref-entry";

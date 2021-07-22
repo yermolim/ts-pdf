@@ -1,6 +1,7 @@
 import { Vec2 } from "mathador";
-import { Double, Quadruple } from "../../common/types";
-import { getRandomUuid } from "../../common/uuid";
+import { UUID } from "ts-viewers-core";
+
+import { Double, Quadruple } from "ts-viewers-core";
 import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
 import { DocumentService } from "../../services/document-service";
@@ -352,7 +353,7 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
 
     const nowString = new Date().toISOString();
     const dto: FreeTextAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/FreeText",
       pageId: null,
 

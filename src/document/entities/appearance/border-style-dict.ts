@@ -1,4 +1,4 @@
-import { Double } from "../../../common/types";
+import { Double } from "ts-viewers-core";
 import { dictTypes, borderStyles, BorderStyle } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
 import { ParserResult } from "../../data-parse/data-parser";

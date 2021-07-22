@@ -1,8 +1,7 @@
-import { Quadruple } from "../../common/types";
 import { Mat3, Vec2 } from "mathador";
-import { getRandomUuid } from "../../common/uuid";
+import { UUID, Quadruple, CloudCurveData } from "ts-viewers-core";
+
 import { BEZIER_CONSTANT } from "../../drawing/utils";
-import { buildCloudCurveFromEllipse } from "../../drawing/clouds";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -91,7 +90,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
     const center = new Vec2(min.x + rx, min.y + ry);
 
     if (this._cloudMode) {
-      const curveData = buildCloudCurveFromEllipse(rx, ry, CircleAnnotation.cloudArcSize, 
+      const curveData = CloudCurveData.buildFromEllipse(rx, ry, CircleAnnotation.cloudArcSize, 
         new Mat3().applyTranslation(center.x, center.y));    
   
       pathString = "M" + curveData.start.x + "," + curveData.start.y;
@@ -193,7 +192,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
 
     const nowString = new Date().toISOString();
     const dto: CircleAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Circle",
       pageId: null,
 

@@ -1,4 +1,4 @@
-import { Octuple } from "../../common/types";
+import { Octuple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";

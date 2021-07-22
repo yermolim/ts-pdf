@@ -1,4 +1,4 @@
-import { LinkedList } from "../../common/types";
+import { LinkedList } from "ts-viewers-core";
 
 import { maxGeneration, xRefEntryTypes } from "../spec-constants";
 import { XRef } from "../entities/x-refs/x-ref";

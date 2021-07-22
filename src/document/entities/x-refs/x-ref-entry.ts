@@ -1,5 +1,5 @@
-import { parseIntFromBytes, int8ToBytes, 
-  int16ToBytes, int32ToBytes } from "../../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
 import { codes } from "../../encoding/char-codes";
 import { maxGeneration, XRefEntryType, xRefEntryTypes } from "../../spec-constants";
 import { Reference } from "../../references/reference";
@@ -139,13 +139,13 @@ export class XRefEntry implements Reference {
     let value2: number;
     while (i < bytes.length) {
       type = w1 
-        ? parseIntFromBytes(bytes.slice(i, i + w1))
+        ? ByteUtils.parseIntFromBytes(bytes.slice(i, i + w1))
         : 1;
       i += w1;
-      value1 = parseIntFromBytes(bytes.slice(i, i + w2));
+      value1 = ByteUtils.parseIntFromBytes(bytes.slice(i, i + w2));
       i += w2;
       value2 = w3 
-        ? parseIntFromBytes(bytes.slice(i, i + w3))
+        ? ByteUtils.parseIntFromBytes(bytes.slice(i, i + w3))
         : null;
       i += w3;
 
@@ -238,33 +238,35 @@ export class XRefEntry implements Reference {
         w1ToBytesFunc = () => new Uint8Array();
         break;
       case 1:
-        w1ToBytesFunc = int8ToBytes;
+        w1ToBytesFunc = ByteUtils.int8ToBytes;
         break;
       case 2:
-        w1ToBytesFunc = int16ToBytes;
+        w1ToBytesFunc = ByteUtils.int16ToBytes;
         break;
       default:
         // just pad 3-bytes value with 0s
-        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
+        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 2)
+          .fill(0), ...ByteUtils.int16ToBytes(n)]);
         break;
     }
     switch (w2) {
       case 1:
-        w2ToBytesFunc = int8ToBytes;
+        w2ToBytesFunc = ByteUtils.int8ToBytes;
         break;
       case 2:
-        w2ToBytesFunc = int16ToBytes;
+        w2ToBytesFunc = ByteUtils.int16ToBytes;
         break;
       case 3:
         // just pad 2-bytes value with 0
-        w2ToBytesFunc = (n: number) => new Uint8Array([0, ...int16ToBytes(n)]);
+        w2ToBytesFunc = (n: number) => new Uint8Array([0, ...ByteUtils.int16ToBytes(n)]);
         break;
       case 4:
-        w2ToBytesFunc = int32ToBytes;
+        w2ToBytesFunc = ByteUtils.int32ToBytes;
         break;
       default:
         // just pad 4-bytes value with 0s
-        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 4).fill(0), ...int32ToBytes(n)]);
+        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 4)
+          .fill(0), ...ByteUtils.int32ToBytes(n)]);
         break;
     }
     switch (w3) {
@@ -272,14 +274,15 @@ export class XRefEntry implements Reference {
         w3ToBytesFunc = () => new Uint8Array();
         break;
       case 1:
-        w3ToBytesFunc = int8ToBytes;
+        w3ToBytesFunc = ByteUtils.int8ToBytes;
         break;
       case 2:
-        w3ToBytesFunc = int16ToBytes;
+        w3ToBytesFunc = ByteUtils.int16ToBytes;
         break;
       default:
         // just pad 2-bytes value with 0s
-        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 2).fill(0), ...int16ToBytes(n)]);
+        w2ToBytesFunc = (n: number) => new Uint8Array([...new Array(w1 - 2)
+          .fill(0), ...ByteUtils.int16ToBytes(n)]);
         break;
     }
 

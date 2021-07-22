@@ -1,6 +1,5 @@
-import { getRandomUuid } from "../../common/uuid";
 import { Vec2 } from "mathador";
-import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
+import { CloudCurveData, UUID } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -85,7 +84,7 @@ export class GeometricPolygonAnnotator extends GeometricAnnotator {
       path.setAttribute("stroke-linecap", "round");      
       path.setAttribute("stroke-linejoin", "round");      
 
-      const curveData = buildCloudCurveFromPolyline([...this._points, this._points[0]], 
+      const curveData = CloudCurveData.buildFromPolyline([...this._points, this._points[0]], 
         PolygonAnnotation.cloudArcSize);    
   
       pathString = "M" + curveData.start.x + "," + curveData.start.y;
@@ -206,7 +205,7 @@ export class GeometricPolygonAnnotator extends GeometricAnnotator {
 
     const nowString = new Date().toISOString();
     const dto: PolygonAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Polygon",
       pageId: null,
 

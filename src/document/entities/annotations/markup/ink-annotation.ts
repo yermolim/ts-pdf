@@ -1,6 +1,6 @@
 import { Mat3, Vec2 } from "mathador";
 
-import { Double, Quadruple } from "../../../../common/types";
+import { Double, Quadruple } from "ts-viewers-core";
 import { AnnotationDto } from "../../../../common/annotation";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles, valueTypes } from "../../../spec-constants";

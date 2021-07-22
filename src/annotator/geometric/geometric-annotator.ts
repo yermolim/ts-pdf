@@ -1,6 +1,6 @@
 import { Vec2 } from "mathador";
 
-import { Quadruple } from "../../common/types";
+import { Quadruple } from "ts-viewers-core";
 import { LINE_END_MULTIPLIER, LINE_END_MIN_SIZE, BEZIER_CONSTANT } from "../../drawing/utils";
 
 import { DocumentService } from "../../services/document-service";

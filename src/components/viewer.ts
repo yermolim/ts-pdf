@@ -1,7 +1,7 @@
 import { textDialogHtml } from "../assets/index.html";
 
 import { clamp, Vec2, getDistance2D } from "mathador";
-import { htmlToElements } from "../common/dom";
+import { DomUtils } from "ts-viewers-core";
 
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
@@ -119,7 +119,7 @@ export class Viewer {
       return;
     }
 
-    const dialog = htmlToElements(textDialogHtml)[0];
+    const dialog = DomUtils.htmlToElements(textDialogHtml)[0];
     dialog.style.top = this._container.scrollTop + "px";
     dialog.style.left = this._container.scrollLeft + "px";
 

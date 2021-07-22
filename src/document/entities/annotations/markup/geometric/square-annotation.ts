@@ -1,7 +1,6 @@
-import { Hextuple, Quadruple } from "../../../../../common/types";
+import { CloudCurveData, Hextuple, Quadruple } from "ts-viewers-core";
 import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
-import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
 import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
@@ -250,7 +249,7 @@ export class SquareAnnotation extends GeometricAnnotation {
       gs.LC = lineCapStyles.ROUND;
       gs.LJ = lineJoinStyles.ROUND; 
       
-      const curveData = buildCloudCurveFromPolyline([
+      const curveData = CloudCurveData.buildFromPolyline([
         trBoxLL.clone(),
         trBoxLR.clone(),
         trBoxUR.clone(),

@@ -1,8 +1,8 @@
-import { Hextuple, Quadruple } from "../../../../../common/types";
-import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { Mat3, Vec2 } from "mathador";
+import { CloudCurveData, Hextuple, Quadruple } from "ts-viewers-core";
+
+import { annotationTypes, lineCapStyles, lineJoinStyles } from "../../../../spec-constants";
 import { BEZIER_CONSTANT, calcPdfBBoxToRectMatrices } from "../../../../../drawing/utils";
-import { buildCloudCurveFromEllipse } from "../../../../../drawing/clouds";
 
 import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParserResult } from "../../../../data-parse/data-parser";
@@ -255,7 +255,7 @@ export class CircleAnnotation extends GeometricAnnotation {
     // the graphics will be drawn using transformed coordinates to preserve stroke options
     // (by using such way line width, margins, etc. will still be as they were specified)
     if (this._cloud) {
-      const curveData = buildCloudCurveFromEllipse(rx.getMagnitude(), ry.getMagnitude(), 
+      const curveData = CloudCurveData.buildFromEllipse(rx.getMagnitude(), ry.getMagnitude(), 
         CircleAnnotation.cloudArcSize, new Mat3().applyRotation(rotation).applyTranslation(trBoxCenter.x, trBoxCenter.y)); 
       streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
       curveData.curves.forEach(x => {

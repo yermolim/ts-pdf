@@ -1,5 +1,6 @@
 /* eslint-disable no-bitwise */
-import { arraysEqual, findSubarrayIndex, int32ToBytes, xorBytes } from "../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
 import { md5, rc4, bytesToWordArray, wordArrayToBytes } from "../../common/crypto";
 
 import { CryptMethod, cryptMethods, CryptRevision, CryptVersion } from "../spec-constants";
@@ -222,7 +223,7 @@ export class DataCryptHandler {
     if ([2, 3, 4].includes(this._revision)) {
       // 1. Pad or truncate the password string to exactly 32 bytes
       const paddedPassword = this.padPassword32(password);
-      const permissionsLe = int32ToBytes(this._permissions, true);
+      const permissionsLe = ByteUtils.int32ToBytes(this._permissions, true);
       const metadata = this._revision >= 4 && !this._encryptMetadata 
         ? new Uint8Array([255, 255, 255, 255])
         : new Uint8Array(0);
@@ -341,7 +342,7 @@ export class DataCryptHandler {
     */
     if (this._revision >= 3) {
       for (let i = 1; i < 20; i++) {
-        hash = rc4(hash, xorBytes(key, i));
+        hash = rc4(hash, ByteUtils.xorBytes(key, i));
       }
     }
     return wordArrayToBytes(hash);
@@ -396,7 +397,7 @@ export class DataCryptHandler {
     that byte and the single-byte value of the iteration counter (from 1 to 19)
     */
     for (let i = 1; i < 20; i++) {
-      hash = rc4(hash, xorBytes(key, i));
+      hash = rc4(hash, ByteUtils.xorBytes(key, i));
     }
     return wordArrayToBytes(hash);
   }
@@ -428,14 +429,14 @@ export class DataCryptHandler {
         */
         let hash = bytesToWordArray(this._oPasswordHash);
         for (let i = 19; i >= 0; i--) {
-          hash = rc4(hash, xorBytes(ownerEncryptionKey, i));
+          hash = rc4(hash, ByteUtils.xorBytes(ownerEncryptionKey, i));
         }
         userPasswordPadded = wordArrayToBytes(hash);
       }
         
       // 3. The result of step 2 purports to be the user password
       // find padding and remove it if present
-      const j = findSubarrayIndex(userPasswordPadded, new Uint8Array(PASSWORD_32_PADDING));
+      const j = ByteUtils.findSubarrayIndex(userPasswordPadded, new Uint8Array(PASSWORD_32_PADDING));
       const userPassword = new TextDecoder().decode(j === -1 
         ? userPasswordPadded
         : userPasswordPadded.subarray(0, j));
@@ -458,10 +459,10 @@ export class DataCryptHandler {
     let u: Uint8Array;
     if (this._revision === 2) {
       u = this.computeUHash_R2(password);
-      return arraysEqual(this._uPasswordHash, u);
+      return ByteUtils.arraysEqual(this._uPasswordHash, u);
     } else if (this._revision === 3 || this._revision === 4) {
       u = this.computeUHash_R3R4(password); 
-      return arraysEqual(this._uPasswordHash.subarray(0, 16), u);
+      return ByteUtils.arraysEqual(this._uPasswordHash.subarray(0, 16), u);
     } else if (this._revision === 5) {
       // TODO: implement
       throw new Error("Not implemented yet");

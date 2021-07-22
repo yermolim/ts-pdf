@@ -1,8 +1,8 @@
 import { Mat3, Vec2 } from "mathador";
-import { Quadruple, Double, Hextuple } from "../../../../../common/types";
+import { Quadruple, Double, Hextuple, SvgTempPath } from "ts-viewers-core";
+
 import { VecMinMax, LINE_END_MIN_SIZE, 
   LINE_END_MULTIPLIER } from "../../../../../drawing/utils";
-import { SvgTempPath } from "../../../../../drawing/paths/svg-temp-path";
 
 import { annotationTypes, valueTypes, lineCapStyles, LineEndingType, 
   lineEndingTypes, lineJoinStyles, lineIntents, LineIntent, 

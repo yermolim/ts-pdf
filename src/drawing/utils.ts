@@ -1,5 +1,5 @@
 import { Vec2, Mat3 } from "mathador";
-import { Hextuple, Quadruple } from "../common/types";
+import { Hextuple, Quadruple } from "ts-viewers-core";
   
 export type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" 
 | "color-dodge" |"color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
@@ -103,11 +103,4 @@ export function calcPdfBBoxToRectMatrices(bBox: Quadruple, rect: Quadruple, matr
   // console.log(matAA.toFloatShortArray());    
 
   return {matAP, matA, matAA};
-}
-
-export interface BBox {
-  ll: Vec2; 
-  lr: Vec2; 
-  ur: Vec2; 
-  ul: Vec2;
 }

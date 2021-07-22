@@ -1,11 +1,11 @@
 import { Vec2 } from "mathador";
-import { Quadruple } from "../../common/types";
-import { RenderableAnnotation, AnnotationRenderResult } from "../../common/annotation";
-import { PageInfo } from "../../common/page";
+import { Quadruple } from "ts-viewers-core";
+import { RenderableAnnotation, AnnotationRenderResult } from "../common/annotation";
+import { PageInfo } from "../common/page";
 
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
-  from "../../services/document-service";
+  from "../services/document-service";
 
 export class PageAnnotationView {
   private readonly _pageInfo: PageInfo;

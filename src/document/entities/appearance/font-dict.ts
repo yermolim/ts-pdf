@@ -1,5 +1,6 @@
-import { Quadruple } from "../../../common/types";
-import { getBit } from "../../../common/byte";
+import { ByteUtils } from "ts-viewers-core";
+
+import { Quadruple } from "ts-viewers-core";
 
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
@@ -362,7 +363,7 @@ export class FontDict extends PdfDict {
       return false;
     }
     const flags = this._descriptor?.Flags;
-    return !!getBit(flags, 0);
+    return !!ByteUtils.getBit(flags, 0);
   }
   /** 'true' if the current font has serifs ('font-family: serif;'), 
    * 'false' otherwise ('font-family: sans-serif;') */
@@ -371,7 +372,7 @@ export class FontDict extends PdfDict {
       return false;
     }
     const flags = this._descriptor?.Flags;
-    return !!getBit(flags, 1);
+    return !!ByteUtils.getBit(flags, 1);
   }
   /** 'true' if the current font is script-like ('font-family: cursive;'), 
    * 'false' otherwise */
@@ -380,7 +381,7 @@ export class FontDict extends PdfDict {
       return false;
     }
     const flags = this._descriptor?.Flags;
-    return !!getBit(flags, 3);
+    return !!ByteUtils.getBit(flags, 3);
   }
   /** 'true' if the current font is 'italic', 'false' otherwise */
   get isItalic(): boolean {
@@ -388,7 +389,7 @@ export class FontDict extends PdfDict {
       return false;
     }
     const flags = this._descriptor?.Flags;
-    return !!getBit(flags, 6);
+    return !!ByteUtils.getBit(flags, 6);
   }
 
   constructor() {

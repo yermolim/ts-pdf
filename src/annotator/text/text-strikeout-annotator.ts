@@ -1,4 +1,4 @@
-import { Octuple } from "../../common/types";
+import { Octuple } from "ts-viewers-core";
 import { Vec2 } from "mathador";
 
 import { PageService } from "../../services/page-service";

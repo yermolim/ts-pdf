@@ -1,7 +1,7 @@
 import { Vec2 } from "mathador";
 
-import { Quadruple } from "../../../../common/types";
-import { buildTextDataAsync, TextData, TextDataOptions, TextLineData } from "../../../../common/text-data";
+import { Quadruple } from "ts-viewers-core";
+import { TextData, TextDataOptions } from "../../../../common/text-data";
 import { BEZIER_CONSTANT, LINE_END_MIN_SIZE, 
   LINE_END_MULTIPLIER } from "../../../../drawing/utils";
 
@@ -253,7 +253,7 @@ export abstract class MarkupAnnotation extends AnnotationDict {
   protected async updateTextDataAsync(options: TextDataOptions): Promise<TextData> {
     const text = this.Contents?.literal;
     // const text = "Lorem-Ipsum is simply\ndummy, text of the печати, and typesetting industry.";
-    const textData = await buildTextDataAsync(text, options);
+    const textData = await TextData.buildAsync(text, options);
     this._textData = textData;
     return this._textData;
   }

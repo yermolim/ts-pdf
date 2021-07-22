@@ -1,7 +1,7 @@
 import { Mat3, Vec2 } from "mathador";
-import { buildCloudCurveFromPolyline } from "../../../../../drawing/clouds";
 
-import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } from "../../../../spec-constants";
+import { annotationTypes, lineCapStyles, lineJoinStyles, polyIntents } 
+  from "../../../../spec-constants";
 import { CryptInfo } from "../../../../encryption/interfaces";
 import { ParserResult } from "../../../../data-parse/data-parser";
 import { ParserInfo } from "../../../../data-parse/parser-info";
@@ -13,6 +13,7 @@ import { BorderStyleDict } from "../../../appearance/border-style-dict";
 import { GraphicsStateDict } from "../../../appearance/graphics-state-dict";
 import { ResourceDict } from "../../../appearance/resource-dict";
 import { PolyAnnotation, PolyAnnotationDto } from "./poly-annotation";
+import { CloudCurveData } from "ts-viewers-core";
 
 export interface PolygonAnnotationDto extends PolyAnnotationDto {  
   cloud: boolean;
@@ -165,7 +166,7 @@ export class PolygonAnnotation extends PolyAnnotation {
         vertices.push(new Vec2(list[i], list[i + 1]));
       }
       vertices.push(new Vec2(list[0], list[1])); // close the polygon
-      const curveData = buildCloudCurveFromPolyline(vertices, PolygonAnnotation.cloudArcSize);      
+      const curveData = CloudCurveData.buildFromPolyline(vertices, PolygonAnnotation.cloudArcSize);      
 
       streamTextData += `\n${curveData.start.x} ${curveData.start.y} m`;
       curveData.curves.forEach(x => {

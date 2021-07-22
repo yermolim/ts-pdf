@@ -1,5 +1,5 @@
 import { PageInfo } from "./page";
-import { Hextuple, Quadruple } from "./types";
+import { Hextuple, Quadruple } from "ts-viewers-core";
 
 export interface AnnotationRenderResult {
   /**svg container with all the annotation rendered helpers (boxes, handles, etc.) */

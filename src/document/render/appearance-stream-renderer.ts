@@ -1,4 +1,4 @@
-import { Quadruple } from "../../common/types";
+import { Quadruple } from "ts-viewers-core";
 import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices, SELECTION_STROKE_WIDTH, 
   CssMixBlendMode } from "../../drawing/utils";

@@ -1,10 +1,8 @@
 import { Mat3, Vec2 } from "mathador";
+import { UUID, Quadruple, BBox } from "ts-viewers-core";
 
-import { Quadruple } from "../../../common/types";
-import { getRandomUuid } from "../../../common/uuid";
 import { RenderableAnnotation, AnnotationRenderResult, 
   AnnotationDto } from "../../../common/annotation";
-import { BBox } from "../../../drawing/utils";
 
 import { CryptInfo } from "../../encryption/interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
@@ -144,7 +142,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
   //#endregion
 
   //#region render-related properties
-  protected readonly _svgId = getRandomUuid(); 
+  protected readonly _svgId = UUID.getRandomUuid(); 
   
   /**page information used for rendering */
   protected _pageInfo: PageInfo;
@@ -580,7 +578,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       throw new Error("Not all required properties parsed");
     }
 
-    this.$name = this.NM?.literal || getRandomUuid();
+    this.$name = this.NM?.literal || UUID.getRandomUuid();
   }
 
   //#region protected render methods

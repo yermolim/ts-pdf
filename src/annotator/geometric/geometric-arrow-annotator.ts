@@ -1,5 +1,6 @@
 import { Vec2, Mat3 } from "mathador";
-import { getRandomUuid } from "../../common/uuid";
+import { UUID } from "ts-viewers-core";
+
 import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
@@ -52,7 +53,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
   protected override buildAnnotationDto(): LineAnnotationDto {
     const nowString = new Date().toISOString();
     const dto: LineAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Line",
       pageId: null,
 

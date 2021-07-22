@@ -1,4 +1,4 @@
-import { Double, Quadruple } from "../../../../../common/types";
+import { Double, Quadruple } from "ts-viewers-core";
 import { AnnotationDto } from "../../../../../common/annotation";
 import { AnnotationType } from "../../../../spec-constants";
 

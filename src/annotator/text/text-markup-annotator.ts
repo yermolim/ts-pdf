@@ -1,6 +1,7 @@
-import { Octuple } from "../../common/types";
+import { UUID } from "ts-viewers-core";
+
+import { Octuple } from "ts-viewers-core";
 import { TextSelectionInfo } from "../../common/text-selection";
-import { getRandomUuid } from "../../common/uuid";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -164,7 +165,7 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
 
     this._coordsByPageId.forEach((quads, pageId) => {
       const dto: TextMarkupAnnotationDto = {
-        uuid: getRandomUuid(),
+        uuid: UUID.getRandomUuid(),
         annotationType: type,
         pageId,
   

@@ -1,8 +1,5 @@
 import { Vec2 } from "mathador";
-
-import { Quadruple } from "../../common/types";
-import { getRandomUuid } from "../../common/uuid";
-import { buildCloudCurveFromPolyline } from "../../drawing/clouds";
+import { UUID, Quadruple, CloudCurveData } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -86,7 +83,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
       path.setAttribute("stroke-linecap", "round");      
       path.setAttribute("stroke-linejoin", "round");      
 
-      const curveData = buildCloudCurveFromPolyline([
+      const curveData = CloudCurveData.buildFromPolyline([
         new Vec2(min.x, min.y),
         new Vec2(max.x, min.y),
         new Vec2(max.x, max.y),
@@ -193,7 +190,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
 
     const nowString = new Date().toISOString();
     const dto: SquareAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Square",
       pageId: null,
 

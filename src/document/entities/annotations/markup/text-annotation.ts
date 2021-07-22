@@ -1,5 +1,6 @@
-import { Quadruple } from "../../../../common/types";
-import { getRandomUuid } from "../../../../common/uuid";
+import { UUID , Quadruple } from "ts-viewers-core";
+
+
 import { AnnotationDto } from "../../../../common/annotation";
 
 import { AnnotationIconType, annotationIconTypes, 
@@ -105,7 +106,7 @@ export class TextAnnotation extends MarkupAnnotation {
     type: AnnotationIconType = annotationIconTypes.NOTE): TextAnnotation {
     const nowString = new Date().toISOString();
     const dto: TextAnnotationDto = {
-      uuid: getRandomUuid(),
+      uuid: UUID.getRandomUuid(),
       annotationType: "/Text",
       pageId: null,
 

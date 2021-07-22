@@ -25,7 +25,7 @@ import { FontDict } from "../document/entities/appearance/font-dict";
 import { AnnotationParser } from "../document/data-parse/annotation-parser";
 import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
 
-import { ElementEventService } from "./element-event-service";
+import { EventService } from "ts-viewers-core";
 
 //#region custom events
 export const annotSelectionRequestEvent = "tspdf-annotselectionrequest" as const;
@@ -85,8 +85,8 @@ interface ExecutedAsyncCommand {
 }
 
 export class DocumentService {
-  protected readonly _eventService: ElementEventService;
-  get eventService(): ElementEventService {
+  protected readonly _eventService: EventService;
+  get eventService(): EventService {
     return this._eventService;
   }
 
@@ -150,7 +150,7 @@ export class DocumentService {
     return !this._encryption || !!this._authResult;
   }
 
-  private constructor(eventService: ElementEventService, data: Uint8Array, userName: string) {
+  private constructor(eventService: EventService, data: Uint8Array, userName: string) {
     if (!eventService) {
       throw new Error("Event controller is not defined");
     }
@@ -168,7 +168,7 @@ export class DocumentService {
     this._initPromise = this.initAsync();
   }
 
-  static async CreateNewAsync(eventService: ElementEventService, 
+  static async CreateNewAsync(eventService: EventService, 
     data: Uint8Array, userName: string): Promise<DocumentService> {
     const service = new DocumentService(eventService, data, userName);
     await service._initPromise;
