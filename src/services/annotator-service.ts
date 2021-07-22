@@ -1,14 +1,12 @@
 import { Vec2 } from "mathador";
-import { ContextMenu, DomUtils , Quadruple } from "ts-viewers-core";
+import { ContextMenu, DomUtils , Quadruple, 
+  CustomStampCreationInfo, CustomStampService } from "ts-viewers-core";
 
 import { geometricIcons, lineTypeIcons, textIcons, 
   stampContextButtonsHtml } from "../assets/index.html";
 
-import { CustomStampCreationInfo } from "../drawing/stamps";
-
 import { DocumentService } from "./document-service";
 import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";
-import { CustomStampService } from "./custom-stamp-service";
 
 import { Viewer } from "../components/viewer";
 

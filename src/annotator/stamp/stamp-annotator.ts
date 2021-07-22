@@ -1,7 +1,7 @@
 import { getDistance2D, Vec2 } from "mathador";
-import { UUID } from "ts-viewers-core";
+import { UUID, CustomStampCreationInfo } from "ts-viewers-core";
 
-import { CustomStampCreationInfo, standardStampCreationInfos } from "../../drawing/stamps";
+import { standardStampCreationInfos } from "../../drawing/stamps";
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
 import { StampAnnotation, StampAnnotationDto } 
@@ -129,8 +129,8 @@ export class StampAnnotator extends Annotator {
 
       textContent: null,
 
-      rect: creationInfo.rect,
-      bbox: creationInfo.bBox,
+      rect: creationInfo.rect || creationInfo.bbox,
+      bbox: creationInfo.bbox,
       matrix: null,
 
       stampType: creationInfo.type,

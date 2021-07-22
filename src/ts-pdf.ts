@@ -3,22 +3,21 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
 
 import { clamp } from "mathador";
-import { DomUtils, EventService, Loader } from "ts-viewers-core";
+import { DomUtils, EventService, Loader, CustomStampCreationInfo,
+  customStampEvent, CustomStampEvent, CustomStampEventDetail, 
+  CustomStampService } from "ts-viewers-core";
 
 import { mainHtml, passwordDialogHtml } from "./assets/index.html";
-import { styles } from "./assets/styles.html";
+import { styles } from "./assets/styles";
 
 import { getSelectionInfosFromSelection } from "./common/text-selection";
 import { AnnotationDto } from "./common/annotation";
-import { CustomStampCreationInfo } from "./drawing/stamps";
 
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
 import { DocumentService, annotChangeEvent, AnnotEvent, 
   AnnotEventDetail, DocServiceStateChangeEvent, 
   docServiceStateChangeEvent } from "./services/document-service";
-import { customStampEvent, CustomStampEvent, CustomStampEventDetail, 
-  CustomStampService } from "./services/custom-stamp-service";
 import { AnnotatorService } from "./services/annotator-service";
 
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
@@ -28,7 +27,13 @@ import { PageView } from "./components/page-view";
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
   annotatorTypes, 
   TextSelectionChangeEvent, 
-  textSelectionChangeEvent} from "./annotator/annotator";
+  textSelectionChangeEvent} from "./annotator/annotator"; 
+
+declare global {
+  interface HTMLElementEventMap {
+    [customStampEvent]: CustomStampEvent;
+  }
+}
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 

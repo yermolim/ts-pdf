@@ -1,4 +1,4 @@
-import { Quadruple } from "ts-viewers-core";
+import { Quadruple, StampCreationInfo } from "ts-viewers-core";
 
 const standardStampColors = {  
   redColor: [0.804, 0, 0],
@@ -2723,24 +2723,9 @@ const standardStampForms = {
   `,
 } as const;
 
-export interface StampCreationInfo {
-  subject: string;
-  bBox: Quadruple;
-  rect: Quadruple;
-}
-
 export interface StandardStampCreationInfo extends StampCreationInfo {   
   textStreamData: string;
   color: [r: number, g: number, b: number];
-}
-
-export interface CustomStampCreationInfo extends StampCreationInfo {
-  /**image data as a byte array (4 bytes for each pixel: RGBA) */
-  imageData: number[];
-  /**stamp name to use in PDF file */
-  type: string;
-  /**stamp name to show in user interface */
-  name: string;
 }
 
 export const standardStampCreationInfos = {
@@ -2748,98 +2733,98 @@ export const standardStampCreationInfos = {
     textStreamData: standardStampForms.DRAFT,
     color: standardStampColors.redColor,
     subject: "Draft",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Approved": {      
     textStreamData: standardStampForms.APPROVED,
     color: standardStampColors.greenColor,
     subject: "Approved",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/NotApproved": {        
     textStreamData: standardStampForms.NOT_APPROVED,
     color: standardStampColors.redColor,
     subject: "Not Approved",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Departmental": {        
     textStreamData: standardStampForms.DEPARTMENTAL,
     color: standardStampColors.blueColor,
     subject: "Departmental",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Confidential": {        
     textStreamData: standardStampForms.CONFIDENTIAL,
     color: standardStampColors.redColor,
     subject: "Confidential",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Final": {        
     textStreamData: standardStampForms.FINAL,
     color: standardStampColors.redColor,
     subject: "Final",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Expired": {        
     textStreamData: standardStampForms.EXPIRED,
     color: standardStampColors.redColor,
     subject: "Expired",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/AsIs": {        
     textStreamData: standardStampForms.AS_IS,
     color: standardStampColors.redColor,
     subject: "As Is",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Sold": {        
     textStreamData: standardStampForms.SOLD,
     color: standardStampColors.blueColor,
     subject: "Sold",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/Experimental": {        
     textStreamData: standardStampForms.EXPERIMENTAL,
     color: standardStampColors.blueColor,
     subject: "Experimental",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/ForComment": {        
     textStreamData: standardStampForms.FOR_COMMENT,
     color: standardStampColors.greenColor,
     subject: "For Comment",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/TopSecret": {        
     textStreamData: standardStampForms.TOP_SECRET,
     color: standardStampColors.redColor,
     subject: "Top Secret",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/ForPublicRelease": {        
     textStreamData: standardStampForms.FOR_PUBLIC_RELEASE,
     color: standardStampColors.greenColor,
     subject: "For Public Release",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
   "/NotForPublicRelease": {        
     textStreamData: standardStampForms.NOT_FOR_PUBLIC_RELEASE,
     color: standardStampColors.redColor,
     subject: "Not For Public Release",
-    bBox: standardStampBBox,
+    bbox: standardStampBBox,
     rect: standardStampRect,
   },
 } as const;

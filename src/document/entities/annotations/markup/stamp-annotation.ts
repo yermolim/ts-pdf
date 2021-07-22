@@ -72,8 +72,8 @@ export class StampAnnotation extends MarkupAnnotation {
       stampForm.setTextStreamData(stampCreationInfo.textStreamData);
       const color = stampCreationInfo.color;
       const subject = stampCreationInfo.subject;
-      const bBox = stampCreationInfo.bBox;
-      const rect = dto.rect || stampCreationInfo.rect;
+      const bBox = stampCreationInfo.bbox;
+      const rect = dto.rect || stampCreationInfo.rect || stampCreationInfo.bbox;
       
       stampForm.BBox = bBox;
 
