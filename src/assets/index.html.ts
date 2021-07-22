@@ -2,39 +2,6 @@
 
 import { Icons } from "ts-viewers-core";
 
-//#region icons
-export const geometricIcons = {
-  square: `<img src="${Icons.icon_square}"/>`,
-  circle: `<img src="${Icons.icon_circle}"/>`,
-  line: `<img src="${Icons.icon_line}"/>`,
-  arrow: `<img src="${Icons.icon_arrow}"/>`,
-  polyline: `<img src="${Icons.icon_polyline}"/>`,
-  polygon: `<img src="${Icons.icon_polygon}"/>`,
-} as const;
-
-export const textIcons = {
-  note: `<img src="${Icons.icon_popup2}"/>`,
-  freeText: `<img src="${Icons.icon_text_free}"/>`,
-  freeTextCallout: `<img src="${Icons.icon_text_callout}"/>`,
-  strikeout: `<img src="${Icons.icon_text_strikeout}"/>`,
-  squiggly: `<img src="${Icons.icon_text_squiggly}"/>`,
-  underline: `<img src="${Icons.icon_text_underline}"/>`,
-  highlight: `<img src="${Icons.icon_text_highlight}"/>`,
-} as const;
-
-export const lineTypeIcons = {  
-  straight: `<img src="${Icons.icon_straight}"/>`,
-  cloudy: `<img src="${Icons.icon_cloudy}"/>`,
-} as const;
-
-export const editIcons = {  
-  close: `<img src="${Icons.icon_close}"/>`,
-  ok: `<img src="${Icons.icon_ok}"/>`,
-  back: `<img src="${Icons.icon_back}"/>`,
-  delete: `<img src="${Icons.icon_delete}"/>`,
-} as const;
-//#endregion
-
 export const mainHtml = /*html*/`
   <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">

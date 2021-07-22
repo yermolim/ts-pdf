@@ -55,33 +55,6 @@ export { CustomStampEvent } from 'ts-viewers-core';
 import Pako from 'pako';
 import CryptoES from 'crypto-es';
 
-const geometricIcons = {
-    square: `<img src="${Icons.icon_square}"/>`,
-    circle: `<img src="${Icons.icon_circle}"/>`,
-    line: `<img src="${Icons.icon_line}"/>`,
-    arrow: `<img src="${Icons.icon_arrow}"/>`,
-    polyline: `<img src="${Icons.icon_polyline}"/>`,
-    polygon: `<img src="${Icons.icon_polygon}"/>`,
-};
-const textIcons = {
-    note: `<img src="${Icons.icon_popup2}"/>`,
-    freeText: `<img src="${Icons.icon_text_free}"/>`,
-    freeTextCallout: `<img src="${Icons.icon_text_callout}"/>`,
-    strikeout: `<img src="${Icons.icon_text_strikeout}"/>`,
-    squiggly: `<img src="${Icons.icon_text_squiggly}"/>`,
-    underline: `<img src="${Icons.icon_text_underline}"/>`,
-    highlight: `<img src="${Icons.icon_text_highlight}"/>`,
-};
-const lineTypeIcons = {
-    straight: `<img src="${Icons.icon_straight}"/>`,
-    cloudy: `<img src="${Icons.icon_cloudy}"/>`,
-};
-({
-    close: `<img src="${Icons.icon_close}"/>`,
-    ok: `<img src="${Icons.icon_ok}"/>`,
-    back: `<img src="${Icons.icon_back}"/>`,
-    delete: `<img src="${Icons.icon_delete}"/>`,
-});
 const mainHtml = `
   <div id="main-container" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
@@ -27116,7 +27089,7 @@ class AnnotatorService {
                 this._geometricSubmode = x;
                 this.setMode();
             });
-            item.innerHTML = geometricIcons[x];
+            item.innerHTML = Icons.geometricIcons[x];
             submodePicker.append(item);
         });
         return submodePicker;
@@ -27134,7 +27107,7 @@ class AnnotatorService {
                 this._textSubmode = x;
                 this.setMode();
             });
-            item.innerHTML = textIcons[x];
+            item.innerHTML = Icons.textIcons[x];
             submodePicker.append(item);
         });
         return submodePicker;
@@ -27181,7 +27154,7 @@ class AnnotatorService {
                 this.setMode();
             });
         }
-        cloudyLineButton.innerHTML = lineTypeIcons.cloudy;
+        cloudyLineButton.innerHTML = Icons.lineTypeIcons.cloudy;
         div.append(cloudyLineButton);
         const straightLineButton = document.createElement("div");
         straightLineButton.classList.add("panel-button");
@@ -27197,7 +27170,7 @@ class AnnotatorService {
                 this.setMode();
             });
         }
-        straightLineButton.innerHTML = lineTypeIcons.straight;
+        straightLineButton.innerHTML = Icons.lineTypeIcons.straight;
         div.append(straightLineButton);
         const slider = document.createElement("input");
         slider.setAttribute("type", "range");
