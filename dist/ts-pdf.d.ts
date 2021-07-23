@@ -960,7 +960,6 @@ interface TsPdfViewerOptions {
     minScale?: number;
     maxScale?: number;
 }
-
 declare class TsPdfViewer {
     private readonly _userName;
     private readonly _outerContainer;
@@ -1047,4 +1046,4 @@ declare class TsPdfViewer {
     private showPasswordDialogAsync;
 }
 
-export { AnnotEvent, AnnotEventDetail, AnnotationDto, TsPdfViewer, TsPdfViewerOptions };
+export { AnnotEvent, AnnotEventDetail, AnnotationDto, FileButtons, TsPdfViewer, TsPdfViewerOptions };

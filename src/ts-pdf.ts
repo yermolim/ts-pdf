@@ -37,7 +37,7 @@ declare global {
 
 type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
-type FileButtons = "open" | "save" | "close";
+export type FileButtons = "open" | "save" | "close";
 
 export interface TsPdfViewerOptions {
   /**parent container CSS selector */
@@ -94,9 +94,6 @@ export interface TsPdfViewerOptions {
   minScale?: number;
   maxScale?: number;
 }
-
-export {AnnotationDto, AnnotEvent, AnnotEventDetail, 
-  CustomStampCreationInfo, CustomStampEventDetail};
 
 export class TsPdfViewer {
   //#region private fields
@@ -992,3 +989,6 @@ export class TsPdfViewer {
   }
   //#endregion
 }
+
+export {AnnotationDto, AnnotEvent, AnnotEventDetail, 
+  CustomStampCreationInfo, CustomStampEventDetail};
