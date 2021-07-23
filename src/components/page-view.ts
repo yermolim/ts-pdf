@@ -102,6 +102,8 @@ export class PageView implements PageInfo {
     return this._dimensionsIsValid && this._viewRendered;
   }
 
+  private _destroyed: boolean;
+
   constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number) {
     if (!docService) {
       throw new Error("Annotation data is not defined");
@@ -151,6 +153,7 @@ export class PageView implements PageInfo {
 
   /**free the resources that can prevent garbage to be collected */
   destroy() {
+    this._destroyed = true;
     this._previewContainer.remove();
     this._viewOuterContainer.remove();
     this._pageProxy.cleanup();
@@ -289,6 +292,10 @@ export class PageView implements PageInfo {
   }
 
   private async runRenderTaskAsync(renderParams: RenderParameters): Promise<boolean> {
+    if (this._destroyed) {
+      return false;
+    }
+    
     this.cancelRenderTask();
     this._renderTask = this._pageProxy.render(renderParams);
     try {

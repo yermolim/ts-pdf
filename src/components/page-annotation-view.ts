@@ -47,9 +47,10 @@ export class PageAnnotationView {
 
   /**free the resources that can prevent garbage to be collected */
   destroy() {
+    this._destroyed = true;
+
     this.remove();
     this._container = null;
-    this._destroyed = true;
 
     this._rendered.forEach(x => {
       x.$onPointerDownAction = null;
@@ -75,12 +76,22 @@ export class PageAnnotationView {
       return;
     }
     
-    await this.renderAnnotationsAsync();
     parent.append(this._container);
+    
+    const renderResult = await this.renderAnnotationsAsync();
+    if (!renderResult) {
+      this._container?.remove();
+      return;
+    }
+
     this._docService.eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
   }
 
-  private async renderAnnotationsAsync(): Promise<boolean> {    
+  private async renderAnnotationsAsync(): Promise<boolean> { 
+    if (this._destroyed) {
+      return false;
+    }
+    
     this.clear();
 
     const annotations = await this._docService.getPageAnnotationsAsync(this._pageInfo.id) || [];
@@ -114,10 +125,17 @@ export class PageAnnotationView {
 
       this._rendered.add(annotation);
       this._svg.append(renderResult.controls);
-      this._container?.append(renderResult.content);
+
+      if (this._destroyed) {
+        return false;
+      }
+      this._container.append(renderResult.content);
     }
 
-    this._container?.append(this._svg);
+    if (this._destroyed) {
+      return false;
+    }
+    this._container.append(this._svg);
     return true;
   }
 
@@ -127,7 +145,7 @@ export class PageAnnotationView {
   }
 
   private onAnnotationSelectionChange = (e: AnnotEvent) => {
-    if (e.detail.type === "select") {
+    if (!this._destroyed && e.detail.type === "select") {
       // toggle "touchAction" to prevent default gestures from interfering with the annotation edit logic
       if (e.detail.annotations?.length) {
         this._container.style.touchAction = "none";
