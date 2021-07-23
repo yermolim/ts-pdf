@@ -8,13 +8,10 @@ import { FlateDecoder } from "../../encoding/flate-decoder";
 
 import { DataParser, ParserResult } from "../../data-parse/data-parser";
 import { ParserInfo } from "../../data-parse/parser-info";
-import { SyncDataParser } from "../../data-parse/sync-data-parser";
 
 import { PdfObject } from "./pdf-object";
 
 export abstract class PdfStream extends PdfObject {
-  static dataParserConstructor: new (data: Uint8Array) => DataParser = SyncDataParser;
-
   /** (Optional) The  type  of  PDF  object  that  this  dictionary  describes */
   readonly Type: StreamType;
 
@@ -69,18 +66,18 @@ export abstract class PdfStream extends PdfObject {
     const decoder = new TextDecoder();
     return decoder.decode(this.decodedStreamData);
   }
-
-  /**
-   * get a new instance of the decoded stream data parser
-   */
-  get streamDataParser(): DataParser {
-    return new PdfStream.dataParserConstructor(this.decodedStreamData);
-  }
   
   protected constructor(type: StreamType) {
     super();
     this.Type = type;
-  }  
+  }
+
+  /**
+   * get a new instance of the decoded stream data parser
+   */
+  async getStreamDataParserAsync(): Promise<DataParser> {
+    return await PdfStream.getDataParserAsync(this.decodedStreamData);
+  }
 
   toArray(cryptInfo?: CryptInfo): Uint8Array {
     

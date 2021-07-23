@@ -457,7 +457,7 @@ export class ImageStream extends PdfStream {
                 throw new Error("Can't parse /Mask value reference: failed to parse image stream");
               }
 
-              const maskParser = maskStream.value.streamDataParser;
+              const maskParser = await maskStream.value.getStreamDataParserAsync();
               const maskValues: number[] = [];
               let j = 0;
               let value: ParserResult<number>;

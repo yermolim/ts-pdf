@@ -1,11 +1,17 @@
+import { codes } from "../../encoding/char-codes";
 import { CryptInfo, IEncodable } from "../../encryption/interfaces";
-import { Reference } from "../../references/reference";
-import { DataParser, ParserResult } from "../../data-parse/data-parser";
+
 import { DateString } from "../strings/date-string";
 import { HexString } from "../strings/hex-string";
 import { LiteralString } from "../strings/literal-string";
+
+import { Reference } from "../../references/reference";
+
+import { DataParser, ParserResult } from "../../data-parse/data-parser";
+import { BgDataParser } from "../../data-parse/bg-data-parser";
+import { SyncDataParser } from "../../data-parse/sync-data-parser";
+
 import { ObjectId } from "./object-id";
-import { codes } from "../../encoding/char-codes";
 
 export abstract class PdfObject implements IEncodable {
   /**action to execute on change of any of the public properties of the current object using proxy */
@@ -100,6 +106,12 @@ export abstract class PdfObject implements IEncodable {
 
   protected constructor() {
     
+  }  
+
+  protected static async getDataParserAsync(data: Uint8Array): Promise<DataParser> {
+    const parser = (await BgDataParser.TryGetParser(data)) ?? 
+      (await SyncDataParser.TryGetParser(data));   
+    return parser;
   }
   
   markAsDeleted(value = true) {

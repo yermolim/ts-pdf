@@ -40,15 +40,12 @@ export class ObjectStream extends PdfStream {
     }
   }
 
-  async getObjectDataAsync(id: number, 
-    dataParserConstructor: new (data: Uint8Array) => DataParser): Promise<ParserInfo> { 
-    dataParserConstructor ||= PdfStream.dataParserConstructor;
-
+  async getObjectDataAsync(id: number): Promise<ParserInfo> {
     if (!this._streamData || !this.N || !this.First) {
       return null;
     }
 
-    const parser = this.streamDataParser;
+    const parser = await this.getStreamDataParserAsync();
 
     const offsetMap = new Map<number, number>();
     let temp: ParserResult<number>;
@@ -124,7 +121,7 @@ export class ObjectStream extends PdfStream {
     }
 
     return {
-      parser: new dataParserConstructor(bytes),
+      parser: await PdfStream.getDataParserAsync(bytes),
       bounds: {
         start: 0, 
         end: bytes.length - 1,

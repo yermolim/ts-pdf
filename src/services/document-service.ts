@@ -3,9 +3,11 @@ import { AnnotationDto } from "../common/annotation";
 import { dictTypes } from "../document/spec-constants";
 import { AuthenticationResult } from "../document/encryption/interfaces";
 
-import { DataParser } from "../document/data-parse/data-parser";
-import { SyncDataParser } from "../document/data-parse/sync-data-parser";
 import { ParserInfo } from "../document/data-parse/parser-info";
+import { DataParser } from "../document/data-parse/data-parser";
+import { BgDataParser } from "../document/data-parse/bg-data-parser";
+import { SyncDataParser } from "../document/data-parse/sync-data-parser";
+
 import { DataUpdater, PageUpdateInfo } from "../document/data-save/data-updater";
 import { DataCryptHandler } from "../document/encryption/data-crypt-handler";
 
@@ -97,8 +99,9 @@ export class DocumentService {
   
   private _initPromise: Promise<void>;
 
-  private readonly _data: Uint8Array; 
-  private readonly _docParser: DataParser;
+  private readonly _data: Uint8Array;
+
+  private _docParser: DataParser;
 
   private _version: string; 
   private _xrefs: XRef[];
@@ -156,7 +159,6 @@ export class DocumentService {
     }
     
     this._data = data;
-    this._docParser = new SyncDataParser(data);    
     
     this._userName = userName;
     this._fontMap = FontDict.newFontMap();  
@@ -428,7 +430,10 @@ export class DocumentService {
     // console.log(this._referenceData);  
   }
 
-  private async initAsync() { 
+  private async initAsync() {
+    this._docParser = (await BgDataParser.TryGetParser(this._data)) ??
+      (await SyncDataParser.TryGetParser(this._data));  
+    
     await this.parseXrefsAsync();
     await this.parseEncryptionAsync();
   }
@@ -595,7 +600,7 @@ export class DocumentService {
     if (!stream) {
       return;
     }
-    const objectParseInfo = await stream.value.getObjectDataAsync(id, SyncDataParser);
+    const objectParseInfo = await stream.value.getObjectDataAsync(id);
     if (objectParseInfo) {
       // the object is found inside the stream
       objectParseInfo.parseInfoGetterAsync = parseInfoGetterAsync;

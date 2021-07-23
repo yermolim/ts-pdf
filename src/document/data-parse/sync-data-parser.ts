@@ -74,13 +74,21 @@ export class SyncDataParser implements DataParser {
    * 
    * @param data byte array (can be the whole PDF file data, a single PDF object data, or decrypted stream data)
    */
-  constructor(data: Uint8Array) {
+  private constructor(data: Uint8Array) {
     if (!data?.length) {
       throw new Error("Data is empty");
     }
     this._data = data;
     this._maxIndex = data.length - 1;
   }  
+  
+  static async TryGetParser(data: Uint8Array): Promise<SyncDataParser> {
+    try {
+      return new SyncDataParser(data);
+    } catch {
+      return null;
+    }
+  }
 
   //#region static check methods
   /**
@@ -704,7 +712,7 @@ export class SyncDataParser implements DataParser {
     return {start, end: arrayEnd};
   }
       
-  async getHexBoundsAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
+  async getHexBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {   
     if (skipEmpty) {
       start = await this.skipEmptyAsync(start);
     }
@@ -720,7 +728,7 @@ export class SyncDataParser implements DataParser {
     return {start, end};
   }  
 
-  async getLiteralBoundsAsync(start: number, skipEmpty = true): Promise<ParserBounds> {       
+  async getLiteralBoundsAtAsync(start: number, skipEmpty = true): Promise<ParserBounds> {       
     if (skipEmpty) {
       start = await this.skipEmptyAsync(start);
     }
@@ -785,7 +793,7 @@ export class SyncDataParser implements DataParser {
       || (float && value === codes.DOT)) {
       numberStr += String.fromCharCode(value);
       value = this._data[++i];
-    };
+    }
 
     return numberStr 
       ? {value: +numberStr, start, end: i - 1}
@@ -809,7 +817,7 @@ export class SyncDataParser implements DataParser {
     while (SyncDataParser.isRegularChar(value)) {
       result += String.fromCharCode(value);
       value = this._data[++i];
-    };
+    }
 
     return result.length > 1 
       ? {value: result, start, end: i - 1}
@@ -830,7 +838,7 @@ export class SyncDataParser implements DataParser {
     while (SyncDataParser.isRegularChar(value)) {
       result += String.fromCharCode(value);
       value = this._data[++i];
-    };
+    }
 
     return result.length !== 0 
       ? {value: result, start, end: i - 1}
@@ -1048,10 +1056,10 @@ export class SyncDataParser implements DataParser {
             skipValueBounds = await this.getArrayBoundsAtAsync(i, false);
             break;
           case valueTypes.STRING_LITERAL:            
-            skipValueBounds = await this.getLiteralBoundsAsync(i, false);
+            skipValueBounds = await this.getLiteralBoundsAtAsync(i, false);
             break; 
           case valueTypes.STRING_HEX: 
-            skipValueBounds = await this.getHexBoundsAsync(i, false);
+            skipValueBounds = await this.getHexBoundsAtAsync(i, false);
             break; 
           case valueTypes.NUMBER:
             const numberParseResult = await this.parseNumberAtAsync(i, true, false);

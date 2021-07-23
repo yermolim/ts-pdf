@@ -39,7 +39,7 @@ export class HexString implements IEncodable {
   static async parseAsync(parser: DataParser, start: number, cryptInfo: CryptInfo = null, 
     skipEmpty = true): Promise<ParserResult<HexString>>  {   
 
-    const bounds = await parser.getHexBoundsAsync(start, skipEmpty);
+    const bounds = await parser.getHexBoundsAtAsync(start, skipEmpty);
     if (!bounds) {
       return null;
     }

@@ -181,7 +181,7 @@ export class UnicodeCmapStream extends PdfStream {
     this._codeRanges.length = 0;
     this._map.clear();
 
-    const parser = this.streamDataParser;
+    const parser = await this.getStreamDataParserAsync();
     const decoder = new TextDecoder("utf-16be");
     
     await this.parseCodeRangesAsync(parser);

@@ -141,9 +141,9 @@ export interface DataParser {
   
   getArrayBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
       
-  getHexBoundsAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
+  getHexBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
-  getLiteralBoundsAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
+  getLiteralBoundsAtAsync(start: number, skipEmpty?: boolean): Promise<ParserBounds>;
 
   //#endregion
 

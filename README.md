@@ -21,6 +21,7 @@ A PDF.js-based PDF viewer written in TypeScript.
     <li>responsive UI, friendly for touch devices</li>
     <li>easy color scheme customization using CSS variables to override the default values</li>
     <li>using Shadow DOM to minimize conflicts with outer HTML</li>
+    <li>page and annotation parsing is run in background threads using web workers to minimize interface lags</li>
 </ul>
 
 <img src="https://raw.githubusercontent.com/yermolim/ts-pdf/main/gifs/main.gif" width="540" height="340">
@@ -164,6 +165,7 @@ The other one is to make your own build of PDF.js.
     <li><del>add text caption support for line annotations</del> added in 0.6.6</li>
     <li><del>add free text annotations support</del> added in 0.7.0</li>
     <li><del>add 'undo' button and corresponding logic</del> added in 0.7.0</li>
+    <li><del>move parser to background thread using web workers</del> added in 0.8.1</li>
     <li>add keyboard shortcuts</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>

@@ -1199,6 +1199,16 @@ class SyncDataParser {
     get maxIndex() {
         return this._maxIndex;
     }
+    static TryGetParser(data) {
+        return __awaiter$1g(this, void 0, void 0, function* () {
+            try {
+                return new SyncDataParser(data);
+            }
+            catch (_a) {
+                return null;
+            }
+        });
+    }
     static isRegularChar(code) {
         if (isNaN(code)) {
             return false;
@@ -1746,7 +1756,7 @@ class SyncDataParser {
             return { start, end: arrayEnd };
         });
     }
-    getHexBoundsAsync(start, skipEmpty = true) {
+    getHexBoundsAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
@@ -1761,7 +1771,7 @@ class SyncDataParser {
             return { start, end };
         });
     }
-    getLiteralBoundsAsync(start, skipEmpty = true) {
+    getLiteralBoundsAtAsync(start, skipEmpty = true) {
         return __awaiter$1g(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
@@ -2048,10 +2058,10 @@ class SyncDataParser {
                             skipValueBounds = yield this.getArrayBoundsAtAsync(i, false);
                             break;
                         case valueTypes.STRING_LITERAL:
-                            skipValueBounds = yield this.getLiteralBoundsAsync(i, false);
+                            skipValueBounds = yield this.getLiteralBoundsAtAsync(i, false);
                             break;
                         case valueTypes.STRING_HEX:
-                            skipValueBounds = yield this.getHexBoundsAsync(i, false);
+                            skipValueBounds = yield this.getHexBoundsAtAsync(i, false);
                             break;
                         case valueTypes.NUMBER:
                             const numberParseResult = yield this.parseNumberAtAsync(i, true, false);
@@ -2798,7 +2808,7 @@ class HexString {
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1d(this, void 0, void 0, function* () {
-            const bounds = yield parser.getHexBoundsAsync(start, skipEmpty);
+            const bounds = yield parser.getHexBoundsAtAsync(start, skipEmpty);
             if (!bounds) {
                 return null;
             }
@@ -2878,7 +2888,7 @@ class LiteralString {
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
         return __awaiter$1c(this, void 0, void 0, function* () {
-            const bounds = yield parser.getLiteralBoundsAsync(start, skipEmpty);
+            const bounds = yield parser.getLiteralBoundsAtAsync(start, skipEmpty);
             if (!bounds) {
                 return;
             }
@@ -3085,6 +3095,12 @@ class PdfObject {
     }
     get deleted() {
         return this._deleted;
+    }
+    static getDataParserAsync(data) {
+        return __awaiter$1b(this, void 0, void 0, function* () {
+            const parser = (yield SyncDataParser.TryGetParser(data));
+            return parser;
+        });
     }
     markAsDeleted(value = true) {
         this._deleted = value;
@@ -4143,8 +4159,10 @@ class PdfStream extends PdfObject {
         const decoder = new TextDecoder();
         return decoder.decode(this.decodedStreamData);
     }
-    get streamDataParser() {
-        return new PdfStream.dataParserConstructor(this.decodedStreamData);
+    getStreamDataParserAsync() {
+        return __awaiter$18(this, void 0, void 0, function* () {
+            return yield PdfStream.getDataParserAsync(this.decodedStreamData);
+        });
     }
     toArray(cryptInfo) {
         const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
@@ -4354,7 +4372,6 @@ class PdfStream extends PdfObject {
         this._decodedStreamData = decodedData;
     }
 }
-PdfStream.dataParserConstructor = SyncDataParser;
 
 var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -5078,7 +5095,7 @@ class ImageStream extends PdfStream {
                                 if (!maskStream) {
                                     throw new Error("Can't parse /Mask value reference: failed to parse image stream");
                                 }
-                                const maskParser = maskStream.value.streamDataParser;
+                                const maskParser = yield maskStream.value.getStreamDataParserAsync();
                                 const maskValues = [];
                                 let j = 0;
                                 let value;
@@ -5366,7 +5383,7 @@ class ObjectMapDict extends PdfDict {
                                 const dictBounds = yield parser.getDictBoundsAtAsync(i);
                                 if (dictBounds) {
                                     const dictParseInfo = {
-                                        parser: new ObjectMapDict.dataParserConstructor(yield parser.sliceCharCodesAsync(dictBounds.start, dictBounds.end)),
+                                        parser: yield PdfDict.getDataParserAsync(yield parser.sliceCharCodesAsync(dictBounds.start, dictBounds.end)),
                                         bounds: {
                                             start: 0,
                                             end: dictBounds.end - dictBounds.start,
@@ -5391,7 +5408,6 @@ class ObjectMapDict extends PdfDict {
         });
     }
 }
-ObjectMapDict.dataParserConstructor = SyncDataParser;
 
 var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -5546,7 +5562,7 @@ class UnicodeCmapStream extends PdfStream {
         return __awaiter$11(this, void 0, void 0, function* () {
             this._codeRanges.length = 0;
             this._map.clear();
-            const parser = this.streamDataParser;
+            const parser = yield this.getStreamDataParserAsync();
             const decoder = new TextDecoder("utf-16be");
             yield this.parseCodeRangesAsync(parser);
             yield this.parseCharMapAsync(parser, decoder);
@@ -12701,7 +12717,7 @@ class AppearanceStreamRenderer {
     }
     drawStreamAsync(stream) {
         return __awaiter$R(this, void 0, void 0, function* () {
-            const parser = stream.streamDataParser;
+            const parser = yield stream.getStreamDataParserAsync();
             const svgElements = [];
             const lastCoord = new Vec2();
             let lastOperator;
@@ -15225,13 +15241,12 @@ class ObjectStream extends PdfStream {
             }
         });
     }
-    getObjectDataAsync(id, dataParserConstructor) {
+    getObjectDataAsync(id) {
         return __awaiter$K(this, void 0, void 0, function* () {
-            dataParserConstructor || (dataParserConstructor = PdfStream.dataParserConstructor);
             if (!this._streamData || !this.N || !this.First) {
                 return null;
             }
-            const parser = this.streamDataParser;
+            const parser = yield this.getStreamDataParserAsync();
             const offsetMap = new Map();
             let temp;
             let objectId;
@@ -15293,7 +15308,7 @@ class ObjectStream extends PdfStream {
                 throw new Error("Object byte array is empty");
             }
             return {
-                parser: new dataParserConstructor(bytes),
+                parser: yield PdfStream.getDataParserAsync(bytes),
                 bounds: {
                     start: 0,
                     end: bytes.length - 1,
@@ -23809,7 +23824,7 @@ class DocumentService {
             if (!stream) {
                 return;
             }
-            const objectParseInfo = yield stream.value.getObjectDataAsync(id, SyncDataParser);
+            const objectParseInfo = yield stream.value.getObjectDataAsync(id);
             if (objectParseInfo) {
                 objectParseInfo.parseInfoGetterAsync = parseInfoGetterAsync;
                 return objectParseInfo;
@@ -23838,7 +23853,6 @@ class DocumentService {
             throw new Error("Event controller is not defined");
         }
         this._data = data;
-        this._docParser = new SyncDataParser(data);
         this._userName = userName;
         this._fontMap = FontDict.newFontMap();
         this._eventService = eventService;
@@ -24087,6 +24101,8 @@ class DocumentService {
     }
     initAsync() {
         return __awaiter$j(this, void 0, void 0, function* () {
+            this._docParser =
+                (yield SyncDataParser.TryGetParser(this._data));
             yield this.parseXrefsAsync();
             yield this.parseEncryptionAsync();
         });

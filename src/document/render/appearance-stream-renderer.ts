@@ -799,7 +799,7 @@ export class AppearanceStreamRenderer {
   }
 
   protected async drawStreamAsync(stream: XFormStream): Promise<SvgElementWithBlendMode[]> {
-    const parser = stream.streamDataParser;    
+    const parser = await stream.getStreamDataParserAsync();    
     const svgElements: SvgElementWithBlendMode[] = [];
 
     const lastCoord = new Vec2();
