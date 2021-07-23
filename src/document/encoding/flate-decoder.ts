@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-bitwise */
-import Pako from "pako";
+import * as Pako from "pako";
 import { FlatePredictor, flatePredictors } from "../spec-constants";
 import { FlateStream } from "./flate-stream";
 import { Stream } from "./stream";

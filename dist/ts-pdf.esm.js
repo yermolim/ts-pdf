@@ -1,5 +1,5 @@
 /**
- * A PDF.js-based PDF viewer written in TypeScript.
+ * ts-pdf (a PDF.js-based PDF viewer written in TypeScript)
  * Copyright (C) 2021-present Volodymyr Yermolenko (yermolim@gmail.com), Chemproject PJSC
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,7 @@ import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getD
 import { Vec2, clamp, Mat3, Vec3, getDistance2D } from 'mathador';
 import { Icons, getCommonStyles, UUID, ByteUtils, LinkedList, DomUtils, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
 export { CustomStampEvent } from 'ts-viewers-core';
-import Pako from 'pako';
+import * as Pako from 'pako';
 import CryptoES from 'crypto-es';
 
 const mainHtml = `
