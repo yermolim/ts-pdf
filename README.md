@@ -165,7 +165,7 @@ The other one is to make your own build of PDF.js.
     <li><del>add text caption support for line annotations</del> added in 0.6.6</li>
     <li><del>add free text annotations support</del> added in 0.7.0</li>
     <li><del>add 'undo' button and corresponding logic</del> added in 0.7.0</li>
-    <li><del>move parser to background thread using web workers</del> added in 0.8.1</li>
+    <li><del>move parser to background thread using web workers</del> added in 0.9.0</li>
     <li>add keyboard shortcuts</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>
