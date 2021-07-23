@@ -1,5 +1,5 @@
 import { Quadruple, Hextuple, BBox, Double, customStampEvent, CustomStampEvent, CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
-export { CustomStampEvent, CustomStampEventDetail } from 'ts-viewers-core';
+export { CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
 import { Mat3, Vec3, Vec2 } from 'mathador';
 
 interface PageInfo {

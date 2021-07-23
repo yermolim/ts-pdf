@@ -96,7 +96,7 @@ export interface TsPdfViewerOptions {
 }
 
 export {AnnotationDto, AnnotEvent, AnnotEventDetail, 
-  CustomStampEvent, CustomStampEventDetail};
+  CustomStampCreationInfo, CustomStampEventDetail};
 
 export class TsPdfViewer {
   //#region private fields

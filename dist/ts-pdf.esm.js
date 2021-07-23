@@ -51,7 +51,6 @@
 import { renderTextLayer, RenderingCancelledException, GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import { Vec2, clamp, Mat3, Vec3, getDistance2D } from 'mathador';
 import { Icons, getCommonStyles, UUID, ByteUtils, LinkedList, DomUtils, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
-export { CustomStampEvent } from 'ts-viewers-core';
 import * as Pako from 'pako';
 import CryptoES from 'crypto-es';
 
