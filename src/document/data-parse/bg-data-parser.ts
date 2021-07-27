@@ -4,39 +4,164 @@ import { ValueType } from "../spec-constants";
 import { workerSrc } from "./bg-data-parser-worker-src";
 import { UUID } from "ts-viewers-core";
 
-export class BgDataParser implements DataParser {
-  private static _workerSrc: string;
-  private static _workerSrcPromise: Promise<string>;
+class BgDataParserWorker {
+  private readonly _worker: Worker;
+  get worker(): Worker {
+    return this._worker;
+  }
 
-  private readonly _data: Uint8Array;  
+  private _parser: BgDataParser;
+
+  constructor(worker: Worker) {
+    this._worker = worker;
+  }
+}
+
+export class BgDataParser implements DataParser {  
+  private static readonly _workersCount = 4;
+  private static readonly _workerTimeout = 1000;
+
+  private static readonly _workerPool: Worker[] = [];
+  private static readonly _freeWorkers = new Set<Worker>();
+  
+  private static _initialized: boolean;
+
+  private _data: ArrayBuffer | ArrayBufferLike;  
   private readonly _maxIndex: number;
   public get maxIndex(): number {
     return this._maxIndex;
   }
 
-  private _worker: Worker;  
-
   private constructor(data: Uint8Array) {
     if (!data?.length) {
       throw new Error("Data is empty");
     }
-    this._data = data;
+    this._data = data.slice().buffer;
     this._maxIndex = data.length - 1;
   }
 
-  static async TryGetParser(data: Uint8Array): Promise<BgDataParser> {
-    const worker = new BgDataParser(data.slice());
+  static tryGetParser(data: Uint8Array): BgDataParser {
     try {
-      await worker.initAsync();
-      return worker;
+      const parser = new BgDataParser(data);
+      return parser;
     } catch (e) {
-      console.log(e.message);
+      console.error(e);
       return null;
     }
   }
 
+  static destroy() {
+    this._freeWorkers.clear();
+    this._workerPool.forEach(x => x.terminate());
+    this._workerPool.length = 0;
+    this._initialized = false;
+  }
+  
+  private static initWorkers() {
+    if (this._initialized) {
+      return;
+    }
+
+    const srcBlob = new Blob([workerSrc], { type: "text/plain;charset=utf-8;" });
+    const srcUri = URL.createObjectURL(srcBlob);
+        
+    for (let i = 0; i < this._workersCount; i++) {
+      const worker = new Worker(srcUri);
+      this._workerPool.push(worker);
+      this._freeWorkers.add(worker);
+    }
+
+    this._initialized = true;
+  };
+  
+  private static async getFreeWorkerFromPoolAsync(): Promise<Worker> {
+    this.initWorkers();
+
+    if (this._freeWorkers.size) {
+      // worker is available. remove it from free list and return to the caller
+      const worker = this._freeWorkers.values().next().value;
+      this._freeWorkers.delete(worker);
+      return worker;
+    }
+
+    const freeWorkerPromise = new Promise<Worker>((resolve, reject) => {
+      const start = performance.now();
+      // worker is not available. start polling until it will be available
+      const interval = setInterval(() => {
+        if (this._freeWorkers.size) {
+          const worker = this._freeWorkers.values().next().value;
+          this._freeWorkers.delete(worker);
+          clearInterval(interval);
+          resolve(worker);
+        }
+        if (performance.now() - start > this._workerTimeout) {
+          clearInterval(interval);
+          reject("Free worker waiting timeout exceeded");
+        }
+      }, 10);
+    });
+    return await freeWorkerPromise;
+  }
+  
+  private static returnWorkerToPool(worker: Worker) {
+    if (this._initialized) {
+      this._freeWorkers.add(worker);
+    }
+  }
+  
+  private static async transferDataToWorker(worker: Worker, buffer: ArrayBuffer | ArrayBufferLike) {
+    const workerPromise = new Promise<void>((resolve, reject) => {
+      worker.onmessage = (e) => {
+        if (e.data.type === "success") {
+          resolve();
+        } else {
+          console.log(e);
+          console.log(e.data);
+
+          reject(e);
+        }
+      };
+      worker.onerror = (e) => {
+        console.log(e);
+        console.log(e.message);        
+        
+        reject(e);
+      };
+      worker.postMessage({name: "data-set", bytes: buffer}, [buffer]);
+    });
+
+    try {
+      await workerPromise;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Error while transfering parser data to worker");
+    }
+  }
+  
+  private static async transferDataFromWorker(worker: Worker): Promise<ArrayBuffer | ArrayBufferLike> {
+    const workerPromise = new Promise<ArrayBuffer | ArrayBufferLike>((resolve, reject) => {
+      worker.onmessage = (e) => {
+        if (e.data.type === "success") {
+          const buffer = e.data.bytes;
+          resolve(buffer);
+        } else {
+          reject(e);
+        }
+      };
+      worker.onerror = (e) => reject(e);
+      worker.postMessage({name: "data-reset"});
+    });
+
+    try {
+      const buffer = await workerPromise;
+      return buffer;
+    } catch {
+      throw new Error("Error while transfering parser data from worker");
+    }
+  }
+
   destroy() {
-    this._worker?.terminate();
+
   }
   
   /**
@@ -47,7 +172,7 @@ export class BgDataParser implements DataParser {
    */
   async getSubParserAsync(start: number, end?: number): Promise<DataParser> {
     const data = await this.execCommandAsync<Uint8Array>("slice-char-codes", [start, end]);
-    const parser = await BgDataParser.TryGetParser(data);
+    const parser = BgDataParser.tryGetParser(data);
     return parser;
   }
   
@@ -266,50 +391,18 @@ export class BgDataParser implements DataParser {
   
   //#endregion
 
-  private async initAsync() {
-    // lazy load worker text url
-    let src: string;
-    if (!BgDataParser._workerSrc) {
-      if (!BgDataParser._workerSrcPromise) {
-        BgDataParser._workerSrcPromise = new Promise<string>((resolve, reject) => {
-          const srcBlob = new Blob([workerSrc], { type: "text/plain" });
-          const srcUri = URL.createObjectURL(srcBlob);
-          BgDataParser._workerSrc = srcUri;
-          resolve(BgDataParser._workerSrc);
-        });
-      }
-      src = await BgDataParser._workerSrcPromise;
-    } else {
-      src = BgDataParser._workerSrc;
-    }
-
-    const dataBuffer = this._data.buffer;
-    const worker = new Worker(src);
-    const workerPromise = new Promise<void>((resolve, reject) => {
-      worker.onmessage = (e) => {
-        if (e.data.type === "success") {
-          this._worker = worker;
-          resolve();
-        } else {
-          reject(e);
-        }
-      };
-      worker.onerror = (e) => reject(e);
-      worker.postMessage({name: "init", bytes: dataBuffer}, [dataBuffer]);
-    });
-    await workerPromise;
-  }
-
   private async execCommandAsync<T>(commandName: string, commandArgs: any[] = []): Promise<T> {
-    if (!this._worker) {
-      throw new Error("Background worker is not initialized!");
-    }
+    const dataBuffer = this._data;
+    
+    const worker = await BgDataParser.getFreeWorkerFromPoolAsync();
+
+    await BgDataParser.transferDataToWorker(worker, dataBuffer);
 
     const commandId = UUID.getRandomUuid();
-    const promise = new Promise<T>((resolve, reject) => {
-      this._worker.onmessage = (e) => {
-        this._worker.onerror = null;
-        this._worker.onmessage = null;
+    const commandResultPromise = new Promise<T>((resolve, reject) => {
+      worker.onmessage = (e) => {
+        worker.onerror = null;
+        worker.onmessage = null;
         if (e.data.type === "error") {
           reject(`Background worker error: ${e.data.message}`);       
         } else if (e.data.id !== commandId) {
@@ -318,14 +411,20 @@ export class BgDataParser implements DataParser {
           resolve(e.data.result);
         }
       };
-      this._worker.onerror = (e) => {
-        this._worker.onerror = null;
-        this._worker.onmessage = null;
+      worker.onerror = (e) => {
+        worker.onerror = null;
+        worker.onmessage = null;
         reject(`Background worker error: ${e.message}`);
       };
     });
-    this._worker.postMessage({id: commandId, name: commandName, args: commandArgs});
+    worker.postMessage({id: commandId, name: commandName, args: commandArgs});
+    const result = await commandResultPromise; 
 
-    return await promise;
+    const returnedBuffer = await BgDataParser.transferDataFromWorker(worker);
+    this._data = returnedBuffer;    
+
+    BgDataParser.returnWorkerToPool(worker);
+
+    return result;
   }
 }

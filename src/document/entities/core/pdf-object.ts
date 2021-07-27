@@ -109,8 +109,8 @@ export abstract class PdfObject implements IEncodable {
   }  
 
   protected static async getDataParserAsync(data: Uint8Array): Promise<DataParser> {
-    const parser = (await BgDataParser.TryGetParser(data)) ?? 
-      (await SyncDataParser.TryGetParser(data));   
+    const parser = BgDataParser.tryGetParser(data) ?? 
+      SyncDataParser.tryGetParser(data);   
     return parser;
   }
   

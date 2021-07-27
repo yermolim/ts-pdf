@@ -193,6 +193,7 @@ export class DocumentService {
       this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
   
       this._docParser?.destroy();
+      BgDataParser.destroy();
     });
   }
 
@@ -431,8 +432,8 @@ export class DocumentService {
   }
 
   private async initAsync() {
-    this._docParser = (await BgDataParser.TryGetParser(this._data)) ??
-      (await SyncDataParser.TryGetParser(this._data));  
+    this._docParser = BgDataParser.tryGetParser(this._data) ??
+      SyncDataParser.tryGetParser(this._data);  
     
     await this.parseXrefsAsync();
     await this.parseEncryptionAsync();

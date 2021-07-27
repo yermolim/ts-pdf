@@ -327,8 +327,8 @@ function processData(data) {
   const id = data.id;
   const name = data.name;
 
-  if (name === "init") {
-    if (data.bytes) {
+  if (name === "data-set") {
+    if (data.bytes) {      
       const dataBytesArray = new Uint8Array(data.bytes);
       if (dataBytesArray?.length) {
         _data = dataBytesArray;
@@ -338,7 +338,15 @@ function processData(data) {
       }
     }
     sendResponse({id, name, type: "error", 
-      message: "init: byte array is null or empty"});
+      message: "data-set: byte array is null or empty"});
+    return; 
+  }
+  
+  if (name === "data-reset") {
+    const buffer = _data.buffer;
+    _data = new Uint8Array();
+    _maxIndex = 0;
+    sendResponse({id, name, type: "success", bytes: buffer}, [buffer]);
     return; 
   }
 
