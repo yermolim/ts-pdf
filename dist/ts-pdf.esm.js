@@ -2433,10 +2433,23 @@ var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arg
 };
 class BgDataParser {
     constructor(data) {
+        this._workerOnMessageHandlers = new Set();
+        this._commandsInProgress = 0;
+        this.onWorkerMessage = (e) => {
+            for (const handler of this._workerOnMessageHandlers) {
+                handler(e);
+            }
+        };
+        this.onWorkerError = (e) => {
+            throw new Error(`Background worker error: ${e.message}`);
+        };
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
         }
-        this._data = data.slice().buffer;
+        if (!BgDataParser._workerSrc) {
+            throw new Error("Worker source is not initialized");
+        }
+        this._data = data.buffer;
         this._maxIndex = data.length - 1;
     }
     get maxIndex() {
@@ -2456,28 +2469,17 @@ class BgDataParser {
         this._freeWorkers.clear();
         this._workerPool.forEach(x => x.terminate());
         this._workerPool.length = 0;
-        this._initialized = false;
     }
-    static initWorkers() {
-        if (this._initialized) {
-            return;
-        }
-        const srcBlob = new Blob([workerSrc], { type: "text/plain;charset=utf-8;" });
-        const srcUri = URL.createObjectURL(srcBlob);
-        for (let i = 0; i < this._workersCount; i++) {
-            const worker = new Worker(srcUri);
-            this._workerPool.push(worker);
-            this._freeWorkers.add(worker);
-        }
-        this._initialized = true;
-    }
-    ;
     static getFreeWorkerFromPoolAsync() {
         return __awaiter$1h(this, void 0, void 0, function* () {
-            this.initWorkers();
             if (this._freeWorkers.size) {
                 const worker = this._freeWorkers.values().next().value;
                 this._freeWorkers.delete(worker);
+                return worker;
+            }
+            if (this._workerPool.length < this._maxWorkersCount) {
+                const worker = new Worker(this._workerSrc);
+                this._workerPool.push(worker);
                 return worker;
             }
             const freeWorkerPromise = new Promise((resolve, reject) => {
@@ -2493,15 +2495,13 @@ class BgDataParser {
                         clearInterval(interval);
                         reject("Free worker waiting timeout exceeded");
                     }
-                }, 10);
+                }, 20);
             });
             return yield freeWorkerPromise;
         });
     }
     static returnWorkerToPool(worker) {
-        if (this._initialized) {
-            this._freeWorkers.add(worker);
-        }
+        this._freeWorkers.add(worker);
     }
     static transferDataToWorker(worker, buffer) {
         return __awaiter$1h(this, void 0, void 0, function* () {
@@ -2551,7 +2551,7 @@ class BgDataParser {
                 const buffer = yield workerPromise;
                 return buffer;
             }
-            catch (_e) {
+            catch (_a) {
                 throw new Error("Error while transfering parser data from worker");
             }
         });
@@ -2748,61 +2748,80 @@ class BgDataParser {
             return result;
         });
     }
+    releaseWorkerAsync(worker) {
+        return __awaiter$1h(this, void 0, void 0, function* () {
+            this._workerPromise = null;
+            const returnedBuffer = yield BgDataParser.transferDataFromWorker(worker);
+            this._data = returnedBuffer;
+            worker.onmessage = null;
+            worker.onerror = null;
+            BgDataParser.returnWorkerToPool(worker);
+            this._prevWorkerReleasePromise = null;
+        });
+    }
+    getWorkerAsync() {
+        return __awaiter$1h(this, void 0, void 0, function* () {
+            if (this._prevWorkerReleasePromise) {
+                yield this._prevWorkerReleasePromise;
+            }
+            if (!this._workerPromise) {
+                this._workerPromise = new Promise((resolve, reject) => __awaiter$1h(this, void 0, void 0, function* () {
+                    const dataBuffer = this._data;
+                    const freeWorker = yield BgDataParser.getFreeWorkerFromPoolAsync();
+                    yield BgDataParser.transferDataToWorker(freeWorker, dataBuffer);
+                    freeWorker.onmessage = this.onWorkerMessage;
+                    freeWorker.onerror = this.onWorkerError;
+                    const workerReleaseInterval = setInterval(() => __awaiter$1h(this, void 0, void 0, function* () {
+                        if (this._commandsInProgress > 0 || this._workerOnMessageHandlers.size) {
+                            return;
+                        }
+                        clearInterval(workerReleaseInterval);
+                        this._prevWorkerReleasePromise = this.releaseWorkerAsync(freeWorker);
+                    }), 50);
+                    resolve(freeWorker);
+                }));
+            }
+            const worker = yield this._workerPromise;
+            return worker;
+        });
+    }
     execCommandAsync(commandName, commandArgs = []) {
         return __awaiter$1h(this, void 0, void 0, function* () {
-            const dataBuffer = this._data;
-            const a = performance.now();
-            const worker = yield BgDataParser.getFreeWorkerFromPoolAsync();
-            yield BgDataParser.transferDataToWorker(worker, dataBuffer);
-            BgDataParser._a += performance.now() - a;
-            console.log("A");
-            console.log(BgDataParser._a);
-            const b = performance.now();
+            this._commandsInProgress++;
+            const worker = yield this.getWorkerAsync();
             const commandId = UUID.getRandomUuid();
             const commandResultPromise = new Promise((resolve, reject) => {
-                worker.onmessage = (e) => {
-                    worker.onerror = null;
-                    worker.onmessage = null;
+                const onMessage = (e) => {
+                    if (e.data.id !== commandId) {
+                        console.log(e.data.id);
+                        return;
+                    }
+                    this._workerOnMessageHandlers.delete(onMessage);
                     if (e.data.type === "error") {
                         reject(`Background worker error: ${e.data.message}`);
-                    }
-                    else if (e.data.id !== commandId) {
-                        reject(`Wrong response id: '${e.data.id}' instead of '${commandId}'`);
                     }
                     else {
                         resolve(e.data.result);
                     }
                 };
-                worker.onerror = (e) => {
-                    worker.onerror = null;
-                    worker.onmessage = null;
-                    reject(`Background worker error: ${e.message}`);
-                };
+                this._workerOnMessageHandlers.add(onMessage);
             });
             worker.postMessage({ id: commandId, name: commandName, args: commandArgs });
             const result = yield commandResultPromise;
-            BgDataParser._b += performance.now() - b;
-            console.log("B");
-            console.log(BgDataParser._b);
-            const c = performance.now();
-            const returnedBuffer = yield BgDataParser.transferDataFromWorker(worker);
-            this._data = returnedBuffer;
-            BgDataParser.returnWorkerToPool(worker);
-            BgDataParser._c += performance.now() - c;
-            console.log("C");
-            console.log(BgDataParser._c);
+            this._commandsInProgress--;
             return result;
         });
     }
 }
-BgDataParser._workersCount = 4;
+BgDataParser._maxWorkersCount = navigator.hardwareConcurrency || 4;
 BgDataParser._workerTimeout = 1000;
+BgDataParser._workerSrc = (() => {
+    const srcBlob = new Blob([workerSrc], { type: "text/plain;charset=utf-8;" });
+    const srcUri = URL.createObjectURL(srcBlob);
+    return srcUri;
+})();
 BgDataParser._workerPool = [];
 BgDataParser._freeWorkers = new Set();
-BgDataParser._a = 0;
-BgDataParser._b = 0;
-BgDataParser._c = 0;
-BgDataParser._d = 0;
 
 const codes = {
     NULL: 0,
@@ -2973,7 +2992,7 @@ class SyncDataParser {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
         }
-        this._data = data.slice();
+        this._data = data;
         this._maxIndex = data.length - 1;
     }
     get maxIndex() {
@@ -4879,7 +4898,7 @@ class PdfObject {
     static getDataParserAsync(data) {
         var _a;
         return __awaiter$1b(this, void 0, void 0, function* () {
-            const parser = (_a = BgDataParser.tryGetParser(data)) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(data);
+            const parser = (_a = BgDataParser.tryGetParser(data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(data);
             return parser;
         });
     }
@@ -25893,7 +25912,7 @@ class DocumentService {
     initAsync() {
         var _a;
         return __awaiter$j(this, void 0, void 0, function* () {
-            this._docParser = (_a = BgDataParser.tryGetParser(this._data)) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(this._data);
+            this._docParser = (_a = BgDataParser.tryGetParser(this._data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(this._data);
             yield this.parseXrefsAsync();
             yield this.parseEncryptionAsync();
         });

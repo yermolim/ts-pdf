@@ -78,7 +78,7 @@ export class SyncDataParser implements DataParser {
     if (!data?.length) {
       throw new Error("Data is empty");
     }
-    this._data = data.slice();
+    this._data = data;
     this._maxIndex = data.length - 1;
   }  
   

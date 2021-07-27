@@ -432,7 +432,7 @@ export class DocumentService {
   }
 
   private async initAsync() {
-    this._docParser = BgDataParser.tryGetParser(this._data) ??
+    this._docParser = BgDataParser.tryGetParser(this._data.slice()) ??
       SyncDataParser.tryGetParser(this._data);  
     
     await this.parseXrefsAsync();
