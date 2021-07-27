@@ -1350,8 +1350,8 @@ function processData(data) {
   const id = data.id;
   const name = data.name;
 
-  if (name === "init") {
-    if (data.bytes) {
+  if (name === "data-set") {
+    if (data.bytes) {      
       const dataBytesArray = new Uint8Array(data.bytes);
       if (dataBytesArray?.length) {
         _data = dataBytesArray;
@@ -1361,7 +1361,15 @@ function processData(data) {
       }
     }
     sendResponse({id, name, type: "error", 
-      message: "init: byte array is null or empty"});
+      message: "data-set: byte array is null or empty"});
+    return; 
+  }
+  
+  if (name === "data-reset") {
+    const buffer = _data.buffer;
+    _data = new Uint8Array();
+    _maxIndex = 0;
+    sendResponse({id, name, type: "success", bytes: buffer}, [buffer]);
     return; 
   }
 
@@ -2425,36 +2433,135 @@ var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arg
 };
 class BgDataParser {
     constructor(data) {
+        this._workerOnMessageHandlers = new Set();
+        this._commandsInProgress = 0;
+        this.onWorkerMessage = (e) => {
+            for (const handler of this._workerOnMessageHandlers) {
+                handler(e);
+            }
+        };
+        this.onWorkerError = (e) => {
+            throw new Error(`Background worker error: ${e.message}`);
+        };
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
             throw new Error("Data is empty");
         }
-        this._data = data;
+        if (!BgDataParser._workerSrc) {
+            throw new Error("Worker source is not initialized");
+        }
+        this._data = data.buffer;
         this._maxIndex = data.length - 1;
     }
     get maxIndex() {
         return this._maxIndex;
     }
-    static TryGetParser(data) {
+    static tryGetParser(data) {
+        try {
+            const parser = new BgDataParser(data);
+            return parser;
+        }
+        catch (e) {
+            console.error(e);
+            return null;
+        }
+    }
+    static destroy() {
+        this._freeWorkers.clear();
+        this._workerPool.forEach(x => x.terminate());
+        this._workerPool.length = 0;
+    }
+    static getFreeWorkerFromPoolAsync() {
         return __awaiter$1h(this, void 0, void 0, function* () {
-            const worker = new BgDataParser(data.slice());
-            try {
-                yield worker.initAsync();
+            if (this._freeWorkers.size) {
+                const worker = this._freeWorkers.values().next().value;
+                this._freeWorkers.delete(worker);
                 return worker;
             }
+            if (this._workerPool.length < this._maxWorkersCount) {
+                const worker = new Worker(this._workerSrc);
+                this._workerPool.push(worker);
+                return worker;
+            }
+            const freeWorkerPromise = new Promise((resolve, reject) => {
+                const start = performance.now();
+                const interval = setInterval(() => {
+                    if (this._freeWorkers.size) {
+                        const worker = this._freeWorkers.values().next().value;
+                        this._freeWorkers.delete(worker);
+                        clearInterval(interval);
+                        resolve(worker);
+                    }
+                    if (performance.now() - start > this._workerTimeout) {
+                        clearInterval(interval);
+                        reject("Free worker waiting timeout exceeded");
+                    }
+                }, 20);
+            });
+            return yield freeWorkerPromise;
+        });
+    }
+    static returnWorkerToPool(worker) {
+        this._freeWorkers.add(worker);
+    }
+    static transferDataToWorker(worker, buffer) {
+        return __awaiter$1h(this, void 0, void 0, function* () {
+            const workerPromise = new Promise((resolve, reject) => {
+                worker.onmessage = (e) => {
+                    if (e.data.type === "success") {
+                        resolve();
+                    }
+                    else {
+                        console.log(e);
+                        console.log(e.data);
+                        reject(e);
+                    }
+                };
+                worker.onerror = (e) => {
+                    console.log(e);
+                    console.log(e.message);
+                    reject(e);
+                };
+                worker.postMessage({ name: "data-set", bytes: buffer }, [buffer]);
+            });
+            try {
+                yield workerPromise;
+            }
             catch (e) {
-                console.log(e.message);
-                return null;
+                console.error(e);
+                throw new Error("Error while transfering parser data to worker");
+            }
+        });
+    }
+    static transferDataFromWorker(worker) {
+        return __awaiter$1h(this, void 0, void 0, function* () {
+            const workerPromise = new Promise((resolve, reject) => {
+                worker.onmessage = (e) => {
+                    if (e.data.type === "success") {
+                        const buffer = e.data.bytes;
+                        resolve(buffer);
+                    }
+                    else {
+                        reject(e);
+                    }
+                };
+                worker.onerror = (e) => reject(e);
+                worker.postMessage({ name: "data-reset" });
+            });
+            try {
+                const buffer = yield workerPromise;
+                return buffer;
+            }
+            catch (_a) {
+                throw new Error("Error while transfering parser data from worker");
             }
         });
     }
     destroy() {
-        var _a;
-        (_a = this._worker) === null || _a === void 0 ? void 0 : _a.terminate();
     }
     getSubParserAsync(start, end) {
         return __awaiter$1h(this, void 0, void 0, function* () {
             const data = yield this.execCommandAsync("slice-char-codes", [start, end]);
-            const parser = yield BgDataParser.TryGetParser(data);
+            const parser = BgDataParser.tryGetParser(data);
             return parser;
         });
     }
@@ -2641,72 +2748,80 @@ class BgDataParser {
             return result;
         });
     }
-    initAsync() {
+    releaseWorkerAsync(worker) {
         return __awaiter$1h(this, void 0, void 0, function* () {
-            let src;
-            if (!BgDataParser._workerSrc) {
-                if (!BgDataParser._workerSrcPromise) {
-                    BgDataParser._workerSrcPromise = new Promise((resolve, reject) => {
-                        const srcBlob = new Blob([workerSrc], { type: "text/plain" });
-                        const srcUri = URL.createObjectURL(srcBlob);
-                        BgDataParser._workerSrc = srcUri;
-                        resolve(BgDataParser._workerSrc);
-                    });
-                }
-                src = yield BgDataParser._workerSrcPromise;
+            this._workerPromise = null;
+            const returnedBuffer = yield BgDataParser.transferDataFromWorker(worker);
+            this._data = returnedBuffer;
+            worker.onmessage = null;
+            worker.onerror = null;
+            BgDataParser.returnWorkerToPool(worker);
+            this._prevWorkerReleasePromise = null;
+        });
+    }
+    getWorkerAsync() {
+        return __awaiter$1h(this, void 0, void 0, function* () {
+            if (this._prevWorkerReleasePromise) {
+                yield this._prevWorkerReleasePromise;
             }
-            else {
-                src = BgDataParser._workerSrc;
+            if (!this._workerPromise) {
+                this._workerPromise = new Promise((resolve, reject) => __awaiter$1h(this, void 0, void 0, function* () {
+                    const dataBuffer = this._data;
+                    const freeWorker = yield BgDataParser.getFreeWorkerFromPoolAsync();
+                    yield BgDataParser.transferDataToWorker(freeWorker, dataBuffer);
+                    freeWorker.onmessage = this.onWorkerMessage;
+                    freeWorker.onerror = this.onWorkerError;
+                    const workerReleaseInterval = setInterval(() => __awaiter$1h(this, void 0, void 0, function* () {
+                        if (this._commandsInProgress > 0 || this._workerOnMessageHandlers.size) {
+                            return;
+                        }
+                        clearInterval(workerReleaseInterval);
+                        this._prevWorkerReleasePromise = this.releaseWorkerAsync(freeWorker);
+                    }), 50);
+                    resolve(freeWorker);
+                }));
             }
-            const dataBuffer = this._data.buffer;
-            const worker = new Worker(src);
-            const workerPromise = new Promise((resolve, reject) => {
-                worker.onmessage = (e) => {
-                    if (e.data.type === "success") {
-                        this._worker = worker;
-                        resolve();
-                    }
-                    else {
-                        reject(e);
-                    }
-                };
-                worker.onerror = (e) => reject(e);
-                worker.postMessage({ name: "init", bytes: dataBuffer }, [dataBuffer]);
-            });
-            yield workerPromise;
+            const worker = yield this._workerPromise;
+            return worker;
         });
     }
     execCommandAsync(commandName, commandArgs = []) {
         return __awaiter$1h(this, void 0, void 0, function* () {
-            if (!this._worker) {
-                throw new Error("Background worker is not initialized!");
-            }
+            this._commandsInProgress++;
+            const worker = yield this.getWorkerAsync();
             const commandId = UUID.getRandomUuid();
-            const promise = new Promise((resolve, reject) => {
-                this._worker.onmessage = (e) => {
-                    this._worker.onerror = null;
-                    this._worker.onmessage = null;
+            const commandResultPromise = new Promise((resolve, reject) => {
+                const onMessage = (e) => {
+                    if (e.data.id !== commandId) {
+                        console.log(e.data.id);
+                        return;
+                    }
+                    this._workerOnMessageHandlers.delete(onMessage);
                     if (e.data.type === "error") {
                         reject(`Background worker error: ${e.data.message}`);
-                    }
-                    else if (e.data.id !== commandId) {
-                        reject(`Wrong response id: '${e.data.id}' instead of '${commandId}'`);
                     }
                     else {
                         resolve(e.data.result);
                     }
                 };
-                this._worker.onerror = (e) => {
-                    this._worker.onerror = null;
-                    this._worker.onmessage = null;
-                    reject(`Background worker error: ${e.message}`);
-                };
+                this._workerOnMessageHandlers.add(onMessage);
             });
-            this._worker.postMessage({ id: commandId, name: commandName, args: commandArgs });
-            return yield promise;
+            worker.postMessage({ id: commandId, name: commandName, args: commandArgs });
+            const result = yield commandResultPromise;
+            this._commandsInProgress--;
+            return result;
         });
     }
 }
+BgDataParser._maxWorkersCount = navigator.hardwareConcurrency || 4;
+BgDataParser._workerTimeout = 1000;
+BgDataParser._workerSrc = (() => {
+    const srcBlob = new Blob([workerSrc], { type: "text/plain;charset=utf-8;" });
+    const srcUri = URL.createObjectURL(srcBlob);
+    return srcUri;
+})();
+BgDataParser._workerPool = [];
+BgDataParser._freeWorkers = new Set();
 
 const codes = {
     NULL: 0,
@@ -2883,15 +2998,15 @@ class SyncDataParser {
     get maxIndex() {
         return this._maxIndex;
     }
-    static TryGetParser(data) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
-            try {
-                return new SyncDataParser(data);
-            }
-            catch (_a) {
-                return null;
-            }
-        });
+    static tryGetParser(data) {
+        try {
+            const parser = new SyncDataParser(data);
+            return parser;
+        }
+        catch (e) {
+            console.error(e);
+            return null;
+        }
     }
     static isRegularChar(code) {
         if (isNaN(code)) {
@@ -4783,7 +4898,7 @@ class PdfObject {
     static getDataParserAsync(data) {
         var _a;
         return __awaiter$1b(this, void 0, void 0, function* () {
-            const parser = (_a = (yield BgDataParser.TryGetParser(data))) !== null && _a !== void 0 ? _a : (yield SyncDataParser.TryGetParser(data));
+            const parser = (_a = BgDataParser.tryGetParser(data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(data);
             return parser;
         });
     }
@@ -25603,6 +25718,7 @@ class DocumentService {
             this._eventService.removeListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
             this._eventService.removeListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
             (_a = this._docParser) === null || _a === void 0 ? void 0 : _a.destroy();
+            BgDataParser.destroy();
         });
     }
     tryAuthenticate(password = "") {
@@ -25796,7 +25912,7 @@ class DocumentService {
     initAsync() {
         var _a;
         return __awaiter$j(this, void 0, void 0, function* () {
-            this._docParser = (_a = (yield BgDataParser.TryGetParser(this._data))) !== null && _a !== void 0 ? _a : (yield SyncDataParser.TryGetParser(this._data));
+            this._docParser = (_a = BgDataParser.tryGetParser(this._data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(this._data);
             yield this.parseXrefsAsync();
             yield this.parseEncryptionAsync();
         });

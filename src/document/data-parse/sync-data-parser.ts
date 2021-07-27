@@ -82,10 +82,12 @@ export class SyncDataParser implements DataParser {
     this._maxIndex = data.length - 1;
   }  
   
-  static async TryGetParser(data: Uint8Array): Promise<SyncDataParser> {
+  static tryGetParser(data: Uint8Array): SyncDataParser {
     try {
-      return new SyncDataParser(data);
-    } catch {
+      const parser = new SyncDataParser(data);
+      return parser;
+    } catch (e) {
+      console.error(e);
       return null;
     }
   }
