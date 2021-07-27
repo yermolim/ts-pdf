@@ -15523,7 +15523,16 @@ class AnnotationDict extends PdfDict {
                             break;
                         case "/Contents":
                         case "/NM":
-                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            const contentsEntryType = yield parser.getValueTypeAtAsync(i);
+                            if (contentsEntryType === valueTypes.STRING_LITERAL) {
+                                i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            }
+                            else if (contentsEntryType === valueTypes.STRING_HEX) {
+                                i = yield this.parseHexPropAsync(name, parser, i, parseInfo.cryptInfo);
+                            }
+                            else {
+                                i = yield parser.skipToNextNameAsync(i, end - 1);
+                            }
                             break;
                         case "/M":
                             const date = yield DateString.parseAsync(parser, i, parseInfo.cryptInfo);

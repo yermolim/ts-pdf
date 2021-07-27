@@ -428,7 +428,14 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
           
           case "/Contents":
           case "/NM":
-            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+            const contentsEntryType = await parser.getValueTypeAtAsync(i);
+            if (contentsEntryType === valueTypes.STRING_LITERAL) {
+              i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+            } else if (contentsEntryType === valueTypes.STRING_HEX) {
+              i = await this.parseHexPropAsync(name, parser, i, parseInfo.cryptInfo);
+            } else {
+              i = await parser.skipToNextNameAsync(i, end - 1);
+            }
             break;
           
           case "/M":
