@@ -6,7 +6,7 @@ import { UUID } from "ts-viewers-core";
 
 export class BgDataParser implements DataParser {  
   private static readonly _maxWorkersCount = navigator.hardwareConcurrency || 4;
-  private static readonly _workerTimeout = 1000;
+  private static readonly _workerTimeout = 60 * 1000;
 
   private static readonly _workerSrc = (() => {    
     const srcBlob = new Blob([workerSrc], { type: "text/plain;charset=utf-8;" });
@@ -437,8 +437,8 @@ export class BgDataParser implements DataParser {
     const commandResultPromise = new Promise<T>((resolve, reject) => {
       const onMessage = (e: MessageEvent<any>) => { 
         if (e.data.id !== commandId) {
-          console.log(e.data.id);
-          
+          // DEBUG
+          // console.log(e.data.id);          
           return;
         }
         this._workerOnMessageHandlers.delete(onMessage);

@@ -2793,7 +2793,6 @@ class BgDataParser {
             const commandResultPromise = new Promise((resolve, reject) => {
                 const onMessage = (e) => {
                     if (e.data.id !== commandId) {
-                        console.log(e.data.id);
                         return;
                     }
                     this._workerOnMessageHandlers.delete(onMessage);
@@ -2814,7 +2813,7 @@ class BgDataParser {
     }
 }
 BgDataParser._maxWorkersCount = navigator.hardwareConcurrency || 4;
-BgDataParser._workerTimeout = 1000;
+BgDataParser._workerTimeout = 60 * 1000;
 BgDataParser._workerSrc = (() => {
     const srcBlob = new Blob([workerSrc], { type: "text/plain;charset=utf-8;" });
     const srcUri = URL.createObjectURL(srcBlob);
@@ -26121,24 +26120,19 @@ class DocumentService {
                     }
                 }
                 annotIdsByPageId.set(page.ref.id, annotationIds);
-                const annotations = [];
-                const processAnnotation = (objectId) => new Promise((resolve, reject) => {
-                    setTimeout(() => __awaiter$j(this, void 0, void 0, function* () {
-                        const info = yield this.getObjectParseInfoAsync(objectId.id);
-                        info.rect = page.MediaBox;
-                        const annot = yield AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
-                        resolve(annot);
-                    }), 0);
-                });
-                for (const objectId of annotationIds) {
-                    const annot = yield processAnnotation(objectId);
+                const processAnnotation = (objectId) => __awaiter$j(this, void 0, void 0, function* () {
+                    const info = yield this.getObjectParseInfoAsync(objectId.id);
+                    info.rect = page.MediaBox;
+                    const annot = yield AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
                     if (annot) {
-                        annotations.push(annot);
                         annot.$pageId = page.id;
                         annot.$onEditAction = this.getOnAnnotEditAction(annot);
                         annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
                     }
-                }
+                    return annot;
+                });
+                const annotations = (yield Promise.all(annotationIds.map(x => processAnnotation(x))))
+                    .filter(x => x);
                 annotationMap.set(page.id, annotations);
             }
             this._annotIdsByPageId = annotIdsByPageId;
@@ -29547,12 +29541,11 @@ class PageAnnotationView {
                 return false;
             }
             this.clear();
-            const annotations = (yield this._docService.getPageAnnotationsAsync(this._pageInfo.id)) || [];
-            for (let i = 0; i < annotations.length || 0; i++) {
-                const annotation = annotations[i];
-                if (annotation.deleted) {
-                    continue;
-                }
+            const annotations = (yield this._docService
+                .getPageAnnotationsAsync(this._pageInfo.id))
+                .filter(x => !x.deleted)
+                || [];
+            const processAnnotation = (annotation) => __awaiter$2(this, void 0, void 0, function* () {
                 let renderResult;
                 if (!this._rendered.has(annotation)) {
                     annotation.$onPointerDownAction = (e) => {
@@ -29569,16 +29562,13 @@ class PageAnnotationView {
                 else {
                     renderResult = annotation.lastRenderResult || (yield annotation.renderAsync(this._pageInfo));
                 }
-                if (!renderResult) {
-                    continue;
+                if (renderResult && !this._destroyed) {
+                    this._rendered.add(annotation);
+                    this._svg.append(renderResult.controls);
+                    this._container.append(renderResult.content);
                 }
-                this._rendered.add(annotation);
-                this._svg.append(renderResult.controls);
-                if (this._destroyed) {
-                    return false;
-                }
-                this._container.append(renderResult.content);
-            }
+            });
+            yield Promise.all(annotations.map(x => processAnnotation(x)));
             if (this._destroyed) {
                 return false;
             }

@@ -727,28 +727,22 @@ export class DocumentService {
         }        
       }
       annotIdsByPageId.set(page.ref.id, annotationIds);
-
-      const annotations: AnnotationDict[] = [];   
-      // fake async function to keep user interface responsible. TODO: remove when it will be unneeded   
-      const processAnnotation = (objectId: ObjectId) => 
-        new Promise<AnnotationDict>((resolve, reject) => {
-          setTimeout(async () => {          
-            const info = await this.getObjectParseInfoAsync(objectId.id);  
-            info.rect = page.MediaBox;
-            const annot = await AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
-            resolve(annot);
-          }, 0);
-        });
-      for (const objectId of annotationIds) {
-        const annot = await processAnnotation(objectId);
+        
+      const processAnnotation = async (objectId: ObjectId) => {
+        const info = await this.getObjectParseInfoAsync(objectId.id);
+        info.rect = page.MediaBox;
+        const annot = await AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
         if (annot) {
-          annotations.push(annot);
           annot.$pageId = page.id;
           annot.$onEditAction = this.getOnAnnotEditAction(annot);
           annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
         }
-      }
-      
+        return annot;
+      };
+  
+      const annotations = (await Promise.all(
+        annotationIds.map(x => processAnnotation(x))))
+        .filter(x => x);
       annotationMap.set(page.id, annotations);
     }
 

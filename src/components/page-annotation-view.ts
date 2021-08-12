@@ -6,6 +6,8 @@ import { PageInfo } from "../common/page";
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
   from "../services/document-service";
+  
+import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
   private readonly _pageInfo: PageInfo;
@@ -94,14 +96,12 @@ export class PageAnnotationView {
     
     this.clear();
 
-    const annotations = await this._docService.getPageAnnotationsAsync(this._pageInfo.id) || [];
+    const annotations = (await this._docService
+      .getPageAnnotationsAsync(this._pageInfo.id))
+      .filter(x => !x.deleted)
+      || [];
 
-    for (let i = 0; i < annotations.length || 0; i++) {
-      const annotation = annotations[i];
-      if (annotation.deleted) {
-        continue;
-      }
-
+    const processAnnotation = async (annotation: AnnotationDict) => {
       let renderResult: AnnotationRenderResult;
       if (!this._rendered.has(annotation)) {
         // attach events to the annotation
@@ -119,22 +119,19 @@ export class PageAnnotationView {
         renderResult = annotation.lastRenderResult || await annotation.renderAsync(this._pageInfo);
       }   
 
-      if (!renderResult) {
-        continue;
-      }      
-
-      this._rendered.add(annotation);
-      this._svg.append(renderResult.controls);
-
-      if (this._destroyed) {
-        return false;
+      if (renderResult && !this._destroyed) {
+        this._rendered.add(annotation);
+        this._svg.append(renderResult.controls);
+        this._container.append(renderResult.content);
       }
-      this._container.append(renderResult.content);
-    }
+    }; 
+
+    await Promise.all(annotations.map(x => processAnnotation(x)));
 
     if (this._destroyed) {
       return false;
     }
+    
     this._container.append(this._svg);
     return true;
   }
