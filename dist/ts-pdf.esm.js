@@ -21456,6 +21456,7 @@ class StampAnnotation extends MarkupAnnotation {
         }
         else if (((_a = dto.stampImageData) === null || _a === void 0 ? void 0 : _a.length) && !(dto.stampImageData.length % 4)) {
             const data = new Uint8Array(dto.stampImageData);
+            annotation._customImageData = data;
             const stampMask = new ImageStream();
             const stampMaskDecodeParams = new DecodeParamsDict();
             stampMaskDecodeParams.setIntProp("/Predictor", 12);
@@ -21556,7 +21557,7 @@ class StampAnnotation extends MarkupAnnotation {
             matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
             stampType: this.Name,
             stampSubject: (_f = this.Subj) === null || _f === void 0 ? void 0 : _f.literal,
-            stampImageData: null,
+            stampImageData: this._customImageData ? [...this._customImageData] : null,
         };
     }
     parsePropsAsync(parseInfo) {

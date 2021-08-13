@@ -32,6 +32,8 @@ export class StampAnnotation extends MarkupAnnotation {
    * (Optional; PDF 1.6+) A name describing the intent of the annotation
    */
   IT = "/Stamp";
+
+  protected _customImageData: Uint8Array;
   
   protected constructor() {
     super(annotationTypes.STAMP);
@@ -95,7 +97,9 @@ export class StampAnnotation extends MarkupAnnotation {
       annotation.CA = 1; // opacity
     } else if (dto.stampImageData?.length && !(dto.stampImageData.length % 4)) {
       // custom stamp
+
       const data = new Uint8Array(dto.stampImageData);
+      annotation._customImageData = data;
 
       const stampMask = new ImageStream();
       const stampMaskDecodeParams = new DecodeParamsDict();
@@ -204,7 +208,7 @@ export class StampAnnotation extends MarkupAnnotation {
 
       stampType: this.Name,
       stampSubject: this.Subj?.literal,
-      stampImageData: null, // TODO: add export custom image data
+      stampImageData: this._customImageData ? [...this._customImageData] : null,
     };
   }
   
