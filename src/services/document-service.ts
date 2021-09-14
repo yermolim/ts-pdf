@@ -316,7 +316,7 @@ export class DocumentService {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
       annotation = await AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-      await this.appendAnnotationToPageAsync(dto.pageId, annotation);
+      await this.appendAnnotationAsync(dto.pageId, annotation, false);
     }
   }
 

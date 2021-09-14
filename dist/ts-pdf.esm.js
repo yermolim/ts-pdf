@@ -25809,7 +25809,7 @@ class DocumentService {
             let annotation;
             for (const dto of dtos) {
                 annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-                yield this.appendAnnotationToPageAsync(dto.pageId, annotation);
+                yield this.appendAnnotationAsync(dto.pageId, annotation, false);
             }
         });
     }
