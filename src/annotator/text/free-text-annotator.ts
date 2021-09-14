@@ -1,7 +1,5 @@
 import { Vec2 } from "mathador";
-import { UUID } from "ts-viewers-core";
-
-import { Quadruple } from "ts-viewers-core";
+import { UUID, Quadruple } from "ts-viewers-core";
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
