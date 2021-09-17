@@ -788,6 +788,7 @@ export class TsPdfViewer {
       case "add":
       case "delete":
       case "render":
+      case "import":
         // rerender affected pages
         if (annotations?.length) {
           const pageIdSet = new Set<number>(annotations.map(x => x.pageId));

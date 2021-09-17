@@ -25801,7 +25801,7 @@ class DocumentService {
     }
     appendAnnotationToPageAsync(pageId, annotation) {
         return __awaiter$j(this, void 0, void 0, function* () {
-            yield this.appendAnnotationAsync(pageId, annotation, true, true);
+            yield this.appendAnnotationAsync(pageId, annotation, true, "add");
         });
     }
     appendSerializedAnnotationsAsync(dtos) {
@@ -25809,7 +25809,7 @@ class DocumentService {
             let annotation;
             for (const dto of dtos) {
                 annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-                yield this.appendAnnotationAsync(dto.pageId, annotation, false, false);
+                yield this.appendAnnotationAsync(dto.pageId, annotation, false, "import");
             }
         });
     }
@@ -25968,12 +25968,10 @@ class DocumentService {
                     })
                 });
             }
-            if (raiseEvent) {
-                this._eventService.dispatchEvent(new AnnotEvent({
-                    type: "add",
-                    annotations: [annotation.toDto()],
-                }));
-            }
+            this._eventService.dispatchEvent(new AnnotEvent({
+                type: raiseEvent,
+                annotations: [annotation.toDto()],
+            }));
         });
     }
     removeAnnotation(annotation, undoable) {
@@ -25986,7 +25984,7 @@ class DocumentService {
             this.pushCommand({
                 timestamp: Date.now(),
                 undo: () => __awaiter$j(this, void 0, void 0, function* () {
-                    yield this.appendAnnotationAsync(annotation.$pageId, annotation, false, true);
+                    yield this.appendAnnotationAsync(annotation.$pageId, annotation, false, "add");
                 })
             });
         }
@@ -30048,6 +30046,7 @@ class TsPdfViewer {
                 case "add":
                 case "delete":
                 case "render":
+                case "import":
                     if (annotations === null || annotations === void 0 ? void 0 : annotations.length) {
                         const pageIdSet = new Set(annotations.map(x => x.pageId));
                         this._pageService.renderSpecifiedPages(pageIdSet);
