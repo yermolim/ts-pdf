@@ -25801,7 +25801,7 @@ class DocumentService {
     }
     appendAnnotationToPageAsync(pageId, annotation) {
         return __awaiter$j(this, void 0, void 0, function* () {
-            yield this.appendAnnotationAsync(pageId, annotation, true);
+            yield this.appendAnnotationAsync(pageId, annotation, true, true);
         });
     }
     appendSerializedAnnotationsAsync(dtos) {
@@ -25809,7 +25809,7 @@ class DocumentService {
             let annotation;
             for (const dto of dtos) {
                 annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-                yield this.appendAnnotationAsync(dto.pageId, annotation, false);
+                yield this.appendAnnotationAsync(dto.pageId, annotation, false, false);
             }
         });
     }
@@ -25936,7 +25936,7 @@ class DocumentService {
             undoableCount: this._lastCommands.length,
         }));
     }
-    appendAnnotationAsync(pageId, annotation, undoable) {
+    appendAnnotationAsync(pageId, annotation, undoable, raiseEvent) {
         return __awaiter$j(this, void 0, void 0, function* () {
             if (!annotation) {
                 throw new Error("Annotation is not defined");
@@ -25968,10 +25968,12 @@ class DocumentService {
                     })
                 });
             }
-            this._eventService.dispatchEvent(new AnnotEvent({
-                type: "add",
-                annotations: [annotation.toDto()],
-            }));
+            if (raiseEvent) {
+                this._eventService.dispatchEvent(new AnnotEvent({
+                    type: "add",
+                    annotations: [annotation.toDto()],
+                }));
+            }
         });
     }
     removeAnnotation(annotation, undoable) {
@@ -25984,7 +25986,7 @@ class DocumentService {
             this.pushCommand({
                 timestamp: Date.now(),
                 undo: () => __awaiter$j(this, void 0, void 0, function* () {
-                    yield this.appendAnnotationAsync(annotation.$pageId, annotation, false);
+                    yield this.appendAnnotationAsync(annotation.$pageId, annotation, false, true);
                 })
             });
         }

@@ -305,7 +305,7 @@ export class DocumentService {
    * appending an annotation to another page removes it from the first one
    */
   async appendAnnotationToPageAsync(pageId: number, annotation: AnnotationDict) {
-    await this.appendAnnotationAsync(pageId, annotation, true);
+    await this.appendAnnotationAsync(pageId, annotation, true, true);
   } 
 
   /**
@@ -316,7 +316,7 @@ export class DocumentService {
     let annotation: AnnotationDict;
     for (const dto of dtos) {
       annotation = await AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-      await this.appendAnnotationAsync(dto.pageId, annotation, false);
+      await this.appendAnnotationAsync(dto.pageId, annotation, false, false);
     }
   }
 
@@ -459,7 +459,8 @@ export class DocumentService {
     }));    
   }
 
-  private async appendAnnotationAsync(pageId: number, annotation: AnnotationDict, undoable: boolean) {
+  private async appendAnnotationAsync(pageId: number, annotation: AnnotationDict, 
+    undoable: boolean, raiseEvent: boolean) {
     if (!annotation) {
       throw new Error("Annotation is not defined");
     }
@@ -493,10 +494,12 @@ export class DocumentService {
       });
     }
 
-    this._eventService.dispatchEvent(new AnnotEvent({   
-      type: "add",   
-      annotations: [annotation.toDto()],
-    }));
+    if (raiseEvent) {
+      this._eventService.dispatchEvent(new AnnotEvent({   
+        type: "add",   
+        annotations: [annotation.toDto()],
+      }));
+    }
   } 
   
   /**mark an annotation as deleted */
@@ -512,7 +515,7 @@ export class DocumentService {
       this.pushCommand({
         timestamp: Date.now(),
         undo: async () => {
-          await this.appendAnnotationAsync(annotation.$pageId, annotation, false);
+          await this.appendAnnotationAsync(annotation.$pageId, annotation, false, true);
         }
       });
     }
