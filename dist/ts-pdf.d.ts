@@ -974,6 +974,7 @@ declare class TsPdfViewer {
     private _fileName;
     private _docService;
     private _annotatorService;
+    private _fileButtons;
     private _fileOpenAction;
     private _fileSaveAction;
     private _fileCloseAction;
@@ -1018,11 +1019,15 @@ declare class TsPdfViewer {
     private onZoomFitPageClick;
     private onRotateCounterClockwiseClick;
     private onRotateClockwiseClick;
+    private rotateCounterClockwise;
+    private rotateClockwise;
     private onPaginatorInput;
     private onPaginatorChange;
     private onPaginatorPrevClick;
     private onPaginatorNextClick;
     private onCurrentPagesChanged;
+    private moveToPrevPage;
+    private moveToNextPage;
     private annotatorUndo;
     private annotatorClear;
     private annotatorSave;
@@ -1037,13 +1042,17 @@ declare class TsPdfViewer {
     private onAnnotationPenModeButtonClick;
     private onAnnotationGeometricModeButtonClick;
     private onAnnotationTextModeButtonClick;
+    private onMainContainerPointerMove;
+    private hidePanels;
+    private showPanels;
     private onPdfLoadingProgress;
     private docServiceUndo;
     private onDocServiceStateChange;
     private refreshPagesAsync;
     private onPreviewerToggleClick;
-    private onMainContainerPointerMove;
+    private togglePreviewer;
     private showPasswordDialogAsync;
+    private onViewerKeyDown;
 }
 
 export { AnnotEvent, AnnotEventDetail, AnnotationDto, FileButtons, TsPdfViewer, TsPdfViewerOptions };

@@ -134,6 +134,27 @@ To apply a custom color scheme to the viewer, assign color values to the followi
 }
 ```
 
+### Keyboard shortcuts
+<ul>
+    <li>alt + ctrl + o => open file (if the corresponding button is allowed in options)</li>
+    <li>alt + ctrl + s => save file (if the corresponding button is allowed in options)</li>
+    <li>alt + ctrl + x => close file (if the corresponding button is allowed in options)</li>
+    <li>alt + ctrl + t => toggle preview panel visibility</li>
+    <li>alt + ctrl + 1 => text selection mode</li>
+    <li>alt + ctrl + 2 => hand drag mode</li>
+    <li>alt + ctrl + 3 => annotation mode</li>
+    <li>escape => clear annotation (in annotation add mode)</li>
+    <li>backspace => undo last action (in annotation add mode)</li>
+    <li>enter => save annotation (in annotation add mode)</li>
+    <li>ctrz + z => undo last annotation edit</li>
+    <li>↑ => zoom in</li>
+    <li>↓ => zoom out</li>
+    <li>← => previous page</li>
+    <li>→ => next page</li>
+</ul>
+
+
+
 ### Solving Angular app compilation issue
 
 When using this module inside an Angular app you can face the problem that your project is not compiling because of 'SyntaxError: Unexpected token'. The cause of such behavior is that Angular 11.x and lower use Webpack v4.x that does not support fluent null-check syntax ('?.'), which is present in 'pdfjs-dist' build. 
@@ -166,7 +187,7 @@ The other one is to make your own build of PDF.js.
     <li><del>add free text annotations support</del> added in 0.7.0</li>
     <li><del>add 'undo' button and corresponding logic</del> added in 0.7.0</li>
     <li><del>move parser to background thread using web workers</del> added in 0.9.0</li>
-    <li>add keyboard shortcuts</li>
+    <li><del>add keyboard shortcuts</del>added in 0.10.0</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>
     <li>add tooltips to buttons</li>

@@ -116,6 +116,8 @@ export class TsPdfViewer {
   private _docService: DocumentService;  
   private _annotatorService: AnnotatorService;
 
+  private _fileButtons: FileButtons[];
+
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
@@ -156,6 +158,7 @@ export class TsPdfViewer {
     GlobalWorkerOptions.workerSrc = options.workerSource;
 
     this._userName = options.userName || "Guest";
+    this._fileButtons = options.fileButtons || [];
     this._fileOpenAction = options.fileOpenAction;
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
@@ -168,7 +171,7 @@ export class TsPdfViewer {
     const maxScale = options.maxScale || 4;
 
     this._shadowRoot = this._outerContainer.attachShadow({mode: "open"});
-    this._shadowRoot.innerHTML = styles + mainHtml;    
+    this._shadowRoot.innerHTML = styles + mainHtml;     
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
     this._eventService = new EventService(this._mainContainer);
@@ -187,7 +190,7 @@ export class TsPdfViewer {
 
     this.initMainContainerEventHandlers();
     this.initViewControls();
-    this.initFileButtons(options.fileButtons || []);
+    this.initFileButtons();
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
 
@@ -196,8 +199,10 @@ export class TsPdfViewer {
     this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
     this._eventService.addListener(customStampEvent, this.onCustomStampChanged);
     this._eventService.addListener(docServiceStateChangeEvent, this.onDocServiceStateChange);
-    
+
     document.addEventListener("selectionchange", this.onTextSelectionChange); 
+    
+    this._mainContainer.addEventListener("keydown", this.onViewerKeyDown);
   }
 
   //#region public API
@@ -346,6 +351,7 @@ export class TsPdfViewer {
     }
 
     await this.refreshPagesAsync();
+    this.showPanels();
   }
   
   /**
@@ -505,12 +511,12 @@ export class TsPdfViewer {
       .addEventListener("click", this.onPreviewerToggleClick);  
   }
 
-  private initFileButtons(fileButtons: FileButtons[]) {
+  private initFileButtons() {
     const openButton = this._shadowRoot.querySelector("#button-open-file");
     const saveButton = this._shadowRoot.querySelector("#button-save-file");
     const closeButton = this._shadowRoot.querySelector("#button-close-file");
 
-    if (fileButtons.includes("open")) {
+    if (this._fileButtons.includes("open")) {
       this._fileInput = this._shadowRoot.getElementById("open-file-input") as HTMLInputElement;
       this._fileInput.addEventListener("change", this.onFileInput);
       openButton.addEventListener("click", this._fileOpenAction || this.onOpenFileButtonClick);
@@ -518,13 +524,13 @@ export class TsPdfViewer {
       openButton.remove();
     }
 
-    if (fileButtons.includes("save")) {
+    if (this._fileButtons.includes("save")) {
       saveButton.addEventListener("click", this._fileSaveAction || this.onSaveFileButtonClickAsync);
     } else {
       saveButton.remove();
     }
     
-    if (fileButtons.includes("close")) {
+    if (this._fileButtons.includes("close")) {
       closeButton.addEventListener("click", this._fileCloseAction || this.onCloseFileButtonClick);
     } else {
       closeButton.remove();
@@ -679,14 +685,28 @@ export class TsPdfViewer {
 
   //#region page rotation
   private onRotateCounterClockwiseClick = () => {
-    this._pageService.getCurrentPage().rotateCounterClockwise();
-    this.setAnnotationMode(this._annotatorService.mode);
+    this.rotateCounterClockwise();
   };
   
   private onRotateClockwiseClick = () => {
+    this.rotateClockwise();
+  };
+
+  private rotateCounterClockwise() {
+    if (!this._docService) {
+      return;
+    }
     this._pageService.getCurrentPage().rotateCounterClockwise();
     this.setAnnotationMode(this._annotatorService.mode);
-  };
+  }
+
+  private rotateClockwise() {
+    if (!this._docService) {
+      return;
+    }
+    this._pageService.getCurrentPage().rotateCounterClockwise();
+    this.setAnnotationMode(this._annotatorService.mode);
+  }
   //#endregion
 
 
@@ -708,19 +728,33 @@ export class TsPdfViewer {
   };
   
   private onPaginatorPrevClick = () => {
-    const pageIndex = clamp(this._pageService.currentPageIndex - 1, 0, this._pageService.length - 1);
-    this._pageService.requestSetCurrentPageIndex(pageIndex);
+    this.moveToPrevPage();
   };
 
   private onPaginatorNextClick = () => {
-    const pageIndex = clamp(this._pageService.currentPageIndex + 1, 0, this._pageService.length - 1);
-    this._pageService.requestSetCurrentPageIndex(pageIndex);
+    this.moveToNextPage();
   };
   
   private onCurrentPagesChanged = (event: CurrentPageChangeEvent) => {
     const {newIndex} = event.detail;
     (<HTMLInputElement>this._shadowRoot.getElementById("paginator-input")).value = newIndex + 1 + "";
   };
+
+  private moveToPrevPage() {    
+    if (!this._docService) {
+      return;
+    }
+    const pageIndex = clamp(this._pageService.currentPageIndex - 1, 0, this._pageService.length - 1);
+    this._pageService.requestSetCurrentPageIndex(pageIndex);
+  }
+  
+  private moveToNextPage() {  
+    if (!this._docService) {
+      return;
+    }   
+    const pageIndex = clamp(this._pageService.currentPageIndex + 1, 0, this._pageService.length - 1);
+    this._pageService.requestSetCurrentPageIndex(pageIndex);
+  }
   //#endregion
   
 
@@ -873,6 +907,51 @@ export class TsPdfViewer {
   //#endregion
 
 
+  //#region show/hide panels
+  private onMainContainerPointerMove = (event: PointerEvent) => {
+    const {clientX, clientY} = event;
+    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
+
+    const l = clientX - rectX;
+    const t = clientY - rectY;
+    const r = width - l;
+    const b = height - t;
+
+    if (Math.min(l, r, t, b) > 150) {
+      // hide panels if pointer is far from the container edges
+      this.hidePanels();
+    } else {
+      // show panels otherwise
+      this.showPanels();
+    }
+  };
+
+  private hidePanels() {
+    if (!this._panelsHidden && !this._timers.hidePanels) {
+      this._timers.hidePanels = setTimeout(() => {
+        if (!this._pdfDocument) {
+          return; // hide panels only if document is open
+        }
+        this._mainContainer.classList.add("hide-panels");
+        this._panelsHidden = true;
+        this._timers.hidePanels = null;
+      }, 5000);
+    }      
+  }
+
+  private showPanels() {
+    if (this._timers.hidePanels) {
+      clearTimeout(this._timers.hidePanels);
+      this._timers.hidePanels = null;
+    }
+    if (this._panelsHidden) {        
+      this._mainContainer.classList.remove("hide-panels");
+      this._panelsHidden = false;
+    }
+  }
+  //#endregion
+
+
   //#region misc
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
     // TODO: implement progress display
@@ -911,6 +990,10 @@ export class TsPdfViewer {
   }
 
   private onPreviewerToggleClick = () => {
+    this.togglePreviewer();
+  };
+
+  private togglePreviewer() {
     if (this._previewer.hidden) {
       this._mainContainer.classList.remove("hide-previewer");
       this._shadowRoot.querySelector("div#toggle-previewer").classList.add("on");
@@ -920,41 +1003,7 @@ export class TsPdfViewer {
       this._shadowRoot.querySelector("div#toggle-previewer").classList.remove("on");
       this._previewer.hide();
     }
-  };
-
-  private onMainContainerPointerMove = (event: PointerEvent) => {
-    const {clientX, clientY} = event;
-    const {x: rectX, y: rectY, width, height} = this._mainContainer.getBoundingClientRect();
-
-    const l = clientX - rectX;
-    const t = clientY - rectY;
-    const r = width - l;
-    const b = height - t;
-
-    if (Math.min(l, r, t, b) > 150) {
-      // hide panels if pointer is far from the container edges
-      if (!this._panelsHidden && !this._timers.hidePanels) {
-        this._timers.hidePanels = setTimeout(() => {
-          if (!this._pdfDocument) {
-            return; // hide panels only if document is open
-          }
-          this._mainContainer.classList.add("hide-panels");
-          this._panelsHidden = true;
-          this._timers.hidePanels = null;
-        }, 5000);
-      }      
-    } else {
-      // show panels otherwise
-      if (this._timers.hidePanels) {
-        clearTimeout(this._timers.hidePanels);
-        this._timers.hidePanels = null;
-      }
-      if (this._panelsHidden) {        
-        this._mainContainer.classList.remove("hide-panels");
-        this._panelsHidden = false;
-      }
-    }
-  };
+  }
 
   private async showPasswordDialogAsync(): Promise<string> {
     const passwordPromise = new Promise<string>((resolve, reject) => {
@@ -988,6 +1037,115 @@ export class TsPdfViewer {
 
     return passwordPromise;
   }
+
+  private onViewerKeyDown = (event: KeyboardEvent) => {
+    switch (event.code) {
+      case "KeyO":
+        if (event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          if (this._fileButtons.includes("open")) {
+            if (this._fileOpenAction) {
+              this._fileOpenAction();
+            } else if (this.onOpenFileButtonClick) {
+              this.onOpenFileButtonClick();
+            }
+          }
+        }
+        break;
+      case "KeyS":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          if (this._fileButtons.includes("save")) {
+            if (this._fileSaveAction) {
+              this._fileSaveAction();
+            } else if (this.onSaveFileButtonClickAsync) {
+              this.onSaveFileButtonClickAsync();
+            }
+          }
+        }
+        break;
+      case "KeyX":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          if (this._fileButtons.includes("close")) {
+            if (this._fileCloseAction) {
+              this._fileCloseAction();
+            } else if (this.onCloseFileButtonClick) {
+              this.onCloseFileButtonClick();
+            }
+          }
+        }
+        break;
+      case "KeyT":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.togglePreviewer();
+        }
+        break;
+      case "Digit1":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.setViewerMode("text");
+        }
+        break;
+      case "Digit2":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.setViewerMode("hand");
+        }
+        break;
+      case "Digit3":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.setViewerMode("annotation");
+        }
+        break;
+      case "ArrowLeft":
+        event.preventDefault();
+        this.moveToPrevPage();
+        break;
+      case "ArrowRight":
+        event.preventDefault();
+        this.moveToNextPage();
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        this._viewer.zoomIn();
+        break;
+      case "ArrowDown":
+        event.preventDefault();
+        this._viewer.zoomOut();
+        break;
+      case "Comma":
+        event.preventDefault();
+        this.rotateCounterClockwise();
+        break;
+      case "Period":
+        event.preventDefault();
+        this.rotateClockwise();
+        break;
+      case "Escape":
+        event.preventDefault();
+        this._annotatorService.annotator?.clear();
+        break;
+      case "Backspace":
+        event.preventDefault();
+        this._annotatorService.annotator?.undo();
+        break;
+      case "Enter":
+        event.preventDefault();
+        this._annotatorService.annotator?.saveAnnotationAsync();
+        break;
+      case "KeyZ":
+        if (event.ctrlKey) {
+          event.preventDefault();
+          this._docService?.undoAsync();
+        }
+        break;
+      default:
+        return;
+    }
+  };
   //#endregion
 }
 

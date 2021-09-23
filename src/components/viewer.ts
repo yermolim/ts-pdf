@@ -169,7 +169,7 @@ export class Viewer {
     const {top: cTop} = this._container.getBoundingClientRect();
     const {top: pTop} = this._pageService.getPage(pageNumber).viewContainer.getBoundingClientRect();
 
-    const scroll = pTop - (cTop - this._container.scrollTop);
+    const scroll = pTop - (cTop - this._container.scrollTop) - 20;
     this._container.scrollTo(this._container.scrollLeft, scroll);
   }
 

@@ -3,7 +3,7 @@
 import { Icons } from "ts-viewers-core";
 
 export const mainHtml = /*html*/`
-  <div id="main-container" class="hide-previewer disabled" 
+  <div id="main-container" tabindex="0" class="hide-previewer disabled" 
     ondragstart="return false;" ondrop="return false;">
     <div id="viewer"></div>
     <div id="previewer"></div>
