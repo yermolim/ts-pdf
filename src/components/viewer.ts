@@ -1,21 +1,16 @@
 import { clamp, Vec2, getDistance2D } from "mathador";
 import { DomUtils, HtmlTemplates } from "ts-viewers-core";
+import { ModeService } from "../services/mode-service";
 
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
 
-export const viewerModes = ["text", "hand", "annotation", "comparison"] as const;
-export type ViewerMode =  typeof viewerModes[number];
-
 export interface ViewerOptions {
   minScale?: number;
   maxScale?: number;
-  disabledModes?: ViewerMode[];
 }
 
 export class Viewer {
-  public readonly enabledModes: readonly ViewerMode[];
-
   private readonly _minScale: number;
   private readonly _maxScale: number;
 
@@ -25,22 +20,7 @@ export class Viewer {
     return this._container;
   }
 
-  private _mode: ViewerMode;  
-  get mode(): ViewerMode {
-    return this._mode;
-  }
-  set mode(value: ViewerMode) {
-    // close an opened dialog if present
-    if (this._dialogClose) {
-      this._dialogClose();
-    }
-
-    if (!value || value === this._mode) {
-      return;
-    }
-
-    this._mode = value;
-  }
+  private _modeService: ModeService; 
 
   private _scale = 1;
   get scale(): number {
@@ -64,28 +44,30 @@ export class Viewer {
 
   private _dialogClose: () => void;  
 
-  constructor(pageService: PageService, container: HTMLDivElement, options?: ViewerOptions) {
+  constructor(modeService: ModeService, pageService: PageService, 
+    container: HTMLDivElement, options?: ViewerOptions) {
+    if (!modeService) {
+      throw new Error("Mode service is not defined");
+    }
+    if (!pageService) {
+      throw new Error("Page service is not defined");
+    }
     if (!container) {
       throw new Error("Container is not defined");
     }
     
+    this._modeService = modeService;
     this._pageService = pageService;
     this._container = container;
 
     this._minScale = options?.minScale || 0.25;
     this._maxScale = options?.maxScale || 4;
 
-    const modes: ViewerMode[] = [];
-    viewerModes.forEach(x => {
-      if (!options?.disabledModes?.length
-        || !options.disabledModes.includes(x)) {
-        modes.push(x);
+    this._modeService.addOnModeChangeStarted(() => {
+      if (this?._dialogClose) {
+        this._dialogClose();
       }
     });
-    if (!modes.length) {
-      throw new Error("All viewer modes are disabled");
-    }
-    this.enabledModes = modes;
 
     this.init();
   } 
@@ -225,7 +207,7 @@ export class Viewer {
   };  
 
   private onPointerDownScroll = (e: PointerEvent) => { 
-    if (this._mode !== "hand") {
+    if (this._modeService.mode !== "hand") {
       return;
     }
     

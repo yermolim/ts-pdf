@@ -29551,9 +29551,156 @@ var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+class PdfLoaderService {
+    constructor(eventService) {
+        if (!eventService) {
+            throw new Error("Event controller is not defined");
+        }
+        this._eventService = eventService;
+    }
+    get pageCount() {
+        var _a;
+        return ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.numPages) || 0;
+    }
+    get docLoaded() {
+        return !!this._pdfDocument;
+    }
+    get docService() {
+        return this._docService;
+    }
+    get fileName() {
+        return this._fileName;
+    }
+    destroy() {
+        var _a, _b;
+        (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
+        if (this._pdfDocument) {
+            this._pdfDocument.cleanup();
+            this._pdfDocument.destroy();
+        }
+        (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
+    }
+    openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            yield this.closePdfAsync();
+            let data;
+            let doc;
+            try {
+                data = yield DomUtils.loadFileDataAsync(src);
+            }
+            catch (e) {
+                throw new Error(`Cannot load file data: ${e.message}`);
+            }
+            const docService = yield DocumentService.createNewAsync(this._eventService, data, userName);
+            let password;
+            while (true) {
+                const authenticated = docService.tryAuthenticate(password);
+                if (!authenticated) {
+                    password = yield getPasswordAsync();
+                    if (password === null) {
+                        throw new Error("File loading cancelled: authentication aborted");
+                    }
+                    continue;
+                }
+                break;
+            }
+            try {
+                if (this._pdfLoadingTask) {
+                    yield this.closePdfAsync();
+                    return this.openPdfAsync(data, userName, fileName, getPasswordAsync, onProgress);
+                }
+                const dataWithoutAnnotations = yield docService.getDataWithoutSupportedAnnotationsAsync();
+                this._pdfLoadingTask = getDocument({
+                    data: dataWithoutAnnotations,
+                    password,
+                });
+                if (onProgress) {
+                    this._pdfLoadingTask.onProgress = onProgress;
+                }
+                doc = yield this._pdfLoadingTask.promise;
+                this._pdfLoadingTask = null;
+            }
+            catch (e) {
+                throw new Error(`Cannot open PDF: ${e.message}`);
+            }
+            this._pdfDocument = doc;
+            this._docService = docService;
+            this._fileName = fileName;
+        });
+    }
+    closePdfAsync() {
+        var _a, _b;
+        return __awaiter$2(this, void 0, void 0, function* () {
+            if (this._pdfLoadingTask) {
+                if (!this._pdfLoadingTask.destroyed) {
+                    yield this._pdfLoadingTask.destroy();
+                }
+                this._pdfLoadingTask = null;
+            }
+            (_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.destroy();
+            this._pdfDocument = null;
+            (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
+            this._docService = null;
+            this._fileName = null;
+        });
+    }
+    getPageAsync(pageIndex) {
+        var _a;
+        return __awaiter$2(this, void 0, void 0, function* () {
+            return yield ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.getPage(pageIndex + 1));
+        });
+    }
+}
+
 const viewerModes = ["text", "hand", "annotation", "comparison"];
+class ModeService {
+    constructor(options) {
+        this._onModeChangeStarted = new Set();
+        const modes = [];
+        viewerModes.forEach(x => {
+            var _a;
+            if (!((_a = options === null || options === void 0 ? void 0 : options.disabledModes) === null || _a === void 0 ? void 0 : _a.length)
+                || !options.disabledModes.includes(x)) {
+                modes.push(x);
+            }
+        });
+        if (!modes.length) {
+            throw new Error("All viewer modes are disabled");
+        }
+        this.enabledModes = modes;
+    }
+    get mode() {
+        return this._mode;
+    }
+    set mode(value) {
+        var _a;
+        if ((_a = this._onModeChangeStarted) === null || _a === void 0 ? void 0 : _a.size) {
+            this._onModeChangeStarted.forEach(x => x());
+        }
+        if (!value || value === this._mode) {
+            return;
+        }
+        this._mode = value;
+    }
+    addOnModeChangeStarted(action) {
+        this._onModeChangeStarted.add(action);
+    }
+    removeOnModeChangeStarted(action) {
+        this._onModeChangeStarted.delete(action);
+    }
+}
+
+var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 class Viewer {
-    constructor(pageService, container, options) {
+    constructor(modeService, pageService, container, options) {
         this._scale = 1;
         this._pointerInfo = {
             lastPos: null,
@@ -29586,7 +29733,7 @@ class Viewer {
             this.renderVisible();
         };
         this.onPointerDownScroll = (e) => {
-            if (this._mode !== "hand") {
+            if (this._modeService.mode !== "hand") {
                 return;
             }
             const { clientX, clientY } = e;
@@ -29660,41 +29807,29 @@ class Viewer {
             event.target.addEventListener("touchend", onTouchEnd);
             event.target.addEventListener("touchcancel", onTouchEnd);
         };
+        if (!modeService) {
+            throw new Error("Mode service is not defined");
+        }
+        if (!pageService) {
+            throw new Error("Page service is not defined");
+        }
         if (!container) {
             throw new Error("Container is not defined");
         }
+        this._modeService = modeService;
         this._pageService = pageService;
         this._container = container;
         this._minScale = (options === null || options === void 0 ? void 0 : options.minScale) || 0.25;
         this._maxScale = (options === null || options === void 0 ? void 0 : options.maxScale) || 4;
-        const modes = [];
-        viewerModes.forEach(x => {
-            var _a;
-            if (!((_a = options === null || options === void 0 ? void 0 : options.disabledModes) === null || _a === void 0 ? void 0 : _a.length)
-                || !options.disabledModes.includes(x)) {
-                modes.push(x);
+        this._modeService.addOnModeChangeStarted(() => {
+            if (this === null || this === void 0 ? void 0 : this._dialogClose) {
+                this._dialogClose();
             }
         });
-        if (!modes.length) {
-            throw new Error("All viewer modes are disabled");
-        }
-        this.enabledModes = modes;
         this.init();
     }
     get container() {
         return this._container;
-    }
-    get mode() {
-        return this._mode;
-    }
-    set mode(value) {
-        if (this._dialogClose) {
-            this._dialogClose();
-        }
-        if (!value || value === this._mode) {
-            return;
-        }
-        this._mode = value;
     }
     get scale() {
         return this._scale;
@@ -29730,7 +29865,7 @@ class Viewer {
         this.scrollToPage(this._pageService.currentPageIndex);
     }
     showTextDialogAsync(initialText) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             if (this._dialogClose) {
                 return;
             }
@@ -29933,116 +30068,6 @@ class Previewer {
     }
 }
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-class PdfLoaderService {
-    constructor(eventService) {
-        if (!eventService) {
-            throw new Error("Event controller is not defined");
-        }
-        this._eventService = eventService;
-    }
-    get pageCount() {
-        var _a;
-        return ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.numPages) || 0;
-    }
-    get docLoaded() {
-        return !!this._pdfDocument;
-    }
-    get docService() {
-        return this._docService;
-    }
-    get fileName() {
-        return this._fileName;
-    }
-    destroy() {
-        var _a, _b;
-        (_a = this._pdfLoadingTask) === null || _a === void 0 ? void 0 : _a.destroy();
-        if (this._pdfDocument) {
-            this._pdfDocument.cleanup();
-            this._pdfDocument.destroy();
-        }
-        (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
-    }
-    openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress) {
-        return __awaiter$1(this, void 0, void 0, function* () {
-            yield this.closePdfAsync();
-            let data;
-            let doc;
-            try {
-                data = yield DomUtils.loadFileDataAsync(src);
-            }
-            catch (e) {
-                throw new Error(`Cannot load file data: ${e.message}`);
-            }
-            const docService = yield DocumentService.createNewAsync(this._eventService, data, userName);
-            let password;
-            while (true) {
-                const authenticated = docService.tryAuthenticate(password);
-                if (!authenticated) {
-                    password = yield getPasswordAsync();
-                    if (password === null) {
-                        throw new Error("File loading cancelled: authentication aborted");
-                    }
-                    continue;
-                }
-                break;
-            }
-            try {
-                if (this._pdfLoadingTask) {
-                    yield this.closePdfAsync();
-                    return this.openPdfAsync(data, userName, fileName, getPasswordAsync, onProgress);
-                }
-                const dataWithoutAnnotations = yield docService.getDataWithoutSupportedAnnotationsAsync();
-                this._pdfLoadingTask = getDocument({
-                    data: dataWithoutAnnotations,
-                    password,
-                });
-                if (onProgress) {
-                    this._pdfLoadingTask.onProgress = onProgress;
-                }
-                doc = yield this._pdfLoadingTask.promise;
-                this._pdfLoadingTask = null;
-            }
-            catch (e) {
-                throw new Error(`Cannot open PDF: ${e.message}`);
-            }
-            this._pdfDocument = doc;
-            this._docService = docService;
-            this._fileName = fileName;
-        });
-    }
-    closePdfAsync() {
-        var _a, _b;
-        return __awaiter$1(this, void 0, void 0, function* () {
-            if (this._pdfLoadingTask) {
-                if (!this._pdfLoadingTask.destroyed) {
-                    yield this._pdfLoadingTask.destroy();
-                }
-                this._pdfLoadingTask = null;
-            }
-            (_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._pdfDocument = null;
-            (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
-            this._docService = null;
-            this._fileName = null;
-        });
-    }
-    getPageAsync(pageIndex) {
-        var _a;
-        return __awaiter$1(this, void 0, void 0, function* () {
-            return yield ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.getPage(pageIndex + 1));
-        });
-    }
-}
-
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -30096,7 +30121,7 @@ class TsPdfViewer {
                 return;
             }
             const mode = /button-mode-(.+)/.exec(parentButton.id)[1];
-            this.setViewerMode(mode);
+            this.setMode(mode);
         };
         this.onZoomOutClick = () => {
             this._viewer.zoomOut();
@@ -30358,25 +30383,25 @@ class TsPdfViewer {
                 case "Digit1":
                     if (this._docService && event.ctrlKey && event.altKey) {
                         event.preventDefault();
-                        this.setViewerMode("text");
+                        this.setMode("text");
                     }
                     break;
                 case "Digit2":
                     if (this._docService && event.ctrlKey && event.altKey) {
                         event.preventDefault();
-                        this.setViewerMode("hand");
+                        this.setMode("hand");
                     }
                     break;
                 case "Digit3":
                     if (this._docService && event.ctrlKey && event.altKey) {
                         event.preventDefault();
-                        this.setViewerMode("annotation");
+                        this.setMode("annotation");
                     }
                     break;
                 case "Digit4":
                     if (this._docService && event.ctrlKey && event.altKey) {
                         event.preventDefault();
-                        this.setViewerMode("comparison");
+                        this.setMode("comparison");
                     }
                     break;
                 case "ArrowLeft":
@@ -30457,13 +30482,14 @@ class TsPdfViewer {
         this._shadowRoot.innerHTML = styles + mainHtml;
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         this._eventService = new EventService(this._mainContainer);
+        this._modeService = new ModeService({ disabledModes: options.disabledModes || [] });
         this._loaderService = new PdfLoaderService(this._eventService);
         this._pageService = new PageService(this._eventService, this._loaderService, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
         this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
         this._customStampsService.importCustomStamps(options.customStamps);
         this._loader = new Loader();
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"));
-        this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale, disabledModes: options.disabledModes || [] });
+        this._viewer = new Viewer(this._modeService, this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
         this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
         this.initMainContainerEventHandlers();
         this.initViewControls();
@@ -30506,7 +30532,7 @@ class TsPdfViewer {
                 this._loader.hide();
                 throw e;
             }
-            this.setViewerMode();
+            this.setMode();
             yield this.refreshPagesAsync();
             this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
             this.setAnnotationMode("select");
@@ -30521,7 +30547,7 @@ class TsPdfViewer {
             this._mainContainer.classList.add("disabled");
             this._mainContainer.classList.remove("annotation-focused");
             this._mainContainer.classList.remove("annotation-selected");
-            this.setViewerMode();
+            this.setMode();
             (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
             yield this.refreshPagesAsync();
             this.showPanels();
@@ -30672,7 +30698,7 @@ class TsPdfViewer {
     }
     initModeSwitchButtons() {
         const modeButtons = this._shadowRoot.querySelectorAll("*[id^=\"button-mode-\"]");
-        const enabledModes = this._viewer.enabledModes;
+        const enabledModes = this._modeService.enabledModes;
         modeButtons.forEach(x => {
             const mode = /button-mode-(.+)/.exec(x.id)[1];
             if (enabledModes.includes(mode)) {
@@ -30701,8 +30727,8 @@ class TsPdfViewer {
         this._shadowRoot.querySelector("#button-command-undo")
             .addEventListener("click", this.docServiceUndo);
     }
-    setViewerMode(mode) {
-        mode = mode || this._viewer.enabledModes[0] || "text";
+    setMode(mode) {
+        mode = mode || this._modeService.enabledModes[0] || "text";
         viewerModes.forEach(x => {
             this._mainContainer.classList.remove("mode-" + x);
             this._shadowRoot.querySelector("#button-mode-" + x).classList.remove("on");
@@ -30710,7 +30736,7 @@ class TsPdfViewer {
         this.setAnnotationMode("select");
         this._mainContainer.classList.add("mode-" + mode);
         this._shadowRoot.querySelector("#button-mode-" + mode).classList.add("on");
-        this._viewer.mode = mode;
+        this._modeService.mode = mode;
     }
     rotateCounterClockwise() {
         if (!this._docService) {

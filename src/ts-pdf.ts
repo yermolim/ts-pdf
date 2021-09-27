@@ -18,15 +18,16 @@ import { DocumentService, annotChangeEvent, AnnotEvent,
   AnnotEventDetail, DocServiceStateChangeEvent, 
   docServiceStateChangeEvent } from "./services/document-service";
 import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-service";
+import { PdfLoaderService } from "./services/pdf-loader-service";
+import { ModeService, ViewerMode, viewerModes } from "./services/mode-service";
 
-import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
+import { Viewer } from "./components/viewer";
 import { Previewer } from "./components/previewer";
 
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
   annotatorTypes, 
   TextSelectionChangeEvent, 
   textSelectionChangeEvent} from "./annotator/annotator"; 
-import { PdfLoaderService } from "./services/pdf-loader-service";
 
 declare global {
   interface HTMLElementEventMap {
@@ -103,6 +104,7 @@ export class TsPdfViewer {
   private readonly _mainContainer: HTMLDivElement;
   
   private readonly _eventService: EventService;
+  private readonly _modeService: ModeService;
   private readonly _loaderService: PdfLoaderService;  
   private readonly _pageService: PageService;
   private readonly _customStampsService: CustomStampService;
@@ -173,6 +175,7 @@ export class TsPdfViewer {
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
     this._eventService = new EventService(this._mainContainer);
+    this._modeService = new ModeService({disabledModes: options.disabledModes || []});
     this._loaderService = new PdfLoaderService(this._eventService);
     this._pageService = new PageService(this._eventService, this._loaderService,
       {previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages});      
@@ -182,8 +185,8 @@ export class TsPdfViewer {
 
     this._loader = new Loader();
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"));
-    this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
-      {minScale: minScale, maxScale: maxScale, disabledModes: options.disabledModes || []}); 
+    this._viewer = new Viewer(this._modeService, this._pageService, this._shadowRoot.querySelector("#viewer"), 
+      {minScale: minScale, maxScale: maxScale}); 
     this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
 
     this.initMainContainerEventHandlers();
@@ -236,7 +239,7 @@ export class TsPdfViewer {
       throw e;
     }
     
-    this.setViewerMode();
+    this.setMode();
 
     // load pages from the document
     await this.refreshPagesAsync();
@@ -261,7 +264,7 @@ export class TsPdfViewer {
     this._mainContainer.classList.remove("annotation-selected");
 
     // reset viewer state to default
-    this.setViewerMode();
+    this.setMode();
 
     this._annotatorService?.destroy();
 
@@ -488,7 +491,7 @@ export class TsPdfViewer {
 
   private initModeSwitchButtons() {
     const modeButtons = this._shadowRoot.querySelectorAll("*[id^=\"button-mode-\"]");
-    const enabledModes = this._viewer.enabledModes;
+    const enabledModes = this._modeService.enabledModes;
     modeButtons.forEach(x => {
       const mode = /button-mode-(.+)/.exec(x.id)[1] as ViewerMode;        
       if (enabledModes.includes(mode)) {
@@ -527,8 +530,8 @@ export class TsPdfViewer {
 
 
   //#region viewer modes
-  private setViewerMode(mode?: ViewerMode) {
-    mode = mode || this._viewer.enabledModes[0] || "text"; // 'text' is the default mode
+  private setMode(mode?: ViewerMode) {
+    mode = mode || this._modeService.enabledModes[0] || "text"; // 'text' is the default mode
 
     // disable previous viewer mode
     viewerModes.forEach(x => {
@@ -539,7 +542,7 @@ export class TsPdfViewer {
 
     this._mainContainer.classList.add("mode-" + mode);
     this._shadowRoot.querySelector("#button-mode-" + mode).classList.add("on");
-    this._viewer.mode = mode;
+    this._modeService.mode = mode;
   }
 
   private onViewerModeButtonClick = (e: Event) => {
@@ -548,7 +551,7 @@ export class TsPdfViewer {
       return;
     }
     const mode = /button-mode-(.+)/.exec(parentButton.id)[1] as ViewerMode;
-    this.setViewerMode(mode);
+    this.setMode(mode);
   };
   //#endregion
 
@@ -953,25 +956,25 @@ export class TsPdfViewer {
       case "Digit1":
         if (this._docService && event.ctrlKey && event.altKey) {
           event.preventDefault();
-          this.setViewerMode("text");
+          this.setMode("text");
         }
         break;
       case "Digit2":
         if (this._docService && event.ctrlKey && event.altKey) {
           event.preventDefault();
-          this.setViewerMode("hand");
+          this.setMode("hand");
         }
         break;
       case "Digit3":
         if (this._docService && event.ctrlKey && event.altKey) {
           event.preventDefault();
-          this.setViewerMode("annotation");
+          this.setMode("annotation");
         }
         break;
       case "Digit4":
         if (this._docService && event.ctrlKey && event.altKey) {
           event.preventDefault();
-          this.setViewerMode("comparison");
+          this.setMode("comparison");
         }
         break;
       case "ArrowLeft":

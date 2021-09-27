@@ -1,7 +1,6 @@
-import { Quadruple, Hextuple, BBox, Double, EventService, customStampEvent, CustomStampEvent, CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
+import { Quadruple, Hextuple, BBox, Double, customStampEvent, CustomStampEvent, CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
 export { CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core';
 import { Mat3, Vec3, Vec2 } from 'mathador';
-import { PDFPageProxy } from 'pdfjs-dist/types/display/api';
 
 interface PageInfo {
     readonly number: number;
@@ -938,192 +937,6 @@ declare global {
         [docServiceStateChangeEvent]: DocServiceStateChangeEvent;
     }
 }
-declare class DocumentService {
-    protected readonly _eventService: EventService;
-    get eventService(): EventService;
-    private readonly _userName;
-    get userName(): string;
-    private _initPromise;
-    private readonly _data;
-    private _docParser;
-    private _version;
-    private _xrefs;
-    private _referenceData;
-    private _encryption;
-    private _authResult;
-    private _catalog;
-    private _pages;
-    private _pageById;
-    private _annotIdsByPageId;
-    private _supportedAnnotsByPageId;
-    private _focusedAnnotation;
-    get focusedAnnotation(): AnnotationDict;
-    private _selectedAnnotation;
-    get selectedAnnotation(): AnnotationDict;
-    private _fontMap;
-    get fontMap(): Map<string, FontDict>;
-    private _lastCommands;
-    get size(): number;
-    get encrypted(): boolean;
-    get authenticated(): boolean;
-    private constructor();
-    static createNewAsync(eventService: EventService, data: Uint8Array, userName: string): Promise<DocumentService>;
-    destroy(): void;
-    tryAuthenticate(password?: string): boolean;
-    getPlainData(): Uint8Array;
-    undoAsync(): Promise<void>;
-    getDataWithoutSupportedAnnotationsAsync(): Promise<Uint8Array>;
-    getDataWithUpdatedAnnotationsAsync(): Promise<Uint8Array>;
-    getPageAnnotationsAsync(pageId: number): Promise<AnnotationDict[]>;
-    serializeAnnotationsAsync(addedOnly?: boolean): Promise<AnnotationDto[]>;
-    appendAnnotationToPageAsync(pageId: number, annotation: AnnotationDict): Promise<void>;
-    appendSerializedAnnotationsAsync(dtos: AnnotationDto[]): Promise<void>;
-    removeAnnotationFromPage(annotation: AnnotationDict): void;
-    removeSelectedAnnotation(): void;
-    setSelectedAnnotation(annotation: AnnotationDict): AnnotationDict;
-    setFocusedAnnotation(annotation: AnnotationDict): AnnotationDict;
-    getSelectedAnnotationTextContent(): string;
-    setSelectedAnnotationTextContentAsync(text: string): Promise<void>;
-    private parseXrefsAsync;
-    private initAsync;
-    private pushCommand;
-    private undoCommandAsync;
-    private emitStateChanged;
-    private appendAnnotationAsync;
-    private removeAnnotation;
-    private getOnAnnotEditAction;
-    private getOnAnnotRenderUpdatedAction;
-    private getObjectParseInfoAsync;
-    private authenticate;
-    private checkAuthentication;
-    private parseEncryptionAsync;
-    private parsePagesAsync;
-    private parsePageTreeAsync;
-    private parseSupportedAnnotationsAsync;
-    private getSupportedAnnotationMapAsync;
-    private getAllSupportedAnnotationsAsync;
-    private onAnnotationSelectionRequest;
-    private onAnnotationFocusRequest;
-}
-
-declare class PdfLoaderService {
-    protected readonly _eventService: EventService;
-    private _pdfLoadingTask;
-    private _pdfDocument;
-    get pageCount(): number;
-    get docLoaded(): boolean;
-    private _docService;
-    get docService(): DocumentService;
-    private _fileName;
-    get fileName(): string;
-    constructor(eventService: EventService);
-    destroy(): void;
-    openPdfAsync(src: string | Blob | Uint8Array, fileName: string, userName: string, getPasswordAsync: () => Promise<string>, onProgress?: (progressData: {
-        loaded: number;
-        total: number;
-    }) => void): Promise<void>;
-    closePdfAsync(): Promise<void>;
-    getPageAsync(pageIndex: number): Promise<PDFPageProxy>;
-}
-
-declare class PageView implements PageInfo {
-    static readonly validRotationValues: number[];
-    readonly number: number;
-    readonly id: number;
-    readonly generation: number;
-    private readonly _loaderService;
-    private readonly _pageProxy;
-    private readonly _defaultViewport;
-    private _currentViewport;
-    private _dimensions;
-    private _previewContainer;
-    get previewContainer(): HTMLDivElement;
-    private _previewRendered;
-    private _viewOuterContainer;
-    get viewContainer(): HTMLDivElement;
-    private _viewInnerContainer;
-    private _viewCanvas;
-    private $viewRendered;
-    private set _viewRendered(value);
-    private get _viewRendered();
-    private _text;
-    private _annotations;
-    private _renderTask;
-    private _renderPromise;
-    private _rotation;
-    get rotation(): number;
-    set rotation(value: number);
-    private _scale;
-    get scale(): number;
-    set scale(value: number);
-    get width(): number;
-    get height(): number;
-    private _dimensionsIsValid;
-    get viewValid(): boolean;
-    private _destroyed;
-    private constructor();
-    static CreateNewAsync(loaderService: PdfLoaderService, pageIndex: number, previewWidth: number): Promise<PageView>;
-    destroy(): void;
-    renderPreviewAsync(force?: boolean): Promise<void>;
-    renderViewAsync(force?: boolean): Promise<void>;
-    clearPreview(): void;
-    clearView(): void;
-    rotateClockwise(): void;
-    rotateCounterClockwise(): void;
-    private refreshDimensions;
-    private cancelRenderTask;
-    private runRenderTaskAsync;
-    private createPreviewCanvas;
-    private createViewCanvas;
-    private runPreviewRenderAsync;
-    private runViewRenderAsync;
-}
-
-declare const currentPageChangeRequestEvent: "tspdf-currentpagechangerequest";
-interface CurrentPageChangeRequestEventDetail {
-    pageIndex: number;
-}
-declare class CurrentPageChangeRequestEvent extends CustomEvent<CurrentPageChangeRequestEventDetail> {
-    constructor(detail: CurrentPageChangeRequestEventDetail);
-}
-declare const currentPageChangeEvent: "tspdf-currentpagechange";
-interface CurrentPageChangeEventDetail {
-    oldIndex: number;
-    newIndex: number;
-}
-declare class CurrentPageChangeEvent extends CustomEvent<CurrentPageChangeEventDetail> {
-    constructor(detail: CurrentPageChangeEventDetail);
-}
-declare const pagesLoadedEvent: "tspdf-pagesloaded";
-interface PagesLoadedEventDetail {
-    pages: PageView[];
-}
-declare class PagesLoadedEvent extends CustomEvent<PagesLoadedEventDetail> {
-    constructor(detail: PagesLoadedEventDetail);
-}
-declare const pagesRenderedEvent: "tspdf-pagesrendered";
-interface PagesRenderedEventDetail {
-    pages: PageView[];
-}
-declare class PagesRenderedEvent extends CustomEvent<PagesRenderedEventDetail> {
-    constructor(detail: PagesRenderedEventDetail);
-}
-declare const scaleChangedEvent: "tspdf-scalechanged";
-interface ScaleChangedEventDetail {
-    scale: number;
-}
-declare class ScaleChangedEvent extends CustomEvent<ScaleChangedEventDetail> {
-    constructor(detail: ScaleChangedEventDetail);
-}
-declare global {
-    interface HTMLElementEventMap {
-        [currentPageChangeEvent]: CurrentPageChangeEvent;
-        [currentPageChangeRequestEvent]: CurrentPageChangeRequestEvent;
-        [pagesLoadedEvent]: PagesLoadedEvent;
-        [pagesRenderedEvent]: PagesRenderedEvent;
-        [scaleChangedEvent]: ScaleChangedEvent;
-    }
-}
 
 declare const viewerModes: readonly ["text", "hand", "annotation", "comparison"];
 declare type ViewerMode = typeof viewerModes[number];
@@ -1157,6 +970,7 @@ declare class TsPdfViewer {
     private readonly _shadowRoot;
     private readonly _mainContainer;
     private readonly _eventService;
+    private readonly _modeService;
     private readonly _loaderService;
     private readonly _pageService;
     private readonly _customStampsService;
@@ -1198,7 +1012,7 @@ declare class TsPdfViewer {
     private onCloseFileButtonClick;
     private initModeSwitchButtons;
     private initAnnotationButtons;
-    private setViewerMode;
+    private setMode;
     private onViewerModeButtonClick;
     private onZoomOutClick;
     private onZoomInClick;
