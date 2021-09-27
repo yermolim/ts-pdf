@@ -1,6 +1,6 @@
 import { getDistance2D, Vec2 } from "mathador";
 
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { PageService } from "../../services/page-service";
 
 import { Viewer } from "../../components/viewer";

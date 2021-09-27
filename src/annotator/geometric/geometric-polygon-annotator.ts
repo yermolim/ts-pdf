@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { CloudCurveData, UUID } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { PolygonAnnotation, PolygonAnnotationDto } 

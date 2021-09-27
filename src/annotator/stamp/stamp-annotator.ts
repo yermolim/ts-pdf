@@ -3,7 +3,7 @@ import { UUID, CustomStampCreationInfo } from "ts-viewers-core";
 
 import { standardStampCreationInfos } from "../../drawing/stamps";
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { StampAnnotation, StampAnnotationDto } 
   from "../../document/entities/annotations/markup/stamp-annotation";
   

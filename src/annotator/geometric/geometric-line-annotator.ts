@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { UUID , Quadruple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 
 import { LineAnnotation, LineAnnotationDto } 
   from "../../document/entities/annotations/markup/geometric/line-annotation";

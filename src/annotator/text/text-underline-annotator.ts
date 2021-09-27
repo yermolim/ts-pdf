@@ -1,5 +1,5 @@
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 
 import { UnderlineAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/underline-annotation";

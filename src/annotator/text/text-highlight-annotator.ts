@@ -1,7 +1,7 @@
 import { Octuple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 
 import { HighlightAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/highlight-annotation";

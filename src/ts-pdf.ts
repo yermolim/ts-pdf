@@ -17,7 +17,7 @@ import { PageService, currentPageChangeEvent,
   CurrentPageChangeEvent } from "./services/page-service";
 import { DocumentDataService, annotChangeEvent, AnnotEvent, 
   AnnotEventDetail, DocServiceStateChangeEvent, 
-  docServiceStateChangeEvent } from "./services/document-service";
+  docServiceStateChangeEvent } from "./services/document-data-service";
 import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-service";
 
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";

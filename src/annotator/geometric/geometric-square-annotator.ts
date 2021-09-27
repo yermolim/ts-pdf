@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { UUID, Quadruple, CloudCurveData } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { SquareAnnotationDto, SquareAnnotation } 
   from "../../document/entities/annotations/markup/geometric/square-annotation";
 

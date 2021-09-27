@@ -5,7 +5,7 @@ import { PageInfo } from "../common/page";
 
 import { DocumentDataService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
-  from "../services/document-service";
+  from "../services/document-data-service";
   
 import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
 

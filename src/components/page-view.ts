@@ -5,7 +5,7 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
-import { DocumentDataService } from "../services/document-service";
+import { DocumentDataService } from "../services/document-data-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";

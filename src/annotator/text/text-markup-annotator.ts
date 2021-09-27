@@ -1,10 +1,10 @@
-import { UUID } from "ts-viewers-core";
+import { UUID , Octuple } from "ts-viewers-core";
 
-import { Octuple } from "ts-viewers-core";
+
 import { TextSelectionInfo } from "../../common/text-selection";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 
 import { TextMarkupAnnotationDto } 
   from "../../document/entities/annotations/markup/text-markup/text-markup-annotation";

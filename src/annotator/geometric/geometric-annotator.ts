@@ -3,7 +3,7 @@ import { Vec2 } from "mathador";
 import { Quadruple } from "ts-viewers-core";
 import { LINE_END_MULTIPLIER, LINE_END_MIN_SIZE, BEZIER_CONSTANT } from "../../drawing/utils";
 
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { PageService } from "../../services/page-service";
 import { LineEndingType, lineEndingTypes } from "../../document/spec-constants";
 

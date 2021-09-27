@@ -4,7 +4,7 @@ import { UUID, Quadruple, CloudCurveData } from "ts-viewers-core";
 import { BEZIER_CONSTANT } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { CircleAnnotation, CircleAnnotationDto } 
   from "../../document/entities/annotations/markup/geometric/circle-annotation";
 

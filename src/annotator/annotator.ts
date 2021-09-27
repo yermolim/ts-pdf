@@ -1,6 +1,6 @@
 import { TextSelectionInfo } from "../common/text-selection";
 
-import { DocumentDataService } from "../services/document-service";
+import { DocumentDataService } from "../services/document-data-service";
 import { PageCoords, PageService, PagesRenderedEvent, pagesRenderedEvent } 
   from "../services/page-service";
   

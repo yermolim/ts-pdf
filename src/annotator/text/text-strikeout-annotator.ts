@@ -2,7 +2,7 @@ import { Octuple } from "ts-viewers-core";
 import { Vec2 } from "mathador";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 
 import { StrikeoutAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/strikeout-annotation";

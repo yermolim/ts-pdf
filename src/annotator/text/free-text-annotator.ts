@@ -1,6 +1,6 @@
 import { Vec2 } from "mathador";
 import { UUID, Quadruple } from "ts-viewers-core";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
 import { FreeTextAnnotation, FreeTextAnnotationDto, FreeTextAnnotPointsDto } 

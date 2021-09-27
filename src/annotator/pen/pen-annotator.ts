@@ -1,7 +1,7 @@
 import { Vec2 } from "mathador";
 import { UUID , Quadruple, SvgSmoothPath } from "ts-viewers-core";
 
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { PageService } from "../../services/page-service";
 import { InkAnnotation, InkAnnotationDto } 
   from "../../document/entities/annotations/markup/ink-annotation";

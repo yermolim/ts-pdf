@@ -4,7 +4,7 @@ import { UUID } from "ts-viewers-core";
 import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-data-service";
 import { LineAnnotationDto } from "../../document/entities/annotations/markup/geometric/line-annotation";
 import { lineEndingTypes, lineIntents } from "../../document/spec-constants";
 

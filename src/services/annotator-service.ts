@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { ContextMenu, DomUtils , Quadruple, Icons, HtmlTemplates,
   CustomStampCreationInfo, CustomStampService } from "ts-viewers-core";
 
-import { DocumentDataService } from "./document-service";
+import { DocumentDataService } from "./document-data-service";
 import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";
 
 import { Viewer } from "../components/viewer";
