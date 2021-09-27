@@ -26151,15 +26151,19 @@ var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class PageView {
-    constructor(loaderService, pageProxy, previewWidth) {
+    constructor(modeService, loaderService, pageProxy, previewWidth) {
         this._rotation = 0;
         this._scale = 1;
+        if (!modeService) {
+            throw new Error("Mode service is not defined");
+        }
         if (!loaderService) {
             throw new Error("Loader service is not defined");
         }
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
         }
+        this._modeService = modeService;
         this._loaderService = loaderService;
         this._pageProxy = pageProxy;
         this._defaultViewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
@@ -26234,10 +26238,10 @@ class PageView {
     get viewValid() {
         return this._dimensionsIsValid && this._viewRendered;
     }
-    static CreateNewAsync(loaderService, pageIndex, previewWidth) {
+    static CreateNewAsync(modeService, loaderService, pageIndex, previewWidth) {
         return __awaiter$i(this, void 0, void 0, function* () {
             const pageProxy = yield (loaderService === null || loaderService === void 0 ? void 0 : loaderService.getPageAsync(pageIndex));
-            const pageView = new PageView(loaderService, pageProxy, previewWidth);
+            const pageView = new PageView(modeService, loaderService, pageProxy, previewWidth);
             return pageView;
         });
     }
@@ -26489,15 +26493,19 @@ class ScaleChangedEvent extends CustomEvent {
     }
 }
 class PageService {
-    constructor(eventService, loaderService, options) {
+    constructor(eventService, modeService, loaderService, options) {
         this._pages = [];
         this._renderedPages = [];
         if (!eventService) {
             throw new Error("Event service is not defined");
         }
+        if (!modeService) {
+            throw new Error("Mode service is not defined");
+        }
         if (!loaderService) {
             throw new Error("Loader service is not defined");
         }
+        this._modeService = modeService;
         this._eventService = eventService;
         this._loaderService = loaderService;
         this._previewCanvasWidth = (options === null || options === void 0 ? void 0 : options.previewCanvasWidth) || 100;
@@ -26550,7 +26558,7 @@ class PageService {
             const pages = [];
             if (docPagesNumber) {
                 for (let i = 0; i < docPagesNumber; i++) {
-                    const page = yield PageView.CreateNewAsync(this._loaderService, i, this._previewCanvasWidth);
+                    const page = yield PageView.CreateNewAsync(this._modeService, this._loaderService, i, this._previewCanvasWidth);
                     pages.push(page);
                 }
             }
@@ -30484,7 +30492,7 @@ class TsPdfViewer {
         this._eventService = new EventService(this._mainContainer);
         this._modeService = new ModeService({ disabledModes: options.disabledModes || [] });
         this._loaderService = new PdfLoaderService(this._eventService);
-        this._pageService = new PageService(this._eventService, this._loaderService, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
+        this._pageService = new PageService(this._eventService, this._modeService, this._loaderService, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
         this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
         this._customStampsService.importCustomStamps(options.customStamps);
         this._loader = new Loader();

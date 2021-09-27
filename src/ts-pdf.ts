@@ -177,8 +177,8 @@ export class TsPdfViewer {
     this._eventService = new EventService(this._mainContainer);
     this._modeService = new ModeService({disabledModes: options.disabledModes || []});
     this._loaderService = new PdfLoaderService(this._eventService);
-    this._pageService = new PageService(this._eventService, this._loaderService,
-      {previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages});      
+    this._pageService = new PageService(this._eventService, this._modeService, this._loaderService,
+      {previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages});
 
     this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
     this._customStampsService.importCustomStamps(options.customStamps);

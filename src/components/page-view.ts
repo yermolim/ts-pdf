@@ -5,11 +5,11 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
-import { DocumentService } from "../services/document-service";
+import { PdfLoaderService } from "../services/pdf-loader-service";
+import { ModeService } from "../services/mode-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
-import { PdfLoaderService } from "../services/pdf-loader-service";
 
 export class PageView implements PageInfo { 
   static readonly validRotationValues = [0, 90, 180, 270];
@@ -21,6 +21,7 @@ export class PageView implements PageInfo {
   /**pdf object generation of the page */
   readonly generation: number;
   
+  private readonly _modeService: ModeService;
   private readonly _loaderService: PdfLoaderService;
   private readonly _pageProxy: PDFPageProxy; 
 
@@ -105,7 +106,11 @@ export class PageView implements PageInfo {
 
   private _destroyed: boolean;
 
-  private constructor(loaderService: PdfLoaderService, pageProxy: PDFPageProxy, previewWidth: number) {
+  private constructor(modeService: ModeService, loaderService: PdfLoaderService, 
+    pageProxy: PDFPageProxy, previewWidth: number) {
+    if (!modeService) {
+      throw new Error("Mode service is not defined");
+    }
     if (!loaderService) {
       throw new Error("Loader service is not defined");
     }
@@ -113,6 +118,7 @@ export class PageView implements PageInfo {
       throw new Error("Page proxy is not defined");
     }
 
+    this._modeService = modeService;
     this._loaderService = loaderService;
     
     this._pageProxy = pageProxy;
@@ -152,10 +158,10 @@ export class PageView implements PageInfo {
     this.refreshDimensions();
   }  
 
-  static async CreateNewAsync(loaderService: PdfLoaderService, 
+  static async CreateNewAsync(modeService: ModeService, loaderService: PdfLoaderService, 
     pageIndex: number, previewWidth: number): Promise<PageView> {
     const pageProxy = await loaderService?.getPageAsync(pageIndex);
-    const pageView = new PageView(loaderService, pageProxy, previewWidth);
+    const pageView = new PageView(modeService, loaderService, pageProxy, previewWidth);
     return pageView;
   }
 

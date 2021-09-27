@@ -2,6 +2,7 @@ import { clamp } from "mathador";
 
 import { EventService } from "ts-viewers-core";
 import { PageView } from "../components/page-view";
+import { ModeService } from "./mode-service";
 import { PdfLoaderService } from "./pdf-loader-service";
 
 //#region custom events
@@ -98,6 +99,7 @@ export class PageService {
   get eventService(): EventService {
     return this._eventService;
   }
+  private readonly _modeService: ModeService;
   private readonly _loaderService: PdfLoaderService;
 
   private readonly _previewCanvasWidth: number;
@@ -139,14 +141,18 @@ export class PageService {
     this._eventService.dispatchEvent(new ScaleChangedEvent({scale: value}));
   }
 
-  constructor(eventService: EventService, loaderService: PdfLoaderService, 
-    options?: PageServiceOptions) {   
+  constructor(eventService: EventService, modeService: ModeService,
+    loaderService: PdfLoaderService, options?: PageServiceOptions) {   
     if (!eventService) {
       throw new Error("Event service is not defined");
+    } 
+    if (!modeService) {
+      throw new Error("Mode service is not defined");
     } 
     if (!loaderService) {
       throw new Error("Loader service is not defined");
     } 
+    this._modeService = modeService;
     this._eventService = eventService;
     this._loaderService = loaderService;
 
@@ -171,7 +177,8 @@ export class PageService {
     const pages: PageView[] = [];
     if (docPagesNumber) {
       for (let i = 0; i < docPagesNumber; i++) {
-        const page = await PageView.CreateNewAsync(this._loaderService, i, this._previewCanvasWidth);
+        const page = await PageView.CreateNewAsync(this._modeService, 
+          this._loaderService, i, this._previewCanvasWidth);
         pages.push(page);
       }
     }
