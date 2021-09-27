@@ -245,19 +245,7 @@ export class TsPdfViewer {
 
     // get the plain pdf data as a byte array
     try {
-      if (src instanceof Uint8Array) {
-        data = src;
-      } else {
-        let blob: Blob;  
-        if (typeof src === "string") {
-          const res = await fetch(src);
-          blob = await res.blob();
-        } else {
-          blob = src;
-        }  
-        const buffer = await blob.arrayBuffer();
-        data = new Uint8Array(buffer);
-      }
+      data = await DomUtils.loadFileDataAsync(src);
     } catch (e) {
       this._loader.hide();
       throw new Error(`Cannot load file data: ${e.message}`);

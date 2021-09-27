@@ -376,7 +376,8 @@ const styles = `
     flex-shrink: 1;
     width: 100px;
   }
-  .mode-comparison .page-annotations {
+  .mode-comparison .page-annotations,
+  .mode-comparison .page-text {
     visibility: hidden;
   }
 </style>
@@ -30334,21 +30335,7 @@ class TsPdfViewer {
             let data;
             let doc;
             try {
-                if (src instanceof Uint8Array) {
-                    data = src;
-                }
-                else {
-                    let blob;
-                    if (typeof src === "string") {
-                        const res = yield fetch(src);
-                        blob = yield res.blob();
-                    }
-                    else {
-                        blob = src;
-                    }
-                    const buffer = yield blob.arrayBuffer();
-                    data = new Uint8Array(buffer);
-                }
+                data = yield DomUtils.loadFileDataAsync(src);
             }
             catch (e) {
                 this._loader.hide();

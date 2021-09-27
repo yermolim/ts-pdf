@@ -130,7 +130,8 @@ export const styles = /*html*/`
     flex-shrink: 1;
     width: 100px;
   }
-  .mode-comparison .page-annotations {
+  .mode-comparison .page-annotations,
+  .mode-comparison .page-text {
     visibility: hidden;
   }
 </style>
