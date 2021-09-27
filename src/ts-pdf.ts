@@ -106,6 +106,7 @@ export class TsPdfViewer {
   private readonly _loaderService: PdfLoaderService;  
   private readonly _pageService: PageService;
   private readonly _customStampsService: CustomStampService;
+  
   private get _docService(): DocumentService {
     return this._loaderService?.docService;
   }  
@@ -234,6 +235,8 @@ export class TsPdfViewer {
       this._loader.hide();
       throw e;
     }
+    
+    this.setViewerMode();
 
     // load pages from the document
     await this.refreshPagesAsync();
@@ -509,35 +512,13 @@ export class TsPdfViewer {
     this._shadowRoot.querySelector("#button-annotation-delete")
       .addEventListener("click", this.onAnnotationDeleteButtonClick); 
       
-    // stamp buttons
-    this._shadowRoot.querySelector("#button-annotation-stamp-undo")
-      .addEventListener("click", this.annotatorUndo);
-    this._shadowRoot.querySelector("#button-annotation-stamp-clear")
-      .addEventListener("click", this.annotatorClear);    
-
-    // pen buttons
-    this._shadowRoot.querySelector("#button-annotation-pen-undo")
-      .addEventListener("click", this.annotatorUndo);
-    this._shadowRoot.querySelector("#button-annotation-pen-clear")
-      .addEventListener("click", this.annotatorClear);
-    this._shadowRoot.querySelector("#button-annotation-pen-save")
-      .addEventListener("click", this.annotatorSave);
-      
-    // geometric buttons
-    this._shadowRoot.querySelector("#button-annotation-geometric-undo")
-      .addEventListener("click", this.annotatorUndo);
-    this._shadowRoot.querySelector("#button-annotation-geometric-clear")
-      .addEventListener("click", this.annotatorClear);
-    this._shadowRoot.querySelector("#button-annotation-geometric-save")
-      .addEventListener("click", this.annotatorSave);
-      
-    // text buttons
-    this._shadowRoot.querySelector("#button-annotation-text-undo")
-      .addEventListener("click", this.annotatorUndo);
-    this._shadowRoot.querySelector("#button-annotation-text-clear")
-      .addEventListener("click", this.annotatorClear);
-    this._shadowRoot.querySelector("#button-annotation-text-save")
-      .addEventListener("click", this.annotatorSave);
+    // annotator buttons
+    this._shadowRoot.querySelectorAll(".button-annotation-undo")
+      .forEach(x => x.addEventListener("click", this.annotatorUndo));
+    this._shadowRoot.querySelectorAll(".button-annotation-clear")
+      .forEach(x => x.addEventListener("click", this.annotatorClear));
+    this._shadowRoot.querySelectorAll(".button-annotation-save")
+      .forEach(x => x.addEventListener("click", this.annotatorSave));
 
     this._shadowRoot.querySelector("#button-command-undo")
       .addEventListener("click", this.docServiceUndo);      

@@ -379,7 +379,7 @@ export class PageService {
     const pages = this._pages;
     
     const visible = this.getVisiblePageIndices(container);
-    const {actual: indices, minFinal: minIndex, maxFinal: maxIndex} = visible;
+    const {actual: indices} = visible;
 
     if (!indices.length) {
       // no visible pages = no current page. default to zero

@@ -100,15 +100,15 @@ export const mainHtml = /*html*/`
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-stamp-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-stamp-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div>
         <div id="button-annotation-stamp-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-stamp" 
@@ -118,15 +118,15 @@ export const mainHtml = /*html*/`
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-pen-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-pen-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div> 
         <div id="button-annotation-pen-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-pen" 
@@ -136,15 +136,15 @@ export const mainHtml = /*html*/`
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-geometric-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-geometric-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div> 
         <div id="button-annotation-geometric-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-geometric" 
@@ -154,15 +154,15 @@ export const mainHtml = /*html*/`
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-text-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-text-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div> 
         <div id="button-annotation-text-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-text" 

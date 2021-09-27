@@ -152,15 +152,15 @@ const mainHtml = `
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-stamp-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-stamp-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div>
         <div id="button-annotation-stamp-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-stamp" 
@@ -170,15 +170,15 @@ const mainHtml = `
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-pen-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-pen-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div> 
         <div id="button-annotation-pen-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-pen" 
@@ -188,15 +188,15 @@ const mainHtml = `
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-geometric-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-geometric-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div> 
         <div id="button-annotation-geometric-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-geometric" 
@@ -206,15 +206,15 @@ const mainHtml = `
       </div>
       <div class="annotation-panel-row">
         <div id="button-annotation-text-undo" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-undo">
           <img src="${Icons.icon_back}"/>
         </div> 
         <div id="button-annotation-text-clear" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-clear">
           <img src="${Icons.icon_close}"/>
         </div> 
         <div id="button-annotation-text-save" 
-          class="panel-button annotation-panel-subitem">
+          class="panel-button annotation-panel-subitem button-annotation-save">
           <img src="${Icons.icon_ok}"/>
         </div> 
         <div id="button-annotation-mode-text" 
@@ -26693,7 +26693,7 @@ class PageService {
     updateCurrentPage(container) {
         const pages = this._pages;
         const visible = this.getVisiblePageIndices(container);
-        const { actual: indices, minFinal: minIndex, maxFinal: maxIndex } = visible;
+        const { actual: indices } = visible;
         if (!indices.length) {
             this.setCurrentPageIndex(0);
             return;
@@ -30506,6 +30506,7 @@ class TsPdfViewer {
                 this._loader.hide();
                 throw e;
             }
+            this.setViewerMode();
             yield this.refreshPagesAsync();
             this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
             this.setAnnotationMode("select");
@@ -30691,28 +30692,12 @@ class TsPdfViewer {
             .addEventListener("click", this.onAnnotationEditTextButtonClick);
         this._shadowRoot.querySelector("#button-annotation-delete")
             .addEventListener("click", this.onAnnotationDeleteButtonClick);
-        this._shadowRoot.querySelector("#button-annotation-stamp-undo")
-            .addEventListener("click", this.annotatorUndo);
-        this._shadowRoot.querySelector("#button-annotation-stamp-clear")
-            .addEventListener("click", this.annotatorClear);
-        this._shadowRoot.querySelector("#button-annotation-pen-undo")
-            .addEventListener("click", this.annotatorUndo);
-        this._shadowRoot.querySelector("#button-annotation-pen-clear")
-            .addEventListener("click", this.annotatorClear);
-        this._shadowRoot.querySelector("#button-annotation-pen-save")
-            .addEventListener("click", this.annotatorSave);
-        this._shadowRoot.querySelector("#button-annotation-geometric-undo")
-            .addEventListener("click", this.annotatorUndo);
-        this._shadowRoot.querySelector("#button-annotation-geometric-clear")
-            .addEventListener("click", this.annotatorClear);
-        this._shadowRoot.querySelector("#button-annotation-geometric-save")
-            .addEventListener("click", this.annotatorSave);
-        this._shadowRoot.querySelector("#button-annotation-text-undo")
-            .addEventListener("click", this.annotatorUndo);
-        this._shadowRoot.querySelector("#button-annotation-text-clear")
-            .addEventListener("click", this.annotatorClear);
-        this._shadowRoot.querySelector("#button-annotation-text-save")
-            .addEventListener("click", this.annotatorSave);
+        this._shadowRoot.querySelectorAll(".button-annotation-undo")
+            .forEach(x => x.addEventListener("click", this.annotatorUndo));
+        this._shadowRoot.querySelectorAll(".button-annotation-clear")
+            .forEach(x => x.addEventListener("click", this.annotatorClear));
+        this._shadowRoot.querySelectorAll(".button-annotation-save")
+            .forEach(x => x.addEventListener("click", this.annotatorSave));
         this._shadowRoot.querySelector("#button-command-undo")
             .addEventListener("click", this.docServiceUndo);
     }
