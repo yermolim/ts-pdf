@@ -1,6 +1,6 @@
 import { getDistance2D, Vec2 } from "mathador";
 
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 
 import { Viewer } from "../../components/viewer";
@@ -15,7 +15,7 @@ export class TextNoteAnnotator extends TextAnnotator {
   protected _pageId: number;
   protected _tempAnnotation: TextAnnotation;
 
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     viewer: Viewer, options?: TextAnnotatorOptions) {
     super(docService, pageService, viewer.container, options || {});
     this._viewer = viewer;

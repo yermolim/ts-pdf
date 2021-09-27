@@ -1,6 +1,6 @@
 import { Vec2 } from "mathador";
 import { UUID, Quadruple } from "ts-viewers-core";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
 import { FreeTextAnnotation, FreeTextAnnotationDto, FreeTextAnnotPointsDto } 
@@ -18,7 +18,7 @@ export class FreeTextAnnotator extends TextAnnotator {
   /**min and max rectangle corners in the page coordinate system */
   protected _rect: Quadruple;
 
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     viewer: Viewer, options?: TextAnnotatorOptions) {
     super(docService, pageService, viewer.container, options || {});
     this._viewer = viewer;

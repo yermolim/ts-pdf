@@ -1,6 +1,6 @@
 import { TextSelectionInfo } from "../common/text-selection";
 
-import { DocumentDataService } from "../services/document-data-service";
+import { DocumentService } from "../services/document-service";
 import { PageCoords, PageService, PagesRenderedEvent, pagesRenderedEvent } 
   from "../services/page-service";
   
@@ -50,7 +50,7 @@ declare global {
  * base class for annotation addition tools
  */
 export abstract class Annotator {
-  protected readonly _docService: DocumentDataService;
+  protected readonly _docService: DocumentService;
   protected readonly _pageService: PageService;
   protected readonly _parent: HTMLDivElement;
   
@@ -69,7 +69,7 @@ export abstract class Annotator {
   protected _lastPointerDownInfo: PointerDownInfo;
   protected _pointerCoordsInPageCS: PageCoords;  
 
-  constructor(docService: DocumentDataService, pageService: PageService, parent: HTMLDivElement) {
+  constructor(docService: DocumentService, pageService: PageService, parent: HTMLDivElement) {
     if (!docService) {
       throw new Error("Document service not defined");
     }

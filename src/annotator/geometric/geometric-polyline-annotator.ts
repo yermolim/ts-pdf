@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { UUID } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { PolylineAnnotation, PolylineAnnotationDto } from "../../document/entities/annotations/markup/geometric/polyline-annotation";
@@ -11,7 +11,7 @@ export class GeometricPolylineAnnotator extends GeometricAnnotator {
   /**points in the page coordinate system */
   protected readonly _points: Vec2[] = [];
   
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

@@ -1,7 +1,7 @@
 import { Quadruple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 
 import { Annotator, AnnotatorDataChangeEvent } from "../annotator";
 
@@ -14,7 +14,7 @@ export abstract class TextAnnotator extends Annotator {
   protected _color: Quadruple;
   protected _strokeWidth: number;
   
-  protected constructor(docService: DocumentDataService, pageService: PageService, 
+  protected constructor(docService: DocumentService, pageService: PageService, 
     parent: HTMLDivElement, options: TextAnnotatorOptions) {
     super(docService, pageService, parent);
     

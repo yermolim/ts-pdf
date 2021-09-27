@@ -1,5 +1,5 @@
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 
 import { UnderlineAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/underline-annotation";
@@ -9,7 +9,7 @@ import { TextMarkupAnnotator } from "./text-markup-annotator";
 
 export class TextUnderlineAnnotator extends TextMarkupAnnotator {
 
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     parent: HTMLDivElement, options?: TextAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

@@ -1,7 +1,7 @@
 import { Quadruple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricArrowAnnotator } from "./geometric-arrow-annotator";
@@ -20,7 +20,7 @@ export class GeometricAnnotatorFactory {
   protected _lastStrokeWidth: number;
   protected _lastCloudMode: boolean;
 
-  createAnnotator(docService: DocumentDataService, pageService: PageService, parent: HTMLDivElement,
+  createAnnotator(docService: DocumentService, pageService: PageService, parent: HTMLDivElement,
     options?: GeometricAnnotatorOptions, type?: GeometricAnnotatorType): GeometricAnnotator {
 
     if (!docService) {

@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { UUID, Quadruple, CloudCurveData } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 import { SquareAnnotationDto, SquareAnnotation } 
   from "../../document/entities/annotations/markup/geometric/square-annotation";
 
@@ -15,7 +15,7 @@ export class GeometricSquareAnnotator extends GeometricAnnotator {
   /**min and max rectangle corners in the page coordinate system */
   protected _rect: Quadruple;
   
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { UUID, Double, Quadruple } from "ts-viewers-core";
 import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
 
@@ -24,7 +24,7 @@ export class FreeTextCalloutAnnotator extends TextAnnotator {
   /**future annotation key points */
   protected _points: FreeTextAnnotPointsDto;
 
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     viewer: Viewer, options?: TextAnnotatorOptions) {
     super(docService, pageService, viewer.container, options || {});
     this._viewer = viewer;

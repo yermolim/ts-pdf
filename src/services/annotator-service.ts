@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { ContextMenu, DomUtils , Quadruple, Icons, HtmlTemplates,
   CustomStampCreationInfo, CustomStampService } from "ts-viewers-core";
 
-import { DocumentDataService } from "./document-data-service";
+import { DocumentService } from "./document-service";
 import { PageService, pagesRenderedEvent, PagesRenderedEvent } from "./page-service";
 
 import { Viewer } from "../components/viewer";
@@ -27,7 +27,7 @@ export class AnnotatorService {
     [1, 0.2, 1, 0.5], // pink
   ];
   
-  private readonly _docService: DocumentDataService;
+  private readonly _docService: DocumentService;
   private readonly _pageService: PageService;
   private readonly _customStampService: CustomStampService;
   private readonly _viewer: Viewer;
@@ -61,7 +61,7 @@ export class AnnotatorService {
     return this._annotator;
   }
 
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     customStampService: CustomStampService, viewer: Viewer) {
     if (!docService) {
       throw new Error("Document service is not defined");

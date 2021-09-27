@@ -2,7 +2,7 @@ import { Octuple } from "ts-viewers-core";
 import { Vec2 } from "mathador";
 
 import { PageService } from "../../services/page-service";
-import { DocumentDataService } from "../../services/document-data-service";
+import { DocumentService } from "../../services/document-service";
 
 import { StrikeoutAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/strikeout-annotation";
@@ -12,7 +12,7 @@ import { TextMarkupAnnotator } from "./text-markup-annotator";
 
 export class TextStrikeoutAnnotator extends TextMarkupAnnotator {
 
-  constructor(docService: DocumentDataService, pageService: PageService, 
+  constructor(docService: DocumentService, pageService: PageService, 
     parent: HTMLDivElement, options?: TextAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

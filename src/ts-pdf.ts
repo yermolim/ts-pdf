@@ -15,9 +15,9 @@ import { AnnotationDto } from "./common/annotation";
 
 import { PageService, currentPageChangeEvent, 
   CurrentPageChangeEvent } from "./services/page-service";
-import { DocumentDataService, annotChangeEvent, AnnotEvent, 
+import { DocumentService, annotChangeEvent, AnnotEvent, 
   AnnotEventDetail, DocServiceStateChangeEvent, 
-  docServiceStateChangeEvent } from "./services/document-data-service";
+  docServiceStateChangeEvent } from "./services/document-service";
 import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-service";
 
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
@@ -113,7 +113,7 @@ export class TsPdfViewer {
 
   private _fileName: string; 
 
-  private _docService: DocumentDataService;  
+  private _docService: DocumentService;  
   private _annotatorService: AnnotatorService;
 
   private _fileButtons: FileButtons[];
@@ -252,7 +252,7 @@ export class TsPdfViewer {
     }
 
     // create DocumentData
-    const docService = await DocumentDataService.CreateNewAsync(this._eventService, data, this._userName);
+    const docService = await DocumentService.CreateNewAsync(this._eventService, data, this._userName);
     let password: string;
     while (true) {
       const authenticated = docService.tryAuthenticate(password);
