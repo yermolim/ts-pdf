@@ -1,25 +1,16 @@
 import { PageService, currentPageChangeEvent, CurrentPageChangeEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
 
-export interface PreviewerOptions {
-  canvasWidth?: number;
-}
-
 export class Previewer {
   private readonly _pageService: PageService;
   private readonly _container: HTMLDivElement;
-
-  private readonly _canvasWidth: number;
-  get canvasWidth(): number {
-    return this._canvasWidth;
-  }
 
   private _hidden = true;
   get hidden(): boolean {
     return this._hidden;
   }
  
-  constructor(pageService: PageService, container: HTMLDivElement, options?: PreviewerOptions) {        
+  constructor(pageService: PageService, container: HTMLDivElement) {        
     if (!pageService) {
       throw new Error("Page service is not defined");
     }
@@ -28,8 +19,6 @@ export class Previewer {
     }
     this._pageService = pageService;
     this._container = container;
-
-    this._canvasWidth = options?.canvasWidth || 100;
 
     this.init();
   }

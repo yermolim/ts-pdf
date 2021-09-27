@@ -9,6 +9,7 @@ import { DocumentService } from "../services/document-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
+import { PdfLoaderService } from "../services/pdf-loader-service";
 
 export class PageView implements PageInfo { 
   static readonly validRotationValues = [0, 90, 180, 270];
@@ -20,7 +21,7 @@ export class PageView implements PageInfo {
   /**pdf object generation of the page */
   readonly generation: number;
   
-  private readonly _docService: DocumentService;
+  private readonly _loaderService: PdfLoaderService;
   private readonly _pageProxy: PDFPageProxy; 
 
   private readonly _defaultViewport: PageViewport;
@@ -104,15 +105,15 @@ export class PageView implements PageInfo {
 
   private _destroyed: boolean;
 
-  constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number) {
-    if (!docService) {
-      throw new Error("Annotation data is not defined");
+  private constructor(loaderService: PdfLoaderService, pageProxy: PDFPageProxy, previewWidth: number) {
+    if (!loaderService) {
+      throw new Error("Loader service is not defined");
     }
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
 
-    this._docService = docService;
+    this._loaderService = loaderService;
     
     this._pageProxy = pageProxy;
     this._defaultViewport = pageProxy.getViewport({scale: 1, rotation: 0});
@@ -149,6 +150,13 @@ export class PageView implements PageInfo {
     this._viewOuterContainer.append(this._viewInnerContainer);
 
     this.refreshDimensions();
+  }  
+
+  static async CreateNewAsync(loaderService: PdfLoaderService, 
+    pageIndex: number, previewWidth: number): Promise<PageView> {
+    const pageProxy = await loaderService?.getPageAsync(pageIndex);
+    const pageView = new PageView(loaderService, pageProxy, previewWidth);
+    return pageView;
   }
 
   /**free the resources that can prevent garbage to be collected */
@@ -157,7 +165,7 @@ export class PageView implements PageInfo {
     this._previewContainer.remove();
     this._viewOuterContainer.remove();
     this._pageProxy.cleanup();
-  }  
+  }
 
   /**
    * render the preview to the SVG element and append in to the preview container
@@ -383,13 +391,13 @@ export class PageView implements PageInfo {
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationView(this._docService, this, new Vec2(x, y));
+      this._annotations = new PageAnnotationView(this._loaderService.docService, this, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this._viewInnerContainer);
 
     // check if scale not changed during text render
     if (scale === this._scale) {
       this._dimensionsIsValid = true;
-    }     
+    }
   }
 }

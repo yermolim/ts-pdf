@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
-import { PDFDocumentLoadingTask, PDFDocumentProxy } from "pdfjs-dist/types/display/api";
+import { GlobalWorkerOptions } from "pdfjs-dist";
 
 import { clamp } from "mathador";
 import { DomUtils, EventService, Loader, CustomStampCreationInfo,
@@ -22,12 +21,12 @@ import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-ser
 
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { Previewer } from "./components/previewer";
-import { PageView } from "./components/page-view";
 
 import { annotatorDataChangeEvent, AnnotatorDataChangeEvent, 
   annotatorTypes, 
   TextSelectionChangeEvent, 
   textSelectionChangeEvent} from "./annotator/annotator"; 
+import { PdfLoaderService } from "./services/pdf-loader-service";
 
 declare global {
   interface HTMLElementEventMap {
@@ -104,16 +103,17 @@ export class TsPdfViewer {
   private readonly _mainContainer: HTMLDivElement;
   
   private readonly _eventService: EventService;
+  private readonly _loaderService: PdfLoaderService;  
   private readonly _pageService: PageService;
   private readonly _customStampsService: CustomStampService;
+  private get _docService(): DocumentService {
+    return this._loaderService?.docService;
+  }  
 
   private readonly _loader: Loader;
   private readonly _viewer: Viewer;
-  private readonly _previewer: Previewer;  
+  private readonly _previewer: Previewer;
 
-  private _fileName: string; 
-
-  private _docService: DocumentService;  
   private _annotatorService: AnnotatorService;
 
   private _fileButtons: FileButtons[];
@@ -128,9 +128,6 @@ export class TsPdfViewer {
   private _panelsHidden: boolean;
 
   private _fileInput: HTMLInputElement;
-  
-  private _pdfLoadingTask: PDFDocumentLoadingTask;
-  private _pdfDocument: PDFDocumentProxy;  
   
   /**common timers */
   private _timers = {    
@@ -175,15 +172,15 @@ export class TsPdfViewer {
     this._mainContainer = this._shadowRoot.querySelector("div#main-container") as HTMLDivElement;
 
     this._eventService = new EventService(this._mainContainer);
-    this._pageService = new PageService(this._eventService,
-      {visibleAdjPages: visibleAdjPages});      
+    this._loaderService = new PdfLoaderService(this._eventService);
+    this._pageService = new PageService(this._eventService, this._loaderService,
+      {previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages});      
 
     this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
     this._customStampsService.importCustomStamps(options.customStamps);
 
     this._loader = new Loader();
-    this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
-      {canvasWidth: previewWidth});
+    this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"));
     this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
       {minScale: minScale, maxScale: maxScale, disabledModes: options.disabledModes || []}); 
     this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
@@ -208,22 +205,15 @@ export class TsPdfViewer {
   //#region public API
   /**free resources to let GC clean them to avoid memory leak */
   destroy() {
-    this._annotChangeCallback = null;
-
-    this._pdfLoadingTask?.destroy();    
+    this._annotChangeCallback = null;   
 
     this._annotatorService?.destroy();
 
+    this._loaderService.destroy(); 
     this._viewer.destroy();
     this._previewer.destroy();
-    this._pageService.destroy();
-    
-    if (this._pdfDocument) {
-      this._pdfDocument.cleanup();
-      this._pdfDocument.destroy();
-    }  
-    this._docService?.destroy();  
-    
+    this._pageService.destroy();    
+
     this._customStampsService.destroy();
     this._eventService.destroy();
 
@@ -236,65 +226,14 @@ export class TsPdfViewer {
   async openPdfAsync(src: string | Blob | Uint8Array, 
     fileName?: string): Promise<void> {
     this._loader.show(this._mainContainer);
-    
-    // close the currently opened file if present
-    await this.closePdfAsync();
 
-    let data: Uint8Array;
-    let doc: PDFDocumentProxy;
-
-    // get the plain pdf data as a byte array
     try {
-      data = await DomUtils.loadFileDataAsync(src);
+      await this._loaderService.openPdfAsync(src, fileName,
+        this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
     } catch (e) {
       this._loader.hide();
-      throw new Error(`Cannot load file data: ${e.message}`);
+      throw e;
     }
-
-    // create DocumentData
-    const docService = await DocumentService.CreateNewAsync(this._eventService, data, this._userName);
-    let password: string;
-    while (true) {
-      const authenticated = docService.tryAuthenticate(password);
-      if (!authenticated) {
-        password = await this.showPasswordDialogAsync();
-        if (password === null) {
-          this._loader.hide();
-          throw new Error("File loading cancelled: authentication aborted");
-        }
-        continue;
-      }
-      break;
-    }
-
-    // try open the data with PDF.js
-    try {
-      if (this._pdfLoadingTask) {
-        await this.closePdfAsync();
-        return this.openPdfAsync(data);
-      }
-
-      // remove supported annotations from the data before supplying it to PDF.js
-      const dataWithoutAnnotations = 
-        await docService.getDataWithoutSupportedAnnotationsAsync();
-
-      this._pdfLoadingTask = getDocument({
-        // get the pdf data with the supported annotations cut out
-        data: dataWithoutAnnotations, 
-        password,
-      });
-      this._pdfLoadingTask.onProgress = this.onPdfLoadingProgress;
-      doc = await this._pdfLoadingTask.promise;    
-      this._pdfLoadingTask = null;
-    } catch (e) {
-      this._loader.hide();
-      throw new Error(`Cannot open PDF: ${e.message}`);
-    }
-
-    // update viewer state
-    this._pdfDocument = doc;
-    this._docService = docService;
-    this._fileName = fileName;
 
     // load pages from the document
     await this.refreshPagesAsync();
@@ -311,12 +250,7 @@ export class TsPdfViewer {
 
   async closePdfAsync(): Promise<void> {
     // destroy a running loading task if present
-    if (this._pdfLoadingTask) {
-      if (!this._pdfLoadingTask.destroyed) {
-        await this._pdfLoadingTask.destroy();
-      }
-      this._pdfLoadingTask = null;
-    }
+    await this._loaderService.closePdfAsync();
 
     this._mainContainer.classList.add("disabled");
     // remove unneeded classes from the main container
@@ -326,17 +260,7 @@ export class TsPdfViewer {
     // reset viewer state to default
     this.setViewerMode();
 
-    if (this._pdfDocument) {
-      this._pdfDocument.destroy();
-      this._pdfDocument = null;
-
-      this._annotatorService?.destroy();
-      
-      this._docService?.destroy();
-      this._docService = null;
-
-      this._fileName = null;
-    }
+    this._annotatorService?.destroy();
 
     await this.refreshPagesAsync();
     this.showPanels();
@@ -550,7 +474,8 @@ export class TsPdfViewer {
     // DEBUG
     // this.openPdfAsync(blob);
 
-    DomUtils.downloadFile(blob, this._fileName || `file_${new Date().toISOString()}.pdf`);
+    DomUtils.downloadFile(blob, this._loaderService?.fileName 
+      || `file_${new Date().toISOString()}.pdf`);
   };
   
   private onCloseFileButtonClick = () => {
@@ -701,7 +626,7 @@ export class TsPdfViewer {
   
   private onPaginatorChange = (event: Event) => {
     if (event.target instanceof HTMLInputElement) {
-      const pageNumber = Math.max(Math.min(+event.target.value, this._pdfDocument.numPages), 1);
+      const pageNumber = Math.max(Math.min(+event.target.value, this._loaderService.pageCount), 1);
       if (pageNumber + "" !== event.target.value) {        
         event.target.value = pageNumber + "";
       }
@@ -900,7 +825,7 @@ export class TsPdfViewer {
   private hidePanels() {
     if (!this._panelsHidden && !this._timers.hidePanels) {
       this._timers.hidePanels = setTimeout(() => {
-        if (!this._pdfDocument) {
+        if (!this._loaderService?.docLoaded) {
           return; // hide panels only if document is open
         }
         this._mainContainer.classList.add("hide-panels");
@@ -945,19 +870,10 @@ export class TsPdfViewer {
    * @returns 
    */
   private async refreshPagesAsync(): Promise<void> {
-    const docPagesNumber = this._pdfDocument?.numPages || 0;
+    const docPagesNumber = this._loaderService.pageCount;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
 
-    const pages: PageView[] = [];
-    if (docPagesNumber) {
-      for (let i = 0; i < docPagesNumber; i++) {    
-        const pageProxy = await this._pdfDocument.getPage(i + 1);
-        const page = new PageView(this._docService, pageProxy, this._previewer.canvasWidth);
-        pages.push(page);
-      }
-    }
-
-    this._pageService.pages = pages;
+    await this._pageService.reloadPagesAsync();
   }
 
   private onPreviewerToggleClick = () => {
@@ -976,7 +892,7 @@ export class TsPdfViewer {
     }
   }
 
-  private async showPasswordDialogAsync(): Promise<string> {
+  private showPasswordDialogAsync = async (): Promise<string> => {
     const passwordPromise = new Promise<string>((resolve, reject) => {
 
       const dialog = DomUtils.htmlToElements(passwordDialogHtml)[0];
@@ -1007,7 +923,7 @@ export class TsPdfViewer {
     });
 
     return passwordPromise;
-  }
+  };
 
   private onViewerKeyDown = (event: KeyboardEvent) => {
     switch (event.code) {

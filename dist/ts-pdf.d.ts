@@ -967,7 +967,7 @@ declare class DocumentService {
     get encrypted(): boolean;
     get authenticated(): boolean;
     private constructor();
-    static CreateNewAsync(eventService: EventService, data: Uint8Array, userName: string): Promise<DocumentService>;
+    static createNewAsync(eventService: EventService, data: Uint8Array, userName: string): Promise<DocumentService>;
     destroy(): void;
     tryAuthenticate(password?: string): boolean;
     getPlainData(): Uint8Array;
@@ -1006,12 +1006,32 @@ declare class DocumentService {
     private onAnnotationFocusRequest;
 }
 
+declare class PdfLoaderService {
+    protected readonly _eventService: EventService;
+    private _pdfLoadingTask;
+    private _pdfDocument;
+    get pageCount(): number;
+    get docLoaded(): boolean;
+    private _docService;
+    get docService(): DocumentService;
+    private _fileName;
+    get fileName(): string;
+    constructor(eventService: EventService);
+    destroy(): void;
+    openPdfAsync(src: string | Blob | Uint8Array, fileName: string, userName: string, getPasswordAsync: () => Promise<string>, onProgress?: (progressData: {
+        loaded: number;
+        total: number;
+    }) => void): Promise<void>;
+    closePdfAsync(): Promise<void>;
+    getPageAsync(pageIndex: number): Promise<PDFPageProxy>;
+}
+
 declare class PageView implements PageInfo {
     static readonly validRotationValues: number[];
     readonly number: number;
     readonly id: number;
     readonly generation: number;
-    private readonly _docService;
+    private readonly _loaderService;
     private readonly _pageProxy;
     private readonly _defaultViewport;
     private _currentViewport;
@@ -1041,7 +1061,8 @@ declare class PageView implements PageInfo {
     private _dimensionsIsValid;
     get viewValid(): boolean;
     private _destroyed;
-    constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number);
+    private constructor();
+    static CreateNewAsync(loaderService: PdfLoaderService, pageIndex: number, previewWidth: number): Promise<PageView>;
     destroy(): void;
     renderPreviewAsync(force?: boolean): Promise<void>;
     renderViewAsync(force?: boolean): Promise<void>;
@@ -1136,13 +1157,13 @@ declare class TsPdfViewer {
     private readonly _shadowRoot;
     private readonly _mainContainer;
     private readonly _eventService;
+    private readonly _loaderService;
     private readonly _pageService;
     private readonly _customStampsService;
+    private get _docService();
     private readonly _loader;
     private readonly _viewer;
     private readonly _previewer;
-    private _fileName;
-    private _docService;
     private _annotatorService;
     private _fileButtons;
     private _fileOpenAction;
@@ -1153,8 +1174,6 @@ declare class TsPdfViewer {
     private _mainContainerRObserver;
     private _panelsHidden;
     private _fileInput;
-    private _pdfLoadingTask;
-    private _pdfDocument;
     private _timers;
     constructor(options: TsPdfViewerOptions);
     destroy(): void;

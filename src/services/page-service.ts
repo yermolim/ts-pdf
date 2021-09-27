@@ -2,6 +2,7 @@ import { clamp } from "mathador";
 
 import { EventService } from "ts-viewers-core";
 import { PageView } from "../components/page-view";
+import { PdfLoaderService } from "./pdf-loader-service";
 
 //#region custom events
 export const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest" as const;
@@ -77,6 +78,8 @@ export interface VisiblePageIndices {
 }
 
 export interface PageServiceOptions {
+  /**width of the preview canvas in pixels */
+  previewCanvasWidth?: number;  
   /**number of pages that should be prerendered outside view */
   visibleAdjPages?: number;  
 }
@@ -95,7 +98,9 @@ export class PageService {
   get eventService(): EventService {
     return this._eventService;
   }
+  private readonly _loaderService: PdfLoaderService;
 
+  private readonly _previewCanvasWidth: number;
   private readonly _visibleAdjPages: number;
 
   private _currentPageIndex: number;
@@ -134,12 +139,18 @@ export class PageService {
     this._eventService.dispatchEvent(new ScaleChangedEvent({scale: value}));
   }
 
-  constructor(eventService: EventService, options?: PageServiceOptions) {   
+  constructor(eventService: EventService, loaderService: PdfLoaderService, 
+    options?: PageServiceOptions) {   
     if (!eventService) {
       throw new Error("Event service is not defined");
     } 
+    if (!loaderService) {
+      throw new Error("Loader service is not defined");
+    } 
     this._eventService = eventService;
+    this._loaderService = loaderService;
 
+    this._previewCanvasWidth = options?.previewCanvasWidth || 100;
     this._visibleAdjPages = options?.visibleAdjPages || 0;
   }
 
@@ -153,6 +164,19 @@ export class PageService {
   
   getCurrentPage(): PageView {
     return this._pages[this._currentPageIndex];
+  }
+
+  async reloadPagesAsync() {   
+    const docPagesNumber = this._loaderService.pageCount; 
+    const pages: PageView[] = [];
+    if (docPagesNumber) {
+      for (let i = 0; i < docPagesNumber; i++) {
+        const page = await PageView.CreateNewAsync(this._loaderService, i, this._previewCanvasWidth);
+        pages.push(page);
+      }
+    }
+
+    this.pages = pages;
   }
 
   /**

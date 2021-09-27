@@ -170,7 +170,7 @@ export class DocumentService {
     this._initPromise = this.initAsync();
   }
 
-  static async CreateNewAsync(eventService: EventService, 
+  static async createNewAsync(eventService: EventService, 
     data: Uint8Array, userName: string): Promise<DocumentService> {
     const service = new DocumentService(eventService, data, userName);
     await service._initPromise;
