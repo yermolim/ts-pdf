@@ -20,7 +20,7 @@ async function run(): Promise<void> {
     },
     customStampChangeCallback: (detail: CustomStampEventDetail) => {
       // console.log(JSON.stringify(detail.stamp));
-    }
+    },
   };
   const viewer = new TsPdfViewer(options);
 

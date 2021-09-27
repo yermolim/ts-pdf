@@ -4,15 +4,18 @@ import { DomUtils, HtmlTemplates } from "ts-viewers-core";
 import { PageService, CurrentPageChangeRequestEvent, currentPageChangeRequestEvent, 
   pagesLoadedEvent, PagesLoadedEvent } from "../services/page-service";
 
-export const viewerModes = ["text", "hand", "annotation"] as const;
+export const viewerModes = ["text", "hand", "annotation", "comparison"] as const;
 export type ViewerMode =  typeof viewerModes[number];
 
 export interface ViewerOptions {
   minScale?: number;
   maxScale?: number;
+  disabledModes?: ViewerMode[];
 }
 
 export class Viewer {
+  public readonly enabledModes: readonly ViewerMode[];
+
   private readonly _minScale: number;
   private readonly _maxScale: number;
 
@@ -59,7 +62,7 @@ export class Viewer {
     target: <HTMLElement>null,
   };
 
-  private _dialogClose: () => void;
+  private _dialogClose: () => void;  
 
   constructor(pageService: PageService, container: HTMLDivElement, options?: ViewerOptions) {
     if (!container) {
@@ -71,6 +74,18 @@ export class Viewer {
 
     this._minScale = options?.minScale || 0.25;
     this._maxScale = options?.maxScale || 4;
+
+    const modes: ViewerMode[] = [];
+    viewerModes.forEach(x => {
+      if (!options?.disabledModes?.length
+        || !options.disabledModes.includes(x)) {
+        modes.push(x);
+      }
+    });
+    if (!modes.length) {
+      throw new Error("All viewer modes are disabled");
+    }
+    this.enabledModes = modes;
 
     this.init();
   } 

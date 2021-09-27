@@ -18,7 +18,7 @@ import { PageService, currentPageChangeEvent,
 import { DocumentService, annotChangeEvent, AnnotEvent, 
   AnnotEventDetail, DocServiceStateChangeEvent, 
   docServiceStateChangeEvent } from "./services/document-service";
-import { AnnotatorService } from "./services/annotator-service";
+import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-service";
 
 import { Viewer, ViewerMode, viewerModes } from "./components/viewer";
 import { Previewer } from "./components/previewer";
@@ -34,8 +34,6 @@ declare global {
     [customStampEvent]: CustomStampEvent;
   }
 }
-
-type AnnotatorMode = "select" | "stamp" | "pen" | "geometric" | "text";
 
 export type FileButtons = "open" | "save" | "close";
 
@@ -93,6 +91,8 @@ export interface TsPdfViewerOptions {
 
   minScale?: number;
   maxScale?: number;
+
+  disabledModes?: ViewerMode[];
 }
 
 export class TsPdfViewer {
@@ -185,7 +185,7 @@ export class TsPdfViewer {
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), 
       {canvasWidth: previewWidth});
     this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), 
-      {minScale: minScale, maxScale: maxScale}); 
+      {minScale: minScale, maxScale: maxScale, disabledModes: options.disabledModes || []}); 
     this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
 
     this.initMainContainerEventHandlers();
@@ -450,7 +450,7 @@ export class TsPdfViewer {
 
   //#region text selection
   protected onTextSelectionChange = () => {
-    const selection = this._shadowRoot.getSelection();
+    const selection: Selection = (<any>this._shadowRoot).getSelection(); // TODO: fix typings if possible
     if (!selection.rangeCount) {
       return;
     }
@@ -571,27 +571,24 @@ export class TsPdfViewer {
   //#endregion
 
   private initModeSwitchButtons() {
-    this._shadowRoot.querySelector("#button-mode-text")
-      .addEventListener("click", this.onTextModeButtonClick);
-    this._shadowRoot.querySelector("#button-mode-hand")
-      .addEventListener("click", this.onHandModeButtonClick);
-    this._shadowRoot.querySelector("#button-mode-annotation")
-      .addEventListener("click", this.onAnnotationModeButtonClick);
-    this.setViewerMode();    
+    const modeButtons = this._shadowRoot.querySelectorAll("*[id^=\"button-mode-\"]");
+    const enabledModes = this._viewer.enabledModes;
+    modeButtons.forEach(x => {
+      const mode = /button-mode-(.+)/.exec(x.id)[1] as ViewerMode;        
+      if (enabledModes.includes(mode)) {
+        x.addEventListener("click", this.onViewerModeButtonClick);
+      } else {
+        x.classList.add("disabled");
+      }
+    });    
   }
 
   private initAnnotationButtons() {
     // mode buttons
-    this._shadowRoot.querySelector("#button-annotation-mode-select")
-      .addEventListener("click", this.onAnnotationSelectModeButtonClick);
-    this._shadowRoot.querySelector("#button-annotation-mode-stamp")
-      .addEventListener("click", this.onAnnotationStampModeButtonClick);
-    this._shadowRoot.querySelector("#button-annotation-mode-pen")
-      .addEventListener("click", this.onAnnotationPenModeButtonClick);
-    this._shadowRoot.querySelector("#button-annotation-mode-geometric")
-      .addEventListener("click", this.onAnnotationGeometricModeButtonClick); 
-    this._shadowRoot.querySelector("#button-annotation-mode-text")
-      .addEventListener("click", this.onAnnotationTextModeButtonClick); 
+    this._shadowRoot.querySelectorAll("*[id^=\"button-annotation-mode-\"]")
+      .forEach(x => {        
+        x.addEventListener("click", this.onAnnotationModeButtonClick);
+      });
 
     // select buttons
     this._shadowRoot.querySelector("#button-annotation-edit-text")
@@ -637,7 +634,7 @@ export class TsPdfViewer {
 
   //#region viewer modes
   private setViewerMode(mode?: ViewerMode) {
-    mode = mode || "text"; // 'text' is the default mode
+    mode = mode || this._viewer.enabledModes[0] || "text"; // 'text' is the default mode
 
     // disable previous viewer mode
     viewerModes.forEach(x => {
@@ -651,16 +648,13 @@ export class TsPdfViewer {
     this._viewer.mode = mode;
   }
 
-  private onTextModeButtonClick = () => {
-    this.setViewerMode("text");
-  };
-
-  private onHandModeButtonClick = () => {
-    this.setViewerMode("hand");
-  };
-  
-  private onAnnotationModeButtonClick = () => {
-    this.setViewerMode("annotation");
+  private onViewerModeButtonClick = (e: Event) => {
+    const parentButton = (<Element>e.target).closest("*[id^=\"button-mode-\"]");    
+    if (!parentButton) {
+      return;
+    }
+    const mode = /button-mode-(.+)/.exec(parentButton.id)[1] as ViewerMode;
+    this.setViewerMode(mode);
   };
   //#endregion
 
@@ -860,7 +854,7 @@ export class TsPdfViewer {
     }
   };
 
-  private setAnnotationMode(mode: AnnotatorMode) {
+  private setAnnotationMode(mode: AnnotatorServiceMode) {
     if (!this._annotatorService || !mode) {
       return;
     }
@@ -885,24 +879,13 @@ export class TsPdfViewer {
     this._docService?.removeSelectedAnnotation();
   };
 
-  private onAnnotationSelectModeButtonClick = () => {
-    this.setAnnotationMode("select");
-  };
-
-  private onAnnotationStampModeButtonClick = () => {
-    this.setAnnotationMode("stamp");
-  };
-
-  private onAnnotationPenModeButtonClick = () => {
-    this.setAnnotationMode("pen");
-  };
-  
-  private onAnnotationGeometricModeButtonClick = () => {
-    this.setAnnotationMode("geometric");
-  };
-
-  private onAnnotationTextModeButtonClick = () => {
-    this.setAnnotationMode("text");
+  private onAnnotationModeButtonClick = (e: Event) => {    
+    const parentButton = (<Element>e.target).closest("*[id^=\"button-annotation-mode-\"]");    
+    if (!parentButton) {
+      return;
+    }
+    const mode = /button-annotation-mode-(.+)/.exec(parentButton.id)[1] as AnnotatorServiceMode;
+    this.setAnnotationMode(mode);
   };
   //#endregion
 
@@ -1098,6 +1081,12 @@ export class TsPdfViewer {
         if (this._docService && event.ctrlKey && event.altKey) {
           event.preventDefault();
           this.setViewerMode("annotation");
+        }
+        break;
+      case "Digit4":
+        if (this._docService && event.ctrlKey && event.altKey) {
+          event.preventDefault();
+          this.setViewerMode("comparison");
         }
         break;
       case "ArrowLeft":

@@ -132,6 +132,7 @@ module.exports = {
     "prefer-const": "error",
     "radix": "error",
     "spaced-comment": "off",        
-    "import/no-unresolved": "off"
+    "import/no-unresolved": "off",
+    "import/named": "off"
   }
 };

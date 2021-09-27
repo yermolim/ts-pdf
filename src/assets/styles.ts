@@ -129,6 +129,9 @@ export const styles = /*html*/`
     flex-grow: 1;
     flex-shrink: 1;
     width: 100px;
-  }   
+  }
+  .mode-comparison .page-annotations {
+    visibility: hidden;
+  }
 </style>
 `;

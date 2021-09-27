@@ -23,6 +23,9 @@ export const mainHtml = /*html*/`
         <div id="button-mode-annotation" class="panel-button panel-item">
           <img src="${Icons.icon_popup}"/>
         </div> 
+        <div id="button-mode-comparison" class="panel-button panel-item">
+          <img src="${Icons.icon_compare}"/>
+        </div> 
         <div class="panel-v-separator margin-s-5 panel-item"></div>
         <div id="button-open-file" class="panel-button panel-item">
           <img src="${Icons.icon_load}"/>

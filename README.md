@@ -143,6 +143,7 @@ To apply a custom color scheme to the viewer, assign color values to the followi
     <li>alt + ctrl + 1 => text selection mode</li>
     <li>alt + ctrl + 2 => hand drag mode</li>
     <li>alt + ctrl + 3 => annotation mode</li>
+    <li>alt + ctrl + 4 => comparison mode</li>
     <li>escape => clear annotation (in annotation add mode)</li>
     <li>backspace => undo last action (in annotation add mode)</li>
     <li>enter => save annotation (in annotation add mode)</li>
@@ -151,9 +152,9 @@ To apply a custom color scheme to the viewer, assign color values to the followi
     <li>↓ => zoom out</li>
     <li>← => previous page</li>
     <li>→ => next page</li>
+    <li>&lt; => rotate left</li>
+    <li>&gt; => rotate right</li>
 </ul>
-
-
 
 ### Solving Angular app compilation issue
 

@@ -75,6 +75,9 @@ const mainHtml = `
         <div id="button-mode-annotation" class="panel-button panel-item">
           <img src="${Icons.icon_popup}"/>
         </div> 
+        <div id="button-mode-comparison" class="panel-button panel-item">
+          <img src="${Icons.icon_compare}"/>
+        </div> 
         <div class="panel-v-separator margin-s-5 panel-item"></div>
         <div id="button-open-file" class="panel-button panel-item">
           <img src="${Icons.icon_load}"/>
@@ -372,7 +375,10 @@ const styles = `
     flex-grow: 1;
     flex-shrink: 1;
     width: 100px;
-  }   
+  }
+  .mode-comparison .page-annotations {
+    visibility: hidden;
+  }
 </style>
 `;
 
@@ -28990,7 +28996,7 @@ var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _argu
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const viewerModes = ["text", "hand", "annotation"];
+const viewerModes = ["text", "hand", "annotation", "comparison"];
 class Viewer {
     constructor(pageService, container, options) {
         this._scale = 1;
@@ -29106,6 +29112,18 @@ class Viewer {
         this._container = container;
         this._minScale = (options === null || options === void 0 ? void 0 : options.minScale) || 0.25;
         this._maxScale = (options === null || options === void 0 ? void 0 : options.maxScale) || 4;
+        const modes = [];
+        viewerModes.forEach(x => {
+            var _a;
+            if (!((_a = options === null || options === void 0 ? void 0 : options.disabledModes) === null || _a === void 0 ? void 0 : _a.length)
+                || !options.disabledModes.includes(x)) {
+                modes.push(x);
+            }
+        });
+        if (!modes.length) {
+            throw new Error("All viewer modes are disabled");
+        }
+        this.enabledModes = modes;
         this.init();
     }
     get container() {
@@ -29929,14 +29947,13 @@ class TsPdfViewer {
         this.onCloseFileButtonClick = () => {
             this.closePdfAsync();
         };
-        this.onTextModeButtonClick = () => {
-            this.setViewerMode("text");
-        };
-        this.onHandModeButtonClick = () => {
-            this.setViewerMode("hand");
-        };
-        this.onAnnotationModeButtonClick = () => {
-            this.setViewerMode("annotation");
+        this.onViewerModeButtonClick = (e) => {
+            const parentButton = e.target.closest("*[id^=\"button-mode-\"]");
+            if (!parentButton) {
+                return;
+            }
+            const mode = /button-mode-(.+)/.exec(parentButton.id)[1];
+            this.setViewerMode(mode);
         };
         this.onZoomOutClick = () => {
             this._viewer.zoomOut();
@@ -30082,20 +30099,13 @@ class TsPdfViewer {
             var _a;
             (_a = this._docService) === null || _a === void 0 ? void 0 : _a.removeSelectedAnnotation();
         };
-        this.onAnnotationSelectModeButtonClick = () => {
-            this.setAnnotationMode("select");
-        };
-        this.onAnnotationStampModeButtonClick = () => {
-            this.setAnnotationMode("stamp");
-        };
-        this.onAnnotationPenModeButtonClick = () => {
-            this.setAnnotationMode("pen");
-        };
-        this.onAnnotationGeometricModeButtonClick = () => {
-            this.setAnnotationMode("geometric");
-        };
-        this.onAnnotationTextModeButtonClick = () => {
-            this.setAnnotationMode("text");
+        this.onAnnotationModeButtonClick = (e) => {
+            const parentButton = e.target.closest("*[id^=\"button-annotation-mode-\"]");
+            if (!parentButton) {
+                return;
+            }
+            const mode = /button-annotation-mode-(.+)/.exec(parentButton.id)[1];
+            this.setAnnotationMode(mode);
         };
         this.onMainContainerPointerMove = (event) => {
             const { clientX, clientY } = event;
@@ -30194,6 +30204,12 @@ class TsPdfViewer {
                         this.setViewerMode("annotation");
                     }
                     break;
+                case "Digit4":
+                    if (this._docService && event.ctrlKey && event.altKey) {
+                        event.preventDefault();
+                        this.setViewerMode("comparison");
+                    }
+                    break;
                 case "ArrowLeft":
                     event.preventDefault();
                     this.moveToPrevPage();
@@ -30277,7 +30293,7 @@ class TsPdfViewer {
         this._customStampsService.importCustomStamps(options.customStamps);
         this._loader = new Loader();
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"), { canvasWidth: previewWidth });
-        this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
+        this._viewer = new Viewer(this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale, disabledModes: options.disabledModes || [] });
         this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
         this.initMainContainerEventHandlers();
         this.initViewControls();
@@ -30549,25 +30565,23 @@ class TsPdfViewer {
         }
     }
     initModeSwitchButtons() {
-        this._shadowRoot.querySelector("#button-mode-text")
-            .addEventListener("click", this.onTextModeButtonClick);
-        this._shadowRoot.querySelector("#button-mode-hand")
-            .addEventListener("click", this.onHandModeButtonClick);
-        this._shadowRoot.querySelector("#button-mode-annotation")
-            .addEventListener("click", this.onAnnotationModeButtonClick);
-        this.setViewerMode();
+        const modeButtons = this._shadowRoot.querySelectorAll("*[id^=\"button-mode-\"]");
+        const enabledModes = this._viewer.enabledModes;
+        modeButtons.forEach(x => {
+            const mode = /button-mode-(.+)/.exec(x.id)[1];
+            if (enabledModes.includes(mode)) {
+                x.addEventListener("click", this.onViewerModeButtonClick);
+            }
+            else {
+                x.classList.add("disabled");
+            }
+        });
     }
     initAnnotationButtons() {
-        this._shadowRoot.querySelector("#button-annotation-mode-select")
-            .addEventListener("click", this.onAnnotationSelectModeButtonClick);
-        this._shadowRoot.querySelector("#button-annotation-mode-stamp")
-            .addEventListener("click", this.onAnnotationStampModeButtonClick);
-        this._shadowRoot.querySelector("#button-annotation-mode-pen")
-            .addEventListener("click", this.onAnnotationPenModeButtonClick);
-        this._shadowRoot.querySelector("#button-annotation-mode-geometric")
-            .addEventListener("click", this.onAnnotationGeometricModeButtonClick);
-        this._shadowRoot.querySelector("#button-annotation-mode-text")
-            .addEventListener("click", this.onAnnotationTextModeButtonClick);
+        this._shadowRoot.querySelectorAll("*[id^=\"button-annotation-mode-\"]")
+            .forEach(x => {
+            x.addEventListener("click", this.onAnnotationModeButtonClick);
+        });
         this._shadowRoot.querySelector("#button-annotation-edit-text")
             .addEventListener("click", this.onAnnotationEditTextButtonClick);
         this._shadowRoot.querySelector("#button-annotation-delete")
@@ -30598,7 +30612,7 @@ class TsPdfViewer {
             .addEventListener("click", this.docServiceUndo);
     }
     setViewerMode(mode) {
-        mode = mode || "text";
+        mode = mode || this._viewer.enabledModes[0] || "text";
         viewerModes.forEach(x => {
             this._mainContainer.classList.remove("mode-" + x);
             this._shadowRoot.querySelector("#button-mode-" + x).classList.remove("on");
