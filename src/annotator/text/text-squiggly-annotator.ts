@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { buildSquigglyLine } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 
 import { SquigglyAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/squiggly-annotation";
@@ -12,7 +12,7 @@ import { TextMarkupAnnotator } from "./text-markup-annotator";
 
 export class TextSquigglyAnnotator extends TextMarkupAnnotator {
 
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options?: TextAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

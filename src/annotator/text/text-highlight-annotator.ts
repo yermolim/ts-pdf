@@ -1,7 +1,7 @@
 import { Octuple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 
 import { HighlightAnnotation } 
   from "../../document/entities/annotations/markup/text-markup/highlight-annotation";
@@ -11,7 +11,7 @@ import { TextMarkupAnnotator } from "./text-markup-annotator";
 
 export class TextHighlightAnnotator extends TextMarkupAnnotator {
   
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options?: TextAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

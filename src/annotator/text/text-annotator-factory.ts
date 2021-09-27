@@ -1,7 +1,7 @@
 import { Quadruple } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 
 import { Viewer } from "../../components/viewer";
 
@@ -23,7 +23,7 @@ export class TextAnnotatorFactory {
   protected _lastColor: Quadruple;
   protected _lastStrokeWidth: number;
 
-  createAnnotator(docService: DocumentService, pageService: PageService, viewer: Viewer,
+  createAnnotator(docService: DocumentDataService, pageService: PageService, viewer: Viewer,
     options?: TextAnnotatorOptions, type?: TextAnnotatorType): TextAnnotator {
 
     if (!docService) {

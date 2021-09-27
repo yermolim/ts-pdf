@@ -3,7 +3,7 @@ import { Vec2 } from "mathador";
 import { Quadruple } from "ts-viewers-core";
 import { LINE_END_MULTIPLIER, LINE_END_MIN_SIZE, BEZIER_CONSTANT } from "../../drawing/utils";
 
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { LineEndingType, lineEndingTypes } from "../../document/spec-constants";
 
@@ -23,7 +23,7 @@ export abstract class GeometricAnnotator extends Annotator {
   /**current page id */
   protected _pageId: number;
   
-  protected constructor(docService: DocumentService, pageService: PageService, parent: HTMLDivElement, 
+  protected constructor(docService: DocumentDataService, pageService: PageService, parent: HTMLDivElement, 
     options: GeometricAnnotatorOptions) {
     super(docService, pageService, parent);
     

@@ -1,9 +1,8 @@
 import { Vec2 } from "mathador";
-import { UUID } from "ts-viewers-core";
+import { UUID , Quadruple } from "ts-viewers-core";
 
-import { Quadruple } from "ts-viewers-core";
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 
 import { LineAnnotation, LineAnnotationDto } 
   from "../../document/entities/annotations/markup/geometric/line-annotation";
@@ -18,7 +17,7 @@ export class GeometricLineAnnotator extends GeometricAnnotator {
   /**segment end positions in the page coordinate system */
   protected _vertices: Quadruple;
   
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

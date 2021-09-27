@@ -4,7 +4,7 @@ import { Octuple } from "ts-viewers-core";
 import { TextSelectionInfo } from "../../common/text-selection";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 
 import { TextMarkupAnnotationDto } 
   from "../../document/entities/annotations/markup/text-markup/text-markup-annotation";
@@ -19,7 +19,7 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
   /**text selection corner coordinates by page identifier */
   protected readonly _coordsByPageId = new Map<number, Octuple[]>();
   
-  protected constructor(docService: DocumentService, pageService: PageService, 
+  protected constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options: TextAnnotatorOptions) {
     super(docService, pageService, parent, options);
   }

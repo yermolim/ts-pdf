@@ -4,7 +4,7 @@ import { UUID, Quadruple, CloudCurveData } from "ts-viewers-core";
 import { BEZIER_CONSTANT } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 import { CircleAnnotation, CircleAnnotationDto } 
   from "../../document/entities/annotations/markup/geometric/circle-annotation";
 
@@ -17,7 +17,7 @@ export class GeometricCircleAnnotator extends GeometricAnnotator {
   /**min and max rectangle corners in the page coordinate system */
   protected _rect: Quadruple;
   
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

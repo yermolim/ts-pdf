@@ -4,7 +4,7 @@ import { UUID } from "ts-viewers-core";
 import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 import { LineAnnotationDto } from "../../document/entities/annotations/markup/geometric/line-annotation";
 import { lineEndingTypes, lineIntents } from "../../document/spec-constants";
 
@@ -12,7 +12,7 @@ import { GeometricAnnotatorOptions } from "./geometric-annotator";
 import { GeometricLineAnnotator } from "./geometric-line-annotator";
 
 export class GeometricArrowAnnotator extends GeometricLineAnnotator {  
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
   }

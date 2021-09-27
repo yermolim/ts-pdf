@@ -86,7 +86,7 @@ interface ExecutedAsyncCommand {
   redo?(): Promise<void>;
 }
 
-export class DocumentService {
+export class DocumentDataService {
   protected readonly _eventService: EventService;
   get eventService(): EventService {
     return this._eventService;
@@ -171,8 +171,8 @@ export class DocumentService {
   }
 
   static async CreateNewAsync(eventService: EventService, 
-    data: Uint8Array, userName: string): Promise<DocumentService> {
-    const service = new DocumentService(eventService, data, userName);
+    data: Uint8Array, userName: string): Promise<DocumentDataService> {
+    const service = new DocumentDataService(eventService, data, userName);
     await service._initPromise;
     return service;
   }

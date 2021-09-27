@@ -3,7 +3,7 @@ import { Quadruple } from "ts-viewers-core";
 import { RenderableAnnotation, AnnotationRenderResult } from "../common/annotation";
 import { PageInfo } from "../common/page";
 
-import { DocumentService, annotChangeEvent, 
+import { DocumentDataService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
   from "../services/document-service";
   
@@ -13,7 +13,7 @@ export class PageAnnotationView {
   private readonly _pageInfo: PageInfo;
   private readonly _viewbox: Quadruple;
 
-  private _docService: DocumentService;
+  private _docService: DocumentDataService;
   private _rendered = new Set<RenderableAnnotation>();
 
   private _container: HTMLDivElement;
@@ -21,7 +21,7 @@ export class PageAnnotationView {
 
   private _destroyed: boolean;
 
-  constructor(docService: DocumentService, pageInfo: PageInfo, pageDimensions: Vec2) {
+  constructor(docService: DocumentDataService, pageInfo: PageInfo, pageDimensions: Vec2) {
     if (!docService || !pageInfo || !pageDimensions) {
       throw new Error("Required argument not found");
     }

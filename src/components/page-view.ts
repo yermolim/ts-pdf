@@ -5,7 +5,7 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
-import { DocumentService } from "../services/document-service";
+import { DocumentDataService } from "../services/document-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
@@ -20,7 +20,7 @@ export class PageView implements PageInfo {
   /**pdf object generation of the page */
   readonly generation: number;
   
-  private readonly _docService: DocumentService;
+  private readonly _docService: DocumentDataService;
   private readonly _pageProxy: PDFPageProxy; 
 
   private readonly _defaultViewport: PageViewport;
@@ -104,7 +104,7 @@ export class PageView implements PageInfo {
 
   private _destroyed: boolean;
 
-  constructor(docService: DocumentService, pageProxy: PDFPageProxy, previewWidth: number) {
+  constructor(docService: DocumentDataService, pageProxy: PDFPageProxy, previewWidth: number) {
     if (!docService) {
       throw new Error("Annotation data is not defined");
     }

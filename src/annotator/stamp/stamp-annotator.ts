@@ -3,7 +3,7 @@ import { UUID, CustomStampCreationInfo } from "ts-viewers-core";
 
 import { standardStampCreationInfos } from "../../drawing/stamps";
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 import { StampAnnotation, StampAnnotationDto } 
   from "../../document/entities/annotations/markup/stamp-annotation";
   
@@ -41,7 +41,7 @@ export class StampAnnotator extends Annotator {
    * @param parent 
    * @param type stamp type
    */
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, type: string, creationInfo?: CustomStampCreationInfo) {
     super(docService, pageService, parent);
     

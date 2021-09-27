@@ -2,7 +2,7 @@ import { Vec2 } from "mathador";
 import { CloudCurveData, UUID } from "ts-viewers-core";
 
 import { PageService } from "../../services/page-service";
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 
 import { GeometricAnnotator, GeometricAnnotatorOptions } from "./geometric-annotator";
 import { PolygonAnnotation, PolygonAnnotationDto } 
@@ -12,7 +12,7 @@ export class GeometricPolygonAnnotator extends GeometricAnnotator {
   /**points in the page coordinate system */
   protected readonly _points: Vec2[] = [];
   
-  constructor(docService: DocumentService, pageService: PageService, 
+  constructor(docService: DocumentDataService, pageService: PageService, 
     parent: HTMLDivElement, options?: GeometricAnnotatorOptions) {
     super(docService, pageService, parent, options || {});
     this.init();

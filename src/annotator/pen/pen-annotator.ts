@@ -1,7 +1,7 @@
 import { Vec2 } from "mathador";
 import { UUID , Quadruple, SvgSmoothPath } from "ts-viewers-core";
 
-import { DocumentService } from "../../services/document-service";
+import { DocumentDataService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { InkAnnotation, InkAnnotationDto } 
   from "../../document/entities/annotations/markup/ink-annotation";
@@ -19,7 +19,7 @@ export class PenAnnotator extends Annotator {
   protected _color: Quadruple;
   protected _strokeWidth: number;
 
-  constructor(docService: DocumentService, pageService: PageService, parent: HTMLDivElement, 
+  constructor(docService: DocumentDataService, pageService: PageService, parent: HTMLDivElement, 
     options?: PenAnnotatorOptions) {
     super(docService, pageService, parent);
     this.init();
