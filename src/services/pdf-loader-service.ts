@@ -5,11 +5,6 @@ import { DomUtils, EventService } from "ts-viewers-core";
 
 import { DocumentService } from "./document-service";
 
-export interface PdfLoaderServices {
-  readonly main: PdfLoaderService;
-  readonly comparer: PdfLoaderService;
-}
-
 export class PdfLoaderService {
   protected readonly _eventService: EventService;
   

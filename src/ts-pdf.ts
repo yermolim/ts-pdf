@@ -18,8 +18,8 @@ import { DocumentService, annotChangeEvent, AnnotEvent,
   AnnotEventDetail, DocServiceStateChangeEvent, 
   docServiceStateChangeEvent } from "./services/document-service";
 import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-service";
-import { PdfLoaderService } from "./services/pdf-loader-service";
 import { ModeService, ViewerMode, viewerModes } from "./services/mode-service";
+import { DocManagerService, DocType } from "./services/doc-manager-service";
 
 import { Viewer } from "./components/viewer";
 import { Previewer } from "./components/previewer";
@@ -105,13 +105,12 @@ export class TsPdfViewer {
   
   private readonly _eventService: EventService;
   private readonly _modeService: ModeService;
-  private readonly _mainLoaderService: PdfLoaderService;  
-  private readonly _comparerLoaderService: PdfLoaderService;  
+  private readonly _docManagerService: DocManagerService; 
   private readonly _pageService: PageService;
   private readonly _customStampsService: CustomStampService;
   
   private get _docService(): DocumentService {
-    return this._mainLoaderService?.docService;
+    return this._docManagerService?.docService;
   }  
 
   private readonly _spinner: Spinner;
@@ -177,10 +176,8 @@ export class TsPdfViewer {
 
     this._eventService = new EventService(this._mainContainer);
     this._modeService = new ModeService({disabledModes: options.disabledModes || []});
-    this._mainLoaderService = new PdfLoaderService(this._eventService);
-    this._comparerLoaderService = new PdfLoaderService(this._eventService);
-    this._pageService = new PageService(this._eventService, this._modeService, 
-      {main: this._mainLoaderService, comparer: this._comparerLoaderService},
+    this._docManagerService = new DocManagerService(this._eventService);
+    this._pageService = new PageService(this._eventService, this._modeService, this._docManagerService,
       {previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages});
 
     this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
@@ -216,7 +213,7 @@ export class TsPdfViewer {
 
     this._annotatorService?.destroy();
 
-    this._mainLoaderService.destroy(); 
+    this._docManagerService.destroy(); 
     this._viewer.destroy();
     this._previewer.destroy();
     this._pageService.destroy();    
@@ -230,49 +227,43 @@ export class TsPdfViewer {
     document.removeEventListener("selectionchange", this.onTextSelectionChange); 
   }
   
+  /**
+   * open PDF file
+   * @param src file URI, base64 string, Blob instance, byte array
+   * @param fileName 
+   */
   async openPdfAsync(src: string | Blob | Uint8Array, 
     fileName?: string): Promise<void> {
-    this._spinner.show(this._mainContainer);
-
-    try {
-      await this._mainLoaderService.openPdfAsync(src, fileName,
-        this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
-    } catch (e) {
-      this._spinner.hide();
-      throw e;
-    }
-    
-    this.setMode();
-
-    // load pages from the document
-    await this.refreshPagesAsync();
-
-    // create an annotation builder and set its mode to 'select'
-    this._annotatorService = new AnnotatorService(this._docService, 
-      this._pageService, this._customStampsService, this._viewer);
-    this.setAnnotationMode("select");
-
-    this._mainContainer.classList.remove("disabled");
-    
-    this._spinner.hide();
+    await this.openDocAsync("main", src, fileName);
   }
 
   async closePdfAsync(): Promise<void> {
-    // destroy a running loading task if present
-    await this._mainLoaderService.closePdfAsync();
+    await this.closeDocAsync("main");
+  }
+  
+  /**
+   * open PDF file for the main file to be compared with.
+   * does nothing if the main file hasn't been not loaded yet.
+   * automatically sets viewer mode to 'comparison'
+   * @param src file URI, base64 string, Blob instance, byte array
+   * @param fileName 
+   */
+  async openComparedPdfAsync(src: string | Blob | Uint8Array, 
+    fileName?: string): Promise<void> {
+    if (!this._docManagerService.docLoaded) {
+      return;
+    }
+    await this.openDocAsync("compared", src, fileName);
+    this.setMode("comparison");
+  }
 
-    this._mainContainer.classList.add("disabled");
-    // remove unneeded classes from the main container
-    this._mainContainer.classList.remove("annotation-focused");
-    this._mainContainer.classList.remove("annotation-selected");
-
-    // reset viewer state to default
+  /**
+   * 
+   * automatically sets viewer mode to the default one after closing is completed
+   */
+  async closeComparedPdfAsync(): Promise<void> {
+    await this.closeDocAsync("compared");
     this.setMode();
-
-    this._annotatorService?.destroy();
-
-    await this.refreshPagesAsync();
-    this.showPanels();
   }
   
   /**
@@ -384,6 +375,61 @@ export class TsPdfViewer {
   };
   //#endregion
 
+  //#region open/close
+  private async openDocAsync(type: DocType,
+    src: string | Blob | Uint8Array, fileName?: string): Promise<void> {
+    this._spinner.show(this._mainContainer);
+
+    try {
+      await this._docManagerService.openPdfAsync(type, src, fileName,
+        this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
+    } catch (e) {
+      this._spinner.hide();
+      throw e;
+    }
+    
+    if (type === "main") {
+      this.setMode();
+
+      // load pages from the document
+      await this.refreshPagesAsync();
+  
+      // create an annotation builder and set its mode to 'select'
+      this._annotatorService = new AnnotatorService(this._docService, 
+        this._pageService, this._customStampsService, this._viewer);
+      this.setAnnotationMode("select");
+  
+      this._mainContainer.classList.remove("disabled");
+    } else if (type === "compared") {
+      // TODO: implement force rerender
+    }
+    
+    this._spinner.hide();
+  }
+
+  private async closeDocAsync(type: DocType): Promise<void> {
+    // destroy a running loading task if present
+    await this._docManagerService.closePdfAsync(type);
+
+    if (type === "main") {
+      this._mainContainer.classList.add("disabled");
+      // remove unneeded classes from the main container
+      this._mainContainer.classList.remove("annotation-focused");
+      this._mainContainer.classList.remove("annotation-selected");
+  
+      // reset viewer state to default
+      this.setMode();
+  
+      this._annotatorService?.destroy();
+  
+      await this.refreshPagesAsync();
+      this.showPanels();
+    } else if (type === "compared") {
+      // TODO: implement force rerender
+    }
+  }
+  //#endregion
+
   //#region GUI initialization methods
   private initMainContainerEventHandlers() { 
     const mcResizeObserver = new ResizeObserver((entries: ResizeObserverEntry[]) => {    
@@ -483,7 +529,7 @@ export class TsPdfViewer {
     // DEBUG
     // this.openPdfAsync(blob);
 
-    DomUtils.downloadFile(blob, this._mainLoaderService?.fileName 
+    DomUtils.downloadFile(blob, this._docManagerService?.fileName 
       || `file_${new Date().toISOString()}.pdf`);
   };
   
@@ -613,7 +659,7 @@ export class TsPdfViewer {
   
   private onPaginatorChange = (event: Event) => {
     if (event.target instanceof HTMLInputElement) {
-      const pageNumber = Math.max(Math.min(+event.target.value, this._mainLoaderService.pageCount), 1);
+      const pageNumber = Math.max(Math.min(+event.target.value, this._docManagerService.pageCount), 1);
       if (pageNumber + "" !== event.target.value) {        
         event.target.value = pageNumber + "";
       }
@@ -812,7 +858,7 @@ export class TsPdfViewer {
   private hidePanels() {
     if (!this._panelsHidden && !this._timers.hidePanels) {
       this._timers.hidePanels = setTimeout(() => {
-        if (!this._mainLoaderService?.docLoaded) {
+        if (!this._docManagerService?.docLoaded) {
           return; // hide panels only if document is open
         }
         this._mainContainer.classList.add("hide-panels");
@@ -857,7 +903,7 @@ export class TsPdfViewer {
    * @returns 
    */
   private async refreshPagesAsync(): Promise<void> {
-    const docPagesNumber = this._mainLoaderService.pageCount;
+    const docPagesNumber = this._docManagerService.pageCount;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
 
     await this._pageService.reloadPagesAsync();

@@ -490,7 +490,7 @@ function getSelectionInfosFromSelection(selection) {
     return getSelectionInfosFromRangeSpans(selectionRange);
 }
 
-var __awaiter$1j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -526,7 +526,7 @@ class PageTextView {
         this._container.addEventListener("pointerup", this.onPointerUp);
     }
     static appendPageTextAsync(pageProxy, parent, scale) {
-        return __awaiter$1j(this, void 0, void 0, function* () {
+        return __awaiter$1l(this, void 0, void 0, function* () {
             const textObj = new PageTextView(pageProxy);
             yield textObj.renderTextLayerAsync(scale);
             parent.append(textObj._container);
@@ -541,7 +541,7 @@ class PageTextView {
         }
     }
     renderTextLayerAsync(scale) {
-        return __awaiter$1j(this, void 0, void 0, function* () {
+        return __awaiter$1l(this, void 0, void 0, function* () {
             this.clear();
             this.destroyRenderTask();
             const viewport = this._pageProxy.getViewport({ scale });
@@ -2284,7 +2284,7 @@ function getCharCode(index) {
 //#endregion
 `;
 
-var __awaiter$1i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2333,7 +2333,7 @@ class BgDataParser {
         this._workerPool.length = 0;
     }
     static getFreeWorkerFromPoolAsync() {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             if (this._freeWorkers.size) {
                 const worker = this._freeWorkers.values().next().value;
                 this._freeWorkers.delete(worker);
@@ -2366,7 +2366,7 @@ class BgDataParser {
         this._freeWorkers.add(worker);
     }
     static transferDataToWorker(worker, buffer) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const workerPromise = new Promise((resolve, reject) => {
                 worker.onmessage = (e) => {
                     if (e.data.type === "success") {
@@ -2395,7 +2395,7 @@ class BgDataParser {
         });
     }
     static transferDataFromWorker(worker) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const workerPromise = new Promise((resolve, reject) => {
                 worker.onmessage = (e) => {
                     if (e.data.type === "success") {
@@ -2421,7 +2421,7 @@ class BgDataParser {
     destroy() {
     }
     getSubParserAsync(start, end) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const data = yield this.execCommandAsync("slice-char-codes", [start, end]);
             const parser = BgDataParser.tryGetParser(data);
             return parser;
@@ -2431,187 +2431,187 @@ class BgDataParser {
         return (index < 0 || index > this._maxIndex);
     }
     isCodeAtAsync(index, code) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("is-code-at", [index, code]);
             return result;
         });
     }
     getValueTypeAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-value-type-at", [start, skipEmpty]);
             return result;
         });
     }
     findSubarrayIndexAsync(sub, options) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-subarray-index", [sub, options]);
             return result;
         });
     }
     findCharIndexAsync(charCode, direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-char-index", [charCode, direction, start]);
             return result;
         });
     }
     findNewLineIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-new-line-index", [direction, start]);
             return result;
         });
     }
     findSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-space-index", [direction, start]);
             return result;
         });
     }
     findNonSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-non-space-index", [direction, start]);
             return result;
         });
     }
     findDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-delimiter-index", [direction, start]);
             return result;
         });
     }
     findNonDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-non-delimiter-index", [direction, start]);
             return result;
         });
     }
     findRegularIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-regular-index", [direction, start]);
             return result;
         });
     }
     findIrregularIndexAsync(direction = true, start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("find-irregular-index", [direction, start]);
             return result;
         });
     }
     getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-indirect-object-bounds", [start, skipEmpty]);
             return result;
         });
     }
     getXrefTableBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-xref-table-bounds", [start, skipEmpty]);
             return result;
         });
     }
     getDictBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-dict-bounds", [start, skipEmpty]);
             return result;
         });
     }
     getArrayBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-array-bounds", [start, skipEmpty]);
             return result;
         });
     }
     getHexBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-hex-bounds", [start, skipEmpty]);
             return result;
         });
     }
     getLiteralBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("get-literal-bounds", [start, skipEmpty]);
             return result;
         });
     }
     parseNumberAtAsync(start, float = false, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-number", [start, float, skipEmpty]);
             return result;
         });
     }
     parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-name", [start, includeSlash, skipEmpty]);
             return result;
         });
     }
     parseStringAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-string", [start, skipEmpty]);
             return result;
         });
     }
     parseBoolAtAsync(start, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-bool", [start, skipEmpty]);
             return result;
         });
     }
     parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-number-array", [start, float, skipEmpty]);
             return result;
         });
     }
     parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-name-array", [start, includeSlash, skipEmpty]);
             return result;
         });
     }
     parseDictTypeAsync(bounds) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-dict-type", [bounds]);
             return result;
         });
     }
     parseDictSubtypeAsync(bounds) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-dict-subtype", [bounds]);
             return result;
         });
     }
     parseDictPropertyByNameAsync(propName, bounds) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("parse-dict-property-by-name", [propName, bounds]);
             return result;
         });
     }
     skipEmptyAsync(start) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("skip-empty", [start]);
             return result;
         });
     }
     skipToNextNameAsync(start, max) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("skip-to-next-name", [start, max]);
             return result;
         });
     }
     sliceCharCodesAsync(start, end) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("slice-char-codes", [start, end]);
             return result;
         });
     }
     sliceCharsAsync(start, end) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             const result = yield this.execCommandAsync("slice-chars", [start, end]);
             return result;
         });
     }
     releaseWorkerAsync(worker) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             this._workerPromise = null;
             const returnedBuffer = yield BgDataParser.transferDataFromWorker(worker);
             this._data = returnedBuffer;
@@ -2622,18 +2622,18 @@ class BgDataParser {
         });
     }
     getWorkerAsync() {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             if (this._prevWorkerReleasePromise) {
                 yield this._prevWorkerReleasePromise;
             }
             if (!this._workerPromise) {
-                this._workerPromise = new Promise((resolve, reject) => __awaiter$1i(this, void 0, void 0, function* () {
+                this._workerPromise = new Promise((resolve, reject) => __awaiter$1k(this, void 0, void 0, function* () {
                     const dataBuffer = this._data;
                     const freeWorker = yield BgDataParser.getFreeWorkerFromPoolAsync();
                     yield BgDataParser.transferDataToWorker(freeWorker, dataBuffer);
                     freeWorker.onmessage = this.onWorkerMessage;
                     freeWorker.onerror = this.onWorkerError;
-                    const workerReleaseInterval = setInterval(() => __awaiter$1i(this, void 0, void 0, function* () {
+                    const workerReleaseInterval = setInterval(() => __awaiter$1k(this, void 0, void 0, function* () {
                         if (this._commandsInProgress > 0 || this._workerOnMessageHandlers.size) {
                             return;
                         }
@@ -2648,7 +2648,7 @@ class BgDataParser {
         });
     }
     execCommandAsync(commandName, commandArgs = []) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
+        return __awaiter$1k(this, void 0, void 0, function* () {
             this._commandsInProgress++;
             const worker = yield this.getWorkerAsync();
             const commandId = UUID.getRandomUuid();
@@ -2839,7 +2839,7 @@ const keywordCodes = {
     AP_STREAM_TEXT_END: [codes.E, codes.T],
 };
 
-var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -2902,7 +2902,7 @@ class SyncDataParser {
     destroy() {
     }
     getSubParserAsync(start, end) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             return new SyncDataParser(yield this.sliceCharCodesAsync(start, end));
         });
     }
@@ -2910,12 +2910,12 @@ class SyncDataParser {
         return (index < 0 || index > this._maxIndex);
     }
     isCodeAtAsync(index, code) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             return this.getCharCode(index) === code;
         });
     }
     getValueTypeAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -2997,7 +2997,7 @@ class SyncDataParser {
     }
     findSubarrayIndexAsync(sub, options) {
         var _a, _b, _c;
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
                 return null;
@@ -3039,7 +3039,7 @@ class SyncDataParser {
         });
     }
     findCharIndexAsync(charCode, direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3064,7 +3064,7 @@ class SyncDataParser {
         });
     }
     findNewLineIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             let lineBreakIndex;
             const arr = this._data;
             let i = isNaN(start)
@@ -3108,7 +3108,7 @@ class SyncDataParser {
         });
     }
     findSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3133,7 +3133,7 @@ class SyncDataParser {
         });
     }
     findNonSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3158,7 +3158,7 @@ class SyncDataParser {
         });
     }
     findDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3183,7 +3183,7 @@ class SyncDataParser {
         });
     }
     findNonDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3208,7 +3208,7 @@ class SyncDataParser {
         });
     }
     findRegularIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3233,7 +3233,7 @@ class SyncDataParser {
         });
     }
     findIrregularIndexAsync(direction = true, start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             let i = isNaN(start)
                 ? direction
@@ -3258,7 +3258,7 @@ class SyncDataParser {
         });
     }
     getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3294,7 +3294,7 @@ class SyncDataParser {
         });
     }
     getXrefTableBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3326,7 +3326,7 @@ class SyncDataParser {
         });
     }
     getDictBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3390,7 +3390,7 @@ class SyncDataParser {
         });
     }
     getArrayBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3417,7 +3417,7 @@ class SyncDataParser {
         });
     }
     getHexBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3432,7 +3432,7 @@ class SyncDataParser {
         });
     }
     getLiteralBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3467,7 +3467,7 @@ class SyncDataParser {
         });
     }
     parseNumberAtAsync(start, float = false, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3496,7 +3496,7 @@ class SyncDataParser {
         });
     }
     parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3518,7 +3518,7 @@ class SyncDataParser {
         });
     }
     parseStringAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3538,7 +3538,7 @@ class SyncDataParser {
         });
     }
     parseBoolAtAsync(start, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield this.skipEmptyAsync(start);
             }
@@ -3564,7 +3564,7 @@ class SyncDataParser {
         });
     }
     parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -3584,7 +3584,7 @@ class SyncDataParser {
         });
     }
     parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -3604,18 +3604,18 @@ class SyncDataParser {
         });
     }
     parseDictTypeAsync(bounds) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             return yield this.parseDictPropertyByNameAsync(keywordCodes.TYPE, bounds);
         });
     }
     parseDictSubtypeAsync(bounds) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             return yield this.parseDictPropertyByNameAsync(keywordCodes.SUBTYPE, bounds);
         });
     }
     parseDictPropertyByNameAsync(propName, bounds) {
         var _a, _b;
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             const arr = this._data;
             if (!(propName === null || propName === void 0 ? void 0 : propName.length)) {
                 return null;
@@ -3681,7 +3681,7 @@ class SyncDataParser {
         });
     }
     skipEmptyAsync(start) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             let index = yield this.findNonSpaceIndexAsync(true, start);
             if (index === -1) {
                 return -1;
@@ -3697,7 +3697,7 @@ class SyncDataParser {
         });
     }
     skipToNextNameAsync(start, max) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             start || (start = 0);
             max = max
                 ? Math.min(max, this._maxIndex)
@@ -3755,12 +3755,12 @@ class SyncDataParser {
         });
     }
     sliceCharCodesAsync(start, end) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             return this._data.slice(start, (end || start) + 1);
         });
     }
     sliceCharsAsync(start, end) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
+        return __awaiter$1j(this, void 0, void 0, function* () {
             return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
         });
     }
@@ -4275,7 +4275,7 @@ class ReferenceDataChange {
     }
 }
 
-var __awaiter$1g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4290,7 +4290,7 @@ class ObjectId {
         this.generation = generation !== null && generation !== void 0 ? generation : 0;
     }
     static parseAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1i(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield parser.findRegularIndexAsync(true, start);
             }
@@ -4313,7 +4313,7 @@ class ObjectId {
         });
     }
     static parseRefAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1i(this, void 0, void 0, function* () {
             const id = yield ObjectId.parseAsync(parser, start, skipEmpty);
             if (!id) {
                 return null;
@@ -4331,7 +4331,7 @@ class ObjectId {
         });
     }
     static parseRefArrayAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
+        return __awaiter$1i(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4365,7 +4365,7 @@ class ObjectId {
     }
 }
 
-var __awaiter$1f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4386,7 +4386,7 @@ class DateString {
         return new Date(this._date);
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
+        return __awaiter$1h(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield parser.skipEmptyAsync(start);
             }
@@ -4442,7 +4442,7 @@ class DateString {
     }
 }
 
-var __awaiter$1e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4467,7 +4467,7 @@ class HexString {
         return this._bytes.slice();
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1e(this, void 0, void 0, function* () {
+        return __awaiter$1g(this, void 0, void 0, function* () {
             const bounds = yield parser.getHexBoundsAtAsync(start, skipEmpty);
             if (!bounds) {
                 return null;
@@ -4481,7 +4481,7 @@ class HexString {
         });
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1e(this, void 0, void 0, function* () {
+        return __awaiter$1g(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4526,7 +4526,7 @@ class HexString {
     }
 }
 
-var __awaiter$1d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4547,7 +4547,7 @@ class LiteralString {
         return this._bytes.slice();
     }
     static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1d(this, void 0, void 0, function* () {
+        return __awaiter$1f(this, void 0, void 0, function* () {
             const bounds = yield parser.getLiteralBoundsAtAsync(start, skipEmpty);
             if (!bounds) {
                 return;
@@ -4561,7 +4561,7 @@ class LiteralString {
         });
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1d(this, void 0, void 0, function* () {
+        return __awaiter$1f(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -4697,7 +4697,7 @@ class LiteralString {
     }
 }
 
-var __awaiter$1c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4758,7 +4758,7 @@ class PdfObject {
     }
     static getDataParserAsync(data) {
         var _a;
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parser = (_a = BgDataParser.tryGetParser(data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(data);
             return parser;
         });
@@ -4799,61 +4799,61 @@ class PdfObject {
         return bytes;
     }
     parseRefPropAsync(propName, parser, index) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield ObjectId.parseRefAsync(parser, index);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseRefArrayPropAsync(propName, parser, index) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield ObjectId.parseRefArrayAsync(parser, index);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseBoolPropAsync(propName, parser, index) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield parser.parseBoolAtAsync(index);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNamePropAsync(propName, parser, index, includeSlash = true) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNameAtAsync(index, includeSlash);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNameArrayPropAsync(propName, parser, index, includeSlash = true) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNameArrayAtAsync(index, includeSlash);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNumberPropAsync(propName, parser, index, float = true) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNumberAtAsync(index, float);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseNumberArrayPropAsync(propName, parser, index, float = true) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield parser.parseNumberArrayAtAsync(index, float);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseDatePropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield DateString.parseAsync(parser, index, cryptInfo);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseLiteralPropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield LiteralString.parseAsync(parser, index, cryptInfo);
             return this.setParsedProp(propName, parsed);
         });
     }
     parseHexPropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1c(this, void 0, void 0, function* () {
+        return __awaiter$1e(this, void 0, void 0, function* () {
             const parsed = yield HexString.parseAsync(parser, index, cryptInfo);
             return this.setParsedProp(propName, parsed);
         });
@@ -4867,7 +4867,7 @@ class PdfObject {
     }
 }
 
-var __awaiter$1b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4895,7 +4895,7 @@ class PdfDict extends PdfObject {
     }
     parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$1b(this, void 0, void 0, function* () {
+        return __awaiter$1d(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parse info is empty");
             }
@@ -4939,7 +4939,7 @@ class PdfDict extends PdfObject {
     }
 }
 
-var __awaiter$1a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -4957,7 +4957,7 @@ class DecodeParamsDict extends PdfDict {
         this._refPropMap = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$1a(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -4973,7 +4973,7 @@ class DecodeParamsDict extends PdfDict {
         });
     }
     static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1a(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
             if (!arrayBounds) {
                 return null;
@@ -5036,7 +5036,7 @@ class DecodeParamsDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$1a(this, void 0, void 0, function* () {
+        return __awaiter$1c(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -5789,7 +5789,7 @@ class FlateDecoder {
     }
 }
 
-var __awaiter$19 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -5821,7 +5821,7 @@ class PdfStream extends PdfObject {
         return decoder.decode(this.decodedStreamData);
     }
     getStreamDataParserAsync() {
-        return __awaiter$19(this, void 0, void 0, function* () {
+        return __awaiter$1b(this, void 0, void 0, function* () {
             return yield PdfStream.getDataParserAsync(this.decodedStreamData);
         });
     }
@@ -5855,7 +5855,7 @@ class PdfStream extends PdfObject {
     }
     parsePropsAsync(parseInfo) {
         var _a, _b;
-        return __awaiter$19(this, void 0, void 0, function* () {
+        return __awaiter$1b(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parse info is empty");
             }
@@ -6034,7 +6034,7 @@ class PdfStream extends PdfObject {
     }
 }
 
-var __awaiter$18 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6048,7 +6048,7 @@ class TrailerStream extends PdfStream {
         super(streamTypes.XREF);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$18(this, void 0, void 0, function* () {
+        return __awaiter$1a(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6103,7 +6103,7 @@ class TrailerStream extends PdfStream {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a;
-        return __awaiter$18(this, void 0, void 0, function* () {
+        return __awaiter$1a(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -6194,7 +6194,7 @@ class XRef {
     }
 }
 
-var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$19 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6269,7 +6269,7 @@ class XRefStream extends XRef {
         return stream;
     }
     static parseAsync(parseInfo, offset) {
-        return __awaiter$17(this, void 0, void 0, function* () {
+        return __awaiter$19(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 return null;
             }
@@ -6300,7 +6300,7 @@ class XRefStream extends XRef {
     }
 }
 
-var __awaiter$16 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$18 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6314,7 +6314,7 @@ class TextStream extends PdfStream {
         super(type);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$16(this, void 0, void 0, function* () {
+        return __awaiter$18(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6340,13 +6340,13 @@ class TextStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$16(this, void 0, void 0, function* () {
+        return __awaiter$18(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
         });
     }
 }
 
-var __awaiter$15 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6378,7 +6378,7 @@ class IndexedColorSpaceArray {
         this.lookupArray = lookupArray;
     }
     static parseAsync(parseInfo, skipEmpty = true) {
-        return __awaiter$15(this, void 0, void 0, function* () {
+        return __awaiter$17(this, void 0, void 0, function* () {
             const { parser, bounds, cryptInfo } = parseInfo;
             let i;
             if (skipEmpty) {
@@ -6478,7 +6478,7 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$14 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$16 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6502,7 +6502,7 @@ class ImageStream extends PdfStream {
         this._sMask = value;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$14(this, void 0, void 0, function* () {
+        return __awaiter$16(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -6572,7 +6572,7 @@ class ImageStream extends PdfStream {
         return new Uint8Array(totalBytes);
     }
     getImageUrlAsync() {
-        return __awaiter$14(this, void 0, void 0, function* () {
+        return __awaiter$16(this, void 0, void 0, function* () {
             if (this._imageUrl) {
                 URL.revokeObjectURL(this._imageUrl);
             }
@@ -6632,7 +6632,7 @@ class ImageStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$14(this, void 0, void 0, function* () {
+        return __awaiter$16(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -6949,7 +6949,7 @@ class ImageStream extends PdfStream {
     }
 }
 
-var __awaiter$13 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$15 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -6965,7 +6965,7 @@ class ObjectMapDict extends PdfDict {
         this._dictParserMap = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$13(this, void 0, void 0, function* () {
+        return __awaiter$15(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -7016,7 +7016,7 @@ class ObjectMapDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$13(this, void 0, void 0, function* () {
+        return __awaiter$15(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -7070,7 +7070,7 @@ class ObjectMapDict extends PdfDict {
     }
 }
 
-var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$14 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -7086,7 +7086,7 @@ class UnicodeCmapStream extends PdfStream {
         this._map = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -7135,7 +7135,7 @@ class UnicodeCmapStream extends PdfStream {
     }
     parseCodeRangesAsync(parser) {
         var _a, _b;
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             let i = 0;
             const codeRangeStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true }))) === null || _a === void 0 ? void 0 : _a.end;
             if (!codeRangeStart) {
@@ -7158,7 +7158,7 @@ class UnicodeCmapStream extends PdfStream {
     }
     parseCharMapAsync(parser, decoder) {
         var _a, _b;
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             let i = 0;
             while (true) {
                 const charMapStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
@@ -7179,7 +7179,7 @@ class UnicodeCmapStream extends PdfStream {
     }
     parseCharRangesMapAsync(parser, decoder) {
         var _a, _b;
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             let i = 0;
             while (true) {
                 const rangeMapStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
@@ -7220,7 +7220,7 @@ class UnicodeCmapStream extends PdfStream {
         });
     }
     fillMapAsync() {
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             this._codeRanges.length = 0;
             this._map.clear();
             const parser = yield this.getStreamDataParserAsync();
@@ -7234,7 +7234,7 @@ class UnicodeCmapStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$12(this, void 0, void 0, function* () {
+        return __awaiter$14(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             yield this.fillMapAsync();
         });
@@ -11090,7 +11090,7 @@ function getCharCodesMapByCode(encoding) {
     return map;
 }
 
-var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$13 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11116,7 +11116,7 @@ class EncodingDict extends PdfDict {
         return this._codeMap;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$13(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -11152,7 +11152,7 @@ class EncodingDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$11(this, void 0, void 0, function* () {
+        return __awaiter$13(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -11236,7 +11236,7 @@ class EncodingDict extends PdfDict {
     }
 }
 
-var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11256,7 +11256,7 @@ class FontDescriptorDict extends PdfDict {
         this.XHeight = 0;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$10(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -11349,7 +11349,7 @@ class FontDescriptorDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$10(this, void 0, void 0, function* () {
+        return __awaiter$12(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -11423,7 +11423,7 @@ class FontDescriptorDict extends PdfDict {
     }
 }
 
-var __awaiter$$ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -11651,7 +11651,7 @@ class FontDict extends PdfDict {
         return map;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$$(this, void 0, void 0, function* () {
+        return __awaiter$11(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -11958,7 +11958,7 @@ class FontDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$$(this, void 0, void 0, function* () {
+        return __awaiter$11(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12093,7 +12093,7 @@ class FontDict extends PdfDict {
     }
 }
 
-var __awaiter$_ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12108,7 +12108,7 @@ class SoftMaskDict extends PdfDict {
         this.TR = "/Identity";
     }
     static parseAsync(parseInfo) {
-        return __awaiter$_(this, void 0, void 0, function* () {
+        return __awaiter$10(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12150,7 +12150,7 @@ class SoftMaskDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$_(this, void 0, void 0, function* () {
+        return __awaiter$10(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12195,7 +12195,7 @@ class SoftMaskDict extends PdfDict {
     }
 }
 
-var __awaiter$Z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$$ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12209,7 +12209,7 @@ class GraphicsStateDict extends PdfDict {
         super(dictTypes.GRAPHICS_STATE);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$Z(this, void 0, void 0, function* () {
+        return __awaiter$$(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12396,7 +12396,7 @@ class GraphicsStateDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$Z(this, void 0, void 0, function* () {
+        return __awaiter$$(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12562,7 +12562,7 @@ class GraphicsStateDict extends PdfDict {
     }
 }
 
-var __awaiter$Y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$_ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12580,7 +12580,7 @@ class ResourceDict extends PdfDict {
         this._streamParsers = streamParsers;
     }
     static parseAsync(parseInfo, streamParsers) {
-        return __awaiter$Y(this, void 0, void 0, function* () {
+        return __awaiter$_(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12705,7 +12705,7 @@ class ResourceDict extends PdfDict {
         this._edited = true;
     }
     fillMapsAsync(parseInfoGetterAsync, cryptInfo) {
-        return __awaiter$Y(this, void 0, void 0, function* () {
+        return __awaiter$_(this, void 0, void 0, function* () {
             this._gsMap.clear();
             this._fontsMap.clear();
             this._xObjectsMap.clear();
@@ -12763,7 +12763,7 @@ class ResourceDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$Y(this, void 0, void 0, function* () {
+        return __awaiter$_(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12841,7 +12841,7 @@ class ResourceDict extends PdfDict {
     }
 }
 
-var __awaiter$X = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$Z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12856,7 +12856,7 @@ class MeasureDict extends PdfDict {
         this.Subtype = "/RL";
     }
     static parseAsync(parseInfo) {
-        return __awaiter$X(this, void 0, void 0, function* () {
+        return __awaiter$Z(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -12889,7 +12889,7 @@ class MeasureDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$X(this, void 0, void 0, function* () {
+        return __awaiter$Z(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -12928,7 +12928,7 @@ class MeasureDict extends PdfDict {
     }
 }
 
-var __awaiter$W = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$Y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12960,7 +12960,7 @@ class GroupDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$W(this, void 0, void 0, function* () {
+        return __awaiter$Y(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -13002,7 +13002,7 @@ class GroupDict extends PdfDict {
     }
 }
 
-var __awaiter$V = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$X = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -13018,7 +13018,7 @@ class TransparencyGroupDict extends GroupDict {
         this.K = false;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$V(this, void 0, void 0, function* () {
+        return __awaiter$X(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -13057,7 +13057,7 @@ class TransparencyGroupDict extends GroupDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$V(this, void 0, void 0, function* () {
+        return __awaiter$X(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             if (this.S !== "/Transparency") {
                 throw new Error("Not a transparency dict");
@@ -13111,7 +13111,7 @@ class TransparencyGroupDict extends GroupDict {
     }
 }
 
-var __awaiter$U = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$W = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -13170,7 +13170,7 @@ class XFormStream extends PdfStream {
         return this._edited || this.Resources.edited;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$U(this, void 0, void 0, function* () {
+        return __awaiter$W(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -13237,7 +13237,7 @@ class XFormStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$U(this, void 0, void 0, function* () {
+        return __awaiter$W(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -13412,7 +13412,7 @@ class XFormStream extends PdfStream {
     }
 }
 
-var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$V = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -13423,7 +13423,7 @@ var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class TextData {
     static buildAsync(text, options) {
-        return __awaiter$T(this, void 0, void 0, function* () {
+        return __awaiter$V(this, void 0, void 0, function* () {
             let result;
             if (text) {
                 const pTemp = document.createElement("p");
@@ -13731,7 +13731,7 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$S = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$U = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -13772,7 +13772,7 @@ class AppearanceStreamRenderer {
         return this._graphicsStates[this._graphicsStates.length - 1];
     }
     static parseNextCommandAsync(parser, i) {
-        return __awaiter$S(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             const parameters = [];
             let operator;
             command: while (!operator) {
@@ -13835,7 +13835,7 @@ class AppearanceStreamRenderer {
         });
     }
     renderAsync() {
-        return __awaiter$S(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             this.reset();
             const elements = yield this.drawStreamAsync(this._stream);
             return {
@@ -14180,7 +14180,7 @@ class AppearanceStreamRenderer {
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
     drawImageAsync(imageStream) {
-        return __awaiter$S(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             const url = yield imageStream.getImageUrlAsync();
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
@@ -14216,7 +14216,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextAsync(textParam, resources) {
-        return __awaiter$S(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             const textState = this.state.textState;
             const fontDict = resources.getFont(textState.customFontName);
             const text = this.decodeTextParam(textParam, fontDict);
@@ -14332,7 +14332,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawTextGroupAsync(parser, resources) {
-        return __awaiter$S(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             const svgElements = [];
             const textState = this.state.textState;
             let i = 0;
@@ -14377,7 +14377,7 @@ class AppearanceStreamRenderer {
         });
     }
     drawStreamAsync(stream) {
-        return __awaiter$S(this, void 0, void 0, function* () {
+        return __awaiter$U(this, void 0, void 0, function* () {
             const parser = yield stream.getStreamDataParserAsync();
             const svgElements = [];
             const lastCoord = new Vec2();
@@ -14526,7 +14526,7 @@ class AppearanceStreamRenderer {
     }
 }
 
-var __awaiter$R = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -14543,7 +14543,7 @@ class BorderStyleDict extends PdfDict {
         this.D = [3, 0];
     }
     static parseAsync(parseInfo) {
-        return __awaiter$R(this, void 0, void 0, function* () {
+        return __awaiter$T(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -14583,7 +14583,7 @@ class BorderStyleDict extends PdfDict {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a, _b;
-        return __awaiter$R(this, void 0, void 0, function* () {
+        return __awaiter$T(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -14636,7 +14636,7 @@ class BorderStyleDict extends PdfDict {
     }
 }
 
-var __awaiter$Q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$S = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -14651,7 +14651,7 @@ class AppearanceDict extends PdfDict {
         this._streamsMap = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$Q(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -14741,7 +14741,7 @@ class AppearanceDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     fillStreamsMapAsync(parseInfoGetterAsync) {
-        return __awaiter$Q(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             this._streamsMap.clear();
             for (const prop of ["N", "R", "D"]) {
                 if (this[prop]) {
@@ -14778,7 +14778,7 @@ class AppearanceDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$Q(this, void 0, void 0, function* () {
+        return __awaiter$S(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -14892,7 +14892,7 @@ class AppearanceDict extends PdfDict {
     }
 }
 
-var __awaiter$P = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$R = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -14908,7 +14908,7 @@ class BorderEffectDict extends PdfDict {
         this.L = 0;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$P(this, void 0, void 0, function* () {
+        return __awaiter$R(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -14944,7 +14944,7 @@ class BorderEffectDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$P(this, void 0, void 0, function* () {
+        return __awaiter$R(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -14984,7 +14984,7 @@ class BorderEffectDict extends PdfDict {
     }
 }
 
-var __awaiter$O = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$Q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -15002,7 +15002,7 @@ class BorderArray {
         this.gap = gap !== null && gap !== void 0 ? gap : 0;
     }
     static parseAsync(parser, start, skipEmpty = true) {
-        return __awaiter$O(this, void 0, void 0, function* () {
+        return __awaiter$Q(this, void 0, void 0, function* () {
             if (skipEmpty) {
                 start = yield parser.findNonSpaceIndexAsync(true, start);
             }
@@ -15067,7 +15067,7 @@ class BorderArray {
     }
 }
 
-var __awaiter$N = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$P = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -15365,7 +15365,7 @@ class AnnotationDict extends PdfDict {
         return new Uint8Array(totalBytes);
     }
     renderAsync(pageInfo) {
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             if (!pageInfo) {
                 throw new Error("Can't render the annotation: view box is not defined");
             }
@@ -15374,7 +15374,7 @@ class AnnotationDict extends PdfDict {
                 this._renderedControls = this.renderControls();
             }
             yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$N(this, void 0, void 0, function* () {
+                setTimeout(() => __awaiter$P(this, void 0, void 0, function* () {
                     yield this.updateRenderAsync();
                     resolve();
                 }), 0);
@@ -15383,7 +15383,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     renderApStreamAsync() {
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             const stream = this.apStream;
             if (stream) {
                 try {
@@ -15398,7 +15398,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     moveToAsync(point) {
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             const width = this.Rect[2] - this.Rect[0];
             const height = this.Rect[3] - this.Rect[1];
             const x = point.x - width / 2;
@@ -15408,7 +15408,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     rotateByAsync(angle, center) {
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             if (!center) {
                 const [x0, y0, x1, y1] = this.Rect;
                 center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
@@ -15440,7 +15440,7 @@ class AnnotationDict extends PdfDict {
     }
     setTextContentAsync(text, undoable = true) {
         var _a;
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             const oldText = (_a = dict.Contents) === null || _a === void 0 ? void 0 : _a.literal;
             if (!text) {
@@ -15453,7 +15453,7 @@ class AnnotationDict extends PdfDict {
             dict.M = DateString.fromDate(new Date());
             if (dict.$onEditAction) {
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$N(this, void 0, void 0, function* () {
+                    ? () => __awaiter$P(this, void 0, void 0, function* () {
                         yield dict.setTextContentAsync(oldText, false);
                     })
                     : undefined);
@@ -15465,7 +15465,7 @@ class AnnotationDict extends PdfDict {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a;
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -15798,7 +15798,7 @@ class AnnotationDict extends PdfDict {
         this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
             const stream = dict.apStream;
@@ -15810,7 +15810,7 @@ class AnnotationDict extends PdfDict {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$N(this, void 0, void 0, function* () {
+                    ? () => __awaiter$P(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -15819,7 +15819,7 @@ class AnnotationDict extends PdfDict {
         });
     }
     applyTempTransformAsync() {
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             if (this._transformationTimer) {
                 clearTimeout(this._transformationTimer);
                 this._transformationTimer = null;
@@ -15828,7 +15828,7 @@ class AnnotationDict extends PdfDict {
             if (this._transformationPromise) {
                 yield this._transformationPromise;
             }
-            this._transformationPromise = new Promise((resolve) => __awaiter$N(this, void 0, void 0, function* () {
+            this._transformationPromise = new Promise((resolve) => __awaiter$P(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
                 this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
                 if (this._moved) {
@@ -15958,7 +15958,7 @@ class AnnotationDict extends PdfDict {
     }
     updateRenderAsync() {
         var _a;
-        return __awaiter$N(this, void 0, void 0, function* () {
+        return __awaiter$P(this, void 0, void 0, function* () {
             if (!this._renderedControls) {
                 return;
             }
@@ -15991,7 +15991,7 @@ class AnnotationDict extends PdfDict {
     }
 }
 
-var __awaiter$M = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$O = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -16044,7 +16044,7 @@ class MarkupAnnotation extends AnnotationDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$M(this, void 0, void 0, function* () {
+        return __awaiter$O(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -16170,7 +16170,7 @@ class MarkupAnnotation extends AnnotationDict {
     }
     updateTextDataAsync(options) {
         var _a;
-        return __awaiter$M(this, void 0, void 0, function* () {
+        return __awaiter$O(this, void 0, void 0, function* () {
             const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
             const textData = yield TextData.buildAsync(text, options);
             this._textData = textData;
@@ -16882,7 +16882,7 @@ class DataCryptHandler {
     }
 }
 
-var __awaiter$L = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$N = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -16896,7 +16896,7 @@ class ObjectStream extends PdfStream {
         super(streamTypes.OBJECT_STREAM);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$L(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -16912,7 +16912,7 @@ class ObjectStream extends PdfStream {
         });
     }
     getObjectDataAsync(id) {
-        return __awaiter$L(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             if (!this._streamData || !this.N || !this.First) {
                 return null;
             }
@@ -17020,7 +17020,7 @@ class ObjectStream extends PdfStream {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$L(this, void 0, void 0, function* () {
+        return __awaiter$N(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -17054,7 +17054,7 @@ class ObjectStream extends PdfStream {
     }
 }
 
-var __awaiter$K = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$M = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -17072,7 +17072,7 @@ class CryptFilterDict extends PdfDict {
         this.EncryptMetadata = true;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$K(this, void 0, void 0, function* () {
+        return __awaiter$M(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -17122,7 +17122,7 @@ class CryptFilterDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$K(this, void 0, void 0, function* () {
+        return __awaiter$M(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -17202,7 +17202,7 @@ class CryptFilterDict extends PdfDict {
     }
 }
 
-var __awaiter$J = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$L = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -17217,7 +17217,7 @@ class CryptMapDict extends PdfDict {
         this._filtersMap = new Map();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$J(this, void 0, void 0, function* () {
+        return __awaiter$L(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -17253,7 +17253,7 @@ class CryptMapDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$J(this, void 0, void 0, function* () {
+        return __awaiter$L(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -17292,7 +17292,7 @@ class CryptMapDict extends PdfDict {
     }
 }
 
-var __awaiter$I = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$K = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -17311,7 +17311,7 @@ class EncryptionDict extends PdfDict {
         this.EncryptMetadata = true;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$I(this, void 0, void 0, function* () {
+        return __awaiter$K(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -17424,7 +17424,7 @@ class EncryptionDict extends PdfDict {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a, _b;
-        return __awaiter$I(this, void 0, void 0, function* () {
+        return __awaiter$K(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -17553,7 +17553,7 @@ class EncryptionDict extends PdfDict {
     }
 }
 
-var __awaiter$H = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$J = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -17567,7 +17567,7 @@ class TrailerDict extends PdfDict {
         super(dictTypes.EMPTY);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$H(this, void 0, void 0, function* () {
+        return __awaiter$J(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -17615,7 +17615,7 @@ class TrailerDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$H(this, void 0, void 0, function* () {
+        return __awaiter$J(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -17687,7 +17687,7 @@ class TrailerDict extends PdfDict {
     }
 }
 
-var __awaiter$G = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$I = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -17751,7 +17751,7 @@ class XRefTable extends XRef {
         return table;
     }
     static parseAsync(parser, start, offset) {
-        return __awaiter$G(this, void 0, void 0, function* () {
+        return __awaiter$I(this, void 0, void 0, function* () {
             if (!parser || isNaN(start)) {
                 return null;
             }
@@ -17798,7 +17798,7 @@ class XRefTable extends XRef {
     }
 }
 
-var __awaiter$F = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$H = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -17816,7 +17816,7 @@ class XrefParser {
     }
     getPdfVersionAsync() {
         var _a;
-        return __awaiter$F(this, void 0, void 0, function* () {
+        return __awaiter$H(this, void 0, void 0, function* () {
             const i = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.VERSION);
             if (!i) {
                 return null;
@@ -17829,7 +17829,7 @@ class XrefParser {
         });
     }
     getLastXrefIndexAsync() {
-        return __awaiter$F(this, void 0, void 0, function* () {
+        return __awaiter$H(this, void 0, void 0, function* () {
             const xrefStartIndex = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_START, { maxIndex: this._dataParser.maxIndex, direction: false });
             if (!xrefStartIndex) {
                 return null;
@@ -17842,7 +17842,7 @@ class XrefParser {
         });
     }
     parseXrefAsync(start, max) {
-        return __awaiter$F(this, void 0, void 0, function* () {
+        return __awaiter$H(this, void 0, void 0, function* () {
             if (!start) {
                 return null;
             }
@@ -17875,7 +17875,7 @@ class XrefParser {
         });
     }
     parseAllXrefsAsync(start) {
-        return __awaiter$F(this, void 0, void 0, function* () {
+        return __awaiter$H(this, void 0, void 0, function* () {
             const xrefs = [];
             let max = this._dataParser.maxIndex;
             let xref;
@@ -18017,7 +18017,7 @@ class ReferenceData {
     }
 }
 
-var __awaiter$E = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$G = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -18031,7 +18031,7 @@ class CatalogDict extends PdfDict {
         super(dictTypes.CATALOG);
     }
     static parseAsync(parseInfo) {
-        return __awaiter$E(this, void 0, void 0, function* () {
+        return __awaiter$G(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -18070,7 +18070,7 @@ class CatalogDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$E(this, void 0, void 0, function* () {
+        return __awaiter$G(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -18109,7 +18109,7 @@ class CatalogDict extends PdfDict {
     }
 }
 
-var __awaiter$D = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$F = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -18124,7 +18124,7 @@ class PageDict extends PdfDict {
         this.Rotate = 0;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$D(this, void 0, void 0, function* () {
+        return __awaiter$F(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -18232,7 +18232,7 @@ class PageDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$D(this, void 0, void 0, function* () {
+        return __awaiter$F(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -18358,7 +18358,7 @@ class PageDict extends PdfDict {
     }
 }
 
-var __awaiter$C = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$E = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -18373,7 +18373,7 @@ class PageTreeDict extends PdfDict {
         this.Rotate = 0;
     }
     static parseAsync(parseInfo) {
-        return __awaiter$C(this, void 0, void 0, function* () {
+        return __awaiter$E(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -18418,7 +18418,7 @@ class PageTreeDict extends PdfDict {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$C(this, void 0, void 0, function* () {
+        return __awaiter$E(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -21255,7 +21255,7 @@ const standardStampCreationInfos = {
     },
 };
 
-var __awaiter$B = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$D = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21364,7 +21364,7 @@ class StampAnnotation extends MarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$B(this, void 0, void 0, function* () {
+        return __awaiter$D(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -21426,7 +21426,7 @@ class StampAnnotation extends MarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$B(this, void 0, void 0, function* () {
+        return __awaiter$D(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -21465,7 +21465,7 @@ class StampAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$A = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$C = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21592,7 +21592,7 @@ class TextAnnotation extends MarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$A(this, void 0, void 0, function* () {
+        return __awaiter$C(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -21662,7 +21662,7 @@ class TextAnnotation extends MarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$A(this, void 0, void 0, function* () {
+        return __awaiter$C(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -21735,7 +21735,7 @@ class TextAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$B = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -21776,7 +21776,7 @@ class InkAnnotation extends MarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$z(this, void 0, void 0, function* () {
+        return __awaiter$B(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -21838,7 +21838,7 @@ class InkAnnotation extends MarkupAnnotation {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a;
-        return __awaiter$z(this, void 0, void 0, function* () {
+        return __awaiter$B(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -21927,7 +21927,7 @@ class InkAnnotation extends MarkupAnnotation {
     }
     applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$z(this, void 0, void 0, function* () {
+        return __awaiter$B(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             let x;
             let y;
@@ -21975,7 +21975,7 @@ class InkAnnotation extends MarkupAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$z(this, void 0, void 0, function* () {
+                    ? () => __awaiter$B(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -21984,7 +21984,7 @@ class InkAnnotation extends MarkupAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$z(this, void 0, void 0, function* () {
+        return __awaiter$B(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -22003,7 +22003,7 @@ class InkAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$A = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22034,7 +22034,7 @@ class GeometricAnnotation extends MarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$y(this, void 0, void 0, function* () {
+        return __awaiter$A(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -22064,7 +22064,7 @@ class GeometricAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$x = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22106,7 +22106,7 @@ class SquareAnnotation extends GeometricAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$x(this, void 0, void 0, function* () {
+        return __awaiter$z(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -22168,7 +22168,7 @@ class SquareAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$x(this, void 0, void 0, function* () {
+        return __awaiter$z(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -22278,7 +22278,7 @@ class SquareAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$x(this, void 0, void 0, function* () {
+        return __awaiter$z(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
             const stream = dict.apStream;
@@ -22290,7 +22290,7 @@ class SquareAnnotation extends GeometricAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$x(this, void 0, void 0, function* () {
+                    ? () => __awaiter$z(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -22307,7 +22307,7 @@ class SquareAnnotation extends GeometricAnnotation {
 }
 SquareAnnotation.cloudArcSize = 20;
 
-var __awaiter$w = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22349,7 +22349,7 @@ class CircleAnnotation extends GeometricAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$w(this, void 0, void 0, function* () {
+        return __awaiter$y(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -22411,7 +22411,7 @@ class CircleAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$w(this, void 0, void 0, function* () {
+        return __awaiter$y(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -22532,7 +22532,7 @@ class CircleAnnotation extends GeometricAnnotation {
         this.apStream = apStream;
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$w(this, void 0, void 0, function* () {
+        return __awaiter$y(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             dict.applyRectTransform(matrix);
             const stream = dict.apStream;
@@ -22544,7 +22544,7 @@ class CircleAnnotation extends GeometricAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$w(this, void 0, void 0, function* () {
+                    ? () => __awaiter$y(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -22561,7 +22561,7 @@ class CircleAnnotation extends GeometricAnnotation {
 }
 CircleAnnotation.cloudArcSize = 20;
 
-var __awaiter$v = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$x = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22598,7 +22598,7 @@ class PolyAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$v(this, void 0, void 0, function* () {
+        return __awaiter$x(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -22671,7 +22671,7 @@ class PolyAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$w = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22715,7 +22715,7 @@ class PolygonAnnotation extends PolyAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$w(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -22767,7 +22767,7 @@ class PolygonAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$w(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             yield this.bakeRotationAsync();
         });
@@ -22831,7 +22831,7 @@ class PolygonAnnotation extends PolyAnnotation {
     }
     applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$w(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             let x;
             let y;
@@ -22881,7 +22881,7 @@ class PolygonAnnotation extends PolyAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$u(this, void 0, void 0, function* () {
+                    ? () => __awaiter$w(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -22890,7 +22890,7 @@ class PolygonAnnotation extends PolyAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$u(this, void 0, void 0, function* () {
+        return __awaiter$w(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -22910,7 +22910,7 @@ class PolygonAnnotation extends PolyAnnotation {
 }
 PolygonAnnotation.cloudArcSize = 20;
 
-var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$v = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -22954,7 +22954,7 @@ class PolylineAnnotation extends PolyAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$t(this, void 0, void 0, function* () {
+        return __awaiter$v(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -23016,7 +23016,7 @@ class PolylineAnnotation extends PolyAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$t(this, void 0, void 0, function* () {
+        return __awaiter$v(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -23099,7 +23099,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
     applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$t(this, void 0, void 0, function* () {
+        return __awaiter$v(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             let x;
             let y;
@@ -23146,7 +23146,7 @@ class PolylineAnnotation extends PolyAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$t(this, void 0, void 0, function* () {
+                    ? () => __awaiter$v(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -23155,7 +23155,7 @@ class PolylineAnnotation extends PolyAnnotation {
         });
     }
     bakeRotationAsync() {
-        return __awaiter$t(this, void 0, void 0, function* () {
+        return __awaiter$v(this, void 0, void 0, function* () {
             const angle = this.getCurrentRotation();
             const centerX = (this.Rect[0] + this.Rect[2]) / 2;
             const centerY = (this.Rect[1] + this.Rect[3]) / 2;
@@ -23174,7 +23174,7 @@ class PolylineAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -23273,7 +23273,7 @@ class LineAnnotation extends GeometricAnnotation {
         return marginMin;
     }
     static createFromDtoAsync(dto, fontMap) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             if (dto.annotationType !== "/Line") {
                 throw new Error("Invalid annotation type");
             }
@@ -23311,7 +23311,7 @@ class LineAnnotation extends GeometricAnnotation {
         });
     }
     static parseAsync(parseInfo, fontMap) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -23408,7 +23408,7 @@ class LineAnnotation extends GeometricAnnotation {
         const _super = Object.create(null, {
             setTextContentAsync: { get: () => super.setTextContentAsync }
         });
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             yield _super.setTextContentAsync.call(this, text, undoable);
             yield this.updateStreamAsync();
         });
@@ -23418,7 +23418,7 @@ class LineAnnotation extends GeometricAnnotation {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a;
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -23532,7 +23532,7 @@ class LineAnnotation extends GeometricAnnotation {
         });
     }
     applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             const [x1, y1, x2, y2] = dict.L;
             const start = new Vec2(x1, y1).applyMat3(matrix);
@@ -23543,7 +23543,7 @@ class LineAnnotation extends GeometricAnnotation {
             if (dict.$onEditAction) {
                 const invertedMat = Mat3.invert(matrix);
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$s(this, void 0, void 0, function* () {
+                    ? () => __awaiter$u(this, void 0, void 0, function* () {
                         yield dict.applyCommonTransformAsync(invertedMat, false);
                         yield dict.updateRenderAsync();
                     })
@@ -23552,14 +23552,14 @@ class LineAnnotation extends GeometricAnnotation {
         });
     }
     updateStreamAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             yield dict.generateApStreamAsync();
             yield dict.updateRenderAsync();
         });
     }
     calculateStreamBboxAsync() {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             const [x1, y1, x2, y2] = this.L;
             const length = new Vec2(x2 - x1, y2 - y1).getMagnitude();
             const strokeWidth = this.strokeWidth;
@@ -23661,7 +23661,7 @@ class LineAnnotation extends GeometricAnnotation {
         return lineStream;
     }
     getTextStreamPartAsync(pivotPoint, font) {
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             const textData = this._textData;
             if (!textData) {
                 return "";
@@ -23701,7 +23701,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
     generateApStreamAsync() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-        return __awaiter$s(this, void 0, void 0, function* () {
+        return __awaiter$u(this, void 0, void 0, function* () {
             if (!this.L) {
                 return;
             }
@@ -23780,7 +23780,7 @@ class LineAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -23812,7 +23812,7 @@ class TextMarkupAnnotation extends MarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$r(this, void 0, void 0, function* () {
+        return __awaiter$t(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -23848,7 +23848,7 @@ class TextMarkupAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -23903,7 +23903,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -23954,7 +23954,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$q(this, void 0, void 0, function* () {
+        return __awaiter$s(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
         });
     }
@@ -24013,7 +24013,7 @@ class HighlightAnnotation extends TextMarkupAnnotation {
     }
 }
 
-var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -24071,7 +24071,7 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -24122,7 +24122,7 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$p(this, void 0, void 0, function* () {
+        return __awaiter$r(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
         });
     }
@@ -24174,7 +24174,7 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
     }
 }
 
-var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -24229,7 +24229,7 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$o(this, void 0, void 0, function* () {
+        return __awaiter$q(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -24280,7 +24280,7 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$o(this, void 0, void 0, function* () {
+        return __awaiter$q(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
         });
     }
@@ -24340,7 +24340,7 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
     }
 }
 
-var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -24396,7 +24396,7 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         return annotation.initProxy();
     }
     static parseAsync(parseInfo) {
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$p(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -24447,7 +24447,7 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         const _super = Object.create(null, {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
-        return __awaiter$n(this, void 0, void 0, function* () {
+        return __awaiter$p(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
         });
     }
@@ -24506,7 +24506,7 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
 }
 SquigglyAnnotation.squiggleSize = 6;
 
-var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -24763,7 +24763,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         return marginMin;
     }
     static createFromDtoAsync(dto, fontMap) {
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             if (dto.annotationType !== "/FreeText") {
                 throw new Error("Invalid annotation type");
             }
@@ -24809,7 +24809,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         });
     }
     static parseAsync(parseInfo, fontMap) {
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             if (!parseInfo) {
                 throw new Error("Parsing information not passed");
             }
@@ -24909,7 +24909,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         const _super = Object.create(null, {
             setTextContentAsync: { get: () => super.setTextContentAsync }
         });
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             yield _super.setTextContentAsync.call(this, text, undoable);
             yield this.updateStreamAsync(null);
         });
@@ -24919,7 +24919,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
             parsePropsAsync: { get: () => super.parsePropsAsync }
         });
         var _a;
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             yield _super.parsePropsAsync.call(this, parseInfo);
             const { parser, bounds } = parseInfo;
             const start = bounds.contentStart || bounds.start;
@@ -25118,7 +25118,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         return calloutStream;
     }
     getTextStreamPartAsync(sPoints, font) {
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             const w = this.strokeWidth;
             const textMaxWidth = sPoints.br.x - sPoints.bl.x - 2 * w;
             if (textMaxWidth <= 0) {
@@ -25172,7 +25172,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
     generateApStreamAsync(pPoints) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             if (!pPoints) {
                 throw new Error("No key annotation point coordinates passed");
             }
@@ -25223,14 +25223,14 @@ class FreeTextAnnotation extends MarkupAnnotation {
         });
     }
     updateStreamAsync(points, undoable = true) {
-        return __awaiter$m(this, void 0, void 0, function* () {
+        return __awaiter$o(this, void 0, void 0, function* () {
             const dict = this.getProxy();
             const oldPoints = dict.pointsPageCS;
             yield dict.generateApStreamAsync(points || oldPoints);
             yield dict.updateRenderAsync();
             if (points && dict.$onEditAction) {
                 dict.$onEditAction(undoable
-                    ? () => __awaiter$m(this, void 0, void 0, function* () {
+                    ? () => __awaiter$o(this, void 0, void 0, function* () {
                         yield dict.updateStreamAsync(oldPoints, false);
                     })
                     : undefined);
@@ -25316,7 +25316,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -25327,7 +25327,7 @@ var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _argu
 };
 class AnnotationParser {
     static ParseAnnotationFromInfoAsync(info, fontMap) {
-        return __awaiter$l(this, void 0, void 0, function* () {
+        return __awaiter$n(this, void 0, void 0, function* () {
             const annotationType = yield info.parser.parseDictSubtypeAsync(info.bounds);
             let annot;
             switch (annotationType) {
@@ -25375,7 +25375,7 @@ class AnnotationParser {
         });
     }
     static ParseAnnotationFromDtoAsync(dto, fontMap) {
-        return __awaiter$l(this, void 0, void 0, function* () {
+        return __awaiter$n(this, void 0, void 0, function* () {
             let annotation;
             switch (dto.annotationType) {
                 case "/Stamp":
@@ -25422,7 +25422,7 @@ class AnnotationParser {
     }
 }
 
-var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -25460,7 +25460,7 @@ class DocumentService {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
         this._lastCommands = [];
-        this.getObjectParseInfoAsync = (id) => __awaiter$k(this, void 0, void 0, function* () {
+        this.getObjectParseInfoAsync = (id) => __awaiter$m(this, void 0, void 0, function* () {
             var _a, _b, _c;
             if (!id) {
                 return null;
@@ -25562,7 +25562,7 @@ class DocumentService {
         return !this._encryption || !!this._authResult;
     }
     static createNewAsync(eventService, data, userName) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const service = new DocumentService(eventService, data, userName);
             yield service._initPromise;
             return service;
@@ -25593,12 +25593,12 @@ class DocumentService {
         return this._data.slice();
     }
     undoAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             yield this.undoCommandAsync();
         });
     }
     getDataWithoutSupportedAnnotationsAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const annotationMarkedToDelete = [];
             if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
@@ -25618,7 +25618,7 @@ class DocumentService {
         });
     }
     getDataWithUpdatedAnnotationsAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const updaterData = [];
             annotationMap.forEach((pageAnnotations, pageId) => {
@@ -25641,14 +25641,14 @@ class DocumentService {
         });
     }
     getPageAnnotationsAsync(pageId) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             const annotations = annotationMap.get(pageId);
             return annotations || [];
         });
     }
     serializeAnnotationsAsync(addedOnly = false) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const result = [];
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             annotationMap.forEach((v, k) => {
@@ -25662,12 +25662,12 @@ class DocumentService {
         });
     }
     appendAnnotationToPageAsync(pageId, annotation) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             yield this.appendAnnotationAsync(pageId, annotation, true, "add");
         });
     }
     appendSerializedAnnotationsAsync(dtos) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             let annotation;
             for (const dto of dtos) {
                 annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
@@ -25744,12 +25744,12 @@ class DocumentService {
     }
     setSelectedAnnotationTextContentAsync(text) {
         var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             yield ((_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
         });
     }
     parseXrefsAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const xrefParser = new XrefParser(this._docParser);
             this._version = yield xrefParser.getPdfVersionAsync();
             if (!this._version) {
@@ -25773,7 +25773,7 @@ class DocumentService {
     }
     initAsync() {
         var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             this._docParser = (_a = BgDataParser.tryGetParser(this._data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(this._data);
             yield this.parseXrefsAsync();
             yield this.parseEncryptionAsync();
@@ -25784,7 +25784,7 @@ class DocumentService {
         this.emitStateChanged();
     }
     undoCommandAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             if (!this._lastCommands.length) {
                 return;
             }
@@ -25799,7 +25799,7 @@ class DocumentService {
         }));
     }
     appendAnnotationAsync(pageId, annotation, undoable, raiseEvent) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             if (!annotation) {
                 throw new Error("Annotation is not defined");
             }
@@ -25822,7 +25822,7 @@ class DocumentService {
             if (undoable) {
                 this.pushCommand({
                     timestamp: Date.now(),
-                    undo: () => __awaiter$k(this, void 0, void 0, function* () {
+                    undo: () => __awaiter$m(this, void 0, void 0, function* () {
                         this.removeAnnotation(annotation, false);
                         if (this.selectedAnnotation === annotation) {
                             this.setSelectedAnnotation(null);
@@ -25845,7 +25845,7 @@ class DocumentService {
         if (undoable) {
             this.pushCommand({
                 timestamp: Date.now(),
-                undo: () => __awaiter$k(this, void 0, void 0, function* () {
+                undo: () => __awaiter$m(this, void 0, void 0, function* () {
                     yield this.appendAnnotationAsync(annotation.$pageId, annotation, false, "add");
                 })
             });
@@ -25897,7 +25897,7 @@ class DocumentService {
         }
     }
     parseEncryptionAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const encryptionId = this._xrefs[0].encrypt;
             if (!encryptionId) {
                 return;
@@ -25911,7 +25911,7 @@ class DocumentService {
         });
     }
     parsePagesAsync(output, tree) {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             if (!tree.Kids.length) {
                 return;
             }
@@ -25938,7 +25938,7 @@ class DocumentService {
     }
     ;
     parsePageTreeAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const catalogId = this._xrefs[0].root;
             const catalogParseInfo = yield this.getObjectParseInfoAsync(catalogId.id);
             const catalog = yield CatalogDict.parseAsync(catalogParseInfo);
@@ -25961,7 +25961,7 @@ class DocumentService {
     }
     parseSupportedAnnotationsAsync() {
         var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             this.checkAuthentication();
             if (!this._catalog) {
                 yield this.parsePageTreeAsync();
@@ -25983,7 +25983,7 @@ class DocumentService {
                     }
                 }
                 annotIdsByPageId.set(page.ref.id, annotationIds);
-                const processAnnotation = (objectId) => __awaiter$k(this, void 0, void 0, function* () {
+                const processAnnotation = (objectId) => __awaiter$m(this, void 0, void 0, function* () {
                     const info = yield this.getObjectParseInfoAsync(objectId.id);
                     info.rect = page.MediaBox;
                     const annot = yield AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
@@ -26003,7 +26003,7 @@ class DocumentService {
         });
     }
     getSupportedAnnotationMapAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             this.checkAuthentication();
             if (this._supportedAnnotsByPageId) {
                 return this._supportedAnnotsByPageId;
@@ -26013,7 +26013,7 @@ class DocumentService {
         });
     }
     getAllSupportedAnnotationsAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
+        return __awaiter$m(this, void 0, void 0, function* () {
             const result = [];
             const annotationMap = yield this.getSupportedAnnotationMapAsync();
             annotationMap.forEach((v, k) => {
@@ -26024,7 +26024,7 @@ class DocumentService {
     }
 }
 
-var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -26084,7 +26084,7 @@ class PageAnnotationView {
     }
     appendAsync(parent) {
         var _a;
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$l(this, void 0, void 0, function* () {
             if (this._destroyed) {
                 return;
             }
@@ -26098,7 +26098,7 @@ class PageAnnotationView {
         });
     }
     renderAnnotationsAsync() {
-        return __awaiter$j(this, void 0, void 0, function* () {
+        return __awaiter$l(this, void 0, void 0, function* () {
             if (this._destroyed) {
                 return false;
             }
@@ -26107,7 +26107,7 @@ class PageAnnotationView {
                 .getPageAnnotationsAsync(this._pageInfo.id))
                 .filter(x => !x.deleted)
                 || [];
-            const processAnnotation = (annotation) => __awaiter$j(this, void 0, void 0, function* () {
+            const processAnnotation = (annotation) => __awaiter$l(this, void 0, void 0, function* () {
                 let renderResult;
                 if (!this._rendered.has(annotation)) {
                     annotation.$onPointerDownAction = (e) => {
@@ -26144,7 +26144,7 @@ class PageAnnotationView {
     }
 }
 
-var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -26154,23 +26154,22 @@ var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class PageView {
-    constructor(modeService, loaderServices, pageIndex, previewWidth) {
+    constructor(modeService, docManagerService, pageIndex, previewWidth) {
         this._rotation = 0;
         this._scale = 1;
         if (!modeService) {
             throw new Error("Mode service is not defined");
         }
-        if (!(loaderServices === null || loaderServices === void 0 ? void 0 : loaderServices.main)) {
+        if (!docManagerService) {
             throw new Error("Loader service is not defined");
         }
         this._modeService = modeService;
-        this._mainLoaderService = loaderServices.main;
-        this._comparerLoaderService = loaderServices.comparer;
-        const pageProxy = loaderServices.main.getPage(pageIndex);
+        this._docManagerService = docManagerService;
+        const pageProxy = docManagerService.getPageProxy("main", pageIndex);
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
         }
-        this._mainPageProxy = pageProxy;
+        this._pageProxy = pageProxy;
         this._defaultViewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
         this._rotation = pageProxy.rotate;
         this.number = pageProxy.pageNumber;
@@ -26225,10 +26224,10 @@ class PageView {
         this._destroyed = true;
         this._previewContainer.remove();
         this._viewOuterContainer.remove();
-        this._mainPageProxy.cleanup();
+        this._pageProxy.cleanup();
     }
     renderPreviewAsync(force = false) {
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (this._renderPromise) {
                 if (force) {
                     this.cancelRenderTask();
@@ -26243,7 +26242,7 @@ class PageView {
         });
     }
     renderViewAsync(force = false) {
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (this._renderPromise) {
                 if (force) {
                     this.cancelRenderTask();
@@ -26360,12 +26359,12 @@ class PageView {
         }
     }
     runRenderTaskAsync(renderParams) {
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (this._destroyed) {
                 return false;
             }
             this.cancelRenderTask();
-            this._renderTask = this._mainPageProxy.render(renderParams);
+            this._renderTask = this._pageProxy.render(renderParams);
             try {
                 yield this._renderTask.promise;
             }
@@ -26404,7 +26403,7 @@ class PageView {
         return canvas;
     }
     runPreviewRenderAsync() {
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const canvas = this.createPreviewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
@@ -26421,11 +26420,25 @@ class PageView {
         });
     }
     runViewRenderAsync() {
-        var _a, _b;
-        return __awaiter$i(this, void 0, void 0, function* () {
+        return __awaiter$k(this, void 0, void 0, function* () {
             const scale = this._scale;
-            (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._text = null;
+            this.clearTextLayer();
+            yield this.renderCanvasLayer(scale);
+            yield this.renderTextLayer(scale);
+            yield this.renderAnnotationLayer();
+            if (scale === this._scale) {
+                this._dimensionsIsValid = true;
+            }
+        });
+    }
+    clearTextLayer() {
+        var _a;
+        (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._text = null;
+    }
+    renderCanvasLayer(scale) {
+        var _a;
+        return __awaiter$k(this, void 0, void 0, function* () {
             const canvas = this.createViewCanvas();
             const params = {
                 canvasContext: canvas.getContext("2d"),
@@ -26436,25 +26449,30 @@ class PageView {
             if (!result || scale !== this._scale) {
                 return;
             }
-            (_b = this._viewCanvas) === null || _b === void 0 ? void 0 : _b.remove();
+            (_a = this._viewCanvas) === null || _a === void 0 ? void 0 : _a.remove();
             this._viewInnerContainer.append(canvas);
             this._viewCanvas = canvas;
             this._viewRendered = true;
-            this._text = yield PageTextView.appendPageTextAsync(this._mainPageProxy, this._viewInnerContainer, scale);
+        });
+    }
+    renderTextLayer(scale) {
+        return __awaiter$k(this, void 0, void 0, function* () {
+            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
+        });
+    }
+    renderAnnotationLayer() {
+        return __awaiter$k(this, void 0, void 0, function* () {
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._mainLoaderService.docService, this, new Vec2(x, y));
+                this._annotations = new PageAnnotationView(this._docManagerService.docService, this, new Vec2(x, y));
             }
             yield this._annotations.appendAsync(this._viewInnerContainer);
-            if (scale === this._scale) {
-                this._dimensionsIsValid = true;
-            }
         });
     }
 }
 PageView.validRotationValues = [0, 90, 180, 270];
 
-var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -26494,7 +26512,7 @@ class ScaleChangedEvent extends CustomEvent {
     }
 }
 class PageService {
-    constructor(eventService, modeService, loaderServices, options) {
+    constructor(eventService, modeService, docManagerService, options) {
         this._pages = [];
         this._renderedPages = [];
         if (!eventService) {
@@ -26503,12 +26521,12 @@ class PageService {
         if (!modeService) {
             throw new Error("Mode service is not defined");
         }
-        if (!(loaderServices === null || loaderServices === void 0 ? void 0 : loaderServices.main)) {
-            throw new Error("Loader service is not defined");
+        if (!docManagerService) {
+            throw new Error("Doc manager service is not defined");
         }
         this._modeService = modeService;
         this._eventService = eventService;
-        this._loaderServices = loaderServices;
+        this._docManagerService = docManagerService;
         this._previewCanvasWidth = (options === null || options === void 0 ? void 0 : options.previewCanvasWidth) || 100;
         this._visibleAdjPages = (options === null || options === void 0 ? void 0 : options.visibleAdjPages) || 0;
     }
@@ -26554,12 +26572,12 @@ class PageService {
         return this._pages[this._currentPageIndex];
     }
     reloadPagesAsync() {
-        return __awaiter$h(this, void 0, void 0, function* () {
-            const docPagesNumber = this._loaderServices.main.pageCount;
+        return __awaiter$j(this, void 0, void 0, function* () {
+            const docPagesNumber = this._docManagerService.pageCount;
             const pages = [];
             if (docPagesNumber) {
                 for (let i = 0; i < docPagesNumber; i++) {
-                    const page = new PageView(this._modeService, this._loaderServices, i, this._previewCanvasWidth);
+                    const page = new PageView(this._modeService, this._docManagerService, i, this._previewCanvasWidth);
                     pages.push(page);
                 }
             }
@@ -27027,7 +27045,7 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27101,7 +27119,7 @@ class GeometricLineAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$g(this, void 0, void 0, function* () {
+        return __awaiter$i(this, void 0, void 0, function* () {
             if (!this._vertices) {
                 return;
             }
@@ -27199,7 +27217,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
     }
 }
 
-var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27273,7 +27291,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$f(this, void 0, void 0, function* () {
+        return __awaiter$h(this, void 0, void 0, function* () {
             if (!this._rect) {
                 return;
             }
@@ -27355,7 +27373,7 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27436,7 +27454,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$e(this, void 0, void 0, function* () {
+        return __awaiter$g(this, void 0, void 0, function* () {
             if (this._points.length < 3) {
                 return;
             }
@@ -27535,7 +27553,7 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27616,7 +27634,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
         }
     }
     saveAnnotationAsync() {
-        return __awaiter$d(this, void 0, void 0, function* () {
+        return __awaiter$f(this, void 0, void 0, function* () {
             if (this._points.length < 2) {
                 return;
             }
@@ -27700,7 +27718,7 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27774,7 +27792,7 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         this.clearGroup();
     }
     saveAnnotationAsync() {
-        return __awaiter$c(this, void 0, void 0, function* () {
+        return __awaiter$e(this, void 0, void 0, function* () {
             if (!this._rect) {
                 return;
             }
@@ -27904,7 +27922,7 @@ class GeometricAnnotatorFactory {
     }
 }
 
-var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -27979,7 +27997,7 @@ class PenAnnotator extends Annotator {
         this.removeTempPenData();
     }
     saveAnnotationAsync() {
-        return __awaiter$b(this, void 0, void 0, function* () {
+        return __awaiter$d(this, void 0, void 0, function* () {
             if (!this._annotationPathData) {
                 return;
             }
@@ -28101,7 +28119,7 @@ class PenAnnotator extends Annotator {
     }
 }
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28144,7 +28162,7 @@ class StampAnnotator extends Annotator {
             }
             this.updatePointerCoords(cx, cy);
         };
-        this.onPointerUp = (e) => __awaiter$a(this, void 0, void 0, function* () {
+        this.onPointerUp = (e) => __awaiter$c(this, void 0, void 0, function* () {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -28193,7 +28211,7 @@ class StampAnnotator extends Annotator {
         this._tempAnnotation = null;
     }
     saveAnnotationAsync() {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$c(this, void 0, void 0, function* () {
             if (!this._pageId || !this._tempAnnotation) {
                 return;
             }
@@ -28245,7 +28263,7 @@ class StampAnnotator extends Annotator {
         return StampAnnotation.createFromDto(dto);
     }
     createTempStampAnnotationAsync() {
-        return __awaiter$a(this, void 0, void 0, function* () {
+        return __awaiter$c(this, void 0, void 0, function* () {
             let stamp;
             if (standardStampCreationInfos[this._type]) {
                 stamp = this.createStandardStamp(this._type, this._docService.userName);
@@ -28417,7 +28435,7 @@ class TextMarkupAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28432,7 +28450,7 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
         this.init();
     }
     saveAnnotationAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$b(this, void 0, void 0, function* () {
             if (!this._coordsByPageId.size) {
                 return;
             }
@@ -28463,7 +28481,7 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28478,7 +28496,7 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
         this.init();
     }
     saveAnnotationAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$a(this, void 0, void 0, function* () {
             if (!this._coordsByPageId.size) {
                 return;
             }
@@ -28518,7 +28536,7 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28533,7 +28551,7 @@ class TextStrikeoutAnnotator extends TextMarkupAnnotator {
         this.init();
     }
     saveAnnotationAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
+        return __awaiter$9(this, void 0, void 0, function* () {
             if (!this._coordsByPageId.size) {
                 return;
             }
@@ -28578,7 +28596,7 @@ class TextStrikeoutAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28593,7 +28611,7 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
         this.init();
     }
     saveAnnotationAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (!this._coordsByPageId.size) {
                 return;
             }
@@ -28626,7 +28644,7 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28651,7 +28669,7 @@ class TextNoteAnnotator extends TextAnnotator {
             this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 4} ${offsetY - (y2 - y1) / 4})`);
             this.updatePointerCoords(cx, cy);
         };
-        this.onPointerUp = (e) => __awaiter$5(this, void 0, void 0, function* () {
+        this.onPointerUp = (e) => __awaiter$7(this, void 0, void 0, function* () {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -28698,7 +28716,7 @@ class TextNoteAnnotator extends TextAnnotator {
     }
     saveAnnotationAsync() {
         var _a, _b;
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!this._pageId || !this._tempAnnotation) {
                 return;
             }
@@ -28718,7 +28736,7 @@ class TextNoteAnnotator extends TextAnnotator {
         this.createTempNoteAnnotationAsync();
     }
     createTempNoteAnnotationAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             const note = TextAnnotation.createStandard(this._docService.userName, this._color);
             const renderResult = yield note.renderApStreamAsync();
             this._svgGroup.innerHTML = "";
@@ -28731,7 +28749,7 @@ class TextNoteAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -28779,7 +28797,7 @@ class FreeTextAnnotator extends TextAnnotator {
             const { min, max } = Vec2.minMax(this._down, new Vec2(px, py));
             this.redrawRect(min, max);
         };
-        this.onPointerUp = (e) => __awaiter$4(this, void 0, void 0, function* () {
+        this.onPointerUp = (e) => __awaiter$6(this, void 0, void 0, function* () {
             if (!e.isPrimary) {
                 return;
             }
@@ -28808,7 +28826,7 @@ class FreeTextAnnotator extends TextAnnotator {
         this.emitDataChanged(0);
     }
     saveAnnotationAsync() {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$6(this, void 0, void 0, function* () {
             if (!this._pageId || !this._rect) {
                 return;
             }
@@ -28925,7 +28943,7 @@ class FreeTextAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -29047,7 +29065,7 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
         this.emitDataChanged(0);
     }
     saveAnnotationAsync() {
-        return __awaiter$3(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             if (!this._pageId || !this._rect) {
                 return;
             }
@@ -29551,7 +29569,45 @@ class AnnotatorService {
     }
 }
 
-var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+const viewerModes = ["text", "hand", "annotation", "comparison"];
+class ModeService {
+    constructor(options) {
+        this._onModeChangeStarted = new Set();
+        const modes = [];
+        viewerModes.forEach(x => {
+            var _a;
+            if (!((_a = options === null || options === void 0 ? void 0 : options.disabledModes) === null || _a === void 0 ? void 0 : _a.length)
+                || !options.disabledModes.includes(x)) {
+                modes.push(x);
+            }
+        });
+        if (!modes.length) {
+            throw new Error("All viewer modes are disabled");
+        }
+        this.enabledModes = modes;
+    }
+    get mode() {
+        return this._mode;
+    }
+    set mode(value) {
+        var _a;
+        if ((_a = this._onModeChangeStarted) === null || _a === void 0 ? void 0 : _a.size) {
+            this._onModeChangeStarted.forEach(x => x());
+        }
+        if (!value || value === this._mode) {
+            return;
+        }
+        this._mode = value;
+    }
+    addOnModeChangeStarted(action) {
+        this._onModeChangeStarted.add(action);
+    }
+    removeOnModeChangeStarted(action) {
+        this._onModeChangeStarted.delete(action);
+    }
+}
+
+var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -29591,7 +29647,7 @@ class PdfLoaderService {
     }
     openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress) {
         var _a;
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             yield this.closePdfAsync();
             let data;
             let doc;
@@ -29646,7 +29702,7 @@ class PdfLoaderService {
     }
     closePdfAsync() {
         var _a, _b;
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$4(this, void 0, void 0, function* () {
             if (this._pdfLoadingTask) {
                 if (!this._pdfLoadingTask.destroyed) {
                     yield this._pdfLoadingTask.destroy();
@@ -29670,41 +29726,97 @@ class PdfLoaderService {
     }
 }
 
-const viewerModes = ["text", "hand", "annotation", "comparison"];
-class ModeService {
-    constructor(options) {
-        this._onModeChangeStarted = new Set();
-        const modes = [];
-        viewerModes.forEach(x => {
-            var _a;
-            if (!((_a = options === null || options === void 0 ? void 0 : options.disabledModes) === null || _a === void 0 ? void 0 : _a.length)
-                || !options.disabledModes.includes(x)) {
-                modes.push(x);
+var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class ComparisonService {
+    constructor() { }
+    destroy() { }
+    getComparisonResult() {
+        return this._comparisonResult;
+    }
+    getComparisonResultForPage(pageIndex) {
+        const comparisonResult = this.getComparisonResult();
+        return comparisonResult === null || comparisonResult === void 0 ? void 0 : comparisonResult.get(pageIndex);
+    }
+    clearComparisonResult() {
+        return this._comparisonResult = null;
+    }
+    compareAsync() {
+        return __awaiter$3(this, void 0, void 0, function* () {
+            const result = null;
+            this._comparisonResult = result;
+            return this._comparisonResult;
+        });
+    }
+}
+
+var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+class DocManagerService {
+    constructor(mainEventService) {
+        this._dummyDiv = document.createElement("div");
+        if (!mainEventService) {
+            throw new Error("Main event service is not defined");
+        }
+        this._docLoaders = {
+            main: new PdfLoaderService(mainEventService),
+            compared: new PdfLoaderService(new EventService(this._dummyDiv)),
+        };
+        this._comparisonService = new ComparisonService();
+    }
+    get docService() {
+        return this._docLoaders.main.docService;
+    }
+    get pageCount() {
+        return this._docLoaders.main.pageCount;
+    }
+    get docLoaded() {
+        return this._docLoaders.main.docLoaded;
+    }
+    get fileName() {
+        return this._docLoaders.main.fileName;
+    }
+    destroy() {
+        this._comparisonService.destroy();
+        Object.keys(this._docLoaders).forEach(key => {
+            this._docLoaders[key].destroy();
+        });
+    }
+    openPdfAsync(type, src, fileName, userName, getPasswordAsync, onProgress) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            yield this._docLoaders[type].openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress);
+            if (type === "main" || type === "compared") {
+                yield this._comparisonService.compareAsync();
             }
         });
-        if (!modes.length) {
-            throw new Error("All viewer modes are disabled");
-        }
-        this.enabledModes = modes;
     }
-    get mode() {
-        return this._mode;
+    closePdfAsync(type) {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            yield this._docLoaders[type].closePdfAsync();
+            if (type === "main" || type === "compared") {
+                yield this._comparisonService.compareAsync();
+            }
+        });
     }
-    set mode(value) {
-        var _a;
-        if ((_a = this._onModeChangeStarted) === null || _a === void 0 ? void 0 : _a.size) {
-            this._onModeChangeStarted.forEach(x => x());
-        }
-        if (!value || value === this._mode) {
-            return;
-        }
-        this._mode = value;
+    getPageProxy(type, pageIndex) {
+        return this._docLoaders[type].getPage(pageIndex);
     }
-    addOnModeChangeStarted(action) {
-        this._onModeChangeStarted.add(action);
-    }
-    removeOnModeChangeStarted(action) {
-        this._onModeChangeStarted.delete(action);
+    getComparisonResultForPage(pageIndex) {
+        return this._comparisonService.getComparisonResultForPage(pageIndex);
     }
 }
 
@@ -30127,7 +30239,7 @@ class TsPdfViewer {
             if (!blob) {
                 return;
             }
-            DomUtils.downloadFile(blob, ((_a = this._mainLoaderService) === null || _a === void 0 ? void 0 : _a.fileName)
+            DomUtils.downloadFile(blob, ((_a = this._docManagerService) === null || _a === void 0 ? void 0 : _a.fileName)
                 || `file_${new Date().toISOString()}.pdf`);
         });
         this.onCloseFileButtonClick = () => {
@@ -30166,7 +30278,7 @@ class TsPdfViewer {
         };
         this.onPaginatorChange = (event) => {
             if (event.target instanceof HTMLInputElement) {
-                const pageNumber = Math.max(Math.min(+event.target.value, this._mainLoaderService.pageCount), 1);
+                const pageNumber = Math.max(Math.min(+event.target.value, this._docManagerService.pageCount), 1);
                 if (pageNumber + "" !== event.target.value) {
                     event.target.value = pageNumber + "";
                 }
@@ -30501,9 +30613,8 @@ class TsPdfViewer {
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         this._eventService = new EventService(this._mainContainer);
         this._modeService = new ModeService({ disabledModes: options.disabledModes || [] });
-        this._mainLoaderService = new PdfLoaderService(this._eventService);
-        this._comparerLoaderService = new PdfLoaderService(this._eventService);
-        this._pageService = new PageService(this._eventService, this._modeService, { main: this._mainLoaderService, comparer: this._comparerLoaderService }, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
+        this._docManagerService = new DocManagerService(this._eventService);
+        this._pageService = new PageService(this._eventService, this._modeService, this._docManagerService, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
         this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
         this._customStampsService.importCustomStamps(options.customStamps);
         this._spinner = new Spinner();
@@ -30525,13 +30636,13 @@ class TsPdfViewer {
     }
     get _docService() {
         var _a;
-        return (_a = this._mainLoaderService) === null || _a === void 0 ? void 0 : _a.docService;
+        return (_a = this._docManagerService) === null || _a === void 0 ? void 0 : _a.docService;
     }
     destroy() {
         var _a, _b;
         this._annotChangeCallback = null;
         (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._mainLoaderService.destroy();
+        this._docManagerService.destroy();
         this._viewer.destroy();
         this._previewer.destroy();
         this._pageService.destroy();
@@ -30543,33 +30654,27 @@ class TsPdfViewer {
     }
     openPdfAsync(src, fileName) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._spinner.show(this._mainContainer);
-            try {
-                yield this._mainLoaderService.openPdfAsync(src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
-            }
-            catch (e) {
-                this._spinner.hide();
-                throw e;
-            }
-            this.setMode();
-            yield this.refreshPagesAsync();
-            this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
-            this.setAnnotationMode("select");
-            this._mainContainer.classList.remove("disabled");
-            this._spinner.hide();
+            yield this.openDocAsync("main", src, fileName);
         });
     }
     closePdfAsync() {
-        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._mainLoaderService.closePdfAsync();
-            this._mainContainer.classList.add("disabled");
-            this._mainContainer.classList.remove("annotation-focused");
-            this._mainContainer.classList.remove("annotation-selected");
+            yield this.closeDocAsync("main");
+        });
+    }
+    openComparedPdfAsync(src, fileName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this._docManagerService.docLoaded) {
+                return;
+            }
+            yield this.openDocAsync("compared", src, fileName);
+            this.setMode("comparison");
+        });
+    }
+    closeComparedPdfAsync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.closeDocAsync("compared");
             this.setMode();
-            (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
-            yield this.refreshPagesAsync();
-            this.showPanels();
         });
     }
     importAnnotationsAsync(dtos) {
@@ -30645,6 +30750,41 @@ class TsPdfViewer {
                 type: "application/pdf",
             });
             return blob;
+        });
+    }
+    openDocAsync(type, src, fileName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._spinner.show(this._mainContainer);
+            try {
+                yield this._docManagerService.openPdfAsync(type, src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
+            }
+            catch (e) {
+                this._spinner.hide();
+                throw e;
+            }
+            if (type === "main") {
+                this.setMode();
+                yield this.refreshPagesAsync();
+                this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
+                this.setAnnotationMode("select");
+                this._mainContainer.classList.remove("disabled");
+            }
+            this._spinner.hide();
+        });
+    }
+    closeDocAsync(type) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._docManagerService.closePdfAsync(type);
+            if (type === "main") {
+                this._mainContainer.classList.add("disabled");
+                this._mainContainer.classList.remove("annotation-focused");
+                this._mainContainer.classList.remove("annotation-selected");
+                this.setMode();
+                (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
+                yield this.refreshPagesAsync();
+                this.showPanels();
+            }
         });
     }
     initMainContainerEventHandlers() {
@@ -30799,7 +30939,7 @@ class TsPdfViewer {
         if (!this._panelsHidden && !this._timers.hidePanels) {
             this._timers.hidePanels = setTimeout(() => {
                 var _a;
-                if (!((_a = this._mainLoaderService) === null || _a === void 0 ? void 0 : _a.docLoaded)) {
+                if (!((_a = this._docManagerService) === null || _a === void 0 ? void 0 : _a.docLoaded)) {
                     return;
                 }
                 this._mainContainer.classList.add("hide-panels");
@@ -30820,7 +30960,7 @@ class TsPdfViewer {
     }
     refreshPagesAsync() {
         return __awaiter(this, void 0, void 0, function* () {
-            const docPagesNumber = this._mainLoaderService.pageCount;
+            const docPagesNumber = this._docManagerService.pageCount;
             this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
             yield this._pageService.reloadPagesAsync();
         });

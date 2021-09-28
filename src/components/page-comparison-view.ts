@@ -1,3 +1,5 @@
+// import { Vec2 } from "mathador";
+
 // export class PageComparisonView {
 //   private _container: HTMLDivElement;
 //   private _svg: SVGSVGElement;
@@ -14,20 +16,20 @@
 //     this._docService = docService;
 
 //     this._container = document.createElement("div");
-//     this._container.classList.add("page-annotations");
+//     this._container.classList.add("page-comparison");
 
-//     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-//     this._svg.classList.add("page-annotations-controls");
-//     this._svg.setAttribute("data-page-id", pageInfo + "");
-//     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-//     // flip Y to match PDF coords where 0,0 is the lower-left corner
-//     this._svg.setAttribute("transform", "scale(1, -1)");
-//     // handle annotation selection
-//     this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
-//       if (e.target === this._svg) {
-//         docService.setSelectedAnnotation(null);
-//       }
-//     });    
+//     // this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+//     // this._svg.classList.add("page-annotations-controls");
+//     // this._svg.setAttribute("data-page-id", pageInfo + "");
+//     // this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
+//     // // flip Y to match PDF coords where 0,0 is the lower-left corner
+//     // this._svg.setAttribute("transform", "scale(1, -1)");
+//     // // handle annotation selection
+//     // this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
+//     //   if (e.target === this._svg) {
+//     //     docService.setSelectedAnnotation(null);
+//     //   }
+//     // });    
 //   } 
 
 //   /**free the resources that can prevent garbage to be collected */

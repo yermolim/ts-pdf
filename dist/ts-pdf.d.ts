@@ -971,8 +971,7 @@ declare class TsPdfViewer {
     private readonly _mainContainer;
     private readonly _eventService;
     private readonly _modeService;
-    private readonly _mainLoaderService;
-    private readonly _comparerLoaderService;
+    private readonly _docManagerService;
     private readonly _pageService;
     private readonly _customStampsService;
     private get _docService();
@@ -994,6 +993,8 @@ declare class TsPdfViewer {
     destroy(): void;
     openPdfAsync(src: string | Blob | Uint8Array, fileName?: string): Promise<void>;
     closePdfAsync(): Promise<void>;
+    openComparedPdfAsync(src: string | Blob | Uint8Array, fileName?: string): Promise<void>;
+    closeComparedPdfAsync(): Promise<void>;
     importAnnotationsAsync(dtos: AnnotationDto[]): Promise<void>;
     importAnnotationsFromJsonAsync(json: string): Promise<void>;
     exportAnnotationsAsync(): Promise<AnnotationDto[]>;
@@ -1004,6 +1005,8 @@ declare class TsPdfViewer {
     exportCustomStampsToJson(): string;
     getCurrentPdfAsync(): Promise<Blob>;
     protected onTextSelectionChange: () => void;
+    private openDocAsync;
+    private closeDocAsync;
     private initMainContainerEventHandlers;
     private initViewControls;
     private initFileButtons;

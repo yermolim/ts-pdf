@@ -5,11 +5,11 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
-import { PdfLoaderService, PdfLoaderServices } from "../services/pdf-loader-service";
 import { ModeService } from "../services/mode-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
+import { DocManagerService } from "../services/doc-manager-service";
 
 export class PageView implements PageInfo { 
   static readonly validRotationValues = [0, 90, 180, 270];
@@ -23,10 +23,8 @@ export class PageView implements PageInfo {
   
   private readonly _modeService: ModeService;
 
-  private readonly _mainLoaderService: PdfLoaderService;
-  private readonly _mainPageProxy: PDFPageProxy; 
-  
-  private readonly _comparerLoaderService: PdfLoaderService;
+  private readonly _docManagerService: DocManagerService;
+  private readonly _pageProxy: PDFPageProxy;
 
   private readonly _defaultViewport: PageViewport;
   private _currentViewport: PageViewport;  
@@ -109,24 +107,23 @@ export class PageView implements PageInfo {
 
   private _destroyed: boolean;
 
-  constructor(modeService: ModeService, loaderServices: PdfLoaderServices, 
+  constructor(modeService: ModeService, docManagerService: DocManagerService, 
     pageIndex: number, previewWidth: number) {
     if (!modeService) {
       throw new Error("Mode service is not defined");
     }
-    if (!loaderServices?.main) {
+    if (!docManagerService) {
       throw new Error("Loader service is not defined");
     }
     
     this._modeService = modeService;
-    this._mainLoaderService = loaderServices.main;
-    this._comparerLoaderService = loaderServices.comparer;
+    this._docManagerService = docManagerService;
 
-    const pageProxy = loaderServices.main.getPage(pageIndex);
+    const pageProxy = docManagerService.getPageProxy("main", pageIndex);
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
-    this._mainPageProxy = pageProxy;    
+    this._pageProxy = pageProxy;
     
     this._defaultViewport = pageProxy.getViewport({scale: 1, rotation: 0});
     this._rotation = pageProxy.rotate;
@@ -143,7 +140,7 @@ export class PageView implements PageInfo {
     this._destroyed = true;
     this._previewContainer.remove();
     this._viewOuterContainer.remove();
-    this._mainPageProxy.cleanup();
+    this._pageProxy.cleanup();
   }
 
   /**
@@ -183,6 +180,8 @@ export class PageView implements PageInfo {
     if (!force && this.viewValid) {
       return;
     }
+
+    // TODO: add check for mode change
 
     this._renderPromise = this.runViewRenderAsync();
     return this._renderPromise;
@@ -314,7 +313,7 @@ export class PageView implements PageInfo {
     }
     
     this.cancelRenderTask();
-    this._renderTask = this._mainPageProxy.render(renderParams);
+    this._renderTask = this._pageProxy.render(renderParams);
     try {
       await this._renderTask.promise;
     } catch (error) {
@@ -372,9 +371,30 @@ export class PageView implements PageInfo {
   private async runViewRenderAsync(): Promise<void> { 
     const scale = this._scale;
 
+    // clear text layer
+    this.clearTextLayer();
+
+    // render canvas layer
+    await this.renderCanvasLayer(scale);
+
+    // add text layer on top of the canvas layer
+    await this.renderTextLayer(scale);
+
+    // add annotations layer on top of the text layer
+    await this.renderAnnotationLayer();
+
+    // check if scale not changed during render
+    if (scale === this._scale) {
+      this._dimensionsIsValid = true;
+    }
+  }
+
+  private clearTextLayer() {
     this._text?.destroy();
     this._text = null;
+  }
 
+  private async renderCanvasLayer(scale: number): Promise<void> {
     // create a new canvas of the needed size and fill it with a rendered page
     const canvas = this.createViewCanvas();
     const params = <RenderParameters>{
@@ -393,20 +413,19 @@ export class PageView implements PageInfo {
     this._viewInnerContainer.append(canvas);
     this._viewCanvas = canvas;
     this._viewRendered = true;
+  }
 
-    // add text div on top of canvas
-    this._text = await PageTextView.appendPageTextAsync(this._mainPageProxy, this._viewInnerContainer, scale); 
+  private async renderTextLayer(scale: number): Promise<void> {
+    this._text = await PageTextView.appendPageTextAsync(
+      this._pageProxy, this._viewInnerContainer, scale); 
+  }
 
-    // add annotations div on top of canvas
+  private async renderAnnotationLayer(): Promise<void> {
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationView(this._mainLoaderService.docService, this, new Vec2(x, y));
+      this._annotations = new PageAnnotationView(
+        this._docManagerService.docService, this, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this._viewInnerContainer);
-
-    // check if scale not changed during text render
-    if (scale === this._scale) {
-      this._dimensionsIsValid = true;
-    }
   }
 }
