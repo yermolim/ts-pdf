@@ -2,7 +2,7 @@
 import { GlobalWorkerOptions } from "pdfjs-dist";
 
 import { clamp } from "mathador";
-import { DomUtils, EventService, Loader, CustomStampCreationInfo,
+import { DomUtils, EventService, Spinner, CustomStampCreationInfo,
   customStampEvent, CustomStampEvent, CustomStampEventDetail, 
   CustomStampService } from "ts-viewers-core";
 
@@ -105,15 +105,16 @@ export class TsPdfViewer {
   
   private readonly _eventService: EventService;
   private readonly _modeService: ModeService;
-  private readonly _loaderService: PdfLoaderService;  
+  private readonly _mainLoaderService: PdfLoaderService;  
+  private readonly _comparerLoaderService: PdfLoaderService;  
   private readonly _pageService: PageService;
   private readonly _customStampsService: CustomStampService;
   
   private get _docService(): DocumentService {
-    return this._loaderService?.docService;
+    return this._mainLoaderService?.docService;
   }  
 
-  private readonly _loader: Loader;
+  private readonly _spinner: Spinner;
   private readonly _viewer: Viewer;
   private readonly _previewer: Previewer;
 
@@ -176,14 +177,16 @@ export class TsPdfViewer {
 
     this._eventService = new EventService(this._mainContainer);
     this._modeService = new ModeService({disabledModes: options.disabledModes || []});
-    this._loaderService = new PdfLoaderService(this._eventService);
-    this._pageService = new PageService(this._eventService, this._modeService, this._loaderService,
+    this._mainLoaderService = new PdfLoaderService(this._eventService);
+    this._comparerLoaderService = new PdfLoaderService(this._eventService);
+    this._pageService = new PageService(this._eventService, this._modeService, 
+      {main: this._mainLoaderService, comparer: this._comparerLoaderService},
       {previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages});
 
     this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
     this._customStampsService.importCustomStamps(options.customStamps);
 
-    this._loader = new Loader();
+    this._spinner = new Spinner();
     this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"));
     this._viewer = new Viewer(this._modeService, this._pageService, this._shadowRoot.querySelector("#viewer"), 
       {minScale: minScale, maxScale: maxScale}); 
@@ -213,7 +216,7 @@ export class TsPdfViewer {
 
     this._annotatorService?.destroy();
 
-    this._loaderService.destroy(); 
+    this._mainLoaderService.destroy(); 
     this._viewer.destroy();
     this._previewer.destroy();
     this._pageService.destroy();    
@@ -229,13 +232,13 @@ export class TsPdfViewer {
   
   async openPdfAsync(src: string | Blob | Uint8Array, 
     fileName?: string): Promise<void> {
-    this._loader.show(this._mainContainer);
+    this._spinner.show(this._mainContainer);
 
     try {
-      await this._loaderService.openPdfAsync(src, fileName,
+      await this._mainLoaderService.openPdfAsync(src, fileName,
         this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
     } catch (e) {
-      this._loader.hide();
+      this._spinner.hide();
       throw e;
     }
     
@@ -251,12 +254,12 @@ export class TsPdfViewer {
 
     this._mainContainer.classList.remove("disabled");
     
-    this._loader.hide();
+    this._spinner.hide();
   }
 
   async closePdfAsync(): Promise<void> {
     // destroy a running loading task if present
-    await this._loaderService.closePdfAsync();
+    await this._mainLoaderService.closePdfAsync();
 
     this._mainContainer.classList.add("disabled");
     // remove unneeded classes from the main container
@@ -480,7 +483,7 @@ export class TsPdfViewer {
     // DEBUG
     // this.openPdfAsync(blob);
 
-    DomUtils.downloadFile(blob, this._loaderService?.fileName 
+    DomUtils.downloadFile(blob, this._mainLoaderService?.fileName 
       || `file_${new Date().toISOString()}.pdf`);
   };
   
@@ -610,7 +613,7 @@ export class TsPdfViewer {
   
   private onPaginatorChange = (event: Event) => {
     if (event.target instanceof HTMLInputElement) {
-      const pageNumber = Math.max(Math.min(+event.target.value, this._loaderService.pageCount), 1);
+      const pageNumber = Math.max(Math.min(+event.target.value, this._mainLoaderService.pageCount), 1);
       if (pageNumber + "" !== event.target.value) {        
         event.target.value = pageNumber + "";
       }
@@ -809,7 +812,7 @@ export class TsPdfViewer {
   private hidePanels() {
     if (!this._panelsHidden && !this._timers.hidePanels) {
       this._timers.hidePanels = setTimeout(() => {
-        if (!this._loaderService?.docLoaded) {
+        if (!this._mainLoaderService?.docLoaded) {
           return; // hide panels only if document is open
         }
         this._mainContainer.classList.add("hide-panels");
@@ -854,7 +857,7 @@ export class TsPdfViewer {
    * @returns 
    */
   private async refreshPagesAsync(): Promise<void> {
-    const docPagesNumber = this._loaderService.pageCount;
+    const docPagesNumber = this._mainLoaderService.pageCount;
     this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
 
     await this._pageService.reloadPagesAsync();

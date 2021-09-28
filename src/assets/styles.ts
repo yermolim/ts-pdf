@@ -130,6 +130,9 @@ export const styles = /*html*/`
     flex-shrink: 1;
     width: 100px;
   }
+  .mode-hand .page-text {
+    visibility: hidden;
+  }
   .mode-comparison .page-annotations,
   .mode-comparison .page-text {
     visibility: hidden;

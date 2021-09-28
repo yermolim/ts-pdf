@@ -3,7 +3,7 @@ import { clamp } from "mathador";
 import { EventService } from "ts-viewers-core";
 import { PageView } from "../components/page-view";
 import { ModeService } from "./mode-service";
-import { PdfLoaderService } from "./pdf-loader-service";
+import { PdfLoaderServices } from "./pdf-loader-service";
 
 //#region custom events
 export const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest" as const;
@@ -100,7 +100,7 @@ export class PageService {
     return this._eventService;
   }
   private readonly _modeService: ModeService;
-  private readonly _loaderService: PdfLoaderService;
+  private readonly _loaderServices: PdfLoaderServices;
 
   private readonly _previewCanvasWidth: number;
   private readonly _visibleAdjPages: number;
@@ -142,19 +142,19 @@ export class PageService {
   }
 
   constructor(eventService: EventService, modeService: ModeService,
-    loaderService: PdfLoaderService, options?: PageServiceOptions) {   
+    loaderServices: PdfLoaderServices, options?: PageServiceOptions) {   
     if (!eventService) {
       throw new Error("Event service is not defined");
     } 
     if (!modeService) {
       throw new Error("Mode service is not defined");
     } 
-    if (!loaderService) {
+    if (!loaderServices?.main) {
       throw new Error("Loader service is not defined");
     } 
     this._modeService = modeService;
     this._eventService = eventService;
-    this._loaderService = loaderService;
+    this._loaderServices = loaderServices;
 
     this._previewCanvasWidth = options?.previewCanvasWidth || 100;
     this._visibleAdjPages = options?.visibleAdjPages || 0;
@@ -173,12 +173,12 @@ export class PageService {
   }
 
   async reloadPagesAsync() {   
-    const docPagesNumber = this._loaderService.pageCount; 
+    const docPagesNumber = this._loaderServices.main.pageCount; 
     const pages: PageView[] = [];
     if (docPagesNumber) {
       for (let i = 0; i < docPagesNumber; i++) {
-        const page = await PageView.CreateNewAsync(this._modeService, 
-          this._loaderService, i, this._previewCanvasWidth);
+        const page = new PageView(this._modeService, 
+          this._loaderServices, i, this._previewCanvasWidth);
         pages.push(page);
       }
     }

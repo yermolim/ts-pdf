@@ -5,7 +5,7 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
-import { PdfLoaderService } from "../services/pdf-loader-service";
+import { PdfLoaderService, PdfLoaderServices } from "../services/pdf-loader-service";
 import { ModeService } from "../services/mode-service";
 
 import { PageTextView } from "./page-text-view";
@@ -22,8 +22,11 @@ export class PageView implements PageInfo {
   readonly generation: number;
   
   private readonly _modeService: ModeService;
-  private readonly _loaderService: PdfLoaderService;
-  private readonly _pageProxy: PDFPageProxy; 
+
+  private readonly _mainLoaderService: PdfLoaderService;
+  private readonly _mainPageProxy: PDFPageProxy; 
+  
+  private readonly _comparerLoaderService: PdfLoaderService;
 
   private readonly _defaultViewport: PageViewport;
   private _currentViewport: PageViewport;  
@@ -106,22 +109,25 @@ export class PageView implements PageInfo {
 
   private _destroyed: boolean;
 
-  private constructor(modeService: ModeService, loaderService: PdfLoaderService, 
-    pageProxy: PDFPageProxy, previewWidth: number) {
+  constructor(modeService: ModeService, loaderServices: PdfLoaderServices, 
+    pageIndex: number, previewWidth: number) {
     if (!modeService) {
       throw new Error("Mode service is not defined");
     }
-    if (!loaderService) {
+    if (!loaderServices?.main) {
       throw new Error("Loader service is not defined");
     }
+    
+    this._modeService = modeService;
+    this._mainLoaderService = loaderServices.main;
+    this._comparerLoaderService = loaderServices.comparer;
+
+    const pageProxy = loaderServices.main.getPage(pageIndex);
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
     }
-
-    this._modeService = modeService;
-    this._loaderService = loaderService;
+    this._mainPageProxy = pageProxy;    
     
-    this._pageProxy = pageProxy;
     this._defaultViewport = pageProxy.getViewport({scale: 1, rotation: 0});
     this._rotation = pageProxy.rotate;
 
@@ -129,40 +135,7 @@ export class PageView implements PageInfo {
     this.id = pageProxy.ref["num"];
     this.generation = pageProxy.ref["gen"];
 
-    const {width, height} = this._defaultViewport;
-    previewWidth = Math.max(previewWidth ?? 0, 50);
-    const previewHeight = previewWidth * (height / width);
-    this._dimensions = {width, height, previewWidth, previewHeight};
-
-    this._previewContainer = document.createElement("div");
-    this._previewContainer.classList.add("page-preview");    
-    this._previewContainer.setAttribute("data-page-number", this.number + "");
-    this._previewContainer.setAttribute("data-page-id", this.id + "");
-    this._previewContainer.setAttribute("data-page-gen", this.generation + "");
-    this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-    this._previewContainer.style.height = this._dimensions.previewHeight + "px";    
-
-    this._viewOuterContainer = document.createElement("div");
-    this._viewOuterContainer.classList.add("page-container");
-    this._viewOuterContainer.setAttribute("data-page-number", this.number + ""); 
-    this._viewOuterContainer.setAttribute("data-page-id", this.id + "");
-    this._viewOuterContainer.setAttribute("data-page-gen", this.generation + "");  
-
-    this._viewInnerContainer = document.createElement("div");
-    this._viewInnerContainer.classList.add("page");
-    this._viewInnerContainer.setAttribute("data-page-number", this.number + ""); 
-    this._viewInnerContainer.setAttribute("data-page-id", this.id + "");
-    this._viewInnerContainer.setAttribute("data-page-gen", this.generation + "");
-    this._viewOuterContainer.append(this._viewInnerContainer);
-
-    this.refreshDimensions();
-  }  
-
-  static async CreateNewAsync(modeService: ModeService, loaderService: PdfLoaderService, 
-    pageIndex: number, previewWidth: number): Promise<PageView> {
-    const pageProxy = await loaderService?.getPageAsync(pageIndex);
-    const pageView = new PageView(modeService, loaderService, pageProxy, previewWidth);
-    return pageView;
+    this.initDom(previewWidth);
   }
 
   /**free the resources that can prevent garbage to be collected */
@@ -170,7 +143,7 @@ export class PageView implements PageInfo {
     this._destroyed = true;
     this._previewContainer.remove();
     this._viewOuterContainer.remove();
-    this._pageProxy.cleanup();
+    this._mainPageProxy.cleanup();
   }
 
   /**
@@ -248,6 +221,36 @@ export class PageView implements PageInfo {
     }
   }
 
+  private initDom(previewWidth: number) {
+    const {width, height} = this._defaultViewport;
+    previewWidth = Math.max(previewWidth ?? 0, 50);
+    const previewHeight = previewWidth * (height / width);
+    this._dimensions = {width, height, previewWidth, previewHeight};
+
+    this._previewContainer = document.createElement("div");
+    this._previewContainer.classList.add("page-preview");    
+    this._previewContainer.setAttribute("data-page-number", this.number + "");
+    this._previewContainer.setAttribute("data-page-id", this.id + "");
+    this._previewContainer.setAttribute("data-page-gen", this.generation + "");
+    this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+    this._previewContainer.style.height = this._dimensions.previewHeight + "px";    
+
+    this._viewOuterContainer = document.createElement("div");
+    this._viewOuterContainer.classList.add("page-container");
+    this._viewOuterContainer.setAttribute("data-page-number", this.number + ""); 
+    this._viewOuterContainer.setAttribute("data-page-id", this.id + "");
+    this._viewOuterContainer.setAttribute("data-page-gen", this.generation + "");  
+
+    this._viewInnerContainer = document.createElement("div");
+    this._viewInnerContainer.classList.add("page");
+    this._viewInnerContainer.setAttribute("data-page-number", this.number + ""); 
+    this._viewInnerContainer.setAttribute("data-page-id", this.id + "");
+    this._viewInnerContainer.setAttribute("data-page-gen", this.generation + "");
+    this._viewOuterContainer.append(this._viewInnerContainer);
+
+    this.refreshDimensions();
+  }
+
   private refreshDimensions() {
     const dpr = window.devicePixelRatio;
     this._currentViewport = this._defaultViewport.clone({
@@ -311,7 +314,7 @@ export class PageView implements PageInfo {
     }
     
     this.cancelRenderTask();
-    this._renderTask = this._pageProxy.render(renderParams);
+    this._renderTask = this._mainPageProxy.render(renderParams);
     try {
       await this._renderTask.promise;
     } catch (error) {
@@ -392,12 +395,12 @@ export class PageView implements PageInfo {
     this._viewRendered = true;
 
     // add text div on top of canvas
-    this._text = await PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale); 
+    this._text = await PageTextView.appendPageTextAsync(this._mainPageProxy, this._viewInnerContainer, scale); 
 
     // add annotations div on top of canvas
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
-      this._annotations = new PageAnnotationView(this._loaderService.docService, this, new Vec2(x, y));
+      this._annotations = new PageAnnotationView(this._mainLoaderService.docService, this, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this._viewInnerContainer);
 

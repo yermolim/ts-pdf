@@ -971,11 +971,12 @@ declare class TsPdfViewer {
     private readonly _mainContainer;
     private readonly _eventService;
     private readonly _modeService;
-    private readonly _loaderService;
+    private readonly _mainLoaderService;
+    private readonly _comparerLoaderService;
     private readonly _pageService;
     private readonly _customStampsService;
     private get _docService();
-    private readonly _loader;
+    private readonly _spinner;
     private readonly _viewer;
     private readonly _previewer;
     private _annotatorService;

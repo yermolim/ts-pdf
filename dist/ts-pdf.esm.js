@@ -50,7 +50,7 @@
 
 import { renderTextLayer, RenderingCancelledException, getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import { Vec2, Mat3, Vec3, clamp, getDistance2D } from 'mathador';
-import { Icons, getCommonStyles, UUID, ByteUtils, LinkedList, DomUtils, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Loader, customStampEvent } from 'ts-viewers-core';
+import { Icons, getCommonStyles, UUID, ByteUtils, LinkedList, DomUtils, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Spinner, customStampEvent } from 'ts-viewers-core';
 import * as Pako from 'pako';
 import CryptoES from 'crypto-es';
 
@@ -375,6 +375,9 @@ const styles = `
     flex-grow: 1;
     flex-shrink: 1;
     width: 100px;
+  }
+  .mode-hand .page-text {
+    visibility: hidden;
   }
   .mode-comparison .page-annotations,
   .mode-comparison .page-text {
@@ -26151,49 +26154,29 @@ var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _argu
     });
 };
 class PageView {
-    constructor(modeService, loaderService, pageProxy, previewWidth) {
+    constructor(modeService, loaderServices, pageIndex, previewWidth) {
         this._rotation = 0;
         this._scale = 1;
         if (!modeService) {
             throw new Error("Mode service is not defined");
         }
-        if (!loaderService) {
+        if (!(loaderServices === null || loaderServices === void 0 ? void 0 : loaderServices.main)) {
             throw new Error("Loader service is not defined");
         }
+        this._modeService = modeService;
+        this._mainLoaderService = loaderServices.main;
+        this._comparerLoaderService = loaderServices.comparer;
+        const pageProxy = loaderServices.main.getPage(pageIndex);
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
         }
-        this._modeService = modeService;
-        this._loaderService = loaderService;
-        this._pageProxy = pageProxy;
+        this._mainPageProxy = pageProxy;
         this._defaultViewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
         this._rotation = pageProxy.rotate;
         this.number = pageProxy.pageNumber;
         this.id = pageProxy.ref["num"];
         this.generation = pageProxy.ref["gen"];
-        const { width, height } = this._defaultViewport;
-        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
-        const previewHeight = previewWidth * (height / width);
-        this._dimensions = { width, height, previewWidth, previewHeight };
-        this._previewContainer = document.createElement("div");
-        this._previewContainer.classList.add("page-preview");
-        this._previewContainer.setAttribute("data-page-number", this.number + "");
-        this._previewContainer.setAttribute("data-page-id", this.id + "");
-        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
-        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
-        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
-        this._viewOuterContainer = document.createElement("div");
-        this._viewOuterContainer.classList.add("page-container");
-        this._viewOuterContainer.setAttribute("data-page-number", this.number + "");
-        this._viewOuterContainer.setAttribute("data-page-id", this.id + "");
-        this._viewOuterContainer.setAttribute("data-page-gen", this.generation + "");
-        this._viewInnerContainer = document.createElement("div");
-        this._viewInnerContainer.classList.add("page");
-        this._viewInnerContainer.setAttribute("data-page-number", this.number + "");
-        this._viewInnerContainer.setAttribute("data-page-id", this.id + "");
-        this._viewInnerContainer.setAttribute("data-page-gen", this.generation + "");
-        this._viewOuterContainer.append(this._viewInnerContainer);
-        this.refreshDimensions();
+        this.initDom(previewWidth);
     }
     get previewContainer() {
         return this._previewContainer;
@@ -26238,18 +26221,11 @@ class PageView {
     get viewValid() {
         return this._dimensionsIsValid && this._viewRendered;
     }
-    static CreateNewAsync(modeService, loaderService, pageIndex, previewWidth) {
-        return __awaiter$i(this, void 0, void 0, function* () {
-            const pageProxy = yield (loaderService === null || loaderService === void 0 ? void 0 : loaderService.getPageAsync(pageIndex));
-            const pageView = new PageView(modeService, loaderService, pageProxy, previewWidth);
-            return pageView;
-        });
-    }
     destroy() {
         this._destroyed = true;
         this._previewContainer.remove();
         this._viewOuterContainer.remove();
-        this._pageProxy.cleanup();
+        this._mainPageProxy.cleanup();
     }
     renderPreviewAsync(force = false) {
         return __awaiter$i(this, void 0, void 0, function* () {
@@ -26309,6 +26285,31 @@ class PageView {
             this.rotation = (this._rotation || 0) + 90;
         }
     }
+    initDom(previewWidth) {
+        const { width, height } = this._defaultViewport;
+        previewWidth = Math.max(previewWidth !== null && previewWidth !== void 0 ? previewWidth : 0, 50);
+        const previewHeight = previewWidth * (height / width);
+        this._dimensions = { width, height, previewWidth, previewHeight };
+        this._previewContainer = document.createElement("div");
+        this._previewContainer.classList.add("page-preview");
+        this._previewContainer.setAttribute("data-page-number", this.number + "");
+        this._previewContainer.setAttribute("data-page-id", this.id + "");
+        this._previewContainer.setAttribute("data-page-gen", this.generation + "");
+        this._previewContainer.style.width = this._dimensions.previewWidth + "px";
+        this._previewContainer.style.height = this._dimensions.previewHeight + "px";
+        this._viewOuterContainer = document.createElement("div");
+        this._viewOuterContainer.classList.add("page-container");
+        this._viewOuterContainer.setAttribute("data-page-number", this.number + "");
+        this._viewOuterContainer.setAttribute("data-page-id", this.id + "");
+        this._viewOuterContainer.setAttribute("data-page-gen", this.generation + "");
+        this._viewInnerContainer = document.createElement("div");
+        this._viewInnerContainer.classList.add("page");
+        this._viewInnerContainer.setAttribute("data-page-number", this.number + "");
+        this._viewInnerContainer.setAttribute("data-page-id", this.id + "");
+        this._viewInnerContainer.setAttribute("data-page-gen", this.generation + "");
+        this._viewOuterContainer.append(this._viewInnerContainer);
+        this.refreshDimensions();
+    }
     refreshDimensions() {
         const dpr = window.devicePixelRatio;
         this._currentViewport = this._defaultViewport.clone({
@@ -26364,7 +26365,7 @@ class PageView {
                 return false;
             }
             this.cancelRenderTask();
-            this._renderTask = this._pageProxy.render(renderParams);
+            this._renderTask = this._mainPageProxy.render(renderParams);
             try {
                 yield this._renderTask.promise;
             }
@@ -26439,10 +26440,10 @@ class PageView {
             this._viewInnerContainer.append(canvas);
             this._viewCanvas = canvas;
             this._viewRendered = true;
-            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
+            this._text = yield PageTextView.appendPageTextAsync(this._mainPageProxy, this._viewInnerContainer, scale);
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._loaderService.docService, this, new Vec2(x, y));
+                this._annotations = new PageAnnotationView(this._mainLoaderService.docService, this, new Vec2(x, y));
             }
             yield this._annotations.appendAsync(this._viewInnerContainer);
             if (scale === this._scale) {
@@ -26493,7 +26494,7 @@ class ScaleChangedEvent extends CustomEvent {
     }
 }
 class PageService {
-    constructor(eventService, modeService, loaderService, options) {
+    constructor(eventService, modeService, loaderServices, options) {
         this._pages = [];
         this._renderedPages = [];
         if (!eventService) {
@@ -26502,12 +26503,12 @@ class PageService {
         if (!modeService) {
             throw new Error("Mode service is not defined");
         }
-        if (!loaderService) {
+        if (!(loaderServices === null || loaderServices === void 0 ? void 0 : loaderServices.main)) {
             throw new Error("Loader service is not defined");
         }
         this._modeService = modeService;
         this._eventService = eventService;
-        this._loaderService = loaderService;
+        this._loaderServices = loaderServices;
         this._previewCanvasWidth = (options === null || options === void 0 ? void 0 : options.previewCanvasWidth) || 100;
         this._visibleAdjPages = (options === null || options === void 0 ? void 0 : options.visibleAdjPages) || 0;
     }
@@ -26554,11 +26555,11 @@ class PageService {
     }
     reloadPagesAsync() {
         return __awaiter$h(this, void 0, void 0, function* () {
-            const docPagesNumber = this._loaderService.pageCount;
+            const docPagesNumber = this._loaderServices.main.pageCount;
             const pages = [];
             if (docPagesNumber) {
                 for (let i = 0; i < docPagesNumber; i++) {
-                    const page = yield PageView.CreateNewAsync(this._modeService, this._loaderService, i, this._previewCanvasWidth);
+                    const page = new PageView(this._modeService, this._loaderServices, i, this._previewCanvasWidth);
                     pages.push(page);
                 }
             }
@@ -29589,6 +29590,7 @@ class PdfLoaderService {
         (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
     }
     openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress) {
+        var _a;
         return __awaiter$2(this, void 0, void 0, function* () {
             yield this.closePdfAsync();
             let data;
@@ -29632,6 +29634,12 @@ class PdfLoaderService {
                 throw new Error(`Cannot open PDF: ${e.message}`);
             }
             this._pdfDocument = doc;
+            const pageMap = new Map();
+            for (let i = 0; i < doc.numPages; i++) {
+                const pageProxy = yield ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.getPage(i + 1));
+                pageMap.set(i, pageProxy);
+            }
+            this._pdfPageProxies = pageMap;
             this._docService = docService;
             this._fileName = fileName;
         });
@@ -29645,6 +29653,7 @@ class PdfLoaderService {
                 }
                 this._pdfLoadingTask = null;
             }
+            this._pdfPageProxies = null;
             (_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.destroy();
             this._pdfDocument = null;
             (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
@@ -29652,11 +29661,12 @@ class PdfLoaderService {
             this._fileName = null;
         });
     }
-    getPageAsync(pageIndex) {
+    getPage(pageIndex) {
         var _a;
-        return __awaiter$2(this, void 0, void 0, function* () {
-            return yield ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.getPage(pageIndex + 1));
-        });
+        if (!((_a = this._pdfPageProxies) === null || _a === void 0 ? void 0 : _a.size)) {
+            return null;
+        }
+        return this._pdfPageProxies.get(pageIndex);
     }
 }
 
@@ -30117,7 +30127,7 @@ class TsPdfViewer {
             if (!blob) {
                 return;
             }
-            DomUtils.downloadFile(blob, ((_a = this._loaderService) === null || _a === void 0 ? void 0 : _a.fileName)
+            DomUtils.downloadFile(blob, ((_a = this._mainLoaderService) === null || _a === void 0 ? void 0 : _a.fileName)
                 || `file_${new Date().toISOString()}.pdf`);
         });
         this.onCloseFileButtonClick = () => {
@@ -30156,7 +30166,7 @@ class TsPdfViewer {
         };
         this.onPaginatorChange = (event) => {
             if (event.target instanceof HTMLInputElement) {
-                const pageNumber = Math.max(Math.min(+event.target.value, this._loaderService.pageCount), 1);
+                const pageNumber = Math.max(Math.min(+event.target.value, this._mainLoaderService.pageCount), 1);
                 if (pageNumber + "" !== event.target.value) {
                     event.target.value = pageNumber + "";
                 }
@@ -30491,11 +30501,12 @@ class TsPdfViewer {
         this._mainContainer = this._shadowRoot.querySelector("div#main-container");
         this._eventService = new EventService(this._mainContainer);
         this._modeService = new ModeService({ disabledModes: options.disabledModes || [] });
-        this._loaderService = new PdfLoaderService(this._eventService);
-        this._pageService = new PageService(this._eventService, this._modeService, this._loaderService, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
+        this._mainLoaderService = new PdfLoaderService(this._eventService);
+        this._comparerLoaderService = new PdfLoaderService(this._eventService);
+        this._pageService = new PageService(this._eventService, this._modeService, { main: this._mainLoaderService, comparer: this._comparerLoaderService }, { previewCanvasWidth: previewWidth, visibleAdjPages: visibleAdjPages });
         this._customStampsService = new CustomStampService(this._mainContainer, this._eventService);
         this._customStampsService.importCustomStamps(options.customStamps);
-        this._loader = new Loader();
+        this._spinner = new Spinner();
         this._previewer = new Previewer(this._pageService, this._shadowRoot.querySelector("#previewer"));
         this._viewer = new Viewer(this._modeService, this._pageService, this._shadowRoot.querySelector("#viewer"), { minScale: minScale, maxScale: maxScale });
         this._viewer.container.addEventListener("contextmenu", e => e.preventDefault());
@@ -30514,13 +30525,13 @@ class TsPdfViewer {
     }
     get _docService() {
         var _a;
-        return (_a = this._loaderService) === null || _a === void 0 ? void 0 : _a.docService;
+        return (_a = this._mainLoaderService) === null || _a === void 0 ? void 0 : _a.docService;
     }
     destroy() {
         var _a, _b;
         this._annotChangeCallback = null;
         (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._loaderService.destroy();
+        this._mainLoaderService.destroy();
         this._viewer.destroy();
         this._previewer.destroy();
         this._pageService.destroy();
@@ -30532,12 +30543,12 @@ class TsPdfViewer {
     }
     openPdfAsync(src, fileName) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._loader.show(this._mainContainer);
+            this._spinner.show(this._mainContainer);
             try {
-                yield this._loaderService.openPdfAsync(src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
+                yield this._mainLoaderService.openPdfAsync(src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
             }
             catch (e) {
-                this._loader.hide();
+                this._spinner.hide();
                 throw e;
             }
             this.setMode();
@@ -30545,13 +30556,13 @@ class TsPdfViewer {
             this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
             this.setAnnotationMode("select");
             this._mainContainer.classList.remove("disabled");
-            this._loader.hide();
+            this._spinner.hide();
         });
     }
     closePdfAsync() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._loaderService.closePdfAsync();
+            yield this._mainLoaderService.closePdfAsync();
             this._mainContainer.classList.add("disabled");
             this._mainContainer.classList.remove("annotation-focused");
             this._mainContainer.classList.remove("annotation-selected");
@@ -30788,7 +30799,7 @@ class TsPdfViewer {
         if (!this._panelsHidden && !this._timers.hidePanels) {
             this._timers.hidePanels = setTimeout(() => {
                 var _a;
-                if (!((_a = this._loaderService) === null || _a === void 0 ? void 0 : _a.docLoaded)) {
+                if (!((_a = this._mainLoaderService) === null || _a === void 0 ? void 0 : _a.docLoaded)) {
                     return;
                 }
                 this._mainContainer.classList.add("hide-panels");
@@ -30809,7 +30820,7 @@ class TsPdfViewer {
     }
     refreshPagesAsync() {
         return __awaiter(this, void 0, void 0, function* () {
-            const docPagesNumber = this._loaderService.pageCount;
+            const docPagesNumber = this._mainLoaderService.pageCount;
             this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
             yield this._pageService.reloadPagesAsync();
         });

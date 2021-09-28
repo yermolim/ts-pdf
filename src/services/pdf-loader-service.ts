@@ -5,11 +5,17 @@ import { DomUtils, EventService } from "ts-viewers-core";
 
 import { DocumentService } from "./document-service";
 
+export interface PdfLoaderServices {
+  readonly main: PdfLoaderService;
+  readonly comparer: PdfLoaderService;
+}
+
 export class PdfLoaderService {
   protected readonly _eventService: EventService;
   
   private _pdfLoadingTask: PDFDocumentLoadingTask;
   private _pdfDocument: PDFDocumentProxy;
+  private _pdfPageProxies: Map<number, PDFPageProxy>;
 
   get pageCount(): number {
     return this._pdfDocument?.numPages || 0;
@@ -106,6 +112,14 @@ export class PdfLoaderService {
 
     // update viewer state
     this._pdfDocument = doc;
+
+    const pageMap = new Map<number, PDFPageProxy>();
+    for (let i = 0; i < doc.numPages; i++) {      
+      const pageProxy = await this._pdfDocument?.getPage(i + 1);
+      pageMap.set(i, pageProxy);
+    }
+    this._pdfPageProxies = pageMap;
+    
     this._docService = docService;
     this._fileName = fileName;
   }
@@ -119,16 +133,19 @@ export class PdfLoaderService {
       this._pdfLoadingTask = null;
     }
 
+    this._pdfPageProxies = null;
     this._pdfDocument?.destroy();
-    this._pdfDocument = null;
+    this._pdfDocument = null;    
     
     this._docService?.destroy();
     this._docService = null;
-
     this._fileName = null;
   }
 
-  async getPageAsync(pageIndex: number): Promise<PDFPageProxy> {
-    return await this._pdfDocument?.getPage(pageIndex + 1);
+  getPage(pageIndex: number): PDFPageProxy {
+    if (!this._pdfPageProxies?.size) {
+      return null;
+    }
+    return this._pdfPageProxies.get(pageIndex);
   }
 }
