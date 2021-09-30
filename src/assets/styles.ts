@@ -130,12 +130,40 @@ export const styles = /*html*/`
     flex-shrink: 1;
     width: 100px;
   }
-  .mode-hand .page-text {
+
+  <!-- .mode-hand .page-text {
     visibility: hidden;
   }
   .mode-comparison .page-annotations,
   .mode-comparison .page-text {
     visibility: hidden;
+  }
+  .mode-text .page-comparison,
+  .mode-hand .page-comparison,
+  .mode-annotation .page-comparison {
+    visibility: hidden;
+  } -->
+  
+  #button-command-comparison-open,
+  #button-command-comparison-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+  :not(.mode-comparison) #button-command-comparison-open,
+  .comparison-loaded #button-command-comparison-open,
+  :not(.comparison-loaded) #button-command-comparison-close {
+    cursor: default;
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+  }
+  .mode-comparison:not(.comparison-loaded) #button-command-comparison-open,
+  .mode-comparison.comparison-loaded #button-command-comparison-close { 
+    cursor: pointer;
+    opacity: 100;
+    transform: scale(1);
+    transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
   }
 </style>
 `;

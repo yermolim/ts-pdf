@@ -129,6 +129,14 @@ const mainHtml = `
     </div>
     <div id="command-panel">
       <div class="command-panel-row">
+        <div id="button-command-comparison-close" 
+          class="panel-button command-panel-subitem accent">
+          <img src="${Icons.icon_close2}"/>
+        </div>
+        <div id="button-command-comparison-open" 
+          class="panel-button command-panel-subitem accent">
+          <img src="${Icons.icon_load}"/>
+        </div>
         <div id="button-command-undo" 
           class="panel-button command-panel-subitem accent">
           <img src="${Icons.icon_back}"/>
@@ -231,6 +239,7 @@ const mainHtml = `
     </div>
 
     <input id="open-file-input" class="abs-hidden" type="file" accept="application/pdf">
+    <input id="open-comparable-file-input" class="abs-hidden" type="file" accept="application/pdf">
   </div>
 `;
 const passwordDialogHtml = `
@@ -376,12 +385,40 @@ const styles = `
     flex-shrink: 1;
     width: 100px;
   }
-  .mode-hand .page-text {
+
+  <!-- .mode-hand .page-text {
     visibility: hidden;
   }
   .mode-comparison .page-annotations,
   .mode-comparison .page-text {
     visibility: hidden;
+  }
+  .mode-text .page-comparison,
+  .mode-hand .page-comparison,
+  .mode-annotation .page-comparison {
+    visibility: hidden;
+  } -->
+  
+  #button-command-comparison-open,
+  #button-command-comparison-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+  :not(.mode-comparison) #button-command-comparison-open,
+  .comparison-loaded #button-command-comparison-open,
+  :not(.comparison-loaded) #button-command-comparison-close {
+    cursor: default;      
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity 0.1s ease-in, transform 0s linear 0.1s;
+  }
+  .mode-comparison:not(.comparison-loaded) #button-command-comparison-open,
+  .mode-comparison.comparison-loaded #button-command-comparison-close { 
+    cursor: pointer;
+    opacity: 100;
+    transform: scale(1);    
+    transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
   }
 </style>
 `;
@@ -528,22 +565,29 @@ class PageTextView {
     static appendPageTextAsync(pageProxy, parent, scale) {
         return __awaiter$1l(this, void 0, void 0, function* () {
             const textObj = new PageTextView(pageProxy);
-            yield textObj.renderTextLayerAsync(scale);
+            const result = yield textObj.renderTextLayerAsync(scale);
+            if (!result || textObj._destroyed) {
+                return null;
+            }
             parent.append(textObj._container);
             return textObj;
         });
     }
     destroy() {
+        this.remove();
+        this._container = null;
+        this._destroyed = true;
+    }
+    remove() {
         this.destroyRenderTask();
         if (this._container) {
             this._container.remove();
-            this._container = null;
         }
     }
     renderTextLayerAsync(scale) {
         return __awaiter$1l(this, void 0, void 0, function* () {
-            this.clear();
             this.destroyRenderTask();
+            this.clear();
             const viewport = this._pageProxy.getViewport({ scale });
             const textContentStream = this._pageProxy.streamTextContent();
             this._renderTask = renderTextLayer({
@@ -26217,6 +26261,9 @@ class PageView {
     get height() {
         return this._dimensions.height;
     }
+    get modeNotChanged() {
+        return this._lastRenderMode === this._modeService.mode;
+    }
     get viewValid() {
         return this._dimensionsIsValid && this._viewRendered;
     }
@@ -26249,10 +26296,10 @@ class PageView {
                 }
                 yield this._renderPromise;
             }
-            if (!force && this.viewValid) {
+            if (!force && this.viewValid && this.modeNotChanged) {
                 return;
             }
-            this._renderPromise = this.runViewRenderAsync();
+            this._renderPromise = this.runViewRenderAsync(force);
             return this._renderPromise;
         });
     }
@@ -26419,24 +26466,41 @@ class PageView {
             this._previewRendered = true;
         });
     }
-    runViewRenderAsync() {
+    runViewRenderAsync(force) {
+        var _a;
         return __awaiter$k(this, void 0, void 0, function* () {
+            const mode = this._modeService.mode;
             const scale = this._scale;
             this.clearTextLayer();
-            yield this.renderCanvasLayer(scale);
-            yield this.renderTextLayer(scale);
-            yield this.renderAnnotationLayer();
+            if (force || !this.viewValid) {
+                const canvasRendered = yield this.renderCanvasLayerAsync(scale);
+                if (!canvasRendered) {
+                    return;
+                }
+            }
+            if (mode === "text"
+                || mode === "annotation") {
+                yield this.renderTextLayerAsync(scale);
+            }
+            if (mode !== "comparison") {
+                yield this.renderAnnotationLayerAsync();
+            }
+            else {
+                (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.remove();
+                yield this.renderComparisonLayerAsync();
+            }
+            this._lastRenderMode = mode;
             if (scale === this._scale) {
                 this._dimensionsIsValid = true;
             }
         });
     }
     clearTextLayer() {
-        var _a;
+        var _a, _b;
         (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
-        this._text = null;
+        (_b = this._text) === null || _b === void 0 ? void 0 : _b.remove();
     }
-    renderCanvasLayer(scale) {
+    renderCanvasLayerAsync(scale) {
         var _a;
         return __awaiter$k(this, void 0, void 0, function* () {
             const canvas = this.createViewCanvas();
@@ -26447,26 +26511,31 @@ class PageView {
             };
             const result = yield this.runRenderTaskAsync(params);
             if (!result || scale !== this._scale) {
-                return;
+                return false;
             }
             (_a = this._viewCanvas) === null || _a === void 0 ? void 0 : _a.remove();
             this._viewInnerContainer.append(canvas);
             this._viewCanvas = canvas;
             this._viewRendered = true;
+            return true;
         });
     }
-    renderTextLayer(scale) {
+    renderTextLayerAsync(scale) {
         return __awaiter$k(this, void 0, void 0, function* () {
             this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
         });
     }
-    renderAnnotationLayer() {
+    renderAnnotationLayerAsync() {
         return __awaiter$k(this, void 0, void 0, function* () {
             if (!this._annotations) {
                 const { width: x, height: y } = this._dimensions;
                 this._annotations = new PageAnnotationView(this._docManagerService.docService, this, new Vec2(x, y));
             }
             yield this._annotations.appendAsync(this._viewInnerContainer);
+        });
+    }
+    renderComparisonLayerAsync() {
+        return __awaiter$k(this, void 0, void 0, function* () {
         });
     }
 }
@@ -26590,7 +26659,7 @@ class PageService {
             this._eventService.dispatchEvent(new CurrentPageChangeRequestEvent({ pageIndex: index }));
         }
     }
-    renderVisiblePages(container) {
+    renderVisiblePages(container, force) {
         const pages = this._pages;
         const { minFinal: minPageNumber, maxFinal: maxPageNumber } = this.getVisiblePageIndices(container);
         const renderedPages = [];
@@ -26598,7 +26667,7 @@ class PageService {
             const page = pages[i];
             if (i >= minPageNumber && i <= maxPageNumber) {
                 renderedPages.push(page);
-                page.renderViewAsync();
+                page.renderViewAsync(force);
             }
             else {
                 page.clearView();
@@ -29994,6 +30063,9 @@ class Viewer {
         this.setScale(Math.min(hScale, vScale));
         this.scrollToPage(this._pageService.currentPageIndex);
     }
+    renderVisible(force) {
+        this._pageService.renderVisiblePages(this._container, force);
+    }
     showTextDialogAsync(initialText) {
         return __awaiter$1(this, void 0, void 0, function* () {
             if (this._dialogClose) {
@@ -30049,9 +30121,6 @@ class Viewer {
         this._container.addEventListener("touchstart", this.onTouchZoom);
         this._pageService.eventService.addListener(pagesLoadedEvent, this.onPagesLoaded);
         this._pageService.eventService.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
-    }
-    renderVisible() {
-        this._pageService.renderVisiblePages(this._container);
     }
     setScale(scale, cursorPosition = null) {
         if (!scale || scale === this._scale) {
@@ -30227,11 +30296,11 @@ class TsPdfViewer {
             if (files.length === 0) {
                 return;
             }
-            this.openPdfAsync(files[0], files[0].name);
+            this.openDocAsync("main", files[0], files[0].name);
             this._fileInput.value = null;
         };
         this.onOpenFileButtonClick = () => {
-            this._shadowRoot.getElementById("open-file-input").click();
+            this._fileInput.click();
         };
         this.onSaveFileButtonClickAsync = () => __awaiter(this, void 0, void 0, function* () {
             var _a;
@@ -30243,7 +30312,21 @@ class TsPdfViewer {
                 || `file_${new Date().toISOString()}.pdf`);
         });
         this.onCloseFileButtonClick = () => {
-            this.closePdfAsync();
+            this.closeDocAsync("main");
+        };
+        this.onComparableFileInput = () => {
+            const files = this._comparableFileInput.files;
+            if (files.length === 0) {
+                return;
+            }
+            this.openDocAsync("compared", files[0], files[0].name);
+            this._comparableFileInput.value = null;
+        };
+        this.onComparableOpenFileButtonClick = () => {
+            this._comparableFileInput.click();
+        };
+        this.onComparableCloseFileButtonClick = () => {
+            this.closeDocAsync("compared");
         };
         this.onViewerModeButtonClick = (e) => {
             const parentButton = e.target.closest("*[id^=\"button-mode-\"]");
@@ -30602,6 +30685,9 @@ class TsPdfViewer {
         this._fileOpenAction = options.fileOpenAction;
         this._fileSaveAction = options.fileSaveAction;
         this._fileCloseAction = options.fileCloseAction;
+        this._comparableFileButtons = options.comparablefileButtons || [];
+        this._comparableFileOpenAction = options.comparableFileOpenAction;
+        this._comparableFileCloseAction = options.comparableFileCloseAction;
         this._annotChangeCallback = options.annotChangeCallback;
         this._customStampChangeCallback = options.customStampChangeCallback;
         const visibleAdjPages = options.visibleAdjPages || 0;
@@ -30769,6 +30855,12 @@ class TsPdfViewer {
                 this.setAnnotationMode("select");
                 this._mainContainer.classList.remove("disabled");
             }
+            else if (type === "compared") {
+                this._mainContainer.classList.add("comparison-loaded");
+                if (this._modeService.mode === "comparison") {
+                    this._viewer.renderVisible(true);
+                }
+            }
             this._spinner.hide();
         });
     }
@@ -30784,6 +30876,12 @@ class TsPdfViewer {
                 (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
                 yield this.refreshPagesAsync();
                 this.showPanels();
+            }
+            else if (type === "compared") {
+                this._mainContainer.classList.remove("comparison-loaded");
+                if (this._modeService.mode === "comparison") {
+                    this._viewer.renderVisible(true);
+                }
             }
         });
     }
@@ -30854,6 +30952,23 @@ class TsPdfViewer {
         else {
             closeButton.remove();
         }
+        const comparableOpenButton = this._shadowRoot.querySelector("#button-command-comparison-open");
+        const comparableCloseButton = this._shadowRoot.querySelector("#button-command-comparison-close");
+        if (this._comparableFileButtons.includes("open")) {
+            this._comparableFileInput = this._shadowRoot
+                .getElementById("open-comparable-file-input");
+            this._comparableFileInput.addEventListener("change", this.onComparableFileInput);
+            comparableOpenButton.addEventListener("click", this._comparableFileOpenAction || this.onComparableOpenFileButtonClick);
+        }
+        else {
+            comparableOpenButton.remove();
+        }
+        if (this._comparableFileButtons.includes("close")) {
+            comparableCloseButton.addEventListener("click", this._comparableFileCloseAction || this.onComparableCloseFileButtonClick);
+        }
+        else {
+            comparableCloseButton.remove();
+        }
     }
     initModeSwitchButtons() {
         const modeButtons = this._shadowRoot.querySelectorAll("*[id^=\"button-mode-\"]");
@@ -30896,6 +31011,7 @@ class TsPdfViewer {
         this._mainContainer.classList.add("mode-" + mode);
         this._shadowRoot.querySelector("#button-mode-" + mode).classList.add("on");
         this._modeService.mode = mode;
+        this._viewer.renderVisible();
     }
     rotateCounterClockwise() {
         if (!this._docService) {

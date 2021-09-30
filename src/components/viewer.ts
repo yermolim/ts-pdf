@@ -108,6 +108,10 @@ export class Viewer {
     this.scrollToPage(this._pageService.currentPageIndex);
   }  
   
+  renderVisible(force?: boolean) {
+    this._pageService.renderVisiblePages(this._container, force);
+  }
+
   async showTextDialogAsync(initialText: string): Promise<string> {
     if (this._dialogClose) {
       // can't open multiple dialogs at the same time
@@ -179,10 +183,6 @@ export class Viewer {
 
     this._pageService.eventService.addListener(pagesLoadedEvent, this.onPagesLoaded);
     this._pageService.eventService.addListener(currentPageChangeRequestEvent, this.onScrollRequest);
-  }
-  
-  private renderVisible() {
-    this._pageService.renderVisiblePages(this._container);
   }
 
   private onPagesLoaded = (event: PagesLoadedEvent) => {

@@ -946,15 +946,12 @@ declare global {
         [customStampEvent]: CustomStampEvent;
     }
 }
-declare type FileButtons = "open" | "save" | "close";
+declare type BaseFileButtons = "open" | "close";
+declare type FileButtons = BaseFileButtons | "save";
 interface TsPdfViewerOptions {
     containerSelector: string;
     workerSource: string;
     userName?: string;
-    fileButtons?: FileButtons[];
-    fileOpenAction?: () => void;
-    fileSaveAction?: () => void;
-    fileCloseAction?: () => void;
     annotChangeCallback?: (detail: AnnotEventDetail) => void;
     customStamps?: CustomStampCreationInfo[];
     customStampChangeCallback?: (detail: CustomStampEventDetail) => void;
@@ -963,6 +960,13 @@ interface TsPdfViewerOptions {
     minScale?: number;
     maxScale?: number;
     disabledModes?: ViewerMode[];
+    fileButtons?: FileButtons[];
+    fileOpenAction?: () => void;
+    fileSaveAction?: () => void;
+    fileCloseAction?: () => void;
+    comparablefileButtons?: BaseFileButtons[];
+    comparableFileOpenAction?: () => void;
+    comparableFileCloseAction?: () => void;
 }
 declare class TsPdfViewer {
     private readonly _userName;
@@ -980,14 +984,18 @@ declare class TsPdfViewer {
     private readonly _previewer;
     private _annotatorService;
     private _fileButtons;
+    private _comparableFileButtons;
+    private _fileInput;
+    private _comparableFileInput;
     private _fileOpenAction;
     private _fileSaveAction;
     private _fileCloseAction;
+    private _comparableFileOpenAction;
+    private _comparableFileCloseAction;
     private _annotChangeCallback;
     private _customStampChangeCallback;
     private _mainContainerRObserver;
     private _panelsHidden;
-    private _fileInput;
     private _timers;
     constructor(options: TsPdfViewerOptions);
     destroy(): void;
@@ -1014,6 +1022,9 @@ declare class TsPdfViewer {
     private onOpenFileButtonClick;
     private onSaveFileButtonClickAsync;
     private onCloseFileButtonClick;
+    private onComparableFileInput;
+    private onComparableOpenFileButtonClick;
+    private onComparableCloseFileButtonClick;
     private initModeSwitchButtons;
     private initAnnotationButtons;
     private setMode;
@@ -1056,4 +1067,4 @@ declare class TsPdfViewer {
     private onViewerKeyDown;
 }
 
-export { AnnotEvent, AnnotEventDetail, AnnotationDto, FileButtons, TsPdfViewer, TsPdfViewerOptions };
+export { AnnotEvent, AnnotEventDetail, AnnotationDto, BaseFileButtons, FileButtons, TsPdfViewer, TsPdfViewerOptions };

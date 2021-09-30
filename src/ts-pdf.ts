@@ -35,7 +35,8 @@ declare global {
   }
 }
 
-export type FileButtons = "open" | "save" | "close";
+export type BaseFileButtons = "open" | "close";
+export type FileButtons = BaseFileButtons | "save";
 
 export interface TsPdfViewerOptions {
   /**parent container CSS selector */
@@ -44,24 +45,6 @@ export interface TsPdfViewerOptions {
   workerSource: string;
   /**current user name (used for annotations) */
   userName?: string;
-
-  /**list of the file interaction buttons shown*/
-  fileButtons?: FileButtons[];
-  /**
-   * action to execute instead of the default file open action
-   * f.e. to open a custom dialog that allows the user to select a file from the database
-   */
-  fileOpenAction?: () => void;
-  /**
-   * action to execute instead of the default file download action
-   * f.e. to save the file bytes to the database instead of downloading it
-   */
-  fileSaveAction?: () => void;
-  /**
-   * action to execute instead of the default file close action
-   * f.e. to discard all the changes made to the file
-   */
-  fileCloseAction?: () => void;
 
   /**
    * action to execute on annotation change event 
@@ -92,7 +75,39 @@ export interface TsPdfViewerOptions {
   minScale?: number;
   maxScale?: number;
 
+  /**list of the viewer modes to disable */
   disabledModes?: ViewerMode[];
+
+  /**list of the file interaction buttons shown*/
+  fileButtons?: FileButtons[];
+  /**
+   * action to execute instead of the default file open action
+   * f.e. to open a custom dialog that allows the user to select a file from the database
+   */
+  fileOpenAction?: () => void;
+  /**
+   * action to execute instead of the default file download action
+   * f.e. to save the file bytes to the database instead of downloading it
+   */
+  fileSaveAction?: () => void;
+  /**
+   * action to execute instead of the default file close action
+   * f.e. to discard all the changes made to the file
+   */
+  fileCloseAction?: () => void;
+
+  /**list of the comparable file interaction buttons shown*/
+  comparablefileButtons?: BaseFileButtons[];
+  /**
+   * action to execute instead of the default file open action
+   * f.e. to open a custom dialog that allows the user to select a file from the database
+   */
+  comparableFileOpenAction?: () => void;
+  /**
+   * action to execute instead of the default file close action
+   * f.e. to discard all the changes made to the file
+   */
+  comparableFileCloseAction?: () => void;
 }
 
 export class TsPdfViewer {
@@ -119,18 +134,25 @@ export class TsPdfViewer {
 
   private _annotatorService: AnnotatorService;
 
+  //#region file actions
   private _fileButtons: FileButtons[];
+  private _comparableFileButtons: BaseFileButtons[];
+
+  private _fileInput: HTMLInputElement;
+  private _comparableFileInput: HTMLInputElement;
 
   private _fileOpenAction: () => void;
   private _fileSaveAction: () => void;
   private _fileCloseAction: () => void;
+  private _comparableFileOpenAction: () => void;
+  private _comparableFileCloseAction: () => void;
+  //#endregion
+
   private _annotChangeCallback: (detail: AnnotEventDetail) => void;
   private _customStampChangeCallback: (detail: CustomStampEventDetail) => void;
 
   private _mainContainerRObserver: ResizeObserver;
   private _panelsHidden: boolean;
-
-  private _fileInput: HTMLInputElement;
   
   /**common timers */
   private _timers = {    
@@ -162,6 +184,9 @@ export class TsPdfViewer {
     this._fileOpenAction = options.fileOpenAction;
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
+    this._comparableFileButtons = options.comparablefileButtons || [];
+    this._comparableFileOpenAction = options.comparableFileOpenAction;
+    this._comparableFileCloseAction = options.comparableFileCloseAction;
     this._annotChangeCallback = options.annotChangeCallback;
     this._customStampChangeCallback = options.customStampChangeCallback;
     
@@ -401,7 +426,11 @@ export class TsPdfViewer {
   
       this._mainContainer.classList.remove("disabled");
     } else if (type === "compared") {
-      // TODO: implement force rerender
+      this._mainContainer.classList.add("comparison-loaded");
+      if (this._modeService.mode === "comparison") {
+        // force rerender pages
+        this._viewer.renderVisible(true);
+      }
     }
     
     this._spinner.hide();
@@ -425,7 +454,11 @@ export class TsPdfViewer {
       await this.refreshPagesAsync();
       this.showPanels();
     } else if (type === "compared") {
-      // TODO: implement force rerender
+      this._mainContainer.classList.remove("comparison-loaded");
+      if (this._modeService.mode === "comparison") {
+        // force rerender pages
+        this._viewer.renderVisible(true);
+      }
     }
   }
   //#endregion
@@ -502,6 +535,26 @@ export class TsPdfViewer {
     } else {
       closeButton.remove();
     }
+
+    const comparableOpenButton = this._shadowRoot.querySelector("#button-command-comparison-open");
+    const comparableCloseButton = this._shadowRoot.querySelector("#button-command-comparison-close");
+
+    if (this._comparableFileButtons.includes("open")) {
+      this._comparableFileInput = this._shadowRoot
+        .getElementById("open-comparable-file-input") as HTMLInputElement;
+      this._comparableFileInput.addEventListener("change", this.onComparableFileInput);
+      comparableOpenButton.addEventListener("click", 
+        this._comparableFileOpenAction || this.onComparableOpenFileButtonClick);
+    } else {
+      comparableOpenButton.remove();
+    }
+
+    if (this._comparableFileButtons.includes("close")) {
+      comparableCloseButton.addEventListener("click", 
+        this._comparableFileCloseAction || this.onComparableCloseFileButtonClick);
+    } else {
+      comparableCloseButton.remove();
+    }
   }
 
   //#region default file buttons actions
@@ -511,13 +564,13 @@ export class TsPdfViewer {
       return;
     }
 
-    this.openPdfAsync(files[0], files[0].name);    
+    this.openDocAsync("main", files[0], files[0].name); 
 
     this._fileInput.value = null;
   };
 
   private onOpenFileButtonClick = () => {    
-    this._shadowRoot.getElementById("open-file-input").click();
+    this._fileInput.click();
   };
 
   private onSaveFileButtonClickAsync = async () => {
@@ -534,7 +587,26 @@ export class TsPdfViewer {
   };
   
   private onCloseFileButtonClick = () => {
-    this.closePdfAsync();
+    this.closeDocAsync("main");
+  };
+
+  private onComparableFileInput = () => {
+    const files = this._comparableFileInput.files;    
+    if (files.length === 0) {
+      return;
+    }
+
+    this.openDocAsync("compared", files[0], files[0].name);
+
+    this._comparableFileInput.value = null;
+  };
+
+  private onComparableOpenFileButtonClick = () => {    
+    this._comparableFileInput.click();
+  };
+
+  private onComparableCloseFileButtonClick = () => {
+    this.closeDocAsync("compared");
   };
   //#endregion
 
@@ -592,6 +664,8 @@ export class TsPdfViewer {
     this._mainContainer.classList.add("mode-" + mode);
     this._shadowRoot.querySelector("#button-mode-" + mode).classList.add("on");
     this._modeService.mode = mode;
+
+    this._viewer.renderVisible();
   }
 
   private onViewerModeButtonClick = (e: Event) => {

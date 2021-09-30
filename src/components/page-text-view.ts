@@ -10,6 +10,8 @@ export class PageTextView {
 
   private _divModeTimer: number;
 
+  private _destroyed: boolean;
+
   private constructor(pageProxy: PDFPageProxy) {
     if (!pageProxy) {
       throw new Error("Page proxy is not defined");
@@ -31,23 +33,31 @@ export class PageTextView {
    */
   static async appendPageTextAsync(pageProxy: PDFPageProxy, parent: HTMLElement, scale: number): Promise<PageTextView> {
     const textObj = new PageTextView(pageProxy);
-    await textObj.renderTextLayerAsync(scale);
+    const result = await textObj.renderTextLayerAsync(scale);
+    if (!result || textObj._destroyed) {
+      return null;
+    }
     parent.append(textObj._container);
     return textObj;
   } 
 
   /**free the resources that can prevent garbage to be collected */
   destroy() {
+    this.remove();
+    this._container = null;
+    this._destroyed = true;
+  }
+
+  remove() {
     this.destroyRenderTask();
     if (this._container) {
       this._container.remove();
-      this._container = null;
     }
   }
 
   private async renderTextLayerAsync(scale: number): Promise<boolean> {
-    this.clear();
     this.destroyRenderTask();
+    this.clear();
 
     const viewport = this._pageProxy.getViewport({scale});
     const textContentStream = this._pageProxy.streamTextContent();

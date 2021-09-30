@@ -199,7 +199,7 @@ export class PageService {
   }
 
   /**render the pages which are visible inside the specified container (viewer) */
-  renderVisiblePages(container: HTMLDivElement) {
+  renderVisiblePages(container: HTMLDivElement, force?: boolean) {
     const pages = this._pages;
     const {minFinal: minPageNumber, maxFinal: maxPageNumber} = this.getVisiblePageIndices(container);
 
@@ -209,7 +209,7 @@ export class PageService {
       if (i >= minPageNumber && i <= maxPageNumber) {
         // render page view and dispatch corresponding event
         renderedPages.push(page);
-        page.renderViewAsync();
+        page.renderViewAsync(force);
       } else {
         page.clearView();
       }

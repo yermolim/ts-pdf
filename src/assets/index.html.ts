@@ -77,6 +77,14 @@ export const mainHtml = /*html*/`
     </div>
     <div id="command-panel">
       <div class="command-panel-row">
+        <div id="button-command-comparison-close" 
+          class="panel-button command-panel-subitem accent">
+          <img src="${Icons.icon_close2}"/>
+        </div>
+        <div id="button-command-comparison-open" 
+          class="panel-button command-panel-subitem accent">
+          <img src="${Icons.icon_load}"/>
+        </div>
         <div id="button-command-undo" 
           class="panel-button command-panel-subitem accent">
           <img src="${Icons.icon_back}"/>
@@ -179,6 +187,7 @@ export const mainHtml = /*html*/`
     </div>
 
     <input id="open-file-input" class="abs-hidden" type="file" accept="application/pdf">
+    <input id="open-comparable-file-input" class="abs-hidden" type="file" accept="application/pdf">
   </div>
 `;
 

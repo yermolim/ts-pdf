@@ -75,6 +75,6 @@
     "mathador": "^0.2.2",
     "pako": "^2.0.4",
     "pdfjs-dist": "^2.9.359",
-    "ts-viewers-core": "^0.0.23"
+    "ts-viewers-core": "^0.0.25"
   }
 }

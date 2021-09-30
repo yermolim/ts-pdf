@@ -5,7 +5,7 @@ import { PageViewport } from "pdfjs-dist/types/display/display_utils";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
-import { ModeService } from "../services/mode-service";
+import { ModeService, ViewerMode } from "../services/mode-service";
 
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
@@ -100,6 +100,11 @@ export class PageView implements PageInfo {
   }
 
   private _dimensionsIsValid: boolean;
+  private _lastRenderMode: ViewerMode;
+  /**returns 'true' if the current mode is same as it was during last render */
+  get modeNotChanged(): boolean {
+    return this._lastRenderMode === this._modeService.mode;
+  }
   /**returns 'true' if the view is rendered using the current scale */
   get viewValid(): boolean {
     return this._dimensionsIsValid && this._viewRendered;
@@ -177,13 +182,11 @@ export class PageView implements PageInfo {
       await this._renderPromise;
     }
 
-    if (!force && this.viewValid) {
+    if (!force && this.viewValid && this.modeNotChanged) {
       return;
     }
 
-    // TODO: add check for mode change
-
-    this._renderPromise = this.runViewRenderAsync();
+    this._renderPromise = this.runViewRenderAsync(force);
     return this._renderPromise;
   }
   
@@ -368,21 +371,37 @@ export class PageView implements PageInfo {
     this._previewRendered = true;
   }
 
-  private async runViewRenderAsync(): Promise<void> { 
+  private async runViewRenderAsync(force: boolean): Promise<void> { 
+    const mode = this._modeService.mode;
     const scale = this._scale;
 
-    // clear text layer
+    // clear page layers
     this.clearTextLayer();
 
-    // render canvas layer
-    await this.renderCanvasLayer(scale);
+    if (force || !this.viewValid) {
+      // render canvas layer
+      const canvasRendered = await this.renderCanvasLayerAsync(scale);
+      if (!canvasRendered) {
+        return;
+      }
+    }
 
-    // add text layer on top of the canvas layer
-    await this.renderTextLayer(scale);
+    if (mode === "text"
+     || mode === "annotation") {
+      // add text layer on top of the canvas layer
+      await this.renderTextLayerAsync(scale);
+    }
 
-    // add annotations layer on top of the text layer
-    await this.renderAnnotationLayer();
+    if (mode !== "comparison") {
+      // add annotations layer on top of the canvas/text layer
+      await this.renderAnnotationLayerAsync();
+    } else {
+      this._annotations?.remove();
+      // add comparison layer on top of the canvas layer
+      await this.renderComparisonLayerAsync();
+    }
 
+    this._lastRenderMode = mode;
     // check if scale not changed during render
     if (scale === this._scale) {
       this._dimensionsIsValid = true;
@@ -391,10 +410,10 @@ export class PageView implements PageInfo {
 
   private clearTextLayer() {
     this._text?.destroy();
-    this._text = null;
+    this._text?.remove();
   }
 
-  private async renderCanvasLayer(scale: number): Promise<void> {
+  private async renderCanvasLayerAsync(scale: number): Promise<boolean> {
     // create a new canvas of the needed size and fill it with a rendered page
     const canvas = this.createViewCanvas();
     const params = <RenderParameters>{
@@ -406,26 +425,31 @@ export class PageView implements PageInfo {
     if (!result || scale !== this._scale) {
       // page rendering was cancelled  
       // or scale changed during rendering    
-      return;
+      return false;
     }
 
     this._viewCanvas?.remove();
     this._viewInnerContainer.append(canvas);
     this._viewCanvas = canvas;
     this._viewRendered = true;
+    return true;
   }
 
-  private async renderTextLayer(scale: number): Promise<void> {
+  private async renderTextLayerAsync(scale: number): Promise<void> {
     this._text = await PageTextView.appendPageTextAsync(
       this._pageProxy, this._viewInnerContainer, scale); 
   }
 
-  private async renderAnnotationLayer(): Promise<void> {
+  private async renderAnnotationLayerAsync(): Promise<void> {
     if (!this._annotations) {
       const {width: x, height: y} = this._dimensions;
       this._annotations = new PageAnnotationView(
         this._docManagerService.docService, this, new Vec2(x, y));
     }
     await this._annotations.appendAsync(this._viewInnerContainer);
+  }
+
+  private async renderComparisonLayerAsync(): Promise<void> {
+    // TODO: implement
   }
 }
