@@ -19,7 +19,8 @@ import { DocumentService, annotChangeEvent, AnnotEvent,
   docServiceStateChangeEvent } from "./services/document-service";
 import { AnnotatorService, AnnotatorServiceMode } from "./services/annotator-service";
 import { ModeService, ViewerMode, viewerModes } from "./services/mode-service";
-import { DocManagerService, DocType } from "./services/doc-manager-service";
+import { DocChangeEvent, docChangeEvent, 
+  DocManagerService, DocType } from "./services/doc-manager-service";
 
 import { Viewer } from "./components/viewer";
 import { Previewer } from "./components/previewer";
@@ -220,6 +221,7 @@ export class TsPdfViewer {
     this.initModeSwitchButtons();
     this.initAnnotationButtons();
 
+    this._eventService.addListener(docChangeEvent, this.onDocChangeAsync);
     this._eventService.addListener(annotChangeEvent, this.onAnnotationChange);
     this._eventService.addListener(currentPageChangeEvent, this.onCurrentPagesChanged);
     this._eventService.addListener(annotatorDataChangeEvent, this.onAnnotatorDataChanged);
@@ -413,53 +415,12 @@ export class TsPdfViewer {
       throw e;
     }
     
-    if (type === "main") {
-      this.setMode();
-
-      // load pages from the document
-      await this.refreshPagesAsync();
-  
-      // create an annotation builder and set its mode to 'select'
-      this._annotatorService = new AnnotatorService(this._docService, 
-        this._pageService, this._customStampsService, this._viewer);
-      this.setAnnotationMode("select");
-  
-      this._mainContainer.classList.remove("disabled");
-    } else if (type === "compared") {
-      this._mainContainer.classList.add("comparison-loaded");
-      if (this._modeService.mode === "comparison") {
-        // force rerender pages
-        this._viewer.renderVisible(true);
-      }
-    }
-    
     this._spinner.hide();
   }
 
   private async closeDocAsync(type: DocType): Promise<void> {
     // destroy a running loading task if present
     await this._docManagerService.closePdfAsync(type);
-
-    if (type === "main") {
-      this._mainContainer.classList.add("disabled");
-      // remove unneeded classes from the main container
-      this._mainContainer.classList.remove("annotation-focused");
-      this._mainContainer.classList.remove("annotation-selected");
-  
-      // reset viewer state to default
-      this.setMode();
-  
-      this._annotatorService?.destroy();
-  
-      await this.refreshPagesAsync();
-      this.showPanels();
-    } else if (type === "compared") {
-      this._mainContainer.classList.remove("comparison-loaded");
-      if (this._modeService.mode === "comparison") {
-        // force rerender pages
-        this._viewer.renderVisible(true);
-      }
-    }
   }
   //#endregion
 
@@ -962,6 +923,48 @@ export class TsPdfViewer {
 
   private docServiceUndo = () => {
     this._docService?.undoAsync();
+  };
+  
+  private onDocChangeAsync = async (e: DocChangeEvent) => {
+    if (e.detail.type === "main") {
+      if (e.detail.action === "open") {
+        this.setMode();
+  
+        // load pages from the document
+        await this.refreshPagesAsync();
+    
+        // create an annotation builder and set its mode to 'select'
+        this._annotatorService = new AnnotatorService(this._docService, 
+          this._pageService, this._customStampsService, this._viewer);
+        this.setAnnotationMode("select");
+    
+        this._mainContainer.classList.remove("disabled");        
+      } else if (e.detail.action === "close") {        
+        this._mainContainer.classList.add("disabled");
+        // remove unneeded classes from the main container
+        this._mainContainer.classList.remove("annotation-focused");
+        this._mainContainer.classList.remove("annotation-selected");
+    
+        // reset viewer state to default
+        this.setMode();
+    
+        this._annotatorService?.destroy();
+    
+        await this.refreshPagesAsync();
+        this.showPanels();
+      }
+    }
+    if (e.detail.type === "compared") {
+      if (e.detail.action === "open") {
+        this._mainContainer.classList.add("comparison-loaded");
+      } else if (e.detail.action === "close") {
+        this._mainContainer.classList.remove("comparison-loaded");
+      }
+      if (this._modeService.mode === "comparison") {
+        // force rerender pages
+        this._viewer.renderVisible(true);
+      }
+    }
   };
 
   private onDocServiceStateChange = (e: DocServiceStateChangeEvent) => {

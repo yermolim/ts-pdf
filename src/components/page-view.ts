@@ -10,10 +10,13 @@ import { ModeService, ViewerMode } from "../services/mode-service";
 import { PageTextView } from "./page-text-view";
 import { PageAnnotationView } from "./page-annotation-view";
 import { DocManagerService } from "../services/doc-manager-service";
+import { PageComparisonView } from "./page-comparison-view";
 
 export class PageView implements PageInfo { 
   static readonly validRotationValues = [0, 90, 180, 270];
 
+  /**index of the page in the pdf file */
+  readonly index: number;
   /**number of the page in the pdf file */
   readonly number: number;
   /**pdf object id of the page */
@@ -63,6 +66,7 @@ export class PageView implements PageInfo {
 
   private _text: PageTextView;
   private _annotations: PageAnnotationView;
+  private _comparison: PageComparisonView;
 
   private _renderTask: {cancel: () => void; promise: Promise<void>};
   private _renderPromise: Promise<void>;
@@ -133,6 +137,7 @@ export class PageView implements PageInfo {
     this._defaultViewport = pageProxy.getViewport({scale: 1, rotation: 0});
     this._rotation = pageProxy.rotate;
 
+    this.index = pageIndex;
     this.number = pageProxy.pageNumber;
     this.id = pageProxy.ref["num"];
     this.generation = pageProxy.ref["gen"];
@@ -197,6 +202,9 @@ export class PageView implements PageInfo {
 
   /**clear the view container */
   clearView() {
+    this._comparison?.destroy();
+    this._comparison = null;
+
     this._annotations?.destroy();
     this._annotations = null;
 
@@ -316,14 +324,14 @@ export class PageView implements PageInfo {
     }
     
     this.cancelRenderTask();
-    this._renderTask = this._pageProxy.render(renderParams);
     try {
+      this._renderTask = this._pageProxy.render(renderParams);
       await this._renderTask.promise;
     } catch (error) {
       if (error instanceof RenderingCancelledException) {
         return false;
       } else {
-        throw error;
+        console.log(error.message);
       }
     } finally {
       this._renderTask = null;
@@ -355,6 +363,10 @@ export class PageView implements PageInfo {
   }
   
   private async runPreviewRenderAsync(): Promise<void> { 
+    if (this._destroyed) {
+      return;
+    }
+    
     const canvas = this.createPreviewCanvas();
     const params = <RenderParameters>{
       canvasContext: canvas.getContext("2d"),
@@ -372,6 +384,10 @@ export class PageView implements PageInfo {
   }
 
   private async runViewRenderAsync(force: boolean): Promise<void> { 
+    if (this._destroyed) {
+      return;
+    }    
+
     const mode = this._modeService.mode;
     const scale = this._scale;
 
@@ -450,6 +466,17 @@ export class PageView implements PageInfo {
   }
 
   private async renderComparisonLayerAsync(): Promise<void> {
-    // TODO: implement
+    const comparisonPageProxy = this._docManagerService.getPageProxy("compared", this.index);
+    if (!comparisonPageProxy) {
+      this._comparison?.remove();
+      return;
+    }
+
+    if (!this._comparison) {
+      const {width: x, height: y} = this._dimensions;
+      this._comparison = new PageComparisonView(
+        this._docManagerService.comparisonService, this, new Vec2(x, y));
+    }
+    await this._comparison.appendAsync(this._viewInnerContainer, comparisonPageProxy, this._scale);
   }
 }

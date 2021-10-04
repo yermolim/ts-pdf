@@ -23,7 +23,11 @@ export class PdfLoaderService {
   private _docService: DocumentService;  
   get docService(): DocumentService {
     return this._docService;
-  }    
+  }
+
+  get docProxy(): PDFDocumentProxy {
+    return this._pdfDocument;
+  }
 
   private _fileName: string; 
   get fileName(): string {

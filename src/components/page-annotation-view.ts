@@ -10,11 +10,10 @@ import { DocumentService, annotChangeEvent,
 import { AnnotationDict } from "../document/entities/annotations/annotation-dict";
 
 export class PageAnnotationView {
+  private readonly _docService: DocumentService;
   private readonly _pageInfo: PageInfo;
   private readonly _viewbox: Quadruple;
-
-  private _docService: DocumentService;
-  private _rendered = new Set<RenderableAnnotation>();
+  private readonly _rendered = new Set<RenderableAnnotation>();
 
   private _container: HTMLDivElement;
   private _svg: SVGSVGElement;
@@ -35,7 +34,7 @@ export class PageAnnotationView {
 
     this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this._svg.classList.add("page-annotations-controls");
-    this._svg.setAttribute("data-page-id", pageInfo + "");
+    this._svg.setAttribute("data-page-id", pageInfo.id + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
     // flip Y to match PDF coords where 0,0 is the lower-left corner
     this._svg.setAttribute("transform", "scale(1, -1)");

@@ -8,13 +8,37 @@ import { ComparisonService, PdfPageComparisonResult } from "./comparison-service
 
 export type DocType = "main" | "compared";
 
+//#region custom events
+export const docChangeEvent = "tspdf-docchangeevent" as const;
+
+export interface DocChangeEventDetail {
+  action: "open" | "close";
+  type: DocType;
+}
+
+export class DocChangeEvent extends CustomEvent<DocChangeEventDetail> {
+  constructor(detail: DocChangeEventDetail) {
+    super(docChangeEvent, {detail});
+  }
+}
+
+declare global {
+  interface HTMLElementEventMap {
+    [docChangeEvent]: DocChangeEvent;
+  }
+}
+//#endregion
+
 export class DocManagerService {
+  private readonly _eventService: EventService;
   private readonly _dummyDiv = document.createElement("div");
   private readonly _docLoaders: {
     [key in DocType]: PdfLoaderService;
   };
-
   private readonly _comparisonService: ComparisonService;  
+  get comparisonService(): ComparisonService {
+    return this._comparisonService;
+  }
 
   get docService(): DocumentService {
     return this._docLoaders.main.docService;
@@ -36,6 +60,7 @@ export class DocManagerService {
     if (!mainEventService) {
       throw new Error("Main event service is not defined");
     }
+    this._eventService = mainEventService;
 
     this._docLoaders = {
       main: new PdfLoaderService(mainEventService),
@@ -59,16 +84,25 @@ export class DocManagerService {
 
     await this._docLoaders[type].openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress);
 
-    if (type === "main" || type === "compared") {
-      await this._comparisonService.compareAsync();
+    if (type === "main") {
+      await this.closePdfAsync("compared");
+      this._eventService.dispatchEvent(new DocChangeEvent({action: "open", type: "main"}));
+    } else if (type === "compared") {      
+      await this._comparisonService.compareAsync(
+        this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);
+      this._eventService.dispatchEvent(new DocChangeEvent({action: "open", type: "compared"}));
     }
   }
   
   async closePdfAsync(type: DocType): Promise<void> {
     await this._docLoaders[type].closePdfAsync();
     
-    if (type === "main" || type === "compared") {
-      await this._comparisonService.compareAsync();
+    if (type === "main") {
+      await this.closePdfAsync("compared");
+      this._eventService.dispatchEvent(new DocChangeEvent({action: "close", type: "main"}));
+    } else if (type === "compared") {
+      await this._comparisonService.clearComparisonResult();
+      this._eventService.dispatchEvent(new DocChangeEvent({action: "close", type: "compared"}));
     }
   }
   

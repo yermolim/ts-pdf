@@ -165,5 +165,33 @@ export const styles = /*html*/`
     transform: scale(1);
     transition: opacity 0.1s ease-out 0.35s, transform 0s linear 0.35s;
   }
+
+  .page-comparison {
+    width: 0;
+    height: 0;
+  }
+  .page-comparison-areas {
+    z-index: 2;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .comparison-area-rect {
+    stroke: red;
+    stroke-width: 3px;
+    fill: none;
+  }
+  .comparison-area-image {
+    opacity: 0;
+  }
+  .transparent .comparison-area-image {
+    opacity: 0.5;
+  }
+  .opaque .comparison-area-image {
+    opacity: 1;
+  }
+
 </style>
 `;

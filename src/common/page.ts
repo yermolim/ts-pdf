@@ -1,4 +1,6 @@
 export interface PageInfo {
+  /**index of the page in the pdf file */
+  readonly index: number;
   /**number of the page in the pdf file */
   readonly number: number;
   /**pdf object id of the page */

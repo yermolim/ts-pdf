@@ -3,6 +3,7 @@ export { CustomStampCreationInfo, CustomStampEventDetail } from 'ts-viewers-core
 import { Mat3, Vec3, Vec2 } from 'mathador';
 
 interface PageInfo {
+    readonly index: number;
     readonly number: number;
     readonly id: number;
     readonly generation: number;
@@ -1059,6 +1060,7 @@ declare class TsPdfViewer {
     private showPanels;
     private onPdfLoadingProgress;
     private docServiceUndo;
+    private onDocChangeAsync;
     private onDocServiceStateChange;
     private refreshPagesAsync;
     private onPreviewerToggleClick;

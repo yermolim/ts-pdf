@@ -33,8 +33,13 @@ export class PageTextView {
    */
   static async appendPageTextAsync(pageProxy: PDFPageProxy, parent: HTMLElement, scale: number): Promise<PageTextView> {
     const textObj = new PageTextView(pageProxy);
-    const result = await textObj.renderTextLayerAsync(scale);
-    if (!result || textObj._destroyed) {
+    try {
+      const result = await textObj.renderTextLayerAsync(scale);
+      if (!result || textObj._destroyed) {
+        return null;
+      }
+    } catch (e) {
+      console.error(e);
       return null;
     }
     parent.append(textObj._container);
