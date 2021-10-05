@@ -13,6 +13,7 @@ A PDF.js-based PDF viewer written in TypeScript.
 ## Features
 <ul>
     <li>opening and viewing PDF files</li>
+    <li>comparing two PDF files and visualizing differences</li>
     <li>adding and editing PDF annotations (supported annotation types are listed below)</li>
     <li>custom parsing and rendering for the supported annotation types</li>
     <li>annotation import/export to/from data-transfer objects that can be effortlessly serialized to JSON (useful for storing annotations in the separate database)</li>
@@ -189,6 +190,7 @@ The other one is to make your own build of PDF.js.
     <li><del>add 'undo' button and corresponding logic</del> added in 0.7.0</li>
     <li><del>move parser to background thread using web workers</del> added in 0.9.0</li>
     <li><del>add keyboard shortcuts</del>added in 0.10.0</li>
+    <li><del>add document comparison mode</del>added in 0.11.0</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>
     <li>add tooltips to buttons</li>
