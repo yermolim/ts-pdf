@@ -610,7 +610,6 @@ export class TsPdfViewer {
   }
   //#endregion
 
-
   //#region viewer modes
   private setMode(mode?: ViewerMode) {
     mode = mode || this._modeService.enabledModes[0] || "text"; // 'text' is the default mode
@@ -657,7 +656,6 @@ export class TsPdfViewer {
   };
   //#endregion
 
-
   //#region page rotation
   private onRotateCounterClockwiseClick = () => {
     this.rotateCounterClockwise();
@@ -683,7 +681,6 @@ export class TsPdfViewer {
     this.setAnnotationMode(this._annotatorService.mode);
   }
   //#endregion
-
 
   //#region paginator
   private onPaginatorInput = (event: Event) => {
@@ -732,7 +729,6 @@ export class TsPdfViewer {
   }
   //#endregion
   
-
   //#region annotations
   private annotatorUndo = () => {
     this._annotatorService.annotator?.undo();
@@ -870,7 +866,6 @@ export class TsPdfViewer {
   };
   //#endregion
 
-
   //#region show/hide panels
   private onMainContainerPointerMove = (event: PointerEvent) => {
     const {clientX, clientY} = event;
@@ -914,7 +909,6 @@ export class TsPdfViewer {
     }
   }
   //#endregion
-
 
   //#region misc
   private onPdfLoadingProgress = (progressData: { loaded: number; total: number }) => {
