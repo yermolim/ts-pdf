@@ -98,7 +98,7 @@ export interface TsPdfViewerOptions {
   fileCloseAction?: () => void;
 
   /**list of the comparable file interaction buttons shown*/
-  comparablefileButtons?: BaseFileButtons[];
+  comparableFileButtons?: BaseFileButtons[];
   /**
    * action to execute instead of the default file open action
    * f.e. to open a custom dialog that allows the user to select a file from the database
@@ -185,7 +185,7 @@ export class TsPdfViewer {
     this._fileOpenAction = options.fileOpenAction;
     this._fileSaveAction = options.fileSaveAction;
     this._fileCloseAction = options.fileCloseAction;
-    this._comparableFileButtons = options.comparablefileButtons || [];
+    this._comparableFileButtons = options.comparableFileButtons || [];
     this._comparableFileOpenAction = options.comparableFileOpenAction;
     this._comparableFileCloseAction = options.comparableFileCloseAction;
     this._annotChangeCallback = options.annotChangeCallback;

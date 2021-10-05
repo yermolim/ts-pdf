@@ -31215,7 +31215,7 @@ class TsPdfViewer {
         this._fileOpenAction = options.fileOpenAction;
         this._fileSaveAction = options.fileSaveAction;
         this._fileCloseAction = options.fileCloseAction;
-        this._comparableFileButtons = options.comparablefileButtons || [];
+        this._comparableFileButtons = options.comparableFileButtons || [];
         this._comparableFileOpenAction = options.comparableFileOpenAction;
         this._comparableFileCloseAction = options.comparableFileCloseAction;
         this._annotChangeCallback = options.annotChangeCallback;

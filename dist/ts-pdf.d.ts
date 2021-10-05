@@ -965,7 +965,7 @@ interface TsPdfViewerOptions {
     fileOpenAction?: () => void;
     fileSaveAction?: () => void;
     fileCloseAction?: () => void;
-    comparablefileButtons?: BaseFileButtons[];
+    comparableFileButtons?: BaseFileButtons[];
     comparableFileOpenAction?: () => void;
     comparableFileCloseAction?: () => void;
 }

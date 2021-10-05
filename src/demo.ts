@@ -10,7 +10,7 @@ async function run(): Promise<void> {
     workerSource: "assets/pdf.worker.min.js",
     userName: "yermolim",
     fileButtons: ["open", "close", "save"],
-    comparablefileButtons: ["open", "close"],
+    comparableFileButtons: ["open", "close"],
     annotChangeCallback: (detail: AnnotEventDetail) =>  {
       if (detail.type === "focus" 
         || detail.type === "select"
