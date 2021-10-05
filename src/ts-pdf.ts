@@ -1147,4 +1147,4 @@ export class TsPdfViewer {
 }
 
 export {AnnotationDto, AnnotEvent, AnnotEventDetail, 
-  CustomStampCreationInfo, CustomStampEventDetail};
+  CustomStampCreationInfo, CustomStampEventDetail, ViewerMode};

@@ -1069,4 +1069,4 @@ declare class TsPdfViewer {
     private onViewerKeyDown;
 }
 
-export { AnnotEvent, AnnotEventDetail, AnnotationDto, BaseFileButtons, FileButtons, TsPdfViewer, TsPdfViewerOptions };
+export { AnnotEvent, AnnotEventDetail, AnnotationDto, BaseFileButtons, FileButtons, TsPdfViewer, TsPdfViewerOptions, ViewerMode };
