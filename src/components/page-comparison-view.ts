@@ -73,31 +73,25 @@ export class PageComparisonView {
 
     const comparisonResult = this._comparisonService
       .getComparisonResultForPage(this._subjectPageInfo.index);
-    if (!comparisonResult?.length) {
+    if (!comparisonResult?.areas?.length) {
       return;
     };
     
-    let rerendered = false;
     if (!this._lastRenderResult
       || this._lastRenderResult.pageProxy !== agentPageProxy
       || this._lastRenderResult.scale !== scale) {
-
       this._lastRenderResult = await this.renderPageAsync(agentPageProxy, scale);
+    }
 
-      rerendered = true;
-    }
-    
-    if (rerendered) {
-      this.clear();
-    }
     if (!this._lastRenderResult) {
       return;
     }
 
+    this.clear();
     parent.append(this._container);
 
-    // TODO: implement changed areas visualization
-    for (const comparisonEntry of comparisonResult) {
+    const [offsetX, offsetY] = comparisonResult.offset;
+    for (const comparisonArea of comparisonResult.areas) {
       
       const changedAreaGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
       changedAreaGroup.classList.add("comparison-area");
@@ -105,36 +99,37 @@ export class PageComparisonView {
       changedAreaGroup.addEventListener("pointerenter", this.onAreaPointerEnter);
       changedAreaGroup.addEventListener("pointerleave", this.onAreaPointerLeave);
 
-      const x = comparisonEntry[0];
-      const y = comparisonEntry[1];
-      const yPdf = this._subjectPageHeight - Math.max(comparisonEntry[1], comparisonEntry[3]);
-      const w = Math.max(Math.abs(comparisonEntry[2] - comparisonEntry[0]), 1);
-      const h = Math.max(Math.abs(comparisonEntry[3] - comparisonEntry[1]), 1);
-      const scaledW = w * scale;
-      const scaledH = h * scale;
+      const sx = comparisonArea[0];
+      const sy = comparisonArea[1];
+      const syPdf = this._subjectPageHeight - Math.max(comparisonArea[1], comparisonArea[3]);
+      const sw = Math.max(Math.abs(comparisonArea[2] - comparisonArea[0]), 1);
+      const sh = Math.max(Math.abs(comparisonArea[3] - comparisonArea[1]), 1);
+      const swScaled = sw * scale;
+      const shScaled = sh * scale;
 
       const tmpCanvas = document.createElement("canvas");
-      tmpCanvas.width = scaledW;
-      tmpCanvas.height = scaledH;
+      tmpCanvas.width = swScaled;
+      tmpCanvas.height = shScaled;
       tmpCanvas.getContext("2d").scale(1, -1);
       tmpCanvas.getContext("2d").drawImage(this._lastRenderResult.canvas, 
-        x * scale, y * scale, scaledW, scaledH, 0, 0, scaledW, -scaledH);
+        (sx + offsetX) * scale, (sy + offsetY) * scale, swScaled, shScaled, 
+        0, 0, swScaled, -shScaled);
       const imageUrl = tmpCanvas.toDataURL("image/png");
 
       const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
       image.classList.add("comparison-area-image");
-      image.setAttribute("x", x + "");
-      image.setAttribute("y", yPdf + "");
-      image.setAttribute("width", w + "");
-      image.setAttribute("height", h + "");
+      image.setAttribute("x", sx + "");
+      image.setAttribute("y", syPdf + "");
+      image.setAttribute("width", sw + "");
+      image.setAttribute("height", sh + "");
       image.setAttribute("href", imageUrl);
 
       const area = document.createElementNS("http://www.w3.org/2000/svg", "rect");
       area.classList.add("comparison-area-rect");
-      area.setAttribute("x", x + "");
-      area.setAttribute("y", yPdf + "");
-      area.setAttribute("width", w + "");
-      area.setAttribute("height", h + "");
+      area.setAttribute("x", sx + "");
+      area.setAttribute("y", syPdf + "");
+      area.setAttribute("width", sw + "");
+      area.setAttribute("height", sh + "");
 
       changedAreaGroup.append(image);
       changedAreaGroup.append(area);

@@ -26285,6 +26285,7 @@ class PageComparisonView {
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
     }
     appendAsync(parent, agentPageProxy, scale) {
+        var _a;
         return __awaiter$l(this, void 0, void 0, function* () {
             this.remove();
             if (this._destroyed || !agentPageProxy) {
@@ -26292,55 +26293,52 @@ class PageComparisonView {
             }
             const comparisonResult = this._comparisonService
                 .getComparisonResultForPage(this._subjectPageInfo.index);
-            if (!(comparisonResult === null || comparisonResult === void 0 ? void 0 : comparisonResult.length)) {
+            if (!((_a = comparisonResult === null || comparisonResult === void 0 ? void 0 : comparisonResult.areas) === null || _a === void 0 ? void 0 : _a.length)) {
                 return;
             }
-            let rerendered = false;
             if (!this._lastRenderResult
                 || this._lastRenderResult.pageProxy !== agentPageProxy
                 || this._lastRenderResult.scale !== scale) {
                 this._lastRenderResult = yield this.renderPageAsync(agentPageProxy, scale);
-                rerendered = true;
-            }
-            if (rerendered) {
-                this.clear();
             }
             if (!this._lastRenderResult) {
                 return;
             }
+            this.clear();
             parent.append(this._container);
-            for (const comparisonEntry of comparisonResult) {
+            const [offsetX, offsetY] = comparisonResult.offset;
+            for (const comparisonArea of comparisonResult.areas) {
                 const changedAreaGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
                 changedAreaGroup.classList.add("comparison-area");
                 changedAreaGroup.addEventListener("pointerdown", this.onAreaPointerDown);
                 changedAreaGroup.addEventListener("pointerenter", this.onAreaPointerEnter);
                 changedAreaGroup.addEventListener("pointerleave", this.onAreaPointerLeave);
-                const x = comparisonEntry[0];
-                const y = comparisonEntry[1];
-                const yPdf = this._subjectPageHeight - Math.max(comparisonEntry[1], comparisonEntry[3]);
-                const w = Math.max(Math.abs(comparisonEntry[2] - comparisonEntry[0]), 1);
-                const h = Math.max(Math.abs(comparisonEntry[3] - comparisonEntry[1]), 1);
-                const scaledW = w * scale;
-                const scaledH = h * scale;
+                const sx = comparisonArea[0];
+                const sy = comparisonArea[1];
+                const syPdf = this._subjectPageHeight - Math.max(comparisonArea[1], comparisonArea[3]);
+                const sw = Math.max(Math.abs(comparisonArea[2] - comparisonArea[0]), 1);
+                const sh = Math.max(Math.abs(comparisonArea[3] - comparisonArea[1]), 1);
+                const swScaled = sw * scale;
+                const shScaled = sh * scale;
                 const tmpCanvas = document.createElement("canvas");
-                tmpCanvas.width = scaledW;
-                tmpCanvas.height = scaledH;
+                tmpCanvas.width = swScaled;
+                tmpCanvas.height = shScaled;
                 tmpCanvas.getContext("2d").scale(1, -1);
-                tmpCanvas.getContext("2d").drawImage(this._lastRenderResult.canvas, x * scale, y * scale, scaledW, scaledH, 0, 0, scaledW, -scaledH);
+                tmpCanvas.getContext("2d").drawImage(this._lastRenderResult.canvas, (sx + offsetX) * scale, (sy + offsetY) * scale, swScaled, shScaled, 0, 0, swScaled, -shScaled);
                 const imageUrl = tmpCanvas.toDataURL("image/png");
                 const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
                 image.classList.add("comparison-area-image");
-                image.setAttribute("x", x + "");
-                image.setAttribute("y", yPdf + "");
-                image.setAttribute("width", w + "");
-                image.setAttribute("height", h + "");
+                image.setAttribute("x", sx + "");
+                image.setAttribute("y", syPdf + "");
+                image.setAttribute("width", sw + "");
+                image.setAttribute("height", sh + "");
                 image.setAttribute("href", imageUrl);
                 const area = document.createElementNS("http://www.w3.org/2000/svg", "rect");
                 area.classList.add("comparison-area-rect");
-                area.setAttribute("x", x + "");
-                area.setAttribute("y", yPdf + "");
-                area.setAttribute("width", w + "");
-                area.setAttribute("height", h + "");
+                area.setAttribute("x", sx + "");
+                area.setAttribute("y", syPdf + "");
+                area.setAttribute("width", sw + "");
+                area.setAttribute("height", sh + "");
                 changedAreaGroup.append(image);
                 changedAreaGroup.append(area);
                 this._svg.append(changedAreaGroup);
@@ -30029,7 +30027,7 @@ class ComparisonService {
     clearComparisonResult() {
         return this._comparisonResult = null;
     }
-    compareAsync(subjectDocProxy, agentDocProxy) {
+    compareAsync(subjectDocProxy, agentDocProxy, offsets) {
         return __awaiter$3(this, void 0, void 0, function* () {
             const result = new Map();
             if (!subjectDocProxy || !agentDocProxy) {
@@ -30042,18 +30040,18 @@ class ComparisonService {
                 const agentPage = i < agentPagesCount
                     ? yield agentDocProxy.getPage(i + 1)
                     : null;
-                const pageComparisonResult = yield this.comparePagesAsync(subjectPage, agentPage);
+                const pageComparisonResult = yield this.comparePagesAsync(subjectPage, agentPage, offsets === null || offsets === void 0 ? void 0 : offsets.get(i));
                 result.set(i, pageComparisonResult);
             }
             this._comparisonResult = result;
             return this._comparisonResult;
         });
     }
-    comparePagesAsync(subjectPageProxy, agentPageProxy) {
+    comparePagesAsync(subjectPageProxy, agentPageProxy, offset) {
         return __awaiter$3(this, void 0, void 0, function* () {
             const subjectImageData = yield this.renderPageAsync(subjectPageProxy);
             const agentImageData = yield this.renderPageAsync(agentPageProxy);
-            const pageComparisonResult = yield this.compareImageDataAsync(subjectImageData, agentImageData);
+            const pageComparisonResult = yield this.compareImageDataAsync(subjectImageData, agentImageData, { offset });
             return pageComparisonResult;
         });
     }
@@ -30079,13 +30077,22 @@ class ComparisonService {
             return imageData;
         });
     }
-    compareImageDataAsync(subjectImageData, agentImageData, threshold = 5) {
+    compareImageDataAsync(subjectImageData, agentImageData, options) {
+        var _a;
         return __awaiter$3(this, void 0, void 0, function* () {
+            const threshold = (_a = options === null || options === void 0 ? void 0 : options.threshold) !== null && _a !== void 0 ? _a : 5;
+            const offset = (options === null || options === void 0 ? void 0 : options.offset) || [0, 0];
             if (!subjectImageData) {
-                return [];
+                return {
+                    areas: [],
+                    offset: [0, 0],
+                };
             }
             if (!agentImageData) {
-                return [[0, 0, subjectImageData.width, subjectImageData.height]];
+                return {
+                    areas: [[0, 0, subjectImageData.width, subjectImageData.height]],
+                    offset: [0, 0],
+                };
             }
             const aabbs = [];
             const sw = subjectImageData.width;
@@ -30096,24 +30103,31 @@ class ComparisonService {
             const aBytes = agentImageData.data;
             let si;
             let ai;
-            for (let x = 0; x < sw; x++) {
-                for (let y = 0; y < sh; y++) {
-                    if (x >= aw || y >= ah) {
-                        this.addPixelToAabbs(aabbs, x, y, threshold, sw, sh);
+            let ax;
+            let ay;
+            for (let sx = 0; sx < sw; sx++) {
+                for (let sy = 0; sy < sh; sy++) {
+                    ax = sx + offset[0];
+                    ay = sy + offset[1];
+                    if (ax < 0 || ay < 0
+                        || ax >= aw || ay >= ah) {
                         continue;
                     }
-                    si = (sw * y + x) * 4;
-                    ai = (aw * y + x) * 4;
+                    si = (sw * sy + sx) * 4;
+                    ai = (aw * ay + ax) * 4;
                     if (sBytes[si] !== aBytes[ai]
                         || sBytes[si + 1] !== aBytes[ai + 1]
                         || sBytes[si + 2] !== aBytes[ai + 2]
                         || sBytes[si + 3] !== aBytes[ai + 3]) {
-                        this.addPixelToAabbs(aabbs, x, y, threshold, sw, sh);
+                        this.addPixelToAabbs(aabbs, sx, sy, threshold, sw, sh);
                     }
                 }
             }
             const mergedAabbs = this.mergeIntersectingAabbs(aabbs);
-            return mergedAabbs;
+            return {
+                areas: mergedAabbs,
+                offset,
+            };
         });
     }
     addPixelToAabbs(aabbs, x, y, threshold, pageWidth, pageHeight) {
@@ -30361,7 +30375,7 @@ class DocManagerService {
                 this._eventService.dispatchEvent(new DocChangeEvent({ action: "open", type: "main" }));
             }
             else if (type === "compared") {
-                yield this._comparisonService.compareAsync(this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);
+                yield this.runComparisonAsync();
                 this._eventService.dispatchEvent(new DocChangeEvent({ action: "open", type: "compared" }));
             }
         });
@@ -30377,6 +30391,11 @@ class DocManagerService {
                 yield this._comparisonService.clearComparisonResult();
                 this._eventService.dispatchEvent(new DocChangeEvent({ action: "close", type: "compared" }));
             }
+        });
+    }
+    runComparisonAsync() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            yield this._comparisonService.compareAsync(this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);
         });
     }
     getPageProxy(type, pageIndex) {
@@ -31376,10 +31395,11 @@ class TsPdfViewer {
                 yield this._docManagerService.openPdfAsync(type, src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
             }
             catch (e) {
-                this._spinner.hide();
                 throw e;
             }
-            this._spinner.hide();
+            finally {
+                this._spinner.hide();
+            }
         });
     }
     closeDocAsync(type) {

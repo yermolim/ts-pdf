@@ -2,10 +2,13 @@
 import { PDFDocumentProxy, PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
 
 import { Vec2 } from "mathador";
-import { Quadruple } from "ts-viewers-core";
+import { Double, Quadruple } from "ts-viewers-core";
 
-export type PdfPageComparisonResult = Quadruple[];
 export type PdfDocComparisonResult = Map<number, PdfPageComparisonResult>;
+export interface PdfPageComparisonResult {
+  areas: Quadruple[];
+  offset: Double;
+};
 
 export class ComparisonService {
   private readonly _maxChangedPixels: number;
@@ -32,11 +35,12 @@ export class ComparisonService {
    * 
    * @param subjectDocProxy comparand doc proxy
    * @param agentDocProxy comparator doc proxy
+   * @param offsets a map containing agent page offsets ([x, y]) by page index
    * @returns comparison result as a map 
    * (keys are page indices, values are AABB coords tuples of the changed areas)
    */
-  async compareAsync(subjectDocProxy: PDFDocumentProxy, agentDocProxy: PDFDocumentProxy): 
-  Promise<PdfDocComparisonResult> {
+  async compareAsync(subjectDocProxy: PDFDocumentProxy, agentDocProxy: PDFDocumentProxy,
+    offsets?: Map<number, Double>): Promise<PdfDocComparisonResult> {
     const result: PdfDocComparisonResult = new Map<number, PdfPageComparisonResult>();
 
     if (!subjectDocProxy || !agentDocProxy) {
@@ -51,7 +55,8 @@ export class ComparisonService {
       const agentPage = i < agentPagesCount
         ? await agentDocProxy.getPage(i + 1)
         : null;
-      const pageComparisonResult = await this.comparePagesAsync(subjectPage, agentPage);
+      const pageComparisonResult = await this.comparePagesAsync(
+        subjectPage, agentPage, offsets?.get(i));
       result.set(i, pageComparisonResult);
     }
 
@@ -60,13 +65,13 @@ export class ComparisonService {
   }
 
   private async comparePagesAsync(subjectPageProxy: PDFPageProxy, 
-    agentPageProxy: PDFPageProxy): Promise<PdfPageComparisonResult> {
+    agentPageProxy: PDFPageProxy, offset?: Double): Promise<PdfPageComparisonResult> {
 
     const subjectImageData = await this.renderPageAsync(subjectPageProxy);
     const agentImageData = await this.renderPageAsync(agentPageProxy);
     
     const pageComparisonResult: PdfPageComparisonResult = 
-      await this.compareImageDataAsync(subjectImageData, agentImageData);
+      await this.compareImageDataAsync(subjectImageData, agentImageData, {offset});
     return pageComparisonResult;
   }
   
@@ -102,18 +107,28 @@ export class ComparisonService {
    * compare two images data
    * @param subjectImageData 
    * @param agentImageData 
-   * @param threshold max distance between changed pixels to consider them belonging to the same area
+   * @param options threshold: max distance between changed pixels to consider them belonging to the same area;
+   * offset: agent image offset ([x, y])
    * @returns an array of AABB coords tuples of the changed areas
    */
-  private async compareImageDataAsync(subjectImageData: ImageData, 
-    agentImageData: ImageData, threshold = 5): Promise<Quadruple[]> {
+  private async compareImageDataAsync(subjectImageData: ImageData, agentImageData: ImageData, 
+    options?: {threshold?: number; offset?: Double}): Promise<PdfPageComparisonResult> {
+
+    const threshold = options?.threshold ?? 5;
+    const offset = options?.offset || [0, 0];
 
     // handle base cases
     if (!subjectImageData) {
-      return [];
+      return {
+        areas: [],
+        offset: [0, 0],
+      };
     }
     if (!agentImageData) {
-      return [[0, 0, subjectImageData.width, subjectImageData.height]];
+      return {
+        areas: [[0, 0, subjectImageData.width, subjectImageData.height]],
+        offset: [0, 0],
+      };
     }
 
     const aabbs: Quadruple[] = [];
@@ -128,26 +143,33 @@ export class ComparisonService {
     const aBytes = agentImageData.data;  
     let si: number;
     let ai: number;
-    for (let x = 0; x < sw; x++) {
-      for (let y = 0; y < sh; y++) {
-        if (x >= aw || y >= ah) {
-          this.addPixelToAabbs(aabbs, x, y, threshold, sw, sh);
+    let ax: number;
+    let ay: number;
+    for (let sx = 0; sx < sw; sx++) {
+      for (let sy = 0; sy < sh; sy++) {
+        ax = sx + offset[0];
+        ay = sy + offset[1];
+        if (ax < 0 || ay < 0
+          || ax >= aw || ay >= ah) {
+          // this.addPixelToAabbs(aabbs, x, y, threshold, sw, sh);
           continue;
         }
-        si = (sw * y + x) * 4;
-        ai = (aw * y + x) * 4;
+        si = (sw * sy + sx) * 4;
+        ai = (aw * ay + ax) * 4;
         if (sBytes[si] !== aBytes[ai]
           || sBytes[si + 1] !== aBytes[ai + 1]
           || sBytes[si + 2] !== aBytes[ai + 2]
           || sBytes[si + 3] !== aBytes[ai + 3]) {
-          this.addPixelToAabbs(aabbs, x, y, threshold, sw, sh);
+          this.addPixelToAabbs(aabbs, sx, sy, threshold, sw, sh);
         }
       }
     }
     
-    const mergedAabbs = this.mergeIntersectingAabbs(aabbs);
-
-    return mergedAabbs;
+    const mergedAabbs = this.mergeIntersectingAabbs(aabbs);    
+    return {
+      areas: mergedAabbs,
+      offset,
+    };
   }  
 
   private addPixelToAabbs(aabbs: Quadruple[], x: number, y: number, threshold: number,

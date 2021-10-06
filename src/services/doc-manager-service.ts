@@ -88,8 +88,7 @@ export class DocManagerService {
       await this.closePdfAsync("compared");
       this._eventService.dispatchEvent(new DocChangeEvent({action: "open", type: "main"}));
     } else if (type === "compared") {      
-      await this._comparisonService.compareAsync(
-        this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);
+      await this.runComparisonAsync();
       this._eventService.dispatchEvent(new DocChangeEvent({action: "open", type: "compared"}));
     }
   }
@@ -104,6 +103,11 @@ export class DocManagerService {
       await this._comparisonService.clearComparisonResult();
       this._eventService.dispatchEvent(new DocChangeEvent({action: "close", type: "compared"}));
     }
+  }
+
+  async runComparisonAsync() {
+    await this._comparisonService.compareAsync(
+      this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);    
   }
   
   getPageProxy(type: DocType, pageIndex: number): PDFPageProxy {

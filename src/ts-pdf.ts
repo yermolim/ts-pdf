@@ -411,11 +411,10 @@ export class TsPdfViewer {
       await this._docManagerService.openPdfAsync(type, src, fileName,
         this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
     } catch (e) {
-      this._spinner.hide();
       throw e;
-    }
-    
-    this._spinner.hide();
+    } finally {
+      this._spinner.hide();
+    }    
   }
 
   private async closeDocAsync(type: DocType): Promise<void> {
@@ -1147,4 +1146,4 @@ export class TsPdfViewer {
 }
 
 export {AnnotationDto, AnnotEvent, AnnotEventDetail, 
-  CustomStampCreationInfo, CustomStampEventDetail, ViewerMode};
+  CustomStampCreationInfo, CustomStampEventDetail, ViewerMode as TsPdfViewerMode};
