@@ -2,6 +2,296 @@ import { codes, keywordCodes } from "../encoding/char-codes";
 import { ValueType, valueTypes } from "../spec-constants";
 import { DataParser, ParserOptions, ParserBounds, ParserResult } from "./data-parser";
 
+
+
+
+
+interface IBytePatternSearch {
+  run(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number>;
+  runBackwards(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number>;
+}
+
+/**naive algorithm implementation for pattern searching in byte arrays */
+class NaiveBytePatternSearch implements IBytePatternSearch {
+  private readonly _pattern: readonly number[];
+
+  constructor(pattern: number[] | readonly number[]) {
+    if (!pattern?.length) {
+      throw new Error("Pattern is empty");
+    }
+    this._pattern = pattern;
+  }
+
+  *run(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number> {
+    const pattern = this._pattern;
+
+    if (!arr?.length || arr.length < pattern.length) {
+      return -1;
+    }
+
+    let found = false;
+    let i = 0;
+    let j = 0;
+    outer_loop:
+    for (i; i < arr.length; i++) {
+      for (j = 0; j < pattern.length; j++) {
+        if (arr[i + j] !== pattern[j]) {
+          continue outer_loop;
+        }
+      }
+      found = true;
+      yield i;
+    }
+
+    if (!found) {
+      return -1;
+    }
+  }
+
+  *runBackwards(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number> {
+    const pattern = this._pattern;
+
+    if (!arr?.length || arr.length < pattern.length) {
+      return -1;
+    }
+
+    let found = false;    
+    let i = arr.length - 1;
+    let j = 0;
+    const subMaxIndex = pattern.length - 1;
+    outer_loop:
+    for (i; i >= 0; i--) {
+      for (j = 0; j < pattern.length; j++) {
+        if (arr[i - j] !== pattern[subMaxIndex - j]) {
+          continue outer_loop;
+        }
+      }
+      found = true;
+      yield i - j + 1;
+    }
+
+    if (!found) {
+      return -1;
+    }
+  }
+}
+
+/**Knutt-Morris-Pratt algorithm implementation for pattern searching in byte arrays */
+class KMPBytePatternSearch implements IBytePatternSearch {
+  private readonly _pattern: readonly number[];
+  private readonly _lookup: readonly number[];
+
+  constructor(pattern: number[] | readonly number[]) {
+    if (!pattern?.length) {
+      throw new Error("Pattern is empty");
+    }
+    this._pattern = pattern;
+    this._lookup = KMPBytePatternSearch.buildLookupArray(pattern);
+  }
+
+  private static buildLookupArray(pattern: number[] | readonly number[]): number[] {
+    const lookup = new Array<number>(pattern.length);
+    lookup[0] = 0;
+
+    let prefix = 0;
+    let suffix = 1;
+
+    while (suffix < pattern.length) {
+      if (pattern[prefix] === pattern[suffix]) {
+        lookup[suffix++] = ++prefix;
+      } else if (!prefix) {
+        lookup[suffix++] = 0;
+      } else {
+        prefix = lookup[prefix - 1];
+      }
+    }
+
+    return lookup;
+  }
+
+  *run(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number> {
+    const pattern = this._pattern;
+    const lookup = this._lookup;
+
+    if (!arr?.length || arr.length < pattern.length) {
+      return -1;
+    }
+
+    let found = false;
+    let i = 0;
+    let j = 0;
+    const jMax = pattern.length - 1;
+    while (i < arr.length) {
+      if (arr[i] === pattern[j]) {
+        if (j === jMax) {
+          found = true;
+          yield i - jMax;
+          j = lookup[j - 1];
+          continue;
+        }
+        i++;
+        j++;
+      } else if (j > 0) {
+        j = lookup[j - 1];
+      } else {
+        i++;
+        j = 0;
+      }
+    }
+
+    if (!found) {
+      return -1;
+    }
+  }
+
+  *runBackwards(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number> {
+    const pattern = this._pattern;
+    const lookup = this._lookup;
+
+    if (!arr?.length || arr.length < pattern.length) {
+      return -1;
+    }
+
+    // TODO: check implementation correctness
+    let found = false;
+    let i = arr.length - 1;
+    let j = 0;
+    const jMax = pattern.length - 1;
+    while (i - j >= 0) {
+      if (arr[i - j] === pattern[jMax - j]) {
+        if (j === jMax) {
+          found = true;
+          yield i - pattern.length + 1;
+          j = lookup[j - 1];
+          continue;
+        }
+        j++;
+      } else if (lookup[j - 1] > 0) {
+        i -= j;
+        j = lookup[j - 1];
+      } else {
+        i--;
+        j = 0;
+      }
+    }
+
+    if (!found) {
+      return -1;
+    }
+  }
+}
+
+/**Boyer-Moore algorithm implementation for pattern searching in byte arrays */
+class BMBytePatternSearch implements IBytePatternSearch {  
+  private readonly _pattern: readonly number[];
+  private readonly _badCharLookup: readonly number[];
+  private readonly _goodSuffixLookup: readonly number[];
+  
+  constructor(pattern: number[] | readonly number[]) {
+    if (!pattern?.length) {
+      throw new Error("Pattern is empty");
+    }
+    this._pattern = pattern;
+    this._badCharLookup = BMBytePatternSearch.buildBadCharLookupArray(pattern);
+    this._goodSuffixLookup = BMBytePatternSearch.buildGoodSuffixLookupArray(pattern);
+  }
+
+  private static buildBadCharLookupArray(pattern: number[] | readonly number[]): number[] {
+    // use an array of length 256 to accomodate all possible byte values
+    const lookup = new Array<number>(256).fill(pattern.length);
+
+    const maxSkipSize = pattern.length - 1;
+    for (let i = 0; i < maxSkipSize; i++) {
+      const byte = pattern[i];
+      lookup[byte] = maxSkipSize - i;
+    }
+
+    return lookup;
+  }
+
+  private static buildGoodSuffixLookupArray(pattern: number[] | readonly number[]): number[] {
+    const pLen = pattern.length;
+    const maxPatternIndex = pLen - 1;
+
+    const lookup = new Array<number>(pLen);
+
+    let lastPrefixPosition = pLen;
+    for (let i = pLen; i > 0; i--) {
+      let isPrefix = true;
+      for (let m = i, n = 0; m < pattern.length; m++, n++) {
+        if (pattern[m] !== pattern[n]) {
+          isPrefix = false;
+          break;
+        }
+      }
+      if (isPrefix) {
+        lastPrefixPosition = i;
+      }
+      lookup[pLen - i] = lastPrefixPosition - 1 + pLen;
+    }
+
+    for (let i = 0; i < maxPatternIndex; i++) {
+      let sLen = 0;
+      for (let m = i, n = pattern.length - 1; m >= 0 && pattern[m] === pattern[n]; m--, n--) {
+        sLen++;
+      }
+      lookup[sLen] = maxPatternIndex - i + sLen;
+    }
+
+    return lookup;
+  }
+
+  *run(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number> {
+    const pattern = this._pattern;
+    const badCharLookup = this._badCharLookup;
+    const goodSuffixLookup = this._goodSuffixLookup;
+
+    if (!arr?.length || arr.length < pattern.length) {
+      return -1;
+    }
+
+    let found = false;
+    let i: number;
+    let j: number;
+    const jMax = pattern.length - 1;
+    for (i = jMax; i < arr.length;) {
+      for (j = jMax; pattern[j] === arr[i]; i--, j--) {
+        if (j === 0) {
+          found = true;
+          yield i;
+          break;
+        }
+      }
+
+      i += Math.max(
+        goodSuffixLookup[jMax - j], 
+        badCharLookup[arr[i]]);
+    }
+
+    if (!found) {
+      return -1;
+    }
+  }
+
+  *runBackwards(arr: number[] | readonly number[] | Uint8Array | Uint8ClampedArray): Generator<number> {
+    throw new Error("Not implemented exception");
+
+    // TODO: implement
+
+    const pattern = this._pattern;
+    const badCharLookup = this._badCharLookup;
+    const goodSuffixLookup = this._goodSuffixLookup;
+
+    if (!arr?.length || arr.length < pattern.length) {
+      return -1;
+    }
+  }
+}
+
+
+
+
+
 export class SyncDataParser implements DataParser {
   //#region static collections
   /**
@@ -259,36 +549,29 @@ export class SyncDataParser implements DataParser {
     const minIndex = Math.max(Math.min(options?.minIndex ?? 0, this._maxIndex), 0);
     const maxIndex = Math.max(Math.min(options?.maxIndex ?? this._maxIndex, this._maxIndex), 0);
     const allowOpened = !options?.closedOnly;
+      
+    const searcher: IBytePatternSearch = new NaiveBytePatternSearch(sub); // naive search, O(m*n)
+    // const searcher: IBytePatternSearch = new KMPBytePatternSearch(sub); // Knutt-Morris-Pratt, O(m+n)
+    // const searcher: IBytePatternSearch = new BMBytePatternSearch(sub); // Boyer-Moore, O(m*n)
 
-    let i = direction
-      ? minIndex
-      : maxIndex; 
+    let start: number;
+    let end: number;
 
-    let j: number; 
-    if (direction) { 
-      outer_loop:
-      for (i; i <= maxIndex; i++) {
-        for (j = 0; j < sub.length; j++) {
-          if (arr[i + j] !== sub[j]) {
-            continue outer_loop;
-          }
-        }
-        if (allowOpened || !SyncDataParser.isRegularChar(arr[i + j])) {
-          return {start: i, end: i + j - 1};
-        }
-      }
+    let foundIndexGen: Generator<number>;
+    if (direction) {
+      foundIndexGen = searcher.run(arr.subarray(minIndex, maxIndex + 1));
     } else {
-      const subMaxIndex = sub.length - 1;
-      outer_loop:
-      for (i; i >= minIndex; i--) {
-        for (j = 0; j < sub.length; j++) {
-          if (arr[i - j] !== sub[subMaxIndex - j]) {
-            continue outer_loop;
-          }
-        }
-        if (allowOpened || !SyncDataParser.isRegularChar(arr[i - j])) {
-          return {start: i - j + 1, end: i};
-        }
+      foundIndexGen = searcher.runBackwards(arr.subarray(minIndex, maxIndex + 1));
+    }
+
+    for (const i of foundIndexGen) {
+      if (i === -1) {
+        return null;
+      }
+      start = i + minIndex;
+      end = start + sub.length - 1;
+      if (allowOpened || end === maxIndex || !SyncDataParser.isRegularChar(arr[end + 1])) {
+        return {start, end};
       }
     }
 

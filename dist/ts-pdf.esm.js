@@ -2926,6 +2926,57 @@ var __awaiter$1k = (undefined && undefined.__awaiter) || function (thisArg, _arg
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+class NaiveBytePatternSearch {
+    constructor(pattern) {
+        if (!(pattern === null || pattern === void 0 ? void 0 : pattern.length)) {
+            throw new Error("Pattern is empty");
+        }
+        this._pattern = pattern;
+    }
+    *run(arr) {
+        const pattern = this._pattern;
+        if (!(arr === null || arr === void 0 ? void 0 : arr.length) || arr.length < pattern.length) {
+            return -1;
+        }
+        let found = false;
+        let i = 0;
+        let j = 0;
+        outer_loop: for (i; i < arr.length; i++) {
+            for (j = 0; j < pattern.length; j++) {
+                if (arr[i + j] !== pattern[j]) {
+                    continue outer_loop;
+                }
+            }
+            found = true;
+            yield i;
+        }
+        if (!found) {
+            return -1;
+        }
+    }
+    *runBackwards(arr) {
+        const pattern = this._pattern;
+        if (!(arr === null || arr === void 0 ? void 0 : arr.length) || arr.length < pattern.length) {
+            return -1;
+        }
+        let found = false;
+        let i = arr.length - 1;
+        let j = 0;
+        const subMaxIndex = pattern.length - 1;
+        outer_loop: for (i; i >= 0; i--) {
+            for (j = 0; j < pattern.length; j++) {
+                if (arr[i - j] !== pattern[subMaxIndex - j]) {
+                    continue outer_loop;
+                }
+            }
+            found = true;
+            yield i - j + 1;
+        }
+        if (!found) {
+            return -1;
+        }
+    }
+}
 class SyncDataParser {
     constructor(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -3084,33 +3135,24 @@ class SyncDataParser {
             const minIndex = Math.max(Math.min((_b = options === null || options === void 0 ? void 0 : options.minIndex) !== null && _b !== void 0 ? _b : 0, this._maxIndex), 0);
             const maxIndex = Math.max(Math.min((_c = options === null || options === void 0 ? void 0 : options.maxIndex) !== null && _c !== void 0 ? _c : this._maxIndex, this._maxIndex), 0);
             const allowOpened = !(options === null || options === void 0 ? void 0 : options.closedOnly);
-            let i = direction
-                ? minIndex
-                : maxIndex;
-            let j;
+            const searcher = new NaiveBytePatternSearch(sub);
+            let start;
+            let end;
+            let foundIndexGen;
             if (direction) {
-                outer_loop: for (i; i <= maxIndex; i++) {
-                    for (j = 0; j < sub.length; j++) {
-                        if (arr[i + j] !== sub[j]) {
-                            continue outer_loop;
-                        }
-                    }
-                    if (allowOpened || !SyncDataParser.isRegularChar(arr[i + j])) {
-                        return { start: i, end: i + j - 1 };
-                    }
-                }
+                foundIndexGen = searcher.run(arr.subarray(minIndex, maxIndex + 1));
             }
             else {
-                const subMaxIndex = sub.length - 1;
-                outer_loop: for (i; i >= minIndex; i--) {
-                    for (j = 0; j < sub.length; j++) {
-                        if (arr[i - j] !== sub[subMaxIndex - j]) {
-                            continue outer_loop;
-                        }
-                    }
-                    if (allowOpened || !SyncDataParser.isRegularChar(arr[i - j])) {
-                        return { start: i - j + 1, end: i };
-                    }
+                foundIndexGen = searcher.runBackwards(arr.subarray(minIndex, maxIndex + 1));
+            }
+            for (const i of foundIndexGen) {
+                if (i === -1) {
+                    return null;
+                }
+                start = i + minIndex;
+                end = start + sub.length - 1;
+                if (allowOpened || end === maxIndex || !SyncDataParser.isRegularChar(arr[end + 1])) {
+                    return { start, end };
                 }
             }
             return null;
