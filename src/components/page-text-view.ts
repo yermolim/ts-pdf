@@ -1,6 +1,6 @@
 import { renderTextLayer } from "pdfjs-dist";
-import { PDFPageProxy } from "pdfjs-dist/types/display/api";
-import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types/display/text_layer";
+import { PDFPageProxy } from "pdfjs-dist/types/src/display/api";
+import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types/src/display/text_layer";
 
 export class PageTextView {  
   private _container: HTMLDivElement;

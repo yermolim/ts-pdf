@@ -1,5 +1,5 @@
 import { getDocument } from "pdfjs-dist";
-import { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist/types/display/api";
+import { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist/types/src/display/api";
 
 import { DomUtils, EventService } from "ts-viewers-core";
 

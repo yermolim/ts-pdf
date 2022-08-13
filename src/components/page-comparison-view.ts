@@ -1,4 +1,4 @@
-import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
+import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/src/display/api";
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";

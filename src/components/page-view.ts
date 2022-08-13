@@ -1,6 +1,6 @@
 import { RenderingCancelledException } from "pdfjs-dist";
-import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
-import { PageViewport } from "pdfjs-dist/types/display/display_utils";
+import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/src/display/api";
+import { PageViewport } from "pdfjs-dist/types/src/display/display_utils";
 
 import { Vec2 } from "mathador";
 

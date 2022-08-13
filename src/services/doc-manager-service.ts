@@ -1,4 +1,4 @@
-import { PDFPageProxy } from "pdfjs-dist/types/display/api";
+import { PDFPageProxy } from "pdfjs-dist/types/src/display/api";
 
 import { EventService } from "ts-viewers-core";
 

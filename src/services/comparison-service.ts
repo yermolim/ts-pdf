@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-import { PDFDocumentProxy, PDFPageProxy, RenderParameters } from "pdfjs-dist/types/display/api";
+import { PDFDocumentProxy, PDFPageProxy, RenderParameters } from "pdfjs-dist/types/src/display/api";
 
 import { Vec2 } from "mathador";
 import { Double, Quadruple } from "ts-viewers-core";

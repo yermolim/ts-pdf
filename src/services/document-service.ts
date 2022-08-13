@@ -157,12 +157,12 @@ export class DocumentService {
     if (!eventService) {
       throw new Error("Event controller is not defined");
     }
-    
+
     this._data = data;
-    
+
     this._userName = userName;
     this._fontMap = FontDict.newFontMap();  
-      
+
     this._eventService = eventService;
     this._eventService.addListener(annotSelectionRequestEvent, this.onAnnotationSelectionRequest);
     this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
@@ -433,7 +433,7 @@ export class DocumentService {
 
   private async initAsync() {
     this._docParser = BgDataParser.tryGetParser(this._data.slice()) ??
-      SyncDataParser.tryGetParser(this._data);  
+      SyncDataParser.tryGetParser(this._data);
     
     await this.parseXrefsAsync();
     await this.parseEncryptionAsync();

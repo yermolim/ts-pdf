@@ -1,6 +1,4 @@
-import { ByteUtils } from "ts-viewers-core";
-
-import { Quadruple } from "ts-viewers-core";
+import { ByteUtils, Quadruple } from "ts-viewers-core";
 
 import { dictTypes, valueTypes } from "../../spec-constants";
 import { CryptInfo } from "../../encryption/interfaces";
