@@ -389,7 +389,9 @@ export class TsPdfViewer {
 
   //#region text selection
   protected onTextSelectionChange = () => {
-    const selection: Selection = (<any>this._shadowRoot).getSelection(); // TODO: fix typings if possible
+    const selection: Selection = (<any>this._shadowRoot).getSelection
+      ? (<any>this._shadowRoot).getSelection() // Note: for Chrome
+      : document.getSelection(); // Note: for FF and Safari
     if (!selection.rangeCount) {
       return;
     }

@@ -484,7 +484,7 @@ function getRangeNodes(range) {
 }
 function getSelectionInfosFromRangeSpans(range) {
     var _a;
-    const textNodes = getRangeNodes(range).filter(x => x.nodeType === 3);
+    const textNodes = getRangeNodes(range).filter(x => (x === null || x === void 0 ? void 0 : x.nodeType) === 3);
     const selectionInfos = [];
     for (let i = 0; i < textNodes.length; i++) {
         const node = textNodes[i];
@@ -30847,7 +30847,9 @@ class TsPdfViewer {
             hidePanels: 0,
         };
         this.onTextSelectionChange = () => {
-            const selection = this._shadowRoot.getSelection();
+            const selection = this._shadowRoot.getSelection
+                ? this._shadowRoot.getSelection()
+                : document.getSelection();
             if (!selection.rangeCount) {
                 return;
             }

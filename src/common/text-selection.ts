@@ -113,7 +113,8 @@ function getSelectionInfosFromRangeTextNodes(range: Range): TextSelectionInfo[] 
 function getSelectionInfosFromRangeSpans(range: Range): TextSelectionInfo[] {
   // when using PDF.js text render, different line of text are always in the separate span
   // so each span in the range is treated as containing a single-line text
-  const textNodes = getRangeNodes(range).filter(x => x.nodeType === 3);
+  const textNodes = getRangeNodes(range).filter(x => x?.nodeType === 3); 
+  // Note. nodeType 3: text (represents textual content in an element or attribute)
   
   const selectionInfos: TextSelectionInfo[] = [];
   for (let i = 0; i < textNodes.length; i++) {
