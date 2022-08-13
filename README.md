@@ -192,6 +192,7 @@ The other one is to make your own build of PDF.js.
     <li><del>add keyboard shortcuts</del>added in 0.10.0</li>
     <li><del>add document comparison mode</del>added in 0.11.0</li>
     <li>add user-frienly error messages on failed file opening</li>
+    <li>add proper support for linearized PDF files</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>
     <li>add tooltips to buttons</li>

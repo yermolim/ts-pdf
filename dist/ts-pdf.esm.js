@@ -17800,8 +17800,14 @@ class TrailerDict extends PdfDict {
                     break;
                 }
             }
-            if (!this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-                throw new Error("Not all required properties parsed");
+            if (!this.Root) {
+                console.log("Trailer 'Root' property is missing. Look like the file is linearized, which is not oficially supported atm!");
+            }
+            if (!this.Size) {
+                throw new Error("Not all required properties parsed: Size is missing");
+            }
+            if (this.Encrypt && !this.ID) {
+                throw new Error("Not all required properties parsed: ID is missing while Encryption is used");
             }
         });
     }

@@ -178,9 +178,18 @@ export class TrailerDict extends PdfDict {
         break;
       }
     };
-    
-    if (!this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-      throw new Error("Not all required properties parsed");
+
+    if (!this.Root) {
+      console.log("Trailer 'Root' property is missing. Look like the file is linearized, which is not oficially supported atm!");
+      // TODO: add additional check if file is actually linearized. Throw if not.
+      // TODO: uncomment when the check for linearization will be implemented
+      // throw new Error("Not all required properties parsed: Root is missing");
+    }
+    if (!this.Size) {
+      throw new Error("Not all required properties parsed: Size is missing");
+    }
+    if (this.Encrypt && !this.ID) {
+      throw new Error("Not all required properties parsed: ID is missing while Encryption is used");
     }
   }
 }
