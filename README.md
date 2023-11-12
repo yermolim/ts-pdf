@@ -211,3 +211,12 @@ The other one is to make your own build of PDF.js.
     <li><a href="https://github.com/nodeca/pako">pako<a></li>
     <li><a href="https://github.com/uuidjs/uuid">uuid<a></li>
 </ul>
+
+## Running the demo
+
+<ul>
+    <li>Clone the repository to your local machine</li>
+    <li>(optional) Change the host/port if needed in the 'ls-config.json' file</li>
+    <li>Run the 'npm run start' command from the project folder</li>
+    <li>Open the demo page in your web browser</li>
+</ul>
