@@ -880,7 +880,9 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     this._transformationPromise = new Promise<void>(async resolve => {
       // reset and remove the copy from DOM
       this._svgContentCopy.remove();
-      this._svgContentCopy.setAttribute("transform", "matrix(1 0 0 1 0 0)");
+      const transformation = "matrix(1, 0, 0, 1, 0, 0)";
+      this._svgContentCopy.setAttribute("style", 
+        `transform: ${transformation}; -webkit-transform: ${transformation};`);
 
       if (this._moved) {
         // transform the annotation

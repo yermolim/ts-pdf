@@ -50,7 +50,7 @@ declare const objectTypes: {
     readonly DICTIONARY: 8;
     readonly STREAM: 9;
 };
-declare type ObjectType = typeof objectTypes[keyof typeof objectTypes];
+type ObjectType = typeof objectTypes[keyof typeof objectTypes];
 declare const valueTypes: {
     readonly UNKNOWN: 0;
     readonly NULL: 1;
@@ -65,7 +65,7 @@ declare const valueTypes: {
     readonly REF: 10;
     readonly COMMENT: 11;
 };
-declare type ValueType = typeof valueTypes[keyof typeof valueTypes];
+type ValueType = typeof valueTypes[keyof typeof valueTypes];
 declare const dictTypes: {
     readonly XREF: "/XRef";
     readonly XOBJECT: "/XObject";
@@ -89,13 +89,13 @@ declare const dictTypes: {
     readonly ENCODING: "/Encoding";
     readonly EMPTY: "";
 };
-declare type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
+type DictType = typeof dictTypes[keyof typeof dictTypes] | UserTypes;
 declare const userTypes: {
     readonly INDIVIDUAL: "/Ind";
     readonly TITLE: "/Title";
     readonly ORGANIZATION: "/Org";
 };
-declare type UserTypes = typeof userTypes[keyof typeof userTypes];
+type UserTypes = typeof userTypes[keyof typeof userTypes];
 declare const streamFilters: {
     readonly ASCII85: "/ASCII85Decode";
     readonly ASCIIHEX: "/ASCIIHexDecode";
@@ -108,14 +108,14 @@ declare const streamFilters: {
     readonly LZW: "/LZWDecode";
     readonly RLX: "/RunLengthDecode";
 };
-declare type StreamFilter = typeof streamFilters[keyof typeof streamFilters];
+type StreamFilter = typeof streamFilters[keyof typeof streamFilters];
 declare const streamTypes: {
     readonly XREF: "/XRef";
     readonly OBJECT_STREAM: "/ObjStm";
     readonly FORM_XOBJECT: "/XObject";
     readonly METADATA_STREAM: "/Metadata";
 };
-declare type StreamType = typeof streamTypes[keyof typeof streamTypes];
+type StreamType = typeof streamTypes[keyof typeof streamTypes];
 declare const annotationTypes: {
     readonly TEXT: "/Text";
     readonly LINK: "/Link";
@@ -146,26 +146,26 @@ declare const annotationTypes: {
     readonly PROJECTION: "/Projection";
     readonly RICH_MEDIA: "/RichMedia";
 };
-declare type AnnotationType = typeof annotationTypes[keyof typeof annotationTypes];
+type AnnotationType = typeof annotationTypes[keyof typeof annotationTypes];
 declare const lineCapStyles: {
     readonly BUTT: 0;
     readonly ROUND: 1;
     readonly SQUARE: 2;
 };
-declare type LineCapStyle = typeof lineCapStyles[keyof typeof lineCapStyles];
+type LineCapStyle = typeof lineCapStyles[keyof typeof lineCapStyles];
 declare const lineJoinStyles: {
     readonly MITER: 0;
     readonly ROUND: 1;
     readonly BEVEL: 2;
 };
-declare type LineJoinStyle = typeof lineJoinStyles[keyof typeof lineJoinStyles];
+type LineJoinStyle = typeof lineJoinStyles[keyof typeof lineJoinStyles];
 declare const renderingIntents: {
     readonly ABSOLUTE: "/AbsoluteColorimetric";
     readonly RELATIVE: "/RelativeColorimetric";
     readonly SATURATION: "/Saturation";
     readonly PERCEPTUAL: "/Perceptual";
 };
-declare type RenderingIntent = typeof renderingIntents[keyof typeof renderingIntents];
+type RenderingIntent = typeof renderingIntents[keyof typeof renderingIntents];
 declare const blendModes: {
     readonly NORMAL: "/Normal";
     readonly COMPATIBLE: "/Compatible";
@@ -181,7 +181,7 @@ declare const blendModes: {
     readonly DIFFERENCE: "/Difference";
     readonly EXCLUSION: "/Exclusion";
 };
-declare type BlendMode = typeof blendModes[keyof typeof blendModes];
+type BlendMode = typeof blendModes[keyof typeof blendModes];
 declare const textRenderModes: {
     readonly FILL: 0;
     readonly STROKE: 1;
@@ -192,17 +192,17 @@ declare const textRenderModes: {
     readonly FILL_STROKE_USE_AS_CLIP: 6;
     readonly USE_AS_CLIP: 7;
 };
-declare type TextRenderMode = typeof textRenderModes[keyof typeof textRenderModes];
+type TextRenderMode = typeof textRenderModes[keyof typeof textRenderModes];
 declare const softMaskTypes: {
     readonly ALPHA: "/Alpha";
     readonly LUMINOSITY: "/Luminosity";
 };
-declare type SoftMaskType = typeof softMaskTypes[keyof typeof softMaskTypes];
+type SoftMaskType = typeof softMaskTypes[keyof typeof softMaskTypes];
 declare const borderEffects: {
     NONE: string;
     CLOUDY: string;
 };
-declare type BorderEffect = typeof borderEffects[keyof typeof borderEffects];
+type BorderEffect = typeof borderEffects[keyof typeof borderEffects];
 declare const borderStyles: {
     readonly SOLID: "/S";
     readonly DASHED: "/D";
@@ -211,11 +211,11 @@ declare const borderStyles: {
     readonly UNDERLINE: "/U";
     readonly NONE: "/N";
 };
-declare type BorderStyle = typeof borderStyles[keyof typeof borderStyles];
+type BorderStyle = typeof borderStyles[keyof typeof borderStyles];
 declare const groupDictTypes: {
     readonly TRANSPARENCY: "/Transparency";
 };
-declare type GroupDictType = typeof groupDictTypes[keyof typeof groupDictTypes];
+type GroupDictType = typeof groupDictTypes[keyof typeof groupDictTypes];
 
 interface Reference {
     id: number;
@@ -541,7 +541,7 @@ declare class FontDict extends PdfDict {
     protected getProxy(): FontDict;
 }
 
-declare type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "color-dodge" | "color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
+type CssMixBlendMode = "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "color-dodge" | "color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion";
 
 declare class DateString implements IEncodable {
     private readonly _source;
@@ -940,15 +940,15 @@ declare global {
 }
 
 declare const viewerModes: readonly ["text", "hand", "annotation", "comparison"];
-declare type ViewerMode = typeof viewerModes[number];
+type ViewerMode = typeof viewerModes[number];
 
 declare global {
     interface HTMLElementEventMap {
         [customStampEvent]: CustomStampEvent;
     }
 }
-declare type BaseFileButtons = "open" | "close";
-declare type FileButtons = BaseFileButtons | "save";
+type BaseFileButtons = "open" | "close";
+type FileButtons = BaseFileButtons | "save";
 interface TsPdfViewerOptions {
     containerSelector: string;
     workerSource: string;
@@ -1069,4 +1069,4 @@ declare class TsPdfViewer {
     private onViewerKeyDown;
 }
 
-export { AnnotEvent, AnnotEventDetail, AnnotationDto, BaseFileButtons, FileButtons, TsPdfViewer, ViewerMode as TsPdfViewerMode, TsPdfViewerOptions };
+export { AnnotEvent, type AnnotEventDetail, type AnnotationDto, type BaseFileButtons, type FileButtons, TsPdfViewer, type ViewerMode as TsPdfViewerMode, type TsPdfViewerOptions };
