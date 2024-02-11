@@ -1,7 +1,7 @@
 import { UUID , Octuple } from "ts-viewers-core";
 
-
 import { TextSelectionInfo } from "../../common/text-selection";
+import { applyTranslateRotateToElement } from "../../drawing/transformations";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -99,8 +99,8 @@ export abstract class TextMarkupAnnotator extends TextAnnotator {
         this._svgGroupByPageId.set(x.id, svg);
         this._svgGroup.append(svg);
       }    
-      svg.setAttribute("transform",
-        `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
+
+      applyTranslateRotateToElement(svg, offsetX, offsetY, rotation);
     });
   }
   

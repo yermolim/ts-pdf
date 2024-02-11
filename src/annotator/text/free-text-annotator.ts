@@ -1,5 +1,8 @@
 import { Vec2 } from "mathador";
 import { UUID, Quadruple } from "ts-viewers-core";
+
+import { applyTranslateRotateToElement } from "../../drawing/transformations";
+
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { Viewer } from "../../components/viewer";
@@ -212,8 +215,8 @@ export class FreeTextAnnotator extends TextAnnotator {
       default:
         throw new Error(`Invalid rotation degree: ${rotation}`);
     }
-    this._svgGroup.setAttribute("transform",
-      `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);     
+
+    applyTranslateRotateToElement(this._svgGroup, offsetX, offsetY, rotation);
   }
   
   protected buildAnnotationDto(text: string): FreeTextAnnotationDto {

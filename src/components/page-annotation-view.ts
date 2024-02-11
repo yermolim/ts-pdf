@@ -1,7 +1,9 @@
 import { Vec2 } from "mathador";
 import { Quadruple } from "ts-viewers-core";
+
 import { RenderableAnnotation, AnnotationRenderResult } from "../common/annotation";
 import { PageInfo } from "../common/page";
+import { applyFlipYToElement } from "../drawing/transformations";
 
 import { DocumentService, annotChangeEvent, 
   AnnotEvent, AnnotSelectionRequestEvent, AnnotFocusRequestEvent } 
@@ -36,8 +38,8 @@ export class PageAnnotationView {
     this._svg.classList.add("page-annotations-controls");
     this._svg.setAttribute("data-page-id", pageInfo.id + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-    // flip Y to match PDF coords where 0,0 is the lower-left corner
-    this._svg.setAttribute("transform", "scale(1, -1)");
+    applyFlipYToElement(this._svg);
+
     // handle annotation selection
     this._svg.addEventListener("pointerdown", (e: PointerEvent) => {
       if (e.target === this._svg) {

@@ -667,6 +667,24 @@ class PageTextView {
     }
 }
 
+function applyFlipYToElement(element) {
+    setTransformationToElement(element, getVerticalMirrorCssTransformation());
+}
+function applyMatrixToElement(element, matrix) {
+    const matrixString = `matrix(${matrix.toFloatShortArray().join(", ")})`;
+    setTransformationToElement(element, matrixString);
+}
+function applyTranslateRotateToElement(element, x, y, r) {
+    element.setAttribute("transform", `translate(${x} ${y}) rotate(${-r})`);
+}
+function setTransformationToElement(element, transformation) {
+    element.style["transform"] = transformation;
+    element.style["-webkit-transform"] = transformation;
+}
+function getVerticalMirrorCssTransformation() {
+    return "matrix(1, 0, 0, -1, 0, 0)";
+}
+
 const maxGeneration = 65535;
 const objectTypes = {
     UNKNOWN: 0,
@@ -14258,7 +14276,8 @@ class AppearanceStreamRenderer {
             d += " Z";
         }
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
+        this.addDescriptionDataAttribute(path, "astream-path");
+        applyMatrixToElement(path, this.state.matrix);
         path.setAttribute("d", d);
         if (fill) {
             path.setAttribute("fill", this.state.fill);
@@ -14287,8 +14306,9 @@ class AppearanceStreamRenderer {
         svg.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
         svg.append(path);
         const clonedSvg = this.createSvgElement();
-        clonedSvg.classList.add("annotation-pick-helper");
+        this.addDescriptionDataAttribute(clonedSvg, "astream-selection-helper");
         const clonedPath = path.cloneNode(true);
+        this.addDescriptionDataAttribute(clonedPath, "astream-selection-path");
         const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
             ? SELECTION_STROKE_WIDTH
             : this.state.strokeWidth;
@@ -14305,31 +14325,33 @@ class AppearanceStreamRenderer {
             if (!url) {
                 throw new Error("Can't get image url from external image stream");
             }
+            const matrix = new Mat3()
+                .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
+                .applyScaling(1, -1)
+                .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
+                .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
+                .multiply(this.state.matrix);
             const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            this.addDescriptionDataAttribute(image, "astream-image");
             image.onerror = e => {
                 console.log(`Loading external image stream failed: ${e}`);
             };
             image.setAttribute("href", url);
             image.setAttribute("width", imageStream.Width + "");
             image.setAttribute("height", imageStream.Height + "");
-            const imageMatrix = new Mat3()
-                .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
-                .applyScaling(1, -1)
-                .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
-                .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
-                .multiply(this.state.matrix);
-            const imageMatrixString = imageMatrix.toFloatShortArray().join(" ");
-            image.setAttribute("transform", `matrix(${imageMatrixString})`);
+            applyMatrixToElement(image, matrix);
             const imageWrapper = this.createSvgElement();
+            imageWrapper.setAttribute("data-tspdf-desc", "astream-image-wrapper");
             imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
             imageWrapper.append(image);
             const clonedSvg = this.createSvgElement();
-            clonedSvg.classList.add("annotation-pick-helper");
+            this.addDescriptionDataAttribute(clonedSvg, "astream-image-selection-helper");
             const clonedRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            this.addDescriptionDataAttribute(clonedRect, "astream-image-selection-rect");
             clonedRect.setAttribute("width", imageStream.Width + "");
             clonedRect.setAttribute("height", imageStream.Height + "");
             clonedRect.setAttribute("fill", "transparent");
-            clonedRect.setAttribute("transform", `matrix(${imageMatrixString})`);
+            applyMatrixToElement(clonedRect, matrix);
             clonedSvg.append(clonedRect);
             this._selectionCopies.push(clonedRect);
             return imageWrapper;
@@ -14345,12 +14367,13 @@ class AppearanceStreamRenderer {
                 console.log(`Can't decode the stream text parameter: '${textParam}'`);
                 return null;
             }
-            const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            svgText.setAttribute("transform", `matrix(${new Mat3()
+            const matrix = new Mat3()
                 .applyScaling(1, -1)
                 .applyScaling(textState.horizontalScale, 1)
-                .multiply(Mat3.multiply(textState.matrix, this.state.matrix))
-                .toFloatShortArray().join(" ")})`);
+                .multiply(Mat3.multiply(textState.matrix, this.state.matrix));
+            const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            this.addDescriptionDataAttribute(svgText, "astream-text");
+            applyMatrixToElement(svgText, matrix);
             svgText.setAttribute("x", "0");
             svgText.setAttribute("y", "0");
             svgText.textContent = text;
@@ -14419,7 +14442,7 @@ class AppearanceStreamRenderer {
             }
             yield new Promise((resolve, reject) => {
                 const tempContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                tempContainer.classList.add("annotation-content-element");
+                this.addDescriptionDataAttribute(tempContainer, "astream-temp-text-sizer");
                 tempContainer.setAttribute("viewBox", "0 0 100 100");
                 tempContainer.style.width = "100px";
                 tempContainer.style.height = "100px";
@@ -14438,7 +14461,7 @@ class AppearanceStreamRenderer {
                 }, 0);
             });
             const clonedSvg = this.createSvgElement();
-            clonedSvg.classList.add("annotation-pick-helper");
+            this.addDescriptionDataAttribute(clonedSvg, "astream-text-selection-helper");
             const clonedPath = svgText.cloneNode(true);
             const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
                 ? SELECTION_STROKE_WIDTH
@@ -14643,6 +14666,9 @@ class AppearanceStreamRenderer {
             }
             return svgElements;
         });
+    }
+    addDescriptionDataAttribute(element, description) {
+        element.setAttribute("data-tspdf-desc", description);
     }
 }
 
@@ -15273,10 +15299,10 @@ class AnnotationDict extends PdfDict {
             if (!e.isPrimary) {
                 return;
             }
-            const current = this.convertClientCoordsToPage(e.clientX, e.clientY);
+            const currentPosition = this.convertClientCoordsToPage(e.clientX, e.clientY);
             this._tempTransformationMatrix.reset()
-                .applyTranslation(current.x - this._tempStartPoint.x, current.y - this._tempStartPoint.y);
-            this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+                .applyTranslation(currentPosition.x - this._tempStartPoint.x, currentPosition.y - this._tempStartPoint.y);
+            applyMatrixToElement(this._svgContentCopy, this._tempTransformationMatrix);
             this._moved = true;
         };
         this.onTranslationPointerUp = (e) => {
@@ -15320,7 +15346,7 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(-centerX, -centerY)
                 .applyRotation(angle)
                 .applyTranslation(centerX, centerY);
-            this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+            applyMatrixToElement(this._svgContentCopy, this._tempTransformationMatrix);
             this._moved = true;
         };
         this.onRotationHandlePointerUp = (e) => {
@@ -15403,7 +15429,7 @@ class AnnotationDict extends PdfDict {
                 .applyTranslation(annotCenterX, annotCenterY);
             const translation = this._tempStartPoint.clone().subtract(this._tempStartPoint.clone().applyMat3(this._tempTransformationMatrix));
             this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
-            this._svgContentCopy.setAttribute("transform", `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+            applyMatrixToElement(this._svgContentCopy, this._tempTransformationMatrix);
             this._moved = true;
         };
         this.onScaleHandlePointerUp = (e) => {
@@ -15950,8 +15976,7 @@ class AnnotationDict extends PdfDict {
             }
             this._transformationPromise = new Promise((resolve) => __awaiter$Q(this, void 0, void 0, function* () {
                 this._svgContentCopy.remove();
-                const transformation = "matrix(1, 0, 0, 1, 0, 0)";
-                this._svgContentCopy.setAttribute("style", `transform: ${transformation}; -webkit-transform: ${transformation};`);
+                applyFlipYToElement(this._svgContentCopy);
                 if (this._moved) {
                     yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
                     yield this.updateRenderAsync();
@@ -15998,20 +16023,21 @@ class AnnotationDict extends PdfDict {
         content.id = this._svgId;
         content.classList.add("annotation-content");
         content.setAttribute("data-annotation-name", this.$name);
+        content.setAttribute("data-annotation-subtype", this.Subtype);
         const { width, height } = this._pageInfo;
         if ((_a = renderResult.clipPaths) === null || _a === void 0 ? void 0 : _a.length) {
             const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             clipPathsContainer.append(...renderResult.clipPaths);
             clipPathsContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
-            clipPathsContainer.setAttribute("transform", "scale(1, -1)");
+            applyFlipYToElement(clipPathsContainer);
             content.append(clipPathsContainer);
         }
         renderResult.elements.forEach(x => {
             const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
             elementContainer.classList.add("annotation-content-element");
             elementContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
-            elementContainer.setAttribute("transform", "scale(1, -1)");
             elementContainer.style["mixBlendMode"] = x.blendMode;
+            applyFlipYToElement(elementContainer);
             elementContainer.append(x.element);
             content.append(elementContainer);
         });
@@ -26186,7 +26212,7 @@ class PageAnnotationView {
         this._svg.classList.add("page-annotations-controls");
         this._svg.setAttribute("data-page-id", pageInfo.id + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-        this._svg.setAttribute("transform", "scale(1, -1)");
+        applyFlipYToElement(this._svg);
         this._svg.addEventListener("pointerdown", (e) => {
             if (e.target === this._svg) {
                 docService.setSelectedAnnotation(null);
@@ -26320,7 +26346,7 @@ class PageComparisonView {
         this._svg.classList.add("page-comparison-areas");
         this._svg.setAttribute("data-page-id", subjectPageInfo.id + "");
         this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-        this._svg.setAttribute("transform", "scale(1, -1)");
+        applyFlipYToElement(this._svg);
         this._container.append(this._svg);
     }
     destroy() {
@@ -27149,9 +27175,8 @@ class Annotator {
         annotationOverlay.id = "annotation-overlay";
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.classList.add("abs-stretch", "no-margin", "no-padding");
-        const transformation = "matrix(1, 0, 0, -1, 0, 0)";
-        svg.setAttribute("style", `transform: ${transformation}; -webkit-transform: ${transformation};`);
         svg.setAttribute("opacity", "0.5");
+        applyFlipYToElement(svg);
         const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
         svg.append(g);
         annotationOverlay.append(svg);
@@ -27271,7 +27296,7 @@ class GeometricAnnotator extends Annotator {
             default:
                 throw new Error(`Invalid rotation degree: ${rotation}`);
         }
-        this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
+        applyTranslateRotateToElement(this._svgGroup, offsetX, offsetY, rotation);
     }
     buildLineEndingPath(point, type, strokeWidth, side) {
         const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
@@ -27506,7 +27531,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
         const end = new Vec2(max.x, max.y);
         const xAlignedStart = new Vec2();
         const xAlignedEnd = new Vec2(Vec2.subtract(end, start).getMagnitude(), 0);
-        const mat = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
+        const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", `rgba(${r * 255},${g * 255},${b * 255},${a})`);
@@ -27518,7 +27543,7 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
         pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
         pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;
         path.setAttribute("d", pathString);
-        path.setAttribute("transform", `matrix(${mat.toFloatShortArray().join(" ")})`);
+        applyMatrixToElement(path, matrix);
         this._svgGroup.append(path);
     }
     buildAnnotationDto() {
@@ -28376,7 +28401,7 @@ class PenAnnotator extends Annotator {
             default:
                 throw new Error(`Invalid rotation degree: ${rotation}`);
         }
-        this._annotationPathData.group.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
+        applyTranslateRotateToElement(this._annotationPathData.group, offsetX, offsetY, rotation);
     }
     removeTempPenData() {
         if (this._annotationPathData) {
@@ -28698,7 +28723,7 @@ class TextMarkupAnnotator extends TextAnnotator {
                 this._svgGroupByPageId.set(x.id, svg);
                 this._svgGroup.append(svg);
             }
-            svg.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
+            applyTranslateRotateToElement(svg, offsetX, offsetY, rotation);
         });
     }
     updateCoords(selections) {
@@ -29229,7 +29254,7 @@ class FreeTextAnnotator extends TextAnnotator {
             default:
                 throw new Error(`Invalid rotation degree: ${rotation}`);
         }
-        this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
+        applyTranslateRotateToElement(this._svgGroup, offsetX, offsetY, rotation);
     }
     buildAnnotationDto(text) {
         const margin = this._strokeWidth / 2;
@@ -29503,7 +29528,7 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
             default:
                 throw new Error(`Invalid rotation degree: ${rotation}`);
         }
-        this._svgGroup.setAttribute("transform", `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);
+        applyTranslateRotateToElement(this._svgGroup, offsetX, offsetY, rotation);
     }
     buildAnnotationDto(text) {
         let margin;

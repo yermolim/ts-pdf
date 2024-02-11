@@ -3,6 +3,7 @@ import { UUID, Quadruple, BBox } from "ts-viewers-core";
 
 import { RenderableAnnotation, AnnotationRenderResult, 
   AnnotationDto } from "../../../common/annotation";
+import { applyMatrixToElement, applyFlipYToElement } from "../../../drawing/transformations";
 
 import { CryptInfo } from "../../encryption/interfaces";
 import { AnnotationType, dictTypes, valueTypes } from "../../spec-constants";
@@ -880,9 +881,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     this._transformationPromise = new Promise<void>(async resolve => {
       // reset and remove the copy from DOM
       this._svgContentCopy.remove();
-      const transformation = "matrix(1, 0, 0, 1, 0, 0)";
-      this._svgContentCopy.setAttribute("style", 
-        `transform: ${transformation}; -webkit-transform: ${transformation};`);
+      applyFlipYToElement(this._svgContentCopy);
 
       if (this._moved) {
         // transform the annotation
@@ -951,6 +950,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     content.id = this._svgId;
     content.classList.add("annotation-content");
     content.setAttribute("data-annotation-name", this.$name); 
+    content.setAttribute("data-annotation-subtype", this.Subtype);
 
     const {width, height} = this._pageInfo;
     
@@ -958,8 +958,8 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       const clipPathsContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       clipPathsContainer.append(...renderResult.clipPaths);
       clipPathsContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
-      // flip Y to match PDF coords where 0,0 is the lower-left corner
-      clipPathsContainer.setAttribute("transform", "scale(1, -1)");
+      applyFlipYToElement(clipPathsContainer);
+
       content.append(clipPathsContainer);
     }
       
@@ -967,10 +967,9 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       const elementContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       elementContainer.classList.add("annotation-content-element");
       elementContainer.setAttribute("viewBox", `0 0 ${width} ${height}`);
-      // flip Y to match PDF coords where 0,0 is the lower-left corner
-      elementContainer.setAttribute("transform", "scale(1, -1)");
-
       elementContainer.style["mixBlendMode"] = x.blendMode;
+      applyFlipYToElement(elementContainer);
+
       elementContainer.append(x.element);
       content.append(elementContainer);
     });
@@ -1158,14 +1157,15 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       return;
     }
 
-    const current = this.convertClientCoordsToPage(e.clientX, e.clientY);;
+    const currentPosition = this.convertClientCoordsToPage(e.clientX, e.clientY);
+
     // update the temp transformation matrix
     this._tempTransformationMatrix.reset()
-      .applyTranslation(current.x - this._tempStartPoint.x, 
-        current.y - this._tempStartPoint.y);
+      .applyTranslation(currentPosition.x - this._tempStartPoint.x, 
+        currentPosition.y - this._tempStartPoint.y);
+
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopy.setAttribute("transform", 
-      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+    applyMatrixToElement(this._svgContentCopy, this._tempTransformationMatrix);
 
     this._moved = true;
   };
@@ -1235,8 +1235,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
       .applyTranslation(centerX, centerY);
 
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopy.setAttribute("transform", 
-      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+    applyMatrixToElement(this._svgContentCopy, this._tempTransformationMatrix);
     
     this._moved = true;
   };
@@ -1355,8 +1354,7 @@ export abstract class AnnotationDict extends PdfDict implements RenderableAnnota
     this._tempTransformationMatrix.applyTranslation(translation.x, translation.y);
     
     // move the svg element copy to visualize the future transformation in real-time
-    this._svgContentCopy.setAttribute("transform", 
-      `matrix(${this._tempTransformationMatrix.toFloatShortArray().join(" ")})`);
+    applyMatrixToElement(this._svgContentCopy, this._tempTransformationMatrix);
       
     this._moved = true;
   };

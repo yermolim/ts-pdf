@@ -2,6 +2,7 @@ import { Vec2, Mat3 } from "mathador";
 import { UUID } from "ts-viewers-core";
 
 import { LINE_END_MIN_SIZE, LINE_END_MULTIPLIER } from "../../drawing/utils";
+import { applyMatrixToElement } from "../../drawing/transformations";
 
 import { PageService } from "../../services/page-service";
 import { DocumentService } from "../../services/document-service";
@@ -27,7 +28,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     const end = new Vec2(max.x, max.y);
     const xAlignedStart = new Vec2();
     const xAlignedEnd = new Vec2(Vec2.subtract(end, start).getMagnitude(), 0);
-    const mat = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
+    const matrix = Mat3.from4Vec2(xAlignedStart, xAlignedEnd, start, end);
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("fill", "none");
@@ -44,8 +45,7 @@ export class GeometricArrowAnnotator extends GeometricLineAnnotator {
     pathString += ` L ${xAlignedEnd.x},${xAlignedEnd.y}`;
     pathString += ` L ${xAlignedEnd.x - arrowSize},${xAlignedEnd.y - arrowSize / 2}`;
     path.setAttribute("d", pathString);
-    // transform the line to it's target position
-    path.setAttribute("transform", `matrix(${mat.toFloatShortArray().join(" ")})`);
+    applyMatrixToElement(path, matrix);
 
     this._svgGroup.append(path);
   }

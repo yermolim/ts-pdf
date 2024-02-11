@@ -1,6 +1,8 @@
 import { Vec2 } from "mathador";
 import { UUID , Quadruple, SvgSmoothPath } from "ts-viewers-core";
 
+import { applyTranslateRotateToElement } from "../../drawing/transformations";
+
 import { DocumentService } from "../../services/document-service";
 import { PageService } from "../../services/page-service";
 import { InkAnnotation, InkAnnotationDto } 
@@ -118,8 +120,8 @@ export class PenAnnotator extends Annotator {
       default:
         throw new Error(`Invalid rotation degree: ${rotation}`);
     }
-    this._annotationPathData.group.setAttribute("transform",
-      `translate(${offsetX} ${offsetY}) rotate(${-rotation})`);      
+
+    applyTranslateRotateToElement(this._annotationPathData.group, offsetX, offsetY, rotation);
   }
 
   /**clear the temp path group */

@@ -2,6 +2,7 @@ import { Quadruple } from "ts-viewers-core";
 import { Mat3, Vec2 } from "mathador";
 import { calcPdfBBoxToRectMatrices, SELECTION_STROKE_WIDTH, 
   CssMixBlendMode } from "../../drawing/utils";
+import { applyMatrixToElement } from "../../drawing/transformations";
 
 import { keywordCodes } from "../encoding/char-codes";
 import { colorSpaces, lineCapStyles, lineJoinStyles, textRenderModes, valueTypes } from "../spec-constants";
@@ -531,7 +532,8 @@ export class AppearanceStreamRenderer {
     }
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("transform", `matrix(${this.state.matrix.toFloatShortArray().join(" ")})`);
+    this.addDescriptionDataAttribute(path, "astream-path");
+    applyMatrixToElement(path, this.state.matrix);
     path.setAttribute("d", d);
 
     if (fill) {
@@ -563,8 +565,9 @@ export class AppearanceStreamRenderer {
     
     // create a transparent path copy with large stroke width to simplify user interaction    
     const clonedSvg = this.createSvgElement();
-    clonedSvg.classList.add("annotation-pick-helper");
+    this.addDescriptionDataAttribute(clonedSvg, "astream-selection-helper");
     const clonedPath = path.cloneNode(true) as SVGPathElement;
+    this.addDescriptionDataAttribute(clonedPath, "astream-selection-path");
     const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
       ? SELECTION_STROKE_WIDTH
       : this.state.strokeWidth;
@@ -583,34 +586,37 @@ export class AppearanceStreamRenderer {
       throw new Error("Can't get image url from external image stream");
     }
 
+    const matrix = new Mat3()
+      .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
+      .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
+      .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
+      .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
+      .multiply(this.state.matrix);
+
     const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+    this.addDescriptionDataAttribute(image, "astream-image");
     image.onerror = e => {
       console.log(`Loading external image stream failed: ${e}`);
     };
     image.setAttribute("href", url);
     image.setAttribute("width", imageStream.Width + "");
     image.setAttribute("height", imageStream.Height + "");   
-    const imageMatrix = new Mat3()
-      .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
-      .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
-      .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
-      .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
-      .multiply(this.state.matrix);
-    const imageMatrixString = imageMatrix.toFloatShortArray().join(" ");
-    image.setAttribute("transform", `matrix(${imageMatrixString})`);
+    applyMatrixToElement(image, matrix);
 
     const imageWrapper = this.createSvgElement();
+    imageWrapper.setAttribute("data-tspdf-desc", "astream-image-wrapper");
     imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
     imageWrapper.append(image);
 
     // create a transparent image rect copy to simplify user interaction    
     const clonedSvg = this.createSvgElement();
-    clonedSvg.classList.add("annotation-pick-helper");
+    this.addDescriptionDataAttribute(clonedSvg, "astream-image-selection-helper");
     const clonedRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    this.addDescriptionDataAttribute(clonedRect, "astream-image-selection-rect");
     clonedRect.setAttribute("width", imageStream.Width + "");
     clonedRect.setAttribute("height", imageStream.Height + "");   
     clonedRect.setAttribute("fill", "transparent");
-    clonedRect.setAttribute("transform", `matrix(${imageMatrixString})`);
+    applyMatrixToElement(clonedRect, matrix);
     clonedSvg.append(clonedRect);
     this._selectionCopies.push(clonedRect);
 
@@ -629,13 +635,14 @@ export class AppearanceStreamRenderer {
       return null;
     }
 
+    const matrix = new Mat3()
+      .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
+      .applyScaling(textState.horizontalScale, 1) // apply horizontal scaling
+      .multiply(Mat3.multiply(textState.matrix, this.state.matrix));
+
     const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    svgText.setAttribute("transform", `matrix(${
-      new Mat3()
-        .applyScaling(1, -1) // flip Y to negate the effect from the page-level SVG flipping
-        .applyScaling(textState.horizontalScale, 1) // apply horizontal scaling
-        .multiply(Mat3.multiply(textState.matrix, this.state.matrix))      
-        .toFloatShortArray().join(" ")})`);
+    this.addDescriptionDataAttribute(svgText, "astream-text");
+    applyMatrixToElement(svgText, matrix);
     svgText.setAttribute("x", "0");
     svgText.setAttribute("y", "0");
     svgText.textContent = text;
@@ -710,7 +717,7 @@ export class AppearanceStreamRenderer {
     // TODO: find more elegant solution to get real text element width
     await new Promise((resolve, reject) => {
       const tempContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      tempContainer.classList.add("annotation-content-element");
+      this.addDescriptionDataAttribute(tempContainer, "astream-temp-text-sizer");
       tempContainer.setAttribute("viewBox", "0 0 100 100");
       tempContainer.style.width = "100px";
       tempContainer.style.height = "100px";
@@ -731,7 +738,7 @@ export class AppearanceStreamRenderer {
     
     // create a transparent text copy with large stroke width to simplify user interaction    
     const clonedSvg = this.createSvgElement();
-    clonedSvg.classList.add("annotation-pick-helper");
+    this.addDescriptionDataAttribute(clonedSvg, "astream-text-selection-helper");
     const clonedPath = svgText.cloneNode(true) as SVGPathElement;
     const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
       ? SELECTION_STROKE_WIDTH
@@ -964,5 +971,9 @@ export class AppearanceStreamRenderer {
       lastOperator = operator;
     }
     return svgElements;
+  }
+
+  protected addDescriptionDataAttribute(element: Element, description: string) {
+    element.setAttribute("data-tspdf-desc", description);
   }
 }

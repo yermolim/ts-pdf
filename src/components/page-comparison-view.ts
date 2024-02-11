@@ -2,6 +2,8 @@ import { PDFPageProxy, RenderParameters } from "pdfjs-dist/types/src/display/api
 import { Vec2 } from "mathador";
 
 import { PageInfo } from "../common/page";
+import { applyFlipYToElement } from "../drawing/transformations";
+
 import { ComparisonService } from "../services/comparison-service";
 
 interface PageRenderResult {
@@ -39,8 +41,7 @@ export class PageComparisonView {
     this._svg.classList.add("page-comparison-areas");
     this._svg.setAttribute("data-page-id", subjectPageInfo.id + "");
     this._svg.setAttribute("viewBox", `0 0 ${pageDimensions.x} ${pageDimensions.y}`);
-    // flip Y to match PDF coords where 0,0 is the lower-left corner
-    this._svg.setAttribute("transform", "scale(1, -1)");
+    applyFlipYToElement(this._svg);
 
     this._container.append(this._svg);
   } 

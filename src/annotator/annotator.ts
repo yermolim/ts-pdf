@@ -1,4 +1,5 @@
 import { TextSelectionInfo } from "../common/text-selection";
+import { applyFlipYToElement } from "../drawing/transformations";
 
 import { DocumentService } from "../services/document-service";
 import { PageCoords, PageService, PagesRenderedEvent, pagesRenderedEvent } 
@@ -122,11 +123,8 @@ export abstract class Annotator {
     
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.classList.add("abs-stretch", "no-margin", "no-padding");
-
-    const transformation = "matrix(1, 0, 0, -1, 0, 0)";
-    svg.setAttribute("style", 
-      `transform: ${transformation}; -webkit-transform: ${transformation};`);
     svg.setAttribute("opacity", "0.5");
+    applyFlipYToElement(svg);
 
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
     svg.append(g);
