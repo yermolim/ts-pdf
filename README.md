@@ -222,5 +222,3 @@ The other one is to make your own build of PDF.js.
 </ul>
 
 #### Additional information
-
-This project is tested with Browserstack.
