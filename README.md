@@ -220,3 +220,5 @@ The other one is to make your own build of PDF.js.
     <li>Run the 'npm run start' command from the project folder</li>
     <li>Open the demo page in your web browser</li>
 </ul>
+
+#### Additional information
