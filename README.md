@@ -191,17 +191,20 @@ The other one is to make your own build of PDF.js.
     <li><del>move parser to background thread using web workers</del> added in 0.9.0</li>
     <li><del>add keyboard shortcuts</del>added in 0.10.0</li>
     <li><del>add document comparison mode</del>added in 0.11.0</li>
+    <li>add tooltips to buttons</li>
     <li>add user-frienly error messages on failed file opening</li>
     <li>make error messages more informative</li>
     <li>add proper support for linearized PDF files</li>
     <li>add more options for line annotations</li>
     <li>add more options for free text annotations</li>
-    <li>add tooltips to buttons</li>
+    <li>add watermark tool (with watermark generator)</li>
     <li>add localizations</li>
     <li>add tests</li>
+    <li>limit users to editing their own annotations only (optionally)</li>
     <li>further optimization of the parser and the renderer</li>
-    <li>support for the rest of encryption algorithms</li>
-    <li>support for the rest of encoding algorithms</li>
+    <li>support for PDF 2.0 features (requires purchasing the specification)</li>
+    <li>support for the rest of encryption algorithms (on request only)</li>
+    <li>support for the rest of encoding algorithms (on request only)</li>
 </ul>
 
 ## External dependencies:

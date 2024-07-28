@@ -485,7 +485,7 @@ export class FreeTextAnnotation extends MarkupAnnotation {
       }
     }
         
-    if (!this.DA) {
+    if (!this.DA && !this.AP) {
       throw new Error("Not all required properties parsed");
     }
     

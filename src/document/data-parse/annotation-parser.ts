@@ -19,7 +19,7 @@ import { HighlightAnnotation } from "../entities/annotations/markup/text-markup/
 import { UnderlineAnnotation } from "../entities/annotations/markup/text-markup/underline-annotation";
 import { StrikeoutAnnotation } from "../entities/annotations/markup/text-markup/strikeout-annotation";
 import { SquigglyAnnotation } from "../entities/annotations/markup/text-markup/squiggly-annotation";
-import { FreeTextAnnotation } from "../entities/annotations/markup/free-text-annotation";
+import { FreeTextAnnotation, FreeTextAnnotationDto } from "../entities/annotations/markup/free-text-annotation";
 
 export class AnnotationParser {
 
@@ -113,6 +113,9 @@ export class AnnotationParser {
         break;
       case "/Underline":        
         annotation = UnderlineAnnotation.createFromDto(dto as TextMarkupAnnotationDto);
+        break;
+      case "/FreeText":
+        annotation = await FreeTextAnnotation.createFromDtoAsync(dto as FreeTextAnnotationDto, fontMap);
         break;
       default:
         throw new Error(`Unsupported annotation type: ${dto.annotationType}`);

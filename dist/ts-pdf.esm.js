@@ -555,15 +555,6 @@ function getSelectionInfosFromSelection(selection) {
     return getSelectionInfosFromRangeSpans(selectionRange);
 }
 
-var __awaiter$1m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PageTextView {
     constructor(pageProxy) {
         this.onPointerDown = (e) => {
@@ -590,22 +581,20 @@ class PageTextView {
         this._container.addEventListener("pointerdown", this.onPointerDown);
         this._container.addEventListener("pointerup", this.onPointerUp);
     }
-    static appendPageTextAsync(pageProxy, parent, scale) {
-        return __awaiter$1m(this, void 0, void 0, function* () {
-            const textObj = new PageTextView(pageProxy);
-            try {
-                const result = yield textObj.renderTextLayerAsync(scale);
-                if (!result || textObj._destroyed) {
-                    return null;
-                }
-            }
-            catch (e) {
-                console.error(e);
+    static async appendPageTextAsync(pageProxy, parent, scale) {
+        const textObj = new PageTextView(pageProxy);
+        try {
+            const result = await textObj.renderTextLayerAsync(scale);
+            if (!result || textObj._destroyed) {
                 return null;
             }
-            parent.append(textObj._container);
-            return textObj;
-        });
+        }
+        catch (e) {
+            console.error(e);
+            return null;
+        }
+        parent.append(textObj._container);
+        return textObj;
     }
     destroy() {
         this.remove();
@@ -618,43 +607,41 @@ class PageTextView {
             this._container.remove();
         }
     }
-    renderTextLayerAsync(scale) {
-        return __awaiter$1m(this, void 0, void 0, function* () {
-            this.destroyRenderTask();
-            this.clear();
-            const viewport = this._pageProxy.getViewport({ scale });
-            const textContentStream = this._pageProxy.streamTextContent();
-            this._renderTask = renderTextLayer({
-                container: this._container,
-                textContentStream,
-                viewport,
-                enhanceTextSelection: false,
-            });
-            try {
-                yield this._renderTask.promise;
-            }
-            catch (error) {
-                if (error.message === "TextLayer task cancelled.") {
-                    return false;
-                }
-                else {
-                    throw error;
-                }
-            }
-            const spans = this._container.querySelectorAll("span");
-            spans.forEach(x => {
-                const blCornerSpan = document.createElement("span");
-                blCornerSpan.classList.add("dummy-corner", "bl");
-                const brCornerSpan = document.createElement("span");
-                brCornerSpan.classList.add("dummy-corner", "br");
-                const trCornerSpan = document.createElement("span");
-                trCornerSpan.classList.add("dummy-corner", "tr");
-                const tlCornerSpan = document.createElement("span");
-                tlCornerSpan.classList.add("dummy-corner", "tl");
-                x.append(blCornerSpan, brCornerSpan, trCornerSpan, tlCornerSpan);
-            });
-            return true;
+    async renderTextLayerAsync(scale) {
+        this.destroyRenderTask();
+        this.clear();
+        const viewport = this._pageProxy.getViewport({ scale });
+        const textContentStream = this._pageProxy.streamTextContent();
+        this._renderTask = renderTextLayer({
+            container: this._container,
+            textContentStream,
+            viewport,
+            enhanceTextSelection: false,
         });
+        try {
+            await this._renderTask.promise;
+        }
+        catch (error) {
+            if (error.message === "TextLayer task cancelled.") {
+                return false;
+            }
+            else {
+                throw error;
+            }
+        }
+        const spans = this._container.querySelectorAll("span");
+        spans.forEach(x => {
+            const blCornerSpan = document.createElement("span");
+            blCornerSpan.classList.add("dummy-corner", "bl");
+            const brCornerSpan = document.createElement("span");
+            brCornerSpan.classList.add("dummy-corner", "br");
+            const trCornerSpan = document.createElement("span");
+            trCornerSpan.classList.add("dummy-corner", "tr");
+            const tlCornerSpan = document.createElement("span");
+            tlCornerSpan.classList.add("dummy-corner", "tl");
+            x.append(blCornerSpan, brCornerSpan, trCornerSpan, tlCornerSpan);
+        });
+        return true;
     }
     clear() {
         this._container.innerHTML = "";
@@ -2380,15 +2367,6 @@ function getCharCode(index) {
 //#endregion
 `;
 
-var __awaiter$1l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class BgDataParser {
     get maxIndex() {
         return this._maxIndex;
@@ -2428,346 +2406,272 @@ class BgDataParser {
         this._workerPool.forEach(x => x.terminate());
         this._workerPool.length = 0;
     }
-    static getFreeWorkerFromPoolAsync() {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            if (this._freeWorkers.size) {
-                const worker = this._freeWorkers.values().next().value;
-                this._freeWorkers.delete(worker);
-                return worker;
-            }
-            if (this._workerPool.length < this._maxWorkersCount) {
-                const worker = new Worker(this._workerSrc);
-                this._workerPool.push(worker);
-                return worker;
-            }
-            const freeWorkerPromise = new Promise((resolve, reject) => {
-                const start = performance.now();
-                const interval = setInterval(() => {
-                    if (this._freeWorkers.size) {
-                        const worker = this._freeWorkers.values().next().value;
-                        this._freeWorkers.delete(worker);
-                        clearInterval(interval);
-                        resolve(worker);
-                    }
-                    if (performance.now() - start > this._workerTimeout) {
-                        clearInterval(interval);
-                        reject("Free worker waiting timeout exceeded");
-                    }
-                }, 20);
-            });
-            return yield freeWorkerPromise;
+    static async getFreeWorkerFromPoolAsync() {
+        if (this._freeWorkers.size) {
+            const worker = this._freeWorkers.values().next().value;
+            this._freeWorkers.delete(worker);
+            return worker;
+        }
+        if (this._workerPool.length < this._maxWorkersCount) {
+            const worker = new Worker(this._workerSrc);
+            this._workerPool.push(worker);
+            return worker;
+        }
+        const freeWorkerPromise = new Promise((resolve, reject) => {
+            const start = performance.now();
+            const interval = setInterval(() => {
+                if (this._freeWorkers.size) {
+                    const worker = this._freeWorkers.values().next().value;
+                    this._freeWorkers.delete(worker);
+                    clearInterval(interval);
+                    resolve(worker);
+                }
+                if (performance.now() - start > this._workerTimeout) {
+                    clearInterval(interval);
+                    reject("Free worker waiting timeout exceeded");
+                }
+            }, 20);
         });
+        return await freeWorkerPromise;
     }
     static returnWorkerToPool(worker) {
         this._freeWorkers.add(worker);
     }
-    static transferDataToWorker(worker, buffer) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const workerPromise = new Promise((resolve, reject) => {
-                worker.onmessage = (e) => {
-                    if (e.data.type === "success") {
-                        resolve();
-                    }
-                    else {
-                        console.log(e);
-                        console.log(e.data);
-                        reject(e);
-                    }
-                };
-                worker.onerror = (e) => {
+    static async transferDataToWorker(worker, buffer) {
+        const workerPromise = new Promise((resolve, reject) => {
+            worker.onmessage = (e) => {
+                if (e.data.type === "success") {
+                    resolve();
+                }
+                else {
                     console.log(e);
-                    console.log(e.message);
+                    console.log(e.data);
                     reject(e);
-                };
-                worker.postMessage({ name: "data-set", bytes: buffer }, [buffer]);
-            });
-            try {
-                yield workerPromise;
-            }
-            catch (e) {
-                console.error(e);
-                throw new Error("Error while transfering parser data to worker");
-            }
+                }
+            };
+            worker.onerror = (e) => {
+                console.log(e);
+                console.log(e.message);
+                reject(e);
+            };
+            worker.postMessage({ name: "data-set", bytes: buffer }, [buffer]);
         });
+        try {
+            await workerPromise;
+        }
+        catch (e) {
+            console.error(e);
+            throw new Error("Error while transfering parser data to worker");
+        }
     }
-    static transferDataFromWorker(worker) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const workerPromise = new Promise((resolve, reject) => {
-                worker.onmessage = (e) => {
-                    if (e.data.type === "success") {
-                        const buffer = e.data.bytes;
-                        resolve(buffer);
-                    }
-                    else {
-                        reject(e);
-                    }
-                };
-                worker.onerror = (e) => reject(e);
-                worker.postMessage({ name: "data-reset" });
-            });
-            try {
-                const buffer = yield workerPromise;
-                return buffer;
-            }
-            catch (_a) {
-                throw new Error("Error while transfering parser data from worker");
-            }
+    static async transferDataFromWorker(worker) {
+        const workerPromise = new Promise((resolve, reject) => {
+            worker.onmessage = (e) => {
+                if (e.data.type === "success") {
+                    const buffer = e.data.bytes;
+                    resolve(buffer);
+                }
+                else {
+                    reject(e);
+                }
+            };
+            worker.onerror = (e) => reject(e);
+            worker.postMessage({ name: "data-reset" });
         });
+        try {
+            const buffer = await workerPromise;
+            return buffer;
+        }
+        catch (_a) {
+            throw new Error("Error while transfering parser data from worker");
+        }
     }
     destroy() {
     }
-    getSubParserAsync(start, end) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const data = yield this.execCommandAsync("slice-char-codes", [start, end]);
-            const parser = BgDataParser.tryGetParser(data);
-            return parser;
-        });
+    async getSubParserAsync(start, end) {
+        const data = await this.execCommandAsync("slice-char-codes", [start, end]);
+        const parser = BgDataParser.tryGetParser(data);
+        return parser;
     }
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
-    isCodeAtAsync(index, code) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("is-code-at", [index, code]);
-            return result;
-        });
+    async isCodeAtAsync(index, code) {
+        const result = await this.execCommandAsync("is-code-at", [index, code]);
+        return result;
     }
-    getValueTypeAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-value-type-at", [start, skipEmpty]);
-            return result;
-        });
+    async getValueTypeAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-value-type-at", [start, skipEmpty]);
+        return result;
     }
-    findSubarrayIndexAsync(sub, options) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-subarray-index", [sub, options]);
-            return result;
-        });
+    async findSubarrayIndexAsync(sub, options) {
+        const result = await this.execCommandAsync("find-subarray-index", [sub, options]);
+        return result;
     }
-    findCharIndexAsync(charCode, direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-char-index", [charCode, direction, start]);
-            return result;
-        });
+    async findCharIndexAsync(charCode, direction = true, start) {
+        const result = await this.execCommandAsync("find-char-index", [charCode, direction, start]);
+        return result;
     }
-    findNewLineIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-new-line-index", [direction, start]);
-            return result;
-        });
+    async findNewLineIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-new-line-index", [direction, start]);
+        return result;
     }
-    findSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-space-index", [direction, start]);
-            return result;
-        });
+    async findSpaceIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-space-index", [direction, start]);
+        return result;
     }
-    findNonSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-non-space-index", [direction, start]);
-            return result;
-        });
+    async findNonSpaceIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-non-space-index", [direction, start]);
+        return result;
     }
-    findDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-delimiter-index", [direction, start]);
-            return result;
-        });
+    async findDelimiterIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-delimiter-index", [direction, start]);
+        return result;
     }
-    findNonDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-non-delimiter-index", [direction, start]);
-            return result;
-        });
+    async findNonDelimiterIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-non-delimiter-index", [direction, start]);
+        return result;
     }
-    findRegularIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-regular-index", [direction, start]);
-            return result;
-        });
+    async findRegularIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-regular-index", [direction, start]);
+        return result;
     }
-    findIrregularIndexAsync(direction = true, start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("find-irregular-index", [direction, start]);
-            return result;
-        });
+    async findIrregularIndexAsync(direction = true, start) {
+        const result = await this.execCommandAsync("find-irregular-index", [direction, start]);
+        return result;
     }
-    getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-indirect-object-bounds", [start, skipEmpty]);
-            return result;
-        });
+    async getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-indirect-object-bounds", [start, skipEmpty]);
+        return result;
     }
-    getXrefTableBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-xref-table-bounds", [start, skipEmpty]);
-            return result;
-        });
+    async getXrefTableBoundsAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-xref-table-bounds", [start, skipEmpty]);
+        return result;
     }
-    getDictBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-dict-bounds", [start, skipEmpty]);
-            return result;
-        });
+    async getDictBoundsAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-dict-bounds", [start, skipEmpty]);
+        return result;
     }
-    getArrayBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-array-bounds", [start, skipEmpty]);
-            return result;
-        });
+    async getArrayBoundsAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-array-bounds", [start, skipEmpty]);
+        return result;
     }
-    getHexBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-hex-bounds", [start, skipEmpty]);
-            return result;
-        });
+    async getHexBoundsAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-hex-bounds", [start, skipEmpty]);
+        return result;
     }
-    getLiteralBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("get-literal-bounds", [start, skipEmpty]);
-            return result;
-        });
+    async getLiteralBoundsAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("get-literal-bounds", [start, skipEmpty]);
+        return result;
     }
-    parseNumberAtAsync(start, float = false, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-number", [start, float, skipEmpty]);
-            return result;
-        });
+    async parseNumberAtAsync(start, float = false, skipEmpty = true) {
+        const result = await this.execCommandAsync("parse-number", [start, float, skipEmpty]);
+        return result;
     }
-    parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-name", [start, includeSlash, skipEmpty]);
-            return result;
-        });
+    async parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
+        const result = await this.execCommandAsync("parse-name", [start, includeSlash, skipEmpty]);
+        return result;
     }
-    parseStringAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-string", [start, skipEmpty]);
-            return result;
-        });
+    async parseStringAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("parse-string", [start, skipEmpty]);
+        return result;
     }
-    parseBoolAtAsync(start, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-bool", [start, skipEmpty]);
-            return result;
-        });
+    async parseBoolAtAsync(start, skipEmpty = true) {
+        const result = await this.execCommandAsync("parse-bool", [start, skipEmpty]);
+        return result;
     }
-    parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-number-array", [start, float, skipEmpty]);
-            return result;
-        });
+    async parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
+        const result = await this.execCommandAsync("parse-number-array", [start, float, skipEmpty]);
+        return result;
     }
-    parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-name-array", [start, includeSlash, skipEmpty]);
-            return result;
-        });
+    async parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
+        const result = await this.execCommandAsync("parse-name-array", [start, includeSlash, skipEmpty]);
+        return result;
     }
-    parseDictTypeAsync(bounds) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-dict-type", [bounds]);
-            return result;
-        });
+    async parseDictTypeAsync(bounds) {
+        const result = await this.execCommandAsync("parse-dict-type", [bounds]);
+        return result;
     }
-    parseDictSubtypeAsync(bounds) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-dict-subtype", [bounds]);
-            return result;
-        });
+    async parseDictSubtypeAsync(bounds) {
+        const result = await this.execCommandAsync("parse-dict-subtype", [bounds]);
+        return result;
     }
-    parseDictPropertyByNameAsync(propName, bounds) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("parse-dict-property-by-name", [propName, bounds]);
-            return result;
-        });
+    async parseDictPropertyByNameAsync(propName, bounds) {
+        const result = await this.execCommandAsync("parse-dict-property-by-name", [propName, bounds]);
+        return result;
     }
-    skipEmptyAsync(start) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("skip-empty", [start]);
-            return result;
-        });
+    async skipEmptyAsync(start) {
+        const result = await this.execCommandAsync("skip-empty", [start]);
+        return result;
     }
-    skipToNextNameAsync(start, max) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("skip-to-next-name", [start, max]);
-            return result;
-        });
+    async skipToNextNameAsync(start, max) {
+        const result = await this.execCommandAsync("skip-to-next-name", [start, max]);
+        return result;
     }
-    sliceCharCodesAsync(start, end) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("slice-char-codes", [start, end]);
-            return result;
-        });
+    async sliceCharCodesAsync(start, end) {
+        const result = await this.execCommandAsync("slice-char-codes", [start, end]);
+        return result;
     }
-    sliceCharsAsync(start, end) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            const result = yield this.execCommandAsync("slice-chars", [start, end]);
-            return result;
-        });
+    async sliceCharsAsync(start, end) {
+        const result = await this.execCommandAsync("slice-chars", [start, end]);
+        return result;
     }
-    releaseWorkerAsync(worker) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            this._workerPromise = null;
-            const returnedBuffer = yield BgDataParser.transferDataFromWorker(worker);
-            this._data = returnedBuffer;
-            worker.onmessage = null;
-            worker.onerror = null;
-            BgDataParser.returnWorkerToPool(worker);
-            this._prevWorkerReleasePromise = null;
-        });
+    async releaseWorkerAsync(worker) {
+        this._workerPromise = null;
+        const returnedBuffer = await BgDataParser.transferDataFromWorker(worker);
+        this._data = returnedBuffer;
+        worker.onmessage = null;
+        worker.onerror = null;
+        BgDataParser.returnWorkerToPool(worker);
+        this._prevWorkerReleasePromise = null;
     }
-    getWorkerAsync() {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            if (this._prevWorkerReleasePromise) {
-                yield this._prevWorkerReleasePromise;
-            }
-            if (!this._workerPromise) {
-                this._workerPromise = new Promise((resolve, reject) => __awaiter$1l(this, void 0, void 0, function* () {
-                    const dataBuffer = this._data;
-                    const freeWorker = yield BgDataParser.getFreeWorkerFromPoolAsync();
-                    yield BgDataParser.transferDataToWorker(freeWorker, dataBuffer);
-                    freeWorker.onmessage = this.onWorkerMessage;
-                    freeWorker.onerror = this.onWorkerError;
-                    const workerReleaseInterval = setInterval(() => __awaiter$1l(this, void 0, void 0, function* () {
-                        if (this._commandsInProgress > 0 || this._workerOnMessageHandlers.size) {
-                            return;
-                        }
-                        clearInterval(workerReleaseInterval);
-                        this._prevWorkerReleasePromise = this.releaseWorkerAsync(freeWorker);
-                    }), 50);
-                    resolve(freeWorker);
-                }));
-            }
-            const worker = yield this._workerPromise;
-            return worker;
-        });
-    }
-    execCommandAsync(commandName, commandArgs = []) {
-        return __awaiter$1l(this, void 0, void 0, function* () {
-            this._commandsInProgress++;
-            const worker = yield this.getWorkerAsync();
-            const commandId = UUID.getRandomUuid();
-            const commandResultPromise = new Promise((resolve, reject) => {
-                const onMessage = (e) => {
-                    if (e.data.id !== commandId) {
+    async getWorkerAsync() {
+        if (this._prevWorkerReleasePromise) {
+            await this._prevWorkerReleasePromise;
+        }
+        if (!this._workerPromise) {
+            this._workerPromise = new Promise(async (resolve, reject) => {
+                const dataBuffer = this._data;
+                const freeWorker = await BgDataParser.getFreeWorkerFromPoolAsync();
+                await BgDataParser.transferDataToWorker(freeWorker, dataBuffer);
+                freeWorker.onmessage = this.onWorkerMessage;
+                freeWorker.onerror = this.onWorkerError;
+                const workerReleaseInterval = setInterval(async () => {
+                    if (this._commandsInProgress > 0 || this._workerOnMessageHandlers.size) {
                         return;
                     }
-                    this._workerOnMessageHandlers.delete(onMessage);
-                    if (e.data.type === "error") {
-                        reject(`Background worker error: ${e.data.message}`);
-                    }
-                    else {
-                        resolve(e.data.result);
-                    }
-                };
-                this._workerOnMessageHandlers.add(onMessage);
+                    clearInterval(workerReleaseInterval);
+                    this._prevWorkerReleasePromise = this.releaseWorkerAsync(freeWorker);
+                }, 50);
+                resolve(freeWorker);
             });
-            worker.postMessage({ id: commandId, name: commandName, args: commandArgs });
-            const result = yield commandResultPromise;
-            this._commandsInProgress--;
-            return result;
+        }
+        const worker = await this._workerPromise;
+        return worker;
+    }
+    async execCommandAsync(commandName, commandArgs = []) {
+        this._commandsInProgress++;
+        const worker = await this.getWorkerAsync();
+        const commandId = UUID.getRandomUuid();
+        const commandResultPromise = new Promise((resolve, reject) => {
+            const onMessage = (e) => {
+                if (e.data.id !== commandId) {
+                    return;
+                }
+                this._workerOnMessageHandlers.delete(onMessage);
+                if (e.data.type === "error") {
+                    reject(`Background worker error: ${e.data.message}`);
+                }
+                else {
+                    resolve(e.data.result);
+                }
+            };
+            this._workerOnMessageHandlers.add(onMessage);
         });
+        worker.postMessage({ id: commandId, name: commandName, args: commandArgs });
+        const result = await commandResultPromise;
+        this._commandsInProgress--;
+        return result;
     }
 }
 BgDataParser._maxWorkersCount = navigator.hardwareConcurrency || 4;
@@ -2935,15 +2839,6 @@ const keywordCodes = {
     AP_STREAM_TEXT_END: [codes.E, codes.T],
 };
 
-var __awaiter$1k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class NaiveBytePatternSearch {
     constructor(pattern) {
         if (!(pattern === null || pattern === void 0 ? void 0 : pattern.length)) {
@@ -3048,859 +2943,797 @@ class SyncDataParser {
     }
     destroy() {
     }
-    getSubParserAsync(start, end) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            return new SyncDataParser(yield this.sliceCharCodesAsync(start, end));
-        });
+    async getSubParserAsync(start, end) {
+        return new SyncDataParser(await this.sliceCharCodesAsync(start, end));
     }
     isOutside(index) {
         return (index < 0 || index > this._maxIndex);
     }
-    isCodeAtAsync(index, code) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            return this.getCharCode(index) === code;
-        });
+    async isCodeAtAsync(index, code) {
+        return this.getCharCode(index) === code;
     }
-    getValueTypeAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start)) {
-                return null;
-            }
-            const arr = this._data;
-            const i = start;
-            const charCode = arr[i];
-            switch (charCode) {
-                case codes.SLASH:
-                    if (SyncDataParser.isRegularChar(arr[i + 1])) {
-                        return valueTypes.NAME;
-                    }
-                    return valueTypes.UNKNOWN;
-                case codes.L_BRACKET:
-                    return valueTypes.ARRAY;
-                case codes.L_PARENTHESE:
-                    return valueTypes.STRING_LITERAL;
-                case codes.LESS:
-                    if (codes.LESS === arr[i + 1]) {
-                        return valueTypes.DICTIONARY;
-                    }
-                    return valueTypes.STRING_HEX;
-                case codes.PERCENT:
-                    return valueTypes.COMMENT;
-                case codes.D_0:
-                case codes.D_1:
-                case codes.D_2:
-                case codes.D_3:
-                case codes.D_4:
-                case codes.D_5:
-                case codes.D_6:
-                case codes.D_7:
-                case codes.D_8:
-                case codes.D_9:
-                    const nextDelimIndex = yield this.findDelimiterIndexAsync(true, i + 1);
-                    if (nextDelimIndex !== -1) {
-                        const refEndIndex = yield this.findCharIndexAsync(codes.R, false, nextDelimIndex - 1);
-                        if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
-                            return valueTypes.REF;
-                        }
-                    }
-                    return valueTypes.NUMBER;
-                case codes.DOT:
-                case codes.MINUS:
-                    if (SyncDataParser.isDigit(arr[i + 1])) {
-                        return valueTypes.NUMBER;
-                    }
-                    return valueTypes.UNKNOWN;
-                case codes.s:
-                    if (arr[i + 1] === codes.t
-                        && arr[i + 2] === codes.r
-                        && arr[i + 3] === codes.e
-                        && arr[i + 4] === codes.a
-                        && arr[i + 5] === codes.m) {
-                        return valueTypes.STREAM;
-                    }
-                    return valueTypes.UNKNOWN;
-                case codes.t:
-                    if (arr[i + 1] === codes.r
-                        && arr[i + 2] === codes.u
-                        && arr[i + 3] === codes.e) {
-                        return valueTypes.BOOLEAN;
-                    }
-                    return valueTypes.UNKNOWN;
-                case codes.f:
-                    if (arr[i + 1] === codes.a
-                        && arr[i + 2] === codes.l
-                        && arr[i + 3] === codes.s
-                        && arr[i + 4] === codes.e) {
-                        return valueTypes.BOOLEAN;
-                    }
-                    return valueTypes.UNKNOWN;
-                default:
-                    return valueTypes.UNKNOWN;
-            }
-        });
-    }
-    findSubarrayIndexAsync(sub, options) {
-        var _a, _b, _c;
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
-                return null;
-            }
-            const direction = (_a = options === null || options === void 0 ? void 0 : options.direction) !== null && _a !== void 0 ? _a : true;
-            const minIndex = Math.max(Math.min((_b = options === null || options === void 0 ? void 0 : options.minIndex) !== null && _b !== void 0 ? _b : 0, this._maxIndex), 0);
-            const maxIndex = Math.max(Math.min((_c = options === null || options === void 0 ? void 0 : options.maxIndex) !== null && _c !== void 0 ? _c : this._maxIndex, this._maxIndex), 0);
-            const allowOpened = !(options === null || options === void 0 ? void 0 : options.closedOnly);
-            const searcher = new NaiveBytePatternSearch(sub);
-            let start;
-            let end;
-            let foundIndexGen;
-            if (direction) {
-                foundIndexGen = searcher.run(arr.subarray(minIndex, maxIndex + 1));
-            }
-            else {
-                foundIndexGen = searcher.runBackwards(arr.subarray(minIndex, maxIndex + 1));
-            }
-            for (const i of foundIndexGen) {
-                if (i === -1) {
-                    return null;
-                }
-                start = i + minIndex;
-                end = start + sub.length - 1;
-                if (allowOpened || end === maxIndex || !SyncDataParser.isRegularChar(arr[end + 1])) {
-                    return { start, end };
-                }
-            }
+    async getValueTypeAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start)) {
             return null;
-        });
+        }
+        const arr = this._data;
+        const i = start;
+        const charCode = arr[i];
+        switch (charCode) {
+            case codes.SLASH:
+                if (SyncDataParser.isRegularChar(arr[i + 1])) {
+                    return valueTypes.NAME;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.L_BRACKET:
+                return valueTypes.ARRAY;
+            case codes.L_PARENTHESE:
+                return valueTypes.STRING_LITERAL;
+            case codes.LESS:
+                if (codes.LESS === arr[i + 1]) {
+                    return valueTypes.DICTIONARY;
+                }
+                return valueTypes.STRING_HEX;
+            case codes.PERCENT:
+                return valueTypes.COMMENT;
+            case codes.D_0:
+            case codes.D_1:
+            case codes.D_2:
+            case codes.D_3:
+            case codes.D_4:
+            case codes.D_5:
+            case codes.D_6:
+            case codes.D_7:
+            case codes.D_8:
+            case codes.D_9:
+                const nextDelimIndex = await this.findDelimiterIndexAsync(true, i + 1);
+                if (nextDelimIndex !== -1) {
+                    const refEndIndex = await this.findCharIndexAsync(codes.R, false, nextDelimIndex - 1);
+                    if (refEndIndex !== -1 && refEndIndex > i && !SyncDataParser.isRegularChar(arr[refEndIndex + 1])) {
+                        return valueTypes.REF;
+                    }
+                }
+                return valueTypes.NUMBER;
+            case codes.DOT:
+            case codes.MINUS:
+                if (SyncDataParser.isDigit(arr[i + 1])) {
+                    return valueTypes.NUMBER;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.s:
+                if (arr[i + 1] === codes.t
+                    && arr[i + 2] === codes.r
+                    && arr[i + 3] === codes.e
+                    && arr[i + 4] === codes.a
+                    && arr[i + 5] === codes.m) {
+                    return valueTypes.STREAM;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.t:
+                if (arr[i + 1] === codes.r
+                    && arr[i + 2] === codes.u
+                    && arr[i + 3] === codes.e) {
+                    return valueTypes.BOOLEAN;
+                }
+                return valueTypes.UNKNOWN;
+            case codes.f:
+                if (arr[i + 1] === codes.a
+                    && arr[i + 2] === codes.l
+                    && arr[i + 3] === codes.s
+                    && arr[i + 4] === codes.e) {
+                    return valueTypes.BOOLEAN;
+                }
+                return valueTypes.UNKNOWN;
+            default:
+                return valueTypes.UNKNOWN;
+        }
     }
-    findCharIndexAsync(charCode, direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (arr[i] === charCode) {
-                        return i;
-                    }
+    async findSubarrayIndexAsync(sub, options) {
+        var _a, _b, _c;
+        const arr = this._data;
+        if (!(sub === null || sub === void 0 ? void 0 : sub.length)) {
+            return null;
+        }
+        const direction = (_a = options === null || options === void 0 ? void 0 : options.direction) !== null && _a !== void 0 ? _a : true;
+        const minIndex = Math.max(Math.min((_b = options === null || options === void 0 ? void 0 : options.minIndex) !== null && _b !== void 0 ? _b : 0, this._maxIndex), 0);
+        const maxIndex = Math.max(Math.min((_c = options === null || options === void 0 ? void 0 : options.maxIndex) !== null && _c !== void 0 ? _c : this._maxIndex, this._maxIndex), 0);
+        const allowOpened = !(options === null || options === void 0 ? void 0 : options.closedOnly);
+        const searcher = new NaiveBytePatternSearch(sub);
+        let start;
+        let end;
+        let foundIndexGen;
+        if (direction) {
+            foundIndexGen = searcher.run(arr.subarray(minIndex, maxIndex + 1));
+        }
+        else {
+            foundIndexGen = searcher.runBackwards(arr.subarray(minIndex, maxIndex + 1));
+        }
+        for (const i of foundIndexGen) {
+            if (i === -1) {
+                return null;
+            }
+            start = i + minIndex;
+            end = start + sub.length - 1;
+            if (allowOpened || end === maxIndex || !SyncDataParser.isRegularChar(arr[end + 1])) {
+                return { start, end };
+            }
+        }
+        return null;
+    }
+    async findCharIndexAsync(charCode, direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (arr[i] === charCode) {
+                    return i;
                 }
             }
-            else {
-                for (i; i >= 0; i--) {
-                    if (arr[i] === charCode) {
-                        return i;
-                    }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (arr[i] === charCode) {
+                    return i;
                 }
             }
+        }
+        return -1;
+    }
+    async findNewLineIndexAsync(direction = true, start) {
+        let lineBreakIndex;
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isNewLineChar(arr[i])) {
+                    lineBreakIndex = i;
+                    break;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isNewLineChar(arr[i])) {
+                    lineBreakIndex = i;
+                    break;
+                }
+            }
+        }
+        if (lineBreakIndex === undefined) {
             return -1;
-        });
+        }
+        if (direction) {
+            if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN
+                && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
+                lineBreakIndex++;
+            }
+            return Math.min(lineBreakIndex + 1, this._maxIndex);
+        }
+        else {
+            if (this._data[lineBreakIndex] === codes.LINE_FEED
+                && this._data[lineBreakIndex - 1] === codes.CARRIAGE_RETURN) {
+                lineBreakIndex--;
+            }
+            return Math.max(lineBreakIndex - 1, 0);
+        }
     }
-    findNewLineIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            let lineBreakIndex;
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isNewLineChar(arr[i])) {
-                        lineBreakIndex = i;
-                        break;
-                    }
+    async findSpaceIndexAsync(direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    async findNonSpaceIndexAsync(direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isNotSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isNotSpaceChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    async findDelimiterIndexAsync(direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    async findNonDelimiterIndexAsync(direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isNotDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isNotDelimiterChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    async findRegularIndexAsync(direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    async findIrregularIndexAsync(direction = true, start) {
+        const arr = this._data;
+        let i = isNaN(start)
+            ? direction
+                ? 0
+                : this._maxIndex
+            : start;
+        if (direction) {
+            for (i; i <= this._maxIndex; i++) {
+                if (SyncDataParser.isNotRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        else {
+            for (i; i >= 0; i--) {
+                if (SyncDataParser.isNotRegularChar(arr[i])) {
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+    async getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start)) {
+            return null;
+        }
+        const objStartIndex = await this.findSubarrayIndexAsync(keywordCodes.OBJ, { minIndex: start, closedOnly: true });
+        if (!objStartIndex) {
+            return null;
+        }
+        let contentStart = await this.findNonSpaceIndexAsync(true, objStartIndex.end + 1);
+        if (contentStart === -1) {
+            return null;
+        }
+        const objEndIndex = await this.findSubarrayIndexAsync(keywordCodes.OBJ_END, { minIndex: contentStart, closedOnly: true });
+        if (!objEndIndex) {
+            return null;
+        }
+        let contentEnd = await this.findNonSpaceIndexAsync(false, objEndIndex.start - 1);
+        if (this.getCharCode(contentStart) === codes.LESS
+            && this.getCharCode(contentStart + 1) === codes.LESS
+            && this.getCharCode(contentEnd - 1) === codes.GREATER
+            && this.getCharCode(contentEnd) === codes.GREATER) {
+            contentStart += 2;
+            contentEnd -= 2;
+        }
+        return {
+            start: objStartIndex.start,
+            end: objEndIndex.end,
+            contentStart,
+            contentEnd,
+        };
+    }
+    async getXrefTableBoundsAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start) || this._data[start] !== codes.x) {
+            return null;
+        }
+        const xrefStart = await this.findSubarrayIndexAsync(keywordCodes.XREF_TABLE, { minIndex: start });
+        if (!xrefStart) {
+            return null;
+        }
+        const contentStart = await this.findNonSpaceIndexAsync(true, xrefStart.end + 1);
+        if (contentStart === -1) {
+            return null;
+        }
+        const xrefEnd = await this.findSubarrayIndexAsync(keywordCodes.TRAILER, { minIndex: xrefStart.end + 1 });
+        if (!xrefEnd) {
+            return null;
+        }
+        const contentEnd = await this.findNonSpaceIndexAsync(false, xrefEnd.start - 1);
+        if (contentEnd < contentStart) {
+            return null;
+        }
+        return {
+            start: xrefStart.start,
+            end: xrefEnd.end,
+            contentStart,
+            contentEnd,
+        };
+    }
+    async getDictBoundsAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start)
+            || this._data[start] !== codes.LESS
+            || this._data[start + 1] !== codes.LESS) {
+            return null;
+        }
+        const contentStart = await this.findNonSpaceIndexAsync(true, start + 2);
+        if (contentStart === -1) {
+            return null;
+        }
+        let dictOpened = 1;
+        let dictBound = true;
+        let literalOpened = 0;
+        let i = contentStart;
+        let code;
+        let prevCode;
+        while (dictOpened) {
+            prevCode = code;
+            code = this._data[i++];
+            if (code === codes.L_PARENTHESE
+                && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+                literalOpened++;
+            }
+            if (code === codes.R_PARENTHESE
+                && (literalOpened && prevCode !== codes.BACKSLASH)) {
+                literalOpened--;
+            }
+            if (literalOpened) {
+                continue;
+            }
+            if (!dictBound) {
+                if (code === codes.LESS && code === prevCode) {
+                    dictOpened++;
+                    dictBound = true;
+                }
+                else if (code === codes.GREATER && code === prevCode) {
+                    dictOpened--;
+                    dictBound = true;
                 }
             }
             else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isNewLineChar(arr[i])) {
-                        lineBreakIndex = i;
-                        break;
-                    }
-                }
+                dictBound = false;
             }
-            if (lineBreakIndex === undefined) {
-                return -1;
-            }
-            if (direction) {
-                if (this._data[lineBreakIndex] === codes.CARRIAGE_RETURN
-                    && this._data[lineBreakIndex + 1] === codes.LINE_FEED) {
-                    lineBreakIndex++;
-                }
-                return Math.min(lineBreakIndex + 1, this._maxIndex);
-            }
-            else {
-                if (this._data[lineBreakIndex] === codes.LINE_FEED
-                    && this._data[lineBreakIndex - 1] === codes.CARRIAGE_RETURN) {
-                    lineBreakIndex--;
-                }
-                return Math.max(lineBreakIndex - 1, 0);
-            }
-        });
-    }
-    findSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isSpaceChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isSpaceChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        });
-    }
-    findNonSpaceIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isNotSpaceChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isNotSpaceChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        });
-    }
-    findDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isDelimiterChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isDelimiterChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        });
-    }
-    findNonDelimiterIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isNotDelimiterChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isNotDelimiterChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        });
-    }
-    findRegularIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isRegularChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isRegularChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        });
-    }
-    findIrregularIndexAsync(direction = true, start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            let i = isNaN(start)
-                ? direction
-                    ? 0
-                    : this._maxIndex
-                : start;
-            if (direction) {
-                for (i; i <= this._maxIndex; i++) {
-                    if (SyncDataParser.isNotRegularChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            else {
-                for (i; i >= 0; i--) {
-                    if (SyncDataParser.isNotRegularChar(arr[i])) {
-                        return i;
-                    }
-                }
-            }
-            return -1;
-        });
-    }
-    getIndirectObjectBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start)) {
-                return null;
-            }
-            const objStartIndex = yield this.findSubarrayIndexAsync(keywordCodes.OBJ, { minIndex: start, closedOnly: true });
-            if (!objStartIndex) {
-                return null;
-            }
-            let contentStart = yield this.findNonSpaceIndexAsync(true, objStartIndex.end + 1);
-            if (contentStart === -1) {
-                return null;
-            }
-            const objEndIndex = yield this.findSubarrayIndexAsync(keywordCodes.OBJ_END, { minIndex: contentStart, closedOnly: true });
-            if (!objEndIndex) {
-                return null;
-            }
-            let contentEnd = yield this.findNonSpaceIndexAsync(false, objEndIndex.start - 1);
-            if (this.getCharCode(contentStart) === codes.LESS
-                && this.getCharCode(contentStart + 1) === codes.LESS
-                && this.getCharCode(contentEnd - 1) === codes.GREATER
-                && this.getCharCode(contentEnd) === codes.GREATER) {
-                contentStart += 2;
-                contentEnd -= 2;
-            }
-            return {
-                start: objStartIndex.start,
-                end: objEndIndex.end,
-                contentStart,
-                contentEnd,
-            };
-        });
-    }
-    getXrefTableBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start) || this._data[start] !== codes.x) {
-                return null;
-            }
-            const xrefStart = yield this.findSubarrayIndexAsync(keywordCodes.XREF_TABLE, { minIndex: start });
-            if (!xrefStart) {
-                return null;
-            }
-            const contentStart = yield this.findNonSpaceIndexAsync(true, xrefStart.end + 1);
-            if (contentStart === -1) {
-                return null;
-            }
-            const xrefEnd = yield this.findSubarrayIndexAsync(keywordCodes.TRAILER, { minIndex: xrefStart.end + 1 });
-            if (!xrefEnd) {
-                return null;
-            }
-            const contentEnd = yield this.findNonSpaceIndexAsync(false, xrefEnd.start - 1);
-            if (contentEnd < contentStart) {
-                return null;
-            }
-            return {
-                start: xrefStart.start,
-                end: xrefEnd.end,
-                contentStart,
-                contentEnd,
-            };
-        });
-    }
-    getDictBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start)
-                || this._data[start] !== codes.LESS
-                || this._data[start + 1] !== codes.LESS) {
-                return null;
-            }
-            const contentStart = yield this.findNonSpaceIndexAsync(true, start + 2);
-            if (contentStart === -1) {
-                return null;
-            }
-            let dictOpened = 1;
-            let dictBound = true;
-            let literalOpened = 0;
-            let i = contentStart;
-            let code;
-            let prevCode;
-            while (dictOpened) {
-                prevCode = code;
-                code = this._data[i++];
-                if (code === codes.L_PARENTHESE
-                    && (!literalOpened || prevCode !== codes.BACKSLASH)) {
-                    literalOpened++;
-                }
-                if (code === codes.R_PARENTHESE
-                    && (literalOpened && prevCode !== codes.BACKSLASH)) {
-                    literalOpened--;
-                }
-                if (literalOpened) {
-                    continue;
-                }
-                if (!dictBound) {
-                    if (code === codes.LESS && code === prevCode) {
-                        dictOpened++;
-                        dictBound = true;
-                    }
-                    else if (code === codes.GREATER && code === prevCode) {
-                        dictOpened--;
-                        dictBound = true;
-                    }
-                }
-                else {
-                    dictBound = false;
-                }
-            }
-            const end = i - 1;
-            const contentEnd = yield this.findNonSpaceIndexAsync(false, end - 2);
-            if (contentEnd < contentStart) {
-                return {
-                    start,
-                    end,
-                };
-            }
+        }
+        const end = i - 1;
+        const contentEnd = await this.findNonSpaceIndexAsync(false, end - 2);
+        if (contentEnd < contentStart) {
             return {
                 start,
                 end,
-                contentStart,
-                contentEnd,
             };
-        });
+        }
+        return {
+            start,
+            end,
+            contentStart,
+            contentEnd,
+        };
     }
-    getArrayBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start) || this._data[start] !== codes.L_BRACKET) {
-                return null;
-            }
-            let arraysOpened = 1;
-            let i = start + 1;
-            let code;
-            while (arraysOpened) {
-                code = this._data[i++];
-                if (code === codes.L_BRACKET) {
-                    arraysOpened++;
-                }
-                else if (code === codes.R_BRACKET) {
-                    arraysOpened--;
-                }
-            }
-            const arrayEnd = i - 1;
-            if (arrayEnd - start < 1) {
-                return null;
-            }
-            return { start, end: arrayEnd };
-        });
-    }
-    getHexBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
-                return null;
-            }
-            const end = yield this.findCharIndexAsync(codes.GREATER, true, start + 1);
-            if (end === -1) {
-                return null;
-            }
-            return { start, end };
-        });
-    }
-    getLiteralBoundsAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
-                return null;
-            }
-            let i = start;
-            let code;
-            let escaped = false;
-            let opened = 0;
-            while (opened || code !== codes.R_PARENTHESE || escaped) {
-                if (i > this._maxIndex) {
-                    return null;
-                }
-                code = this.getCharCode(i++);
-                if (!escaped) {
-                    if (code === codes.L_PARENTHESE) {
-                        opened += 1;
-                    }
-                    else if (opened && code === codes.R_PARENTHESE) {
-                        opened -= 1;
-                    }
-                }
-                if (!escaped && code === codes.BACKSLASH) {
-                    escaped = true;
-                }
-                else {
-                    escaped = false;
-                }
-            }
-            return { start, end: i - 1 };
-        });
-    }
-    parseNumberAtAsync(start, float = false, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
-                return null;
-            }
-            let i = start;
-            let numberStr = "";
-            let value = this._data[i];
-            if (value === codes.MINUS) {
-                numberStr += "-";
-                value = this._data[++i];
-            }
-            else if (value === codes.DOT) {
-                numberStr += "0.";
-                value = this._data[++i];
-            }
-            while (SyncDataParser.isDigit(value)
-                || (float && value === codes.DOT)) {
-                numberStr += String.fromCharCode(value);
-                value = this._data[++i];
-            }
-            return numberStr
-                ? { value: +numberStr, start, end: i - 1 }
-                : null;
-        });
-    }
-    parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start) || this._data[start] !== codes.SLASH) {
-                return null;
-            }
-            let i = start + 1;
-            let result = includeSlash
-                ? "/"
-                : "";
-            let value = this._data[i];
-            while (SyncDataParser.isRegularChar(value)) {
-                result += String.fromCharCode(value);
-                value = this._data[++i];
-            }
-            return result.length > 1
-                ? { value: result, start, end: i - 1 }
-                : null;
-        });
-    }
-    parseStringAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start)) {
-                return null;
-            }
-            let i = start;
-            let result = "";
-            let value = this._data[i];
-            while (SyncDataParser.isRegularChar(value)) {
-                result += String.fromCharCode(value);
-                value = this._data[++i];
-            }
-            return result.length !== 0
-                ? { value: result, start, end: i - 1 }
-                : null;
-        });
-    }
-    parseBoolAtAsync(start, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield this.skipEmptyAsync(start);
-            }
-            if (this.isOutside(start)) {
-                return null;
-            }
-            const nearestDelimiter = yield this.findDelimiterIndexAsync(true, start);
-            const isTrue = yield this.findSubarrayIndexAsync(keywordCodes.TRUE, {
-                minIndex: start,
-                maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
-            });
-            if (isTrue) {
-                return { value: true, start, end: isTrue.end };
-            }
-            const isFalse = yield this.findSubarrayIndexAsync(keywordCodes.FALSE, {
-                minIndex: start,
-                maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
-            });
-            if (isFalse) {
-                return { value: false, start, end: isFalse.end };
-            }
+    async getArrayBoundsAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start) || this._data[start] !== codes.L_BRACKET) {
             return null;
-        });
+        }
+        let arraysOpened = 1;
+        let i = start + 1;
+        let code;
+        while (arraysOpened) {
+            code = this._data[i++];
+            if (code === codes.L_BRACKET) {
+                arraysOpened++;
+            }
+            else if (code === codes.R_BRACKET) {
+                arraysOpened--;
+            }
+        }
+        const arrayEnd = i - 1;
+        if (arrayEnd - start < 1) {
+            return null;
+        }
+        return { start, end: arrayEnd };
     }
-    parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
-            if (!arrayBounds) {
+    async getHexBoundsAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start) || this.getCharCode(start) !== codes.LESS) {
+            return null;
+        }
+        const end = await this.findCharIndexAsync(codes.GREATER, true, start + 1);
+        if (end === -1) {
+            return null;
+        }
+        return { start, end };
+    }
+    async getLiteralBoundsAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start) || this.getCharCode(start) !== codes.L_PARENTHESE) {
+            return null;
+        }
+        let i = start;
+        let code;
+        let escaped = false;
+        let opened = 0;
+        while (opened || code !== codes.R_PARENTHESE || escaped) {
+            if (i > this._maxIndex) {
                 return null;
             }
-            const numbers = [];
-            let current;
-            let i = arrayBounds.start + 1;
-            while (i < arrayBounds.end) {
-                current = yield this.parseNumberAtAsync(i, float, true);
-                if (!current) {
-                    break;
+            code = this.getCharCode(i++);
+            if (!escaped) {
+                if (code === codes.L_PARENTHESE) {
+                    opened += 1;
                 }
-                numbers.push(current.value);
-                i = current.end + 1;
-            }
-            return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
-        });
-    }
-    parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arrayBounds = yield this.getArrayBoundsAtAsync(start, skipEmpty);
-            if (!arrayBounds) {
-                return null;
-            }
-            const names = [];
-            let current;
-            let i = arrayBounds.start + 1;
-            while (i < arrayBounds.end) {
-                current = yield this.parseNameAtAsync(i, includeSlash, true);
-                if (!current) {
-                    break;
+                else if (opened && code === codes.R_PARENTHESE) {
+                    opened -= 1;
                 }
-                names.push(current.value);
-                i = current.end + 1;
             }
-            return { value: names, start: arrayBounds.start, end: arrayBounds.end };
-        });
+            if (!escaped && code === codes.BACKSLASH) {
+                escaped = true;
+            }
+            else {
+                escaped = false;
+            }
+        }
+        return { start, end: i - 1 };
     }
-    parseDictTypeAsync(bounds) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            return yield this.parseDictPropertyByNameAsync(keywordCodes.TYPE, bounds);
-        });
+    async parseNumberAtAsync(start, float = false, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start) || !SyncDataParser.isRegularChar(this._data[start])) {
+            return null;
+        }
+        let i = start;
+        let numberStr = "";
+        let value = this._data[i];
+        if (value === codes.MINUS) {
+            numberStr += "-";
+            value = this._data[++i];
+        }
+        else if (value === codes.DOT) {
+            numberStr += "0.";
+            value = this._data[++i];
+        }
+        while (SyncDataParser.isDigit(value)
+            || (float && value === codes.DOT)) {
+            numberStr += String.fromCharCode(value);
+            value = this._data[++i];
+        }
+        return numberStr
+            ? { value: +numberStr, start, end: i - 1 }
+            : null;
     }
-    parseDictSubtypeAsync(bounds) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            return yield this.parseDictPropertyByNameAsync(keywordCodes.SUBTYPE, bounds);
-        });
+    async parseNameAtAsync(start, includeSlash = true, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start) || this._data[start] !== codes.SLASH) {
+            return null;
+        }
+        let i = start + 1;
+        let result = includeSlash
+            ? "/"
+            : "";
+        let value = this._data[i];
+        while (SyncDataParser.isRegularChar(value)) {
+            result += String.fromCharCode(value);
+            value = this._data[++i];
+        }
+        return result.length > 1
+            ? { value: result, start, end: i - 1 }
+            : null;
     }
-    parseDictPropertyByNameAsync(propName, bounds) {
+    async parseStringAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start)) {
+            return null;
+        }
+        let i = start;
+        let result = "";
+        let value = this._data[i];
+        while (SyncDataParser.isRegularChar(value)) {
+            result += String.fromCharCode(value);
+            value = this._data[++i];
+        }
+        return result.length !== 0
+            ? { value: result, start, end: i - 1 }
+            : null;
+    }
+    async parseBoolAtAsync(start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await this.skipEmptyAsync(start);
+        }
+        if (this.isOutside(start)) {
+            return null;
+        }
+        const nearestDelimiter = await this.findDelimiterIndexAsync(true, start);
+        const isTrue = await this.findSubarrayIndexAsync(keywordCodes.TRUE, {
+            minIndex: start,
+            maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
+        });
+        if (isTrue) {
+            return { value: true, start, end: isTrue.end };
+        }
+        const isFalse = await this.findSubarrayIndexAsync(keywordCodes.FALSE, {
+            minIndex: start,
+            maxIndex: nearestDelimiter === -1 ? this._maxIndex : nearestDelimiter,
+        });
+        if (isFalse) {
+            return { value: false, start, end: isFalse.end };
+        }
+        return null;
+    }
+    async parseNumberArrayAtAsync(start, float = true, skipEmpty = true) {
+        const arrayBounds = await this.getArrayBoundsAtAsync(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const numbers = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = await this.parseNumberAtAsync(i, float, true);
+            if (!current) {
+                break;
+            }
+            numbers.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: numbers, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    async parseNameArrayAtAsync(start, includeSlash = true, skipEmpty = true) {
+        const arrayBounds = await this.getArrayBoundsAtAsync(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const names = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = await this.parseNameAtAsync(i, includeSlash, true);
+            if (!current) {
+                break;
+            }
+            names.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: names, start: arrayBounds.start, end: arrayBounds.end };
+    }
+    async parseDictTypeAsync(bounds) {
+        return await this.parseDictPropertyByNameAsync(keywordCodes.TYPE, bounds);
+    }
+    async parseDictSubtypeAsync(bounds) {
+        return await this.parseDictPropertyByNameAsync(keywordCodes.SUBTYPE, bounds);
+    }
+    async parseDictPropertyByNameAsync(propName, bounds) {
         var _a, _b;
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            const arr = this._data;
-            if (!(propName === null || propName === void 0 ? void 0 : propName.length)) {
-                return null;
+        const arr = this._data;
+        if (!(propName === null || propName === void 0 ? void 0 : propName.length)) {
+            return null;
+        }
+        const minIndex = Math.max(Math.min((_a = bounds.start) !== null && _a !== void 0 ? _a : 0, this._maxIndex), 0);
+        const maxIndex = Math.max(Math.min((_b = bounds.end) !== null && _b !== void 0 ? _b : this._maxIndex, this._maxIndex), 0);
+        let propNameBounds;
+        let i = minIndex;
+        let j;
+        let code;
+        let prevCode;
+        let dictOpened = 0;
+        let dictBound = true;
+        let literalOpened = 0;
+        outer_loop: for (i; i <= maxIndex; i++) {
+            prevCode = code;
+            code = arr[i];
+            if (code === codes.L_PARENTHESE
+                && (!literalOpened || prevCode !== codes.BACKSLASH)) {
+                literalOpened++;
             }
-            const minIndex = Math.max(Math.min((_a = bounds.start) !== null && _a !== void 0 ? _a : 0, this._maxIndex), 0);
-            const maxIndex = Math.max(Math.min((_b = bounds.end) !== null && _b !== void 0 ? _b : this._maxIndex, this._maxIndex), 0);
-            let propNameBounds;
-            let i = minIndex;
-            let j;
-            let code;
-            let prevCode;
-            let dictOpened = 0;
-            let dictBound = true;
-            let literalOpened = 0;
-            outer_loop: for (i; i <= maxIndex; i++) {
-                prevCode = code;
-                code = arr[i];
-                if (code === codes.L_PARENTHESE
-                    && (!literalOpened || prevCode !== codes.BACKSLASH)) {
-                    literalOpened++;
+            if (code === codes.R_PARENTHESE
+                && (literalOpened && prevCode !== codes.BACKSLASH)) {
+                literalOpened--;
+            }
+            if (literalOpened) {
+                continue;
+            }
+            if (!dictBound) {
+                if (code === codes.LESS && code === prevCode) {
+                    dictOpened++;
+                    dictBound = true;
                 }
-                if (code === codes.R_PARENTHESE
-                    && (literalOpened && prevCode !== codes.BACKSLASH)) {
-                    literalOpened--;
-                }
-                if (literalOpened) {
-                    continue;
-                }
-                if (!dictBound) {
-                    if (code === codes.LESS && code === prevCode) {
-                        dictOpened++;
-                        dictBound = true;
-                    }
-                    else if (code === codes.GREATER && code === prevCode) {
-                        dictOpened--;
-                        dictBound = true;
-                    }
-                }
-                else {
-                    dictBound = false;
-                }
-                for (j = 0; j < propName.length; j++) {
-                    if (arr[i + j] !== propName[j]) {
-                        continue outer_loop;
-                    }
-                }
-                if (dictOpened !== 1) {
-                    continue;
-                }
-                if (!SyncDataParser.isRegularChar(arr[i + j])) {
-                    propNameBounds = { start: i, end: i + j - 1 };
-                    break;
+                else if (code === codes.GREATER && code === prevCode) {
+                    dictOpened--;
+                    dictBound = true;
                 }
             }
-            if (!propNameBounds) {
-                return null;
+            else {
+                dictBound = false;
             }
-            const type = yield this.parseNameAtAsync(propNameBounds.end + 1);
-            if (!type) {
-                return null;
+            for (j = 0; j < propName.length; j++) {
+                if (arr[i + j] !== propName[j]) {
+                    continue outer_loop;
+                }
             }
-            return type.value;
-        });
+            if (dictOpened !== 1) {
+                continue;
+            }
+            if (!SyncDataParser.isRegularChar(arr[i + j])) {
+                propNameBounds = { start: i, end: i + j - 1 };
+                break;
+            }
+        }
+        if (!propNameBounds) {
+            return null;
+        }
+        const type = await this.parseNameAtAsync(propNameBounds.end + 1);
+        if (!type) {
+            return null;
+        }
+        return type.value;
     }
-    skipEmptyAsync(start) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            let index = yield this.findNonSpaceIndexAsync(true, start);
-            if (index === -1) {
-                return -1;
-            }
-            if (this._data[index] === codes.PERCENT) {
-                const afterComment = yield this.findNewLineIndexAsync(true, index + 1);
-                if (afterComment === -1) {
-                    return -1;
-                }
-                index = yield this.findNonSpaceIndexAsync(true, afterComment);
-            }
-            return index;
-        });
-    }
-    skipToNextNameAsync(start, max) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            start || (start = 0);
-            max = max
-                ? Math.min(max, this._maxIndex)
-                : 0;
-            if (max < start) {
-                return -1;
-            }
-            let i = start;
-            while (i <= max) {
-                const value = yield this.getValueTypeAtAsync(i, true);
-                if (value) {
-                    let skipValueBounds;
-                    switch (value) {
-                        case valueTypes.DICTIONARY:
-                            skipValueBounds = yield this.getDictBoundsAtAsync(i, false);
-                            break;
-                        case valueTypes.ARRAY:
-                            skipValueBounds = yield this.getArrayBoundsAtAsync(i, false);
-                            break;
-                        case valueTypes.STRING_LITERAL:
-                            skipValueBounds = yield this.getLiteralBoundsAtAsync(i, false);
-                            break;
-                        case valueTypes.STRING_HEX:
-                            skipValueBounds = yield this.getHexBoundsAtAsync(i, false);
-                            break;
-                        case valueTypes.NUMBER:
-                            const numberParseResult = yield this.parseNumberAtAsync(i, true, false);
-                            if (numberParseResult) {
-                                skipValueBounds = numberParseResult;
-                            }
-                            break;
-                        case valueTypes.BOOLEAN:
-                            const boolParseResult = yield this.parseBoolAtAsync(i, false);
-                            if (boolParseResult) {
-                                skipValueBounds = boolParseResult;
-                            }
-                            break;
-                        case valueTypes.COMMENT:
-                            break;
-                        case valueTypes.NAME:
-                            return i;
-                        default:
-                            i++;
-                            continue;
-                    }
-                    if (skipValueBounds) {
-                        i = skipValueBounds.end + 1;
-                        skipValueBounds = null;
-                        continue;
-                    }
-                }
-                i++;
-            }
+    async skipEmptyAsync(start) {
+        let index = await this.findNonSpaceIndexAsync(true, start);
+        if (index === -1) {
             return -1;
-        });
+        }
+        if (this._data[index] === codes.PERCENT) {
+            const afterComment = await this.findNewLineIndexAsync(true, index + 1);
+            if (afterComment === -1) {
+                return -1;
+            }
+            index = await this.findNonSpaceIndexAsync(true, afterComment);
+        }
+        return index;
     }
-    sliceCharCodesAsync(start, end) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            return this._data.slice(start, (end || start) + 1);
-        });
+    async skipToNextNameAsync(start, max) {
+        start || (start = 0);
+        max = max
+            ? Math.min(max, this._maxIndex)
+            : 0;
+        if (max < start) {
+            return -1;
+        }
+        let i = start;
+        while (i <= max) {
+            const value = await this.getValueTypeAtAsync(i, true);
+            if (value) {
+                let skipValueBounds;
+                switch (value) {
+                    case valueTypes.DICTIONARY:
+                        skipValueBounds = await this.getDictBoundsAtAsync(i, false);
+                        break;
+                    case valueTypes.ARRAY:
+                        skipValueBounds = await this.getArrayBoundsAtAsync(i, false);
+                        break;
+                    case valueTypes.STRING_LITERAL:
+                        skipValueBounds = await this.getLiteralBoundsAtAsync(i, false);
+                        break;
+                    case valueTypes.STRING_HEX:
+                        skipValueBounds = await this.getHexBoundsAtAsync(i, false);
+                        break;
+                    case valueTypes.NUMBER:
+                        const numberParseResult = await this.parseNumberAtAsync(i, true, false);
+                        if (numberParseResult) {
+                            skipValueBounds = numberParseResult;
+                        }
+                        break;
+                    case valueTypes.BOOLEAN:
+                        const boolParseResult = await this.parseBoolAtAsync(i, false);
+                        if (boolParseResult) {
+                            skipValueBounds = boolParseResult;
+                        }
+                        break;
+                    case valueTypes.COMMENT:
+                        break;
+                    case valueTypes.NAME:
+                        return i;
+                    default:
+                        i++;
+                        continue;
+                }
+                if (skipValueBounds) {
+                    i = skipValueBounds.end + 1;
+                    skipValueBounds = null;
+                    continue;
+                }
+            }
+            i++;
+        }
+        return -1;
     }
-    sliceCharsAsync(start, end) {
-        return __awaiter$1k(this, void 0, void 0, function* () {
-            return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
-        });
+    async sliceCharCodesAsync(start, end) {
+        return this._data.slice(start, (end || start) + 1);
+    }
+    async sliceCharsAsync(start, end) {
+        return String.fromCharCode(...this._data.slice(start, (end || start) + 1));
     }
     getCharCode(index) {
         return this._data[index];
@@ -4413,80 +4246,65 @@ class ReferenceDataChange {
     }
 }
 
-var __awaiter$1j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class ObjectId {
     constructor(id, generation) {
         this.id = id !== null && id !== void 0 ? id : 0;
         this.generation = generation !== null && generation !== void 0 ? generation : 0;
     }
-    static parseAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1j(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield parser.findRegularIndexAsync(true, start);
-            }
-            if (start < 0 || start > parser.maxIndex) {
-                return null;
-            }
-            const id = yield parser.parseNumberAtAsync(start, false, false);
-            if (!id || isNaN(id.value)) {
-                return null;
-            }
-            const generation = yield parser.parseNumberAtAsync(id.end + 2, false, false);
-            if (!generation || isNaN(generation.value)) {
-                return null;
-            }
-            return {
-                value: new ObjectId(id.value, generation.value),
-                start,
-                end: generation.end,
-            };
-        });
+    static async parseAsync(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await parser.findRegularIndexAsync(true, start);
+        }
+        if (start < 0 || start > parser.maxIndex) {
+            return null;
+        }
+        const id = await parser.parseNumberAtAsync(start, false, false);
+        if (!id || isNaN(id.value)) {
+            return null;
+        }
+        const generation = await parser.parseNumberAtAsync(id.end + 2, false, false);
+        if (!generation || isNaN(generation.value)) {
+            return null;
+        }
+        return {
+            value: new ObjectId(id.value, generation.value),
+            start,
+            end: generation.end,
+        };
     }
-    static parseRefAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1j(this, void 0, void 0, function* () {
-            const id = yield ObjectId.parseAsync(parser, start, skipEmpty);
-            if (!id) {
-                return null;
-            }
-            const rIndexSupposed = id.end + 2;
-            const rIndex = yield parser.findSubarrayIndexAsync([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
-            if (!rIndex || rIndex.start !== rIndexSupposed) {
-                return null;
-            }
-            return {
-                value: id.value,
-                start: id.start,
-                end: rIndex.end,
-            };
-        });
+    static async parseRefAsync(parser, start, skipEmpty = true) {
+        const id = await ObjectId.parseAsync(parser, start, skipEmpty);
+        if (!id) {
+            return null;
+        }
+        const rIndexSupposed = id.end + 2;
+        const rIndex = await parser.findSubarrayIndexAsync([codes.R], { minIndex: rIndexSupposed, closedOnly: true });
+        if (!rIndex || rIndex.start !== rIndexSupposed) {
+            return null;
+        }
+        return {
+            value: id.value,
+            start: id.start,
+            end: rIndex.end,
+        };
     }
-    static parseRefArrayAsync(parser, start, skipEmpty = true) {
-        return __awaiter$1j(this, void 0, void 0, function* () {
-            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
-            if (!arrayBounds) {
-                return null;
+    static async parseRefArrayAsync(parser, start, skipEmpty = true) {
+        const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const ids = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = await ObjectId.parseRefAsync(parser, i, true);
+            if (!current) {
+                break;
             }
-            const ids = [];
-            let current;
-            let i = arrayBounds.start + 1;
-            while (i < arrayBounds.end) {
-                current = yield ObjectId.parseRefAsync(parser, i, true);
-                if (!current) {
-                    break;
-                }
-                ids.push(current.value);
-                i = current.end + 1;
-            }
-            return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
-        });
+            ids.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: ids, start: arrayBounds.start, end: arrayBounds.end };
     }
     static fromRef(ref) {
         return new ObjectId(ref.id, ref.generation);
@@ -4503,15 +4321,6 @@ class ObjectId {
     }
 }
 
-var __awaiter$1i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class DateString {
     get source() {
         return this._source;
@@ -4523,30 +4332,28 @@ class DateString {
         this._source = source;
         this._date = new Date(date);
     }
-    static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1i(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield parser.skipEmptyAsync(start);
-            }
-            if (parser.isOutside(start) || !(yield parser.isCodeAtAsync(start, codes.L_PARENTHESE))) {
-                return null;
-            }
-            const end = yield parser.findCharIndexAsync(codes.R_PARENTHESE, true, start);
-            if (end === -1) {
-                return null;
-            }
-            let bytes = yield parser.sliceCharCodesAsync(start + 1, end - 1);
-            if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-                bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-            }
-            try {
-                const date = DateString.fromArray(bytes);
-                return { value: date, start, end };
-            }
-            catch (_a) {
-                return null;
-            }
-        });
+    static async parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await parser.skipEmptyAsync(start);
+        }
+        if (parser.isOutside(start) || !(await parser.isCodeAtAsync(start, codes.L_PARENTHESE))) {
+            return null;
+        }
+        const end = await parser.findCharIndexAsync(codes.R_PARENTHESE, true, start);
+        if (end === -1) {
+            return null;
+        }
+        let bytes = await parser.sliceCharCodesAsync(start + 1, end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        try {
+            const date = DateString.fromArray(bytes);
+            return { value: date, start, end };
+        }
+        catch (_a) {
+            return null;
+        }
     }
     static fromDate(date) {
         const year = date.getFullYear();
@@ -4580,15 +4387,6 @@ class DateString {
     }
 }
 
-var __awaiter$1h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class HexString {
     get literal() {
         return this._literal;
@@ -4604,39 +4402,35 @@ class HexString {
         this._hex = hex;
         this._bytes = bytes;
     }
-    static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
-            const bounds = yield parser.getHexBoundsAtAsync(start, skipEmpty);
-            if (!bounds) {
-                return null;
-            }
-            let bytes = yield parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1);
-            if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-                bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-            }
-            const hex = HexString.fromBytes(bytes);
-            return { value: hex, start: bounds.start, end: bounds.end };
-        });
+    static async parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        const bounds = await parser.getHexBoundsAtAsync(start, skipEmpty);
+        if (!bounds) {
+            return null;
+        }
+        let bytes = await parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1);
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const hex = HexString.fromBytes(bytes);
+        return { value: hex, start: bounds.start, end: bounds.end };
     }
-    static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1h(this, void 0, void 0, function* () {
-            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
-            if (!arrayBounds) {
-                return null;
+    static async parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const hexes = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = await HexString.parseAsync(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
             }
-            const hexes = [];
-            let current;
-            let i = arrayBounds.start + 1;
-            while (i < arrayBounds.end) {
-                current = yield HexString.parseAsync(parser, i, cryptInfo, skipEmpty);
-                if (!current) {
-                    break;
-                }
-                hexes.push(current.value);
-                i = current.end + 1;
-            }
-            return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
-        });
+            hexes.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: hexes, start: arrayBounds.start, end: arrayBounds.end };
     }
     static fromBytes(bytes) {
         const literal = new TextDecoder().decode(bytes);
@@ -4664,15 +4458,6 @@ class HexString {
     }
 }
 
-var __awaiter$1g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class LiteralString {
     get literal() {
         return this._literal;
@@ -4684,39 +4469,35 @@ class LiteralString {
         this._literal = literal;
         this._bytes = bytes;
     }
-    static parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
-            const bounds = yield parser.getLiteralBoundsAtAsync(start, skipEmpty);
-            if (!bounds) {
-                return;
-            }
-            let bytes = LiteralString.unescape(yield parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1));
-            if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
-                bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
-            }
-            const result = LiteralString.fromBytes(bytes);
-            return { value: result, start: bounds.start, end: bounds.end };
-        });
+    static async parseAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        const bounds = await parser.getLiteralBoundsAtAsync(start, skipEmpty);
+        if (!bounds) {
+            return;
+        }
+        let bytes = LiteralString.unescape(await parser.sliceCharCodesAsync(bounds.start + 1, bounds.end - 1));
+        if ((cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.stringCryptor) {
+            bytes = cryptInfo.stringCryptor.decrypt(bytes, cryptInfo.ref);
+        }
+        const result = LiteralString.fromBytes(bytes);
+        return { value: result, start: bounds.start, end: bounds.end };
     }
-    static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1g(this, void 0, void 0, function* () {
-            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
-            if (!arrayBounds) {
-                return null;
+    static async parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const strings = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            current = await LiteralString.parseAsync(parser, i, cryptInfo, skipEmpty);
+            if (!current) {
+                break;
             }
-            const strings = [];
-            let current;
-            let i = arrayBounds.start + 1;
-            while (i < arrayBounds.end) {
-                current = yield LiteralString.parseAsync(parser, i, cryptInfo, skipEmpty);
-                if (!current) {
-                    break;
-                }
-                strings.push(current.value);
-                i = current.end + 1;
-            }
-            return { value: strings, start: arrayBounds.start, end: arrayBounds.end };
-        });
+            strings.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: strings, start: arrayBounds.start, end: arrayBounds.end };
     }
     static fromBytes(bytes) {
         const decoder = bytes[0] === 254 && bytes[1] === 255
@@ -4835,15 +4616,6 @@ class LiteralString {
     }
 }
 
-var __awaiter$1f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PdfObject {
     get sourceBytes() {
         var _a;
@@ -4894,12 +4666,10 @@ class PdfObject {
             },
         };
     }
-    static getDataParserAsync(data) {
+    static async getDataParserAsync(data) {
         var _a;
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parser = (_a = BgDataParser.tryGetParser(data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(data);
-            return parser;
-        });
+        const parser = (_a = BgDataParser.tryGetParser(data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(data);
+        return parser;
     }
     markAsDeleted(value = true) {
         this._deleted = value;
@@ -4936,65 +4706,45 @@ class PdfObject {
         bytes.push(codes.R_BRACKET);
         return bytes;
     }
-    parseRefPropAsync(propName, parser, index) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield ObjectId.parseRefAsync(parser, index);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseRefPropAsync(propName, parser, index) {
+        const parsed = await ObjectId.parseRefAsync(parser, index);
+        return this.setParsedProp(propName, parsed);
     }
-    parseRefArrayPropAsync(propName, parser, index) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield ObjectId.parseRefArrayAsync(parser, index);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseRefArrayPropAsync(propName, parser, index) {
+        const parsed = await ObjectId.parseRefArrayAsync(parser, index);
+        return this.setParsedProp(propName, parsed);
     }
-    parseBoolPropAsync(propName, parser, index) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield parser.parseBoolAtAsync(index);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseBoolPropAsync(propName, parser, index) {
+        const parsed = await parser.parseBoolAtAsync(index);
+        return this.setParsedProp(propName, parsed);
     }
-    parseNamePropAsync(propName, parser, index, includeSlash = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield parser.parseNameAtAsync(index, includeSlash);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseNamePropAsync(propName, parser, index, includeSlash = true) {
+        const parsed = await parser.parseNameAtAsync(index, includeSlash);
+        return this.setParsedProp(propName, parsed);
     }
-    parseNameArrayPropAsync(propName, parser, index, includeSlash = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield parser.parseNameArrayAtAsync(index, includeSlash);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseNameArrayPropAsync(propName, parser, index, includeSlash = true) {
+        const parsed = await parser.parseNameArrayAtAsync(index, includeSlash);
+        return this.setParsedProp(propName, parsed);
     }
-    parseNumberPropAsync(propName, parser, index, float = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield parser.parseNumberAtAsync(index, float);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseNumberPropAsync(propName, parser, index, float = true) {
+        const parsed = await parser.parseNumberAtAsync(index, float);
+        return this.setParsedProp(propName, parsed);
     }
-    parseNumberArrayPropAsync(propName, parser, index, float = true) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield parser.parseNumberArrayAtAsync(index, float);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseNumberArrayPropAsync(propName, parser, index, float = true) {
+        const parsed = await parser.parseNumberArrayAtAsync(index, float);
+        return this.setParsedProp(propName, parsed);
     }
-    parseDatePropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield DateString.parseAsync(parser, index, cryptInfo);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseDatePropAsync(propName, parser, index, cryptInfo) {
+        const parsed = await DateString.parseAsync(parser, index, cryptInfo);
+        return this.setParsedProp(propName, parsed);
     }
-    parseLiteralPropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield LiteralString.parseAsync(parser, index, cryptInfo);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseLiteralPropAsync(propName, parser, index, cryptInfo) {
+        const parsed = await LiteralString.parseAsync(parser, index, cryptInfo);
+        return this.setParsedProp(propName, parsed);
     }
-    parseHexPropAsync(propName, parser, index, cryptInfo) {
-        return __awaiter$1f(this, void 0, void 0, function* () {
-            const parsed = yield HexString.parseAsync(parser, index, cryptInfo);
-            return this.setParsedProp(propName, parsed);
-        });
+    async parseHexPropAsync(propName, parser, index, cryptInfo) {
+        const parsed = await HexString.parseAsync(parser, index, cryptInfo);
+        return this.setParsedProp(propName, parsed);
     }
     setParsedProp(propName, parsed) {
         if (!parsed) {
@@ -5005,15 +4755,6 @@ class PdfObject {
     }
 }
 
-var __awaiter$1e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PdfDict extends PdfObject {
     get streamId() {
         return this._streamId;
@@ -5031,61 +4772,50 @@ class PdfDict extends PdfObject {
         bytes.push(...keywordCodes.DICT_END);
         return new Uint8Array(bytes);
     }
-    parsePropsAsync(parseInfo) {
+    async parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$1e(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parse info is empty");
-            }
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
-            this._streamId = parseInfo.streamId;
-            this._sourceBytes = yield parser.sliceCharCodesAsync(start, end);
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            if (i === -1) {
-                throw new Error("Dict is empty (has no properties)");
-            }
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Type":
-                            const type = yield parser.parseNameAtAsync(i);
-                            if (type) {
-                                if (this.Type && this.Type !== type.value) {
-                                    throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
-                                }
-                                return;
+        if (!parseInfo) {
+            throw new Error("Parse info is empty");
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
+        this._streamId = parseInfo.streamId;
+        this._sourceBytes = await parser.sliceCharCodesAsync(start, end);
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        if (i === -1) {
+            throw new Error("Dict is empty (has no properties)");
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Type":
+                        const type = await parser.parseNameAtAsync(i);
+                        if (type) {
+                            if (this.Type && this.Type !== type.value) {
+                                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
                             }
-                            throw new Error("Can't parse /Type property value");
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            return;
+                        }
+                        throw new Error("Can't parse /Type property value");
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$1d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class DecodeParamsDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
@@ -5094,42 +4824,38 @@ class DecodeParamsDict extends PdfDict {
         this._namePropMap = new Map();
         this._refPropMap = new Map();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$1d(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new DecodeParamsDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new DecodeParamsDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
-    static parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
-        return __awaiter$1d(this, void 0, void 0, function* () {
-            const arrayBounds = yield parser.getArrayBoundsAtAsync(start, skipEmpty);
-            if (!arrayBounds) {
-                return null;
+    static async parseArrayAsync(parser, start, cryptInfo = null, skipEmpty = true) {
+        const arrayBounds = await parser.getArrayBoundsAtAsync(start, skipEmpty);
+        if (!arrayBounds) {
+            return null;
+        }
+        const paramsDicts = [];
+        let current;
+        let i = arrayBounds.start + 1;
+        while (i < arrayBounds.end) {
+            const paramsBounds = await parser.getDictBoundsAtAsync(i);
+            current = await DecodeParamsDict.parseAsync({ parser, bounds: paramsBounds, cryptInfo });
+            if (!current) {
+                break;
             }
-            const paramsDicts = [];
-            let current;
-            let i = arrayBounds.start + 1;
-            while (i < arrayBounds.end) {
-                const paramsBounds = yield parser.getDictBoundsAtAsync(i);
-                current = yield DecodeParamsDict.parseAsync({ parser, bounds: paramsBounds, cryptInfo });
-                if (!current) {
-                    break;
-                }
-                paramsDicts.push(current.value);
-                i = current.end + 1;
-            }
-            return { value: paramsDicts, start: arrayBounds.start, end: arrayBounds.end };
-        });
+            paramsDicts.push(current.value);
+            i = current.end + 1;
+        }
+        return { value: paramsDicts, start: arrayBounds.start, end: arrayBounds.end };
     }
     getIntProp(name) {
         return this._intPropMap.get(name);
@@ -5170,65 +4896,60 @@ class DecodeParamsDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$1d(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    const valueType = yield parser.getValueTypeAtAsync(i);
-                    switch (valueType) {
-                        case valueTypes.NUMBER:
-                            const intValue = yield parser.parseNumberAtAsync(i, false);
-                            if (intValue) {
-                                this._intPropMap.set(name, intValue.value);
-                                i = intValue.end + 1;
-                                continue;
-                            }
-                            break;
-                        case valueTypes.BOOLEAN:
-                            const boolValue = yield parser.parseBoolAtAsync(i);
-                            if (boolValue) {
-                                this._boolPropMap.set(name, boolValue.value);
-                                i = boolValue.end + 1;
-                                continue;
-                            }
-                            break;
-                        case valueTypes.NAME:
-                            const nameValue = yield parser.parseNameAtAsync(i);
-                            if (nameValue) {
-                                this._namePropMap.set(name, nameValue.value);
-                                i = nameValue.end + 1;
-                                continue;
-                            }
-                            break;
-                        case valueTypes.REF:
-                            const refValue = yield ObjectId.parseRefAsync(parser, i);
-                            if (refValue) {
-                                this._refPropMap.set(name, refValue.value);
-                                i = refValue.end + 1;
-                                continue;
-                            }
-                            break;
-                    }
-                    i = yield parser.skipToNextNameAsync(i, end - 1);
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                const valueType = await parser.getValueTypeAtAsync(i);
+                switch (valueType) {
+                    case valueTypes.NUMBER:
+                        const intValue = await parser.parseNumberAtAsync(i, false);
+                        if (intValue) {
+                            this._intPropMap.set(name, intValue.value);
+                            i = intValue.end + 1;
+                            continue;
+                        }
+                        break;
+                    case valueTypes.BOOLEAN:
+                        const boolValue = await parser.parseBoolAtAsync(i);
+                        if (boolValue) {
+                            this._boolPropMap.set(name, boolValue.value);
+                            i = boolValue.end + 1;
+                            continue;
+                        }
+                        break;
+                    case valueTypes.NAME:
+                        const nameValue = await parser.parseNameAtAsync(i);
+                        if (nameValue) {
+                            this._namePropMap.set(name, nameValue.value);
+                            i = nameValue.end + 1;
+                            continue;
+                        }
+                        break;
+                    case valueTypes.REF:
+                        const refValue = await ObjectId.parseRefAsync(parser, i);
+                        if (refValue) {
+                            this._refPropMap.set(name, refValue.value);
+                            i = refValue.end + 1;
+                            continue;
+                        }
+                        break;
                 }
-                else {
-                    break;
-                }
+                i = await parser.skipToNextNameAsync(i, end - 1);
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
@@ -5927,15 +5648,6 @@ class FlateDecoder {
     }
 }
 
-var __awaiter$1c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PdfStream extends PdfObject {
     get streamData() {
         return this._streamData;
@@ -5958,10 +5670,8 @@ class PdfStream extends PdfObject {
         super();
         this.Type = type;
     }
-    getStreamDataParserAsync() {
-        return __awaiter$1c(this, void 0, void 0, function* () {
-            return yield PdfStream.getDataParserAsync(this.decodedStreamData);
-        });
+    async getStreamDataParserAsync() {
+        return await PdfStream.getDataParserAsync(this.decodedStreamData);
     }
     toArray(cryptInfo) {
         const streamData = (cryptInfo === null || cryptInfo === void 0 ? void 0 : cryptInfo.ref) && cryptInfo.streamCryptor
@@ -5991,137 +5701,135 @@ class PdfStream extends PdfObject {
         const bytes = encoder.encode(text);
         this.streamData = bytes;
     }
-    parsePropsAsync(parseInfo) {
+    async parsePropsAsync(parseInfo) {
         var _a, _b;
-        return __awaiter$1c(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parse info is empty");
-            }
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
-            this._sourceBytes = yield parser.sliceCharCodesAsync(start, end);
-            const streamEndIndex = yield parser.findSubarrayIndexAsync(keywordCodes.STREAM_END, {
-                direction: false,
-                minIndex: start,
-                maxIndex: end,
-                closedOnly: true,
-            });
-            if (!streamEndIndex) {
-                throw new Error("Object is not a stream");
-            }
-            const streamStartIndex = yield parser.findSubarrayIndexAsync(keywordCodes.STREAM_START, {
-                direction: false,
-                minIndex: start,
-                maxIndex: streamEndIndex.start - 1,
-                closedOnly: true
-            });
-            if (!streamStartIndex) {
-                throw new Error("Stream start is out of the data bounds");
-            }
-            const dictBounds = yield parser.getDictBoundsAtAsync(start);
-            let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
-            if (i === -1) {
-                throw new Error("Dict is empty (has no properties)");
-            }
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Type":
-                            const type = yield parser.parseNameAtAsync(i);
-                            if (type) {
-                                if (this.Type && this.Type !== type.value) {
-                                    throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
-                                }
-                                i = type.end + 1;
+        if (!parseInfo) {
+            throw new Error("Parse info is empty");
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        this._ref = (_a = parseInfo.cryptInfo) === null || _a === void 0 ? void 0 : _a.ref;
+        this._sourceBytes = await parser.sliceCharCodesAsync(start, end);
+        const streamEndIndex = await parser.findSubarrayIndexAsync(keywordCodes.STREAM_END, {
+            direction: false,
+            minIndex: start,
+            maxIndex: end,
+            closedOnly: true,
+        });
+        if (!streamEndIndex) {
+            throw new Error("Object is not a stream");
+        }
+        const streamStartIndex = await parser.findSubarrayIndexAsync(keywordCodes.STREAM_START, {
+            direction: false,
+            minIndex: start,
+            maxIndex: streamEndIndex.start - 1,
+            closedOnly: true
+        });
+        if (!streamStartIndex) {
+            throw new Error("Stream start is out of the data bounds");
+        }
+        const dictBounds = await parser.getDictBoundsAtAsync(start);
+        let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
+        if (i === -1) {
+            throw new Error("Dict is empty (has no properties)");
+        }
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Type":
+                        const type = await parser.parseNameAtAsync(i);
+                        if (type) {
+                            if (this.Type && this.Type !== type.value) {
+                                throw new Error(`Ivalid dict type: '${type.value}' instead of '${this.Type}'`);
+                            }
+                            i = type.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Type property value");
+                        }
+                        break;
+                    case "/Length":
+                    case "/DL":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Filter":
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.NAME) {
+                            const filter = await parser.parseNameAtAsync(i);
+                            if (filter && supportedFilters.has(filter.value)) {
+                                this.Filter = filter.value;
+                                i = filter.end + 1;
+                                break;
                             }
                             else {
-                                throw new Error("Can't parse /Type property value");
+                                throw new Error(`Unsupported /Filter property value: ${filter.value}`);
                             }
-                            break;
-                        case "/Length":
-                        case "/DL":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Filter":
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.NAME) {
-                                const filter = yield parser.parseNameAtAsync(i);
-                                if (filter && supportedFilters.has(filter.value)) {
-                                    this.Filter = filter.value;
-                                    i = filter.end + 1;
+                        }
+                        else if (entryType === valueTypes.ARRAY) {
+                            const filterNames = await parser.parseNameArrayAtAsync(i);
+                            if (filterNames) {
+                                const filterArray = filterNames.value;
+                                if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
+                                    this.Filter = filterArray[0];
+                                    i = filterNames.end + 1;
                                     break;
                                 }
                                 else {
-                                    throw new Error(`Unsupported /Filter property value: ${filter.value}`);
+                                    throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
                                 }
                             }
-                            else if (entryType === valueTypes.ARRAY) {
-                                const filterNames = yield parser.parseNameArrayAtAsync(i);
-                                if (filterNames) {
-                                    const filterArray = filterNames.value;
-                                    if (filterArray.length === 1 && supportedFilters.has(filterArray[0])) {
-                                        this.Filter = filterArray[0];
-                                        i = filterNames.end + 1;
-                                        break;
-                                    }
-                                    else {
-                                        throw new Error(`Unsupported /Filter property value: ${filterArray.toString()}`);
-                                    }
+                        }
+                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                    case "/DecodeParms":
+                        const paramsEntryType = await parser.getValueTypeAtAsync(i);
+                        if (paramsEntryType === valueTypes.DICTIONARY) {
+                            const decodeParamsBounds = await parser.getDictBoundsAtAsync(i);
+                            if (decodeParamsBounds) {
+                                const params = await DecodeParamsDict.parseAsync({ parser,
+                                    bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo });
+                                if (params) {
+                                    this.DecodeParms = params.value;
+                                    i = decodeParamsBounds.end + 1;
+                                    break;
                                 }
                             }
-                            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                        case "/DecodeParms":
-                            const paramsEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (paramsEntryType === valueTypes.DICTIONARY) {
-                                const decodeParamsBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (decodeParamsBounds) {
-                                    const params = yield DecodeParamsDict.parseAsync({ parser,
-                                        bounds: decodeParamsBounds, cryptInfo: parseInfo.cryptInfo });
-                                    if (params) {
-                                        this.DecodeParms = params.value;
-                                        i = decodeParamsBounds.end + 1;
-                                        break;
-                                    }
+                            throw new Error("Can't parse /DecodeParms property value");
+                        }
+                        else if (paramsEntryType === valueTypes.ARRAY) {
+                            const paramsDicts = await DecodeParamsDict.parseArrayAsync(parser, i, parseInfo.cryptInfo);
+                            if (paramsDicts) {
+                                const paramsArray = paramsDicts.value;
+                                if (paramsArray.length === 1) {
+                                    this.DecodeParms = paramsArray[0];
+                                    i = paramsDicts.end + 1;
+                                    break;
                                 }
-                                throw new Error("Can't parse /DecodeParms property value");
                             }
-                            else if (paramsEntryType === valueTypes.ARRAY) {
-                                const paramsDicts = yield DecodeParamsDict.parseArrayAsync(parser, i, parseInfo.cryptInfo);
-                                if (paramsDicts) {
-                                    const paramsArray = paramsDicts.value;
-                                    if (paramsArray.length === 1) {
-                                        this.DecodeParms = paramsArray[0];
-                                        i = paramsDicts.end + 1;
-                                        break;
-                                    }
-                                }
-                                throw new Error("Can't parse /DecodeParms property value");
-                            }
-                            throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, dictBounds.contentEnd);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error("Can't parse /DecodeParms property value");
+                        }
+                        throw new Error(`Unsupported /DecodeParms property value type: ${paramsEntryType}`);
+                    default:
+                        i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                        break;
                 }
             }
-            const streamStart = yield parser.findNewLineIndexAsync(true, streamStartIndex.end + 1);
-            const streamEnd = yield parser.findNewLineIndexAsync(false, streamEndIndex.start - 1);
-            const streamBytes = yield parser.sliceCharCodesAsync(streamStart, streamEnd);
-            const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
-                ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
-                : streamBytes;
-            this._streamData = encodedData;
-        });
+            else {
+                break;
+            }
+        }
+        const streamStart = await parser.findNewLineIndexAsync(true, streamStartIndex.end + 1);
+        const streamEnd = await parser.findNewLineIndexAsync(false, streamEndIndex.start - 1);
+        const streamBytes = await parser.sliceCharCodesAsync(streamStart, streamEnd);
+        const encodedData = ((_b = parseInfo.cryptInfo) === null || _b === void 0 ? void 0 : _b.ref) && parseInfo.cryptInfo.streamCryptor
+            ? parseInfo.cryptInfo.streamCryptor.decrypt(streamBytes, parseInfo.cryptInfo.ref)
+            : streamBytes;
+        this._streamData = encodedData;
     }
     setStreamData(data) {
         if (!(data === null || data === void 0 ? void 0 : data.length)) {
@@ -6172,34 +5880,23 @@ class PdfStream extends PdfObject {
     }
 }
 
-var __awaiter$1b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TrailerStream extends PdfStream {
     constructor() {
         super(streamTypes.XREF);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$1b(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new TrailerStream();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TrailerStream();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6236,87 +5933,82 @@ class TrailerStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$1b(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const dictBounds = yield parser.getDictBoundsAtAsync(start);
-            let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Size":
-                        case "/Prev":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Root":
-                        case "/Info":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Encrypt":
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.REF) {
-                                const encryptId = yield ObjectId.parseRefAsync(parser, i);
-                                if (encryptId) {
-                                    this.Encrypt = encryptId.value;
-                                    i = encryptId.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error("Can't parse /Encrypt property value");
-                                }
-                            }
-                            throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                        case "/ID":
-                            const hexIds = yield HexString.parseArrayAsync(parser, i);
-                            if (hexIds && hexIds.value[0] && hexIds.value[1]) {
-                                this.ID = [
-                                    hexIds.value[0],
-                                    hexIds.value[1],
-                                ];
-                                i = hexIds.end + 1;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = await parser.getDictBoundsAtAsync(start);
+        let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Size":
+                    case "/Prev":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Root":
+                    case "/Info":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Encrypt":
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.REF) {
+                            const encryptId = await ObjectId.parseRefAsync(parser, i);
+                            if (encryptId) {
+                                this.Encrypt = encryptId.value;
+                                i = encryptId.end + 1;
                                 break;
                             }
-                            const literalIds = yield LiteralString.parseArrayAsync(parser, i);
-                            if (literalIds && literalIds.value[0] && literalIds.value[1]) {
-                                this.ID = [
-                                    HexString.fromHexBytes(literalIds.value[0].bytes),
-                                    HexString.fromHexBytes(literalIds.value[1].bytes),
-                                ];
-                                i = literalIds.end + 1;
-                                break;
+                            else {
+                                throw new Error("Can't parse /Encrypt property value");
                             }
-                            throw new Error("Can't parse /ID property value");
-                        case "/Index":
-                        case "/W":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, false);
+                        }
+                        throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
+                    case "/ID":
+                        const hexIds = await HexString.parseArrayAsync(parser, i);
+                        if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+                            this.ID = [
+                                hexIds.value[0],
+                                hexIds.value[1],
+                            ];
+                            i = hexIds.end + 1;
                             break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                        }
+                        const literalIds = await LiteralString.parseArrayAsync(parser, i);
+                        if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+                            this.ID = [
+                                HexString.fromHexBytes(literalIds.value[0].bytes),
+                                HexString.fromHexBytes(literalIds.value[1].bytes),
+                            ];
+                            i = literalIds.end + 1;
                             break;
-                    }
+                        }
+                        throw new Error("Can't parse /ID property value");
+                    case "/Index":
+                    case "/W":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, false);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                        break;
                 }
-                else {
-                    break;
-                }
             }
-            if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-            if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
-                this.Index = [0, this.Size];
-            }
-        });
+        }
+        if (!this.W || !this.Size || !this.Root || (this.Encrypt && !this.ID)) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (!((_a = this.Index) === null || _a === void 0 ? void 0 : _a.length)) {
+            this.Index = [0, this.Size];
+        }
     }
 }
 
@@ -6332,15 +6024,6 @@ class XRef {
     }
 }
 
-var __awaiter$1a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class XRefStream extends XRef {
     get prev() {
         var _a;
@@ -6406,22 +6089,20 @@ class XRefStream extends XRef {
         stream._trailerStream.streamData = data.bytes;
         return stream;
     }
-    static parseAsync(parseInfo, offset) {
-        return __awaiter$1a(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                return null;
-            }
-            const trailerStream = yield TrailerStream.parseAsync(parseInfo);
-            if (!trailerStream) {
-                return null;
-            }
-            const xrefStream = new XRefStream(trailerStream.value, offset);
-            return {
-                value: xrefStream,
-                start: null,
-                end: null,
-            };
-        });
+    static async parseAsync(parseInfo, offset) {
+        if (!parseInfo) {
+            return null;
+        }
+        const trailerStream = await TrailerStream.parseAsync(parseInfo);
+        if (!trailerStream) {
+            return null;
+        }
+        const xrefStream = new XRefStream(trailerStream.value, offset);
+        return {
+            value: xrefStream,
+            start: null,
+            end: null,
+        };
     }
     createUpdate(entries, offset) {
         return XRefStream.createFrom(this, entries, offset);
@@ -6438,34 +6119,23 @@ class XRefStream extends XRef {
     }
 }
 
-var __awaiter$19 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextStream extends PdfStream {
     constructor(type = null) {
         super(type);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$19(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new TextStream();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TextStream();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getText() {
         return null;
@@ -6474,25 +6144,11 @@ class TextStream extends PdfStream {
         const superBytes = super.toArray(cryptInfo);
         return superBytes;
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$19(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
     }
 }
 
-var __awaiter$18 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class IndexedColorSpaceArray {
     constructor(baseColorSpace, highestValue, lookupArray) {
         switch (baseColorSpace) {
@@ -6515,75 +6171,73 @@ class IndexedColorSpaceArray {
         this.highestValue = highestValue;
         this.lookupArray = lookupArray;
     }
-    static parseAsync(parseInfo, skipEmpty = true) {
-        return __awaiter$18(this, void 0, void 0, function* () {
-            const { parser, bounds, cryptInfo } = parseInfo;
-            let i;
-            if (skipEmpty) {
-                i = yield parser.findNonSpaceIndexAsync(true, bounds.start);
-            }
-            const start = i;
-            if (i < 0 || i > parser.maxIndex
-                || !(yield parser.isCodeAtAsync(start, codes.L_BRACKET))) {
-                console.log("Color space array start not found");
-                return null;
-            }
-            i++;
-            const type = yield parser.parseNameAtAsync(i);
-            if (!type || type.value !== "/Indexed") {
-                console.log("Array is not representing an indexed color space");
-                return null;
-            }
-            i = type.end + 1;
-            const base = yield parser.parseNameAtAsync(i);
-            if (!base) {
-                console.log("Can't parse base color space name of the indexed color space");
-                return null;
-            }
-            i = base.end + 2;
-            const highestValue = yield parser.parseNumberAtAsync(i);
-            if (!highestValue || isNaN(highestValue.value)) {
-                console.log("Can't parse the highest value of the indexed color space");
-                return null;
-            }
-            i = highestValue.end + 1;
-            let lookupArray;
-            const lookupEntryType = yield parser.getValueTypeAtAsync(i);
-            if (lookupEntryType === valueTypes.REF) {
-                try {
-                    const lookupId = yield ObjectId.parseRefAsync(parser, i);
-                    const lookupParseInfo = yield parseInfo.parseInfoGetterAsync(lookupId.value.id);
-                    const lookupStream = yield TextStream.parseAsync(lookupParseInfo);
-                    lookupArray = lookupStream.value.decodedStreamData;
-                    i = lookupId.end + 1;
-                }
-                catch (e) {
-                    throw new Error(`Can't parse indexed color array lookup ref: ${e.message}`);
-                }
-            }
-            else if (lookupEntryType === valueTypes.STRING_HEX) {
-                const lookupHex = yield HexString.parseAsync(parser, i, cryptInfo);
-                if (lookupHex) {
-                    lookupArray = lookupHex.value.hex;
-                    i = lookupHex.end + 1;
-                }
-                else {
-                    throw new Error("Can't parse indexed color array lookup hex string");
-                }
-            }
+    static async parseAsync(parseInfo, skipEmpty = true) {
+        const { parser, bounds, cryptInfo } = parseInfo;
+        let i;
+        if (skipEmpty) {
+            i = await parser.findNonSpaceIndexAsync(true, bounds.start);
+        }
+        const start = i;
+        if (i < 0 || i > parser.maxIndex
+            || !(await parser.isCodeAtAsync(start, codes.L_BRACKET))) {
+            console.log("Color space array start not found");
+            return null;
+        }
+        i++;
+        const type = await parser.parseNameAtAsync(i);
+        if (!type || type.value !== "/Indexed") {
+            console.log("Array is not representing an indexed color space");
+            return null;
+        }
+        i = type.end + 1;
+        const base = await parser.parseNameAtAsync(i);
+        if (!base) {
+            console.log("Can't parse base color space name of the indexed color space");
+            return null;
+        }
+        i = base.end + 2;
+        const highestValue = await parser.parseNumberAtAsync(i);
+        if (!highestValue || isNaN(highestValue.value)) {
+            console.log("Can't parse the highest value of the indexed color space");
+            return null;
+        }
+        i = highestValue.end + 1;
+        let lookupArray;
+        const lookupEntryType = await parser.getValueTypeAtAsync(i);
+        if (lookupEntryType === valueTypes.REF) {
             try {
-                const colorSpace = new IndexedColorSpaceArray(base.value, highestValue.value, lookupArray);
-                return {
-                    value: colorSpace,
-                    start,
-                    end: i - 1,
-                };
+                const lookupId = await ObjectId.parseRefAsync(parser, i);
+                const lookupParseInfo = await parseInfo.parseInfoGetterAsync(lookupId.value.id);
+                const lookupStream = await TextStream.parseAsync(lookupParseInfo);
+                lookupArray = lookupStream.value.decodedStreamData;
+                i = lookupId.end + 1;
             }
             catch (e) {
-                console.log(e.message);
-                return null;
+                throw new Error(`Can't parse indexed color array lookup ref: ${e.message}`);
             }
-        });
+        }
+        else if (lookupEntryType === valueTypes.STRING_HEX) {
+            const lookupHex = await HexString.parseAsync(parser, i, cryptInfo);
+            if (lookupHex) {
+                lookupArray = lookupHex.value.hex;
+                i = lookupHex.end + 1;
+            }
+            else {
+                throw new Error("Can't parse indexed color array lookup hex string");
+            }
+        }
+        try {
+            const colorSpace = new IndexedColorSpaceArray(base.value, highestValue.value, lookupArray);
+            return {
+                value: colorSpace,
+                start,
+                end: i - 1,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const encoder = new TextEncoder();
@@ -6616,15 +6270,6 @@ class IndexedColorSpaceArray {
     }
 }
 
-var __awaiter$17 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class ImageStream extends PdfStream {
     get sMask() {
         return this._sMask;
@@ -6639,21 +6284,19 @@ class ImageStream extends PdfStream {
         this.Interpolate = false;
         this.SMaskInData = 0;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$17(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new ImageStream();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ImageStream();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -6709,297 +6352,290 @@ class ImageStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    getImageUrlAsync() {
-        return __awaiter$17(this, void 0, void 0, function* () {
-            if (this._imageUrl) {
-                URL.revokeObjectURL(this._imageUrl);
+    async getImageUrlAsync() {
+        if (this._imageUrl) {
+            URL.revokeObjectURL(this._imageUrl);
+        }
+        if (this.Filter === streamFilters.DCT
+            || this.Filter === streamFilters.JBIG2
+            || this.Filter === streamFilters.JPX) {
+            const blob = new Blob([this.decodedStreamData], {
+                type: "application/octet-binary",
+            });
+            const imageUrl = URL.createObjectURL(blob);
+            this._imageUrl = imageUrl;
+            return imageUrl;
+        }
+        if (this.Filter === streamFilters.FLATE) {
+            const length = this.Width * this.Height;
+            let alpha;
+            if (this.sMask) {
+                alpha = this.sMask.decodedStreamData;
+                if (alpha.length !== length) {
+                    throw new Error(`Invalid alpha mask data length: ${alpha.length} (must be ${length})`);
+                }
             }
-            if (this.Filter === streamFilters.DCT
-                || this.Filter === streamFilters.JBIG2
-                || this.Filter === streamFilters.JPX) {
-                const blob = new Blob([this.decodedStreamData], {
-                    type: "application/octet-binary",
+            else {
+                alpha = new Uint8Array(length).fill(255);
+            }
+            const imageBytes = new Uint8ClampedArray(length * 4);
+            const colors = this.getRgbColors();
+            let j;
+            let k;
+            for (let i = 0; i < length; i++) {
+                j = i * 4;
+                k = i * 3;
+                imageBytes[j] = colors[k];
+                imageBytes[j + 1] = colors[k + 1];
+                imageBytes[j + 2] = colors[k + 2];
+                imageBytes[j + 3] = alpha[i];
+            }
+            const imageData = new ImageData(imageBytes, this.Width, this.Height);
+            const urlPromise = new Promise((resolve, reject) => {
+                const canvas = document.createElement("canvas");
+                canvas.width = this.Width;
+                canvas.height = this.Height;
+                canvas.getContext("2d").putImageData(imageData, 0, 0);
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    resolve(url);
                 });
-                const imageUrl = URL.createObjectURL(blob);
-                this._imageUrl = imageUrl;
-                return imageUrl;
-            }
-            if (this.Filter === streamFilters.FLATE) {
-                const length = this.Width * this.Height;
-                let alpha;
-                if (this.sMask) {
-                    alpha = this.sMask.decodedStreamData;
-                    if (alpha.length !== length) {
-                        throw new Error(`Invalid alpha mask data length: ${alpha.length} (must be ${length})`);
-                    }
-                }
-                else {
-                    alpha = new Uint8Array(length).fill(255);
-                }
-                const imageBytes = new Uint8ClampedArray(length * 4);
-                const colors = this.getRgbColors();
-                let j;
-                let k;
-                for (let i = 0; i < length; i++) {
-                    j = i * 4;
-                    k = i * 3;
-                    imageBytes[j] = colors[k];
-                    imageBytes[j + 1] = colors[k + 1];
-                    imageBytes[j + 2] = colors[k + 2];
-                    imageBytes[j + 3] = alpha[i];
-                }
-                const imageData = new ImageData(imageBytes, this.Width, this.Height);
-                const urlPromise = new Promise((resolve, reject) => {
-                    const canvas = document.createElement("canvas");
-                    canvas.width = this.Width;
-                    canvas.height = this.Height;
-                    canvas.getContext("2d").putImageData(imageData, 0, 0);
-                    canvas.toBlob((blob) => {
-                        const url = URL.createObjectURL(blob);
-                        resolve(url);
-                    });
-                });
-                const imageUrl = yield urlPromise;
-                this._imageUrl = imageUrl;
-                return imageUrl;
-            }
-            throw new Error(`Unsupported image filter type: ${this.Filter}`);
-        });
+            });
+            const imageUrl = await urlPromise;
+            this._imageUrl = imageUrl;
+            return imageUrl;
+        }
+        throw new Error(`Unsupported image filter type: ${this.Filter}`);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$17(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const dictBounds = yield parser.getDictBoundsAtAsync(start);
-            let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Subtype":
-                            const subtype = yield parser.parseNameAtAsync(i);
-                            if (subtype) {
-                                if (this.Subtype && this.Subtype !== subtype.value) {
-                                    throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
-                                }
-                                i = subtype.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = await parser.getDictBoundsAtAsync(start);
+        let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = await parser.parseNameAtAsync(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
-                            else {
-                                throw new Error("Can't parse /Subtype property value");
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/Width":
+                    case "/Height":
+                    case "/BitsPerComponent":
+                    case "/SMaskInData":
+                    case "/StructParent":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Decode":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, false);
+                        break;
+                    case "/Matte":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/Interpolate":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    case "/SMask":
+                    case "/Metadata":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/ColorSpace":
+                        const colorSpaceEntryType = await parser.getValueTypeAtAsync(i);
+                        if (colorSpaceEntryType === valueTypes.NAME) {
+                            const colorSpaceName = await parser.parseNameAtAsync(i);
+                            if (colorSpaceName) {
+                                this.ColorSpace = colorSpaceName.value;
+                                i = colorSpaceName.end + 1;
+                                break;
                             }
-                            break;
-                        case "/Width":
-                        case "/Height":
-                        case "/BitsPerComponent":
-                        case "/SMaskInData":
-                        case "/StructParent":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Decode":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, false);
-                            break;
-                        case "/Matte":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/Interpolate":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        case "/SMask":
-                        case "/Metadata":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/ColorSpace":
-                            const colorSpaceEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (colorSpaceEntryType === valueTypes.NAME) {
-                                const colorSpaceName = yield parser.parseNameAtAsync(i);
-                                if (colorSpaceName) {
-                                    this.ColorSpace = colorSpaceName.value;
-                                    i = colorSpaceName.end + 1;
+                            throw new Error("Can't parse /ColorSpace name");
+                        }
+                        else if (colorSpaceEntryType === valueTypes.ARRAY) {
+                            const colorSpaceArrayBounds = await parser.getArrayBoundsAtAsync(i);
+                            if (colorSpaceArrayBounds) {
+                                const indexedColorSpace = await IndexedColorSpaceArray.parseAsync({
+                                    parser,
+                                    bounds: colorSpaceArrayBounds,
+                                    cryptInfo: parseInfo.cryptInfo,
+                                    parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
+                                });
+                                if (indexedColorSpace) {
+                                    this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
+                                    this._indexedColorSpace = indexedColorSpace.value;
+                                    i = colorSpaceArrayBounds.end + 1;
                                     break;
                                 }
-                                throw new Error("Can't parse /ColorSpace name");
+                                throw new Error("Can't parse /ColorSpace object:" +
+                                    parser.sliceCharsAsync(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
                             }
-                            else if (colorSpaceEntryType === valueTypes.ARRAY) {
-                                const colorSpaceArrayBounds = yield parser.getArrayBoundsAtAsync(i);
-                                if (colorSpaceArrayBounds) {
-                                    const indexedColorSpace = yield IndexedColorSpaceArray.parseAsync({
-                                        parser,
-                                        bounds: colorSpaceArrayBounds,
-                                        cryptInfo: parseInfo.cryptInfo,
-                                        parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
-                                    });
+                            throw new Error("Can't parse /ColorSpace value array");
+                        }
+                        else if (colorSpaceEntryType === valueTypes.REF) {
+                            const colorSpaceRef = await ObjectId.parseRefAsync(parser, i);
+                            if (colorSpaceRef) {
+                                const colorSpaceParseInfo = await parseInfo.parseInfoGetterAsync(colorSpaceRef.value.id);
+                                if (colorSpaceParseInfo) {
+                                    const indexedColorSpace = await IndexedColorSpaceArray.parseAsync(colorSpaceParseInfo);
                                     if (indexedColorSpace) {
                                         this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
                                         this._indexedColorSpace = indexedColorSpace.value;
-                                        i = colorSpaceArrayBounds.end + 1;
+                                        i = colorSpaceRef.end + 1;
                                         break;
                                     }
                                     throw new Error("Can't parse /ColorSpace object:" +
-                                        parser.sliceCharsAsync(colorSpaceArrayBounds.start, colorSpaceArrayBounds.end));
-                                }
-                                throw new Error("Can't parse /ColorSpace value array");
-                            }
-                            else if (colorSpaceEntryType === valueTypes.REF) {
-                                const colorSpaceRef = yield ObjectId.parseRefAsync(parser, i);
-                                if (colorSpaceRef) {
-                                    const colorSpaceParseInfo = yield parseInfo.parseInfoGetterAsync(colorSpaceRef.value.id);
-                                    if (colorSpaceParseInfo) {
-                                        const indexedColorSpace = yield IndexedColorSpaceArray.parseAsync(colorSpaceParseInfo);
-                                        if (indexedColorSpace) {
-                                            this.ColorSpace = colorSpaces.SPECIAL_INDEXED;
-                                            this._indexedColorSpace = indexedColorSpace.value;
-                                            i = colorSpaceRef.end + 1;
-                                            break;
-                                        }
-                                        throw new Error("Can't parse /ColorSpace object:" +
-                                            (yield colorSpaceParseInfo.parser.sliceCharsAsync(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end)));
-                                    }
-                                }
-                                throw new Error("Can't parse /ColorSpace ref");
-                            }
-                            throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
-                        case "/ImageMask":
-                            const imageMask = yield parser.parseBoolAtAsync(i, false);
-                            if (imageMask) {
-                                this.ImageMask = imageMask.value;
-                                i = imageMask.end + 1;
-                                if (this.ImageMask) {
-                                    this.BitsPerComponent = 1;
+                                        await colorSpaceParseInfo.parser.sliceCharsAsync(colorSpaceParseInfo.bounds.start, colorSpaceParseInfo.bounds.end));
                                 }
                             }
-                            else {
-                                throw new Error("Can't parse /ImageMask property value");
+                            throw new Error("Can't parse /ColorSpace ref");
+                        }
+                        throw new Error(`Unsupported /ColorSpace property value type: ${colorSpaceEntryType}`);
+                    case "/ImageMask":
+                        const imageMask = await parser.parseBoolAtAsync(i, false);
+                        if (imageMask) {
+                            this.ImageMask = imageMask.value;
+                            i = imageMask.end + 1;
+                            if (this.ImageMask) {
+                                this.BitsPerComponent = 1;
                             }
-                            break;
-                        case "/Mask":
-                            const maskEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (maskEntryType === valueTypes.REF) {
-                                const maskStreamId = yield ObjectId.parseRefAsync(parser, i);
-                                if (!maskStreamId) {
-                                    throw new Error("Can't parse /Mask value reference: failed to parse ref");
-                                }
-                                const maskParseInfo = yield parseInfo.parseInfoGetterAsync(maskStreamId.value.id);
-                                if (!maskParseInfo) {
-                                    throw new Error("Can't parse /Mask value reference: failed to get image parse info");
-                                }
-                                const maskStream = yield ImageStream.parseAsync(maskParseInfo);
-                                if (!maskStream) {
-                                    throw new Error("Can't parse /Mask value reference: failed to parse image stream");
-                                }
-                                const maskParser = yield maskStream.value.getStreamDataParserAsync();
-                                const maskValues = [];
-                                let j = 0;
-                                let value;
-                                while (j <= maskParser.maxIndex) {
-                                    value = yield maskParser.parseNumberAtAsync(j, true, true);
-                                    if (!value) {
-                                        break;
-                                    }
-                                    maskValues.push(value.value);
-                                    j = value.end + 1;
-                                }
-                                if (!maskValues.length) {
-                                    throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
-                                }
-                                this.Mask = maskValues;
-                                i = maskStreamId.end + 1;
-                                break;
+                        }
+                        else {
+                            throw new Error("Can't parse /ImageMask property value");
+                        }
+                        break;
+                    case "/Mask":
+                        const maskEntryType = await parser.getValueTypeAtAsync(i);
+                        if (maskEntryType === valueTypes.REF) {
+                            const maskStreamId = await ObjectId.parseRefAsync(parser, i);
+                            if (!maskStreamId) {
+                                throw new Error("Can't parse /Mask value reference: failed to parse ref");
                             }
-                            else if (maskEntryType === valueTypes.ARRAY) {
-                                const maskArray = yield parser.parseNumberArrayAtAsync(i, false);
-                                if (maskArray) {
-                                    this.Mask = maskArray.value;
-                                    i = maskArray.end + 1;
+                            const maskParseInfo = await parseInfo.parseInfoGetterAsync(maskStreamId.value.id);
+                            if (!maskParseInfo) {
+                                throw new Error("Can't parse /Mask value reference: failed to get image parse info");
+                            }
+                            const maskStream = await ImageStream.parseAsync(maskParseInfo);
+                            if (!maskStream) {
+                                throw new Error("Can't parse /Mask value reference: failed to parse image stream");
+                            }
+                            const maskParser = await maskStream.value.getStreamDataParserAsync();
+                            const maskValues = [];
+                            let j = 0;
+                            let value;
+                            while (j <= maskParser.maxIndex) {
+                                value = await maskParser.parseNumberAtAsync(j, true, true);
+                                if (!value) {
                                     break;
                                 }
-                                throw new Error("Can't parse /Mask property value");
+                                maskValues.push(value.value);
+                                j = value.end + 1;
                             }
-                            throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
-                        case "/OC":
-                        case "/Intent":
-                        case "/Alternates":
-                        case "/ID":
-                        case "/OPI":
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                            if (!maskValues.length) {
+                                throw new Error("Can't parse /Mask value reference: failed to parse decoded image data");
+                            }
+                            this.Mask = maskValues;
+                            i = maskStreamId.end + 1;
                             break;
-                    }
+                        }
+                        else if (maskEntryType === valueTypes.ARRAY) {
+                            const maskArray = await parser.parseNumberArrayAtAsync(i, false);
+                            if (maskArray) {
+                                this.Mask = maskArray.value;
+                                i = maskArray.end + 1;
+                                break;
+                            }
+                            throw new Error("Can't parse /Mask property value");
+                        }
+                        throw new Error(`Unsupported /Mask property value type: ${maskEntryType}`);
+                    case "/OC":
+                    case "/Intent":
+                    case "/Alternates":
+                    case "/ID":
+                    case "/OPI":
+                    default:
+                        i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                        break;
                 }
-                else {
+            }
+            else {
+                break;
+            }
+        }
+        if (!this.Width && !this.Height) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
+            throw new Error("Mutually exclusive properties found");
+        }
+        if (!this.Decode && !(this.Filter === streamFilters.JPX && !this.ImageMask)) {
+            switch (this.ColorSpace) {
+                case colorSpaces.GRAYSCALE:
+                    this.Decode = [0, 1];
                     break;
-                }
+                case colorSpaces.RGB:
+                    this.Decode = [0, 1, 0, 1, 0, 1];
+                    break;
+                case colorSpaces.CMYK:
+                    this.Decode = [0, 1, 0, 1, 0, 1, 0, 1];
+                    break;
+                case colorSpaces.SPECIAL_INDEXED:
+                    this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
+                    break;
+                default:
+                    this.Decode = [0, 1];
+                    break;
             }
-            if (!this.Width && !this.Height) {
-                throw new Error("Not all required properties parsed");
+        }
+        if (!this.DecodeParms) {
+            this.DecodeParms = new DecodeParamsDict();
+        }
+        if (!this.DecodeParms.getIntProp("/BitsPerComponent")) {
+            this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
+        }
+        if (!this.DecodeParms.getIntProp("/Columns")) {
+            this.DecodeParms.setIntProp("/Columns", this.Width);
+        }
+        if (!this.DecodeParms.getIntProp("/Colors")) {
+            switch (this.ColorSpace) {
+                case colorSpaces.GRAYSCALE:
+                case colorSpaces.SPECIAL_INDEXED:
+                    this.DecodeParms.setIntProp("/Colors", 1);
+                    break;
+                case colorSpaces.RGB:
+                    this.DecodeParms.setIntProp("/Colors", 3);
+                    break;
+                case colorSpaces.CMYK:
+                    this.DecodeParms.setIntProp("/Colors", 4);
+                    break;
+                default:
+                    this.DecodeParms.setIntProp("/Colors", 1);
+                    break;
             }
-            if (this.ImageMask && (this.BitsPerComponent !== 1 || this.ColorSpace)) {
-                throw new Error("Mutually exclusive properties found");
+        }
+        if (this.SMask) {
+            const sMaskParseInfo = await parseInfo.parseInfoGetterAsync(this.SMask.id);
+            if (!sMaskParseInfo) {
+                throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
             }
-            if (!this.Decode && !(this.Filter === streamFilters.JPX && !this.ImageMask)) {
-                switch (this.ColorSpace) {
-                    case colorSpaces.GRAYSCALE:
-                        this.Decode = [0, 1];
-                        break;
-                    case colorSpaces.RGB:
-                        this.Decode = [0, 1, 0, 1, 0, 1];
-                        break;
-                    case colorSpaces.CMYK:
-                        this.Decode = [0, 1, 0, 1, 0, 1, 0, 1];
-                        break;
-                    case colorSpaces.SPECIAL_INDEXED:
-                        this.Decode = [0, Math.pow(2, this.BitsPerComponent || 1) - 1];
-                        break;
-                    default:
-                        this.Decode = [0, 1];
-                        break;
-                }
+            const sMask = await ImageStream.parseAsync(sMaskParseInfo);
+            if (!sMask) {
+                throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
             }
-            if (!this.DecodeParms) {
-                this.DecodeParms = new DecodeParamsDict();
-            }
-            if (!this.DecodeParms.getIntProp("/BitsPerComponent")) {
-                this.DecodeParms.setIntProp("/BitsPerComponent", this.BitsPerComponent);
-            }
-            if (!this.DecodeParms.getIntProp("/Columns")) {
-                this.DecodeParms.setIntProp("/Columns", this.Width);
-            }
-            if (!this.DecodeParms.getIntProp("/Colors")) {
-                switch (this.ColorSpace) {
-                    case colorSpaces.GRAYSCALE:
-                    case colorSpaces.SPECIAL_INDEXED:
-                        this.DecodeParms.setIntProp("/Colors", 1);
-                        break;
-                    case colorSpaces.RGB:
-                        this.DecodeParms.setIntProp("/Colors", 3);
-                        break;
-                    case colorSpaces.CMYK:
-                        this.DecodeParms.setIntProp("/Colors", 4);
-                        break;
-                    default:
-                        this.DecodeParms.setIntProp("/Colors", 1);
-                        break;
-                }
-            }
-            if (this.SMask) {
-                const sMaskParseInfo = yield parseInfo.parseInfoGetterAsync(this.SMask.id);
-                if (!sMaskParseInfo) {
-                    throw new Error(`Can't get parse info for ref: ${this.SMask.id} ${this.sMask.generation} R`);
-                }
-                const sMask = yield ImageStream.parseAsync(sMaskParseInfo);
-                if (!sMask) {
-                    throw new Error(`Can't parse SMask: ${this.SMask.id} ${this.sMask.generation} R`);
-                }
-                this._sMask = sMask.value;
-            }
-        });
+            this._sMask = sMask.value;
+        }
     }
     getRgbColor(index) {
         var _a;
@@ -7087,36 +6723,25 @@ class ImageStream extends PdfStream {
     }
 }
 
-var __awaiter$16 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class ObjectMapDict extends PdfDict {
     constructor() {
         super(null);
         this._objectIdMap = new Map();
         this._dictParserMap = new Map();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$16(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new ObjectMapDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ObjectMapDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getObjectId(name) {
         return this._objectIdMap.get(name);
@@ -7150,94 +6775,78 @@ class ObjectMapDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$16(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        default:
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.REF) {
-                                const id = yield ObjectId.parseRefAsync(parser, i);
-                                if (id) {
-                                    this._objectIdMap.set(name, id.value);
-                                    i = id.end + 1;
-                                    break;
-                                }
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    default:
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.REF) {
+                            const id = await ObjectId.parseRefAsync(parser, i);
+                            if (id) {
+                                this._objectIdMap.set(name, id.value);
+                                i = id.end + 1;
+                                break;
                             }
-                            else if (entryType === valueTypes.DICTIONARY) {
-                                const dictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (dictBounds) {
-                                    const dictParseInfo = {
-                                        parser: yield PdfDict.getDataParserAsync(yield parser.sliceCharCodesAsync(dictBounds.start, dictBounds.end)),
-                                        bounds: {
-                                            start: 0,
-                                            end: dictBounds.end - dictBounds.start,
-                                            contentStart: dictBounds.contentStart - dictBounds.start,
-                                            contentEnd: dictBounds.contentEnd - dictBounds.start,
-                                        },
-                                        cryptInfo: parseInfo.cryptInfo,
-                                    };
-                                    this._dictParserMap.set(name, dictParseInfo);
-                                    i = dictBounds.end + 1;
-                                    break;
-                                }
+                        }
+                        else if (entryType === valueTypes.DICTIONARY) {
+                            const dictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (dictBounds) {
+                                const dictParseInfo = {
+                                    parser: await PdfDict.getDataParserAsync(await parser.sliceCharCodesAsync(dictBounds.start, dictBounds.end)),
+                                    bounds: {
+                                        start: 0,
+                                        end: dictBounds.end - dictBounds.start,
+                                        contentStart: dictBounds.contentStart - dictBounds.start,
+                                        contentEnd: dictBounds.contentEnd - dictBounds.start,
+                                    },
+                                    cryptInfo: parseInfo.cryptInfo,
+                                };
+                                this._dictParserMap.set(name, dictParseInfo);
+                                i = dictBounds.end + 1;
+                                break;
                             }
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$15 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class UnicodeCmapStream extends PdfStream {
     constructor(type = null) {
         super(type);
         this._codeRanges = [];
         this._map = new Map();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$15(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new UnicodeCmapStream();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new UnicodeCmapStream();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -7271,111 +6880,98 @@ class UnicodeCmapStream extends PdfStream {
         }
         return false;
     }
-    parseCodeRangesAsync(parser) {
+    async parseCodeRangesAsync(parser) {
         var _a, _b;
-        return __awaiter$15(this, void 0, void 0, function* () {
-            let i = 0;
-            const codeRangeStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true }))) === null || _a === void 0 ? void 0 : _a.end;
-            if (!codeRangeStart) {
-                return;
-            }
-            i = codeRangeStart + 1;
-            const codeRangeEnd = (_b = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_CODE_RANGE, { closedOnly: true, minIndex: i }))) === null || _b === void 0 ? void 0 : _b.start;
-            while (i < codeRangeEnd - 1) {
-                const rangeStart = yield HexString.parseAsync(parser, i);
-                i = rangeStart.end + 1;
-                const rangeEnd = yield HexString.parseAsync(parser, i);
-                i = rangeEnd.end + 1;
-                this._codeRanges.push({
-                    length: rangeStart.value.hex.length,
-                    start: rangeStart.value.hex,
-                    end: rangeEnd.value.hex,
-                });
-            }
-        });
+        let i = 0;
+        const codeRangeStart = (_a = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CODE_RANGE, { closedOnly: true }))) === null || _a === void 0 ? void 0 : _a.end;
+        if (!codeRangeStart) {
+            return;
+        }
+        i = codeRangeStart + 1;
+        const codeRangeEnd = (_b = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_CODE_RANGE, { closedOnly: true, minIndex: i }))) === null || _b === void 0 ? void 0 : _b.start;
+        while (i < codeRangeEnd - 1) {
+            const rangeStart = await HexString.parseAsync(parser, i);
+            i = rangeStart.end + 1;
+            const rangeEnd = await HexString.parseAsync(parser, i);
+            i = rangeEnd.end + 1;
+            this._codeRanges.push({
+                length: rangeStart.value.hex.length,
+                start: rangeStart.value.hex,
+                end: rangeEnd.value.hex,
+            });
+        }
     }
-    parseCharMapAsync(parser, decoder) {
+    async parseCharMapAsync(parser, decoder) {
         var _a, _b;
-        return __awaiter$15(this, void 0, void 0, function* () {
-            let i = 0;
-            while (true) {
-                const charMapStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
-                if (!charMapStart) {
-                    break;
-                }
-                i = charMapStart + 1;
-                const charMapEnd = (_b = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_CHAR, { closedOnly: true, minIndex: i }))) === null || _b === void 0 ? void 0 : _b.start;
-                while (i < charMapEnd - 1) {
-                    const hexKey = yield HexString.parseAsync(parser, i);
-                    i = hexKey.end + 1;
-                    const unicodeValue = yield HexString.parseAsync(parser, i);
-                    i = unicodeValue.end + 1;
-                    this._map.set(ByteUtils.parseIntFromBytes(hexKey.value.hex), decoder.decode(unicodeValue.value.hex));
-                }
+        let i = 0;
+        while (true) {
+            const charMapStart = (_a = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_CHAR, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
+            if (!charMapStart) {
+                break;
             }
-        });
+            i = charMapStart + 1;
+            const charMapEnd = (_b = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_CHAR, { closedOnly: true, minIndex: i }))) === null || _b === void 0 ? void 0 : _b.start;
+            while (i < charMapEnd - 1) {
+                const hexKey = await HexString.parseAsync(parser, i);
+                i = hexKey.end + 1;
+                const unicodeValue = await HexString.parseAsync(parser, i);
+                i = unicodeValue.end + 1;
+                this._map.set(ByteUtils.parseIntFromBytes(hexKey.value.hex), decoder.decode(unicodeValue.value.hex));
+            }
+        }
     }
-    parseCharRangesMapAsync(parser, decoder) {
+    async parseCharRangesMapAsync(parser, decoder) {
         var _a, _b;
-        return __awaiter$15(this, void 0, void 0, function* () {
-            let i = 0;
-            while (true) {
-                const rangeMapStart = (_a = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
-                if (!rangeMapStart) {
-                    break;
-                }
-                i = rangeMapStart + 1;
-                const rangeMapEnd = (_b = (yield parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_RANGE, { closedOnly: true, minIndex: i }))) === null || _b === void 0 ? void 0 : _b.start;
-                while (i < rangeMapEnd - 1) {
-                    const keyRangeStart = yield HexString.parseAsync(parser, i);
-                    i = keyRangeStart.end + 1;
-                    const keyRangeEnd = yield HexString.parseAsync(parser, i);
-                    i = keyRangeEnd.end + 1;
-                    let key = ByteUtils.parseIntFromBytes(keyRangeStart.value.hex);
-                    const nextValueType = yield parser.getValueTypeAtAsync(i, true);
-                    if (nextValueType === valueTypes.ARRAY) {
-                        const valueArray = yield HexString.parseArrayAsync(parser, i);
-                        i = valueArray.end + 1;
-                        for (const value of valueArray.value) {
-                            this._map.set(key++, decoder.decode(value.hex));
-                        }
+        let i = 0;
+        while (true) {
+            const rangeMapStart = (_a = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_BEGIN_RANGE, { closedOnly: true, minIndex: i }))) === null || _a === void 0 ? void 0 : _a.end;
+            if (!rangeMapStart) {
+                break;
+            }
+            i = rangeMapStart + 1;
+            const rangeMapEnd = (_b = (await parser.findSubarrayIndexAsync(keywordCodes.CMAP_END_RANGE, { closedOnly: true, minIndex: i }))) === null || _b === void 0 ? void 0 : _b.start;
+            while (i < rangeMapEnd - 1) {
+                const keyRangeStart = await HexString.parseAsync(parser, i);
+                i = keyRangeStart.end + 1;
+                const keyRangeEnd = await HexString.parseAsync(parser, i);
+                i = keyRangeEnd.end + 1;
+                let key = ByteUtils.parseIntFromBytes(keyRangeStart.value.hex);
+                const nextValueType = await parser.getValueTypeAtAsync(i, true);
+                if (nextValueType === valueTypes.ARRAY) {
+                    const valueArray = await HexString.parseArrayAsync(parser, i);
+                    i = valueArray.end + 1;
+                    for (const value of valueArray.value) {
+                        this._map.set(key++, decoder.decode(value.hex));
                     }
-                    else {
-                        const startingValue = yield HexString.parseAsync(parser, i);
-                        i = startingValue.end + 1;
-                        let startingUtf = ByteUtils.parseIntFromBytes(startingValue.value.hex);
-                        while (key <= ByteUtils.parseIntFromBytes(keyRangeEnd.value.hex)) {
-                            const hexStringUnpadded = (startingUtf++).toString(16);
-                            const padding = hexStringUnpadded.length % 2
-                                ? "0"
-                                : "";
-                            const hexString = padding + hexStringUnpadded;
-                            this._map.set(key++, decoder.decode(ByteUtils.hexStringToBytes(hexString)));
-                        }
+                }
+                else {
+                    const startingValue = await HexString.parseAsync(parser, i);
+                    i = startingValue.end + 1;
+                    let startingUtf = ByteUtils.parseIntFromBytes(startingValue.value.hex);
+                    while (key <= ByteUtils.parseIntFromBytes(keyRangeEnd.value.hex)) {
+                        const hexStringUnpadded = (startingUtf++).toString(16);
+                        const padding = hexStringUnpadded.length % 2
+                            ? "0"
+                            : "";
+                        const hexString = padding + hexStringUnpadded;
+                        this._map.set(key++, decoder.decode(ByteUtils.hexStringToBytes(hexString)));
                     }
                 }
             }
-        });
+        }
     }
-    fillMapAsync() {
-        return __awaiter$15(this, void 0, void 0, function* () {
-            this._codeRanges.length = 0;
-            this._map.clear();
-            const parser = yield this.getStreamDataParserAsync();
-            const decoder = new TextDecoder("utf-16be");
-            yield this.parseCodeRangesAsync(parser);
-            yield this.parseCharMapAsync(parser, decoder);
-            yield this.parseCharRangesMapAsync(parser, decoder);
-        });
+    async fillMapAsync() {
+        this._codeRanges.length = 0;
+        this._map.clear();
+        const parser = await this.getStreamDataParserAsync();
+        const decoder = new TextDecoder("utf-16be");
+        await this.parseCodeRangesAsync(parser);
+        await this.parseCharMapAsync(parser, decoder);
+        await this.parseCharRangesMapAsync(parser, decoder);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$15(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            yield this.fillMapAsync();
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        await this.fillMapAsync();
     }
 }
 
@@ -11228,15 +10824,6 @@ function getCharCodesMapByCode(encoding) {
     return map;
 }
 
-var __awaiter$14 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class EncodingDict extends PdfDict {
     get charMap() {
         if (!this._charMap) {
@@ -11253,21 +10840,19 @@ class EncodingDict extends PdfDict {
     constructor() {
         super(dictTypes.ENCODING);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$14(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new EncodingDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new EncodingDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -11286,66 +10871,61 @@ class EncodingDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$14(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/BaseEncoding":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        case "/Differences":
-                            const differencesValueType = yield parser.getValueTypeAtAsync(i, true);
-                            if (differencesValueType === valueTypes.ARRAY) {
-                                this.Differences = [];
-                                const arrayBounds = yield parser.getArrayBoundsAtAsync(i);
-                                let j = arrayBounds.start + 1;
-                                while (j < arrayBounds.end - 1 && j !== -1) {
-                                    const nextArrayValueType = yield parser.getValueTypeAtAsync(j, true);
-                                    switch (nextArrayValueType) {
-                                        case valueTypes.NAME:
-                                            const arrayNameResult = yield parser.parseNameAtAsync(j, true);
-                                            this.Differences.push(arrayNameResult.value);
-                                            j = arrayNameResult.end + 1;
-                                            break;
-                                        case valueTypes.NUMBER:
-                                            const arrayNumberResult = yield parser.parseNumberAtAsync(j, true);
-                                            this.Differences.push(arrayNumberResult.value);
-                                            j = arrayNumberResult.end + 1;
-                                            break;
-                                        default:
-                                            throw new Error(`Invalid differences array value type: ${nextArrayValueType}`);
-                                    }
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/BaseEncoding":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    case "/Differences":
+                        const differencesValueType = await parser.getValueTypeAtAsync(i, true);
+                        if (differencesValueType === valueTypes.ARRAY) {
+                            this.Differences = [];
+                            const arrayBounds = await parser.getArrayBoundsAtAsync(i);
+                            let j = arrayBounds.start + 1;
+                            while (j < arrayBounds.end - 1 && j !== -1) {
+                                const nextArrayValueType = await parser.getValueTypeAtAsync(j, true);
+                                switch (nextArrayValueType) {
+                                    case valueTypes.NAME:
+                                        const arrayNameResult = await parser.parseNameAtAsync(j, true);
+                                        this.Differences.push(arrayNameResult.value);
+                                        j = arrayNameResult.end + 1;
+                                        break;
+                                    case valueTypes.NUMBER:
+                                        const arrayNumberResult = await parser.parseNumberAtAsync(j, true);
+                                        this.Differences.push(arrayNumberResult.value);
+                                        j = arrayNumberResult.end + 1;
+                                        break;
+                                    default:
+                                        throw new Error(`Invalid differences array value type: ${nextArrayValueType}`);
                                 }
-                                i = arrayBounds.end + 1;
                             }
-                            else {
-                                throw new Error(`Invalid differences value type: ${differencesValueType}`);
-                            }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            i = arrayBounds.end + 1;
+                        }
+                        else {
+                            throw new Error(`Invalid differences value type: ${differencesValueType}`);
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
     refreshCharMaps() {
         if (this.Differences) {
@@ -11374,15 +10954,6 @@ class EncodingDict extends PdfDict {
     }
 }
 
-var __awaiter$13 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class FontDescriptorDict extends PdfDict {
     constructor() {
         super(dictTypes.FONT_DESCRIPTOR);
@@ -11393,21 +10964,19 @@ class FontDescriptorDict extends PdfDict {
         this.MissingWidth = 0;
         this.XHeight = 0;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$13(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new FontDescriptorDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FontDescriptorDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -11483,93 +11052,79 @@ class FontDescriptorDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$13(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/FontName":
-                        case "/FontStretch":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        case "/FontFile":
-                        case "/FontFile2":
-                        case "/FontFile3":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Flags":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/FontWeight":
-                        case "/ItalicAngle":
-                        case "/Ascent":
-                        case "/Descent":
-                        case "/Leading":
-                        case "/CapHeight":
-                        case "/XHeight":
-                        case "/StemV":
-                        case "/StemH":
-                        case "/AvgWidth":
-                        case "/MaxWidth":
-                        case "/MissingWidth":
-                            i = yield this.parseNumberPropAsync(name, parser, i, true);
-                            break;
-                        case "/FontBBox":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/CharSet":
-                        case "/FontFamily":
-                            const propType = yield parser.getValueTypeAtAsync(i);
-                            if (propType === valueTypes.STRING_HEX) {
-                                i = yield this.parseHexPropAsync(name, parser, i);
-                            }
-                            else if (propType === valueTypes.STRING_LITERAL) {
-                                i = yield this.parseLiteralPropAsync(name, parser, i);
-                            }
-                            else {
-                                throw new Error(`Unsupported '${name}' property value type: '${propType}'`);
-                            }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/FontName":
+                    case "/FontStretch":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    case "/FontFile":
+                    case "/FontFile2":
+                    case "/FontFile3":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Flags":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/FontWeight":
+                    case "/ItalicAngle":
+                    case "/Ascent":
+                    case "/Descent":
+                    case "/Leading":
+                    case "/CapHeight":
+                    case "/XHeight":
+                    case "/StemV":
+                    case "/StemH":
+                    case "/AvgWidth":
+                    case "/MaxWidth":
+                    case "/MissingWidth":
+                        i = await this.parseNumberPropAsync(name, parser, i, true);
+                        break;
+                    case "/FontBBox":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/CharSet":
+                    case "/FontFamily":
+                        const propType = await parser.getValueTypeAtAsync(i);
+                        if (propType === valueTypes.STRING_HEX) {
+                            i = await this.parseHexPropAsync(name, parser, i);
+                        }
+                        else if (propType === valueTypes.STRING_LITERAL) {
+                            i = await this.parseLiteralPropAsync(name, parser, i);
+                        }
+                        else {
+                            throw new Error(`Unsupported '${name}' property value type: '${propType}'`);
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.FontName
-                || (!this.Flags && this.Flags !== 0)
-                || (!this.ItalicAngle && this.ItalicAngle !== 0)) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.FontName
+            || (!this.Flags && this.Flags !== 0)
+            || (!this.ItalicAngle && this.ItalicAngle !== 0)) {
+            throw new Error("Not all required properties parsed");
+        }
     }
 }
 
-var __awaiter$12 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const cyrillicEncodingDifferences = [
     128,
     "/Djecyrillic",
@@ -11788,25 +11343,23 @@ class FontDict extends PdfDict {
         map.set("verdana", FontDict.createVerdanaFont(encoding));
         return map;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$12(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new FontDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FontDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     static createArialFont(encoding) {
         const descriptor = new FontDescriptorDict();
@@ -12092,136 +11645,131 @@ class FontDict extends PdfDict {
         const literal = decoder.decode(bytes);
         return literal || "";
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$12(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Subtype":
-                            const subtype = yield parser.parseNameAtAsync(i, true);
-                            if (subtype) {
-                                this.Subtype = subtype.value;
-                                i = subtype.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = await parser.parseNameAtAsync(i, true);
+                        if (subtype) {
+                            this.Subtype = subtype.value;
+                            i = subtype.end + 1;
+                            break;
+                        }
+                        throw new Error("Can't parse /Subtype property value");
+                    case "/BaseFont":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    case "/Encoding":
+                        const encodingPropType = await parser.getValueTypeAtAsync(i);
+                        if (encodingPropType === valueTypes.NAME) {
+                            i = await this.parseNamePropAsync(name, parser, i);
+                        }
+                        else if (encodingPropType === valueTypes.REF) {
+                            i = await this.parseRefPropAsync(name, parser, i);
+                        }
+                        else {
+                            throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+                        }
+                        break;
+                    case "/ToUnicode":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/FirstChar":
+                    case "/LastChar":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/FontBBox":
+                    case "/FontMatrix":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/Widths":
+                        const widthPropType = await parser.getValueTypeAtAsync(i);
+                        if (widthPropType === valueTypes.ARRAY) {
+                            i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        }
+                        else if (widthPropType === valueTypes.REF) {
+                            i = await this.parseRefPropAsync(name, parser, i);
+                        }
+                        else {
+                            throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
+                        }
+                        break;
+                    case "/FontDescriptor":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Resources":
+                    case "/CharProcs":
+                        const excludedEntryType = await parser.getValueTypeAtAsync(i);
+                        if (excludedEntryType === valueTypes.REF) {
+                            const excludedDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (excludedDictId && parseInfo.parseInfoGetterAsync) {
+                                this[name.slice(1)] = await parser.sliceCharCodesAsync(excludedDictId.start, excludedDictId.end);
+                                i = excludedDictId.end + 1;
                                 break;
                             }
-                            throw new Error("Can't parse /Subtype property value");
-                        case "/BaseFont":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        case "/Encoding":
-                            const encodingPropType = yield parser.getValueTypeAtAsync(i);
-                            if (encodingPropType === valueTypes.NAME) {
-                                i = yield this.parseNamePropAsync(name, parser, i);
+                            throw new Error(`Can't parse ${name} value reference`);
+                        }
+                        else if (excludedEntryType === valueTypes.DICTIONARY) {
+                            const excludedDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (excludedDictBounds) {
+                                this[name.slice(1)] = await parser.sliceCharCodesAsync(excludedDictBounds.start, excludedDictBounds.end);
+                                i = excludedDictBounds.end + 1;
+                                break;
                             }
-                            else if (encodingPropType === valueTypes.REF) {
-                                i = yield this.parseRefPropAsync(name, parser, i);
-                            }
-                            else {
-                                throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
-                            }
-                            break;
-                        case "/ToUnicode":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/FirstChar":
-                        case "/LastChar":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/FontBBox":
-                        case "/FontMatrix":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/Widths":
-                            const widthPropType = yield parser.getValueTypeAtAsync(i);
-                            if (widthPropType === valueTypes.ARRAY) {
-                                i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            }
-                            else if (widthPropType === valueTypes.REF) {
-                                i = yield this.parseRefPropAsync(name, parser, i);
-                            }
-                            else {
-                                throw new Error(`Unsupported '${name}' property value type: '${encodingPropType}'`);
-                            }
-                            break;
-                        case "/FontDescriptor":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Resources":
-                        case "/CharProcs":
-                            const excludedEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (excludedEntryType === valueTypes.REF) {
-                                const excludedDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (excludedDictId && parseInfo.parseInfoGetterAsync) {
-                                    this[name.slice(1)] = yield parser.sliceCharCodesAsync(excludedDictId.start, excludedDictId.end);
-                                    i = excludedDictId.end + 1;
-                                    break;
-                                }
-                                throw new Error(`Can't parse ${name} value reference`);
-                            }
-                            else if (excludedEntryType === valueTypes.DICTIONARY) {
-                                const excludedDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (excludedDictBounds) {
-                                    this[name.slice(1)] = yield parser.sliceCharCodesAsync(excludedDictBounds.start, excludedDictBounds.end);
-                                    i = excludedDictBounds.end + 1;
-                                    break;
-                                }
-                                throw new Error(`Can't parse ${name} dictionary bounds`);
-                            }
-                            throw new Error(`Unsupported ${name} property value type: ${excludedEntryType}`);
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error(`Can't parse ${name} dictionary bounds`);
+                        }
+                        throw new Error(`Unsupported ${name} property value type: ${excludedEntryType}`);
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (this.Encoding && this.Encoding instanceof ObjectId) {
-                const encodingParseInfo = yield parseInfo.parseInfoGetterAsync(this.Encoding.id);
-                const encodingDict = yield EncodingDict.parseAsync(encodingParseInfo);
-                this._encoding = encodingDict === null || encodingDict === void 0 ? void 0 : encodingDict.value;
+            else {
+                break;
             }
-            if (this.ToUnicode) {
-                const toUtfParseInfo = yield parseInfo.parseInfoGetterAsync(this.ToUnicode.id);
-                const cmap = yield UnicodeCmapStream.parseAsync(toUtfParseInfo);
-                this._toUtfCmap = cmap === null || cmap === void 0 ? void 0 : cmap.value;
-            }
-            if (this.FontDescriptor) {
-                const descriptorParseInfo = yield parseInfo.parseInfoGetterAsync(this.FontDescriptor.id);
-                const descriptor = yield FontDescriptorDict.parseAsync(descriptorParseInfo);
-                this._descriptor = descriptor === null || descriptor === void 0 ? void 0 : descriptor.value;
-            }
-            if (this.Subtype !== "/Type1"
-                && this.Subtype !== "/Type3"
-                && this.Subtype !== "/TrueType"
-                && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
-                throw new Error(`Font type is not supported: ${this.Subtype}`);
-            }
-            if (this.Subtype === "/Type3"
-                && (!this.FontBBox
-                    || !this.FontMatrix
-                    || !this.Encoding
-                    || !this.FirstChar
-                    || !this.LastChar
-                    || !this.Widths
-                    || !this.CharProcs)) {
-                throw new Error("Not all required properties parsed");
-            }
-        });
+        }
+        if (this.Encoding && this.Encoding instanceof ObjectId) {
+            const encodingParseInfo = await parseInfo.parseInfoGetterAsync(this.Encoding.id);
+            const encodingDict = await EncodingDict.parseAsync(encodingParseInfo);
+            this._encoding = encodingDict === null || encodingDict === void 0 ? void 0 : encodingDict.value;
+        }
+        if (this.ToUnicode) {
+            const toUtfParseInfo = await parseInfo.parseInfoGetterAsync(this.ToUnicode.id);
+            const cmap = await UnicodeCmapStream.parseAsync(toUtfParseInfo);
+            this._toUtfCmap = cmap === null || cmap === void 0 ? void 0 : cmap.value;
+        }
+        if (this.FontDescriptor) {
+            const descriptorParseInfo = await parseInfo.parseInfoGetterAsync(this.FontDescriptor.id);
+            const descriptor = await FontDescriptorDict.parseAsync(descriptorParseInfo);
+            this._descriptor = descriptor === null || descriptor === void 0 ? void 0 : descriptor.value;
+        }
+        if (this.Subtype !== "/Type1"
+            && this.Subtype !== "/Type3"
+            && this.Subtype !== "/TrueType"
+            && !(this.Subtype === "/Type0" && this._toUtfCmap)) {
+            throw new Error(`Font type is not supported: ${this.Subtype}`);
+        }
+        if (this.Subtype === "/Type3"
+            && (!this.FontBBox
+                || !this.FontMatrix
+                || !this.Encoding
+                || !this.FirstChar
+                || !this.LastChar
+                || !this.Widths
+                || !this.CharProcs)) {
+            throw new Error("Not all required properties parsed");
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -12231,35 +11779,24 @@ class FontDict extends PdfDict {
     }
 }
 
-var __awaiter$11 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class SoftMaskDict extends PdfDict {
     constructor() {
         super(dictTypes.SOFT_MASK);
         this.TR = "/Identity";
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$11(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new SoftMaskDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new SoftMaskDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12284,87 +11821,71 @@ class SoftMaskDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$11(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/S":
-                            const softMaskType = yield parser.parseNameAtAsync(i, true);
-                            if (softMaskType && Object.values(softMaskTypes)
-                                .includes(softMaskType.value)) {
-                                this.S = softMaskType.value;
-                                i = softMaskType.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /S property value");
-                            }
-                            break;
-                        case "/G":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/BC":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i);
-                            break;
-                        case "/TR":
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/S":
+                        const softMaskType = await parser.parseNameAtAsync(i, true);
+                        if (softMaskType && Object.values(softMaskTypes)
+                            .includes(softMaskType.value)) {
+                            this.S = softMaskType.value;
+                            i = softMaskType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /S property value");
+                        }
+                        break;
+                    case "/G":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/BC":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i);
+                        break;
+                    case "/TR":
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$10 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GraphicsStateDict extends PdfDict {
     constructor() {
         super(dictTypes.GRAPHICS_STATE);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$10(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new GraphicsStateDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new GraphicsStateDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12530,167 +12051,162 @@ class GraphicsStateDict extends PdfDict {
         if (this.AIS) ;
         return params;
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$10(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/LC":
-                            const lineCap = yield parser.parseNumberAtAsync(i, true);
-                            if (lineCap && Object.values(lineCapStyles)
-                                .includes(lineCap.value)) {
-                                this.LC = lineCap.value;
-                                i = lineCap.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/LC":
+                        const lineCap = await parser.parseNumberAtAsync(i, true);
+                        if (lineCap && Object.values(lineCapStyles)
+                            .includes(lineCap.value)) {
+                            this.LC = lineCap.value;
+                            i = lineCap.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LC property value");
+                        }
+                        break;
+                    case "/OPM":
+                        const overprintMode = await parser.parseNumberAtAsync(i, true);
+                        if (overprintMode && ([0, 1].includes(overprintMode.value))) {
+                            this.OPM = overprintMode.value;
+                            i = overprintMode.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /OPM property value");
+                        }
+                        break;
+                    case "/LJ":
+                        const lineJoin = await parser.parseNumberAtAsync(i, true);
+                        if (lineJoin && Object.values(lineJoinStyles)
+                            .includes(lineJoin.value)) {
+                            this.LJ = lineJoin.value;
+                            i = lineJoin.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LJ property value");
+                        }
+                        break;
+                    case "/RI":
+                        const intent = await parser.parseNameAtAsync(i, true);
+                        if (intent && Object.values(renderingIntents)
+                            .includes(intent.value)) {
+                            this.RI = intent.value;
+                            i = intent.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RI property value");
+                        }
+                        break;
+                    case "/BM":
+                        const blendMode = await parser.parseNameAtAsync(i, true);
+                        if (blendMode && Object.values(blendModes)
+                            .includes(blendMode.value)) {
+                            this.BM = blendMode.value;
+                            i = blendMode.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /BM property value");
+                        }
+                        break;
+                    case "/SMask":
+                        const sMaskEntryType = await parser.getValueTypeAtAsync(i);
+                        if (sMaskEntryType === valueTypes.NAME) {
+                            const sMaskName = await parser.parseNameAtAsync(i);
+                            if (sMaskName) {
+                                this.SMask = sMaskName.value;
+                                i = sMaskName.end + 1;
+                                break;
                             }
-                            else {
-                                throw new Error("Can't parse /LC property value");
-                            }
-                            break;
-                        case "/OPM":
-                            const overprintMode = yield parser.parseNumberAtAsync(i, true);
-                            if (overprintMode && ([0, 1].includes(overprintMode.value))) {
-                                this.OPM = overprintMode.value;
-                                i = overprintMode.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /OPM property value");
-                            }
-                            break;
-                        case "/LJ":
-                            const lineJoin = yield parser.parseNumberAtAsync(i, true);
-                            if (lineJoin && Object.values(lineJoinStyles)
-                                .includes(lineJoin.value)) {
-                                this.LJ = lineJoin.value;
-                                i = lineJoin.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /LJ property value");
-                            }
-                            break;
-                        case "/RI":
-                            const intent = yield parser.parseNameAtAsync(i, true);
-                            if (intent && Object.values(renderingIntents)
-                                .includes(intent.value)) {
-                                this.RI = intent.value;
-                                i = intent.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /RI property value");
-                            }
-                            break;
-                        case "/BM":
-                            const blendMode = yield parser.parseNameAtAsync(i, true);
-                            if (blendMode && Object.values(blendModes)
-                                .includes(blendMode.value)) {
-                                this.BM = blendMode.value;
-                                i = blendMode.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /BM property value");
-                            }
-                            break;
-                        case "/SMask":
-                            const sMaskEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (sMaskEntryType === valueTypes.NAME) {
-                                const sMaskName = yield parser.parseNameAtAsync(i);
-                                if (sMaskName) {
-                                    this.SMask = sMaskName.value;
-                                    i = sMaskName.end + 1;
+                            throw new Error("Can't parse /SMask property name");
+                        }
+                        else if (sMaskEntryType === valueTypes.DICTIONARY) {
+                            const sMaskDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (sMaskDictBounds) {
+                                const sMaskDict = await SoftMaskDict.parseAsync({ parser, bounds: sMaskDictBounds });
+                                if (sMaskDict) {
+                                    this.SMask = sMaskDict.value;
+                                    i = sMaskDict.end + 1;
                                     break;
                                 }
-                                throw new Error("Can't parse /SMask property name");
                             }
-                            else if (sMaskEntryType === valueTypes.DICTIONARY) {
-                                const sMaskDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (sMaskDictBounds) {
-                                    const sMaskDict = yield SoftMaskDict.parseAsync({ parser, bounds: sMaskDictBounds });
-                                    if (sMaskDict) {
-                                        this.SMask = sMaskDict.value;
-                                        i = sMaskDict.end + 1;
+                            throw new Error("Can't parse /SMask value dictionary");
+                        }
+                        throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
+                    case "/Font":
+                        const fontEntryType = await parser.getValueTypeAtAsync(i);
+                        if (fontEntryType === valueTypes.ARRAY) {
+                            const fontArrayBounds = await parser.getArrayBoundsAtAsync(i);
+                            if (fontArrayBounds) {
+                                const fontRef = await ObjectId.parseAsync(parser, fontArrayBounds.start + 1);
+                                if (fontRef) {
+                                    const fontSize = await parser.parseNumberAtAsync(fontRef.end + 1);
+                                    if (fontSize) {
+                                        this.Font = [fontRef.value, fontSize.value];
+                                        i = fontArrayBounds.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /SMask value dictionary");
                             }
-                            throw new Error(`Unsupported /SMask property value type: ${sMaskEntryType}`);
-                        case "/Font":
-                            const fontEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (fontEntryType === valueTypes.ARRAY) {
-                                const fontArrayBounds = yield parser.getArrayBoundsAtAsync(i);
-                                if (fontArrayBounds) {
-                                    const fontRef = yield ObjectId.parseAsync(parser, fontArrayBounds.start + 1);
-                                    if (fontRef) {
-                                        const fontSize = yield parser.parseNumberAtAsync(fontRef.end + 1);
-                                        if (fontSize) {
-                                            this.Font = [fontRef.value, fontSize.value];
-                                            i = fontArrayBounds.end + 1;
-                                            break;
-                                        }
+                        }
+                        else {
+                            throw new Error(`Unsupported /Font property value type: ${fontEntryType}`);
+                        }
+                        throw new Error("Can't parse /Font property value");
+                    case "/D":
+                        const dashEntryType = await parser.getValueTypeAtAsync(i);
+                        if (dashEntryType === valueTypes.ARRAY) {
+                            const dashArrayBounds = await parser.getArrayBoundsAtAsync(i);
+                            if (dashArrayBounds) {
+                                const dashArray = await parser.parseNumberArrayAtAsync(dashArrayBounds.start + 1);
+                                if (dashArray) {
+                                    const dashPhase = await parser.parseNumberAtAsync(dashArray.end + 1);
+                                    if (dashPhase) {
+                                        this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
+                                        i = dashArrayBounds.end + 1;
+                                        break;
                                     }
                                 }
                             }
-                            else {
-                                throw new Error(`Unsupported /Font property value type: ${fontEntryType}`);
-                            }
-                            throw new Error("Can't parse /Font property value");
-                        case "/D":
-                            const dashEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (dashEntryType === valueTypes.ARRAY) {
-                                const dashArrayBounds = yield parser.getArrayBoundsAtAsync(i);
-                                if (dashArrayBounds) {
-                                    const dashArray = yield parser.parseNumberArrayAtAsync(dashArrayBounds.start + 1);
-                                    if (dashArray) {
-                                        const dashPhase = yield parser.parseNumberAtAsync(dashArray.end + 1);
-                                        if (dashPhase) {
-                                            this.D = [[dashArray.value[0], dashArray.value[1]], dashPhase.value];
-                                            i = dashArrayBounds.end + 1;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            else {
-                                throw new Error(`Unsupported /D property value type: ${dashEntryType}`);
-                            }
-                            throw new Error("Can't parse /D property value");
-                        case "/OP":
-                        case "/op":
-                        case "/SA":
-                        case "/AIS":
-                        case "/TK":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        case "/LW":
-                        case "/ML":
-                        case "/FL":
-                        case "/SM":
-                        case "/CA":
-                        case "/ca":
-                            i = yield this.parseNumberPropAsync(name, parser, i);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        else {
+                            throw new Error(`Unsupported /D property value type: ${dashEntryType}`);
+                        }
+                        throw new Error("Can't parse /D property value");
+                    case "/OP":
+                    case "/op":
+                    case "/SA":
+                    case "/AIS":
+                    case "/TK":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    case "/LW":
+                    case "/ML":
+                    case "/FL":
+                    case "/SM":
+                    case "/CA":
+                    case "/ca":
+                        i = await this.parseNumberPropAsync(name, parser, i);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -12700,15 +12216,6 @@ class GraphicsStateDict extends PdfDict {
     }
 }
 
-var __awaiter$$ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class ResourceDict extends PdfDict {
     constructor(streamParsers) {
         super(null);
@@ -12717,25 +12224,23 @@ class ResourceDict extends PdfDict {
         this._xObjectsMap = new Map();
         this._streamParsers = streamParsers;
     }
-    static parseAsync(parseInfo, streamParsers) {
-        return __awaiter$$(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new ResourceDict(streamParsers);
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo, streamParsers) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ResourceDict(streamParsers);
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -12842,134 +12347,127 @@ class ResourceDict extends PdfDict {
         this._xObjectsMap.set(`/XObject${name}`, xObject);
         this._edited = true;
     }
-    fillMapsAsync(parseInfoGetterAsync, cryptInfo) {
-        return __awaiter$$(this, void 0, void 0, function* () {
-            this._gsMap.clear();
-            this._fontsMap.clear();
-            this._xObjectsMap.clear();
-            if (this.ExtGState) {
-                for (const [name, objectId] of this.ExtGState.getObjectIds()) {
-                    const streamParseInfo = yield parseInfoGetterAsync(objectId.id);
-                    if (!streamParseInfo) {
-                        continue;
-                    }
-                    const stream = yield GraphicsStateDict.parseAsync(streamParseInfo);
-                    if (stream) {
-                        this._gsMap.set(`/ExtGState${name}`, stream.value);
-                    }
+    async fillMapsAsync(parseInfoGetterAsync, cryptInfo) {
+        this._gsMap.clear();
+        this._fontsMap.clear();
+        this._xObjectsMap.clear();
+        if (this.ExtGState) {
+            for (const [name, objectId] of this.ExtGState.getObjectIds()) {
+                const streamParseInfo = await parseInfoGetterAsync(objectId.id);
+                if (!streamParseInfo) {
+                    continue;
                 }
-                for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {
-                    const dict = yield GraphicsStateDict.parseAsync(parseInfo);
-                    if (dict) {
-                        this._gsMap.set(`/ExtGState${name}`, dict.value);
-                    }
+                const stream = await GraphicsStateDict.parseAsync(streamParseInfo);
+                if (stream) {
+                    this._gsMap.set(`/ExtGState${name}`, stream.value);
                 }
             }
-            if (this.XObject && this._streamParsers) {
-                for (const [name, objectId] of this.XObject.getObjectIds()) {
-                    const streamParseInfo = yield parseInfoGetterAsync(objectId.id);
-                    if (!streamParseInfo) {
-                        continue;
-                    }
-                    const stream = (yield streamParseInfo.parser.findSubarrayIndexAsync(keywordCodes.FORM, {
-                        direction: true,
-                        minIndex: streamParseInfo.bounds.start,
-                        maxIndex: streamParseInfo.bounds.end,
-                    }))
-                        ? yield this._streamParsers.xform(streamParseInfo)
-                        : yield this._streamParsers.image(streamParseInfo);
-                    if (stream) {
-                        this._xObjectsMap.set(`/XObject${name}`, stream.value);
-                    }
+            for (const [name, parseInfo] of this.ExtGState.getDictParsers()) {
+                const dict = await GraphicsStateDict.parseAsync(parseInfo);
+                if (dict) {
+                    this._gsMap.set(`/ExtGState${name}`, dict.value);
                 }
             }
-            if (this.Font) {
-                for (const [name, objectId] of this.Font.getObjectIds()) {
-                    const dictParseInfo = yield parseInfoGetterAsync(objectId.id);
-                    if (!dictParseInfo) {
-                        continue;
-                    }
-                    const dict = yield FontDict.parseAsync(dictParseInfo);
-                    if (dict) {
-                        this._fontsMap.set(`/Font${name}`, dict.value);
-                    }
+        }
+        if (this.XObject && this._streamParsers) {
+            for (const [name, objectId] of this.XObject.getObjectIds()) {
+                const streamParseInfo = await parseInfoGetterAsync(objectId.id);
+                if (!streamParseInfo) {
+                    continue;
+                }
+                const stream = await streamParseInfo.parser.findSubarrayIndexAsync(keywordCodes.FORM, {
+                    direction: true,
+                    minIndex: streamParseInfo.bounds.start,
+                    maxIndex: streamParseInfo.bounds.end,
+                })
+                    ? await this._streamParsers.xform(streamParseInfo)
+                    : await this._streamParsers.image(streamParseInfo);
+                if (stream) {
+                    this._xObjectsMap.set(`/XObject${name}`, stream.value);
                 }
             }
-        });
+        }
+        if (this.Font) {
+            for (const [name, objectId] of this.Font.getObjectIds()) {
+                const dictParseInfo = await parseInfoGetterAsync(objectId.id);
+                if (!dictParseInfo) {
+                    continue;
+                }
+                const dict = await FontDict.parseAsync(dictParseInfo);
+                if (dict) {
+                    this._fontsMap.set(`/Font${name}`, dict.value);
+                }
+            }
+        }
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$$(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/ExtGState":
-                        case "/ColorSpace":
-                        case "/Pattern":
-                        case "/Shading":
-                        case "/XObject":
-                        case "/Font":
-                        case "/Properties":
-                            const mapEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (mapEntryType === valueTypes.REF) {
-                                const mapDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (mapDictId && parseInfo.parseInfoGetterAsync) {
-                                    const mapParseInfo = yield parseInfo.parseInfoGetterAsync(mapDictId.value.id);
-                                    if (mapParseInfo) {
-                                        const mapDict = yield ObjectMapDict.parseAsync(mapParseInfo);
-                                        if (mapDict) {
-                                            this[name.slice(1)] = mapDict.value;
-                                            i = mapDict.end + 1;
-                                            break;
-                                        }
-                                    }
-                                }
-                                throw new Error(`Can't parse ${name} value reference`);
-                            }
-                            else if (mapEntryType === valueTypes.DICTIONARY) {
-                                const mapBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (mapBounds) {
-                                    const map = yield ObjectMapDict.parseAsync({ parser, bounds: mapBounds });
-                                    if (map) {
-                                        this[name.slice(1)] = map.value;
-                                        i = mapBounds.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/ExtGState":
+                    case "/ColorSpace":
+                    case "/Pattern":
+                    case "/Shading":
+                    case "/XObject":
+                    case "/Font":
+                    case "/Properties":
+                        const mapEntryType = await parser.getValueTypeAtAsync(i);
+                        if (mapEntryType === valueTypes.REF) {
+                            const mapDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (mapDictId && parseInfo.parseInfoGetterAsync) {
+                                const mapParseInfo = await parseInfo.parseInfoGetterAsync(mapDictId.value.id);
+                                if (mapParseInfo) {
+                                    const mapDict = await ObjectMapDict.parseAsync(mapParseInfo);
+                                    if (mapDict) {
+                                        this[name.slice(1)] = mapDict.value;
+                                        i = mapDict.end + 1;
                                         break;
                                     }
-                                    else {
-                                        throw new Error(`Can't parse ${name} value dictionary`);
-                                    }
                                 }
-                                throw new Error(`Can't parse ${name} dictionary bounds`);
                             }
-                            throw new Error(`Unsupported /Resources property value type: ${mapEntryType}`);
-                        case "/ProcSet":
-                            i = yield this.parseNameArrayPropAsync(name, parser, i);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error(`Can't parse ${name} value reference`);
+                        }
+                        else if (mapEntryType === valueTypes.DICTIONARY) {
+                            const mapBounds = await parser.getDictBoundsAtAsync(i);
+                            if (mapBounds) {
+                                const map = await ObjectMapDict.parseAsync({ parser, bounds: mapBounds });
+                                if (map) {
+                                    this[name.slice(1)] = map.value;
+                                    i = mapBounds.end + 1;
+                                    break;
+                                }
+                                else {
+                                    throw new Error(`Can't parse ${name} value dictionary`);
+                                }
+                            }
+                            throw new Error(`Can't parse ${name} dictionary bounds`);
+                        }
+                        throw new Error(`Unsupported /Resources property value type: ${mapEntryType}`);
+                    case "/ProcSet":
+                        i = await this.parseNameArrayPropAsync(name, parser, i);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (parseInfo.parseInfoGetterAsync) {
-                yield this.fillMapsAsync(parseInfo.parseInfoGetterAsync, parseInfo.cryptInfo);
+            else {
+                break;
             }
-        });
+        }
+        if (parseInfo.parseInfoGetterAsync) {
+            await this.fillMapsAsync(parseInfo.parseInfoGetterAsync, parseInfo.cryptInfo);
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -12979,35 +12477,24 @@ class ResourceDict extends PdfDict {
     }
 }
 
-var __awaiter$_ = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class MeasureDict extends PdfDict {
     constructor() {
         super(dictTypes.MEASURE);
         this.Subtype = "/RL";
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$_(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new MeasureDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new MeasureDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -13023,58 +12510,44 @@ class MeasureDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$_(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Subtype":
-                            const subtype = yield parser.parseNameAtAsync(i);
-                            if (subtype) {
-                                if (this.Subtype && this.Subtype !== subtype.value) {
-                                    throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
-                                }
-                                i = subtype.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = await parser.parseNameAtAsync(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
-                            else {
-                                throw new Error("Can't parse /Subtype property value");
-                            }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$Z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GroupDict extends PdfDict {
     constructor() {
         super(dictTypes.GROUP);
@@ -13094,82 +12567,66 @@ class GroupDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$Z(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/S":
-                            const intent = yield parser.parseNameAtAsync(i, true);
-                            if (intent) {
-                                if (Object.values(groupDictTypes).includes(intent.value)) {
-                                    this.S = intent.value;
-                                    i = intent.end + 1;
-                                }
-                                else {
-                                    throw new Error(`Invalid dict subtype: '${intent.value}'`);
-                                }
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/S":
+                        const intent = await parser.parseNameAtAsync(i, true);
+                        if (intent) {
+                            if (Object.values(groupDictTypes).includes(intent.value)) {
+                                this.S = intent.value;
+                                i = intent.end + 1;
                             }
                             else {
-                                throw new Error("Can't parse /S property value");
+                                throw new Error(`Invalid dict subtype: '${intent.value}'`);
                             }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        else {
+                            throw new Error("Can't parse /S property value");
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$Y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TransparencyGroupDict extends GroupDict {
     constructor() {
         super();
         this.I = false;
         this.K = false;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$Y(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new TransparencyGroupDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TransparencyGroupDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -13191,73 +12648,59 @@ class TransparencyGroupDict extends GroupDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$Y(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            if (this.S !== "/Transparency") {
-                throw new Error("Not a transparency dict");
-            }
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/CS":
-                            const colorSpaceEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (colorSpaceEntryType === valueTypes.NAME) {
-                                const colorSpaceName = yield parser.parseNameAtAsync(i);
-                                if (colorSpaceName) {
-                                    this.CS = colorSpaceName.value;
-                                    i = colorSpaceName.end + 1;
-                                    break;
-                                }
-                                throw new Error("Can't parse /CS property name");
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        if (this.S !== "/Transparency") {
+            throw new Error("Not a transparency dict");
+        }
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/CS":
+                        const colorSpaceEntryType = await parser.getValueTypeAtAsync(i);
+                        if (colorSpaceEntryType === valueTypes.NAME) {
+                            const colorSpaceName = await parser.parseNameAtAsync(i);
+                            if (colorSpaceName) {
+                                this.CS = colorSpaceName.value;
+                                i = colorSpaceName.end + 1;
+                                break;
                             }
-                            else if (colorSpaceEntryType === valueTypes.ARRAY) {
-                                const colorSpaceArrayBounds = yield parser.getArrayBoundsAtAsync(i);
-                                if (colorSpaceArrayBounds) {
-                                    i = colorSpaceArrayBounds.end + 1;
-                                    break;
-                                }
-                                throw new Error("Can't parse /CS value dictionary");
+                            throw new Error("Can't parse /CS property name");
+                        }
+                        else if (colorSpaceEntryType === valueTypes.ARRAY) {
+                            const colorSpaceArrayBounds = await parser.getArrayBoundsAtAsync(i);
+                            if (colorSpaceArrayBounds) {
+                                i = colorSpaceArrayBounds.end + 1;
+                                break;
                             }
-                            throw new Error(`Unsupported /CS property value type: ${colorSpaceEntryType}`);
-                        case "/I":
-                        case "/K":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error("Can't parse /CS value dictionary");
+                        }
+                        throw new Error(`Unsupported /CS property value type: ${colorSpaceEntryType}`);
+                    case "/I":
+                    case "/K":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$X = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class XFormStream extends PdfStream {
     get matrix() {
         const apMatrix = new Mat3();
@@ -13307,25 +12750,23 @@ class XFormStream extends PdfStream {
         this.FormType = 1;
         this.Matrix = [1, 0, 0, 1, 0, 0];
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$X(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new XFormStream();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new XFormStream();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -13371,176 +12812,171 @@ class XFormStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$X(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const dictBounds = yield parser.getDictBoundsAtAsync(start);
-            let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Subtype":
-                            const subtype = yield parser.parseNameAtAsync(i);
-                            if (subtype) {
-                                if (this.Subtype && this.Subtype !== subtype.value) {
-                                    throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
-                                }
-                                i = subtype.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = await parser.getDictBoundsAtAsync(start);
+        let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = await parser.parseNameAtAsync(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
-                            else {
-                                throw new Error("Can't parse /Subtype property value");
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/FormType":
+                        const formType = await parser.parseNumberAtAsync(i, false);
+                        if (formType) {
+                            if (formType.value !== 1) {
+                                throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
                             }
-                            break;
-                        case "/FormType":
-                            const formType = yield parser.parseNumberAtAsync(i, false);
-                            if (formType) {
-                                if (formType.value !== 1) {
-                                    throw new Error(`Ivalid form type: '${formType.value}' instead of '1'`);
-                                }
-                                i = formType.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /FormType property value");
-                            }
-                            break;
-                        case "/BBox":
-                        case "/Matrix":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/LastModified":
-                            i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        case "/Metadata":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/StructParent":
-                        case "/StructParents":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Resources":
-                            const resEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (resEntryType === valueTypes.REF) {
-                                const resDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (resDictId && parseInfo.parseInfoGetterAsync) {
-                                    const resParseInfo = yield parseInfo.parseInfoGetterAsync(resDictId.value.id);
-                                    if (resParseInfo) {
-                                        const resDict = yield ResourceDict.parseAsync(resParseInfo, { xform: XFormStream.parseAsync, image: ImageStream.parseAsync });
-                                        if (resDict) {
-                                            this.Resources = resDict.value;
-                                            i = resDict.end + 1;
-                                            break;
-                                        }
+                            i = formType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /FormType property value");
+                        }
+                        break;
+                    case "/BBox":
+                    case "/Matrix":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/LastModified":
+                        i = await this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/Metadata":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/StructParent":
+                    case "/StructParents":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Resources":
+                        const resEntryType = await parser.getValueTypeAtAsync(i);
+                        if (resEntryType === valueTypes.REF) {
+                            const resDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (resDictId && parseInfo.parseInfoGetterAsync) {
+                                const resParseInfo = await parseInfo.parseInfoGetterAsync(resDictId.value.id);
+                                if (resParseInfo) {
+                                    const resDict = await ResourceDict.parseAsync(resParseInfo, { xform: XFormStream.parseAsync, image: ImageStream.parseAsync });
+                                    if (resDict) {
+                                        this.Resources = resDict.value;
+                                        i = resDict.end + 1;
+                                        break;
                                     }
                                 }
-                                throw new Error("Can't parse /Resources value reference");
                             }
-                            else if (resEntryType === valueTypes.DICTIONARY) {
-                                const resDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (resDictBounds) {
-                                    if (resDictBounds.contentStart) {
-                                        const resDict = yield ResourceDict.parseAsync({
-                                            parser,
-                                            bounds: resDictBounds,
-                                            parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
-                                        }, { xform: XFormStream.parseAsync, image: ImageStream.parseAsync });
-                                        if (resDict) {
-                                            this.Resources = resDict.value;
-                                        }
-                                        else {
-                                            throw new Error("Can't parse /Resources value dictionary");
-                                        }
+                            throw new Error("Can't parse /Resources value reference");
+                        }
+                        else if (resEntryType === valueTypes.DICTIONARY) {
+                            const resDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (resDictBounds) {
+                                if (resDictBounds.contentStart) {
+                                    const resDict = await ResourceDict.parseAsync({
+                                        parser,
+                                        bounds: resDictBounds,
+                                        parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
+                                    }, { xform: XFormStream.parseAsync, image: ImageStream.parseAsync });
+                                    if (resDict) {
+                                        this.Resources = resDict.value;
                                     }
-                                    i = resDictBounds.end + 1;
-                                    break;
-                                }
-                                throw new Error("Can't parse /Resources dictionary bounds");
-                            }
-                            throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
-                        case "/Measure":
-                            const measureEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (measureEntryType === valueTypes.REF) {
-                                const measureDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (measureDictId && parseInfo.parseInfoGetterAsync) {
-                                    const measureParseInfo = yield parseInfo.parseInfoGetterAsync(measureDictId.value.id);
-                                    if (measureParseInfo) {
-                                        const measureDict = yield MeasureDict.parseAsync(measureParseInfo);
-                                        if (measureDict) {
-                                            this.Measure = measureDict.value;
-                                            i = measureDict.end + 1;
-                                            break;
-                                        }
+                                    else {
+                                        throw new Error("Can't parse /Resources value dictionary");
                                     }
                                 }
-                                throw new Error("Can't parse /Measure value reference");
+                                i = resDictBounds.end + 1;
+                                break;
                             }
-                            else if (measureEntryType === valueTypes.DICTIONARY) {
-                                const measureDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (measureDictBounds) {
-                                    const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo });
+                            throw new Error("Can't parse /Resources dictionary bounds");
+                        }
+                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
+                    case "/Measure":
+                        const measureEntryType = await parser.getValueTypeAtAsync(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                                const measureParseInfo = await parseInfo.parseInfoGetterAsync(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = await MeasureDict.parseAsync(measureParseInfo);
                                     if (measureDict) {
                                         this.Measure = measureDict.value;
                                         i = measureDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /Measure value dictionary");
                             }
-                            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                        case "/Group":
-                            const groupEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (groupEntryType === valueTypes.REF) {
-                                const groupDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (groupDictId && parseInfo.parseInfoGetterAsync) {
-                                    const groupParseInfo = yield parseInfo.parseInfoGetterAsync(groupDictId.value.id);
-                                    if (groupParseInfo) {
-                                        const groupDict = yield TransparencyGroupDict.parseAsync(groupParseInfo);
-                                        if (groupDict) {
-                                            this.Group = groupDict.value;
-                                            i = groupDict.end + 1;
-                                            break;
-                                        }
-                                    }
+                            throw new Error("Can't parse /Measure value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (measureDictBounds) {
+                                const measureDict = await MeasureDict.parseAsync({ parser, bounds: measureDictBounds, cryptInfo: parseInfo.cryptInfo });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
                                 }
-                                throw new Error("Can't parse /Group value reference");
                             }
-                            else if (groupEntryType === valueTypes.DICTIONARY) {
-                                const groupDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (groupDictBounds) {
-                                    const groupDict = yield TransparencyGroupDict.parseAsync({ parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo });
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    case "/Group":
+                        const groupEntryType = await parser.getValueTypeAtAsync(i);
+                        if (groupEntryType === valueTypes.REF) {
+                            const groupDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (groupDictId && parseInfo.parseInfoGetterAsync) {
+                                const groupParseInfo = await parseInfo.parseInfoGetterAsync(groupDictId.value.id);
+                                if (groupParseInfo) {
+                                    const groupDict = await TransparencyGroupDict.parseAsync(groupParseInfo);
                                     if (groupDict) {
                                         this.Group = groupDict.value;
                                         i = groupDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /Group value dictionary");
                             }
-                            throw new Error(`Unsupported /Group property value type: ${groupEntryType}`);
-                        case "/OC":
-                        case "/OPI":
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, dictBounds.contentEnd);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error("Can't parse /Group value reference");
+                        }
+                        else if (groupEntryType === valueTypes.DICTIONARY) {
+                            const groupDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (groupDictBounds) {
+                                const groupDict = await TransparencyGroupDict.parseAsync({ parser, bounds: groupDictBounds, cryptInfo: parseInfo.cryptInfo });
+                                if (groupDict) {
+                                    this.Group = groupDict.value;
+                                    i = groupDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Group value dictionary");
+                        }
+                        throw new Error(`Unsupported /Group property value type: ${groupEntryType}`);
+                    case "/OC":
+                    case "/OPI":
+                    default:
+                        i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                        break;
                 }
             }
-            if (!this.BBox) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.BBox) {
+            throw new Error("Not all required properties parsed");
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -13550,133 +12986,122 @@ class XFormStream extends PdfStream {
     }
 }
 
-var __awaiter$W = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextData {
-    static buildAsync(text, options) {
-        return __awaiter$W(this, void 0, void 0, function* () {
-            let result;
-            if (text) {
-                const pTemp = document.createElement("p");
-                pTemp.style.color = "black";
-                pTemp.style.fontSize = options.fontSize + "px";
-                pTemp.style.fontFamily = "arial";
-                pTemp.style.fontWeight = "normal";
-                pTemp.style.fontStyle = "normal";
-                pTemp.style.lineHeight = "normal";
-                pTemp.style.overflowWrap = "normal";
-                pTemp.style.textAlign = options.textAlign;
-                pTemp.style.textDecoration = "none";
-                pTemp.style.verticalAlign = "top";
-                pTemp.style.whiteSpace = "pre-wrap";
-                pTemp.style.wordBreak = "normal";
-                pTemp.style.position = "fixed";
-                pTemp.style.left = "0";
-                pTemp.style.top = "0";
-                pTemp.style.margin = "0";
-                pTemp.style.padding = "0";
-                pTemp.style.maxWidth = options.maxWidth.toFixed() + "px";
-                pTemp.style.visibility = "hidden";
-                pTemp.style.transform = "scale(0.1)";
-                pTemp.style.transformOrigin = "top left";
-                document.body.append(pTemp);
-                const words = text.split(/([- \n\r])/u);
-                const lines = [];
-                let currentLineText = "";
-                let previousHeight = 0;
-                for (let i = 0; i < words.length; i++) {
-                    const word = words[i];
-                    pTemp.textContent += word;
-                    yield DomUtils.runEmptyTimeout();
-                    const currentHeight = pTemp.offsetHeight;
-                    previousHeight || (previousHeight = currentHeight);
-                    if (currentHeight > previousHeight) {
-                        lines.push(currentLineText);
-                        currentLineText = word;
-                        previousHeight = currentHeight;
-                    }
-                    else {
-                        currentLineText += word;
-                    }
+    static async buildAsync(text, options) {
+        let result;
+        if (text) {
+            const pTemp = document.createElement("p");
+            pTemp.style.color = "black";
+            pTemp.style.fontSize = options.fontSize + "px";
+            pTemp.style.fontFamily = "arial";
+            pTemp.style.fontWeight = "normal";
+            pTemp.style.fontStyle = "normal";
+            pTemp.style.lineHeight = "normal";
+            pTemp.style.overflowWrap = "normal";
+            pTemp.style.textAlign = options.textAlign;
+            pTemp.style.textDecoration = "none";
+            pTemp.style.verticalAlign = "top";
+            pTemp.style.whiteSpace = "pre-wrap";
+            pTemp.style.wordBreak = "normal";
+            pTemp.style.position = "fixed";
+            pTemp.style.left = "0";
+            pTemp.style.top = "0";
+            pTemp.style.margin = "0";
+            pTemp.style.padding = "0";
+            pTemp.style.maxWidth = options.maxWidth.toFixed() + "px";
+            pTemp.style.visibility = "hidden";
+            pTemp.style.transform = "scale(0.1)";
+            pTemp.style.transformOrigin = "top left";
+            document.body.append(pTemp);
+            const words = text.split(/([- \n\r])/u);
+            const lines = [];
+            let currentLineText = "";
+            let previousHeight = 0;
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                pTemp.textContent += word;
+                await DomUtils.runEmptyTimeout();
+                const currentHeight = pTemp.offsetHeight;
+                previousHeight || (previousHeight = currentHeight);
+                if (currentHeight > previousHeight) {
+                    lines.push(currentLineText);
+                    currentLineText = word;
+                    previousHeight = currentHeight;
                 }
-                lines.push(currentLineText);
-                pTemp.innerHTML = "";
-                const lineSpans = [];
-                for (const line of lines) {
-                    const lineSpan = document.createElement("span");
-                    lineSpan.style.position = "relative";
-                    lineSpan.textContent = line;
-                    lineSpans.push(lineSpan);
-                    pTemp.append(lineSpan);
+                else {
+                    currentLineText += word;
                 }
-                yield DomUtils.runEmptyTimeout();
-                const textWidth = pTemp.offsetWidth;
-                const textHeight = pTemp.offsetHeight;
-                let pivotPoint;
-                switch (options.pivotPoint) {
-                    case "top-left":
-                        pivotPoint = new Vec2(0, textHeight);
-                        break;
-                    case "bottom-margin":
-                        pivotPoint = new Vec2(textWidth / 2, options.strokeWidth);
-                        break;
-                    case "center":
-                    default:
-                        pivotPoint = new Vec2(textWidth / 2, textHeight / 2);
-                        break;
-                }
-                const lineData = [];
-                for (let i = 0; i < lines.length; i++) {
-                    const span = lineSpans[i];
-                    const x = span.offsetLeft;
-                    const y = span.offsetTop;
-                    const width = span.offsetWidth;
-                    const height = span.offsetHeight;
-                    const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
-                    const lineTopRightPdf = new Vec2(x + width, textHeight - y);
-                    const lineRect = [
-                        lineBottomLeftPdf.x, lineBottomLeftPdf.y,
-                        lineTopRightPdf.x, lineTopRightPdf.y
-                    ];
-                    const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
-                    const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
-                    const lineRelativeRect = [
-                        lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
-                        lineTopRightPdfRel.x, lineTopRightPdfRel.y
-                    ];
-                    lineData.push({
-                        text: lines[i],
-                        rect: lineRect,
-                        relativeRect: lineRelativeRect,
-                    });
-                }
-                const textRect = [0, 0, textWidth, textHeight];
-                const textRelativeRect = [
-                    0 - pivotPoint.x, 0 - pivotPoint.y,
-                    textWidth - pivotPoint.x, textHeight - pivotPoint.y
+            }
+            lines.push(currentLineText);
+            pTemp.innerHTML = "";
+            const lineSpans = [];
+            for (const line of lines) {
+                const lineSpan = document.createElement("span");
+                lineSpan.style.position = "relative";
+                lineSpan.textContent = line;
+                lineSpans.push(lineSpan);
+                pTemp.append(lineSpan);
+            }
+            await DomUtils.runEmptyTimeout();
+            const textWidth = pTemp.offsetWidth;
+            const textHeight = pTemp.offsetHeight;
+            let pivotPoint;
+            switch (options.pivotPoint) {
+                case "top-left":
+                    pivotPoint = new Vec2(0, textHeight);
+                    break;
+                case "bottom-margin":
+                    pivotPoint = new Vec2(textWidth / 2, options.strokeWidth);
+                    break;
+                case "center":
+                default:
+                    pivotPoint = new Vec2(textWidth / 2, textHeight / 2);
+                    break;
+            }
+            const lineData = [];
+            for (let i = 0; i < lines.length; i++) {
+                const span = lineSpans[i];
+                const x = span.offsetLeft;
+                const y = span.offsetTop;
+                const width = span.offsetWidth;
+                const height = span.offsetHeight;
+                const lineBottomLeftPdf = new Vec2(x, textHeight - (y + height));
+                const lineTopRightPdf = new Vec2(x + width, textHeight - y);
+                const lineRect = [
+                    lineBottomLeftPdf.x, lineBottomLeftPdf.y,
+                    lineTopRightPdf.x, lineTopRightPdf.y
                 ];
-                const textData = {
-                    width: textWidth,
-                    height: textHeight,
-                    rect: textRect,
-                    relativeRect: textRelativeRect,
-                    lines: lineData,
-                };
-                pTemp.remove();
-                result = textData;
+                const lineBottomLeftPdfRel = Vec2.subtract(lineBottomLeftPdf, pivotPoint);
+                const lineTopRightPdfRel = Vec2.subtract(lineTopRightPdf, pivotPoint);
+                const lineRelativeRect = [
+                    lineBottomLeftPdfRel.x, lineBottomLeftPdfRel.y,
+                    lineTopRightPdfRel.x, lineTopRightPdfRel.y
+                ];
+                lineData.push({
+                    text: lines[i],
+                    rect: lineRect,
+                    relativeRect: lineRelativeRect,
+                });
             }
-            else {
-                result = null;
-            }
-            return result;
-        });
+            const textRect = [0, 0, textWidth, textHeight];
+            const textRelativeRect = [
+                0 - pivotPoint.x, 0 - pivotPoint.y,
+                textWidth - pivotPoint.x, textHeight - pivotPoint.y
+            ];
+            const textData = {
+                width: textWidth,
+                height: textHeight,
+                rect: textRect,
+                relativeRect: textRelativeRect,
+                lines: lineData,
+            };
+            pTemp.remove();
+            result = textData;
+        }
+        else {
+            result = null;
+        }
+        return result;
     }
 }
 
@@ -13869,15 +13294,6 @@ GraphicsState.defaultParams = {
     strokeLineJoin: "miter",
 };
 
-var __awaiter$V = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class AppearanceStreamRenderer {
     get state() {
         return this._graphicsStates[this._graphicsStates.length - 1];
@@ -13909,79 +13325,75 @@ class AppearanceStreamRenderer {
         this._clipPaths.push(clipPath);
         this._graphicsStates.push(new GraphicsState({ matrix: matAA, clipPath }));
     }
-    static parseNextCommandAsync(parser, i) {
-        return __awaiter$V(this, void 0, void 0, function* () {
-            const parameters = [];
-            let operator;
-            command: while (!operator) {
-                const nextValueType = yield parser.getValueTypeAtAsync(i, true);
-                switch (nextValueType) {
-                    case valueTypes.NUMBER:
-                        const numberResult = yield parser.parseNumberAtAsync(i, true);
-                        parameters.push(numberResult.value);
-                        i = numberResult.end + 1;
-                        break;
-                    case valueTypes.NAME:
-                        const nameResult = yield parser.parseNameAtAsync(i, true);
-                        parameters.push(nameResult.value);
-                        i = nameResult.end + 1;
-                        break;
-                    case valueTypes.ARRAY:
-                        const arrayBounds = yield parser.getArrayBoundsAtAsync(i);
-                        let j = arrayBounds.start + 1;
-                        while (j < arrayBounds.end - 1 && j !== -1) {
-                            const nextArrayValueType = yield parser.getValueTypeAtAsync(j, true);
-                            switch (nextArrayValueType) {
-                                case valueTypes.STRING_LITERAL:
-                                    const arrayLiteralResult = yield LiteralString.parseAsync(parser, j);
-                                    parameters.push(arrayLiteralResult.value.bytes);
-                                    j = arrayLiteralResult.end + 1;
-                                    break;
-                                case valueTypes.NUMBER:
-                                    const arrayNumberResult = yield parser.parseNumberAtAsync(j, true);
-                                    parameters.push(arrayNumberResult.value);
-                                    j = arrayNumberResult.end + 1;
-                                    break;
-                                default:
-                                    console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
-                                    j = yield parser.findDelimiterIndexAsync(true, j + 1);
-                                    break;
-                            }
+    static async parseNextCommandAsync(parser, i) {
+        const parameters = [];
+        let operator;
+        command: while (!operator) {
+            const nextValueType = await parser.getValueTypeAtAsync(i, true);
+            switch (nextValueType) {
+                case valueTypes.NUMBER:
+                    const numberResult = await parser.parseNumberAtAsync(i, true);
+                    parameters.push(numberResult.value);
+                    i = numberResult.end + 1;
+                    break;
+                case valueTypes.NAME:
+                    const nameResult = await parser.parseNameAtAsync(i, true);
+                    parameters.push(nameResult.value);
+                    i = nameResult.end + 1;
+                    break;
+                case valueTypes.ARRAY:
+                    const arrayBounds = await parser.getArrayBoundsAtAsync(i);
+                    let j = arrayBounds.start + 1;
+                    while (j < arrayBounds.end - 1 && j !== -1) {
+                        const nextArrayValueType = await parser.getValueTypeAtAsync(j, true);
+                        switch (nextArrayValueType) {
+                            case valueTypes.STRING_LITERAL:
+                                const arrayLiteralResult = await LiteralString.parseAsync(parser, j);
+                                parameters.push(arrayLiteralResult.value.bytes);
+                                j = arrayLiteralResult.end + 1;
+                                break;
+                            case valueTypes.NUMBER:
+                                const arrayNumberResult = await parser.parseNumberAtAsync(j, true);
+                                parameters.push(arrayNumberResult.value);
+                                j = arrayNumberResult.end + 1;
+                                break;
+                            default:
+                                console.log(`Unsupported value type in AP stream parameter array: ${nextArrayValueType}`);
+                                j = await parser.findDelimiterIndexAsync(true, j + 1);
+                                break;
                         }
-                        i = arrayBounds.end + 1;
-                        break;
-                    case valueTypes.STRING_LITERAL:
-                        const literalResult = yield LiteralString.parseAsync(parser, i);
-                        parameters.push(literalResult.value.literal);
-                        i = literalResult.end + 1;
-                        break;
-                    case valueTypes.STRING_HEX:
-                        const hexResult = yield HexString.parseAsync(parser, i);
-                        parameters.push(hexResult.value.hex);
-                        i = hexResult.end + 1;
-                        break;
-                    case valueTypes.UNKNOWN:
-                        const operatorResult = yield parser.parseStringAtAsync(i);
-                        operator = operatorResult.value;
-                        i = operatorResult.end + 1;
-                        break command;
-                    default:
-                        throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
-                }
+                    }
+                    i = arrayBounds.end + 1;
+                    break;
+                case valueTypes.STRING_LITERAL:
+                    const literalResult = await LiteralString.parseAsync(parser, i);
+                    parameters.push(literalResult.value.literal);
+                    i = literalResult.end + 1;
+                    break;
+                case valueTypes.STRING_HEX:
+                    const hexResult = await HexString.parseAsync(parser, i);
+                    parameters.push(hexResult.value.hex);
+                    i = hexResult.end + 1;
+                    break;
+                case valueTypes.UNKNOWN:
+                    const operatorResult = await parser.parseStringAtAsync(i);
+                    operator = operatorResult.value;
+                    i = operatorResult.end + 1;
+                    break command;
+                default:
+                    throw new Error(`Invalid appearance stream value type: ${nextValueType}`);
             }
-            return { nextIndex: i, parameters, operator };
-        });
+        }
+        return { nextIndex: i, parameters, operator };
     }
-    renderAsync() {
-        return __awaiter$V(this, void 0, void 0, function* () {
-            this.reset();
-            const elements = yield this.drawStreamAsync(this._stream);
-            return {
-                elements,
-                clipPaths: this._clipPaths.slice(),
-                pickHelpers: this._selectionCopies.slice(),
-            };
-        });
+    async renderAsync() {
+        this.reset();
+        const elements = await this.drawStreamAsync(this._stream);
+        return {
+            elements,
+            clipPaths: this._clipPaths.slice(),
+            pickHelpers: this._selectionCopies.slice(),
+        };
     }
     reset() {
         this._graphicsStates.length = 1;
@@ -14319,368 +13731,351 @@ class AppearanceStreamRenderer {
         this._selectionCopies.push(clonedPath);
         return { element: svg, blendMode: this.state.mixBlendMode || "normal" };
     }
-    drawImageAsync(imageStream) {
-        return __awaiter$V(this, void 0, void 0, function* () {
-            const url = yield imageStream.getImageUrlAsync();
-            if (!url) {
-                throw new Error("Can't get image url from external image stream");
-            }
-            const matrix = new Mat3()
-                .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
-                .applyScaling(1, -1)
-                .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
-                .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
-                .multiply(this.state.matrix);
-            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-            this.addDescriptionDataAttribute(image, "astream-image");
-            image.onerror = e => {
-                console.log(`Loading external image stream failed: ${e}`);
-            };
-            image.setAttribute("href", url);
-            image.setAttribute("width", imageStream.Width + "");
-            image.setAttribute("height", imageStream.Height + "");
-            applyMatrixToElement(image, matrix);
-            const imageWrapper = this.createSvgElement();
-            imageWrapper.setAttribute("data-tspdf-desc", "astream-image-wrapper");
-            imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
-            imageWrapper.append(image);
-            const clonedSvg = this.createSvgElement();
-            this.addDescriptionDataAttribute(clonedSvg, "astream-image-selection-helper");
-            const clonedRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            this.addDescriptionDataAttribute(clonedRect, "astream-image-selection-rect");
-            clonedRect.setAttribute("width", imageStream.Width + "");
-            clonedRect.setAttribute("height", imageStream.Height + "");
-            clonedRect.setAttribute("fill", "transparent");
-            applyMatrixToElement(clonedRect, matrix);
-            clonedSvg.append(clonedRect);
-            this._selectionCopies.push(clonedRect);
-            return imageWrapper;
-        });
+    async drawImageAsync(imageStream) {
+        const url = await imageStream.getImageUrlAsync();
+        if (!url) {
+            throw new Error("Can't get image url from external image stream");
+        }
+        const matrix = new Mat3()
+            .applyTranslation(-imageStream.Width / 2, -imageStream.Height / 2)
+            .applyScaling(1, -1)
+            .applyTranslation(imageStream.Width / 2, imageStream.Height / 2)
+            .applyScaling(1 / imageStream.Width, 1 / imageStream.Height)
+            .multiply(this.state.matrix);
+        const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        this.addDescriptionDataAttribute(image, "astream-image");
+        image.onerror = e => {
+            console.log(`Loading external image stream failed: ${e}`);
+        };
+        image.setAttribute("href", url);
+        image.setAttribute("width", imageStream.Width + "");
+        image.setAttribute("height", imageStream.Height + "");
+        applyMatrixToElement(image, matrix);
+        const imageWrapper = this.createSvgElement();
+        imageWrapper.setAttribute("data-tspdf-desc", "astream-image-wrapper");
+        imageWrapper.setAttribute("clip-path", `url(#${this._clipPaths[this._clipPaths.length - 1].id})`);
+        imageWrapper.append(image);
+        const clonedSvg = this.createSvgElement();
+        this.addDescriptionDataAttribute(clonedSvg, "astream-image-selection-helper");
+        const clonedRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        this.addDescriptionDataAttribute(clonedRect, "astream-image-selection-rect");
+        clonedRect.setAttribute("width", imageStream.Width + "");
+        clonedRect.setAttribute("height", imageStream.Height + "");
+        clonedRect.setAttribute("fill", "transparent");
+        applyMatrixToElement(clonedRect, matrix);
+        clonedSvg.append(clonedRect);
+        this._selectionCopies.push(clonedRect);
+        return imageWrapper;
     }
-    drawTextAsync(textParam, resources) {
-        return __awaiter$V(this, void 0, void 0, function* () {
-            const textState = this.state.textState;
-            const fontDict = resources.getFont(textState.customFontName);
-            const text = this.decodeTextParam(textParam, fontDict);
-            this.setTextStateFont(fontDict);
-            if (!text) {
-                console.log(`Can't decode the stream text parameter: '${textParam}'`);
-                return null;
+    async drawTextAsync(textParam, resources) {
+        const textState = this.state.textState;
+        const fontDict = resources.getFont(textState.customFontName);
+        const text = this.decodeTextParam(textParam, fontDict);
+        this.setTextStateFont(fontDict);
+        if (!text) {
+            console.log(`Can't decode the stream text parameter: '${textParam}'`);
+            return null;
+        }
+        const matrix = new Mat3()
+            .applyScaling(1, -1)
+            .applyScaling(textState.horizontalScale, 1)
+            .multiply(Mat3.multiply(textState.matrix, this.state.matrix));
+        const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        this.addDescriptionDataAttribute(svgText, "astream-text");
+        applyMatrixToElement(svgText, matrix);
+        svgText.setAttribute("x", "0");
+        svgText.setAttribute("y", "0");
+        svgText.textContent = text;
+        svgText.style.fontFamily = textState.fontFamily;
+        svgText.style.fontSize = textState.fontSize;
+        svgText.style.lineHeight = textState.lineHeight;
+        svgText.style.letterSpacing = textState.letterSpacing;
+        svgText.style.wordSpacing = textState.wordSpacing;
+        svgText.style.verticalAlign = textState.verticalAlign;
+        svgText.style.whiteSpace = "pre";
+        svgText.style.userSelect = "none";
+        let fill;
+        let stroke;
+        let clip;
+        switch (textState.renderMode) {
+            case textRenderModes.FILL:
+            default:
+                fill = this.state.fill;
+                break;
+            case textRenderModes.STROKE:
+                stroke = true;
+                break;
+            case textRenderModes.FILL_STROKE:
+                fill = this.state.fill;
+                stroke = true;
+                break;
+            case textRenderModes.INVISIBLE:
+                break;
+            case textRenderModes.FILL_USE_AS_CLIP:
+                fill = this.state.fill;
+                clip = true;
+                break;
+            case textRenderModes.STROKE_USE_AS_CLIP:
+                stroke = true;
+                clip = true;
+                break;
+            case textRenderModes.FILL_STROKE_USE_AS_CLIP:
+                fill = this.state.fill;
+                stroke = true;
+                clip = true;
+                break;
+            case textRenderModes.USE_AS_CLIP:
+                fill = "transparent";
+                clip = true;
+                break;
+        }
+        svgText.style.fill = fill || "none";
+        if (stroke) {
+            svgText.style.stroke = this.state.stroke;
+            svgText.style.strokeWidth = this.state.strokeWidth + "";
+            svgText.style.strokeMiterlimit = this.state.strokeMiterLimit + "";
+            svgText.style.strokeLinecap = this.state.strokeLineCap;
+            svgText.style.strokeLinejoin = this.state.strokeLineJoin;
+            if (this.state.strokeDashArray) {
+                svgText.style.strokeDasharray = this.state.strokeDashArray;
             }
-            const matrix = new Mat3()
-                .applyScaling(1, -1)
-                .applyScaling(textState.horizontalScale, 1)
-                .multiply(Mat3.multiply(textState.matrix, this.state.matrix));
-            const svgText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-            this.addDescriptionDataAttribute(svgText, "astream-text");
-            applyMatrixToElement(svgText, matrix);
-            svgText.setAttribute("x", "0");
-            svgText.setAttribute("y", "0");
-            svgText.textContent = text;
-            svgText.style.fontFamily = textState.fontFamily;
-            svgText.style.fontSize = textState.fontSize;
-            svgText.style.lineHeight = textState.lineHeight;
-            svgText.style.letterSpacing = textState.letterSpacing;
-            svgText.style.wordSpacing = textState.wordSpacing;
-            svgText.style.verticalAlign = textState.verticalAlign;
-            svgText.style.whiteSpace = "pre";
-            svgText.style.userSelect = "none";
-            let fill;
-            let stroke;
-            let clip;
-            switch (textState.renderMode) {
-                case textRenderModes.FILL:
+            if (this.state.strokeDashOffset) {
+                svgText.style.strokeDashoffset = this.state.strokeDashOffset + "";
+            }
+        }
+        else {
+            svgText.style.stroke = "none";
+        }
+        if (clip) {
+            this.pushClipPath(svgText.cloneNode(), true);
+        }
+        await new Promise((resolve, reject) => {
+            const tempContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            this.addDescriptionDataAttribute(tempContainer, "astream-temp-text-sizer");
+            tempContainer.setAttribute("viewBox", "0 0 100 100");
+            tempContainer.style.width = "100px";
+            tempContainer.style.height = "100px";
+            tempContainer.style.zIndex = "-99";
+            tempContainer.style.position = "fixed";
+            tempContainer.style.left = "0";
+            tempContainer.style.top = "0";
+            tempContainer.append(svgText);
+            document.body.append(tempContainer);
+            setTimeout(() => {
+                const width = svgText.getBBox().width;
+                this.state.textState.moveAlongPx(width);
+                svgText.remove();
+                tempContainer.remove();
+                resolve(true);
+            }, 0);
+        });
+        const clonedSvg = this.createSvgElement();
+        this.addDescriptionDataAttribute(clonedSvg, "astream-text-selection-helper");
+        const clonedPath = svgText.cloneNode(true);
+        const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
+            ? SELECTION_STROKE_WIDTH
+            : this.state.strokeWidth;
+        clonedPath.style.strokeWidth = clonedPathStrokeWidth + "";
+        clonedPath.style.stroke = "transparent";
+        clonedPath.style.fill = fill ? "transparent" : "none";
+        clonedSvg.append(clonedPath);
+        this._selectionCopies.push(clonedPath);
+        return { element: svgText, blendMode: this.state.mixBlendMode || "normal" };
+    }
+    async drawTextGroupAsync(parser, resources) {
+        const svgElements = [];
+        const textState = this.state.textState;
+        let i = 0;
+        while (i !== -1) {
+            const { nextIndex, parameters, operator } = await AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
+            i = await parser.skipEmptyAsync(nextIndex);
+            switch (operator) {
+                case "Tj":
+                    svgElements.push(await this.drawTextAsync(parameters[0], resources));
+                    break;
+                case "'":
+                    textState.nextLine();
+                    svgElements.push(await this.drawTextAsync(parameters[0], resources));
+                    break;
+                case "\"":
+                    const [a, b, c] = parameters;
+                    textState.setWordSpacing(+a);
+                    textState.setLetterSpacing(+b);
+                    textState.nextLine();
+                    svgElements.push(await this.drawTextAsync(c, resources));
+                    break;
+                case "TJ":
+                    for (const param of parameters) {
+                        if (param instanceof Uint8Array) {
+                            svgElements.push(await this.drawTextAsync(param, resources));
+                        }
+                        else if (typeof param === "number") {
+                            if (+(param.toFixed(0))) {
+                                textState.moveAlongPdfUnits(param);
+                            }
+                        }
+                    }
+                    break;
                 default:
-                    fill = this.state.fill;
-                    break;
-                case textRenderModes.STROKE:
-                    stroke = true;
-                    break;
-                case textRenderModes.FILL_STROKE:
-                    fill = this.state.fill;
-                    stroke = true;
-                    break;
-                case textRenderModes.INVISIBLE:
-                    break;
-                case textRenderModes.FILL_USE_AS_CLIP:
-                    fill = this.state.fill;
-                    clip = true;
-                    break;
-                case textRenderModes.STROKE_USE_AS_CLIP:
-                    stroke = true;
-                    clip = true;
-                    break;
-                case textRenderModes.FILL_STROKE_USE_AS_CLIP:
-                    fill = this.state.fill;
-                    stroke = true;
-                    clip = true;
-                    break;
-                case textRenderModes.USE_AS_CLIP:
-                    fill = "transparent";
-                    clip = true;
-                    break;
+                    const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
+                    if (!operatorIsGraphicState) {
+                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                    }
             }
-            svgText.style.fill = fill || "none";
-            if (stroke) {
-                svgText.style.stroke = this.state.stroke;
-                svgText.style.strokeWidth = this.state.strokeWidth + "";
-                svgText.style.strokeMiterlimit = this.state.strokeMiterLimit + "";
-                svgText.style.strokeLinecap = this.state.strokeLineCap;
-                svgText.style.strokeLinejoin = this.state.strokeLineJoin;
-                if (this.state.strokeDashArray) {
-                    svgText.style.strokeDasharray = this.state.strokeDashArray;
-                }
-                if (this.state.strokeDashOffset) {
-                    svgText.style.strokeDashoffset = this.state.strokeDashOffset + "";
-                }
-            }
-            else {
-                svgText.style.stroke = "none";
-            }
-            if (clip) {
-                this.pushClipPath(svgText.cloneNode(), true);
-            }
-            yield new Promise((resolve, reject) => {
-                const tempContainer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                this.addDescriptionDataAttribute(tempContainer, "astream-temp-text-sizer");
-                tempContainer.setAttribute("viewBox", "0 0 100 100");
-                tempContainer.style.width = "100px";
-                tempContainer.style.height = "100px";
-                tempContainer.style.zIndex = "-99";
-                tempContainer.style.position = "fixed";
-                tempContainer.style.left = "0";
-                tempContainer.style.top = "0";
-                tempContainer.append(svgText);
-                document.body.append(tempContainer);
-                setTimeout(() => {
-                    const width = svgText.getBBox().width;
-                    this.state.textState.moveAlongPx(width);
-                    svgText.remove();
-                    tempContainer.remove();
-                    resolve(true);
-                }, 0);
-            });
-            const clonedSvg = this.createSvgElement();
-            this.addDescriptionDataAttribute(clonedSvg, "astream-text-selection-helper");
-            const clonedPath = svgText.cloneNode(true);
-            const clonedPathStrokeWidth = !stroke || this.state.strokeWidth < SELECTION_STROKE_WIDTH
-                ? SELECTION_STROKE_WIDTH
-                : this.state.strokeWidth;
-            clonedPath.style.strokeWidth = clonedPathStrokeWidth + "";
-            clonedPath.style.stroke = "transparent";
-            clonedPath.style.fill = fill ? "transparent" : "none";
-            clonedSvg.append(clonedPath);
-            this._selectionCopies.push(clonedPath);
-            return { element: svgText, blendMode: this.state.mixBlendMode || "normal" };
-        });
+        }
+        return svgElements.filter(x => x);
     }
-    drawTextGroupAsync(parser, resources) {
-        return __awaiter$V(this, void 0, void 0, function* () {
-            const svgElements = [];
-            const textState = this.state.textState;
-            let i = 0;
-            while (i !== -1) {
-                const { nextIndex, parameters, operator } = yield AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
-                i = yield parser.skipEmptyAsync(nextIndex);
-                switch (operator) {
-                    case "Tj":
-                        svgElements.push(yield this.drawTextAsync(parameters[0], resources));
-                        break;
-                    case "'":
-                        textState.nextLine();
-                        svgElements.push(yield this.drawTextAsync(parameters[0], resources));
-                        break;
-                    case "\"":
-                        const [a, b, c] = parameters;
-                        textState.setWordSpacing(+a);
-                        textState.setLetterSpacing(+b);
-                        textState.nextLine();
-                        svgElements.push(yield this.drawTextAsync(c, resources));
-                        break;
-                    case "TJ":
-                        for (const param of parameters) {
-                            if (param instanceof Uint8Array) {
-                                svgElements.push(yield this.drawTextAsync(param, resources));
-                            }
-                            else if (typeof param === "number") {
-                                if (+(param.toFixed(0))) {
-                                    textState.moveAlongPdfUnits(param);
-                                }
-                            }
+    async drawStreamAsync(stream) {
+        const parser = await stream.getStreamDataParserAsync();
+        const svgElements = [];
+        const lastCoord = new Vec2();
+        let lastOperator;
+        let d = "";
+        let i = 0;
+        while (i !== -1) {
+            const { nextIndex, parameters, operator } = await AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
+            i = await parser.skipEmptyAsync(nextIndex + 1);
+            switch (operator) {
+                case "m":
+                    const move = new Vec2(+parameters[0], +parameters[1]);
+                    d += ` M ${move.x} ${move.y}`;
+                    lastCoord.setFromVec2(move);
+                    break;
+                case "l":
+                    const line = new Vec2(+parameters[0], +parameters[1]);
+                    d += ` L ${line.x} ${line.y}`;
+                    lastCoord.setFromVec2(line);
+                    break;
+                case "re":
+                    const rMin = new Vec2(+parameters[0], +parameters[1]);
+                    const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
+                    d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
+                    lastCoord.setFromVec2(rMin);
+                    break;
+                case "c":
+                    const cControl1 = new Vec2(+parameters[0], +parameters[1]);
+                    const cControl2 = new Vec2(+parameters[2], +parameters[3]);
+                    const cEnd = new Vec2(+parameters[4], +parameters[5]);
+                    d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
+                    lastCoord.setFromVec2(cEnd);
+                    break;
+                case "v":
+                    const vControl2 = new Vec2(+parameters[0], +parameters[1]);
+                    const vEnd = new Vec2(+parameters[2], +parameters[3]);
+                    d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
+                    lastCoord.setFromVec2(vEnd);
+                    break;
+                case "y":
+                    const yControl1 = new Vec2(+parameters[0], +parameters[1]);
+                    const yEnd = new Vec2(+parameters[2], +parameters[3]);
+                    d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
+                    lastCoord.setFromVec2(yEnd);
+                    break;
+                case "h":
+                    d += " Z";
+                    break;
+                case "S":
+                    svgElements.push(this.drawPath(d, true, false));
+                    d = "";
+                    break;
+                case "s":
+                    svgElements.push(this.drawPath(d, true, false, true));
+                    d = "";
+                    break;
+                case "F":
+                case "f":
+                    svgElements.push(this.drawPath(d, false, true, true));
+                    d = "";
+                    break;
+                case "F*":
+                case "f*":
+                    svgElements.push(this.drawPath(d, false, true, true, true));
+                    d = "";
+                    break;
+                case "B":
+                    svgElements.push(this.drawPath(d, true, true, false, false));
+                    d = "";
+                    break;
+                case "B*":
+                    svgElements.push(this.drawPath(d, true, true, false, true));
+                    d = "";
+                    break;
+                case "b":
+                    svgElements.push(this.drawPath(d, true, true, true, false));
+                    d = "";
+                    break;
+                case "b*":
+                    svgElements.push(this.drawPath(d, true, true, true, true));
+                    d = "";
+                    break;
+                case "n":
+                    if (lastOperator === "W" || lastOperator === "W*") {
+                        if (d[d.length - 1] !== "Z") {
+                            d += " Z";
                         }
+                        const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                        clippingPath.setAttribute("d", d);
+                        this.pushClipPath(clippingPath, lastOperator === "W");
+                    }
+                    d = "";
+                    break;
+                case "W":
+                    break;
+                case "W*":
+                    break;
+                case "BT":
+                    const textObjectEnd = await parser.findSubarrayIndexAsync(keywordCodes.AP_STREAM_TEXT_END, {
+                        closedOnly: true,
+                        minIndex: i,
+                    });
+                    if (textObjectEnd) {
+                        const textParser = await parser.getSubParserAsync(i, textObjectEnd.start - 1);
+                        const textGroup = await this.drawTextGroupAsync(textParser, stream.Resources);
+                        svgElements.push(...textGroup);
+                        i = await parser.skipEmptyAsync(textObjectEnd.end + 1);
                         break;
-                    default:
-                        const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
-                        if (!operatorIsGraphicState) {
-                            throw new Error(`Unsupported appearance stream operator: ${operator}`);
-                        }
-                }
-            }
-            return svgElements.filter(x => x);
-        });
-    }
-    drawStreamAsync(stream) {
-        return __awaiter$V(this, void 0, void 0, function* () {
-            const parser = yield stream.getStreamDataParserAsync();
-            const svgElements = [];
-            const lastCoord = new Vec2();
-            let lastOperator;
-            let d = "";
-            let i = 0;
-            while (i !== -1) {
-                const { nextIndex, parameters, operator } = yield AppearanceStreamRenderer.parseNextCommandAsync(parser, i);
-                i = yield parser.skipEmptyAsync(nextIndex + 1);
-                switch (operator) {
-                    case "m":
-                        const move = new Vec2(+parameters[0], +parameters[1]);
-                        d += ` M ${move.x} ${move.y}`;
-                        lastCoord.setFromVec2(move);
-                        break;
-                    case "l":
-                        const line = new Vec2(+parameters[0], +parameters[1]);
-                        d += ` L ${line.x} ${line.y}`;
-                        lastCoord.setFromVec2(line);
-                        break;
-                    case "re":
-                        const rMin = new Vec2(+parameters[0], +parameters[1]);
-                        const rMax = new Vec2(+parameters[2], +parameters[3]).add(rMin);
-                        d += ` M ${rMin.x} ${rMin.y} L ${rMax.x} ${rMin.y} L ${rMax.x} ${rMax.y} L ${rMin.x} ${rMax.y} L ${rMin.x} ${rMin.y}`;
-                        lastCoord.setFromVec2(rMin);
-                        break;
-                    case "c":
-                        const cControl1 = new Vec2(+parameters[0], +parameters[1]);
-                        const cControl2 = new Vec2(+parameters[2], +parameters[3]);
-                        const cEnd = new Vec2(+parameters[4], +parameters[5]);
-                        d += ` C ${cControl1.x} ${cControl1.y}, ${cControl2.x} ${cControl2.y}, ${cEnd.x} ${cEnd.y}`;
-                        lastCoord.setFromVec2(cEnd);
-                        break;
-                    case "v":
-                        const vControl2 = new Vec2(+parameters[0], +parameters[1]);
-                        const vEnd = new Vec2(+parameters[2], +parameters[3]);
-                        d += ` C ${lastCoord.x} ${lastCoord.y}, ${vControl2.x} ${vControl2.y}, ${vEnd.x} ${vEnd.y}`;
-                        lastCoord.setFromVec2(vEnd);
-                        break;
-                    case "y":
-                        const yControl1 = new Vec2(+parameters[0], +parameters[1]);
-                        const yEnd = new Vec2(+parameters[2], +parameters[3]);
-                        d += ` C ${yControl1.x} ${yControl1.y}, ${yEnd.x} ${yEnd.y}, ${yEnd.x} ${yEnd.y}`;
-                        lastCoord.setFromVec2(yEnd);
-                        break;
-                    case "h":
-                        d += " Z";
-                        break;
-                    case "S":
-                        svgElements.push(this.drawPath(d, true, false));
-                        d = "";
-                        break;
-                    case "s":
-                        svgElements.push(this.drawPath(d, true, false, true));
-                        d = "";
-                        break;
-                    case "F":
-                    case "f":
-                        svgElements.push(this.drawPath(d, false, true, true));
-                        d = "";
-                        break;
-                    case "F*":
-                    case "f*":
-                        svgElements.push(this.drawPath(d, false, true, true, true));
-                        d = "";
-                        break;
-                    case "B":
-                        svgElements.push(this.drawPath(d, true, true, false, false));
-                        d = "";
-                        break;
-                    case "B*":
-                        svgElements.push(this.drawPath(d, true, true, false, true));
-                        d = "";
-                        break;
-                    case "b":
-                        svgElements.push(this.drawPath(d, true, true, true, false));
-                        d = "";
-                        break;
-                    case "b*":
-                        svgElements.push(this.drawPath(d, true, true, true, true));
-                        d = "";
-                        break;
-                    case "n":
-                        if (lastOperator === "W" || lastOperator === "W*") {
-                            if (d[d.length - 1] !== "Z") {
-                                d += " Z";
-                            }
-                            const clippingPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                            clippingPath.setAttribute("d", d);
-                            this.pushClipPath(clippingPath, lastOperator === "W");
-                        }
-                        d = "";
-                        break;
-                    case "W":
-                        break;
-                    case "W*":
-                        break;
-                    case "BT":
-                        const textObjectEnd = yield parser.findSubarrayIndexAsync(keywordCodes.AP_STREAM_TEXT_END, {
-                            closedOnly: true,
-                            minIndex: i,
+                    }
+                    throw new Error("Can't find the appearance stream text object end");
+                case "Do":
+                    const innerStream = stream.Resources.getXObject((`/XObject${parameters[0]}`));
+                    if (!innerStream) {
+                        throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
+                    }
+                    if (innerStream instanceof XFormStream) {
+                        const [im0, im1, im3, im4, im6, im7] = innerStream.Matrix;
+                        const innerMat = new Mat3().set(im0, im1, 0, im3, im4, 0, im6, im7, 1);
+                        this.pushState();
+                        this.state.matrix = innerMat.multiply(this.state.matrix);
+                        const innerStreamSvgElements = await this.drawStreamAsync(innerStream);
+                        svgElements.push(...innerStreamSvgElements);
+                        this.popState();
+                    }
+                    else if (innerStream instanceof ImageStream) {
+                        const image = await this.drawImageAsync(innerStream);
+                        svgElements.push({
+                            element: image,
+                            blendMode: this.state.mixBlendMode || "normal"
                         });
-                        if (textObjectEnd) {
-                            const textParser = yield parser.getSubParserAsync(i, textObjectEnd.start - 1);
-                            const textGroup = yield this.drawTextGroupAsync(textParser, stream.Resources);
-                            svgElements.push(...textGroup);
-                            i = yield parser.skipEmptyAsync(textObjectEnd.end + 1);
-                            break;
-                        }
-                        throw new Error("Can't find the appearance stream text object end");
-                    case "Do":
-                        const innerStream = stream.Resources.getXObject((`/XObject${parameters[0]}`));
-                        if (!innerStream) {
-                            throw new Error(`External object not found in the appearance stream resources: ${parameters[0]}`);
-                        }
-                        if (innerStream instanceof XFormStream) {
-                            const [im0, im1, im3, im4, im6, im7] = innerStream.Matrix;
-                            const innerMat = new Mat3().set(im0, im1, 0, im3, im4, 0, im6, im7, 1);
-                            this.pushState();
-                            this.state.matrix = innerMat.multiply(this.state.matrix);
-                            const innerStreamSvgElements = yield this.drawStreamAsync(innerStream);
-                            svgElements.push(...innerStreamSvgElements);
-                            this.popState();
-                        }
-                        else if (innerStream instanceof ImageStream) {
-                            const image = yield this.drawImageAsync(innerStream);
-                            svgElements.push({
-                                element: image,
-                                blendMode: this.state.mixBlendMode || "normal"
-                            });
-                        }
-                        else {
-                            throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
-                        }
-                        break;
-                    default:
-                        const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
-                        if (!operatorIsGraphicState) {
-                            throw new Error(`Unsupported appearance stream operator: ${operator}`);
-                        }
-                }
-                lastOperator = operator;
+                    }
+                    else {
+                        throw new Error(`Unsupported appearance stream external object: ${parameters[0]}`);
+                    }
+                    break;
+                default:
+                    const operatorIsGraphicState = this.tryApplyingStateOperator(operator, parameters);
+                    if (!operatorIsGraphicState) {
+                        throw new Error(`Unsupported appearance stream operator: ${operator}`);
+                    }
             }
-            return svgElements;
-        });
+            lastOperator = operator;
+        }
+        return svgElements;
     }
     addDescriptionDataAttribute(element, description) {
         element.setAttribute("data-tspdf-desc", description);
     }
 }
 
-var __awaiter$U = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class BorderStyleDict extends PdfDict {
     constructor() {
         super(dictTypes.BORDER_STYLE);
@@ -14688,21 +14083,19 @@ class BorderStyleDict extends PdfDict {
         this.S = borderStyles.SOLID;
         this.D = [3, 0];
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$U(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new BorderStyleDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new BorderStyleDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -14724,97 +14117,81 @@ class BorderStyleDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a, _b;
-        return __awaiter$U(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/W":
-                            i = yield this.parseNumberPropAsync(name, parser, i, true);
-                            break;
-                        case "/S":
-                            const style = yield parser.parseNameAtAsync(i, true);
-                            if (style && Object.values(borderStyles).includes(style.value)) {
-                                this.S = style.value;
-                                i = style.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /S property value");
-                            }
-                            break;
-                        case "/D":
-                            const dashGap = yield parser.parseNumberArrayAtAsync(i, true);
-                            if (dashGap) {
-                                this.D = [
-                                    (_a = dashGap.value[0]) !== null && _a !== void 0 ? _a : 3,
-                                    (_b = dashGap.value[1]) !== null && _b !== void 0 ? _b : 0,
-                                ];
-                                i = dashGap.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /D property value");
-                            }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/W":
+                        i = await this.parseNumberPropAsync(name, parser, i, true);
+                        break;
+                    case "/S":
+                        const style = await parser.parseNameAtAsync(i, true);
+                        if (style && Object.values(borderStyles).includes(style.value)) {
+                            this.S = style.value;
+                            i = style.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /S property value");
+                        }
+                        break;
+                    case "/D":
+                        const dashGap = await parser.parseNumberArrayAtAsync(i, true);
+                        if (dashGap) {
+                            this.D = [
+                                (_a = dashGap.value[0]) !== null && _a !== void 0 ? _a : 3,
+                                (_b = dashGap.value[1]) !== null && _b !== void 0 ? _b : 0,
+                            ];
+                            i = dashGap.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /D property value");
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$T = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class AppearanceDict extends PdfDict {
     constructor() {
         super(null);
         this._streamsMap = new Map();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$T(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new AppearanceDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new AppearanceDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getStream(key) {
         return this._streamsMap.get(key);
@@ -14886,149 +14263,142 @@ class AppearanceDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    fillStreamsMapAsync(parseInfoGetterAsync) {
-        return __awaiter$T(this, void 0, void 0, function* () {
-            this._streamsMap.clear();
-            for (const prop of ["N", "R", "D"]) {
-                if (this[prop]) {
-                    if (this[prop] instanceof ObjectId) {
-                        const streamParseInfo = yield parseInfoGetterAsync(this[prop].id);
-                        if (!streamParseInfo) {
-                            continue;
-                        }
-                        const stream = yield XFormStream.parseAsync(streamParseInfo);
-                        if (!stream) {
-                            continue;
-                        }
-                        if (stream) {
-                            this._streamsMap.set(`/${prop}`, stream.value);
-                        }
+    async fillStreamsMapAsync(parseInfoGetterAsync) {
+        this._streamsMap.clear();
+        for (const prop of ["N", "R", "D"]) {
+            if (this[prop]) {
+                if (this[prop] instanceof ObjectId) {
+                    const streamParseInfo = await parseInfoGetterAsync(this[prop].id);
+                    if (!streamParseInfo) {
+                        continue;
                     }
-                    else {
-                        for (const [name, objectId] of this[prop].getProps()) {
-                            const streamParseInfo = yield parseInfoGetterAsync(objectId.id);
-                            if (!streamParseInfo) {
-                                continue;
-                            }
-                            const stream = yield XFormStream.parseAsync(streamParseInfo);
-                            if (stream) {
-                                this._streamsMap.set(`/${prop}${name}`, stream.value);
-                            }
-                        }
+                    const stream = await XFormStream.parseAsync(streamParseInfo);
+                    if (!stream) {
+                        continue;
                     }
-                }
-            }
-        });
-    }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$T(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/N":
-                            const nEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (nEntryType === valueTypes.REF) {
-                                const nRefId = yield ObjectId.parseRefAsync(parser, i);
-                                if (nRefId) {
-                                    this.N = nRefId.value;
-                                    i = nRefId.end + 1;
-                                    break;
-                                }
-                            }
-                            else if (nEntryType === valueTypes.DICTIONARY) {
-                                const nDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (nDictBounds) {
-                                    const nSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: nDictBounds });
-                                    if (nSubDict) {
-                                        this.N = nSubDict.value;
-                                        i = nSubDict.end + 1;
-                                        break;
-                                    }
-                                }
-                            }
-                            else {
-                                throw new Error(`Unsupported /N property value type: ${nEntryType}`);
-                            }
-                            throw new Error("Can't parse /N property value");
-                        case "/R":
-                            const rEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (rEntryType === valueTypes.REF) {
-                                const rRefId = yield ObjectId.parseRefAsync(parser, i);
-                                if (rRefId) {
-                                    this.R = rRefId.value;
-                                    i = rRefId.end + 1;
-                                    break;
-                                }
-                            }
-                            else if (rEntryType === valueTypes.DICTIONARY) {
-                                const rDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (rDictBounds) {
-                                    const rSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: rDictBounds });
-                                    if (rSubDict) {
-                                        this.R = rSubDict.value;
-                                        i = rSubDict.end + 1;
-                                        break;
-                                    }
-                                }
-                            }
-                            else {
-                                throw new Error(`Unsupported /R property value type: ${rEntryType}`);
-                            }
-                            throw new Error("Can't parse /R property value");
-                        case "/D":
-                            const dEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (dEntryType === valueTypes.REF) {
-                                const dRefId = yield ObjectId.parseRefAsync(parser, i);
-                                if (dRefId) {
-                                    this.D = dRefId.value;
-                                    i = dRefId.end + 1;
-                                    break;
-                                }
-                            }
-                            else if (dEntryType === valueTypes.DICTIONARY) {
-                                const dDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (dDictBounds) {
-                                    const dSubDict = yield ObjectMapDict.parseAsync({ parser, bounds: dDictBounds });
-                                    if (dSubDict) {
-                                        this.D = dSubDict.value;
-                                        i = dSubDict.end + 1;
-                                        break;
-                                    }
-                                }
-                            }
-                            else {
-                                throw new Error(`Unsupported /D property value type: ${dEntryType}`);
-                            }
-                            throw new Error("Can't parse /D property value");
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
+                    if (stream) {
+                        this._streamsMap.set(`/${prop}`, stream.value);
                     }
                 }
                 else {
-                    break;
+                    for (const [name, objectId] of this[prop].getProps()) {
+                        const streamParseInfo = await parseInfoGetterAsync(objectId.id);
+                        if (!streamParseInfo) {
+                            continue;
+                        }
+                        const stream = await XFormStream.parseAsync(streamParseInfo);
+                        if (stream) {
+                            this._streamsMap.set(`/${prop}${name}`, stream.value);
+                        }
+                    }
                 }
             }
-            if (!this.N) {
-                throw new Error("Not all required properties parsed");
+        }
+    }
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/N":
+                        const nEntryType = await parser.getValueTypeAtAsync(i);
+                        if (nEntryType === valueTypes.REF) {
+                            const nRefId = await ObjectId.parseRefAsync(parser, i);
+                            if (nRefId) {
+                                this.N = nRefId.value;
+                                i = nRefId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (nEntryType === valueTypes.DICTIONARY) {
+                            const nDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (nDictBounds) {
+                                const nSubDict = await ObjectMapDict.parseAsync({ parser, bounds: nDictBounds });
+                                if (nSubDict) {
+                                    this.N = nSubDict.value;
+                                    i = nSubDict.end + 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /N property value type: ${nEntryType}`);
+                        }
+                        throw new Error("Can't parse /N property value");
+                    case "/R":
+                        const rEntryType = await parser.getValueTypeAtAsync(i);
+                        if (rEntryType === valueTypes.REF) {
+                            const rRefId = await ObjectId.parseRefAsync(parser, i);
+                            if (rRefId) {
+                                this.R = rRefId.value;
+                                i = rRefId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (rEntryType === valueTypes.DICTIONARY) {
+                            const rDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (rDictBounds) {
+                                const rSubDict = await ObjectMapDict.parseAsync({ parser, bounds: rDictBounds });
+                                if (rSubDict) {
+                                    this.R = rSubDict.value;
+                                    i = rSubDict.end + 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /R property value type: ${rEntryType}`);
+                        }
+                        throw new Error("Can't parse /R property value");
+                    case "/D":
+                        const dEntryType = await parser.getValueTypeAtAsync(i);
+                        if (dEntryType === valueTypes.REF) {
+                            const dRefId = await ObjectId.parseRefAsync(parser, i);
+                            if (dRefId) {
+                                this.D = dRefId.value;
+                                i = dRefId.end + 1;
+                                break;
+                            }
+                        }
+                        else if (dEntryType === valueTypes.DICTIONARY) {
+                            const dDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (dDictBounds) {
+                                const dSubDict = await ObjectMapDict.parseAsync({ parser, bounds: dDictBounds });
+                                if (dSubDict) {
+                                    this.D = dSubDict.value;
+                                    i = dSubDict.end + 1;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            throw new Error(`Unsupported /D property value type: ${dEntryType}`);
+                        }
+                        throw new Error("Can't parse /D property value");
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
+                }
             }
-            if (parseInfo.parseInfoGetterAsync) {
-                yield this.fillStreamsMapAsync(parseInfo.parseInfoGetterAsync);
+            else {
+                break;
             }
-        });
+        }
+        if (!this.N) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (parseInfo.parseInfoGetterAsync) {
+            await this.fillStreamsMapAsync(parseInfo.parseInfoGetterAsync);
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -15038,36 +14408,25 @@ class AppearanceDict extends PdfDict {
     }
 }
 
-var __awaiter$S = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class BorderEffectDict extends PdfDict {
     constructor() {
         super(null);
         this.S = borderEffects.NONE;
         this.L = 0;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$S(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new BorderEffectDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new BorderEffectDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -15086,59 +14445,45 @@ class BorderEffectDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$S(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/S":
-                            const style = yield parser.parseNameAtAsync(i, true);
-                            if (style && Object.values(borderEffects).includes(style.value)) {
-                                this.S = style.value;
-                                i = style.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /S property value");
-                            }
-                            break;
-                        case "/L":
-                            i = yield this.parseNumberPropAsync(name, parser, i, true);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/S":
+                        const style = await parser.parseNameAtAsync(i, true);
+                        if (style && Object.values(borderEffects).includes(style.value)) {
+                            this.S = style.value;
+                            i = style.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /S property value");
+                        }
+                        break;
+                    case "/L":
+                        i = await this.parseNumberPropAsync(name, parser, i, true);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$R = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class BorderArray {
     constructor(hCornerR, vCornerR, width, dash, gap) {
         this.hCornerR = hCornerR !== null && hCornerR !== void 0 ? hCornerR : 0;
@@ -15147,63 +14492,61 @@ class BorderArray {
         this.dash = dash !== null && dash !== void 0 ? dash : 3;
         this.gap = gap !== null && gap !== void 0 ? gap : 0;
     }
-    static parseAsync(parser, start, skipEmpty = true) {
-        return __awaiter$R(this, void 0, void 0, function* () {
-            if (skipEmpty) {
-                start = yield parser.findNonSpaceIndexAsync(true, start);
-            }
-            if (start < 0 || start > parser.maxIndex
-                || !(yield parser.isCodeAtAsync(start, codes.L_BRACKET))) {
-                return null;
-            }
-            const hCornerR = yield parser.parseNumberAtAsync(start + 1);
-            if (!hCornerR || isNaN(hCornerR.value)) {
-                return null;
-            }
-            const vCornerR = yield parser.parseNumberAtAsync(hCornerR.end + 2);
-            if (!vCornerR || isNaN(vCornerR.value)) {
-                return null;
-            }
-            const width = yield parser.parseNumberAtAsync(vCornerR.end + 2);
-            if (!width || isNaN(width.value)) {
-                return null;
-            }
-            const next = yield parser.findNonSpaceIndexAsync(true, width.end + 1);
-            if (!next) {
-                return null;
-            }
-            else if (yield parser.isCodeAtAsync(next, codes.R_BRACKET)) {
-                return {
-                    value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
-                    start,
-                    end: next,
-                };
-            }
-            else if (yield parser.isCodeAtAsync(next, codes.L_BRACKET)) {
-                const dash = yield parser.parseNumberAtAsync(next + 1);
-                if (!dash || isNaN(dash.value)) {
-                    return null;
-                }
-                const gap = yield parser.parseNumberAtAsync(dash.end + 2);
-                if (!gap || isNaN(gap.value)) {
-                    return null;
-                }
-                const dashEnd = yield parser.findNonSpaceIndexAsync(true, gap.end + 1);
-                if (!dashEnd || !(yield parser.isCodeAtAsync(dashEnd, codes.R_BRACKET))) {
-                    return null;
-                }
-                const arrayEnd = yield parser.findNonSpaceIndexAsync(true, dashEnd + 1);
-                if (!arrayEnd || !(yield parser.isCodeAtAsync(arrayEnd, codes.R_BRACKET))) {
-                    return null;
-                }
-                return {
-                    value: new BorderArray(hCornerR.value, vCornerR.value, width.value, dash.value, gap.value),
-                    start,
-                    end: arrayEnd,
-                };
-            }
+    static async parseAsync(parser, start, skipEmpty = true) {
+        if (skipEmpty) {
+            start = await parser.findNonSpaceIndexAsync(true, start);
+        }
+        if (start < 0 || start > parser.maxIndex
+            || !(await parser.isCodeAtAsync(start, codes.L_BRACKET))) {
             return null;
-        });
+        }
+        const hCornerR = await parser.parseNumberAtAsync(start + 1);
+        if (!hCornerR || isNaN(hCornerR.value)) {
+            return null;
+        }
+        const vCornerR = await parser.parseNumberAtAsync(hCornerR.end + 2);
+        if (!vCornerR || isNaN(vCornerR.value)) {
+            return null;
+        }
+        const width = await parser.parseNumberAtAsync(vCornerR.end + 2);
+        if (!width || isNaN(width.value)) {
+            return null;
+        }
+        const next = await parser.findNonSpaceIndexAsync(true, width.end + 1);
+        if (!next) {
+            return null;
+        }
+        else if (await parser.isCodeAtAsync(next, codes.R_BRACKET)) {
+            return {
+                value: new BorderArray(hCornerR.value, vCornerR.value, width.value),
+                start,
+                end: next,
+            };
+        }
+        else if (await parser.isCodeAtAsync(next, codes.L_BRACKET)) {
+            const dash = await parser.parseNumberAtAsync(next + 1);
+            if (!dash || isNaN(dash.value)) {
+                return null;
+            }
+            const gap = await parser.parseNumberAtAsync(dash.end + 2);
+            if (!gap || isNaN(gap.value)) {
+                return null;
+            }
+            const dashEnd = await parser.findNonSpaceIndexAsync(true, gap.end + 1);
+            if (!dashEnd || !(await parser.isCodeAtAsync(dashEnd, codes.R_BRACKET))) {
+                return null;
+            }
+            const arrayEnd = await parser.findNonSpaceIndexAsync(true, dashEnd + 1);
+            if (!arrayEnd || !(await parser.isCodeAtAsync(arrayEnd, codes.R_BRACKET))) {
+                return null;
+            }
+            return {
+                value: new BorderArray(hCornerR.value, vCornerR.value, width.value, dash.value, gap.value),
+                start,
+                end: arrayEnd,
+            };
+        }
+        return null;
     }
     toArray(cryptInfo) {
         const source = this.dash && this.gap
@@ -15213,15 +14556,6 @@ class BorderArray {
     }
 }
 
-var __awaiter$Q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class AnnotationDict extends PdfDict {
     get apStream() {
         var _a;
@@ -15510,61 +14844,53 @@ class AnnotationDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    renderAsync(pageInfo) {
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            if (!pageInfo) {
-                throw new Error("Can't render the annotation: view box is not defined");
-            }
-            this._pageInfo = pageInfo;
-            if (!this._renderedControls) {
-                this._renderedControls = this.renderControls();
-            }
-            yield new Promise((resolve, reject) => {
-                setTimeout(() => __awaiter$Q(this, void 0, void 0, function* () {
-                    yield this.updateRenderAsync();
-                    resolve();
-                }), 0);
-            });
-            return this.lastRenderResult;
+    async renderAsync(pageInfo) {
+        if (!pageInfo) {
+            throw new Error("Can't render the annotation: view box is not defined");
+        }
+        this._pageInfo = pageInfo;
+        if (!this._renderedControls) {
+            this._renderedControls = this.renderControls();
+        }
+        await new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                await this.updateRenderAsync();
+                resolve();
+            }, 0);
         });
+        return this.lastRenderResult;
     }
-    renderApStreamAsync() {
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            const stream = this.apStream;
-            if (stream) {
-                try {
-                    const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
-                    return yield renderer.renderAsync();
-                }
-                catch (e) {
-                    console.log(`Annotation stream render error: ${e.message}`);
-                }
+    async renderApStreamAsync() {
+        const stream = this.apStream;
+        if (stream) {
+            try {
+                const renderer = new AppearanceStreamRenderer(stream, this.Rect, this.$name);
+                return await renderer.renderAsync();
             }
-            return null;
-        });
-    }
-    moveToAsync(point) {
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            const width = this.Rect[2] - this.Rect[0];
-            const height = this.Rect[3] - this.Rect[1];
-            const x = point.x - width / 2;
-            const y = point.y - height / 2;
-            const mat = Mat3.buildTranslate(x, y);
-            yield this.applyCommonTransformAsync(mat);
-        });
-    }
-    rotateByAsync(angle, center) {
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            if (!center) {
-                const [x0, y0, x1, y1] = this.Rect;
-                center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
+            catch (e) {
+                console.log(`Annotation stream render error: ${e.message}`);
             }
-            const mat = new Mat3()
-                .applyTranslation(-center.x, -center.y)
-                .applyRotation(angle)
-                .applyTranslation(center.x, center.y);
-            yield this.applyCommonTransformAsync(mat);
-        });
+        }
+        return null;
+    }
+    async moveToAsync(point) {
+        const width = this.Rect[2] - this.Rect[0];
+        const height = this.Rect[3] - this.Rect[1];
+        const x = point.x - width / 2;
+        const y = point.y - height / 2;
+        const mat = Mat3.buildTranslate(x, y);
+        await this.applyCommonTransformAsync(mat);
+    }
+    async rotateByAsync(angle, center) {
+        if (!center) {
+            const [x0, y0, x1, y1] = this.Rect;
+            center = new Vec2((x0 + x1) / 2, (y0 + y1) / 2);
+        }
+        const mat = new Mat3()
+            .applyTranslation(-center.x, -center.y)
+            .applyRotation(angle)
+            .applyTranslation(center.x, center.y);
+        await this.applyCommonTransformAsync(mat);
     }
     toDto() {
         var _a, _b, _c, _d, _e;
@@ -15584,223 +14910,216 @@ class AnnotationDict extends PdfDict {
             matrix: (_e = this.apStream) === null || _e === void 0 ? void 0 : _e.Matrix,
         };
     }
-    setTextContentAsync(text, undoable = true) {
+    async setTextContentAsync(text, undoable = true) {
         var _a;
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            const oldText = (_a = dict.Contents) === null || _a === void 0 ? void 0 : _a.literal;
-            if (!text) {
-                dict.Contents = null;
-            }
-            else {
-                const literalString = LiteralString.fromString(text);
-                dict.Contents = literalString;
-            }
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$Q(this, void 0, void 0, function* () {
-                        yield dict.setTextContentAsync(oldText, false);
-                    })
-                    : undefined);
-            }
-        });
+        const dict = this.getProxy();
+        const oldText = (_a = dict.Contents) === null || _a === void 0 ? void 0 : _a.literal;
+        if (!text) {
+            dict.Contents = null;
+        }
+        else {
+            const literalString = LiteralString.fromString(text);
+            dict.Contents = literalString;
+        }
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.setTextContentAsync(oldText, false);
+                }
+                : undefined);
+        }
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Subtype":
-                            const subtype = yield parser.parseNameAtAsync(i);
-                            if (subtype) {
-                                if (this.Subtype && this.Subtype !== subtype.value) {
-                                    throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
-                                }
-                                i = subtype.end + 1;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Subtype":
+                        const subtype = await parser.parseNameAtAsync(i);
+                        if (subtype) {
+                            if (this.Subtype && this.Subtype !== subtype.value) {
+                                throw new Error(`Invalid dict subtype: '${subtype.value}' instead of '${this.Subtype}'`);
                             }
-                            else {
-                                throw new Error("Can't parse /Subtype property value");
-                            }
+                            i = subtype.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Subtype property value");
+                        }
+                        break;
+                    case "/Rect":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/P":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Contents":
+                    case "/NM":
+                        const contentsEntryType = await parser.getValueTypeAtAsync(i);
+                        if (contentsEntryType === valueTypes.STRING_LITERAL) {
+                            i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                        }
+                        else if (contentsEntryType === valueTypes.STRING_HEX) {
+                            i = await this.parseHexPropAsync(name, parser, i, parseInfo.cryptInfo);
+                        }
+                        else {
+                            i = await parser.skipToNextNameAsync(i, end - 1);
+                        }
+                        break;
+                    case "/M":
+                        const date = await DateString.parseAsync(parser, i, parseInfo.cryptInfo);
+                        if (date) {
+                            this.M = date.value;
+                            i = date.end + 1;
                             break;
-                        case "/Rect":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/P":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Contents":
-                        case "/NM":
-                            const contentsEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (contentsEntryType === valueTypes.STRING_LITERAL) {
-                                i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
-                            }
-                            else if (contentsEntryType === valueTypes.STRING_HEX) {
-                                i = yield this.parseHexPropAsync(name, parser, i, parseInfo.cryptInfo);
-                            }
-                            else {
-                                i = yield parser.skipToNextNameAsync(i, end - 1);
-                            }
-                            break;
-                        case "/M":
-                            const date = yield DateString.parseAsync(parser, i, parseInfo.cryptInfo);
-                            if (date) {
-                                this.M = date.value;
-                                i = date.end + 1;
+                        }
+                        else {
+                            const dateLiteral = await LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
+                            if (dateLiteral) {
+                                this.M = dateLiteral.value;
+                                i = dateLiteral.end + 1;
                                 break;
                             }
-                            else {
-                                const dateLiteral = yield LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
-                                if (dateLiteral) {
-                                    this.M = dateLiteral.value;
-                                    i = dateLiteral.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /M property value");
-                        case "/C":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/F":
-                        case "/StructParent":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Border":
-                            const borderArray = yield BorderArray.parseAsync(parser, i);
-                            if (borderArray) {
-                                this.Border = borderArray.value;
-                                i = borderArray.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /Border property value");
-                            }
-                            break;
-                        case "/BS":
-                            const bsEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (bsEntryType === valueTypes.REF) {
-                                const bsDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (bsDictId && parseInfo.parseInfoGetterAsync) {
-                                    const bsParseInfo = yield parseInfo.parseInfoGetterAsync(bsDictId.value.id);
-                                    if (bsParseInfo) {
-                                        const bsDict = yield BorderStyleDict.parseAsync(bsParseInfo);
-                                        if (bsDict) {
-                                            this.BS = bsDict.value;
-                                            i = bsDict.end + 1;
-                                            break;
-                                        }
-                                    }
-                                }
-                                throw new Error("Can't parse /BS value reference");
-                            }
-                            else if (bsEntryType === valueTypes.DICTIONARY) {
-                                const bsDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (bsDictBounds) {
-                                    const bsDict = yield BorderStyleDict.parseAsync({ parser, bounds: bsDictBounds });
+                        }
+                        throw new Error("Can't parse /M property value");
+                    case "/C":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/F":
+                    case "/StructParent":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Border":
+                        const borderArray = await BorderArray.parseAsync(parser, i);
+                        if (borderArray) {
+                            this.Border = borderArray.value;
+                            i = borderArray.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Border property value");
+                        }
+                        break;
+                    case "/BS":
+                        const bsEntryType = await parser.getValueTypeAtAsync(i);
+                        if (bsEntryType === valueTypes.REF) {
+                            const bsDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (bsDictId && parseInfo.parseInfoGetterAsync) {
+                                const bsParseInfo = await parseInfo.parseInfoGetterAsync(bsDictId.value.id);
+                                if (bsParseInfo) {
+                                    const bsDict = await BorderStyleDict.parseAsync(bsParseInfo);
                                     if (bsDict) {
                                         this.BS = bsDict.value;
                                         i = bsDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /BS value dictionary");
                             }
-                            throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
-                        case "/BE":
-                            const beEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (beEntryType === valueTypes.REF) {
-                                const bsDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (bsDictId && parseInfo.parseInfoGetterAsync) {
-                                    const bsParseInfo = yield parseInfo.parseInfoGetterAsync(bsDictId.value.id);
-                                    if (bsParseInfo) {
-                                        const bsDict = yield BorderEffectDict.parseAsync(bsParseInfo);
-                                        if (bsDict) {
-                                            this.BE = bsDict.value;
-                                            i = bsDict.end + 1;
-                                            break;
-                                        }
-                                    }
+                            throw new Error("Can't parse /BS value reference");
+                        }
+                        else if (bsEntryType === valueTypes.DICTIONARY) {
+                            const bsDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (bsDictBounds) {
+                                const bsDict = await BorderStyleDict.parseAsync({ parser, bounds: bsDictBounds });
+                                if (bsDict) {
+                                    this.BS = bsDict.value;
+                                    i = bsDict.end + 1;
+                                    break;
                                 }
-                                throw new Error("Can't parse /BE value reference");
                             }
-                            else if (beEntryType === valueTypes.DICTIONARY) {
-                                const bsDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (bsDictBounds) {
-                                    const bsDict = yield BorderEffectDict.parseAsync({ parser, bounds: bsDictBounds });
+                            throw new Error("Can't parse /BS value dictionary");
+                        }
+                        throw new Error(`Unsupported /BS property value type: ${bsEntryType}`);
+                    case "/BE":
+                        const beEntryType = await parser.getValueTypeAtAsync(i);
+                        if (beEntryType === valueTypes.REF) {
+                            const bsDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (bsDictId && parseInfo.parseInfoGetterAsync) {
+                                const bsParseInfo = await parseInfo.parseInfoGetterAsync(bsDictId.value.id);
+                                if (bsParseInfo) {
+                                    const bsDict = await BorderEffectDict.parseAsync(bsParseInfo);
                                     if (bsDict) {
                                         this.BE = bsDict.value;
                                         i = bsDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /BE value dictionary");
                             }
-                            throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
-                        case "/AP":
-                            const apEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (apEntryType === valueTypes.REF) {
-                                const apDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (apDictId && parseInfo.parseInfoGetterAsync) {
-                                    const apParseInfo = yield parseInfo.parseInfoGetterAsync(apDictId.value.id);
-                                    if (apParseInfo) {
-                                        const apDict = yield AppearanceDict.parseAsync(apParseInfo);
-                                        if (apDict) {
-                                            this.AP = apDict.value;
-                                            i = apDict.end + 1;
-                                            break;
-                                        }
-                                    }
+                            throw new Error("Can't parse /BE value reference");
+                        }
+                        else if (beEntryType === valueTypes.DICTIONARY) {
+                            const bsDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (bsDictBounds) {
+                                const bsDict = await BorderEffectDict.parseAsync({ parser, bounds: bsDictBounds });
+                                if (bsDict) {
+                                    this.BE = bsDict.value;
+                                    i = bsDict.end + 1;
+                                    break;
                                 }
-                                throw new Error("Can't parse /AP value reference");
                             }
-                            else if (apEntryType === valueTypes.DICTIONARY) {
-                                const apDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (apDictBounds) {
-                                    const apDict = yield AppearanceDict.parseAsync({
-                                        parser,
-                                        bounds: apDictBounds,
-                                        parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
-                                    });
+                            throw new Error("Can't parse /BE value dictionary");
+                        }
+                        throw new Error(`Unsupported /BE property value type: ${beEntryType}`);
+                    case "/AP":
+                        const apEntryType = await parser.getValueTypeAtAsync(i);
+                        if (apEntryType === valueTypes.REF) {
+                            const apDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (apDictId && parseInfo.parseInfoGetterAsync) {
+                                const apParseInfo = await parseInfo.parseInfoGetterAsync(apDictId.value.id);
+                                if (apParseInfo) {
+                                    const apDict = await AppearanceDict.parseAsync(apParseInfo);
                                     if (apDict) {
                                         this.AP = apDict.value;
                                         i = apDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /AP value dictionary");
                             }
-                            throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
-                        case "/AS":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        case "/OC":
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error("Can't parse /AP value reference");
+                        }
+                        else if (apEntryType === valueTypes.DICTIONARY) {
+                            const apDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (apDictBounds) {
+                                const apDict = await AppearanceDict.parseAsync({
+                                    parser,
+                                    bounds: apDictBounds,
+                                    parseInfoGetterAsync: parseInfo.parseInfoGetterAsync,
+                                });
+                                if (apDict) {
+                                    this.AP = apDict.value;
+                                    i = apDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /AP value dictionary");
+                        }
+                        throw new Error(`Unsupported /AP property value type: ${apEntryType}`);
+                    case "/AS":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    case "/OC":
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Subtype || !this.Rect) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-            this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || UUID.getRandomUuid();
-        });
+        }
+        if (!this.Subtype || !this.Rect) {
+            throw new Error("Not all required properties parsed");
+        }
+        this.$name = ((_a = this.NM) === null || _a === void 0 ? void 0 : _a.literal) || UUID.getRandomUuid();
     }
     getColorString() {
         var _a;
@@ -15943,49 +15262,45 @@ class AnnotationDict extends PdfDict {
         const { min: newRectMin, max: newRectMax } = Vec2.minMax(bBox.ll, bBox.lr, bBox.ur, bBox.ul);
         this.Rect = [newRectMin.x, newRectMin.y, newRectMax.x, newRectMax.y];
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            dict.applyRectTransform(matrix);
-            const stream = dict.apStream;
-            if (stream) {
-                const newApMatrix = Mat3.multiply(stream.matrix, matrix);
-                dict.apStream.matrix = newApMatrix;
-            }
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$Q(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
-            }
-        });
-    }
-    applyTempTransformAsync() {
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            if (this._transformationTimer) {
-                clearTimeout(this._transformationTimer);
-                this._transformationTimer = null;
-                return;
-            }
-            if (this._transformationPromise) {
-                yield this._transformationPromise;
-            }
-            this._transformationPromise = new Promise((resolve) => __awaiter$Q(this, void 0, void 0, function* () {
-                this._svgContentCopy.remove();
-                applyFlipYToElement(this._svgContentCopy);
-                if (this._moved) {
-                    yield this.applyCommonTransformAsync(this._tempTransformationMatrix);
-                    yield this.updateRenderAsync();
+    async applyCommonTransformAsync(matrix, undoable = true) {
+        const dict = this.getProxy();
+        dict.applyRectTransform(matrix);
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+            dict.apStream.matrix = newApMatrix;
+        }
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
                 }
-                this._tempTransformationMatrix.reset();
-                resolve();
-            }));
-            yield this._transformationPromise;
+                : undefined);
+        }
+    }
+    async applyTempTransformAsync() {
+        if (this._transformationTimer) {
+            clearTimeout(this._transformationTimer);
+            this._transformationTimer = null;
+            return;
+        }
+        if (this._transformationPromise) {
+            await this._transformationPromise;
+        }
+        this._transformationPromise = new Promise(async (resolve) => {
+            this._svgContentCopy.remove();
+            applyFlipYToElement(this._svgContentCopy);
+            if (this._moved) {
+                await this.applyCommonTransformAsync(this._tempTransformationMatrix);
+                await this.updateRenderAsync();
+            }
+            this._tempTransformationMatrix.reset();
+            resolve();
         });
+        await this._transformationPromise;
     }
     renderAppearance() {
         return null;
@@ -16103,32 +15418,30 @@ class AnnotationDict extends PdfDict {
     renderHandles() {
         return [...this.renderScaleHandles(), this.renderRotationHandle()];
     }
-    updateRenderAsync() {
+    async updateRenderAsync() {
         var _a;
-        return __awaiter$Q(this, void 0, void 0, function* () {
-            if (!this._renderedControls) {
-                return;
-            }
-            this._renderedControls.innerHTML = "";
-            const contentRenderResult = this.renderAppearance() || (yield this.renderApStreamAsync());
-            if (!contentRenderResult || !((_a = contentRenderResult.elements) === null || _a === void 0 ? void 0 : _a.length)) {
-                this._renderedBox = null;
-                this._svgContentCopy = null;
-                return null;
-            }
-            const content = this.buildRenderedContentStructure(contentRenderResult);
-            this._renderedContent = content;
-            const rect = this.renderRect();
-            const box = this.renderBox();
-            const handles = this.renderHandles();
-            this._renderedBox = box;
-            this._renderedControls.append(rect, box, ...contentRenderResult.pickHelpers, ...handles);
-            const copy = this.buildRenderContentCopy(contentRenderResult);
-            this._svgContentCopy = copy;
-            if (this.$onRenderUpdatedAction) {
-                this.$onRenderUpdatedAction();
-            }
-        });
+        if (!this._renderedControls) {
+            return;
+        }
+        this._renderedControls.innerHTML = "";
+        const contentRenderResult = this.renderAppearance() || await this.renderApStreamAsync();
+        if (!contentRenderResult || !((_a = contentRenderResult.elements) === null || _a === void 0 ? void 0 : _a.length)) {
+            this._renderedBox = null;
+            this._svgContentCopy = null;
+            return null;
+        }
+        const content = this.buildRenderedContentStructure(contentRenderResult);
+        this._renderedContent = content;
+        const rect = this.renderRect();
+        const box = this.renderBox();
+        const handles = this.renderHandles();
+        this._renderedBox = box;
+        this._renderedControls.append(rect, box, ...contentRenderResult.pickHelpers, ...handles);
+        const copy = this.buildRenderContentCopy(contentRenderResult);
+        this._svgContentCopy = copy;
+        if (this.$onRenderUpdatedAction) {
+            this.$onRenderUpdatedAction();
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -16138,15 +15451,6 @@ class AnnotationDict extends PdfDict {
     }
 }
 
-var __awaiter$P = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class MarkupAnnotation extends AnnotationDict {
     constructor(subType) {
         super(subType);
@@ -16187,107 +15491,102 @@ class MarkupAnnotation extends AnnotationDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$P(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/T":
-                        case "/Subj":
-                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        case "/Popup":
-                        case "/IRT":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/RC":
-                            const rcEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (rcEntryType === valueTypes.REF) {
-                                const rsObjectId = yield ObjectId.parseRefAsync(parser, i);
-                                if (rsObjectId && parseInfo.parseInfoGetterAsync) {
-                                    const rcParseInfo = yield parseInfo.parseInfoGetterAsync(rsObjectId.value.id);
-                                    if (rcParseInfo) {
-                                        const rcObjectType = rcParseInfo.type
-                                            || rcParseInfo.parser.getValueTypeAtAsync(rcParseInfo.bounds.contentStart);
-                                        if (rcObjectType === valueTypes.STRING_LITERAL) {
-                                            const popupTextFromIndirectLiteral = yield LiteralString.parseAsync(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
-                                            if (popupTextFromIndirectLiteral) {
-                                                this.RC = popupTextFromIndirectLiteral.value;
-                                                i = rsObjectId.end + 1;
-                                                break;
-                                            }
-                                        }
-                                        else if (rcObjectType === valueTypes.DICTIONARY) {
-                                            const popupTextStream = yield TextStream.parseAsync(rcParseInfo);
-                                            if (popupTextStream) {
-                                                const popupTextFromStream = popupTextStream.value.getText();
-                                                this.RC = LiteralString.fromString(popupTextFromStream);
-                                                i = rsObjectId.end + 1;
-                                                break;
-                                            }
-                                        }
-                                        else {
-                                            throw new Error(`Unsupported /RC property value type: ${rcObjectType}`);
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/T":
+                    case "/Subj":
+                        i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/Popup":
+                    case "/IRT":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/RC":
+                        const rcEntryType = await parser.getValueTypeAtAsync(i);
+                        if (rcEntryType === valueTypes.REF) {
+                            const rsObjectId = await ObjectId.parseRefAsync(parser, i);
+                            if (rsObjectId && parseInfo.parseInfoGetterAsync) {
+                                const rcParseInfo = await parseInfo.parseInfoGetterAsync(rsObjectId.value.id);
+                                if (rcParseInfo) {
+                                    const rcObjectType = rcParseInfo.type
+                                        || rcParseInfo.parser.getValueTypeAtAsync(rcParseInfo.bounds.contentStart);
+                                    if (rcObjectType === valueTypes.STRING_LITERAL) {
+                                        const popupTextFromIndirectLiteral = await LiteralString.parseAsync(rcParseInfo.parser, rcParseInfo.bounds.contentStart);
+                                        if (popupTextFromIndirectLiteral) {
+                                            this.RC = popupTextFromIndirectLiteral.value;
+                                            i = rsObjectId.end + 1;
+                                            break;
                                         }
                                     }
+                                    else if (rcObjectType === valueTypes.DICTIONARY) {
+                                        const popupTextStream = await TextStream.parseAsync(rcParseInfo);
+                                        if (popupTextStream) {
+                                            const popupTextFromStream = popupTextStream.value.getText();
+                                            this.RC = LiteralString.fromString(popupTextFromStream);
+                                            i = rsObjectId.end + 1;
+                                            break;
+                                        }
+                                    }
+                                    else {
+                                        throw new Error(`Unsupported /RC property value type: ${rcObjectType}`);
+                                    }
                                 }
-                                throw new Error("Can't parse /RC value reference");
                             }
-                            else if (rcEntryType === valueTypes.STRING_LITERAL) {
-                                const popupTextFromLiteral = yield LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
-                                if (popupTextFromLiteral) {
-                                    this.RC = popupTextFromLiteral.value;
-                                    i = popupTextFromLiteral.end + 1;
-                                    break;
-                                }
-                                throw new Error("Can't parse /RC property value");
+                            throw new Error("Can't parse /RC value reference");
+                        }
+                        else if (rcEntryType === valueTypes.STRING_LITERAL) {
+                            const popupTextFromLiteral = await LiteralString.parseAsync(parser, i, parseInfo.cryptInfo);
+                            if (popupTextFromLiteral) {
+                                this.RC = popupTextFromLiteral.value;
+                                i = popupTextFromLiteral.end + 1;
+                                break;
                             }
-                            throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
-                        case "/CA":
-                            i = yield this.parseNumberPropAsync(name, parser, i, true);
-                            break;
-                        case "/CreationDate":
-                            i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        case "/RT":
-                            const replyType = yield parser.parseNameAtAsync(i, true);
-                            if (replyType && Object.values(markupAnnotationReplyTypes)
-                                .includes(replyType.value)) {
-                                this.RT = replyType.value;
-                                i = replyType.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /RT property value");
-                            }
-                            break;
-                        case "/ExData":
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error("Can't parse /RC property value");
+                        }
+                        throw new Error(`Unsupported /RC property value type: ${rcEntryType}`);
+                    case "/CA":
+                        i = await this.parseNumberPropAsync(name, parser, i, true);
+                        break;
+                    case "/CreationDate":
+                        i = await this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/RT":
+                        const replyType = await parser.parseNameAtAsync(i, true);
+                        if (replyType && Object.values(markupAnnotationReplyTypes)
+                            .includes(replyType.value)) {
+                            this.RT = replyType.value;
+                            i = replyType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /RT property value");
+                        }
+                        break;
+                    case "/ExData":
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Subtype || !this.Rect) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.Subtype || !this.Rect) {
+            throw new Error("Not all required properties parsed");
+        }
     }
     getColorRect() {
         let r = 0;
@@ -16315,14 +15614,12 @@ class MarkupAnnotation extends AnnotationDict {
         const color = [r, g, b, a];
         return color;
     }
-    updateTextDataAsync(options) {
+    async updateTextDataAsync(options) {
         var _a;
-        return __awaiter$P(this, void 0, void 0, function* () {
-            const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
-            const textData = yield TextData.buildAsync(text, options);
-            this._textData = textData;
-            return this._textData;
-        });
+        const text = (_a = this.Contents) === null || _a === void 0 ? void 0 : _a.literal;
+        const textData = await TextData.buildAsync(text, options);
+        this._textData = textData;
+        return this._textData;
     }
     getLineEndingStreamPart(point, type, strokeWidth, side) {
         const size = Math.max(strokeWidth * LINE_END_MULTIPLIER, LINE_END_MIN_SIZE);
@@ -17029,119 +16326,106 @@ class DataCryptHandler {
     }
 }
 
-var __awaiter$O = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class ObjectStream extends PdfStream {
     constructor() {
         super(streamTypes.OBJECT_STREAM);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$O(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new ObjectStream();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new ObjectStream();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
-    getObjectDataAsync(id) {
-        return __awaiter$O(this, void 0, void 0, function* () {
-            if (!this._streamData || !this.N || !this.First) {
-                return null;
-            }
-            const parser = yield this.getStreamDataParserAsync();
-            const offsetMap = new Map();
-            let temp;
-            let objectId;
-            let byteOffset;
-            let position = 0;
-            for (let n = 0; n < this.N; n++) {
-                temp = yield parser.parseNumberAtAsync(position, false, false);
-                objectId = temp.value;
-                position = temp.end + 2;
-                temp = yield parser.parseNumberAtAsync(position, false, false);
-                byteOffset = temp.value;
-                position = temp.end + 2;
-                offsetMap.set(objectId, byteOffset);
-            }
-            if (!offsetMap.has(id)) {
-                return null;
-            }
-            const objectStart = this.First + offsetMap.get(id);
-            const objectType = yield parser.getValueTypeAtAsync(objectStart);
-            if (objectType === null) {
-                return;
-            }
-            let bounds;
-            let value;
-            switch (objectType) {
-                case objectTypes.DICTIONARY:
-                    bounds = yield parser.getDictBoundsAtAsync(objectStart, false);
-                    break;
-                case objectTypes.ARRAY:
-                    bounds = yield parser.getArrayBoundsAtAsync(objectStart, false);
-                    break;
-                case objectTypes.STRING_LITERAL:
-                    const literalValue = yield LiteralString.parseAsync(parser, objectStart);
-                    if (literalValue) {
-                        bounds = { start: literalValue.start, end: literalValue.end };
-                        value = literalValue;
-                    }
-                    break;
-                case objectTypes.STRING_HEX:
-                    const hexValue = yield HexString.parseAsync(parser, objectStart);
-                    if (hexValue) {
-                        bounds = { start: hexValue.start, end: hexValue.end };
-                        value = hexValue;
-                    }
-                    break;
-                case objectTypes.NUMBER:
-                    const numValue = yield parser.parseNumberAtAsync(objectStart);
-                    if (numValue) {
-                        bounds = { start: numValue.start, end: numValue.end };
-                        value = numValue;
-                    }
-                    break;
-            }
-            if (!bounds) {
-                return null;
-            }
-            const bytes = yield parser.sliceCharCodesAsync(bounds.start, bounds.end);
-            if (!bytes.length) {
-                throw new Error("Object byte array is empty");
-            }
-            return {
-                parser: yield PdfStream.getDataParserAsync(bytes),
-                bounds: {
-                    start: 0,
-                    end: bytes.length - 1,
-                    contentStart: bounds.contentStart
-                        ? bounds.contentStart - bounds.start
-                        : undefined,
-                    contentEnd: bounds.contentEnd
-                        ? bytes.length - 1 - (bounds.end - bounds.contentEnd)
-                        : undefined,
-                },
-                type: objectType,
-                value,
-                cryptInfo: { ref: { id, generation: 0 } },
-                streamId: this.id,
-            };
-        });
+    async getObjectDataAsync(id) {
+        if (!this._streamData || !this.N || !this.First) {
+            return null;
+        }
+        const parser = await this.getStreamDataParserAsync();
+        const offsetMap = new Map();
+        let temp;
+        let objectId;
+        let byteOffset;
+        let position = 0;
+        for (let n = 0; n < this.N; n++) {
+            temp = await parser.parseNumberAtAsync(position, false, false);
+            objectId = temp.value;
+            position = temp.end + 2;
+            temp = await parser.parseNumberAtAsync(position, false, false);
+            byteOffset = temp.value;
+            position = temp.end + 2;
+            offsetMap.set(objectId, byteOffset);
+        }
+        if (!offsetMap.has(id)) {
+            return null;
+        }
+        const objectStart = this.First + offsetMap.get(id);
+        const objectType = await parser.getValueTypeAtAsync(objectStart);
+        if (objectType === null) {
+            return;
+        }
+        let bounds;
+        let value;
+        switch (objectType) {
+            case objectTypes.DICTIONARY:
+                bounds = await parser.getDictBoundsAtAsync(objectStart, false);
+                break;
+            case objectTypes.ARRAY:
+                bounds = await parser.getArrayBoundsAtAsync(objectStart, false);
+                break;
+            case objectTypes.STRING_LITERAL:
+                const literalValue = await LiteralString.parseAsync(parser, objectStart);
+                if (literalValue) {
+                    bounds = { start: literalValue.start, end: literalValue.end };
+                    value = literalValue;
+                }
+                break;
+            case objectTypes.STRING_HEX:
+                const hexValue = await HexString.parseAsync(parser, objectStart);
+                if (hexValue) {
+                    bounds = { start: hexValue.start, end: hexValue.end };
+                    value = hexValue;
+                }
+                break;
+            case objectTypes.NUMBER:
+                const numValue = await parser.parseNumberAtAsync(objectStart);
+                if (numValue) {
+                    bounds = { start: numValue.start, end: numValue.end };
+                    value = numValue;
+                }
+                break;
+        }
+        if (!bounds) {
+            return null;
+        }
+        const bytes = await parser.sliceCharCodesAsync(bounds.start, bounds.end);
+        if (!bytes.length) {
+            throw new Error("Object byte array is empty");
+        }
+        return {
+            parser: await PdfStream.getDataParserAsync(bytes),
+            bounds: {
+                start: 0,
+                end: bytes.length - 1,
+                contentStart: bounds.contentStart
+                    ? bounds.contentStart - bounds.start
+                    : undefined,
+                contentEnd: bounds.contentEnd
+                    ? bytes.length - 1 - (bounds.end - bounds.contentEnd)
+                    : undefined,
+            },
+            type: objectType,
+            value,
+            cryptInfo: { ref: { id, generation: 0 } },
+            streamId: this.id,
+        };
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17163,53 +16447,39 @@ class ObjectStream extends PdfStream {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$O(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const dictBounds = yield parser.getDictBoundsAtAsync(start);
-            let i = yield parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/N":
-                        case "/First":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Extends":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, dictBounds.contentEnd);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const dictBounds = await parser.getDictBoundsAtAsync(start);
+        let i = await parser.skipToNextNameAsync(dictBounds.contentStart, dictBounds.contentEnd);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/N":
+                    case "/First":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Extends":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, dictBounds.contentEnd);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$N = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class CryptFilterDict extends PdfDict {
     constructor() {
         super(dictTypes.CRYPT_FILTER);
@@ -17218,21 +16488,19 @@ class CryptFilterDict extends PdfDict {
         this.Length = 40;
         this.EncryptMetadata = true;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$N(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new CryptFilterDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CryptFilterDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17265,119 +16533,103 @@ class CryptFilterDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$N(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/CFM":
-                            const method = yield parser.parseNameAtAsync(i, true);
-                            if (method && Object.values(cryptMethods)
-                                .includes(method.value)) {
-                                this.CFM = method.value;
-                                i = method.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/CFM":
+                        const method = await parser.parseNameAtAsync(i, true);
+                        if (method && Object.values(cryptMethods)
+                            .includes(method.value)) {
+                            this.CFM = method.value;
+                            i = method.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CFM property value");
+                        }
+                        break;
+                    case "/AuthEvent":
+                        const authEvent = await parser.parseNameAtAsync(i, true);
+                        if (authEvent && Object.values(authEvents)
+                            .includes(authEvent.value)) {
+                            this.AuthEvent = authEvent.value;
+                            i = authEvent.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /AuthEvent property value");
+                        }
+                        break;
+                    case "/Length":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/EncryptMetadata":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    case "/Recipients":
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.STRING_HEX) {
+                            const recipient = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);
+                            if (recipient) {
+                                this.Recipients = recipient.value;
+                                i = recipient.end + 1;
+                                break;
                             }
                             else {
-                                throw new Error("Can't parse /CFM property value");
+                                throw new Error("Can't parse /Recipients property value");
                             }
-                            break;
-                        case "/AuthEvent":
-                            const authEvent = yield parser.parseNameAtAsync(i, true);
-                            if (authEvent && Object.values(authEvents)
-                                .includes(authEvent.value)) {
-                                this.AuthEvent = authEvent.value;
-                                i = authEvent.end + 1;
+                        }
+                        else if (entryType === valueTypes.ARRAY) {
+                            const recipients = await HexString.parseArrayAsync(parser, i);
+                            if (recipients) {
+                                this.Recipients = recipients.value;
+                                i = recipients.end + 1;
+                                break;
                             }
                             else {
-                                throw new Error("Can't parse /AuthEvent property value");
+                                throw new Error("Can't parse /Recipients property value");
                             }
-                            break;
-                        case "/Length":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/EncryptMetadata":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        case "/Recipients":
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.STRING_HEX) {
-                                const recipient = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
-                                if (recipient) {
-                                    this.Recipients = recipient.value;
-                                    i = recipient.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error("Can't parse /Recipients property value");
-                                }
-                            }
-                            else if (entryType === valueTypes.ARRAY) {
-                                const recipients = yield HexString.parseArrayAsync(parser, i);
-                                if (recipients) {
-                                    this.Recipients = recipients.value;
-                                    i = recipients.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error("Can't parse /Recipients property value");
-                                }
-                            }
-                            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$M = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class CryptMapDict extends PdfDict {
     constructor() {
         super(null);
         this._filtersMap = new Map();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$M(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new CryptMapDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CryptMapDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     getProp(name) {
         return this._filtersMap.get(name);
@@ -17396,58 +16648,44 @@ class CryptMapDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$M(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        default:
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.DICTIONARY) {
-                                const dictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (dictBounds) {
-                                    const filter = yield CryptFilterDict.parseAsync({ parser, bounds: dictBounds });
-                                    if (filter) {
-                                        this._filtersMap.set(name, filter.value);
-                                        i = filter.end + 1;
-                                        break;
-                                    }
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    default:
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.DICTIONARY) {
+                            const dictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (dictBounds) {
+                                const filter = await CryptFilterDict.parseAsync({ parser, bounds: dictBounds });
+                                if (filter) {
+                                    this._filtersMap.set(name, filter.value);
+                                    i = filter.end + 1;
+                                    break;
                                 }
                             }
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$L = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class EncryptionDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
@@ -17457,21 +16695,19 @@ class EncryptionDict extends PdfDict {
         this.StrF = "/Identity";
         this.EncryptMetadata = true;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$L(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new EncryptionDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new EncryptionDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17566,168 +16802,152 @@ class EncryptionDict extends PdfDict {
             perms: (_j = this.Perms) === null || _j === void 0 ? void 0 : _j.bytes,
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a, _b;
-        return __awaiter$L(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Filter":
-                        case "/SubFilter":
-                        case "/StmF":
-                        case "/StrF":
-                        case "/EFF":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        case "/V":
-                            const algorithm = yield parser.parseNumberAtAsync(i, false);
-                            if (algorithm && Object.values(cryptVersions)
-                                .includes(algorithm.value)) {
-                                this.V = algorithm.value;
-                                i = algorithm.end + 1;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Filter":
+                    case "/SubFilter":
+                    case "/StmF":
+                    case "/StrF":
+                    case "/EFF":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    case "/V":
+                        const algorithm = await parser.parseNumberAtAsync(i, false);
+                        if (algorithm && Object.values(cryptVersions)
+                            .includes(algorithm.value)) {
+                            this.V = algorithm.value;
+                            i = algorithm.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /V property value");
+                        }
+                        break;
+                    case "/R":
+                        const revision = await parser.parseNumberAtAsync(i, false);
+                        if (revision && Object.values(cryptRevisions)
+                            .includes(revision.value)) {
+                            this.R = revision.value;
+                            i = revision.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /R property value");
+                        }
+                        break;
+                    case "/Length":
+                    case "/P":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/O":
+                    case "/U":
+                    case "/OE":
+                    case "/UE":
+                    case "/Perms":
+                        i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/EncryptMetadata":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    case "/CF":
+                        const dictBounds = await parser.getDictBoundsAtAsync(i);
+                        if (bounds) {
+                            const cryptMap = await CryptMapDict.parseAsync({ parser, bounds: dictBounds });
+                            if (cryptMap) {
+                                this.CF = cryptMap.value;
+                                i = cryptMap.end + 1;
+                            }
+                        }
+                        else {
+                            throw new Error("Can't parse /CF property value");
+                        }
+                        break;
+                    case "/Recipients":
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.STRING_HEX) {
+                            const recipient = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);
+                            if (recipient) {
+                                this.Recipients = recipient.value;
+                                i = recipient.end + 1;
+                                break;
                             }
                             else {
-                                throw new Error("Can't parse /V property value");
+                                throw new Error("Can't parse /Recipients property value");
                             }
-                            break;
-                        case "/R":
-                            const revision = yield parser.parseNumberAtAsync(i, false);
-                            if (revision && Object.values(cryptRevisions)
-                                .includes(revision.value)) {
-                                this.R = revision.value;
-                                i = revision.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /R property value");
-                            }
-                            break;
-                        case "/Length":
-                        case "/P":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/O":
-                        case "/U":
-                        case "/OE":
-                        case "/UE":
-                        case "/Perms":
-                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        case "/EncryptMetadata":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        case "/CF":
-                            const dictBounds = yield parser.getDictBoundsAtAsync(i);
-                            if (bounds) {
-                                const cryptMap = yield CryptMapDict.parseAsync({ parser, bounds: dictBounds });
-                                if (cryptMap) {
-                                    this.CF = cryptMap.value;
-                                    i = cryptMap.end + 1;
-                                }
+                        }
+                        else if (entryType === valueTypes.ARRAY) {
+                            const recipients = await HexString.parseArrayAsync(parser, i);
+                            if (recipients) {
+                                this.Recipients = recipients.value;
+                                i = recipients.end + 1;
+                                break;
                             }
                             else {
-                                throw new Error("Can't parse /CF property value");
+                                throw new Error("Can't parse /Recipients property value");
                             }
-                            break;
-                        case "/Recipients":
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.STRING_HEX) {
-                                const recipient = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
-                                if (recipient) {
-                                    this.Recipients = recipient.value;
-                                    i = recipient.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error("Can't parse /Recipients property value");
-                                }
-                            }
-                            else if (entryType === valueTypes.ARRAY) {
-                                const recipients = yield HexString.parseArrayAsync(parser, i);
-                                if (recipients) {
-                                    this.Recipients = recipients.value;
-                                    i = recipients.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error("Can't parse /Recipients property value");
-                                }
-                            }
-                            throw new Error(`Unsupported /Filter property value type: ${entryType}`);
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        throw new Error(`Unsupported /Filter property value type: ${entryType}`);
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Filter) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-            if (this.Filter === "/Standard"
-                && (!this.R
-                    || !this.O
-                    || !this.U
-                    || isNaN(this.P)
-                    || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms)))) {
-                throw new Error("Not all required properties parsed");
-            }
-            if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
-                && !this.Recipients) {
-                throw new Error("Not all required properties parsed");
-            }
-            if (this.StrF !== "/Identity") {
-                this.stringFilter = (_a = this.CF) === null || _a === void 0 ? void 0 : _a.getProp(this.StrF);
-            }
-            if (this.StmF !== "/Identity") {
-                this.streamFilter = (_b = this.CF) === null || _b === void 0 ? void 0 : _b.getProp(this.StmF);
-            }
-        });
+        }
+        if (!this.Filter) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (this.Filter === "/Standard"
+            && (!this.R
+                || !this.O
+                || !this.U
+                || isNaN(this.P)
+                || (this.V === 5 && (this.R < 5 || !this.OE || !this.UE || !this.Perms)))) {
+            throw new Error("Not all required properties parsed");
+        }
+        if ((this.SubFilter === "adbe.pkcs7.s3" || this.SubFilter === "adbe.pkcs7.s4")
+            && !this.Recipients) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (this.StrF !== "/Identity") {
+            this.stringFilter = (_a = this.CF) === null || _a === void 0 ? void 0 : _a.getProp(this.StrF);
+        }
+        if (this.StmF !== "/Identity") {
+            this.streamFilter = (_b = this.CF) === null || _b === void 0 ? void 0 : _b.getProp(this.StmF);
+        }
     }
 }
 
-var __awaiter$K = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TrailerDict extends PdfDict {
     constructor() {
         super(dictTypes.EMPTY);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$K(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new TrailerDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TrailerDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -17758,97 +16978,83 @@ class TrailerDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$K(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Size":
-                        case "/Prev":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Root":
-                        case "/Info":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Encrypt":
-                            const entryType = yield parser.getValueTypeAtAsync(i);
-                            if (entryType === valueTypes.REF) {
-                                const encryptId = yield ObjectId.parseRefAsync(parser, i);
-                                if (encryptId) {
-                                    this.Encrypt = encryptId.value;
-                                    i = encryptId.end + 1;
-                                    break;
-                                }
-                                else {
-                                    throw new Error("Can't parse /Encrypt property value");
-                                }
-                            }
-                            throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
-                        case "/ID":
-                            const hexIds = yield HexString.parseArrayAsync(parser, i);
-                            if (hexIds && hexIds.value[0] && hexIds.value[1]) {
-                                this.ID = [
-                                    hexIds.value[0],
-                                    hexIds.value[1],
-                                ];
-                                i = hexIds.end + 1;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Size":
+                    case "/Prev":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Root":
+                    case "/Info":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Encrypt":
+                        const entryType = await parser.getValueTypeAtAsync(i);
+                        if (entryType === valueTypes.REF) {
+                            const encryptId = await ObjectId.parseRefAsync(parser, i);
+                            if (encryptId) {
+                                this.Encrypt = encryptId.value;
+                                i = encryptId.end + 1;
                                 break;
                             }
-                            const literalIds = yield LiteralString.parseArrayAsync(parser, i);
-                            if (literalIds && literalIds.value[0] && literalIds.value[1]) {
-                                this.ID = [
-                                    HexString.fromHexBytes(literalIds.value[0].bytes),
-                                    HexString.fromHexBytes(literalIds.value[1].bytes),
-                                ];
-                                i = literalIds.end + 1;
-                                break;
+                            else {
+                                throw new Error("Can't parse /Encrypt property value");
                             }
-                            throw new Error("Can't parse /ID property value");
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
+                        }
+                        throw new Error(`Unsupported /Encrypt property value type: ${entryType}`);
+                    case "/ID":
+                        const hexIds = await HexString.parseArrayAsync(parser, i);
+                        if (hexIds && hexIds.value[0] && hexIds.value[1]) {
+                            this.ID = [
+                                hexIds.value[0],
+                                hexIds.value[1],
+                            ];
+                            i = hexIds.end + 1;
                             break;
-                    }
+                        }
+                        const literalIds = await LiteralString.parseArrayAsync(parser, i);
+                        if (literalIds && literalIds.value[0] && literalIds.value[1]) {
+                            this.ID = [
+                                HexString.fromHexBytes(literalIds.value[0].bytes),
+                                HexString.fromHexBytes(literalIds.value[1].bytes),
+                            ];
+                            i = literalIds.end + 1;
+                            break;
+                        }
+                        throw new Error("Can't parse /ID property value");
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
-                else {
-                    break;
-                }
             }
-            if (!this.Root) {
-                console.log("Trailer 'Root' property is missing. Look like the file is linearized, which is not oficially supported atm!");
+            else {
+                break;
             }
-            if (!this.Size) {
-                throw new Error("Not all required properties parsed: Size is missing");
-            }
-            if (this.Encrypt && !this.ID) {
-                throw new Error("Not all required properties parsed: ID is missing while Encryption is used");
-            }
-        });
+        }
+        if (!this.Root) {
+            console.log("Trailer 'Root' property is missing. Look like the file is linearized, which is not oficially supported atm!");
+        }
+        if (!this.Size) {
+            throw new Error("Not all required properties parsed: Size is missing");
+        }
+        if (this.Encrypt && !this.ID) {
+            throw new Error("Not all required properties parsed: ID is missing while Encryption is used");
+        }
     }
 }
 
-var __awaiter$J = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class XRefTable extends XRef {
     get prev() {
         var _a;
@@ -17903,31 +17109,29 @@ class XRefTable extends XRef {
         const table = new XRefTable(data, trailer, offset);
         return table;
     }
-    static parseAsync(parser, start, offset) {
-        return __awaiter$J(this, void 0, void 0, function* () {
-            if (!parser || isNaN(start)) {
-                return null;
-            }
-            const xrefTableBounds = yield parser.getXrefTableBoundsAtAsync(start);
-            if (!xrefTableBounds) {
-                return null;
-            }
-            const trailerDictBounds = yield parser.getDictBoundsAtAsync(xrefTableBounds.end + 1);
-            if (!trailerDictBounds) {
-                return null;
-            }
-            const table = yield parser.sliceCharCodesAsync(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
-            const trailerDict = yield TrailerDict.parseAsync({ parser, bounds: trailerDictBounds });
-            if (!trailerDict) {
-                return null;
-            }
-            const xrefTable = new XRefTable(table, trailerDict.value, offset);
-            return {
-                value: xrefTable,
-                start: null,
-                end: null,
-            };
-        });
+    static async parseAsync(parser, start, offset) {
+        if (!parser || isNaN(start)) {
+            return null;
+        }
+        const xrefTableBounds = await parser.getXrefTableBoundsAtAsync(start);
+        if (!xrefTableBounds) {
+            return null;
+        }
+        const trailerDictBounds = await parser.getDictBoundsAtAsync(xrefTableBounds.end + 1);
+        if (!trailerDictBounds) {
+            return null;
+        }
+        const table = await parser.sliceCharCodesAsync(xrefTableBounds.contentStart, xrefTableBounds.contentEnd);
+        const trailerDict = await TrailerDict.parseAsync({ parser, bounds: trailerDictBounds });
+        if (!trailerDict) {
+            return null;
+        }
+        const xrefTable = new XRefTable(table, trailerDict.value, offset);
+        return {
+            value: xrefTable,
+            start: null,
+            end: null,
+        };
     }
     createUpdate(entries, offset) {
         return XRefTable.createFrom(this, entries, offset);
@@ -17951,15 +17155,6 @@ class XRefTable extends XRef {
     }
 }
 
-var __awaiter$I = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class XrefParser {
     constructor(parser) {
         if (!parser) {
@@ -17967,84 +17162,76 @@ class XrefParser {
         }
         this._dataParser = parser;
     }
-    getPdfVersionAsync() {
+    async getPdfVersionAsync() {
         var _a;
-        return __awaiter$I(this, void 0, void 0, function* () {
-            const i = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.VERSION);
-            if (!i) {
-                return null;
-            }
-            const version = (_a = (yield this._dataParser.parseNumberAtAsync(i.end + 1, true))) === null || _a === void 0 ? void 0 : _a.value;
-            if (!version) {
-                return null;
-            }
-            return version.toFixed(1);
-        });
+        const i = await this._dataParser.findSubarrayIndexAsync(keywordCodes.VERSION);
+        if (!i) {
+            return null;
+        }
+        const version = (_a = (await this._dataParser.parseNumberAtAsync(i.end + 1, true))) === null || _a === void 0 ? void 0 : _a.value;
+        if (!version) {
+            return null;
+        }
+        return version.toFixed(1);
     }
-    getLastXrefIndexAsync() {
-        return __awaiter$I(this, void 0, void 0, function* () {
-            const xrefStartIndex = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_START, { maxIndex: this._dataParser.maxIndex, direction: false });
-            if (!xrefStartIndex) {
-                return null;
-            }
-            const xrefIndex = this._dataParser.parseNumberAtAsync(xrefStartIndex.end + 1);
-            if (!xrefIndex) {
-                return null;
-            }
-            return xrefIndex;
-        });
+    async getLastXrefIndexAsync() {
+        const xrefStartIndex = await this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_START, { maxIndex: this._dataParser.maxIndex, direction: false });
+        if (!xrefStartIndex) {
+            return null;
+        }
+        const xrefIndex = this._dataParser.parseNumberAtAsync(xrefStartIndex.end + 1);
+        if (!xrefIndex) {
+            return null;
+        }
+        return xrefIndex;
     }
-    parseXrefAsync(start, max) {
-        return __awaiter$I(this, void 0, void 0, function* () {
-            if (!start) {
-                return null;
-            }
-            const offset = start;
-            const xrefTableIndex = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
-            if (xrefTableIndex && xrefTableIndex.start === start) {
-                const xrefStmIndexProp = yield this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
-                if (xrefStmIndexProp) {
-                    const streamXrefIndex = yield this._dataParser.parseNumberAtAsync(xrefStmIndexProp.end + 1);
-                    if (!streamXrefIndex) {
-                        return null;
-                    }
-                    start = streamXrefIndex.value;
+    async parseXrefAsync(start, max) {
+        if (!start) {
+            return null;
+        }
+        const offset = start;
+        const xrefTableIndex = await this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_TABLE, { minIndex: start, closedOnly: true });
+        if (xrefTableIndex && xrefTableIndex.start === start) {
+            const xrefStmIndexProp = await this._dataParser.findSubarrayIndexAsync(keywordCodes.XREF_HYBRID, { minIndex: start, maxIndex: max, closedOnly: true });
+            if (xrefStmIndexProp) {
+                const streamXrefIndex = await this._dataParser.parseNumberAtAsync(xrefStmIndexProp.end + 1);
+                if (!streamXrefIndex) {
+                    return null;
                 }
-                else {
-                    const xrefTable = yield XRefTable.parseAsync(this._dataParser, start, offset);
-                    return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
-                }
+                start = streamXrefIndex.value;
             }
-            const id = yield ObjectId.parseAsync(this._dataParser, start, false);
-            if (!id) {
-                return null;
+            else {
+                const xrefTable = await XRefTable.parseAsync(this._dataParser, start, offset);
+                return xrefTable === null || xrefTable === void 0 ? void 0 : xrefTable.value;
             }
-            const xrefStreamBounds = yield this._dataParser.getIndirectObjectBoundsAtAsync(id.end + 1);
-            if (!xrefStreamBounds) {
-                return null;
-            }
-            const xrefStream = yield XRefStream.parseAsync({ parser: this._dataParser, bounds: xrefStreamBounds }, offset);
-            return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
-        });
+        }
+        const id = await ObjectId.parseAsync(this._dataParser, start, false);
+        if (!id) {
+            return null;
+        }
+        const xrefStreamBounds = await this._dataParser.getIndirectObjectBoundsAtAsync(id.end + 1);
+        if (!xrefStreamBounds) {
+            return null;
+        }
+        const xrefStream = await XRefStream.parseAsync({ parser: this._dataParser, bounds: xrefStreamBounds }, offset);
+        return xrefStream === null || xrefStream === void 0 ? void 0 : xrefStream.value;
     }
-    parseAllXrefsAsync(start) {
-        return __awaiter$I(this, void 0, void 0, function* () {
-            const xrefs = [];
-            let max = this._dataParser.maxIndex;
-            let xref;
-            while (start) {
-                xref = yield this.parseXrefAsync(start, max);
-                if (xref) {
-                    xrefs.push(xref);
-                    max = start;
-                    start = xref.prev;
-                }
-                else {
-                    break;
-                }
+    async parseAllXrefsAsync(start) {
+        const xrefs = [];
+        let max = this._dataParser.maxIndex;
+        let xref;
+        while (start) {
+            xref = await this.parseXrefAsync(start, max);
+            if (xref) {
+                xrefs.push(xref);
+                max = start;
+                start = xref.prev;
             }
-            return xrefs;
-        });
+            else {
+                break;
+            }
+        }
+        return xrefs;
     }
 }
 
@@ -18170,34 +17357,23 @@ class ReferenceData {
     }
 }
 
-var __awaiter$H = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class CatalogDict extends PdfDict {
     constructor() {
         super(dictTypes.CATALOG);
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$H(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new CatalogDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CatalogDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -18219,78 +17395,62 @@ class CatalogDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$H(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Version":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        case "/Pages":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Lang":
-                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Version":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    case "/Pages":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Lang":
+                        i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Pages) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.Pages) {
+            throw new Error("Not all required properties parsed");
+        }
     }
 }
 
-var __awaiter$G = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PageDict extends PdfDict {
     constructor() {
         super(dictTypes.PAGE);
         this.Rotate = 0;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$G(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new PageDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PageDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -18381,165 +17541,149 @@ class PageDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$G(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Parent":
-                        case "/Thumb":
-                        case "/Metadata":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/LastModified":
-                            i = yield this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        case "/Resources":
-                            const resEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (resEntryType === valueTypes.REF) {
-                                const resDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (resDictId && parseInfo.parseInfoGetterAsync) {
-                                    this.Resources = yield parser.sliceCharCodesAsync(resDictId.start, resDictId.end);
-                                    i = resDictId.end + 1;
-                                    break;
-                                }
-                                throw new Error("Can't parse /Resources value reference");
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Parent":
+                    case "/Thumb":
+                    case "/Metadata":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/LastModified":
+                        i = await this.parseDatePropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/Resources":
+                        const resEntryType = await parser.getValueTypeAtAsync(i);
+                        if (resEntryType === valueTypes.REF) {
+                            const resDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (resDictId && parseInfo.parseInfoGetterAsync) {
+                                this.Resources = await parser.sliceCharCodesAsync(resDictId.start, resDictId.end);
+                                i = resDictId.end + 1;
+                                break;
                             }
-                            else if (resEntryType === valueTypes.DICTIONARY) {
-                                const resDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (resDictBounds) {
-                                    this.Resources = yield parser.sliceCharCodesAsync(resDictBounds.start, resDictBounds.end);
-                                    i = resDictBounds.end + 1;
-                                    break;
-                                }
-                                throw new Error("Can't parse /Resources dictionary bounds");
+                            throw new Error("Can't parse /Resources value reference");
+                        }
+                        else if (resEntryType === valueTypes.DICTIONARY) {
+                            const resDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (resDictBounds) {
+                                this.Resources = await parser.sliceCharCodesAsync(resDictBounds.start, resDictBounds.end);
+                                i = resDictBounds.end + 1;
+                                break;
                             }
-                            throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
-                        case "/MediaBox":
-                        case "/CropBox":
-                        case "/BleedBox":
-                        case "/TrimBox":
-                        case "/ArtBox":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/Contents":
-                        case "/B":
-                        case "/Annots":
-                            const refEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (refEntryType === valueTypes.REF) {
-                                const refArrayId = yield ObjectId.parseRefAsync(parser, i);
-                                if (refArrayId) {
-                                    this[name.slice(1)] = refArrayId.value;
-                                    i = refArrayId.end + 1;
-                                    break;
-                                }
+                            throw new Error("Can't parse /Resources dictionary bounds");
+                        }
+                        throw new Error(`Unsupported /Resources property value type: ${resEntryType}`);
+                    case "/MediaBox":
+                    case "/CropBox":
+                    case "/BleedBox":
+                    case "/TrimBox":
+                    case "/ArtBox":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/Contents":
+                    case "/B":
+                    case "/Annots":
+                        const refEntryType = await parser.getValueTypeAtAsync(i);
+                        if (refEntryType === valueTypes.REF) {
+                            const refArrayId = await ObjectId.parseRefAsync(parser, i);
+                            if (refArrayId) {
+                                this[name.slice(1)] = refArrayId.value;
+                                i = refArrayId.end + 1;
+                                break;
                             }
-                            else if (refEntryType === valueTypes.ARRAY) {
-                                const refIds = yield ObjectId.parseRefArrayAsync(parser, i);
-                                if (refIds) {
-                                    this[name.slice(1)] = refIds.value;
-                                    i = refIds.end + 1;
-                                    break;
-                                }
+                        }
+                        else if (refEntryType === valueTypes.ARRAY) {
+                            const refIds = await ObjectId.parseRefArrayAsync(parser, i);
+                            if (refIds) {
+                                this[name.slice(1)] = refIds.value;
+                                i = refIds.end + 1;
+                                break;
                             }
-                            throw new Error(`Unsupported ${name} property value type: ${refEntryType}`);
-                        case "/Rotate":
-                        case "/Dur":
-                        case "/StructParent":
-                        case "/PZ":
-                        case "/UserUnit":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/ID":
-                            const webCaptureIdEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (webCaptureIdEntryType === valueTypes.REF) {
-                                const webCaptureRefId = yield ObjectId.parseRefAsync(parser, i);
-                                if (webCaptureRefId) {
-                                    if (webCaptureRefId && parseInfo.parseInfoGetterAsync) {
-                                        const webCaptureIdParseInfo = yield parseInfo.parseInfoGetterAsync(webCaptureRefId.value.id);
-                                        if (webCaptureIdParseInfo) {
-                                            const webCaptureId = yield HexString.parseAsync(webCaptureIdParseInfo.parser, webCaptureIdParseInfo.bounds.start, webCaptureIdParseInfo.cryptInfo);
-                                            if (webCaptureId) {
-                                                this.ID = webCaptureId.value;
-                                                i = webCaptureRefId.end + 1;
-                                                break;
-                                            }
+                        }
+                        throw new Error(`Unsupported ${name} property value type: ${refEntryType}`);
+                    case "/Rotate":
+                    case "/Dur":
+                    case "/StructParent":
+                    case "/PZ":
+                    case "/UserUnit":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/ID":
+                        const webCaptureIdEntryType = await parser.getValueTypeAtAsync(i);
+                        if (webCaptureIdEntryType === valueTypes.REF) {
+                            const webCaptureRefId = await ObjectId.parseRefAsync(parser, i);
+                            if (webCaptureRefId) {
+                                if (webCaptureRefId && parseInfo.parseInfoGetterAsync) {
+                                    const webCaptureIdParseInfo = await parseInfo.parseInfoGetterAsync(webCaptureRefId.value.id);
+                                    if (webCaptureIdParseInfo) {
+                                        const webCaptureId = await HexString.parseAsync(webCaptureIdParseInfo.parser, webCaptureIdParseInfo.bounds.start, webCaptureIdParseInfo.cryptInfo);
+                                        if (webCaptureId) {
+                                            this.ID = webCaptureId.value;
+                                            i = webCaptureRefId.end + 1;
+                                            break;
                                         }
                                     }
                                 }
-                                throw new Error("Can't parse /ID property value");
                             }
-                            else if (webCaptureIdEntryType === valueTypes.STRING_HEX) {
-                                const webCaptureId = yield HexString.parseAsync(parser, i, parseInfo.cryptInfo);
-                                if (webCaptureId) {
-                                    this.ID = webCaptureId.value;
-                                    i = webCaptureId.end + 1;
-                                    break;
-                                }
+                            throw new Error("Can't parse /ID property value");
+                        }
+                        else if (webCaptureIdEntryType === valueTypes.STRING_HEX) {
+                            const webCaptureId = await HexString.parseAsync(parser, i, parseInfo.cryptInfo);
+                            if (webCaptureId) {
+                                this.ID = webCaptureId.value;
+                                i = webCaptureId.end + 1;
+                                break;
                             }
-                            throw new Error(`Unsupported /ID property value type: ${webCaptureIdEntryType}`);
-                        case "/Tabs":
-                        case "/TemplateInstantiated":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        throw new Error(`Unsupported /ID property value type: ${webCaptureIdEntryType}`);
+                    case "/Tabs":
+                    case "/TemplateInstantiated":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Parent) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.Parent) {
+            throw new Error("Not all required properties parsed");
+        }
     }
 }
 
-var __awaiter$F = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PageTreeDict extends PdfDict {
     constructor() {
         super(dictTypes.PAGE_TREE);
         this.Rotate = 0;
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$F(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new PageTreeDict();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PageTreeDict();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return { value: pdfObject, start: parseInfo.bounds.start, end: parseInfo.bounds.end };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -18567,50 +17711,45 @@ class PageTreeDict extends PdfDict {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$F(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Parent":
-                            i = yield this.parseRefPropAsync(name, parser, i);
-                            break;
-                        case "/Kids":
-                            i = yield this.parseRefArrayPropAsync(name, parser, i);
-                            break;
-                        case "/Count":
-                        case "/Rotate":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/MediaBox":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Parent":
+                        i = await this.parseRefPropAsync(name, parser, i);
+                        break;
+                    case "/Kids":
+                        i = await this.parseRefArrayPropAsync(name, parser, i);
+                        break;
+                    case "/Count":
+                    case "/Rotate":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/MediaBox":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Kids || isNaN(this.Count)) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.Kids || isNaN(this.Count)) {
+            throw new Error("Not all required properties parsed");
+        }
     }
 }
 
@@ -21408,15 +20547,6 @@ const standardStampCreationInfos = {
     },
 };
 
-var __awaiter$E = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class StampAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.STAMP);
@@ -21516,25 +20646,23 @@ class StampAnnotation extends MarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$E(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new StampAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new StampAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -21575,40 +20703,35 @@ class StampAnnotation extends MarkupAnnotation {
             stampImageData: this._customImageData ? [...this._customImageData] : null,
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$E(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Name":
-                            i = yield this.parseNamePropAsync(name, parser, i);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Name":
+                        i = await this.parseNamePropAsync(name, parser, i);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Name) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.Name) {
+            throw new Error("Not all required properties parsed");
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -21618,15 +20741,6 @@ class StampAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$D = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const textNoteForms = {
     NOTE: `25 10 m
   175 10 l
@@ -21744,25 +20858,23 @@ class TextAnnotation extends MarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$D(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new TextAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new TextAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -21811,71 +20923,66 @@ class TextAnnotation extends MarkupAnnotation {
             textNoteStateModel: this.StateModel,
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$D(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Open":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        case "/Name":
-                            const iconType = yield parser.parseNameAtAsync(i, true);
-                            if (iconType && Object.values(annotationIconTypes)
-                                .includes(iconType.value)) {
-                                this.Name = iconType.value;
-                                i = iconType.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /Name property value");
-                            }
-                            break;
-                        case "/State":
-                            const state = yield parser.parseNameAtAsync(i, true);
-                            if (state && Object.values(annotationMarkedStates)
-                                .concat(Object.values(annotationReviewStates))
-                                .includes(state.value)) {
-                                this.State = state.value;
-                                i = state.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /State property value");
-                            }
-                            break;
-                        case "/StateModel":
-                            const stateModelType = yield parser.parseNameAtAsync(i, true);
-                            if (stateModelType && Object.values(annotationStateModelTypes)
-                                .includes(stateModelType.value)) {
-                                this.StateModel = stateModelType.value;
-                                i = stateModelType.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /StateModel property value");
-                            }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Open":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    case "/Name":
+                        const iconType = await parser.parseNameAtAsync(i, true);
+                        if (iconType && Object.values(annotationIconTypes)
+                            .includes(iconType.value)) {
+                            this.Name = iconType.value;
+                            i = iconType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Name property value");
+                        }
+                        break;
+                    case "/State":
+                        const state = await parser.parseNameAtAsync(i, true);
+                        if (state && Object.values(annotationMarkedStates)
+                            .concat(Object.values(annotationReviewStates))
+                            .includes(state.value)) {
+                            this.State = state.value;
+                            i = state.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /State property value");
+                        }
+                        break;
+                    case "/StateModel":
+                        const stateModelType = await parser.parseNameAtAsync(i, true);
+                        if (stateModelType && Object.values(annotationStateModelTypes)
+                            .includes(stateModelType.value)) {
+                            this.StateModel = stateModelType.value;
+                            i = stateModelType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /StateModel property value");
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
     renderHandles() {
         return [];
@@ -21888,15 +20995,6 @@ class TextAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$C = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class InkAnnotation extends MarkupAnnotation {
     constructor() {
         super(annotationTypes.INK);
@@ -21928,25 +21026,23 @@ class InkAnnotation extends MarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$C(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new InkAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new InkAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -21986,57 +21082,52 @@ class InkAnnotation extends MarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$C(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/InkList":
-                            i = yield parser.skipEmptyAsync(i);
-                            const inkType = yield parser.getValueTypeAtAsync(i);
-                            if (inkType === valueTypes.ARRAY) {
-                                const inkList = [];
-                                let inkArrayPos = ++i;
-                                while (true) {
-                                    const sublist = yield parser.parseNumberArrayAtAsync(inkArrayPos);
-                                    if (!sublist) {
-                                        break;
-                                    }
-                                    inkList.push(sublist.value);
-                                    inkArrayPos = sublist.end + 1;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/InkList":
+                        i = await parser.skipEmptyAsync(i);
+                        const inkType = await parser.getValueTypeAtAsync(i);
+                        if (inkType === valueTypes.ARRAY) {
+                            const inkList = [];
+                            let inkArrayPos = ++i;
+                            while (true) {
+                                const sublist = await parser.parseNumberArrayAtAsync(inkArrayPos);
+                                if (!sublist) {
+                                    break;
                                 }
-                                this.InkList = inkList;
-                                break;
+                                inkList.push(sublist.value);
+                                inkArrayPos = sublist.end + 1;
                             }
-                            throw new Error("Can't parse /InkList property value");
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
+                            this.InkList = inkList;
                             break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        throw new Error("Can't parse /InkList property value");
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-            yield this.bakeRotationAsync();
-        });
+        }
+        if (!((_a = this.InkList) === null || _a === void 0 ? void 0 : _a.length)) {
+            throw new Error("Not all required properties parsed");
+        }
+        await this.bakeRotationAsync();
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -22078,75 +21169,71 @@ class InkAnnotation extends MarkupAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
+    async applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$C(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            let x;
-            let y;
-            let xMin;
-            let yMin;
-            let xMax;
-            let yMax;
-            const vec = new Vec2();
-            dict.InkList.forEach(list => {
-                for (let i = 0; i < list.length; i = i + 2) {
-                    x = list[i];
-                    y = list[i + 1];
-                    vec.set(x, y).applyMat3(matrix);
-                    list[i] = vec.x;
-                    list[i + 1] = vec.y;
-                    if (!xMin || vec.x < xMin) {
-                        xMin = vec.x;
-                    }
-                    if (!yMin || vec.y < yMin) {
-                        yMin = vec.y;
-                    }
-                    if (!xMax || vec.x > xMax) {
-                        xMax = vec.x;
-                    }
-                    if (!yMax || vec.y > yMax) {
-                        yMax = vec.y;
-                    }
+        const dict = this.getProxy();
+        let x;
+        let y;
+        let xMin;
+        let yMin;
+        let xMax;
+        let yMax;
+        const vec = new Vec2();
+        dict.InkList.forEach(list => {
+            for (let i = 0; i < list.length; i = i + 2) {
+                x = list[i];
+                y = list[i + 1];
+                vec.set(x, y).applyMat3(matrix);
+                list[i] = vec.x;
+                list[i + 1] = vec.y;
+                if (!xMin || vec.x < xMin) {
+                    xMin = vec.x;
                 }
-            });
-            const margin = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
-            xMin -= margin;
-            yMin -= margin;
-            xMax += margin;
-            yMax += margin;
-            this.Rect = [xMin, yMin, xMax, yMax];
-            if (this._bBox) {
-                const bBox = dict.getLocalBB();
-                bBox.ll.set(xMin, yMin);
-                bBox.lr.set(xMax, yMin);
-                bBox.ur.set(xMax, yMax);
-                bBox.ul.set(xMin, yMax);
-            }
-            this.generateApStream();
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$C(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
+                if (!yMin || vec.y < yMin) {
+                    yMin = vec.y;
+                }
+                if (!xMax || vec.x > xMax) {
+                    xMax = vec.x;
+                }
+                if (!yMax || vec.y > yMax) {
+                    yMax = vec.y;
+                }
             }
         });
+        const margin = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
+        xMin -= margin;
+        yMin -= margin;
+        xMax += margin;
+        yMax += margin;
+        this.Rect = [xMin, yMin, xMax, yMax];
+        if (this._bBox) {
+            const bBox = dict.getLocalBB();
+            bBox.ll.set(xMin, yMin);
+            bBox.lr.set(xMax, yMin);
+            bBox.ur.set(xMax, yMax);
+            bBox.ul.set(xMin, yMax);
+        }
+        this.generateApStream();
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
+                }
+                : undefined);
+        }
     }
-    bakeRotationAsync() {
-        return __awaiter$C(this, void 0, void 0, function* () {
-            const angle = this.getCurrentRotation();
-            const centerX = (this.Rect[0] + this.Rect[2]) / 2;
-            const centerY = (this.Rect[1] + this.Rect[3]) / 2;
-            const matrix = new Mat3()
-                .applyTranslation(-centerX, -centerY)
-                .applyRotation(angle)
-                .applyTranslation(centerX, centerY);
-            yield this.applyCommonTransformAsync(matrix);
-        });
+    async bakeRotationAsync() {
+        const angle = this.getCurrentRotation();
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(angle)
+            .applyTranslation(centerX, centerY);
+        await this.applyCommonTransformAsync(matrix);
     }
     initProxy() {
         return super.initProxy();
@@ -22156,15 +21243,6 @@ class InkAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$B = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GeometricAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
@@ -22183,49 +21261,35 @@ class GeometricAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$B(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/IC":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/IC":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
 }
 
-var __awaiter$A = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class SquareAnnotation extends GeometricAnnotation {
     constructor() {
         super(annotationTypes.SQUARE);
@@ -22258,25 +21322,23 @@ class SquareAnnotation extends GeometricAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$A(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new SquareAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new SquareAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -22317,37 +21379,32 @@ class SquareAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$A(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/RD":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/RD":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
     generateApStream(bbox, matrix) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -22430,26 +21487,24 @@ class SquareAnnotation extends GeometricAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$A(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            dict.applyRectTransform(matrix);
-            const stream = dict.apStream;
-            if (stream) {
-                const newApMatrix = Mat3.multiply(stream.matrix, matrix);
-                dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
-            }
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$A(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
-            }
-        });
+    async applyCommonTransformAsync(matrix, undoable = true) {
+        const dict = this.getProxy();
+        dict.applyRectTransform(matrix);
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+            dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
+        }
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
+                }
+                : undefined);
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -22460,15 +21515,6 @@ class SquareAnnotation extends GeometricAnnotation {
 }
 SquareAnnotation.cloudArcSize = 20;
 
-var __awaiter$z = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class CircleAnnotation extends GeometricAnnotation {
     constructor() {
         super(annotationTypes.CIRCLE);
@@ -22501,25 +21547,23 @@ class CircleAnnotation extends GeometricAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$z(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new CircleAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new CircleAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -22560,37 +21604,32 @@ class CircleAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$z(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/RD":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/RD":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-        });
+            else {
+                break;
+            }
+        }
     }
     generateApStream(bbox, matrix) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -22684,26 +21723,24 @@ class CircleAnnotation extends GeometricAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$z(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            dict.applyRectTransform(matrix);
-            const stream = dict.apStream;
-            if (stream) {
-                const newApMatrix = Mat3.multiply(stream.matrix, matrix);
-                dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
-            }
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$z(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
-            }
-        });
+    async applyCommonTransformAsync(matrix, undoable = true) {
+        const dict = this.getProxy();
+        dict.applyRectTransform(matrix);
+        const stream = dict.apStream;
+        if (stream) {
+            const newApMatrix = Mat3.multiply(stream.matrix, matrix);
+            dict.generateApStream(stream.BBox, newApMatrix.toFloatShortArray());
+        }
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
+                }
+                : undefined);
+        }
     }
     initProxy() {
         return super.initProxy();
@@ -22714,15 +21751,6 @@ class CircleAnnotation extends GeometricAnnotation {
 }
 CircleAnnotation.cloudArcSize = 20;
 
-var __awaiter$y = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PolyAnnotation extends GeometricAnnotation {
     constructor(type) {
         super(type);
@@ -22747,92 +21775,78 @@ class PolyAnnotation extends GeometricAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$y(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/Vertices":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/IT":
-                            const intent = yield parser.parseNameAtAsync(i, true);
-                            if (intent) {
-                                if (Object.values(polyIntents).includes(intent.value)) {
-                                    this.IT = intent.value;
-                                    i = intent.end + 1;
-                                    break;
-                                }
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/Vertices":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/IT":
+                        const intent = await parser.parseNameAtAsync(i, true);
+                        if (intent) {
+                            if (Object.values(polyIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
                             }
-                            throw new Error("Can't parse /IT property value");
-                        case "/Measure":
-                            const measureEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (measureEntryType === valueTypes.REF) {
-                                const measureDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (measureDictId && parseInfo.parseInfoGetterAsync) {
-                                    const measureParseInfo = yield parseInfo.parseInfoGetterAsync(measureDictId.value.id);
-                                    if (measureParseInfo) {
-                                        const measureDict = yield MeasureDict.parseAsync(measureParseInfo);
-                                        if (measureDict) {
-                                            this.Measure = measureDict.value;
-                                            i = measureDict.end + 1;
-                                            break;
-                                        }
-                                    }
-                                }
-                                throw new Error("Can't parse /Measure value reference");
-                            }
-                            else if (measureEntryType === valueTypes.DICTIONARY) {
-                                const measureDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (measureDictBounds) {
-                                    const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/Measure":
+                        const measureEntryType = await parser.getValueTypeAtAsync(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                                const measureParseInfo = await parseInfo.parseInfoGetterAsync(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = await MeasureDict.parseAsync(measureParseInfo);
                                     if (measureDict) {
                                         this.Measure = measureDict.value;
                                         i = measureDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /Measure value dictionary");
                             }
-                            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                            throw new Error("Can't parse /Measure value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (measureDictBounds) {
+                                const measureDict = await MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.Vertices) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.Vertices) {
+            throw new Error("Not all required properties parsed");
+        }
     }
 }
 
-var __awaiter$x = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PolygonAnnotation extends PolyAnnotation {
     constructor() {
         super(annotationTypes.POLYGON);
@@ -22867,25 +21881,23 @@ class PolygonAnnotation extends PolyAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$x(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new PolygonAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PolygonAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -22916,14 +21928,9 @@ class PolygonAnnotation extends PolyAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$x(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            yield this.bakeRotationAsync();
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        await this.bakeRotationAsync();
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -22982,77 +21989,73 @@ class PolygonAnnotation extends PolyAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
+    async applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$x(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            let x;
-            let y;
-            let xMin;
-            let yMin;
-            let xMax;
-            let yMax;
-            const vec = new Vec2();
-            const list = dict.Vertices;
-            for (let i = 0; i < list.length; i = i + 2) {
-                x = list[i];
-                y = list[i + 1];
-                vec.set(x, y).applyMat3(matrix);
-                list[i] = vec.x;
-                list[i + 1] = vec.y;
-                if (!xMin || vec.x < xMin) {
-                    xMin = vec.x;
-                }
-                if (!yMin || vec.y < yMin) {
-                    yMin = vec.y;
-                }
-                if (!xMax || vec.x > xMax) {
-                    xMax = vec.x;
-                }
-                if (!yMax || vec.y > yMax) {
-                    yMax = vec.y;
-                }
+        const dict = this.getProxy();
+        let x;
+        let y;
+        let xMin;
+        let yMin;
+        let xMax;
+        let yMax;
+        const vec = new Vec2();
+        const list = dict.Vertices;
+        for (let i = 0; i < list.length; i = i + 2) {
+            x = list[i];
+            y = list[i + 1];
+            vec.set(x, y).applyMat3(matrix);
+            list[i] = vec.x;
+            list[i + 1] = vec.y;
+            if (!xMin || vec.x < xMin) {
+                xMin = vec.x;
             }
-            const halfStrokeWidth = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
-            const margin = dict.IT === polyIntents.CLOUD
-                ? PolygonAnnotation.cloudArcSize / 2 + halfStrokeWidth
-                : halfStrokeWidth;
-            xMin -= margin;
-            yMin -= margin;
-            xMax += margin;
-            yMax += margin;
-            dict.Rect = [xMin, yMin, xMax, yMax];
-            if (dict._bBox) {
-                const bBox = dict.getLocalBB();
-                bBox.ll.set(xMin, yMin);
-                bBox.lr.set(xMax, yMin);
-                bBox.ur.set(xMax, yMax);
-                bBox.ul.set(xMin, yMax);
+            if (!yMin || vec.y < yMin) {
+                yMin = vec.y;
             }
-            dict.generateApStream();
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$x(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
+            if (!xMax || vec.x > xMax) {
+                xMax = vec.x;
             }
-        });
+            if (!yMax || vec.y > yMax) {
+                yMax = vec.y;
+            }
+        }
+        const halfStrokeWidth = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
+        const margin = dict.IT === polyIntents.CLOUD
+            ? PolygonAnnotation.cloudArcSize / 2 + halfStrokeWidth
+            : halfStrokeWidth;
+        xMin -= margin;
+        yMin -= margin;
+        xMax += margin;
+        yMax += margin;
+        dict.Rect = [xMin, yMin, xMax, yMax];
+        if (dict._bBox) {
+            const bBox = dict.getLocalBB();
+            bBox.ll.set(xMin, yMin);
+            bBox.lr.set(xMax, yMin);
+            bBox.ur.set(xMax, yMax);
+            bBox.ul.set(xMin, yMax);
+        }
+        dict.generateApStream();
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
+                }
+                : undefined);
+        }
     }
-    bakeRotationAsync() {
-        return __awaiter$x(this, void 0, void 0, function* () {
-            const angle = this.getCurrentRotation();
-            const centerX = (this.Rect[0] + this.Rect[2]) / 2;
-            const centerY = (this.Rect[1] + this.Rect[3]) / 2;
-            const matrix = new Mat3()
-                .applyTranslation(-centerX, -centerY)
-                .applyRotation(angle)
-                .applyTranslation(centerX, centerY);
-            yield this.applyCommonTransformAsync(matrix);
-        });
+    async bakeRotationAsync() {
+        const angle = this.getCurrentRotation();
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(angle)
+            .applyTranslation(centerX, centerY);
+        await this.applyCommonTransformAsync(matrix);
     }
     initProxy() {
         return super.initProxy();
@@ -23063,15 +22066,6 @@ class PolygonAnnotation extends PolyAnnotation {
 }
 PolygonAnnotation.cloudArcSize = 20;
 
-var __awaiter$w = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PolylineAnnotation extends PolyAnnotation {
     constructor() {
         super(annotationTypes.POLYLINE);
@@ -23106,25 +22100,23 @@ class PolylineAnnotation extends PolyAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$w(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new PolylineAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new PolylineAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23165,50 +22157,45 @@ class PolylineAnnotation extends PolyAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$w(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/LE":
-                            const lineEndings = yield parser.parseNameArrayAtAsync(i, true);
-                            if (lineEndings
-                                && Object.values(lineEndingTypes).includes(lineEndings.value[0])
-                                && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
-                                this.LE = [
-                                    lineEndings.value[0],
-                                    lineEndings.value[1],
-                                ];
-                                i = lineEndings.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /LE property value");
-                            }
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/LE":
+                        const lineEndings = await parser.parseNameArrayAtAsync(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            yield this.bakeRotationAsync();
-        });
+            else {
+                break;
+            }
+        }
+        await this.bakeRotationAsync();
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -23250,74 +22237,70 @@ class PolylineAnnotation extends PolyAnnotation {
         apStream.setTextStreamData(streamTextData);
         this.apStream = apStream;
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
+    async applyCommonTransformAsync(matrix, undoable = true) {
         var _a, _b, _c, _d;
-        return __awaiter$w(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            let x;
-            let y;
-            let xMin;
-            let yMin;
-            let xMax;
-            let yMax;
-            const vec = new Vec2();
-            const list = dict.Vertices;
-            for (let i = 0; i < list.length; i = i + 2) {
-                x = list[i];
-                y = list[i + 1];
-                vec.set(x, y).applyMat3(matrix);
-                list[i] = vec.x;
-                list[i + 1] = vec.y;
-                if (!xMin || vec.x < xMin) {
-                    xMin = vec.x;
-                }
-                if (!yMin || vec.y < yMin) {
-                    yMin = vec.y;
-                }
-                if (!xMax || vec.x > xMax) {
-                    xMax = vec.x;
-                }
-                if (!yMax || vec.y > yMax) {
-                    yMax = vec.y;
-                }
+        const dict = this.getProxy();
+        let x;
+        let y;
+        let xMin;
+        let yMin;
+        let xMax;
+        let yMax;
+        const vec = new Vec2();
+        const list = dict.Vertices;
+        for (let i = 0; i < list.length; i = i + 2) {
+            x = list[i];
+            y = list[i + 1];
+            vec.set(x, y).applyMat3(matrix);
+            list[i] = vec.x;
+            list[i + 1] = vec.y;
+            if (!xMin || vec.x < xMin) {
+                xMin = vec.x;
             }
-            const margin = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
-            xMin -= margin;
-            yMin -= margin;
-            xMax += margin;
-            yMax += margin;
-            dict.Rect = [xMin, yMin, xMax, yMax];
-            if (dict._bBox) {
-                const bBox = dict.getLocalBB();
-                bBox.ll.set(xMin, yMin);
-                bBox.lr.set(xMax, yMin);
-                bBox.ur.set(xMax, yMax);
-                bBox.ul.set(xMin, yMax);
+            if (!yMin || vec.y < yMin) {
+                yMin = vec.y;
             }
-            dict.generateApStream();
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$w(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
+            if (!xMax || vec.x > xMax) {
+                xMax = vec.x;
             }
-        });
+            if (!yMax || vec.y > yMax) {
+                yMax = vec.y;
+            }
+        }
+        const margin = ((_d = (_b = (_a = dict.BS) === null || _a === void 0 ? void 0 : _a.W) !== null && _b !== void 0 ? _b : (_c = dict.Border) === null || _c === void 0 ? void 0 : _c.width) !== null && _d !== void 0 ? _d : 1) / 2;
+        xMin -= margin;
+        yMin -= margin;
+        xMax += margin;
+        yMax += margin;
+        dict.Rect = [xMin, yMin, xMax, yMax];
+        if (dict._bBox) {
+            const bBox = dict.getLocalBB();
+            bBox.ll.set(xMin, yMin);
+            bBox.lr.set(xMax, yMin);
+            bBox.ur.set(xMax, yMax);
+            bBox.ul.set(xMin, yMax);
+        }
+        dict.generateApStream();
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
+                }
+                : undefined);
+        }
     }
-    bakeRotationAsync() {
-        return __awaiter$w(this, void 0, void 0, function* () {
-            const angle = this.getCurrentRotation();
-            const centerX = (this.Rect[0] + this.Rect[2]) / 2;
-            const centerY = (this.Rect[1] + this.Rect[3]) / 2;
-            const matrix = new Mat3()
-                .applyTranslation(-centerX, -centerY)
-                .applyRotation(angle)
-                .applyTranslation(centerX, centerY);
-            yield this.applyCommonTransformAsync(matrix);
-        });
+    async bakeRotationAsync() {
+        const angle = this.getCurrentRotation();
+        const centerX = (this.Rect[0] + this.Rect[2]) / 2;
+        const centerY = (this.Rect[1] + this.Rect[3]) / 2;
+        const matrix = new Mat3()
+            .applyTranslation(-centerX, -centerY)
+            .applyRotation(angle)
+            .applyTranslation(centerX, centerY);
+        await this.applyCommonTransformAsync(matrix);
     }
     initProxy() {
         return super.initProxy();
@@ -23327,15 +22310,6 @@ class PolylineAnnotation extends PolyAnnotation {
     }
 }
 
-var __awaiter$v = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class LineAnnotation extends GeometricAnnotation {
     get offsetY() {
         return (Math.abs(this.LL || 0) + (this.LLO || 0)) * (this.LL < 0 ? -1 : 1);
@@ -23425,64 +22399,60 @@ class LineAnnotation extends GeometricAnnotation {
             this.applyTempTransformAsync();
         };
     }
-    static createFromDtoAsync(dto, fontMap) {
-        return __awaiter$v(this, void 0, void 0, function* () {
-            if (dto.annotationType !== "/Line") {
-                throw new Error("Invalid annotation type");
-            }
-            const bs = new BorderStyleDict();
-            bs.W = dto.strokeWidth;
-            if (dto.strokeDashGap) {
-                bs.D = dto.strokeDashGap;
-            }
-            const annotation = new LineAnnotation();
-            annotation.$name = dto.uuid;
-            annotation.NM = LiteralString.fromString(dto.uuid);
-            annotation.T = LiteralString.fromString(dto.author);
-            annotation.M = DateString.fromDate(new Date(dto.dateModified));
-            annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
-            annotation.Contents = dto.textContent
-                ? LiteralString.fromString(dto.textContent)
-                : null;
-            annotation.Rect = dto.rect;
-            annotation.C = dto.color.slice(0, 3);
-            annotation.CA = dto.color[3];
-            annotation.BS = bs;
-            annotation.IT = dto.intent || lineIntents.DIMENSION;
-            annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
-            annotation.L = dto.vertices;
-            annotation.LL = dto.leaderLineLength || 0;
-            annotation.LLE = dto.leaderLineExtension || 0;
-            annotation.LLO = dto.leaderLineOffset || 0;
-            annotation.Cap = dto.caption;
-            annotation.CP = dto.captionPosition || lineCaptionPositions.INLINE;
-            annotation.CO = dto.captionOffset || [0, 0];
-            annotation._fontMap = fontMap;
-            yield annotation.generateApStreamAsync();
-            annotation._added = true;
-            return annotation.initProxy();
-        });
+    static async createFromDtoAsync(dto, fontMap) {
+        if (dto.annotationType !== "/Line") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new LineAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Contents = dto.textContent
+            ? LiteralString.fromString(dto.textContent)
+            : null;
+        annotation.Rect = dto.rect;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.IT = dto.intent || lineIntents.DIMENSION;
+        annotation.LE = dto.endingType || [lineEndingTypes.NONE, lineEndingTypes.NONE];
+        annotation.L = dto.vertices;
+        annotation.LL = dto.leaderLineLength || 0;
+        annotation.LLE = dto.leaderLineExtension || 0;
+        annotation.LLO = dto.leaderLineOffset || 0;
+        annotation.Cap = dto.caption;
+        annotation.CP = dto.captionPosition || lineCaptionPositions.INLINE;
+        annotation.CO = dto.captionOffset || [0, 0];
+        annotation._fontMap = fontMap;
+        await annotation.generateApStreamAsync();
+        annotation._added = true;
+        return annotation.initProxy();
     }
-    static parseAsync(parseInfo, fontMap) {
-        return __awaiter$v(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new LineAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                pdfObject._fontMap = fontMap;
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo, fontMap) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new LineAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            pdfObject._fontMap = fontMap;
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -23557,204 +22527,188 @@ class LineAnnotation extends GeometricAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    setTextContentAsync(text, undoable = true) {
-        const _super = Object.create(null, {
-            setTextContentAsync: { get: () => super.setTextContentAsync }
-        });
-        return __awaiter$v(this, void 0, void 0, function* () {
-            yield _super.setTextContentAsync.call(this, text, undoable);
-            yield this.updateStreamAsync();
-        });
+    async setTextContentAsync(text, undoable = true) {
+        await super.setTextContentAsync(text, undoable);
+        await this.updateStreamAsync();
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$v(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/L":
-                        case "/CO":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/LE":
-                            const lineEndings = yield parser.parseNameArrayAtAsync(i, true);
-                            if (lineEndings
-                                && Object.values(lineEndingTypes).includes(lineEndings.value[0])
-                                && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
-                                this.LE = [
-                                    lineEndings.value[0],
-                                    lineEndings.value[1],
-                                ];
-                                i = lineEndings.end + 1;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/L":
+                    case "/CO":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/LE":
+                        const lineEndings = await parser.parseNameArrayAtAsync(i, true);
+                        if (lineEndings
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[0])
+                            && Object.values(lineEndingTypes).includes(lineEndings.value[1])) {
+                            this.LE = [
+                                lineEndings.value[0],
+                                lineEndings.value[1],
+                            ];
+                            i = lineEndings.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    case "/IT":
+                        const intent = await parser.parseNameAtAsync(i, true);
+                        if (intent) {
+                            if (Object.values(lineIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
                             }
-                            else {
-                                throw new Error("Can't parse /LE property value");
-                            }
-                            break;
-                        case "/IT":
-                            const intent = yield parser.parseNameAtAsync(i, true);
-                            if (intent) {
-                                if (Object.values(lineIntents).includes(intent.value)) {
-                                    this.IT = intent.value;
-                                    i = intent.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /IT property value");
-                        case "/CP":
-                            const captionPosition = yield parser.parseNameAtAsync(i, true);
-                            if (captionPosition && Object.values(lineCaptionPositions)
-                                .includes(captionPosition.value)) {
-                                this.CP = captionPosition.value;
-                                i = captionPosition.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /CP property value");
-                            }
-                            break;
-                        case "/LL":
-                        case "/LLE":
-                        case "/LLO":
-                            i = yield this.parseNumberPropAsync(name, parser, i, false);
-                            break;
-                        case "/Cap":
-                            i = yield this.parseBoolPropAsync(name, parser, i);
-                            break;
-                        case "/Measure":
-                            const measureEntryType = yield parser.getValueTypeAtAsync(i);
-                            if (measureEntryType === valueTypes.REF) {
-                                const measureDictId = yield ObjectId.parseRefAsync(parser, i);
-                                if (measureDictId && parseInfo.parseInfoGetterAsync) {
-                                    const measureParseInfo = yield parseInfo.parseInfoGetterAsync(measureDictId.value.id);
-                                    if (measureParseInfo) {
-                                        const measureDict = yield MeasureDict.parseAsync(measureParseInfo);
-                                        if (measureDict) {
-                                            this.Measure = measureDict.value;
-                                            i = measureDict.end + 1;
-                                            break;
-                                        }
-                                    }
-                                }
-                                throw new Error("Can't parse /BS value reference");
-                            }
-                            else if (measureEntryType === valueTypes.DICTIONARY) {
-                                const measureDictBounds = yield parser.getDictBoundsAtAsync(i);
-                                if (measureDictBounds) {
-                                    const measureDict = yield MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    case "/CP":
+                        const captionPosition = await parser.parseNameAtAsync(i, true);
+                        if (captionPosition && Object.values(lineCaptionPositions)
+                            .includes(captionPosition.value)) {
+                            this.CP = captionPosition.value;
+                            i = captionPosition.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /CP property value");
+                        }
+                        break;
+                    case "/LL":
+                    case "/LLE":
+                    case "/LLO":
+                        i = await this.parseNumberPropAsync(name, parser, i, false);
+                        break;
+                    case "/Cap":
+                        i = await this.parseBoolPropAsync(name, parser, i);
+                        break;
+                    case "/Measure":
+                        const measureEntryType = await parser.getValueTypeAtAsync(i);
+                        if (measureEntryType === valueTypes.REF) {
+                            const measureDictId = await ObjectId.parseRefAsync(parser, i);
+                            if (measureDictId && parseInfo.parseInfoGetterAsync) {
+                                const measureParseInfo = await parseInfo.parseInfoGetterAsync(measureDictId.value.id);
+                                if (measureParseInfo) {
+                                    const measureDict = await MeasureDict.parseAsync(measureParseInfo);
                                     if (measureDict) {
                                         this.Measure = measureDict.value;
                                         i = measureDict.end + 1;
                                         break;
                                     }
                                 }
-                                throw new Error("Can't parse /Measure value dictionary");
                             }
-                            throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
+                            throw new Error("Can't parse /BS value reference");
+                        }
+                        else if (measureEntryType === valueTypes.DICTIONARY) {
+                            const measureDictBounds = await parser.getDictBoundsAtAsync(i);
+                            if (measureDictBounds) {
+                                const measureDict = await MeasureDict.parseAsync({ parser, bounds: measureDictBounds });
+                                if (measureDict) {
+                                    this.Measure = measureDict.value;
+                                    i = measureDict.end + 1;
+                                    break;
+                                }
+                            }
+                            throw new Error("Can't parse /Measure value dictionary");
+                        }
+                        throw new Error(`Unsupported /Measure property value type: ${measureEntryType}`);
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
-                else {
-                    break;
+            }
+            else {
+                break;
+            }
+        }
+        if (this.RC) {
+            const domParser = new DOMParser();
+            const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
+            if (body) {
+                const style = body.getAttribute("style");
+                const p = body.querySelector("p");
+                this._rtStyle = style || "";
+                this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
+            }
+        }
+    }
+    async applyCommonTransformAsync(matrix, undoable = true) {
+        const dict = this.getProxy();
+        const [x1, y1, x2, y2] = dict.L;
+        const start = new Vec2(x1, y1).applyMat3(matrix);
+        const end = new Vec2(x2, y2).applyMat3(matrix);
+        dict.L = [start.x, start.y, end.x, end.y];
+        await dict.generateApStreamAsync();
+        dict.M = DateString.fromDate(new Date());
+        if (dict.$onEditAction) {
+            const invertedMat = Mat3.invert(matrix);
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.applyCommonTransformAsync(invertedMat, false);
+                    await dict.updateRenderAsync();
                 }
-            }
-            if (this.RC) {
-                const domParser = new DOMParser();
-                const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
-                if (body) {
-                    const style = body.getAttribute("style");
-                    const p = body.querySelector("p");
-                    this._rtStyle = style || "";
-                    this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
-                }
-            }
-        });
+                : undefined);
+        }
     }
-    applyCommonTransformAsync(matrix, undoable = true) {
-        return __awaiter$v(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            const [x1, y1, x2, y2] = dict.L;
-            const start = new Vec2(x1, y1).applyMat3(matrix);
-            const end = new Vec2(x2, y2).applyMat3(matrix);
-            dict.L = [start.x, start.y, end.x, end.y];
-            yield dict.generateApStreamAsync();
-            dict.M = DateString.fromDate(new Date());
-            if (dict.$onEditAction) {
-                const invertedMat = Mat3.invert(matrix);
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$v(this, void 0, void 0, function* () {
-                        yield dict.applyCommonTransformAsync(invertedMat, false);
-                        yield dict.updateRenderAsync();
-                    })
-                    : undefined);
-            }
-        });
+    async updateStreamAsync() {
+        const dict = this.getProxy();
+        await dict.generateApStreamAsync();
+        await dict.updateRenderAsync();
     }
-    updateStreamAsync() {
-        return __awaiter$v(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            yield dict.generateApStreamAsync();
-            yield dict.updateRenderAsync();
+    async calculateStreamBboxAsync() {
+        const [x1, y1, x2, y2] = this.L;
+        const length = new Vec2(x2 - x1, y2 - y1).getMagnitude();
+        const strokeWidth = this.strokeWidth;
+        const halfStrokeWidth = strokeWidth / 2;
+        const marginMin = this.minMargin;
+        const textMargin = 4 * marginMin;
+        const textMaxWidth = length > textMargin
+            ? length - textMargin
+            : length;
+        const textData = await this.updateTextDataAsync({
+            maxWidth: textMaxWidth,
+            fontSize: 9,
+            strokeWidth,
+            textAlign: "center",
+            pivotPoint: this.CP === lineCaptionPositions.INLINE
+                ? "center"
+                : "bottom-margin",
         });
-    }
-    calculateStreamBboxAsync() {
-        return __awaiter$v(this, void 0, void 0, function* () {
-            const [x1, y1, x2, y2] = this.L;
-            const length = new Vec2(x2 - x1, y2 - y1).getMagnitude();
-            const strokeWidth = this.strokeWidth;
-            const halfStrokeWidth = strokeWidth / 2;
-            const marginMin = this.minMargin;
-            const textMargin = 4 * marginMin;
-            const textMaxWidth = length > textMargin
-                ? length - textMargin
-                : length;
-            const textData = yield this.updateTextDataAsync({
-                maxWidth: textMaxWidth,
-                fontSize: 9,
-                strokeWidth,
-                textAlign: "center",
-                pivotPoint: this.CP === lineCaptionPositions.INLINE
-                    ? "center"
-                    : "bottom-margin",
-            });
-            const marginFront = Math.max(Math.abs(this.LL || 0) + (this.LLO || 0) + halfStrokeWidth, marginMin);
-            const marginBack = Math.max((this.LLE || 0) + halfStrokeWidth, marginMin);
-            const height = marginFront + marginBack;
-            const top = this.LL < 0
-                ? marginMin
-                : height;
-            const bottom = this.LL < 0
-                ? height
-                : marginMin;
-            let xMin = -marginMin;
-            let yMin = -bottom;
-            let xMax = length + marginMin;
-            let yMax = top;
-            if (textData) {
-                const offsetY = this.offsetY;
-                const [textXMin, textYMin, textXMax, textYMax] = textData.relativeRect;
-                xMin = Math.min(xMin, textXMin + length / 2);
-                yMin = Math.min(yMin, textYMin + offsetY);
-                xMax = Math.max(xMax, textXMax + length / 2);
-                yMax = Math.max(yMax, textYMax + offsetY);
-            }
-            const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
-            return bbox;
-        });
+        const marginFront = Math.max(Math.abs(this.LL || 0) + (this.LLO || 0) + halfStrokeWidth, marginMin);
+        const marginBack = Math.max((this.LLE || 0) + halfStrokeWidth, marginMin);
+        const height = marginFront + marginBack;
+        const top = this.LL < 0
+            ? marginMin
+            : height;
+        const bottom = this.LL < 0
+            ? height
+            : marginMin;
+        let xMin = -marginMin;
+        let yMin = -bottom;
+        let xMax = length + marginMin;
+        let yMax = top;
+        if (textData) {
+            const offsetY = this.offsetY;
+            const [textXMin, textYMin, textXMax, textYMax] = textData.relativeRect;
+            xMin = Math.min(xMin, textXMin + length / 2);
+            yMin = Math.min(yMin, textYMin + offsetY);
+            xMax = Math.max(xMax, textXMax + length / 2);
+            yMax = Math.max(yMax, textYMax + offsetY);
+        }
+        const bbox = [new Vec2(xMin, yMin), new Vec2(xMax, yMax)];
+        return bbox;
     }
     calculateStreamMatrix() {
         const [x1, y1, x2, y2] = this.L;
@@ -23813,95 +22767,91 @@ class LineAnnotation extends GeometricAnnotation {
         }
         return lineStream;
     }
-    getTextStreamPartAsync(pivotPoint, font) {
-        return __awaiter$v(this, void 0, void 0, function* () {
-            const textData = this._textData;
-            if (!textData) {
-                return "";
+    async getTextStreamPartAsync(pivotPoint, font) {
+        const textData = this._textData;
+        if (!textData) {
+            return "";
+        }
+        const [xMin, yMin, xMax, yMax] = textData.relativeRect;
+        const bottomLeftLCS = new Vec2(xMin, yMin).add(pivotPoint);
+        const topRightLCS = new Vec2(xMax, yMax).add(pivotPoint);
+        const textBgRectStream = "\nq 1 g 1 G"
+            + `\n${bottomLeftLCS.x} ${bottomLeftLCS.y} m`
+            + `\n${bottomLeftLCS.x} ${topRightLCS.y} l`
+            + `\n${topRightLCS.x} ${topRightLCS.y} l`
+            + `\n${topRightLCS.x} ${bottomLeftLCS.y} l`
+            + "\nf"
+            + "\nQ";
+        let textStream = "\nq 0 g 0 G";
+        const fontSize = 9;
+        for (const line of textData.lines) {
+            if (!line.text) {
+                continue;
             }
-            const [xMin, yMin, xMax, yMax] = textData.relativeRect;
-            const bottomLeftLCS = new Vec2(xMin, yMin).add(pivotPoint);
-            const topRightLCS = new Vec2(xMax, yMax).add(pivotPoint);
-            const textBgRectStream = "\nq 1 g 1 G"
-                + `\n${bottomLeftLCS.x} ${bottomLeftLCS.y} m`
-                + `\n${bottomLeftLCS.x} ${topRightLCS.y} l`
-                + `\n${topRightLCS.x} ${topRightLCS.y} l`
-                + `\n${topRightLCS.x} ${bottomLeftLCS.y} l`
-                + "\nf"
-                + "\nQ";
-            let textStream = "\nq 0 g 0 G";
-            const fontSize = 9;
-            for (const line of textData.lines) {
-                if (!line.text) {
-                    continue;
+            const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(pivotPoint);
+            let lineHex = "";
+            for (const char of line.text) {
+                const code = font.encoding.codeMap.get(char);
+                if (code) {
+                    lineHex += code.toString(16).padStart(2, "0");
                 }
-                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1]).add(pivotPoint);
-                let lineHex = "";
-                for (const char of line.text) {
-                    const code = font.encoding.codeMap.get(char);
-                    if (code) {
-                        lineHex += code.toString(16).padStart(2, "0");
-                    }
-                }
-                textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
-                textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
-                textStream += `\n<${lineHex}> Tj`;
-                textStream += "\nET";
             }
-            textStream += "\nQ";
-            return textBgRectStream + textStream;
-        });
+            textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
+            textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
+            textStream += `\n<${lineHex}> Tj`;
+            textStream += "\nET";
+        }
+        textStream += "\nQ";
+        return textBgRectStream + textStream;
     }
-    generateApStreamAsync() {
+    async generateApStreamAsync() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-        return __awaiter$v(this, void 0, void 0, function* () {
-            if (!this.L) {
-                return;
-            }
-            const bbox = yield this.calculateStreamBboxAsync();
-            const matrix = this.calculateStreamMatrix();
-            this.updateRect(bbox, matrix);
-            const apStream = new XFormStream();
-            apStream.Filter = "/FlateDecode";
-            apStream.LastModified = DateString.fromDate(new Date());
-            apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
-            apStream.Matrix = matrix.toFloatShortArray();
-            apStream.Resources = new ResourceDict();
-            const opacity = this.CA || 1;
-            const strokeWidth = this.strokeWidth;
-            const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
-            const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
-            const gs = new GraphicsStateDict();
-            gs.AIS = true;
-            gs.BM = "/Normal";
-            gs.CA = opacity;
-            gs.ca = opacity;
-            gs.LW = strokeWidth;
-            gs.D = [[strokeDash, strokeGap], 0];
-            gs.LC = lineCapStyles.SQUARE;
-            gs.LJ = lineJoinStyles.MITER;
-            apStream.Resources.setGraphicsState("/GS0", gs);
-            const fontFamily = "arial";
-            const font = (_j = this._fontMap) === null || _j === void 0 ? void 0 : _j.get(fontFamily);
-            if (!font || !((_k = font.encoding) === null || _k === void 0 ? void 0 : _k.codeMap)) {
-                throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
-            }
-            apStream.Resources.setFont(font.name, font);
-            const colorString = this.getColorString();
-            const [apStart, apEnd] = this.getLineEndsStreamCoords(matrix);
-            const lineStreamPart = this.getLineStreamPart(apStart, apEnd);
-            const leftEndingStreamPart = this.getLineEndingStreamPart(apStart, this.LE[0], strokeWidth, "left");
-            const rightEndingStreamPart = this.getLineEndingStreamPart(apEnd, this.LE[1], strokeWidth, "right");
-            const textStreamPart = yield this.getTextStreamPartAsync(Vec2.add(apStart, apEnd).multiplyByScalar(0.5), font);
-            const streamTextData = `q ${colorString} /GS0 gs`
-                + lineStreamPart
-                + leftEndingStreamPart
-                + rightEndingStreamPart
-                + textStreamPart
-                + "\nQ";
-            apStream.setTextStreamData(streamTextData);
-            this.apStream = apStream;
-        });
+        if (!this.L) {
+            return;
+        }
+        const bbox = await this.calculateStreamBboxAsync();
+        const matrix = this.calculateStreamMatrix();
+        this.updateRect(bbox, matrix);
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
+        apStream.Matrix = matrix.toFloatShortArray();
+        apStream.Resources = new ResourceDict();
+        const opacity = this.CA || 1;
+        const strokeWidth = this.strokeWidth;
+        const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+        const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        const fontFamily = "arial";
+        const font = (_j = this._fontMap) === null || _j === void 0 ? void 0 : _j.get(fontFamily);
+        if (!font || !((_k = font.encoding) === null || _k === void 0 ? void 0 : _k.codeMap)) {
+            throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
+        }
+        apStream.Resources.setFont(font.name, font);
+        const colorString = this.getColorString();
+        const [apStart, apEnd] = this.getLineEndsStreamCoords(matrix);
+        const lineStreamPart = this.getLineStreamPart(apStart, apEnd);
+        const leftEndingStreamPart = this.getLineEndingStreamPart(apStart, this.LE[0], strokeWidth, "left");
+        const rightEndingStreamPart = this.getLineEndingStreamPart(apEnd, this.LE[1], strokeWidth, "right");
+        const textStreamPart = await this.getTextStreamPartAsync(Vec2.add(apStart, apEnd).multiplyByScalar(0.5), font);
+        const streamTextData = `q ${colorString} /GS0 gs`
+            + lineStreamPart
+            + leftEndingStreamPart
+            + rightEndingStreamPart
+            + textStreamPart
+            + "\nQ";
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
     }
     renderHandles() {
         return [...this.renderLineEndHandles(), this.renderRotationHandle()];
@@ -23933,15 +22883,6 @@ class LineAnnotation extends GeometricAnnotation {
     }
 }
 
-var __awaiter$u = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextMarkupAnnotation extends MarkupAnnotation {
     constructor(type) {
         super(type);
@@ -23961,55 +22902,41 @@ class TextMarkupAnnotation extends MarkupAnnotation {
         ];
         return new Uint8Array(totalBytes);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$u(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/QuadPoints":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/QuadPoints":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (!this.QuadPoints) {
-                throw new Error("Not all required properties parsed");
+            else {
+                break;
             }
-        });
+        }
+        if (!this.QuadPoints) {
+            throw new Error("Not all required properties parsed");
+        }
     }
     renderHandles() {
         return [];
     }
 }
 
-var __awaiter$t = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class HighlightAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.HIGHLIGHT);
@@ -24055,25 +22982,23 @@ class HighlightAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$t(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new HighlightAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new HighlightAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -24103,13 +23028,8 @@ class HighlightAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$t(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -24166,15 +23086,6 @@ class HighlightAnnotation extends TextMarkupAnnotation {
     }
 }
 
-var __awaiter$s = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class UnderlineAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.UNDERLINE);
@@ -24223,25 +23134,23 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$s(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new UnderlineAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new UnderlineAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -24271,13 +23180,8 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$s(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -24327,15 +23231,6 @@ class UnderlineAnnotation extends TextMarkupAnnotation {
     }
 }
 
-var __awaiter$r = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class StrikeoutAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.STRIKEOUT);
@@ -24381,25 +23276,23 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$r(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new StrikeoutAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new StrikeoutAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -24429,13 +23322,8 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$r(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -24493,15 +23381,6 @@ class StrikeoutAnnotation extends TextMarkupAnnotation {
     }
 }
 
-var __awaiter$q = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class SquigglyAnnotation extends TextMarkupAnnotation {
     constructor() {
         super(annotationTypes.SQUIGGLY);
@@ -24548,25 +23427,23 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
         annotation._added = true;
         return annotation.initProxy();
     }
-    static parseAsync(parseInfo) {
-        return __awaiter$q(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new SquigglyAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new SquigglyAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -24596,13 +23473,8 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
             strokeDashGap: (_l = (_k = this.BS) === null || _k === void 0 ? void 0 : _k.D) !== null && _l !== void 0 ? _l : [3, 0],
         };
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
-        return __awaiter$q(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-        });
+    async parsePropsAsync(parseInfo) {
+        await super.parsePropsAsync(parseInfo);
     }
     generateApStream() {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j;
@@ -24659,15 +23531,6 @@ class SquigglyAnnotation extends TextMarkupAnnotation {
 }
 SquigglyAnnotation.squiggleSize = 6;
 
-var __awaiter$p = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class FreeTextAnnotation extends MarkupAnnotation {
     get pointsStreamCS() {
         const stroke = this.strokeWidth;
@@ -24915,72 +23778,68 @@ class FreeTextAnnotation extends MarkupAnnotation {
             }
         };
     }
-    static createFromDtoAsync(dto, fontMap) {
-        return __awaiter$p(this, void 0, void 0, function* () {
-            if (dto.annotationType !== "/FreeText") {
-                throw new Error("Invalid annotation type");
-            }
-            const bs = new BorderStyleDict();
-            bs.W = dto.strokeWidth;
-            if (dto.strokeDashGap) {
-                bs.D = dto.strokeDashGap;
-            }
-            const annotation = new FreeTextAnnotation();
-            annotation.$name = dto.uuid;
-            annotation.NM = LiteralString.fromString(dto.uuid);
-            annotation.T = LiteralString.fromString(dto.author);
-            annotation.M = DateString.fromDate(new Date(dto.dateModified));
-            annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
-            annotation.Contents = dto.textContent
-                ? LiteralString.fromString(dto.textContent)
-                : null;
-            annotation.Rect = dto.rect;
-            annotation.C = dto.color.slice(0, 3);
-            annotation.CA = dto.color[3];
-            annotation.BS = bs;
-            annotation.IT = dto.intent || freeTextIntents.PLAIN_TEXT;
-            annotation.LE = dto.calloutEndingType || lineEndingTypes.NONE;
-            annotation.Q = dto.justification || justificationTypes.LEFT;
-            annotation._fontMap = fontMap;
-            const { bl, tr, br, tl, l, t, r, b, cob, cok, cop } = dto.points;
-            const points = {
-                bl: new Vec2(bl[0], bl[1]),
-                tr: new Vec2(tr[0], tr[1]),
-                br: new Vec2(br[0], br[1]),
-                tl: new Vec2(tl[0], tl[1]),
-                l: new Vec2(l[0], l[1]),
-                t: new Vec2(t[0], t[1]),
-                r: new Vec2(r[0], r[1]),
-                b: new Vec2(b[0], b[1]),
-                cob: cob ? new Vec2(cob[0], cob[1]) : null,
-                cok: cok ? new Vec2(cok[0], cok[1]) : null,
-                cop: cop ? new Vec2(cop[0], cop[1]) : null,
-            };
-            yield annotation.generateApStreamAsync(points);
-            annotation._added = true;
-            return annotation.initProxy();
-        });
+    static async createFromDtoAsync(dto, fontMap) {
+        if (dto.annotationType !== "/FreeText") {
+            throw new Error("Invalid annotation type");
+        }
+        const bs = new BorderStyleDict();
+        bs.W = dto.strokeWidth;
+        if (dto.strokeDashGap) {
+            bs.D = dto.strokeDashGap;
+        }
+        const annotation = new FreeTextAnnotation();
+        annotation.$name = dto.uuid;
+        annotation.NM = LiteralString.fromString(dto.uuid);
+        annotation.T = LiteralString.fromString(dto.author);
+        annotation.M = DateString.fromDate(new Date(dto.dateModified));
+        annotation.CreationDate = DateString.fromDate(new Date(dto.dateCreated));
+        annotation.Contents = dto.textContent
+            ? LiteralString.fromString(dto.textContent)
+            : null;
+        annotation.Rect = dto.rect;
+        annotation.C = dto.color.slice(0, 3);
+        annotation.CA = dto.color[3];
+        annotation.BS = bs;
+        annotation.IT = dto.intent || freeTextIntents.PLAIN_TEXT;
+        annotation.LE = dto.calloutEndingType || lineEndingTypes.NONE;
+        annotation.Q = dto.justification || justificationTypes.LEFT;
+        annotation._fontMap = fontMap;
+        const { bl, tr, br, tl, l, t, r, b, cob, cok, cop } = dto.points;
+        const points = {
+            bl: new Vec2(bl[0], bl[1]),
+            tr: new Vec2(tr[0], tr[1]),
+            br: new Vec2(br[0], br[1]),
+            tl: new Vec2(tl[0], tl[1]),
+            l: new Vec2(l[0], l[1]),
+            t: new Vec2(t[0], t[1]),
+            r: new Vec2(r[0], r[1]),
+            b: new Vec2(b[0], b[1]),
+            cob: cob ? new Vec2(cob[0], cob[1]) : null,
+            cok: cok ? new Vec2(cok[0], cok[1]) : null,
+            cop: cop ? new Vec2(cop[0], cop[1]) : null,
+        };
+        await annotation.generateApStreamAsync(points);
+        annotation._added = true;
+        return annotation.initProxy();
     }
-    static parseAsync(parseInfo, fontMap) {
-        return __awaiter$p(this, void 0, void 0, function* () {
-            if (!parseInfo) {
-                throw new Error("Parsing information not passed");
-            }
-            try {
-                const pdfObject = new FreeTextAnnotation();
-                yield pdfObject.parsePropsAsync(parseInfo);
-                pdfObject._fontMap = fontMap;
-                return {
-                    value: pdfObject.initProxy(),
-                    start: parseInfo.bounds.start,
-                    end: parseInfo.bounds.end,
-                };
-            }
-            catch (e) {
-                console.log(e.message);
-                return null;
-            }
-        });
+    static async parseAsync(parseInfo, fontMap) {
+        if (!parseInfo) {
+            throw new Error("Parsing information not passed");
+        }
+        try {
+            const pdfObject = new FreeTextAnnotation();
+            await pdfObject.parsePropsAsync(parseInfo);
+            pdfObject._fontMap = fontMap;
+            return {
+                value: pdfObject.initProxy(),
+                start: parseInfo.bounds.start,
+                end: parseInfo.bounds.end,
+            };
+        }
+        catch (e) {
+            console.log(e.message);
+            return null;
+        }
     }
     toArray(cryptInfo) {
         const superBytes = super.toArray(cryptInfo);
@@ -25058,109 +23917,99 @@ class FreeTextAnnotation extends MarkupAnnotation {
             calloutEndingType: this.LE,
         };
     }
-    setTextContentAsync(text, undoable = true) {
-        const _super = Object.create(null, {
-            setTextContentAsync: { get: () => super.setTextContentAsync }
-        });
-        return __awaiter$p(this, void 0, void 0, function* () {
-            yield _super.setTextContentAsync.call(this, text, undoable);
-            yield this.updateStreamAsync(null);
-        });
+    async setTextContentAsync(text, undoable = true) {
+        await super.setTextContentAsync(text, undoable);
+        await this.updateStreamAsync(null);
     }
-    parsePropsAsync(parseInfo) {
-        const _super = Object.create(null, {
-            parsePropsAsync: { get: () => super.parsePropsAsync }
-        });
+    async parsePropsAsync(parseInfo) {
         var _a;
-        return __awaiter$p(this, void 0, void 0, function* () {
-            yield _super.parsePropsAsync.call(this, parseInfo);
-            const { parser, bounds } = parseInfo;
-            const start = bounds.contentStart || bounds.start;
-            const end = bounds.contentEnd || bounds.end;
-            let i = yield parser.skipToNextNameAsync(start, end - 1);
-            let name;
-            let parseResult;
-            while (true) {
-                parseResult = yield parser.parseNameAtAsync(i);
-                if (parseResult) {
-                    i = parseResult.end + 1;
-                    name = parseResult.value;
-                    switch (name) {
-                        case "/DA":
-                        case "/DS":
-                        case "/RC":
-                            i = yield this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
-                            break;
-                        case "/Q":
-                            const justification = yield parser.parseNumberAtAsync(i, true);
-                            if (justification && Object.values(justificationTypes)
-                                .includes(justification.value)) {
-                                this.Q = justification.value;
-                                i = justification.end + 1;
+        await super.parsePropsAsync(parseInfo);
+        const { parser, bounds } = parseInfo;
+        const start = bounds.contentStart || bounds.start;
+        const end = bounds.contentEnd || bounds.end;
+        let i = await parser.skipToNextNameAsync(start, end - 1);
+        let name;
+        let parseResult;
+        while (true) {
+            parseResult = await parser.parseNameAtAsync(i);
+            if (parseResult) {
+                i = parseResult.end + 1;
+                name = parseResult.value;
+                switch (name) {
+                    case "/DA":
+                    case "/DS":
+                    case "/RC":
+                        i = await this.parseLiteralPropAsync(name, parser, i, parseInfo.cryptInfo);
+                        break;
+                    case "/Q":
+                        const justification = await parser.parseNumberAtAsync(i, true);
+                        if (justification && Object.values(justificationTypes)
+                            .includes(justification.value)) {
+                            this.Q = justification.value;
+                            i = justification.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /Q property value");
+                        }
+                        break;
+                    case "/LE":
+                        const lineEndingType = await parser.parseNameAtAsync(i, true);
+                        if (lineEndingType && Object.values(lineEndingTypes)
+                            .includes(lineEndingType.value)) {
+                            this.LE = lineEndingType.value;
+                            i = lineEndingType.end + 1;
+                        }
+                        else {
+                            throw new Error("Can't parse /LE property value");
+                        }
+                        break;
+                    case "/CL":
+                    case "/RD":
+                        i = await this.parseNumberArrayPropAsync(name, parser, i, true);
+                        break;
+                    case "/IT":
+                        const intent = await parser.parseNameAtAsync(i, true);
+                        if (intent) {
+                            if (intent.value === "/FreeTextTypewriter") {
+                                this.IT = freeTextIntents.CLICK_TO_TYPE;
+                                i = intent.end + 1;
+                                break;
                             }
-                            else {
-                                throw new Error("Can't parse /Q property value");
+                            else if (Object.values(freeTextIntents).includes(intent.value)) {
+                                this.IT = intent.value;
+                                i = intent.end + 1;
+                                break;
                             }
-                            break;
-                        case "/LE":
-                            const lineEndingType = yield parser.parseNameAtAsync(i, true);
-                            if (lineEndingType && Object.values(lineEndingTypes)
-                                .includes(lineEndingType.value)) {
-                                this.LE = lineEndingType.value;
-                                i = lineEndingType.end + 1;
-                            }
-                            else {
-                                throw new Error("Can't parse /LE property value");
-                            }
-                            break;
-                        case "/CL":
-                        case "/RD":
-                            i = yield this.parseNumberArrayPropAsync(name, parser, i, true);
-                            break;
-                        case "/IT":
-                            const intent = yield parser.parseNameAtAsync(i, true);
-                            if (intent) {
-                                if (intent.value === "/FreeTextTypewriter") {
-                                    this.IT = freeTextIntents.CLICK_TO_TYPE;
-                                    i = intent.end + 1;
-                                    break;
-                                }
-                                else if (Object.values(freeTextIntents).includes(intent.value)) {
-                                    this.IT = intent.value;
-                                    i = intent.end + 1;
-                                    break;
-                                }
-                            }
-                            throw new Error("Can't parse /IT property value");
-                        default:
-                            i = yield parser.skipToNextNameAsync(i, end - 1);
-                            break;
-                    }
-                }
-                else {
-                    break;
+                        }
+                        throw new Error("Can't parse /IT property value");
+                    default:
+                        i = await parser.skipToNextNameAsync(i, end - 1);
+                        break;
                 }
             }
-            if (this.DS) {
-                this._defaultStyle = this.DS.literal;
+            else {
+                break;
             }
-            if (this.RC) {
-                const domParser = new DOMParser();
-                const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
-                if (body) {
-                    const style = body.getAttribute("style");
-                    const p = body.querySelector("p");
-                    this._rtStyle = style || "";
-                    this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
-                }
+        }
+        if (this.DS) {
+            this._defaultStyle = this.DS.literal;
+        }
+        if (this.RC) {
+            const domParser = new DOMParser();
+            const body = (_a = domParser.parseFromString(this.RC.literal, "text/xml")) === null || _a === void 0 ? void 0 : _a.querySelector("body");
+            if (body) {
+                const style = body.getAttribute("style");
+                const p = body.querySelector("p");
+                this._rtStyle = style || "";
+                this._rtText = (p === null || p === void 0 ? void 0 : p.textContent) || "";
             }
-            if (!this.DA) {
-                throw new Error("Not all required properties parsed");
-            }
-            if (!this.C || (this.C[0] === 1 && this.C[1] === 1 && this.C[2] === 1)) {
-                this.C = [1, 0, 0];
-            }
-        });
+        }
+        if (!this.DA && !this.AP) {
+            throw new Error("Not all required properties parsed");
+        }
+        if (!this.C || (this.C[0] === 1 && this.C[1] === 1 && this.C[2] === 1)) {
+            this.C = [1, 0, 0];
+        }
     }
     calculateStreamMatrix(tbTopLeftPage, tbTopRightPage) {
         const length = Vec2.subtract(tbTopRightPage, tbTopLeftPage).getMagnitude();
@@ -25270,125 +24119,119 @@ class FreeTextAnnotation extends MarkupAnnotation {
         }
         return calloutStream;
     }
-    getTextStreamPartAsync(sPoints, font) {
-        return __awaiter$p(this, void 0, void 0, function* () {
-            const w = this.strokeWidth;
-            const textMaxWidth = sPoints.br.x - sPoints.bl.x - 2 * w;
-            if (textMaxWidth <= 0) {
-                return "";
-            }
-            const fontSize = 12;
-            let textAlign;
-            if (this.Q) {
-                textAlign = this.Q === justificationTypes.CENTER
-                    ? "center"
-                    : "right";
-            }
-            else {
-                textAlign = "left";
-            }
-            const textData = yield this.updateTextDataAsync({
-                maxWidth: textMaxWidth,
-                fontSize,
-                strokeWidth: w,
-                textAlign: textAlign,
-                pivotPoint: "top-left",
-            });
-            if (!textData) {
-                return "";
-            }
-            let textStream = "\nq 0 g 0 G";
-            const codeMap = font.encoding.codeMap;
-            for (const line of textData.lines) {
-                if (!line.text) {
-                    continue;
-                }
-                const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1])
-                    .add(sPoints.tl)
-                    .add(new Vec2(w, -w))
-                    .truncate();
-                let lineHex = "";
-                for (const char of line.text) {
-                    const code = codeMap.get(char);
-                    if (code) {
-                        lineHex += code.toString(16).padStart(2, "0");
-                    }
-                }
-                textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
-                textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
-                textStream += `\n<${lineHex}> Tj`;
-                textStream += "\nET";
-            }
-            textStream += "\nQ";
-            return textStream;
+    async getTextStreamPartAsync(sPoints, font) {
+        const w = this.strokeWidth;
+        const textMaxWidth = sPoints.br.x - sPoints.bl.x - 2 * w;
+        if (textMaxWidth <= 0) {
+            return "";
+        }
+        const fontSize = 12;
+        let textAlign;
+        if (this.Q) {
+            textAlign = this.Q === justificationTypes.CENTER
+                ? "center"
+                : "right";
+        }
+        else {
+            textAlign = "left";
+        }
+        const textData = await this.updateTextDataAsync({
+            maxWidth: textMaxWidth,
+            fontSize,
+            strokeWidth: w,
+            textAlign: textAlign,
+            pivotPoint: "top-left",
         });
+        if (!textData) {
+            return "";
+        }
+        let textStream = "\nq 0 g 0 G";
+        const codeMap = font.encoding.codeMap;
+        for (const line of textData.lines) {
+            if (!line.text) {
+                continue;
+            }
+            const lineStart = new Vec2(line.relativeRect[0], line.relativeRect[1])
+                .add(sPoints.tl)
+                .add(new Vec2(w, -w))
+                .truncate();
+            let lineHex = "";
+            for (const char of line.text) {
+                const code = codeMap.get(char);
+                if (code) {
+                    lineHex += code.toString(16).padStart(2, "0");
+                }
+            }
+            textStream += `\nBT 0 Tc 0 Tw 100 Tz ${font.name} ${fontSize} Tf 0 Tr`;
+            textStream += `\n1 0 0 1 ${lineStart.x} ${lineStart.y + fontSize * 0.2} Tm`;
+            textStream += `\n<${lineHex}> Tj`;
+            textStream += "\nET";
+        }
+        textStream += "\nQ";
+        return textStream;
     }
-    generateApStreamAsync(pPoints) {
+    async generateApStreamAsync(pPoints) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
-        return __awaiter$p(this, void 0, void 0, function* () {
-            if (!pPoints) {
-                throw new Error("No key annotation point coordinates passed");
-            }
-            const matrix = this.calculateStreamMatrix(pPoints.tl, pPoints.tr);
-            const { bbox, points: sPoints } = this.calculateStreamBbox(pPoints, matrix);
-            this.updateAnnotCoords(sPoints, matrix, bbox);
-            const apStream = new XFormStream();
-            apStream.Filter = "/FlateDecode";
-            apStream.LastModified = DateString.fromDate(new Date());
-            apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
-            apStream.Matrix = matrix.toFloatShortArray();
-            apStream.Resources = new ResourceDict();
-            const opacity = this.CA || 1;
-            const strokeWidth = this.strokeWidth;
-            const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
-            const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
-            const gs = new GraphicsStateDict();
-            gs.AIS = true;
-            gs.BM = "/Normal";
-            gs.CA = opacity;
-            gs.ca = opacity;
-            gs.LW = strokeWidth;
-            gs.D = [[strokeDash, strokeGap], 0];
-            gs.LC = lineCapStyles.SQUARE;
-            gs.LJ = lineJoinStyles.MITER;
-            apStream.Resources.setGraphicsState("/GS0", gs);
-            const fontFamily = "arial";
-            const font = (_j = this._fontMap) === null || _j === void 0 ? void 0 : _j.get(fontFamily);
-            if (!font || !((_k = font.encoding) === null || _k === void 0 ? void 0 : _k.codeMap)) {
-                throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
-            }
-            apStream.Resources.setFont(font.name, font);
-            const colorString = this.getColorString();
-            const calloutStreamPart = this.getCalloutStreamPart(sPoints);
-            const textBoxStreamPart = `\n${sPoints.bl.x} ${sPoints.bl.y} m`
-                + `\n${sPoints.br.x} ${sPoints.br.y} l`
-                + `\n${sPoints.tr.x} ${sPoints.tr.y} l`
-                + `\n${sPoints.tl.x} ${sPoints.tl.y} l`
-                + "\nb";
-            const textStreamPart = yield this.getTextStreamPartAsync(sPoints, font);
-            const streamTextData = `q ${colorString} /GS0 gs`
-                + calloutStreamPart
-                + textBoxStreamPart
-                + textStreamPart
-                + "\nQ";
-            apStream.setTextStreamData(streamTextData);
-            this.apStream = apStream;
-        });
+        if (!pPoints) {
+            throw new Error("No key annotation point coordinates passed");
+        }
+        const matrix = this.calculateStreamMatrix(pPoints.tl, pPoints.tr);
+        const { bbox, points: sPoints } = this.calculateStreamBbox(pPoints, matrix);
+        this.updateAnnotCoords(sPoints, matrix, bbox);
+        const apStream = new XFormStream();
+        apStream.Filter = "/FlateDecode";
+        apStream.LastModified = DateString.fromDate(new Date());
+        apStream.BBox = [bbox[0].x, bbox[0].y, bbox[1].x, bbox[1].y];
+        apStream.Matrix = matrix.toFloatShortArray();
+        apStream.Resources = new ResourceDict();
+        const opacity = this.CA || 1;
+        const strokeWidth = this.strokeWidth;
+        const strokeDash = (_d = (_b = (_a = this.BS) === null || _a === void 0 ? void 0 : _a.D[0]) !== null && _b !== void 0 ? _b : (_c = this.Border) === null || _c === void 0 ? void 0 : _c.dash) !== null && _d !== void 0 ? _d : 3;
+        const strokeGap = (_h = (_f = (_e = this.BS) === null || _e === void 0 ? void 0 : _e.D[1]) !== null && _f !== void 0 ? _f : (_g = this.Border) === null || _g === void 0 ? void 0 : _g.gap) !== null && _h !== void 0 ? _h : 0;
+        const gs = new GraphicsStateDict();
+        gs.AIS = true;
+        gs.BM = "/Normal";
+        gs.CA = opacity;
+        gs.ca = opacity;
+        gs.LW = strokeWidth;
+        gs.D = [[strokeDash, strokeGap], 0];
+        gs.LC = lineCapStyles.SQUARE;
+        gs.LJ = lineJoinStyles.MITER;
+        apStream.Resources.setGraphicsState("/GS0", gs);
+        const fontFamily = "arial";
+        const font = (_j = this._fontMap) === null || _j === void 0 ? void 0 : _j.get(fontFamily);
+        if (!font || !((_k = font.encoding) === null || _k === void 0 ? void 0 : _k.codeMap)) {
+            throw new Error(`Suitable font is not found in the font map: '${fontFamily}'`);
+        }
+        apStream.Resources.setFont(font.name, font);
+        const colorString = this.getColorString();
+        const calloutStreamPart = this.getCalloutStreamPart(sPoints);
+        const textBoxStreamPart = `\n${sPoints.bl.x} ${sPoints.bl.y} m`
+            + `\n${sPoints.br.x} ${sPoints.br.y} l`
+            + `\n${sPoints.tr.x} ${sPoints.tr.y} l`
+            + `\n${sPoints.tl.x} ${sPoints.tl.y} l`
+            + "\nb";
+        const textStreamPart = await this.getTextStreamPartAsync(sPoints, font);
+        const streamTextData = `q ${colorString} /GS0 gs`
+            + calloutStreamPart
+            + textBoxStreamPart
+            + textStreamPart
+            + "\nQ";
+        apStream.setTextStreamData(streamTextData);
+        this.apStream = apStream;
     }
-    updateStreamAsync(points, undoable = true) {
-        return __awaiter$p(this, void 0, void 0, function* () {
-            const dict = this.getProxy();
-            const oldPoints = dict.pointsPageCS;
-            yield dict.generateApStreamAsync(points || oldPoints);
-            yield dict.updateRenderAsync();
-            if (points && dict.$onEditAction) {
-                dict.$onEditAction(undoable
-                    ? () => __awaiter$p(this, void 0, void 0, function* () {
-                        yield dict.updateStreamAsync(oldPoints, false);
-                    })
-                    : undefined);
-            }
-        });
+    async updateStreamAsync(points, undoable = true) {
+        const dict = this.getProxy();
+        const oldPoints = dict.pointsPageCS;
+        await dict.generateApStreamAsync(points || oldPoints);
+        await dict.updateRenderAsync();
+        if (points && dict.$onEditAction) {
+            dict.$onEditAction(undoable
+                ? async () => {
+                    await dict.updateStreamAsync(oldPoints, false);
+                }
+                : undefined);
+        }
     }
     renderHandles() {
         const points = this.pointsPageCS;
@@ -25469,121 +24312,102 @@ class FreeTextAnnotation extends MarkupAnnotation {
     }
 }
 
-var __awaiter$o = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class AnnotationParser {
-    static ParseAnnotationFromInfoAsync(info, fontMap) {
-        return __awaiter$o(this, void 0, void 0, function* () {
-            const annotationType = yield info.parser.parseDictSubtypeAsync(info.bounds);
-            let annot;
-            switch (annotationType) {
-                case annotationTypes.STAMP:
-                    annot = yield StampAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.TEXT:
-                    annot = yield TextAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.INK:
-                    annot = yield InkAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.SQUARE:
-                    annot = yield SquareAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.CIRCLE:
-                    annot = yield CircleAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.POLYGON:
-                    annot = yield PolygonAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.POLYLINE:
-                    annot = yield PolylineAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.LINE:
-                    annot = yield LineAnnotation.parseAsync(info, fontMap);
-                    break;
-                case annotationTypes.HIGHLIGHT:
-                    annot = yield HighlightAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.SQUIGGLY:
-                    annot = yield SquigglyAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.STRIKEOUT:
-                    annot = yield StrikeoutAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.UNDERLINE:
-                    annot = yield UnderlineAnnotation.parseAsync(info);
-                    break;
-                case annotationTypes.FREE_TEXT:
-                    annot = yield FreeTextAnnotation.parseAsync(info, fontMap);
-                    break;
-            }
-            return annot === null || annot === void 0 ? void 0 : annot.value;
-        });
+    static async ParseAnnotationFromInfoAsync(info, fontMap) {
+        const annotationType = await info.parser.parseDictSubtypeAsync(info.bounds);
+        let annot;
+        switch (annotationType) {
+            case annotationTypes.STAMP:
+                annot = await StampAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.TEXT:
+                annot = await TextAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.INK:
+                annot = await InkAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.SQUARE:
+                annot = await SquareAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.CIRCLE:
+                annot = await CircleAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.POLYGON:
+                annot = await PolygonAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.POLYLINE:
+                annot = await PolylineAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.LINE:
+                annot = await LineAnnotation.parseAsync(info, fontMap);
+                break;
+            case annotationTypes.HIGHLIGHT:
+                annot = await HighlightAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.SQUIGGLY:
+                annot = await SquigglyAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.STRIKEOUT:
+                annot = await StrikeoutAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.UNDERLINE:
+                annot = await UnderlineAnnotation.parseAsync(info);
+                break;
+            case annotationTypes.FREE_TEXT:
+                annot = await FreeTextAnnotation.parseAsync(info, fontMap);
+                break;
+        }
+        return annot === null || annot === void 0 ? void 0 : annot.value;
     }
-    static ParseAnnotationFromDtoAsync(dto, fontMap) {
-        return __awaiter$o(this, void 0, void 0, function* () {
-            let annotation;
-            switch (dto.annotationType) {
-                case "/Stamp":
-                    annotation = StampAnnotation.createFromDto(dto);
-                    break;
-                case "/Text":
-                    annotation = TextAnnotation.createFromDto(dto);
-                    break;
-                case "/Ink":
-                    annotation = InkAnnotation.createFromDto(dto);
-                    break;
-                case "/Square":
-                    annotation = SquareAnnotation.createFromDto(dto);
-                    break;
-                case "/Circle":
-                    annotation = CircleAnnotation.createFromDto(dto);
-                    break;
-                case "/Polygon":
-                    annotation = PolygonAnnotation.createFromDto(dto);
-                    break;
-                case "/Polyline":
-                    annotation = PolylineAnnotation.createFromDto(dto);
-                    break;
-                case "/Line":
-                    annotation = yield LineAnnotation.createFromDtoAsync(dto, fontMap);
-                    break;
-                case "/Highlight":
-                    annotation = HighlightAnnotation.createFromDto(dto);
-                    break;
-                case "/Squiggly":
-                    annotation = SquigglyAnnotation.createFromDto(dto);
-                    break;
-                case "/Strikeout":
-                    annotation = StrikeoutAnnotation.createFromDto(dto);
-                    break;
-                case "/Underline":
-                    annotation = UnderlineAnnotation.createFromDto(dto);
-                    break;
-                default:
-                    throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
-            }
-            return annotation;
-        });
+    static async ParseAnnotationFromDtoAsync(dto, fontMap) {
+        let annotation;
+        switch (dto.annotationType) {
+            case "/Stamp":
+                annotation = StampAnnotation.createFromDto(dto);
+                break;
+            case "/Text":
+                annotation = TextAnnotation.createFromDto(dto);
+                break;
+            case "/Ink":
+                annotation = InkAnnotation.createFromDto(dto);
+                break;
+            case "/Square":
+                annotation = SquareAnnotation.createFromDto(dto);
+                break;
+            case "/Circle":
+                annotation = CircleAnnotation.createFromDto(dto);
+                break;
+            case "/Polygon":
+                annotation = PolygonAnnotation.createFromDto(dto);
+                break;
+            case "/Polyline":
+                annotation = PolylineAnnotation.createFromDto(dto);
+                break;
+            case "/Line":
+                annotation = await LineAnnotation.createFromDtoAsync(dto, fontMap);
+                break;
+            case "/Highlight":
+                annotation = HighlightAnnotation.createFromDto(dto);
+                break;
+            case "/Squiggly":
+                annotation = SquigglyAnnotation.createFromDto(dto);
+                break;
+            case "/Strikeout":
+                annotation = StrikeoutAnnotation.createFromDto(dto);
+                break;
+            case "/Underline":
+                annotation = UnderlineAnnotation.createFromDto(dto);
+                break;
+            case "/FreeText":
+                annotation = await FreeTextAnnotation.createFromDtoAsync(dto, fontMap);
+                break;
+            default:
+                throw new Error(`Unsupported annotation type: ${dto.annotationType}`);
+        }
+        return annotation;
     }
 }
 
-var __awaiter$n = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const annotSelectionRequestEvent = "tspdf-annotselectionrequest";
 const annotFocusRequestEvent = "tspdf-annotfocusrequest";
 const annotChangeEvent = "tspdf-annotchange";
@@ -25643,7 +24467,7 @@ class DocumentService {
         this._pageById = new Map();
         this._annotIdsByPageId = new Map();
         this._lastCommands = [];
-        this.getObjectParseInfoAsync = (id) => __awaiter$n(this, void 0, void 0, function* () {
+        this.getObjectParseInfoAsync = async (id) => {
             var _a, _b, _c;
             if (!id) {
                 return null;
@@ -25652,11 +24476,11 @@ class DocumentService {
             if (isNaN(offset)) {
                 return null;
             }
-            const objectId = yield ObjectId.parseAsync(this._docParser, offset);
+            const objectId = await ObjectId.parseAsync(this._docParser, offset);
             if (!objectId) {
                 return null;
             }
-            const bounds = yield this._docParser.getIndirectObjectBoundsAtAsync(objectId.end + 1, true);
+            const bounds = await this._docParser.getIndirectObjectBoundsAtAsync(objectId.end + 1, true);
             if (!bounds) {
                 return null;
             }
@@ -25674,17 +24498,17 @@ class DocumentService {
             if (objectId.value.id === id) {
                 return info;
             }
-            const stream = yield ObjectStream.parseAsync(info);
+            const stream = await ObjectStream.parseAsync(info);
             if (!stream) {
                 return;
             }
-            const objectParseInfo = yield stream.value.getObjectDataAsync(id);
+            const objectParseInfo = await stream.value.getObjectDataAsync(id);
             if (objectParseInfo) {
                 objectParseInfo.parseInfoGetterAsync = parseInfoGetterAsync;
                 return objectParseInfo;
             }
             return null;
-        });
+        };
         this.onAnnotationSelectionRequest = (e) => {
             var _a;
             if ((_a = e.detail) === null || _a === void 0 ? void 0 : _a.annotation) {
@@ -25714,12 +24538,10 @@ class DocumentService {
         this._eventService.addListener(annotFocusRequestEvent, this.onAnnotationFocusRequest);
         this._initPromise = this.initAsync();
     }
-    static createNewAsync(eventService, data, userName) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const service = new DocumentService(eventService, data, userName);
-            yield service._initPromise;
-            return service;
-        });
+    static async createNewAsync(eventService, data, userName) {
+        const service = new DocumentService(eventService, data, userName);
+        await service._initPromise;
+        return service;
     }
     destroy() {
         this._initPromise.then(() => {
@@ -25745,88 +24567,74 @@ class DocumentService {
     getPlainData() {
         return this._data.slice();
     }
-    undoAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            yield this.undoCommandAsync();
-        });
+    async undoAsync() {
+        await this.undoCommandAsync();
     }
-    getDataWithoutSupportedAnnotationsAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
-            const annotationMarkedToDelete = [];
-            if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
-                annotationMap.forEach((v, k) => {
-                    const annotations = v.slice();
-                    annotations.forEach(x => {
-                        if (!x.deleted) {
-                            x.markAsDeleted(true);
-                            annotationMarkedToDelete.push(x);
-                        }
-                    });
-                });
-            }
-            const refined = yield this.getDataWithUpdatedAnnotationsAsync();
-            annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
-            return refined;
-        });
-    }
-    getDataWithUpdatedAnnotationsAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
-            const updaterData = [];
-            annotationMap.forEach((pageAnnotations, pageId) => {
-                const page = this._pageById.get(pageId);
-                if (page) {
-                    const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
-                    updaterData.push({
-                        page,
-                        allAnnotationIds,
-                        supportedAnnotations: pageAnnotations || [],
-                    });
-                }
-                else {
-                    console.log(`Page with id '${pageId}' not found`);
-                }
-            });
-            const updater = new DataUpdater(this._data, this._xrefs[0], this._referenceData, this._authResult);
-            const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
-            return updatedBytes;
-        });
-    }
-    getPageAnnotationsAsync(pageId) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
-            const annotations = annotationMap.get(pageId);
-            return annotations || [];
-        });
-    }
-    serializeAnnotationsAsync(addedOnly = false) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const result = [];
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
+    async getDataWithoutSupportedAnnotationsAsync() {
+        const annotationMap = await this.getSupportedAnnotationMapAsync();
+        const annotationMarkedToDelete = [];
+        if (annotationMap === null || annotationMap === void 0 ? void 0 : annotationMap.size) {
             annotationMap.forEach((v, k) => {
-                v.forEach(x => {
-                    if (!addedOnly || x.added) {
-                        result.push(x.toDto());
+                const annotations = v.slice();
+                annotations.forEach(x => {
+                    if (!x.deleted) {
+                        x.markAsDeleted(true);
+                        annotationMarkedToDelete.push(x);
                     }
                 });
             });
-            return result;
-        });
+        }
+        const refined = await this.getDataWithUpdatedAnnotationsAsync();
+        annotationMarkedToDelete.forEach(x => x.markAsDeleted(false));
+        return refined;
     }
-    appendAnnotationToPageAsync(pageId, annotation) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            yield this.appendAnnotationAsync(pageId, annotation, true, "add");
-        });
-    }
-    appendSerializedAnnotationsAsync(dtos) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            let annotation;
-            for (const dto of dtos) {
-                annotation = yield AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
-                yield this.appendAnnotationAsync(dto.pageId, annotation, false, "import");
+    async getDataWithUpdatedAnnotationsAsync() {
+        const annotationMap = await this.getSupportedAnnotationMapAsync();
+        const updaterData = [];
+        annotationMap.forEach((pageAnnotations, pageId) => {
+            const page = this._pageById.get(pageId);
+            if (page) {
+                const allAnnotationIds = this._annotIdsByPageId.get(pageId).slice() || [];
+                updaterData.push({
+                    page,
+                    allAnnotationIds,
+                    supportedAnnotations: pageAnnotations || [],
+                });
+            }
+            else {
+                console.log(`Page with id '${pageId}' not found`);
             }
         });
+        const updater = new DataUpdater(this._data, this._xrefs[0], this._referenceData, this._authResult);
+        const updatedBytes = updater.getDataWithUpdatedAnnotations(updaterData);
+        return updatedBytes;
+    }
+    async getPageAnnotationsAsync(pageId) {
+        const annotationMap = await this.getSupportedAnnotationMapAsync();
+        const annotations = annotationMap.get(pageId);
+        return annotations || [];
+    }
+    async serializeAnnotationsAsync(addedOnly = false) {
+        const result = [];
+        const annotationMap = await this.getSupportedAnnotationMapAsync();
+        annotationMap.forEach((v, k) => {
+            v.forEach(x => {
+                if (!addedOnly || x.added) {
+                    result.push(x.toDto());
+                }
+            });
+        });
+        return result;
+    }
+    async appendAnnotationToPageAsync(pageId, annotation) {
+        await this.appendAnnotationAsync(pageId, annotation, true, "add");
+    }
+    async appendSerializedAnnotationsAsync(dtos) {
+        let annotation;
+        for (const dto of dtos) {
+            annotation = await AnnotationParser.ParseAnnotationFromDtoAsync(dto, this._fontMap);
+            await this.appendAnnotationAsync(dto.pageId, annotation, false, "import");
+        }
     }
     removeAnnotationFromPage(annotation) {
         this.removeAnnotation(annotation, true);
@@ -25895,99 +24703,89 @@ class DocumentService {
         var _a, _b;
         return (_b = (_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
     }
-    setSelectedAnnotationTextContentAsync(text) {
+    async setSelectedAnnotationTextContentAsync(text) {
         var _a;
-        return __awaiter$n(this, void 0, void 0, function* () {
-            yield ((_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
-        });
+        await ((_a = this._selectedAnnotation) === null || _a === void 0 ? void 0 : _a.setTextContentAsync(text));
     }
-    parseXrefsAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const xrefParser = new XrefParser(this._docParser);
-            this._version = yield xrefParser.getPdfVersionAsync();
-            if (!this._version) {
-                throw new Error("Error parsing PDF version number");
+    async parseXrefsAsync() {
+        const xrefParser = new XrefParser(this._docParser);
+        this._version = await xrefParser.getPdfVersionAsync();
+        if (!this._version) {
+            throw new Error("Error parsing PDF version number");
+        }
+        const lastXrefIndex = await xrefParser.getLastXrefIndexAsync();
+        if (!lastXrefIndex) {
+            {
+                throw new Error("File doesn't contain update section");
             }
-            const lastXrefIndex = yield xrefParser.getLastXrefIndexAsync();
-            if (!lastXrefIndex) {
-                {
-                    throw new Error("File doesn't contain update section");
-                }
+        }
+        const xrefs = await xrefParser.parseAllXrefsAsync(lastXrefIndex.value);
+        if (!xrefs.length) {
+            {
+                throw new Error("Failed to parse cross-reference sections");
             }
-            const xrefs = yield xrefParser.parseAllXrefsAsync(lastXrefIndex.value);
-            if (!xrefs.length) {
-                {
-                    throw new Error("Failed to parse cross-reference sections");
-                }
-            }
-            this._xrefs = xrefs;
-            this._referenceData = new ReferenceData(xrefs);
-        });
+        }
+        this._xrefs = xrefs;
+        this._referenceData = new ReferenceData(xrefs);
     }
-    initAsync() {
+    async initAsync() {
         var _a;
-        return __awaiter$n(this, void 0, void 0, function* () {
-            this._docParser = (_a = BgDataParser.tryGetParser(this._data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(this._data);
-            yield this.parseXrefsAsync();
-            yield this.parseEncryptionAsync();
-        });
+        this._docParser = (_a = BgDataParser.tryGetParser(this._data.slice())) !== null && _a !== void 0 ? _a : SyncDataParser.tryGetParser(this._data);
+        await this.parseXrefsAsync();
+        await this.parseEncryptionAsync();
     }
     pushCommand(command) {
         this._lastCommands.push(command);
         this.emitStateChanged();
     }
-    undoCommandAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            if (!this._lastCommands.length) {
-                return;
-            }
-            const lastCommand = this._lastCommands.pop();
-            yield lastCommand.undo();
-            this.emitStateChanged();
-        });
+    async undoCommandAsync() {
+        if (!this._lastCommands.length) {
+            return;
+        }
+        const lastCommand = this._lastCommands.pop();
+        await lastCommand.undo();
+        this.emitStateChanged();
     }
     emitStateChanged() {
         this._eventService.dispatchEvent(new DocServiceStateChangeEvent({
             undoableCount: this._lastCommands.length,
         }));
     }
-    appendAnnotationAsync(pageId, annotation, undoable, raiseEvent) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            if (!annotation) {
-                throw new Error("Annotation is not defined");
-            }
-            const page = this._pageById.get(pageId);
-            if (!page) {
-                throw new Error(`Page with id ${pageId} is not found`);
-            }
-            annotation.markAsDeleted(false);
-            annotation.$pageId = page.id;
-            annotation.$onEditAction = this.getOnAnnotEditAction(annotation);
-            annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
-            const pageAnnotations = annotationMap.get(pageId);
-            if (pageAnnotations) {
-                pageAnnotations.push(annotation);
-            }
-            else {
-                annotationMap.set(pageId, [annotation]);
-            }
-            if (undoable) {
-                this.pushCommand({
-                    timestamp: Date.now(),
-                    undo: () => __awaiter$n(this, void 0, void 0, function* () {
-                        this.removeAnnotation(annotation, false);
-                        if (this.selectedAnnotation === annotation) {
-                            this.setSelectedAnnotation(null);
-                        }
-                    })
-                });
-            }
-            this._eventService.dispatchEvent(new AnnotEvent({
-                type: raiseEvent,
-                annotations: [annotation.toDto()],
-            }));
-        });
+    async appendAnnotationAsync(pageId, annotation, undoable, raiseEvent) {
+        if (!annotation) {
+            throw new Error("Annotation is not defined");
+        }
+        const page = this._pageById.get(pageId);
+        if (!page) {
+            throw new Error(`Page with id ${pageId} is not found`);
+        }
+        annotation.markAsDeleted(false);
+        annotation.$pageId = page.id;
+        annotation.$onEditAction = this.getOnAnnotEditAction(annotation);
+        annotation.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annotation);
+        const annotationMap = await this.getSupportedAnnotationMapAsync();
+        const pageAnnotations = annotationMap.get(pageId);
+        if (pageAnnotations) {
+            pageAnnotations.push(annotation);
+        }
+        else {
+            annotationMap.set(pageId, [annotation]);
+        }
+        if (undoable) {
+            this.pushCommand({
+                timestamp: Date.now(),
+                undo: async () => {
+                    this.removeAnnotation(annotation, false);
+                    if (this.selectedAnnotation === annotation) {
+                        this.setSelectedAnnotation(null);
+                    }
+                }
+            });
+        }
+        this._eventService.dispatchEvent(new AnnotEvent({
+            type: raiseEvent,
+            annotations: [annotation.toDto()],
+        }));
     }
     removeAnnotation(annotation, undoable) {
         if (!annotation) {
@@ -25998,9 +24796,9 @@ class DocumentService {
         if (undoable) {
             this.pushCommand({
                 timestamp: Date.now(),
-                undo: () => __awaiter$n(this, void 0, void 0, function* () {
-                    yield this.appendAnnotationAsync(annotation.$pageId, annotation, false, "add");
-                })
+                undo: async () => {
+                    await this.appendAnnotationAsync(annotation.$pageId, annotation, false, "add");
+                }
             });
         }
         this._eventService.dispatchEvent(new AnnotEvent({
@@ -26049,143 +24847,122 @@ class DocumentService {
             throw new Error("Unauthorized access to file data");
         }
     }
-    parseEncryptionAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const encryptionId = this._xrefs[0].encrypt;
-            if (!encryptionId) {
-                return;
-            }
-            const encryptionParseInfo = yield this.getObjectParseInfoAsync(encryptionId.id);
-            const encryption = yield EncryptionDict.parseAsync(encryptionParseInfo);
-            if (!encryption) {
-                throw new Error("Encryption dict can't be parsed");
-            }
-            this._encryption = encryption.value;
-        });
+    async parseEncryptionAsync() {
+        const encryptionId = this._xrefs[0].encrypt;
+        if (!encryptionId) {
+            return;
+        }
+        const encryptionParseInfo = await this.getObjectParseInfoAsync(encryptionId.id);
+        const encryption = await EncryptionDict.parseAsync(encryptionParseInfo);
+        if (!encryption) {
+            throw new Error("Encryption dict can't be parsed");
+        }
+        this._encryption = encryption.value;
     }
-    parsePagesAsync(output, tree) {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            if (!tree.Kids.length) {
-                return;
+    async parsePagesAsync(output, tree) {
+        if (!tree.Kids.length) {
+            return;
+        }
+        for (const kid of tree.Kids) {
+            const parseInfo = await this.getObjectParseInfoAsync(kid.id);
+            if (!parseInfo) {
+                continue;
             }
-            for (const kid of tree.Kids) {
-                const parseInfo = yield this.getObjectParseInfoAsync(kid.id);
-                if (!parseInfo) {
-                    continue;
-                }
-                const type = yield parseInfo.parser.parseDictTypeAsync(parseInfo.bounds);
-                if (type === dictTypes.PAGE_TREE) {
-                    const kidTree = yield PageTreeDict.parseAsync(parseInfo);
-                    if (kidTree) {
-                        yield this.parsePagesAsync(output, kidTree.value);
-                    }
-                }
-                else if (type === dictTypes.PAGE) {
-                    const kidPage = yield PageDict.parseAsync(parseInfo);
-                    if (kidPage) {
-                        output.push(kidPage.value);
-                    }
+            const type = await parseInfo.parser.parseDictTypeAsync(parseInfo.bounds);
+            if (type === dictTypes.PAGE_TREE) {
+                const kidTree = await PageTreeDict.parseAsync(parseInfo);
+                if (kidTree) {
+                    await this.parsePagesAsync(output, kidTree.value);
                 }
             }
-        });
+            else if (type === dictTypes.PAGE) {
+                const kidPage = await PageDict.parseAsync(parseInfo);
+                if (kidPage) {
+                    output.push(kidPage.value);
+                }
+            }
+        }
     }
     ;
-    parsePageTreeAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const catalogId = this._xrefs[0].root;
-            const catalogParseInfo = yield this.getObjectParseInfoAsync(catalogId.id);
-            const catalog = yield CatalogDict.parseAsync(catalogParseInfo);
-            if (!catalog) {
-                throw new Error("Document root catalog not found");
-            }
-            this._catalog = catalog.value;
-            const pageRootId = catalog.value.Pages;
-            const pageRootParseInfo = yield this.getObjectParseInfoAsync(pageRootId.id);
-            const pageRootTree = yield PageTreeDict.parseAsync(pageRootParseInfo);
-            if (!pageRootTree) {
-                throw new Error("Document root page tree not found");
-            }
-            const pages = [];
-            yield this.parsePagesAsync(pages, pageRootTree.value);
-            this._pages = pages;
-            this._pageById.clear();
-            pages.forEach(x => this._pageById.set(x.ref.id, x));
-        });
+    async parsePageTreeAsync() {
+        const catalogId = this._xrefs[0].root;
+        const catalogParseInfo = await this.getObjectParseInfoAsync(catalogId.id);
+        const catalog = await CatalogDict.parseAsync(catalogParseInfo);
+        if (!catalog) {
+            throw new Error("Document root catalog not found");
+        }
+        this._catalog = catalog.value;
+        const pageRootId = catalog.value.Pages;
+        const pageRootParseInfo = await this.getObjectParseInfoAsync(pageRootId.id);
+        const pageRootTree = await PageTreeDict.parseAsync(pageRootParseInfo);
+        if (!pageRootTree) {
+            throw new Error("Document root page tree not found");
+        }
+        const pages = [];
+        await this.parsePagesAsync(pages, pageRootTree.value);
+        this._pages = pages;
+        this._pageById.clear();
+        pages.forEach(x => this._pageById.set(x.ref.id, x));
     }
-    parseSupportedAnnotationsAsync() {
+    async parseSupportedAnnotationsAsync() {
         var _a;
-        return __awaiter$n(this, void 0, void 0, function* () {
-            this.checkAuthentication();
-            if (!this._catalog) {
-                yield this.parsePageTreeAsync();
+        this.checkAuthentication();
+        if (!this._catalog) {
+            await this.parsePageTreeAsync();
+        }
+        const annotIdsByPageId = new Map();
+        const annotationMap = new Map();
+        for (const page of this._pages) {
+            const annotationIds = [];
+            if (Array.isArray(page.Annots)) {
+                annotationIds.push(...page.Annots);
             }
-            const annotIdsByPageId = new Map();
-            const annotationMap = new Map();
-            for (const page of this._pages) {
-                const annotationIds = [];
-                if (Array.isArray(page.Annots)) {
-                    annotationIds.push(...page.Annots);
-                }
-                else if (page.Annots instanceof ObjectId) {
-                    const parseInfo = yield this.getObjectParseInfoAsync(page.Annots.id);
-                    if (parseInfo) {
-                        const annotationRefs = yield ObjectId.parseRefArrayAsync(parseInfo.parser, parseInfo.bounds.contentStart);
-                        if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
-                            annotationIds.push(...annotationRefs.value);
-                        }
+            else if (page.Annots instanceof ObjectId) {
+                const parseInfo = await this.getObjectParseInfoAsync(page.Annots.id);
+                if (parseInfo) {
+                    const annotationRefs = await ObjectId.parseRefArrayAsync(parseInfo.parser, parseInfo.bounds.contentStart);
+                    if ((_a = annotationRefs === null || annotationRefs === void 0 ? void 0 : annotationRefs.value) === null || _a === void 0 ? void 0 : _a.length) {
+                        annotationIds.push(...annotationRefs.value);
                     }
                 }
-                annotIdsByPageId.set(page.ref.id, annotationIds);
-                const processAnnotation = (objectId) => __awaiter$n(this, void 0, void 0, function* () {
-                    const info = yield this.getObjectParseInfoAsync(objectId.id);
-                    info.rect = page.MediaBox;
-                    const annot = yield AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
-                    if (annot) {
-                        annot.$pageId = page.id;
-                        annot.$onEditAction = this.getOnAnnotEditAction(annot);
-                        annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
-                    }
-                    return annot;
-                });
-                const annotations = (yield Promise.all(annotationIds.map(x => processAnnotation(x))))
-                    .filter(x => x);
-                annotationMap.set(page.id, annotations);
             }
-            this._annotIdsByPageId = annotIdsByPageId;
-            this._supportedAnnotsByPageId = annotationMap;
-        });
+            annotIdsByPageId.set(page.ref.id, annotationIds);
+            const processAnnotation = async (objectId) => {
+                const info = await this.getObjectParseInfoAsync(objectId.id);
+                info.rect = page.MediaBox;
+                const annot = await AnnotationParser.ParseAnnotationFromInfoAsync(info, this._fontMap);
+                if (annot) {
+                    annot.$pageId = page.id;
+                    annot.$onEditAction = this.getOnAnnotEditAction(annot);
+                    annot.$onRenderUpdatedAction = this.getOnAnnotRenderUpdatedAction(annot);
+                }
+                return annot;
+            };
+            const annotations = (await Promise.all(annotationIds.map(x => processAnnotation(x))))
+                .filter(x => x);
+            annotationMap.set(page.id, annotations);
+        }
+        this._annotIdsByPageId = annotIdsByPageId;
+        this._supportedAnnotsByPageId = annotationMap;
     }
-    getSupportedAnnotationMapAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            this.checkAuthentication();
-            if (this._supportedAnnotsByPageId) {
-                return this._supportedAnnotsByPageId;
-            }
-            yield this.parseSupportedAnnotationsAsync();
+    async getSupportedAnnotationMapAsync() {
+        this.checkAuthentication();
+        if (this._supportedAnnotsByPageId) {
             return this._supportedAnnotsByPageId;
-        });
+        }
+        await this.parseSupportedAnnotationsAsync();
+        return this._supportedAnnotsByPageId;
     }
-    getAllSupportedAnnotationsAsync() {
-        return __awaiter$n(this, void 0, void 0, function* () {
-            const result = [];
-            const annotationMap = yield this.getSupportedAnnotationMapAsync();
-            annotationMap.forEach((v, k) => {
-                result.push(...v);
-            });
-            return result;
+    async getAllSupportedAnnotationsAsync() {
+        const result = [];
+        const annotationMap = await this.getSupportedAnnotationMapAsync();
+        annotationMap.forEach((v, k) => {
+            result.push(...v);
         });
+        return result;
     }
 }
 
-var __awaiter$m = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PageAnnotationView {
     constructor(docService, pageInfo, pageDimensions) {
         this._rendered = new Set();
@@ -26235,61 +25012,57 @@ class PageAnnotationView {
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
         this._docService.eventService.removeListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
-    appendAsync(parent) {
+    async appendAsync(parent) {
         var _a;
-        return __awaiter$m(this, void 0, void 0, function* () {
-            if (this._destroyed) {
-                return;
-            }
-            parent.append(this._container);
-            const renderResult = yield this.renderAnnotationsAsync();
-            if (!renderResult) {
-                (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
-                return;
-            }
-            this._docService.eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
-        });
+        if (this._destroyed) {
+            return;
+        }
+        parent.append(this._container);
+        const renderResult = await this.renderAnnotationsAsync();
+        if (!renderResult) {
+            (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
+            return;
+        }
+        this._docService.eventService.addListener(annotChangeEvent, this.onAnnotationSelectionChange);
     }
-    renderAnnotationsAsync() {
-        return __awaiter$m(this, void 0, void 0, function* () {
-            if (this._destroyed) {
-                return false;
+    async renderAnnotationsAsync() {
+        if (this._destroyed) {
+            return false;
+        }
+        this.clear();
+        const annotations = (await this._docService
+            .getPageAnnotationsAsync(this._pageInfo.id))
+            .filter(x => !x.deleted)
+            || [];
+        const processAnnotation = async (annotation) => {
+            let renderResult;
+            if (!this._rendered.has(annotation)) {
+                annotation.$onPointerDownAction = (e) => {
+                    this._docService.eventService.dispatchEvent(new AnnotSelectionRequestEvent({ annotation }));
+                };
+                annotation.$onPointerEnterAction = (e) => {
+                    this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation }));
+                };
+                annotation.$onPointerLeaveAction = (e) => {
+                    this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
+                };
+                renderResult = await annotation.renderAsync(this._pageInfo);
             }
-            this.clear();
-            const annotations = (yield this._docService
-                .getPageAnnotationsAsync(this._pageInfo.id))
-                .filter(x => !x.deleted)
-                || [];
-            const processAnnotation = (annotation) => __awaiter$m(this, void 0, void 0, function* () {
-                let renderResult;
-                if (!this._rendered.has(annotation)) {
-                    annotation.$onPointerDownAction = (e) => {
-                        this._docService.eventService.dispatchEvent(new AnnotSelectionRequestEvent({ annotation }));
-                    };
-                    annotation.$onPointerEnterAction = (e) => {
-                        this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation }));
-                    };
-                    annotation.$onPointerLeaveAction = (e) => {
-                        this._docService.eventService.dispatchEvent(new AnnotFocusRequestEvent({ annotation: null }));
-                    };
-                    renderResult = yield annotation.renderAsync(this._pageInfo);
-                }
-                else {
-                    renderResult = annotation.lastRenderResult || (yield annotation.renderAsync(this._pageInfo));
-                }
-                if (renderResult && !this._destroyed) {
-                    this._rendered.add(annotation);
-                    this._svg.append(renderResult.controls);
-                    this._container.append(renderResult.content);
-                }
-            });
-            yield Promise.all(annotations.map(x => processAnnotation(x)));
-            if (this._destroyed) {
-                return false;
+            else {
+                renderResult = annotation.lastRenderResult || await annotation.renderAsync(this._pageInfo);
             }
-            this._container.append(this._svg);
-            return true;
-        });
+            if (renderResult && !this._destroyed) {
+                this._rendered.add(annotation);
+                this._svg.append(renderResult.controls);
+                this._container.append(renderResult.content);
+            }
+        };
+        await Promise.all(annotations.map(x => processAnnotation(x)));
+        if (this._destroyed) {
+            return false;
+        }
+        this._container.append(this._svg);
+        return true;
     }
     clear() {
         this._container.innerHTML = "";
@@ -26297,15 +25070,6 @@ class PageAnnotationView {
     }
 }
 
-var __awaiter$l = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PageComparisonView {
     constructor(comparisonService, subjectPageInfo, pageDimensions) {
         this.onAreaPointerDown = (e) => {
@@ -26359,106 +25123,93 @@ class PageComparisonView {
         var _a;
         (_a = this._container) === null || _a === void 0 ? void 0 : _a.remove();
     }
-    appendAsync(parent, agentPageProxy, scale) {
+    async appendAsync(parent, agentPageProxy, scale) {
         var _a;
-        return __awaiter$l(this, void 0, void 0, function* () {
-            this.remove();
-            if (this._destroyed || !agentPageProxy) {
-                return;
-            }
-            const comparisonResult = this._comparisonService
-                .getComparisonResultForPage(this._subjectPageInfo.index);
-            if (!((_a = comparisonResult === null || comparisonResult === void 0 ? void 0 : comparisonResult.areas) === null || _a === void 0 ? void 0 : _a.length)) {
-                return;
-            }
-            if (!this._lastRenderResult
-                || this._lastRenderResult.pageProxy !== agentPageProxy
-                || this._lastRenderResult.scale !== scale) {
-                this._lastRenderResult = yield this.renderPageAsync(agentPageProxy, scale);
-            }
-            if (!this._lastRenderResult) {
-                return;
-            }
-            this.clear();
-            parent.append(this._container);
-            const [offsetX, offsetY] = comparisonResult.offset;
-            for (const comparisonArea of comparisonResult.areas) {
-                const changedAreaGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                changedAreaGroup.classList.add("comparison-area");
-                changedAreaGroup.addEventListener("pointerdown", this.onAreaPointerDown);
-                changedAreaGroup.addEventListener("pointerenter", this.onAreaPointerEnter);
-                changedAreaGroup.addEventListener("pointerleave", this.onAreaPointerLeave);
-                const sx = comparisonArea[0];
-                const sy = comparisonArea[1];
-                const syPdf = this._subjectPageHeight - Math.max(comparisonArea[1], comparisonArea[3]);
-                const sw = Math.max(Math.abs(comparisonArea[2] - comparisonArea[0]), 1);
-                const sh = Math.max(Math.abs(comparisonArea[3] - comparisonArea[1]), 1);
-                const swScaled = sw * scale;
-                const shScaled = sh * scale;
-                const tmpCanvas = document.createElement("canvas");
-                tmpCanvas.width = swScaled;
-                tmpCanvas.height = shScaled;
-                tmpCanvas.getContext("2d").scale(1, -1);
-                tmpCanvas.getContext("2d").drawImage(this._lastRenderResult.canvas, (sx + offsetX) * scale, (sy + offsetY) * scale, swScaled, shScaled, 0, 0, swScaled, -shScaled);
-                const imageUrl = tmpCanvas.toDataURL("image/png");
-                const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
-                image.classList.add("comparison-area-image");
-                image.setAttribute("x", sx + "");
-                image.setAttribute("y", syPdf + "");
-                image.setAttribute("width", sw + "");
-                image.setAttribute("height", sh + "");
-                image.setAttribute("href", imageUrl);
-                const area = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-                area.classList.add("comparison-area-rect");
-                area.setAttribute("x", sx + "");
-                area.setAttribute("y", syPdf + "");
-                area.setAttribute("width", sw + "");
-                area.setAttribute("height", sh + "");
-                changedAreaGroup.append(image);
-                changedAreaGroup.append(area);
-                this._svg.append(changedAreaGroup);
-            }
-        });
+        this.remove();
+        if (this._destroyed || !agentPageProxy) {
+            return;
+        }
+        const comparisonResult = this._comparisonService
+            .getComparisonResultForPage(this._subjectPageInfo.index);
+        if (!((_a = comparisonResult === null || comparisonResult === void 0 ? void 0 : comparisonResult.areas) === null || _a === void 0 ? void 0 : _a.length)) {
+            return;
+        }
+        if (!this._lastRenderResult
+            || this._lastRenderResult.pageProxy !== agentPageProxy
+            || this._lastRenderResult.scale !== scale) {
+            this._lastRenderResult = await this.renderPageAsync(agentPageProxy, scale);
+        }
+        if (!this._lastRenderResult) {
+            return;
+        }
+        this.clear();
+        parent.append(this._container);
+        const [offsetX, offsetY] = comparisonResult.offset;
+        for (const comparisonArea of comparisonResult.areas) {
+            const changedAreaGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            changedAreaGroup.classList.add("comparison-area");
+            changedAreaGroup.addEventListener("pointerdown", this.onAreaPointerDown);
+            changedAreaGroup.addEventListener("pointerenter", this.onAreaPointerEnter);
+            changedAreaGroup.addEventListener("pointerleave", this.onAreaPointerLeave);
+            const sx = comparisonArea[0];
+            const sy = comparisonArea[1];
+            const syPdf = this._subjectPageHeight - Math.max(comparisonArea[1], comparisonArea[3]);
+            const sw = Math.max(Math.abs(comparisonArea[2] - comparisonArea[0]), 1);
+            const sh = Math.max(Math.abs(comparisonArea[3] - comparisonArea[1]), 1);
+            const swScaled = sw * scale;
+            const shScaled = sh * scale;
+            const tmpCanvas = document.createElement("canvas");
+            tmpCanvas.width = swScaled;
+            tmpCanvas.height = shScaled;
+            tmpCanvas.getContext("2d").scale(1, -1);
+            tmpCanvas.getContext("2d").drawImage(this._lastRenderResult.canvas, (sx + offsetX) * scale, (sy + offsetY) * scale, swScaled, shScaled, 0, 0, swScaled, -shScaled);
+            const imageUrl = tmpCanvas.toDataURL("image/png");
+            const image = document.createElementNS("http://www.w3.org/2000/svg", "image");
+            image.classList.add("comparison-area-image");
+            image.setAttribute("x", sx + "");
+            image.setAttribute("y", syPdf + "");
+            image.setAttribute("width", sw + "");
+            image.setAttribute("height", sh + "");
+            image.setAttribute("href", imageUrl);
+            const area = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            area.classList.add("comparison-area-rect");
+            area.setAttribute("x", sx + "");
+            area.setAttribute("y", syPdf + "");
+            area.setAttribute("width", sw + "");
+            area.setAttribute("height", sh + "");
+            changedAreaGroup.append(image);
+            changedAreaGroup.append(area);
+            this._svg.append(changedAreaGroup);
+        }
     }
     clear() {
         this._svg.innerHTML = "";
     }
-    renderPageAsync(pageProxy, scale) {
-        return __awaiter$l(this, void 0, void 0, function* () {
-            if (!pageProxy) {
-                return null;
-            }
-            const viewport = pageProxy.getViewport({ scale, rotation: 0 });
-            const { width, height } = viewport;
-            const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-            const canvasCtx = canvas.getContext("2d");
-            const params = {
-                canvasContext: canvasCtx,
-                viewport: viewport,
-                enableWebGL: true,
-            };
-            const renderTask = pageProxy.render(params);
-            yield renderTask.promise;
-            return {
-                canvas,
-                pageProxy,
-                scale,
-            };
-        });
+    async renderPageAsync(pageProxy, scale) {
+        if (!pageProxy) {
+            return null;
+        }
+        const viewport = pageProxy.getViewport({ scale, rotation: 0 });
+        const { width, height } = viewport;
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const canvasCtx = canvas.getContext("2d");
+        const params = {
+            canvasContext: canvasCtx,
+            viewport: viewport,
+            enableWebGL: true,
+        };
+        const renderTask = pageProxy.render(params);
+        await renderTask.promise;
+        return {
+            canvas,
+            pageProxy,
+            scale,
+        };
     }
 }
 
-var __awaiter$k = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PageView {
     get previewContainer() {
         return this._previewContainer;
@@ -26536,35 +25287,31 @@ class PageView {
         this._viewOuterContainer.remove();
         this._pageProxy.cleanup();
     }
-    renderPreviewAsync(force = false) {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            if (this._renderPromise) {
-                if (force) {
-                    this.cancelRenderTask();
-                }
-                yield this._renderPromise;
+    async renderPreviewAsync(force = false) {
+        if (this._renderPromise) {
+            if (force) {
+                this.cancelRenderTask();
             }
-            if (!force && this._previewRendered) {
-                return;
-            }
-            this._renderPromise = this.runPreviewRenderAsync();
-            return this._renderPromise;
-        });
+            await this._renderPromise;
+        }
+        if (!force && this._previewRendered) {
+            return;
+        }
+        this._renderPromise = this.runPreviewRenderAsync();
+        return this._renderPromise;
     }
-    renderViewAsync(force = false) {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            if (this._renderPromise) {
-                if (force) {
-                    this.cancelRenderTask();
-                }
-                yield this._renderPromise;
+    async renderViewAsync(force = false) {
+        if (this._renderPromise) {
+            if (force) {
+                this.cancelRenderTask();
             }
-            if (!force && this.viewValid && this.modeNotChanged) {
-                return;
-            }
-            this._renderPromise = this.runViewRenderAsync(force);
-            return this._renderPromise;
-        });
+            await this._renderPromise;
+        }
+        if (!force && this.viewValid && this.modeNotChanged) {
+            return;
+        }
+        this._renderPromise = this.runViewRenderAsync(force);
+        return this._renderPromise;
     }
     clearPreview() {
         this._previewContainer.innerHTML = "";
@@ -26670,29 +25417,27 @@ class PageView {
             this._renderTask = null;
         }
     }
-    runRenderTaskAsync(renderParams) {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            if (this._destroyed) {
+    async runRenderTaskAsync(renderParams) {
+        if (this._destroyed) {
+            return false;
+        }
+        this.cancelRenderTask();
+        try {
+            this._renderTask = this._pageProxy.render(renderParams);
+            await this._renderTask.promise;
+        }
+        catch (error) {
+            if (error instanceof RenderingCancelledException) {
                 return false;
             }
-            this.cancelRenderTask();
-            try {
-                this._renderTask = this._pageProxy.render(renderParams);
-                yield this._renderTask.promise;
+            else {
+                console.log(error.message);
             }
-            catch (error) {
-                if (error instanceof RenderingCancelledException) {
-                    return false;
-                }
-                else {
-                    console.log(error.message);
-                }
-            }
-            finally {
-                this._renderTask = null;
-            }
-            return true;
-        });
+        }
+        finally {
+            this._renderTask = null;
+        }
+        return true;
     }
     createPreviewCanvas() {
         const canvas = document.createElement("canvas");
@@ -26714,124 +25459,103 @@ class PageView {
         canvas.height = this._dimensions.scaledDprHeight;
         return canvas;
     }
-    runPreviewRenderAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            if (this._destroyed) {
-                return;
-            }
-            const canvas = this.createPreviewCanvas();
-            const params = {
-                canvasContext: canvas.getContext("2d"),
-                viewport: this._defaultViewport.clone({ scale: canvas.width / this._dimensions.width, rotation: 0 }),
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (!result) {
-                this._previewRendered = false;
-                return;
-            }
-            this._previewContainer.innerHTML = "";
-            this._previewContainer.append(canvas);
-            this._previewRendered = true;
-        });
+    async runPreviewRenderAsync() {
+        if (this._destroyed) {
+            return;
+        }
+        const canvas = this.createPreviewCanvas();
+        const params = {
+            canvasContext: canvas.getContext("2d"),
+            viewport: this._defaultViewport.clone({ scale: canvas.width / this._dimensions.width, rotation: 0 }),
+        };
+        const result = await this.runRenderTaskAsync(params);
+        if (!result) {
+            this._previewRendered = false;
+            return;
+        }
+        this._previewContainer.innerHTML = "";
+        this._previewContainer.append(canvas);
+        this._previewRendered = true;
     }
-    runViewRenderAsync(force) {
+    async runViewRenderAsync(force) {
         var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
-            if (this._destroyed) {
+        if (this._destroyed) {
+            return;
+        }
+        const mode = this._modeService.mode;
+        const scale = this._scale;
+        this.clearTextLayer();
+        if (force || !this.viewValid) {
+            const canvasRendered = await this.renderCanvasLayerAsync(scale);
+            if (!canvasRendered) {
                 return;
             }
-            const mode = this._modeService.mode;
-            const scale = this._scale;
-            this.clearTextLayer();
-            if (force || !this.viewValid) {
-                const canvasRendered = yield this.renderCanvasLayerAsync(scale);
-                if (!canvasRendered) {
-                    return;
-                }
-            }
-            if (mode === "text"
-                || mode === "annotation") {
-                yield this.renderTextLayerAsync(scale);
-            }
-            if (mode !== "comparison") {
-                yield this.renderAnnotationLayerAsync();
-            }
-            else {
-                (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.remove();
-                yield this.renderComparisonLayerAsync();
-            }
-            this._lastRenderMode = mode;
-            if (scale === this._scale) {
-                this._dimensionsIsValid = true;
-            }
-        });
+        }
+        if (mode === "text"
+            || mode === "annotation") {
+            await this.renderTextLayerAsync(scale);
+        }
+        if (mode !== "comparison") {
+            await this.renderAnnotationLayerAsync();
+        }
+        else {
+            (_a = this._annotations) === null || _a === void 0 ? void 0 : _a.remove();
+            await this.renderComparisonLayerAsync();
+        }
+        this._lastRenderMode = mode;
+        if (scale === this._scale) {
+            this._dimensionsIsValid = true;
+        }
     }
     clearTextLayer() {
         var _a, _b;
         (_a = this._text) === null || _a === void 0 ? void 0 : _a.destroy();
         (_b = this._text) === null || _b === void 0 ? void 0 : _b.remove();
     }
-    renderCanvasLayerAsync(scale) {
+    async renderCanvasLayerAsync(scale) {
         var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
-            const canvas = this.createViewCanvas();
-            const params = {
-                canvasContext: canvas.getContext("2d"),
-                viewport: this._currentViewport,
-                enableWebGL: true,
-            };
-            const result = yield this.runRenderTaskAsync(params);
-            if (!result || scale !== this._scale) {
-                return false;
-            }
-            (_a = this._viewCanvas) === null || _a === void 0 ? void 0 : _a.remove();
-            this._viewInnerContainer.append(canvas);
-            this._viewCanvas = canvas;
-            this._viewRendered = true;
-            return true;
-        });
+        const canvas = this.createViewCanvas();
+        const params = {
+            canvasContext: canvas.getContext("2d"),
+            viewport: this._currentViewport,
+            enableWebGL: true,
+        };
+        const result = await this.runRenderTaskAsync(params);
+        if (!result || scale !== this._scale) {
+            return false;
+        }
+        (_a = this._viewCanvas) === null || _a === void 0 ? void 0 : _a.remove();
+        this._viewInnerContainer.append(canvas);
+        this._viewCanvas = canvas;
+        this._viewRendered = true;
+        return true;
     }
-    renderTextLayerAsync(scale) {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            this._text = yield PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
-        });
+    async renderTextLayerAsync(scale) {
+        this._text = await PageTextView.appendPageTextAsync(this._pageProxy, this._viewInnerContainer, scale);
     }
-    renderAnnotationLayerAsync() {
-        return __awaiter$k(this, void 0, void 0, function* () {
-            if (!this._annotations) {
-                const { width: x, height: y } = this._dimensions;
-                this._annotations = new PageAnnotationView(this._docManagerService.docService, this, new Vec2(x, y));
-            }
-            yield this._annotations.appendAsync(this._viewInnerContainer);
-        });
+    async renderAnnotationLayerAsync() {
+        if (!this._annotations) {
+            const { width: x, height: y } = this._dimensions;
+            this._annotations = new PageAnnotationView(this._docManagerService.docService, this, new Vec2(x, y));
+        }
+        await this._annotations.appendAsync(this._viewInnerContainer);
     }
-    renderComparisonLayerAsync() {
+    async renderComparisonLayerAsync() {
         var _a;
-        return __awaiter$k(this, void 0, void 0, function* () {
-            const comparisonPageProxy = this._docManagerService.getPageProxy("compared", this.index);
-            if (!comparisonPageProxy) {
-                (_a = this._comparison) === null || _a === void 0 ? void 0 : _a.remove();
-                return;
-            }
-            if (!this._comparison) {
-                const { width: x, height: y } = this._dimensions;
-                this._comparison = new PageComparisonView(this._docManagerService.comparisonService, this, new Vec2(x, y));
-            }
-            yield this._comparison.appendAsync(this._viewInnerContainer, comparisonPageProxy, this._scale);
-        });
+        const comparisonPageProxy = this._docManagerService.getPageProxy("compared", this.index);
+        if (!comparisonPageProxy) {
+            (_a = this._comparison) === null || _a === void 0 ? void 0 : _a.remove();
+            return;
+        }
+        if (!this._comparison) {
+            const { width: x, height: y } = this._dimensions;
+            this._comparison = new PageComparisonView(this._docManagerService.comparisonService, this, new Vec2(x, y));
+        }
+        await this._comparison.appendAsync(this._viewInnerContainer, comparisonPageProxy, this._scale);
     }
 }
 PageView.validRotationValues = [0, 90, 180, 270];
 
-var __awaiter$j = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const currentPageChangeRequestEvent = "tspdf-currentpagechangerequest";
 class CurrentPageChangeRequestEvent extends CustomEvent {
     constructor(detail) {
@@ -26922,18 +25646,16 @@ class PageService {
     getCurrentPage() {
         return this._pages[this._currentPageIndex];
     }
-    reloadPagesAsync() {
-        return __awaiter$j(this, void 0, void 0, function* () {
-            const docPagesNumber = this._docManagerService.pageCount;
-            const pages = [];
-            if (docPagesNumber) {
-                for (let i = 0; i < docPagesNumber; i++) {
-                    const page = new PageView(this._modeService, this._docManagerService, i, this._previewCanvasWidth);
-                    pages.push(page);
-                }
+    async reloadPagesAsync() {
+        const docPagesNumber = this._docManagerService.pageCount;
+        const pages = [];
+        if (docPagesNumber) {
+            for (let i = 0; i < docPagesNumber; i++) {
+                const page = new PageView(this._modeService, this._docManagerService, i, this._previewCanvasWidth);
+                pages.push(page);
             }
-            this.pages = pages;
-        });
+        }
+        this.pages = pages;
     }
     requestSetCurrentPageIndex(index) {
         index = clamp(index || 0, 0, this._pages.length - 1);
@@ -27396,15 +26118,6 @@ class GeometricAnnotator extends Annotator {
     }
 }
 
-var __awaiter$i = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GeometricLineAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -27469,17 +26182,15 @@ class GeometricLineAnnotator extends GeometricAnnotator {
         this._vertices = null;
         this.clearGroup();
     }
-    saveAnnotationAsync() {
-        return __awaiter$i(this, void 0, void 0, function* () {
-            if (!this._vertices) {
-                return;
-            }
-            const pageId = this._pageId;
-            const dto = this.buildAnnotationDto();
-            const annotation = yield LineAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
-            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._vertices) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = await LineAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
@@ -27568,15 +26279,6 @@ class GeometricArrowAnnotator extends GeometricLineAnnotator {
     }
 }
 
-var __awaiter$h = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GeometricCircleAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -27641,17 +26343,15 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
         this._rect = null;
         this.clearGroup();
     }
-    saveAnnotationAsync() {
-        return __awaiter$h(this, void 0, void 0, function* () {
-            if (!this._rect) {
-                return;
-            }
-            const pageId = this._pageId;
-            const dto = this.buildAnnotationDto();
-            const annotation = CircleAnnotation.createFromDto(dto);
-            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._rect) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = CircleAnnotation.createFromDto(dto);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
@@ -27724,15 +26424,6 @@ class GeometricCircleAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$g = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GeometricPolygonAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -27804,17 +26495,15 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
             this.clearGroup();
         }
     }
-    saveAnnotationAsync() {
-        return __awaiter$g(this, void 0, void 0, function* () {
-            if (this._points.length < 3) {
-                return;
-            }
-            const pageId = this._pageId;
-            const dto = this.buildAnnotationDto();
-            const annotation = PolygonAnnotation.createFromDto(dto);
-            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (this._points.length < 3) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = PolygonAnnotation.createFromDto(dto);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
@@ -27904,15 +26593,6 @@ class GeometricPolygonAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$f = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GeometricPolylineAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -27984,17 +26664,15 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
             this.clearGroup();
         }
     }
-    saveAnnotationAsync() {
-        return __awaiter$f(this, void 0, void 0, function* () {
-            if (this._points.length < 2) {
-                return;
-            }
-            const pageId = this._pageId;
-            const dto = this.buildAnnotationDto();
-            const annotation = PolylineAnnotation.createFromDto(dto);
-            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (this._points.length < 2) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = PolylineAnnotation.createFromDto(dto);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
@@ -28069,15 +26747,6 @@ class GeometricPolylineAnnotator extends GeometricAnnotator {
     }
 }
 
-var __awaiter$e = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class GeometricSquareAnnotator extends GeometricAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
@@ -28142,17 +26811,15 @@ class GeometricSquareAnnotator extends GeometricAnnotator {
         this._rect = null;
         this.clearGroup();
     }
-    saveAnnotationAsync() {
-        return __awaiter$e(this, void 0, void 0, function* () {
-            if (!this._rect) {
-                return;
-            }
-            const pageId = this._pageId;
-            const dto = this.buildAnnotationDto();
-            const annotation = SquareAnnotation.createFromDto(dto);
-            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._rect) {
+            return;
+        }
+        const pageId = this._pageId;
+        const dto = this.buildAnnotationDto();
+        const annotation = SquareAnnotation.createFromDto(dto);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
@@ -28273,15 +26940,6 @@ class GeometricAnnotatorFactory {
     }
 }
 
-var __awaiter$d = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PenAnnotator extends Annotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent);
@@ -28347,17 +27005,15 @@ class PenAnnotator extends Annotator {
     clear() {
         this.removeTempPenData();
     }
-    saveAnnotationAsync() {
-        return __awaiter$d(this, void 0, void 0, function* () {
-            if (!this._annotationPathData) {
-                return;
-            }
-            const pageId = this._annotationPathData.id;
-            const dto = this.buildAnnotationDto(this._annotationPathData);
-            const annotation = InkAnnotation.createFromDto(dto);
-            yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._annotationPathData) {
+            return;
+        }
+        const pageId = this._annotationPathData.id;
+        const dto = this.buildAnnotationDto(this._annotationPathData);
+        const annotation = InkAnnotation.createFromDto(dto);
+        await this._docService.appendAnnotationToPageAsync(pageId, annotation);
+        this.clear();
     }
     init() {
         super.init();
@@ -28470,15 +27126,6 @@ class PenAnnotator extends Annotator {
     }
 }
 
-var __awaiter$c = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const supportedStampTypes = [
     { type: "/Draft", name: "Draft" },
     { type: "/Approved", name: "Approved" },
@@ -28513,7 +27160,7 @@ class StampAnnotator extends Annotator {
             }
             this.updatePointerCoords(cx, cy);
         };
-        this.onPointerUp = (e) => __awaiter$c(this, void 0, void 0, function* () {
+        this.onPointerUp = async (e) => {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -28537,13 +27184,13 @@ class StampAnnotator extends Annotator {
                 return;
             }
             const { pageId, pageX, pageY, pageRotation } = this._pointerCoordsInPageCS;
-            yield this._tempAnnotation.moveToAsync(new Vec2(pageX, pageY));
+            await this._tempAnnotation.moveToAsync(new Vec2(pageX, pageY));
             if (pageRotation) {
-                yield this._tempAnnotation.rotateByAsync(-pageRotation / 180 * Math.PI);
+                await this._tempAnnotation.rotateByAsync(-pageRotation / 180 * Math.PI);
             }
             this._pageId = pageId;
-            yield this.saveAnnotationAsync();
-        });
+            await this.saveAnnotationAsync();
+        };
         if (!type) {
             throw new Error("Stamp type is not defined");
         }
@@ -28561,14 +27208,12 @@ class StampAnnotator extends Annotator {
     clear() {
         this._tempAnnotation = null;
     }
-    saveAnnotationAsync() {
-        return __awaiter$c(this, void 0, void 0, function* () {
-            if (!this._pageId || !this._tempAnnotation) {
-                return;
-            }
-            yield this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-            yield this.createTempStampAnnotationAsync();
-        });
+    async saveAnnotationAsync() {
+        if (!this._pageId || !this._tempAnnotation) {
+            return;
+        }
+        await this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+        await this.createTempStampAnnotationAsync();
     }
     init() {
         super.init();
@@ -28613,24 +27258,22 @@ class StampAnnotator extends Annotator {
         };
         return StampAnnotation.createFromDto(dto);
     }
-    createTempStampAnnotationAsync() {
-        return __awaiter$c(this, void 0, void 0, function* () {
-            let stamp;
-            if (standardStampCreationInfos[this._type]) {
-                stamp = this.createStandardStamp(this._type, this._docService.userName);
-            }
-            else if (this._creationInfo) {
-                stamp = this.createCustomStamp(this._creationInfo, this._docService.userName);
-            }
-            else {
-                throw new Error(`Unsupported stamp type: ${this._type}`);
-            }
-            const renderResult = yield stamp.renderApStreamAsync();
-            this._svgGroup.innerHTML = "";
-            this._svgGroup.append(...renderResult.clipPaths);
-            this._svgGroup.append(...renderResult.elements.map(x => x.element));
-            this._tempAnnotation = stamp;
-        });
+    async createTempStampAnnotationAsync() {
+        let stamp;
+        if (standardStampCreationInfos[this._type]) {
+            stamp = this.createStandardStamp(this._type, this._docService.userName);
+        }
+        else if (this._creationInfo) {
+            stamp = this.createCustomStamp(this._creationInfo, this._docService.userName);
+        }
+        else {
+            throw new Error(`Unsupported stamp type: ${this._type}`);
+        }
+        const renderResult = await stamp.renderApStreamAsync();
+        this._svgGroup.innerHTML = "";
+        this._svgGroup.append(...renderResult.clipPaths);
+        this._svgGroup.append(...renderResult.elements.map(x => x.element));
+        this._tempAnnotation = stamp;
     }
     refreshGroupPosition() {
     }
@@ -28786,32 +27429,21 @@ class TextMarkupAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$b = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextHighlightAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotationAsync() {
-        return __awaiter$b(this, void 0, void 0, function* () {
-            if (!this._coordsByPageId.size) {
-                return;
-            }
-            const dtos = this.buildAnnotationDtos("/Highlight");
-            for (const dto of dtos) {
-                const annotation = HighlightAnnotation.createFromDto(dto);
-                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            }
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Highlight");
+        for (const dto of dtos) {
+            const annotation = HighlightAnnotation.createFromDto(dto);
+            await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+        }
+        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -28832,32 +27464,21 @@ class TextHighlightAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$a = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextSquigglyAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotationAsync() {
-        return __awaiter$a(this, void 0, void 0, function* () {
-            if (!this._coordsByPageId.size) {
-                return;
-            }
-            const dtos = this.buildAnnotationDtos("/Squiggly");
-            for (const dto of dtos) {
-                const annotation = SquigglyAnnotation.createFromDto(dto);
-                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            }
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Squiggly");
+        for (const dto of dtos) {
+            const annotation = SquigglyAnnotation.createFromDto(dto);
+            await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+        }
+        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -28887,32 +27508,21 @@ class TextSquigglyAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$9 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextStrikeoutAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotationAsync() {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            if (!this._coordsByPageId.size) {
-                return;
-            }
-            const dtos = this.buildAnnotationDtos("/Strikeout");
-            for (const dto of dtos) {
-                const annotation = StrikeoutAnnotation.createFromDto(dto);
-                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            }
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Strikeout");
+        for (const dto of dtos) {
+            const annotation = StrikeoutAnnotation.createFromDto(dto);
+            await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+        }
+        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -28947,32 +27557,21 @@ class TextStrikeoutAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$8 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextUnderlineAnnotator extends TextMarkupAnnotator {
     constructor(docService, pageService, parent, options) {
         super(docService, pageService, parent, options || {});
         this.init();
     }
-    saveAnnotationAsync() {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            if (!this._coordsByPageId.size) {
-                return;
-            }
-            const dtos = this.buildAnnotationDtos("/Underline");
-            for (const dto of dtos) {
-                const annotation = UnderlineAnnotation.createFromDto(dto);
-                yield this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
-            }
-            this.clear();
-        });
+    async saveAnnotationAsync() {
+        if (!this._coordsByPageId.size) {
+            return;
+        }
+        const dtos = this.buildAnnotationDtos("/Underline");
+        for (const dto of dtos) {
+            const annotation = UnderlineAnnotation.createFromDto(dto);
+            await this._docService.appendAnnotationToPageAsync(dto.pageId, annotation);
+        }
+        this.clear();
     }
     redraw() {
         const [r, g, b, a] = this._color || [0, 0, 0, 1];
@@ -28995,15 +27594,6 @@ class TextUnderlineAnnotator extends TextMarkupAnnotator {
     }
 }
 
-var __awaiter$7 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TextNoteAnnotator extends TextAnnotator {
     constructor(docService, pageService, viewer, options) {
         super(docService, pageService, viewer.container, options || {});
@@ -29020,7 +27610,7 @@ class TextNoteAnnotator extends TextAnnotator {
             this._svgGroup.setAttribute("transform", `translate(${offsetX - (x2 - x1) / 4} ${offsetY - (y2 - y1) / 4})`);
             this.updatePointerCoords(cx, cy);
         };
-        this.onPointerUp = (e) => __awaiter$7(this, void 0, void 0, function* () {
+        this.onPointerUp = async (e) => {
             var _a, _b, _c;
             if (!e.isPrimary || e.button === 2) {
                 return;
@@ -29045,13 +27635,13 @@ class TextNoteAnnotator extends TextAnnotator {
             }
             const { pageId, pageX, pageY, pageRotation } = this._pointerCoordsInPageCS;
             const [x1, y1, x2, y2] = this._tempAnnotation.Rect;
-            yield this._tempAnnotation.moveToAsync(new Vec2(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4));
+            await this._tempAnnotation.moveToAsync(new Vec2(pageX + (x2 - x1) / 4, pageY + (y2 - y1) / 4));
             if (pageRotation) {
-                yield this._tempAnnotation.rotateByAsync(-pageRotation / 180 * Math.PI, new Vec2(pageX, pageY));
+                await this._tempAnnotation.rotateByAsync(-pageRotation / 180 * Math.PI, new Vec2(pageX, pageY));
             }
             this._pageId = pageId;
-            yield this.saveAnnotationAsync();
-        });
+            await this.saveAnnotationAsync();
+        };
         this._viewer = viewer;
         this.init();
     }
@@ -29065,20 +27655,18 @@ class TextNoteAnnotator extends TextAnnotator {
     clear() {
         this._tempAnnotation = null;
     }
-    saveAnnotationAsync() {
+    async saveAnnotationAsync() {
         var _a, _b;
-        return __awaiter$7(this, void 0, void 0, function* () {
-            if (!this._pageId || !this._tempAnnotation) {
-                return;
-            }
-            const initialText = (_b = (_a = this._tempAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
-            const text = yield this._viewer.showTextDialogAsync(initialText);
-            if (text !== null) {
-                yield this._tempAnnotation.setTextContentAsync(text);
-                yield this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
-            }
-            yield this.createTempNoteAnnotationAsync();
-        });
+        if (!this._pageId || !this._tempAnnotation) {
+            return;
+        }
+        const initialText = (_b = (_a = this._tempAnnotation) === null || _a === void 0 ? void 0 : _a.Contents) === null || _b === void 0 ? void 0 : _b.literal;
+        const text = await this._viewer.showTextDialogAsync(initialText);
+        if (text !== null) {
+            await this._tempAnnotation.setTextContentAsync(text);
+            await this._docService.appendAnnotationToPageAsync(this._pageId, this._tempAnnotation);
+        }
+        await this.createTempNoteAnnotationAsync();
     }
     init() {
         super.init();
@@ -29086,29 +27674,18 @@ class TextNoteAnnotator extends TextAnnotator {
         this._overlay.addEventListener("pointerup", this.onPointerUp);
         this.createTempNoteAnnotationAsync();
     }
-    createTempNoteAnnotationAsync() {
-        return __awaiter$7(this, void 0, void 0, function* () {
-            const note = TextAnnotation.createStandard(this._docService.userName, this._color);
-            const renderResult = yield note.renderApStreamAsync();
-            this._svgGroup.innerHTML = "";
-            this._svgGroup.append(...renderResult.clipPaths);
-            this._svgGroup.append(...renderResult.elements.map(x => x.element));
-            this._tempAnnotation = note;
-        });
+    async createTempNoteAnnotationAsync() {
+        const note = TextAnnotation.createStandard(this._docService.userName, this._color);
+        const renderResult = await note.renderApStreamAsync();
+        this._svgGroup.innerHTML = "";
+        this._svgGroup.append(...renderResult.clipPaths);
+        this._svgGroup.append(...renderResult.elements.map(x => x.element));
+        this._tempAnnotation = note;
     }
     refreshGroupPosition() {
     }
 }
 
-var __awaiter$6 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class FreeTextAnnotator extends TextAnnotator {
     constructor(docService, pageService, viewer, options) {
         super(docService, pageService, viewer.container, options || {});
@@ -29148,7 +27725,7 @@ class FreeTextAnnotator extends TextAnnotator {
             const { min, max } = Vec2.minMax(this._down, new Vec2(px, py));
             this.redrawRect(min, max);
         };
-        this.onPointerUp = (e) => __awaiter$6(this, void 0, void 0, function* () {
+        this.onPointerUp = async (e) => {
             if (!e.isPrimary) {
                 return;
             }
@@ -29158,9 +27735,9 @@ class FreeTextAnnotator extends TextAnnotator {
             target.removeEventListener("pointerout", this.onPointerUp);
             target.releasePointerCapture(e.pointerId);
             if (this._rect) {
-                yield this.saveAnnotationAsync();
+                await this.saveAnnotationAsync();
             }
-        });
+        };
         this._viewer = viewer;
         this.init();
     }
@@ -29176,22 +27753,20 @@ class FreeTextAnnotator extends TextAnnotator {
         this._svgGroup.innerHTML = "";
         this.emitDataChanged(0);
     }
-    saveAnnotationAsync() {
-        return __awaiter$6(this, void 0, void 0, function* () {
-            if (!this._pageId || !this._rect) {
-                return;
+    async saveAnnotationAsync() {
+        if (!this._pageId || !this._rect) {
+            return;
+        }
+        const text = await this._viewer.showTextDialogAsync("");
+        if (text !== null) {
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto(text);
+            if (dto) {
+                const annotation = await FreeTextAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
+                await this._docService.appendAnnotationToPageAsync(pageId, annotation);
             }
-            const text = yield this._viewer.showTextDialogAsync("");
-            if (text !== null) {
-                const pageId = this._pageId;
-                const dto = this.buildAnnotationDto(text);
-                if (dto) {
-                    const annotation = yield FreeTextAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
-                    yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-                }
-            }
-            this.clear();
-        });
+        }
+        this.clear();
     }
     init() {
         super.init();
@@ -29294,15 +27869,6 @@ class FreeTextAnnotator extends TextAnnotator {
     }
 }
 
-var __awaiter$5 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class FreeTextCalloutAnnotator extends TextAnnotator {
     constructor(docService, pageService, viewer, options) {
         super(docService, pageService, viewer.container, options || {});
@@ -29415,22 +27981,20 @@ class FreeTextCalloutAnnotator extends TextAnnotator {
         this._svgGroup.innerHTML = "";
         this.emitDataChanged(0);
     }
-    saveAnnotationAsync() {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            if (!this._pageId || !this._rect) {
-                return;
+    async saveAnnotationAsync() {
+        if (!this._pageId || !this._rect) {
+            return;
+        }
+        const text = await this._viewer.showTextDialogAsync("");
+        if (text !== null) {
+            const pageId = this._pageId;
+            const dto = this.buildAnnotationDto(text);
+            if (dto) {
+                const annotation = await FreeTextAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
+                await this._docService.appendAnnotationToPageAsync(pageId, annotation);
             }
-            const text = yield this._viewer.showTextDialogAsync("");
-            if (text !== null) {
-                const pageId = this._pageId;
-                const dto = this.buildAnnotationDto(text);
-                if (dto) {
-                    const annotation = yield FreeTextAnnotation.createFromDtoAsync(dto, this._docService.fontMap);
-                    yield this._docService.appendAnnotationToPageAsync(pageId, annotation);
-                }
-            }
-            this.clear();
-        });
+        }
+        this.clear();
     }
     init() {
         super.init();
@@ -29958,15 +28522,6 @@ class ModeService {
     }
 }
 
-var __awaiter$4 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class PdfLoaderService {
     get pageCount() {
         var _a;
@@ -29999,77 +28554,73 @@ class PdfLoaderService {
         }
         (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
     }
-    openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress) {
+    async openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress) {
         var _a;
-        return __awaiter$4(this, void 0, void 0, function* () {
-            yield this.closePdfAsync();
-            let data;
-            let doc;
-            try {
-                data = yield DomUtils.loadFileDataAsync(src);
-            }
-            catch (e) {
-                throw new Error(`Cannot load file data: ${e.message}`);
-            }
-            const docService = yield DocumentService.createNewAsync(this._eventService, data, userName);
-            let password;
-            while (true) {
-                const authenticated = docService.tryAuthenticate(password);
-                if (!authenticated) {
-                    password = yield getPasswordAsync();
-                    if (password === null) {
-                        throw new Error("File loading cancelled: authentication aborted");
-                    }
-                    continue;
+        await this.closePdfAsync();
+        let data;
+        let doc;
+        try {
+            data = await DomUtils.loadFileDataAsync(src);
+        }
+        catch (e) {
+            throw new Error(`Cannot load file data: ${e.message}`);
+        }
+        const docService = await DocumentService.createNewAsync(this._eventService, data, userName);
+        let password;
+        while (true) {
+            const authenticated = docService.tryAuthenticate(password);
+            if (!authenticated) {
+                password = await getPasswordAsync();
+                if (password === null) {
+                    throw new Error("File loading cancelled: authentication aborted");
                 }
-                break;
+                continue;
             }
-            try {
-                if (this._pdfLoadingTask) {
-                    yield this.closePdfAsync();
-                    return this.openPdfAsync(data, userName, fileName, getPasswordAsync, onProgress);
-                }
-                const dataWithoutAnnotations = yield docService.getDataWithoutSupportedAnnotationsAsync();
-                this._pdfLoadingTask = getDocument({
-                    data: dataWithoutAnnotations,
-                    password,
-                });
-                if (onProgress) {
-                    this._pdfLoadingTask.onProgress = onProgress;
-                }
-                doc = yield this._pdfLoadingTask.promise;
-                this._pdfLoadingTask = null;
-            }
-            catch (e) {
-                throw new Error(`Cannot open PDF: ${e.message}`);
-            }
-            this._pdfDocument = doc;
-            const pageMap = new Map();
-            for (let i = 0; i < doc.numPages; i++) {
-                const pageProxy = yield ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.getPage(i + 1));
-                pageMap.set(i, pageProxy);
-            }
-            this._pdfPageProxies = pageMap;
-            this._docService = docService;
-            this._fileName = fileName;
-        });
-    }
-    closePdfAsync() {
-        var _a, _b;
-        return __awaiter$4(this, void 0, void 0, function* () {
+            break;
+        }
+        try {
             if (this._pdfLoadingTask) {
-                if (!this._pdfLoadingTask.destroyed) {
-                    yield this._pdfLoadingTask.destroy();
-                }
-                this._pdfLoadingTask = null;
+                await this.closePdfAsync();
+                return this.openPdfAsync(data, userName, fileName, getPasswordAsync, onProgress);
             }
-            this._pdfPageProxies = null;
-            (_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.destroy();
-            this._pdfDocument = null;
-            (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
-            this._docService = null;
-            this._fileName = null;
-        });
+            const dataWithoutAnnotations = await docService.getDataWithoutSupportedAnnotationsAsync();
+            this._pdfLoadingTask = getDocument({
+                data: dataWithoutAnnotations,
+                password,
+            });
+            if (onProgress) {
+                this._pdfLoadingTask.onProgress = onProgress;
+            }
+            doc = await this._pdfLoadingTask.promise;
+            this._pdfLoadingTask = null;
+        }
+        catch (e) {
+            throw new Error(`Cannot open PDF: ${e.message}`);
+        }
+        this._pdfDocument = doc;
+        const pageMap = new Map();
+        for (let i = 0; i < doc.numPages; i++) {
+            const pageProxy = await ((_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.getPage(i + 1));
+            pageMap.set(i, pageProxy);
+        }
+        this._pdfPageProxies = pageMap;
+        this._docService = docService;
+        this._fileName = fileName;
+    }
+    async closePdfAsync() {
+        var _a, _b;
+        if (this._pdfLoadingTask) {
+            if (!this._pdfLoadingTask.destroyed) {
+                await this._pdfLoadingTask.destroy();
+            }
+            this._pdfLoadingTask = null;
+        }
+        this._pdfPageProxies = null;
+        (_a = this._pdfDocument) === null || _a === void 0 ? void 0 : _a.destroy();
+        this._pdfDocument = null;
+        (_b = this._docService) === null || _b === void 0 ? void 0 : _b.destroy();
+        this._docService = null;
+        this._fileName = null;
     }
     getPage(pageIndex) {
         var _a;
@@ -30080,15 +28631,6 @@ class PdfLoaderService {
     }
 }
 
-var __awaiter$3 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class ComparisonService {
     constructor() { }
     destroy() { }
@@ -30102,108 +28644,100 @@ class ComparisonService {
     clearComparisonResult() {
         return this._comparisonResult = null;
     }
-    compareAsync(subjectDocProxy, agentDocProxy, offsets) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            const result = new Map();
-            if (!subjectDocProxy || !agentDocProxy) {
-                return result;
-            }
-            const subjectPagesCount = subjectDocProxy.numPages;
-            const agentPagesCount = agentDocProxy.numPages;
-            for (let i = 0; i < subjectPagesCount; i++) {
-                const subjectPage = yield subjectDocProxy.getPage(i + 1);
-                const agentPage = i < agentPagesCount
-                    ? yield agentDocProxy.getPage(i + 1)
-                    : null;
-                const pageComparisonResult = yield this.comparePagesAsync(subjectPage, agentPage, offsets === null || offsets === void 0 ? void 0 : offsets.get(i));
-                result.set(i, pageComparisonResult);
-            }
-            this._comparisonResult = result;
-            return this._comparisonResult;
-        });
+    async compareAsync(subjectDocProxy, agentDocProxy, offsets) {
+        const result = new Map();
+        if (!subjectDocProxy || !agentDocProxy) {
+            return result;
+        }
+        const subjectPagesCount = subjectDocProxy.numPages;
+        const agentPagesCount = agentDocProxy.numPages;
+        for (let i = 0; i < subjectPagesCount; i++) {
+            const subjectPage = await subjectDocProxy.getPage(i + 1);
+            const agentPage = i < agentPagesCount
+                ? await agentDocProxy.getPage(i + 1)
+                : null;
+            const pageComparisonResult = await this.comparePagesAsync(subjectPage, agentPage, offsets === null || offsets === void 0 ? void 0 : offsets.get(i));
+            result.set(i, pageComparisonResult);
+        }
+        this._comparisonResult = result;
+        return this._comparisonResult;
     }
-    comparePagesAsync(subjectPageProxy, agentPageProxy, offset) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            const subjectImageData = yield this.renderPageAsync(subjectPageProxy);
-            const agentImageData = yield this.renderPageAsync(agentPageProxy);
-            const pageComparisonResult = yield this.compareImageDataAsync(subjectImageData, agentImageData, { offset });
-            return pageComparisonResult;
-        });
+    async comparePagesAsync(subjectPageProxy, agentPageProxy, offset) {
+        const subjectImageData = await this.renderPageAsync(subjectPageProxy);
+        const agentImageData = await this.renderPageAsync(agentPageProxy);
+        const pageComparisonResult = await this.compareImageDataAsync(subjectImageData, agentImageData, { offset });
+        return pageComparisonResult;
     }
-    renderPageAsync(pageProxy) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            if (!pageProxy) {
-                return null;
-            }
-            const viewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
-            const { width, height } = viewport;
-            const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-            const canvasCtx = canvas.getContext("2d");
-            const params = {
-                canvasContext: canvasCtx,
-                viewport: viewport,
-                enableWebGL: true,
-            };
-            const renderTask = pageProxy.render(params);
-            yield renderTask.promise;
-            const imageData = canvasCtx.getImageData(0, 0, width, height);
-            return imageData;
-        });
+    async renderPageAsync(pageProxy) {
+        if (!pageProxy) {
+            return null;
+        }
+        const viewport = pageProxy.getViewport({ scale: 1, rotation: 0 });
+        const { width, height } = viewport;
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const canvasCtx = canvas.getContext("2d");
+        const params = {
+            canvasContext: canvasCtx,
+            viewport: viewport,
+            enableWebGL: true,
+        };
+        const renderTask = pageProxy.render(params);
+        await renderTask.promise;
+        const imageData = canvasCtx.getImageData(0, 0, width, height);
+        return imageData;
     }
-    compareImageDataAsync(subjectImageData, agentImageData, options) {
+    async compareImageDataAsync(subjectImageData, agentImageData, options) {
         var _a;
-        return __awaiter$3(this, void 0, void 0, function* () {
-            const threshold = (_a = options === null || options === void 0 ? void 0 : options.threshold) !== null && _a !== void 0 ? _a : 5;
-            const offset = (options === null || options === void 0 ? void 0 : options.offset) || [0, 0];
-            if (!subjectImageData) {
-                return {
-                    areas: [],
-                    offset: [0, 0],
-                };
-            }
-            if (!agentImageData) {
-                return {
-                    areas: [[0, 0, subjectImageData.width, subjectImageData.height]],
-                    offset: [0, 0],
-                };
-            }
-            const aabbs = [];
-            const sw = subjectImageData.width;
-            const sh = subjectImageData.height;
-            const aw = agentImageData.width;
-            const ah = agentImageData.height;
-            const sBytes = subjectImageData.data;
-            const aBytes = agentImageData.data;
-            let si;
-            let ai;
-            let ax;
-            let ay;
-            for (let sx = 0; sx < sw; sx++) {
-                for (let sy = 0; sy < sh; sy++) {
-                    ax = sx + offset[0];
-                    ay = sy + offset[1];
-                    if (ax < 0 || ay < 0
-                        || ax >= aw || ay >= ah) {
-                        continue;
-                    }
-                    si = (sw * sy + sx) * 4;
-                    ai = (aw * ay + ax) * 4;
-                    if (sBytes[si] !== aBytes[ai]
-                        || sBytes[si + 1] !== aBytes[ai + 1]
-                        || sBytes[si + 2] !== aBytes[ai + 2]
-                        || sBytes[si + 3] !== aBytes[ai + 3]) {
-                        this.addPixelToAabbs(aabbs, sx, sy, threshold, sw, sh);
-                    }
+        const threshold = (_a = options === null || options === void 0 ? void 0 : options.threshold) !== null && _a !== void 0 ? _a : 5;
+        const offset = (options === null || options === void 0 ? void 0 : options.offset) || [0, 0];
+        if (!subjectImageData) {
+            return {
+                areas: [],
+                offset: [0, 0],
+            };
+        }
+        if (!agentImageData) {
+            return {
+                areas: [[0, 0, subjectImageData.width, subjectImageData.height]],
+                offset: [0, 0],
+            };
+        }
+        const aabbs = [];
+        const sw = subjectImageData.width;
+        const sh = subjectImageData.height;
+        const aw = agentImageData.width;
+        const ah = agentImageData.height;
+        const sBytes = subjectImageData.data;
+        const aBytes = agentImageData.data;
+        let si;
+        let ai;
+        let ax;
+        let ay;
+        for (let sx = 0; sx < sw; sx++) {
+            for (let sy = 0; sy < sh; sy++) {
+                ax = sx + offset[0];
+                ay = sy + offset[1];
+                if (ax < 0 || ay < 0
+                    || ax >= aw || ay >= ah) {
+                    continue;
+                }
+                si = (sw * sy + sx) * 4;
+                ai = (aw * ay + ax) * 4;
+                if (sBytes[si] !== aBytes[ai]
+                    || sBytes[si + 1] !== aBytes[ai + 1]
+                    || sBytes[si + 2] !== aBytes[ai + 2]
+                    || sBytes[si + 3] !== aBytes[ai + 3]) {
+                    this.addPixelToAabbs(aabbs, sx, sy, threshold, sw, sh);
                 }
             }
-            const mergedAabbs = this.mergeIntersectingAabbs(aabbs);
-            return {
-                areas: mergedAabbs,
-                offset,
-            };
-        });
+        }
+        const mergedAabbs = this.mergeIntersectingAabbs(aabbs);
+        return {
+            areas: mergedAabbs,
+            offset,
+        };
     }
     addPixelToAabbs(aabbs, x, y, threshold, pageWidth, pageHeight) {
         let merged;
@@ -30225,23 +28759,21 @@ class ComparisonService {
             aabbs.push([cxmin, cymin, cxmax, cymax]);
         }
     }
-    compareImageDataDbscanAsync(subjectImageData, agentImageData, threshold = 10) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            if (!subjectImageData) {
-                return [];
-            }
-            if (!agentImageData) {
-                return [[0, 0, subjectImageData.width, subjectImageData.height]];
-            }
-            const changedPixels = this.getChangedPixels(subjectImageData, agentImageData);
-            if (changedPixels.length > this._maxChangedPixels) {
-                return [[0, 0, subjectImageData.width, subjectImageData.height]];
-            }
-            const clusters = yield DBSCAN.runAsync(changedPixels, threshold, 1);
-            const aabbs = this.convertClustersToAabbs(clusters);
-            const mergedAabbs = this.mergeIntersectingAabbs(aabbs);
-            return mergedAabbs;
-        });
+    async compareImageDataDbscanAsync(subjectImageData, agentImageData, threshold = 10) {
+        if (!subjectImageData) {
+            return [];
+        }
+        if (!agentImageData) {
+            return [[0, 0, subjectImageData.width, subjectImageData.height]];
+        }
+        const changedPixels = this.getChangedPixels(subjectImageData, agentImageData);
+        if (changedPixels.length > this._maxChangedPixels) {
+            return [[0, 0, subjectImageData.width, subjectImageData.height]];
+        }
+        const clusters = await DBSCAN.runAsync(changedPixels, threshold, 1);
+        const aabbs = this.convertClustersToAabbs(clusters);
+        const mergedAabbs = this.mergeIntersectingAabbs(aabbs);
+        return mergedAabbs;
     }
     getChangedPixels(subjectImageData, agentImageData) {
         const sw = subjectImageData.width;
@@ -30331,11 +28863,9 @@ class DBSCAN {
         this._visited = new Array(points.length);
         this._assigned = new Array(points.length);
     }
-    static runAsync(points, epsilon, minPoints) {
-        return __awaiter$3(this, void 0, void 0, function* () {
-            const dbScan = new DBSCAN(points, epsilon !== null && epsilon !== void 0 ? epsilon : 1, minPoints !== null && minPoints !== void 0 ? minPoints : 1);
-            return dbScan.runClustering();
-        });
+    static async runAsync(points, epsilon, minPoints) {
+        const dbScan = new DBSCAN(points, epsilon !== null && epsilon !== void 0 ? epsilon : 1, minPoints !== null && minPoints !== void 0 ? minPoints : 1);
+        return dbScan.runClustering();
     }
     runClustering() {
         if (!this._points.length) {
@@ -30393,15 +28923,6 @@ class DBSCAN {
     ;
 }
 
-var __awaiter$2 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const docChangeEvent = "tspdf-docchangeevent";
 class DocChangeEvent extends CustomEvent {
     constructor(detail) {
@@ -30442,36 +28963,30 @@ class DocManagerService {
             this._docLoaders[key].destroy();
         });
     }
-    openPdfAsync(type, src, fileName, userName, getPasswordAsync, onProgress) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            yield this._docLoaders[type].openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress);
-            if (type === "main") {
-                yield this.closePdfAsync("compared");
-                this._eventService.dispatchEvent(new DocChangeEvent({ action: "open", type: "main" }));
-            }
-            else if (type === "compared") {
-                yield this.runComparisonAsync();
-                this._eventService.dispatchEvent(new DocChangeEvent({ action: "open", type: "compared" }));
-            }
-        });
+    async openPdfAsync(type, src, fileName, userName, getPasswordAsync, onProgress) {
+        await this._docLoaders[type].openPdfAsync(src, fileName, userName, getPasswordAsync, onProgress);
+        if (type === "main") {
+            await this.closePdfAsync("compared");
+            this._eventService.dispatchEvent(new DocChangeEvent({ action: "open", type: "main" }));
+        }
+        else if (type === "compared") {
+            await this.runComparisonAsync();
+            this._eventService.dispatchEvent(new DocChangeEvent({ action: "open", type: "compared" }));
+        }
     }
-    closePdfAsync(type) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            yield this._docLoaders[type].closePdfAsync();
-            if (type === "main") {
-                yield this.closePdfAsync("compared");
-                this._eventService.dispatchEvent(new DocChangeEvent({ action: "close", type: "main" }));
-            }
-            else if (type === "compared") {
-                yield this._comparisonService.clearComparisonResult();
-                this._eventService.dispatchEvent(new DocChangeEvent({ action: "close", type: "compared" }));
-            }
-        });
+    async closePdfAsync(type) {
+        await this._docLoaders[type].closePdfAsync();
+        if (type === "main") {
+            await this.closePdfAsync("compared");
+            this._eventService.dispatchEvent(new DocChangeEvent({ action: "close", type: "main" }));
+        }
+        else if (type === "compared") {
+            await this._comparisonService.clearComparisonResult();
+            this._eventService.dispatchEvent(new DocChangeEvent({ action: "close", type: "compared" }));
+        }
     }
-    runComparisonAsync() {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            yield this._comparisonService.compareAsync(this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);
-        });
+    async runComparisonAsync() {
+        await this._comparisonService.compareAsync(this._docLoaders.main.docProxy, this._docLoaders.compared.docProxy);
     }
     getPageProxy(type, pageIndex) {
         return this._docLoaders[type].getPage(pageIndex);
@@ -30481,15 +28996,6 @@ class DocManagerService {
     }
 }
 
-var __awaiter$1 = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class Viewer {
     get container() {
         return this._container;
@@ -30658,43 +29164,41 @@ class Viewer {
     renderVisible(force) {
         this._pageService.renderVisiblePages(this._container, force);
     }
-    showTextDialogAsync(initialText) {
-        return __awaiter$1(this, void 0, void 0, function* () {
-            if (this._dialogClose) {
-                return;
-            }
-            const dialog = DomUtils.htmlToElements(HtmlTemplates.textDialogHtml)[0];
-            dialog.style.top = this._container.scrollTop + "px";
-            dialog.style.left = this._container.scrollLeft + "px";
-            this._container.append(dialog);
-            this._container.classList.add("dialog-shown");
-            let value = initialText || "";
-            const input = dialog.querySelector(".text-input");
-            input.placeholder = "Enter text...";
-            input.value = value;
-            input.addEventListener("change", () => value = input.value);
-            const textPromise = new Promise((resolve, reject) => {
-                const ok = () => {
-                    resolve(value || "");
-                };
-                const cancel = () => {
-                    resolve(null);
-                };
-                dialog.addEventListener("click", (e) => {
-                    if (e.target === dialog) {
-                        cancel();
-                    }
-                });
-                dialog.querySelector(".text-ok").addEventListener("click", ok);
-                dialog.querySelector(".text-cancel").addEventListener("click", cancel);
-                this._dialogClose = () => resolve(null);
+    async showTextDialogAsync(initialText) {
+        if (this._dialogClose) {
+            return;
+        }
+        const dialog = DomUtils.htmlToElements(HtmlTemplates.textDialogHtml)[0];
+        dialog.style.top = this._container.scrollTop + "px";
+        dialog.style.left = this._container.scrollLeft + "px";
+        this._container.append(dialog);
+        this._container.classList.add("dialog-shown");
+        let value = initialText || "";
+        const input = dialog.querySelector(".text-input");
+        input.placeholder = "Enter text...";
+        input.value = value;
+        input.addEventListener("change", () => value = input.value);
+        const textPromise = new Promise((resolve, reject) => {
+            const ok = () => {
+                resolve(value || "");
+            };
+            const cancel = () => {
+                resolve(null);
+            };
+            dialog.addEventListener("click", (e) => {
+                if (e.target === dialog) {
+                    cancel();
+                }
             });
-            const result = yield textPromise;
-            this._dialogClose = null;
-            dialog.remove();
-            this._container.classList.remove("dialog-shown");
-            return result;
+            dialog.querySelector(".text-ok").addEventListener("click", ok);
+            dialog.querySelector(".text-cancel").addEventListener("click", cancel);
+            this._dialogClose = () => resolve(null);
         });
+        const result = await textPromise;
+        this._dialogClose = null;
+        dialog.remove();
+        this._container.classList.remove("dialog-shown");
+        return result;
     }
     scrollToPage(pageNumber) {
         if (!this._pageService.pages.length) {
@@ -30859,15 +29363,6 @@ class Previewer {
     }
 }
 
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 class TsPdfViewer {
     get _docService() {
         var _a;
@@ -30900,15 +29395,15 @@ class TsPdfViewer {
         this.onOpenFileButtonClick = () => {
             this._fileInput.click();
         };
-        this.onSaveFileButtonClickAsync = () => __awaiter(this, void 0, void 0, function* () {
+        this.onSaveFileButtonClickAsync = async () => {
             var _a;
-            const blob = yield this.getCurrentPdfAsync();
+            const blob = await this.getCurrentPdfAsync();
             if (!blob) {
                 return;
             }
             DomUtils.downloadFile(blob, ((_a = this._docManagerService) === null || _a === void 0 ? void 0 : _a.fileName)
                 || `file_${new Date().toISOString()}.pdf`);
-        });
+        };
         this.onCloseFileButtonClick = () => {
             this.closeDocAsync("main");
         };
@@ -31065,15 +29560,15 @@ class TsPdfViewer {
                 this._mainContainer.classList.add(event.detail.annotatorType + "-annotator-data-clearable");
             }
         };
-        this.onAnnotationEditTextButtonClick = () => __awaiter(this, void 0, void 0, function* () {
-            var _b, _c;
-            const initialText = (_b = this._docService) === null || _b === void 0 ? void 0 : _b.getSelectedAnnotationTextContent();
-            const text = yield this._viewer.showTextDialogAsync(initialText);
+        this.onAnnotationEditTextButtonClick = async () => {
+            var _a, _b;
+            const initialText = (_a = this._docService) === null || _a === void 0 ? void 0 : _a.getSelectedAnnotationTextContent();
+            const text = await this._viewer.showTextDialogAsync(initialText);
             if (text === null) {
                 return;
             }
-            yield ((_c = this._docService) === null || _c === void 0 ? void 0 : _c.setSelectedAnnotationTextContentAsync(text));
-        });
+            await ((_b = this._docService) === null || _b === void 0 ? void 0 : _b.setSelectedAnnotationTextContentAsync(text));
+        };
         this.onAnnotationDeleteButtonClick = () => {
             var _a;
             (_a = this._docService) === null || _a === void 0 ? void 0 : _a.removeSelectedAnnotation();
@@ -31106,12 +29601,12 @@ class TsPdfViewer {
             var _a;
             (_a = this._docService) === null || _a === void 0 ? void 0 : _a.undoAsync();
         };
-        this.onDocChangeAsync = (e) => __awaiter(this, void 0, void 0, function* () {
-            var _d;
+        this.onDocChangeAsync = async (e) => {
+            var _a;
             if (e.detail.type === "main") {
                 if (e.detail.action === "open") {
                     this.setMode();
-                    yield this.refreshPagesAsync();
+                    await this.refreshPagesAsync();
                     this._annotatorService = new AnnotatorService(this._docService, this._pageService, this._customStampsService, this._viewer);
                     this.setAnnotationMode("select");
                     this._mainContainer.classList.remove("disabled");
@@ -31121,8 +29616,8 @@ class TsPdfViewer {
                     this._mainContainer.classList.remove("annotation-focused");
                     this._mainContainer.classList.remove("annotation-selected");
                     this.setMode();
-                    (_d = this._annotatorService) === null || _d === void 0 ? void 0 : _d.destroy();
-                    yield this.refreshPagesAsync();
+                    (_a = this._annotatorService) === null || _a === void 0 ? void 0 : _a.destroy();
+                    await this.refreshPagesAsync();
                     this.showPanels();
                 }
             }
@@ -31137,7 +29632,7 @@ class TsPdfViewer {
                     this._viewer.renderVisible(true);
                 }
             }
-        });
+        };
         this.onDocServiceStateChange = (e) => {
             if (e.detail.undoableCount) {
                 this._mainContainer.classList.add("undoable-commands");
@@ -31149,7 +29644,7 @@ class TsPdfViewer {
         this.onPreviewerToggleClick = () => {
             this.togglePreviewer();
         };
-        this.showPasswordDialogAsync = () => __awaiter(this, void 0, void 0, function* () {
+        this.showPasswordDialogAsync = async () => {
             const passwordPromise = new Promise((resolve, reject) => {
                 const dialog = DomUtils.htmlToElements(passwordDialogHtml)[0];
                 this._mainContainer.append(dialog);
@@ -31174,7 +29669,7 @@ class TsPdfViewer {
                 dialog.querySelector(".password-cancel").addEventListener("click", cancel);
             });
             return passwordPromise;
-        });
+        };
         this.onViewerKeyDown = (event) => {
             var _a, _b, _c, _d;
             switch (event.code) {
@@ -31365,67 +29860,51 @@ class TsPdfViewer {
         this._shadowRoot.innerHTML = "";
         document.removeEventListener("selectionchange", this.onTextSelectionChange);
     }
-    openPdfAsync(src, fileName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.openDocAsync("main", src, fileName);
-        });
+    async openPdfAsync(src, fileName) {
+        await this.openDocAsync("main", src, fileName);
     }
-    closePdfAsync() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.closeDocAsync("main");
-        });
+    async closePdfAsync() {
+        await this.closeDocAsync("main");
     }
-    openComparedPdfAsync(src, fileName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this._docManagerService.docLoaded) {
-                return;
-            }
-            yield this.openDocAsync("compared", src, fileName);
-            this.setMode("comparison");
-        });
+    async openComparedPdfAsync(src, fileName) {
+        if (!this._docManagerService.docLoaded) {
+            return;
+        }
+        await this.openDocAsync("compared", src, fileName);
+        this.setMode("comparison");
     }
-    closeComparedPdfAsync() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.closeDocAsync("compared");
-            this.setMode();
-        });
+    async closeComparedPdfAsync() {
+        await this.closeDocAsync("compared");
+        this.setMode();
     }
-    importAnnotationsAsync(dtos) {
+    async importAnnotationsAsync(dtos) {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotationsAsync(dtos));
-            }
-            catch (e) {
-                console.log(`Error while importing annotations: ${e.message}`);
-            }
-        });
+        try {
+            await ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotationsAsync(dtos));
+        }
+        catch (e) {
+            console.log(`Error while importing annotations: ${e.message}`);
+        }
     }
-    importAnnotationsFromJsonAsync(json) {
+    async importAnnotationsFromJsonAsync(json) {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const dtos = JSON.parse(json);
-                yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotationsAsync(dtos));
-            }
-            catch (e) {
-                console.log(`Error while importing annotations: ${e.message}`);
-            }
-        });
+        try {
+            const dtos = JSON.parse(json);
+            await ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.appendSerializedAnnotationsAsync(dtos));
+        }
+        catch (e) {
+            console.log(`Error while importing annotations: ${e.message}`);
+        }
     }
-    exportAnnotationsAsync() {
+    async exportAnnotationsAsync() {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            const dtos = yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotationsAsync(true));
-            return dtos;
-        });
+        const dtos = await ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotationsAsync(true));
+        return dtos;
     }
-    exportAnnotationsToJsonAsync() {
+    async exportAnnotationsToJsonAsync() {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            const dtos = yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotationsAsync(true));
-            return JSON.stringify(dtos);
-        });
+        const dtos = await ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.serializeAnnotationsAsync(true));
+        return JSON.stringify(dtos);
     }
     importCustomStamps(customStamps) {
         try {
@@ -31452,37 +29931,31 @@ class TsPdfViewer {
         const customStamps = this._customStampsService.getCustomStamps();
         return JSON.stringify(customStamps);
     }
-    getCurrentPdfAsync() {
+    async getCurrentPdfAsync() {
         var _a;
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = yield ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotationsAsync());
-            if (!(data === null || data === void 0 ? void 0 : data.length)) {
-                return null;
-            }
-            const blob = new Blob([data], {
-                type: "application/pdf",
-            });
-            return blob;
+        const data = await ((_a = this._docService) === null || _a === void 0 ? void 0 : _a.getDataWithUpdatedAnnotationsAsync());
+        if (!(data === null || data === void 0 ? void 0 : data.length)) {
+            return null;
+        }
+        const blob = new Blob([data], {
+            type: "application/pdf",
         });
+        return blob;
     }
-    openDocAsync(type, src, fileName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._spinner.show(this._mainContainer);
-            try {
-                yield this._docManagerService.openPdfAsync(type, src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
-            }
-            catch (e) {
-                throw e;
-            }
-            finally {
-                this._spinner.hide();
-            }
-        });
+    async openDocAsync(type, src, fileName) {
+        this._spinner.show(this._mainContainer);
+        try {
+            await this._docManagerService.openPdfAsync(type, src, fileName, this._userName, this.showPasswordDialogAsync, this.onPdfLoadingProgress);
+        }
+        catch (e) {
+            throw e;
+        }
+        finally {
+            this._spinner.hide();
+        }
     }
-    closeDocAsync(type) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this._docManagerService.closePdfAsync(type);
-        });
+    async closeDocAsync(type) {
+        await this._docManagerService.closePdfAsync(type);
     }
     initMainContainerEventHandlers() {
         const mcResizeObserver = new ResizeObserver((entries) => {
@@ -31673,12 +30146,10 @@ class TsPdfViewer {
             this._panelsHidden = false;
         }
     }
-    refreshPagesAsync() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const docPagesNumber = this._docManagerService.pageCount;
-            this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
-            yield this._pageService.reloadPagesAsync();
-        });
+    async refreshPagesAsync() {
+        const docPagesNumber = this._docManagerService.pageCount;
+        this._shadowRoot.getElementById("paginator-total").innerHTML = docPagesNumber + "";
+        await this._pageService.reloadPagesAsync();
     }
     togglePreviewer() {
         if (this._previewer.hidden) {
