@@ -48,7 +48,7 @@
  * -//-//-//-//-//-//-//-//-//-//-//-//-//-//-
  */
 
-import { renderTextLayer, RenderingCancelledException, getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import { TextLayer, RenderingCancelledException, getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import { Vec2, Mat3, Vec3, clamp, getDistance2D } from 'mathador';
 import { Icons, getCommonStyles, UUID, ByteUtils, LinkedList, DomUtils, CloudCurveData, SvgTempPath, SvgSmoothPath, ContextMenu, HtmlTemplates, EventService, CustomStampService, Spinner, customStampEvent } from 'ts-viewers-core';
 import * as Pako from 'pako';
@@ -557,29 +557,12 @@ function getSelectionInfosFromSelection(selection) {
 
 class PageTextView {
     constructor(pageProxy) {
-        this.onPointerDown = (e) => {
-            var _a;
-            if (this._divModeTimer) {
-                clearTimeout(this._divModeTimer);
-                this._divModeTimer = null;
-            }
-            (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(true);
-        };
-        this.onPointerUp = (e) => {
-            this._divModeTimer = setTimeout(() => {
-                var _a;
-                (_a = this._renderTask) === null || _a === void 0 ? void 0 : _a.expandTextDivs(false);
-                this._divModeTimer = null;
-            }, 300);
-        };
         if (!pageProxy) {
             throw new Error("Page proxy is not defined");
         }
         this._pageProxy = pageProxy;
         this._container = document.createElement("div");
         this._container.classList.add("page-text");
-        this._container.addEventListener("pointerdown", this.onPointerDown);
-        this._container.addEventListener("pointerup", this.onPointerUp);
     }
     static async appendPageTextAsync(pageProxy, parent, scale) {
         const textObj = new PageTextView(pageProxy);
@@ -602,24 +585,24 @@ class PageTextView {
         this._destroyed = true;
     }
     remove() {
-        this.destroyRenderTask();
         if (this._container) {
             this._container.remove();
         }
     }
     async renderTextLayerAsync(scale) {
-        this.destroyRenderTask();
         this.clear();
         const viewport = this._pageProxy.getViewport({ scale });
-        const textContentStream = this._pageProxy.streamTextContent();
-        this._renderTask = renderTextLayer({
-            container: this._container,
-            textContentStream,
-            viewport,
-            enhanceTextSelection: false,
-        });
+        this._container.style.setProperty("--scale-factor", scale + "");
         try {
-            await this._renderTask.promise;
+            const textLayer = new TextLayer({
+                textContentSource: this._pageProxy.streamTextContent({
+                    includeMarkedContent: true,
+                    disableNormalization: true,
+                }),
+                container: this._container,
+                viewport,
+            });
+            await textLayer.render();
         }
         catch (error) {
             if (error.message === "TextLayer task cancelled.") {
@@ -645,12 +628,6 @@ class PageTextView {
     }
     clear() {
         this._container.innerHTML = "";
-    }
-    destroyRenderTask() {
-        if (this._renderTask) {
-            this._renderTask.cancel();
-            this._renderTask = null;
-        }
     }
 }
 

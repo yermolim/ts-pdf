@@ -92,7 +92,7 @@ export default [
   {
     input: "tsc/src/demo.js",
     output: [
-      { file: "demo/demo.js", format: "esm" },
+      { file: "demo/demo.js", format: "esm", inlineDynamicImports: true },
     ],
     plugins: [
       nodeResolve({

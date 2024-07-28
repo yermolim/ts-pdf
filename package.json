@@ -11,7 +11,7 @@
     "copypngtotsc": "copyfiles -f ./src/assets/icons/*.png ./tsc/src/assets/icons && copyfiles -f ./src/assets/assets.d.ts ./tsc/src",
     "buildts": "tsc && npm run copypngtotsc",
     "buildru": "rollup -c",
-    "copypdfjsworker": "copyfiles -f ./node_modules/pdfjs-dist/build/pdf.worker.min.js ./demo/assets/",
+    "copypdfjsworker": "copyfiles -f ./node_modules/pdfjs-dist/build/pdf.worker.min.mjs ./demo/assets/",
     "copypdfjsviewerstyles": "copyfiles -f ./node_modules/pdfjs-dist/web/pdf_viewer.css ./demo/",
     "build": "npm run buildts && npm run buildru && npm run copypdfjsworker",
     "start": "npm run build && lite-server -c ls-config.json",
@@ -61,7 +61,7 @@
     "karma-jasmine": "^5.1.0",
     "karma-typescript": "^5.5.4",
     "lite-server": "^2.6.1",
-    "puppeteer": "^21.5.1",
+    "puppeteer": "^22.14.0",
     "rollup": "^4.4.0",
     "rollup-plugin-css-porter": "^1.0.2",
     "rollup-plugin-dts": "^6.1.0",
@@ -75,7 +75,7 @@
     "crypto-es": "^2.1.0",
     "mathador": "^0.2.2",
     "pako": "^2.1.0",
-    "pdfjs-dist": "^2.16.105",
+    "pdfjs-dist": "^4.5.136",
     "ts-viewers-core": "^0.0.27"
   }
 }

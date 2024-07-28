@@ -7,7 +7,7 @@ import { AnnotEventDetail, CustomStampEventDetail,
 async function run(): Promise<void> {  
   const options: TsPdfViewerOptions = {
     containerSelector: "#pdf-main-container", 
-    workerSource: "assets/pdf.worker.min.js",
+    workerSource: "assets/pdf.worker.min.mjs",
     userName: "yermolim",
     fileButtons: ["open", "close", "save"],
     comparableFileButtons: ["open", "close"],

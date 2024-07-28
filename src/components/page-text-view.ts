@@ -1,14 +1,10 @@
-import { renderTextLayer } from "pdfjs-dist";
+import { TextLayer } from "pdfjs-dist";
 import { PDFPageProxy } from "pdfjs-dist/types/src/display/api";
-import { TextLayerRenderParameters, TextLayerRenderTask } from "pdfjs-dist/types/src/display/text_layer";
 
 export class PageTextView {  
   private _container: HTMLDivElement;
 
   private _pageProxy: PDFPageProxy;
-  private _renderTask: TextLayerRenderTask;
-
-  private _divModeTimer: number;
 
   private _destroyed: boolean;
 
@@ -20,8 +16,6 @@ export class PageTextView {
 
     this._container = document.createElement("div");
     this._container.classList.add("page-text");
-    this._container.addEventListener("pointerdown", this.onPointerDown);
-    this._container.addEventListener("pointerup", this.onPointerUp);
   } 
 
   /**
@@ -54,27 +48,28 @@ export class PageTextView {
   }
 
   remove() {
-    this.destroyRenderTask();
     if (this._container) {
       this._container.remove();
     }
   }
 
   private async renderTextLayerAsync(scale: number): Promise<boolean> {
-    this.destroyRenderTask();
     this.clear();
 
     const viewport = this._pageProxy.getViewport({scale});
-    const textContentStream = this._pageProxy.streamTextContent();
-    this._renderTask = renderTextLayer(<TextLayerRenderParameters>{
-      container: <HTMLElement>this._container,
-      textContentStream,
-      viewport,
-      // TODO: find a way to enable next option without breaking text markup annotators
-      enhanceTextSelection: false, 
-    });
+    // Note: the variable need to be set as its used by PDF.js to adjust the size of text chunks
+    this._container.style.setProperty("--scale-factor", scale + "");
+
     try {
-      await this._renderTask.promise;
+      const textLayer = new TextLayer({
+        textContentSource: this._pageProxy.streamTextContent({
+          includeMarkedContent: true,
+          disableNormalization: true,
+        }),
+        container: this._container,
+        viewport,
+      });
+      await textLayer.render();
     } catch (error) {
       if (error.message === "TextLayer task cancelled.") {
         return false;
@@ -104,26 +99,4 @@ export class PageTextView {
   private clear() {
     this._container.innerHTML = "";
   }
-
-  private destroyRenderTask() {
-    if (this._renderTask) {
-      this._renderTask.cancel();  
-      this._renderTask = null;
-    }
-  }
-
-  private onPointerDown = (e: PointerEvent) => {
-    if (this._divModeTimer) {
-      clearTimeout(this._divModeTimer);
-      this._divModeTimer = null;
-    }
-    this._renderTask?.expandTextDivs(true);
-  };
-  
-  private onPointerUp = (e: PointerEvent) => {
-    this._divModeTimer = setTimeout(() => {
-      this._renderTask?.expandTextDivs(false);
-      this._divModeTimer = null;
-    }, 300);
-  };
 }
