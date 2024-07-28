@@ -103,7 +103,7 @@ import { TsPdfViewer, TsPdfViewerOptions } from "ts-pdf";
 async function run(): Promise<void> {  
   const options: TsPdfViewerOptions = {
     containerSelector: "#your-html-container-selector", 
-    workerSource: "assets/pdf.worker.min.js", // path to the PDF.js worker script
+    workerSource: "assets/pdf.worker.min.mjs", // path to the PDF.js worker script
     userName: "your_username",
     // you can check other properties using your editor hints
   };
@@ -115,6 +115,7 @@ run();
 ```
 
 #### ⚠️for viewer to function properly its container element must have relative, absolute or fixed position!
+#### ⚠️the PDF.js worker version must match the version of the pdfjs-dist module. When you have the module installed, you can find the default worker file in your node_modules folder: './node_modules/pdfjs-dist/build/pdf.worker.min.mjs'.
 
 ### Changing the color scheme
 
