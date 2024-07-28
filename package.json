@@ -1,6 +1,6 @@
 {
   "name": "ts-pdf",
-  "version": "0.11.4",
+  "version": "0.12.0",
   "description": "PDF.js-based PDF viewer",
   "type": "module",
   "module": "dist/ts-pdf.esm.js",
