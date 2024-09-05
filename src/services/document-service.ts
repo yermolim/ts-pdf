@@ -291,7 +291,7 @@ export class DocumentService {
     const annotationMap = await this.getSupportedAnnotationMapAsync(); 
     annotationMap.forEach((v, k) => {
       v.forEach(x => {
-        if (!addedOnly || x.added) {
+        if ( (!addedOnly || x.added) && !x.deleted) {
           result.push(x.toDto());
         }
       });
